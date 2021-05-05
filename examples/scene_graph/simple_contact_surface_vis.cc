@@ -139,8 +139,8 @@ class MovingBall final : public LeafSystem<double> {
     derivative_values.SetAtIndex(0, std::sin(context.get_time()));
   }
 
-  void CalcFramePoseOutput(
-      const Context<double>& context, FramePoseVector<double>* poses) const {
+  void CalcFramePoseOutput(const Context<double>& context,
+                           FramePoseVector<double>* poses) const {
     RigidTransformd pose;
     const double pos_z = context.get_continuous_state().get_vector()[0];
     pose.set_translation({0.0, 0.0, pos_z});
@@ -225,12 +225,17 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_msg.num_triangles = mesh_W.num_faces();
       surface_msg.triangles.resize(surface_msg.num_triangles);
       write_double3(mesh_W.centroid(), surface_msg.centroid_W);
+      surface_msg.num_quadrature_points = surface_msg.num_triangles;
+      surface_msg.quadrature_point_data.resize(
+          surface_msg.num_quadrature_points);
 
       // Loop through each contact triangle on the contact surface.
       const auto& field = surfaces[i].e_MN();
       for (SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
         lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
             surface_msg.triangles[j];
+        lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_msg =
+            surface_msg.quadrature_point_data[j];
 
         // Get the three vertices.
         const auto& face = mesh_W.element(j);
@@ -241,10 +246,15 @@ class ContactResultMaker final : public LeafSystem<double> {
         write_double3(vA.r_MV(), tri_msg.p_WA);
         write_double3(vB.r_MV(), tri_msg.p_WB);
         write_double3(vC.r_MV(), tri_msg.p_WC);
+        write_double3((vA.r_MV() + vB.r_MV() + vC.r_MV()) / 3.0, quad_msg.p_WQ);
 
         tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
         tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
         tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
+
+        // Face contact *traction* and *slip velocity* data.
+        write_double3(Vector3<double>(0, 0.2, 0), quad_msg.vt_BqAq_W);
+        write_double3(Vector3<double>(0, -0.2, 0), quad_msg.traction_Aq_W);
       }
       // Fake contact *force* and *moment* data.
       write_double3(Vector3<double>(1, 0, 0), surface_msg.force_C_W);
@@ -289,7 +299,7 @@ int do_main() {
   SourceId source_id = scene_graph.RegisterSource("world");
   const double edge_len = 10;
   const RigidTransformd X_WB(Eigen::AngleAxisd(M_PI / 4, Vector3d::UnitX()),
-      Vector3d{0, 0, -sqrt(2.0) * edge_len / 2});
+                             Vector3d{0, 0, -sqrt(2.0) * edge_len / 2});
   GeometryId ground_id = scene_graph.RegisterAnchoredGeometry(
       source_id,
       make_unique<GeometryInstance>(
