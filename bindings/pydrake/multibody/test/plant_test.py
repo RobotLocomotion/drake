@@ -782,6 +782,13 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
+        # Verify CalcTotalMass() calculates a non-zero mass.
+        p_mass = plant.CalcTotalMass(context=context)
+        numpy_compare.assert_float_not_equal(p_mass, 0.)
+        p_mass = plant.CalcTotalMass(
+            context=context, model_instances=[instance])
+        numpy_compare.assert_float_not_equal(p_mass, 0.)
+
         p_com = plant.CalcCenterOfMassPositionInWorld(context=context)
         self.assertTupleEqual(p_com.shape, (3, ))
         p_com = plant.CalcCenterOfMassPositionInWorld(

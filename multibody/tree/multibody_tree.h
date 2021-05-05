@@ -1292,6 +1292,13 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> p_AQi) const;
 
   // See MultibodyPlant method.
+  T CalcTotalMass(const systems::Context<T>& context) const;
+
+  // See MultibodyPlant method.
+  T CalcTotalMass(const systems::Context<T>& context,
+                  const std::vector<ModelInstanceIndex>& model_instances) const;
+
+  // See MultibodyPlant method.
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context) const;
 

@@ -302,6 +302,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.CalcCenterOfMassPosition.doc_deprecated);
 #pragma GCC diagnostic pop
     cls  // BR
+        .def("CalcTotalMass",
+            overload_cast_explicit<T, const Context<T>&>(&Class::CalcTotalMass),
+            py::arg("context"), cls_doc.CalcTotalMass.doc_1args)
+        .def("CalcTotalMass",
+            overload_cast_explicit<T, const Context<T>&,
+                const std::vector<ModelInstanceIndex>&>(&Class::CalcTotalMass),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcTotalMass.doc_2args)
         .def("CalcCenterOfMassPositionInWorld",
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
                 &Class::CalcCenterOfMassPositionInWorld),

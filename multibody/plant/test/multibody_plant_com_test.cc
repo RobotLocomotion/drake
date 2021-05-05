@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -155,6 +156,60 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
   Eigen::Vector3d p_SScm_S_;
   Eigen::Vector3d p_TTcm_T_;
 };
+
+TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
+  // Verify the plant's total mass makes sense.
+  const double mass_system = plant_.CalcTotalMass(*context_);
+  EXPECT_EQ(mass_system, mass_S_ + mass_T_);
+
+  // Verify CalcTotalMass() returns 0 if model instances only has 1 world body.
+  const ModelInstanceIndex world_model_instance =
+      multibody::world_model_instance();
+  std::vector<ModelInstanceIndex> world_model_instance_array;
+  world_model_instance_array.push_back(world_model_instance);
+  double mass_zero =
+      plant_.CalcTotalMass(*context_, world_model_instance_array);
+  EXPECT_EQ(mass_zero, 0.0);
+
+  // Check CalcTotalMass() returns 0 if model instances has only 2 world bodies.
+  world_model_instance_array.push_back(world_model_instance);
+  mass_zero = plant_.CalcTotalMass(*context_, world_model_instance_array);
+  EXPECT_EQ(mass_zero, 0.0);
+
+  // Verify CalcTotalMass() returns 0 for empty model_instances.
+  std::vector<ModelInstanceIndex> model_instances;
+  mass_zero = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_EQ(mass_zero, 0.0);
+
+  // Verify CalcTotalMass() works for 1 instances in model_instances.
+  model_instances.push_back(triangle_instance_);
+  const double mass_triangle = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_EQ(mass_triangle, mass_T_);
+
+  // Verify CalcTotalMass() works for 2 instances in model_instances.
+  model_instances.push_back(sphere_instance_);
+  double mass_2_instances = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_EQ(mass_2_instances, mass_S_ + mass_T_);
+
+  // Verify CalcTotalMass() works for 3 instances (with 2 sphere_instance_).
+  // Note: CalcTotalMass() only calculates a single sphere_instance_ !
+  model_instances.push_back(sphere_instance_);
+  double mass_odd_instances = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_EQ(mass_odd_instances, mass_S_ + mass_T_);  // mass_S not 2 * mass_S!
+
+  // Verify we are able to determine if the total mass = 0.
+  set_mass_sphere(0.0);
+  set_mass_triangle(0.0);
+  mass_zero = plant_.CalcTotalMass(*context_);
+  EXPECT_EQ(mass_zero, 0.0);
+  mass_zero = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_EQ(mass_zero, 0.0);
+
+  // Verify no exception is thrown if there is an invalid ModelInstanceIndex.
+  ModelInstanceIndex error_index(10);
+  model_instances.push_back(error_index);
+  DRAKE_EXPECT_NO_THROW(plant_.CalcTotalMass(*context_, model_instances));
+}
 
 TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   // Verify the plant's default center of mass position makes sense.

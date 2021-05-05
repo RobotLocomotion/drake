@@ -2440,6 +2440,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, frame_B, p_BQi, frame_A, p_AQi);
   }
 
+  /// Calculates the total mass of all bodies in this MultibodyPlant.
+  /// @param[in] context Contains the state of the model.
+  /// @retval The total mass of all bodies or 0 if there are none.
+  /// @note The mass of the world_body() does not contribute to the total mass.
+  T CalcTotalMass(const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcTotalMass(context);
+  }
+
+  /// Calculates the total mass of all bodies contained in model_instances.
+  /// @param[in] context Contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances. This method
+  /// does not distinguish between welded, joint connected, or floating bodies.
+  /// @retval The total mass of all bodies belonging to a model instance in
+  ///   model_instances or 0 if model_instances is empty.
+  /// @note The mass of the world_body() does not contribute to the total mass
+  ///   and each body only contributes to the total mass once, even if the body
+  ///   has repeated occurence (instance) in model_instances.
+  T CalcTotalMass(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcTotalMass(context, model_instances);
+  }
+
   /// Calculates the position vector from the world origin Wo to the center of
   /// mass of all bodies in this MultibodyPlant, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
