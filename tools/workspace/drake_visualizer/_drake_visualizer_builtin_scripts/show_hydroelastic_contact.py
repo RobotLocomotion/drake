@@ -680,19 +680,19 @@ class HydroelasticContactVisualizer:
         for surface in msg.hydroelastic_contacts:
             # Adds a collection of debug data to the console with the given
             # folder name.
-            def add_contact_data(debug_data, item_name):
-                # Exploit the fact that debug_data.append is a vtkAppendPolyData
+            def add_contact_data(data, item_name):
+                # Exploit the fact that data.append is a vtkAppendPolyData
                 # instance. The number of input connections on port zero is the
                 # number of *actual* geometries added. If zero have been added,
                 # do no work.
-                if (debug_data is None or
-                    debug_data.append.GetNumberOfInputConnections(0) == 0):
+                if (data is None
+                        or data.append.GetNumberOfInputConnections(0) == 0):
                     return
                 contact_data_folder = om.getOrCreateContainer(
                         f'Contact data between {surface.body1_name} and '
                         f'{surface.body2_name}', folder)
                 cls = vis.PolyDataItem
-                item = cls(item_name, debug_data.getPolyData(), view)
+                item = cls(item_name, data.getPolyData(), view)
                 om.addToObjectModel(item, contact_data_folder)
                 item.setProperty('Visible', True)
                 item.setProperty('Alpha', 1.0)
