@@ -63,6 +63,12 @@ class SolverBase : public SolverInterface {
       const SolverOptions& merged_options,
       MathematicalProgramResult* result) const = 0;
 
+  /// Suggest the user to take some action if the solver's capability doesn't
+  /// meet the program's requirement.
+  /// Default is providing no suggestion.
+  virtual void SuggestIfCapaibilitiesNotMeet(
+      const MathematicalProgram& prog) const;
+
  private:
   std::function<SolverId()> default_id_;
   std::function<bool()> default_available_;

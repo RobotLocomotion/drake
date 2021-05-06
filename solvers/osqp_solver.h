@@ -59,6 +59,9 @@ class OsqpSolver final : public SolverBase {
  private:
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                const SolverOptions&, MathematicalProgramResult*) const final;
+
+  void SuggestIfCapaibilitiesNotMeet(
+      const MathematicalProgram& prog) const override final;
 };
 }  // namespace solvers
 }  // namespace drake

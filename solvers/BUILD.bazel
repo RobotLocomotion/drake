@@ -913,16 +913,15 @@ drake_cc_library(
         ],
     }),
     hdrs = ["osqp_solver.h"],
-    deps = select({
+    deps = [
+        ":mathematical_program",
+        ":solver_base",
+      ] + select({
         "//conditions:default": [
-            ":mathematical_program",
-            ":solver_base",
             "//math:eigen_sparse_triplet",
             "@osqp",
         ],
         "//tools:no_osqp": [
-            ":mathematical_program",
-            ":solver_base",
         ],
     }),
 )

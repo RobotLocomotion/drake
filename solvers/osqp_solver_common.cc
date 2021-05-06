@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
 
 // This file contains implementations that are common to both the available and
@@ -34,6 +35,18 @@ bool OsqpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
                                         solver_capabilities.access()) &&
          prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
              0;
+}
+
+void OsqpSolver::SuggestIfCapaibilitiesNotMeet(
+    const MathematicalProgram& prog) const {
+  if (prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) ==
+      0) {
+    drake::log()->info(
+        "Your program doesn't have a quadratic cost. OSQP works better with a "
+        "quadratic cost. Please switch to other solvers like CLP (for linear "
+        "programming) or IPOPT/SNOPT (for nonlinear programming) if you don't "
+        "want to add a quadratic cost to this program");
+  }
 }
 
 }  // namespace solvers

@@ -32,6 +32,9 @@ MathematicalProgramResult SolverBase::Solve(
   return result;
 }
 
+void SolverBase::SuggestIfCapaibilitiesNotMeet(
+    const MathematicalProgram&) const {}
+
 void SolverBase::Solve(const MathematicalProgram& prog,
                        const std::optional<Eigen::VectorXd>& initial_guess,
                        const std::optional<SolverOptions>& solver_options,
@@ -47,6 +50,7 @@ void SolverBase::Solve(const MathematicalProgram& prog,
         NiceTypeName::Get(*this)));
   }
   if (!AreProgramAttributesSatisfied(prog)) {
+    SuggestIfCapaibilitiesNotMeet(prog);
     throw std::invalid_argument(fmt::format(
         "The capabilities of {} do not meet the requirements of the "
         "MathematicalProgram ({})", NiceTypeName::Get(*this),
