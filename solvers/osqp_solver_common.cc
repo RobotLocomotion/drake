@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 // This file contains implementations that are common to both the available and
@@ -33,7 +34,8 @@ bool OsqpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access()) &&
          prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
-             0;
+             0 &&
+         AllQuadraticCostsConvex(prog.quadratic_costs());
 }
 
 }  // namespace solvers

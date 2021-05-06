@@ -2320,6 +2320,14 @@ GTEST_TEST(TestMathematicalProgram, AddQuadraticCost) {
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d::Zero(), x);
 
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+
+  // Call AddQuadraticCost with non-convex cost.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddQuadraticCost(-Eigen::Matrix3d::Identity(), Vector3d(1, 2, 3), x),
+      std::invalid_argument, ".* Hessian .*");
+  EXPECT_NO_THROW(prog.AddQuadraticCost(-Eigen::Matrix3d::Identity(),
+                                        Vector3d(1, 2, 3), x,
+                                        true /* allow_nonconvex=true */));
 }
 
 void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
@@ -2339,12 +2347,14 @@ void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
 }
 
 void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
-                                     const Expression& e) {
+                                     const Expression& e,
+                                     bool allow_nonconvex = false) {
   int num_quadratic_cost = prog->quadratic_costs().size();
-  auto binding1 = prog->AddQuadraticCost(e);
+  auto binding1 = prog->AddQuadraticCost(e, allow_nonconvex);
+  EXPECT_EQ(binding1.evaluator()->allow_nonconvex(), allow_nonconvex);
   CheckAddedSymbolicQuadraticCostUserFun(*prog, e, binding1,
                                          ++num_quadratic_cost);
-  auto binding2 = prog->AddCost(e);
+  auto binding2 = prog->AddCost(e, allow_nonconvex);
   CheckAddedSymbolicQuadraticCostUserFun(*prog, e, binding2,
                                          ++num_quadratic_cost);
 }
@@ -2370,7 +2380,7 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
   CheckAddedSymbolicQuadraticCost(&prog, e4);
 
   // Cross terms.
-  Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
+  Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 1 * x(0) * x(1) + 2;
   CheckAddedSymbolicQuadraticCost(&prog, e5);
 
   // Linear terms.
@@ -2385,6 +2395,12 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
   // Cubic polynomial case.
   Expression e8 = pow(x(0), 3) + 1;
   EXPECT_THROW(prog.AddQuadraticCost(e8), runtime_error);
+
+  // nonconvex quadratic.
+  const Expression e9 = -x(0) * x(0) + x(1) * x(1);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddQuadraticCost(e9), std::invalid_argument,
+                              ".* Hessian .*");
+  CheckAddedSymbolicQuadraticCost(&prog, e9, true /* allow_nonconvex */);
 }
 
 GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {

@@ -197,5 +197,14 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
     }
   }
 }
+
+bool AllQuadraticCostsConvex(const std::vector<Binding<QuadraticCost>>& costs) {
+  for (const auto& cost : costs) {
+    if (cost.evaluator()->allow_nonconvex()) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace solvers
 }  // namespace drake

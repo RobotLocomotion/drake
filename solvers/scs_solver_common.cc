@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -23,15 +24,17 @@ bool ScsSolver::is_enabled() { return true; }
 
 bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   return AreRequiredAttributesSupported(
-      prog.required_capabilities(),
-      ProgramAttributes({ProgramAttribute::kLinearEqualityConstraint,
-                         ProgramAttribute::kLinearConstraint,
-                         ProgramAttribute::kLorentzConeConstraint,
-                         ProgramAttribute::kRotatedLorentzConeConstraint,
-                         ProgramAttribute::kPositiveSemidefiniteConstraint,
-                         ProgramAttribute::kExponentialConeConstraint,
-                         ProgramAttribute::kLinearCost,
-                         ProgramAttribute::kQuadraticCost}));
+             prog.required_capabilities(),
+             ProgramAttributes(
+                 {ProgramAttribute::kLinearEqualityConstraint,
+                  ProgramAttribute::kLinearConstraint,
+                  ProgramAttribute::kLorentzConeConstraint,
+                  ProgramAttribute::kRotatedLorentzConeConstraint,
+                  ProgramAttribute::kPositiveSemidefiniteConstraint,
+                  ProgramAttribute::kExponentialConeConstraint,
+                  ProgramAttribute::kLinearCost,
+                  ProgramAttribute::kQuadraticCost})) &&
+         AllQuadraticCostsConvex(prog.quadratic_costs());
 }
 
 }  // namespace solvers

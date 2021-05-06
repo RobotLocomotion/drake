@@ -9,6 +9,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/text_logging.h"
@@ -170,16 +171,18 @@ GTEST_TEST(testCost, testLinearCost) {
 }
 
 GTEST_TEST(testCost, testQuadraticCost) {
+  // Test with allow_nonconvex = false.
   const double tol = numeric_limits<double>::epsilon();
 
   // Simple ground truth test.
   Eigen::Matrix2d Q;
-  Q << 1, 2, 3, 4;
+  Q << 1, 1, 3, 4;
   const Eigen::Vector2d b(5, 6);
   const Eigen::Vector2d x0(7, 8);
-  const double obj_expected = 375.5;
+  const double obj_expected = 347.5;
 
   auto cost = make_shared<QuadraticCost>(Q, b);
+  EXPECT_FALSE(cost->allow_nonconvex());
   Eigen::VectorXd y(1);
 
   EXPECT_TRUE(CompareMatrices(cost->Q(), (Q + Q.transpose()) / 2, 1E-10,
@@ -230,7 +233,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
     const Variable& x_1{x_sym[1]};
     EXPECT_PRED2(ExprEqual, y_sym[0].Expand(),
                  // 0.5 x'Qx + bx
-                 (0.5 * (x_0 * x_0 + (2 + 3) * x_0 * x_1 + 4 * x_1 * x_1) +
+                 (0.5 * (x_0 * x_0 + (1 + 3) * x_0 * x_1 + 4 * x_1 * x_1) +
                   5 * x_0 + 6 * x_1)
                      .Expand());
   }
@@ -255,6 +258,29 @@ GTEST_TEST(testCost, testQuadraticCost) {
   auto new_cost = make_shared<QuadraticCost>(Q, b, c);
   new_cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + c, tol);
+
+  // Update with a non-convex cost;
+  new_cost->UpdateCoefficients(-Q, b, c, true);
+  EXPECT_TRUE(new_cost->allow_nonconvex());
+  EXPECT_TRUE(CompareMatrices(new_cost->Q(), -(Q + Q.transpose()) / 2));
+  // Update with a non-convex cost, but allow_nonconvex being false.
+  DRAKE_EXPECT_THROWS_MESSAGE(new_cost->UpdateCoefficients(-Q, b, c),
+                              std::invalid_argument, ".* Hessian matrix .*");
+}
+
+GTEST_TEST(testCost, testNonConvexQuadraticCost) {
+  // Test with allow_nonconvex = true
+  Eigen::Matrix2d Q;
+  Q << 1, 2, 3, 4;
+  Eigen::Vector2d b(5, 6);
+  double c = 0.1;
+  auto cost = std::make_shared<QuadraticCost>(Q, b, c, true);
+  EXPECT_TRUE(cost->allow_nonconvex());
+  EXPECT_TRUE(CompareMatrices(cost->Q(), (Q + Q.transpose()) / 2));
+  // Now set allow_nonconvex = false, expect to throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      QuadraticCost(Q, b, c), std::invalid_argument,
+      ".* the input Hessian matrix is not positive semidefinite.*");
 }
 
 // TODO(eric.cousineau): Move QuadraticErrorCost and L2NormCost tests here from

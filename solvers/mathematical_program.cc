@@ -438,29 +438,32 @@ Binding<QuadraticCost> MathematicalProgram::AddCost(
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
-    const Expression& e) {
-  return AddCost(internal::ParseQuadraticCost(e));
+    const Expression& e, bool allow_nonconvex) {
+  return AddCost(internal::ParseQuadraticCost(e, allow_nonconvex));
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& x_desired,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(MakeQuadraticErrorCost(Q, x_desired), vars);
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    bool allow_nonconvex) {
+  return AddCost(MakeQuadraticErrorCost(Q, x_desired, allow_nonconvex), vars);
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(make_shared<QuadraticCost>(Q, b, c), vars);
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    bool allow_nonconvex) {
+  return AddCost(make_shared<QuadraticCost>(Q, b, c, allow_nonconvex), vars);
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddQuadraticCost(Q, b, 0., vars);
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    bool allow_nonconvex) {
+  return AddQuadraticCost(Q, b, 0., vars, allow_nonconvex);
 }
 
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
@@ -469,8 +472,9 @@ Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
   return internal::BindingDynamicCast<PolynomialCost>(binding);
 }
 
-Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
-  return AddCost(internal::ParseCost(e));
+Binding<Cost> MathematicalProgram::AddCost(const Expression& e,
+                                           bool allow_nonconvex_quadratic) {
+  return AddCost(internal::ParseCost(e, allow_nonconvex_quadratic));
 }
 
 void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(

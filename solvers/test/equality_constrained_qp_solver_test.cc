@@ -147,7 +147,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   // is unbounded.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  prog.AddCost(x(0) * x(0) - x(1) * x(1));
+  prog.AddCost(x(0) * x(0) - x(1) * x(1), true);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
@@ -172,7 +172,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
   // The problem is unbounded.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  prog.AddCost(-x(0) * x(0) - 2 * x(1));
+  prog.AddCost(-x(0) * x(0) - 2 * x(1), true);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
@@ -205,7 +205,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
 GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessian) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  prog.AddCost(x(0) * x(0) - x(1) * x(1));
+  prog.AddCost(x(0) * x(0) - x(1) * x(1), true);
   auto constraint = prog.AddLinearConstraint(x(1) == 1);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
@@ -238,7 +238,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDhessianUnbounded) {
 GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  prog.AddCost(-x(0) * x(0) - x(1) * x(1));
+  prog.AddCost(-x(0) * x(0) - x(1) * x(1), true);
   Eigen::Matrix2d Aeq;
   Aeq << 1, 1, 1, -1;
   auto constraint =
@@ -259,7 +259,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
 GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUnbounded) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  prog.AddCost(-x(0) * x(0) - x(1) * x(1));
+  prog.AddCost(-x(0) * x(0) - x(1) * x(1), true);
   prog.AddLinearConstraint(x(0) + x(1) == 1);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
@@ -295,7 +295,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDHessianUniqueOptimal) {
 GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
-  prog.AddCost(x(0) * x(0) - 2 * x(1) * x(1));
+  prog.AddCost(x(0) * x(0) - 2 * x(1) * x(1), true);
   prog.AddLinearConstraint(x(0) + 2 * x(1) == 1 && -x(0) + 3 * x(1) == 2 &&
                            2 * x(0) - 3 * x(1) == 3);
   EqualityConstrainedQPSolver solver;

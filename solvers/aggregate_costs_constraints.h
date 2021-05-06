@@ -79,5 +79,14 @@ std::unordered_map<symbolic::Variable, Bound> AggregateBoundingBoxConstraints(
 void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
                                      Eigen::VectorXd* lower,
                                      Eigen::VectorXd* upper);
+
+/**
+ * Returns true if all of the quadratic costs are *deemed* convex.
+ *
+ * If QuadraticCost::allow_nonconvex() is false, then this cost is deemed
+ * convex.
+ */
+bool AllQuadraticCostsConvex(const std::vector<Binding<QuadraticCost>>& costs);
+
 }  // namespace solvers
 }  // namespace drake

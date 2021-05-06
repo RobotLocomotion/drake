@@ -870,6 +870,7 @@ class MathematicalProgram {
 
   /**
    * Adds a generic cost to the optimization program.
+   * @pydrake_mkdoc_identifier{const_binding}
    */
   Binding<Cost> AddCost(const Binding<Cost>& binding);
 
@@ -877,6 +878,7 @@ class MathematicalProgram {
    * Adds a cost type to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
+   * @pydrake_mkdoc_identifier{cost_pointer_bound_vars}
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj,
@@ -890,6 +892,7 @@ class MathematicalProgram {
    * Adds a generic cost to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj, const VariableRefList& vars) {
@@ -909,6 +912,7 @@ class MathematicalProgram {
   /**
    * Adds a cost to the optimization program on a list of variables.
    * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F>
   typename std::enable_if<internal::is_cost_functor_candidate<F>::value,
@@ -921,6 +925,8 @@ class MathematicalProgram {
    * Adds a cost to the optimization program on an Eigen::Vector containing
    * decision variables.
    * @tparam F Type that defines functions numInputs, numOutputs and eval.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F>
   typename std::enable_if<internal::is_cost_functor_candidate<F>::value,
@@ -934,6 +940,8 @@ class MathematicalProgram {
    * Statically assert if a user inadvertently passes a
    * binding-compatible Constraint.
    * @tparam F The type to check.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F, typename Vars>
   typename std::enable_if<internal::assert_if_is_constraint<F>::value,
@@ -946,6 +954,8 @@ class MathematicalProgram {
    * Adds a cost term of the form c'*x.
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
+   *
+   * @pydrake_mkdoc_identifier{linear_cost}
    */
   Binding<LinearCost> AddCost(const Binding<LinearCost>& binding);
 
@@ -994,6 +1004,8 @@ class MathematicalProgram {
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
+   *
+   * @pydrake_mkdoc_identifier{quadratic_cost}
    */
   Binding<QuadraticCost> AddCost(const Binding<QuadraticCost>& binding);
 
@@ -1002,29 +1014,38 @@ class MathematicalProgram {
    * Notice that in the optimization program, the constant term `c` in the cost
    * is ignored.
    * @param e A quadratic symbolic expression.
+   * @param allow_nonconvex Whether we allow non-convex quadratic cost. If
+   * allow_nonconvex = false and `e` is not a convex quadratic function, then
+   * throw std::invalid_argument.
    * @throws std::runtime error if the expression is not quadratic.
    * @return The newly added cost together with the bound variables.
    */
-  Binding<QuadraticCost> AddQuadraticCost(const symbolic::Expression& e);
+  Binding<QuadraticCost> AddQuadraticCost(const symbolic::Expression& e,
+                                          bool allow_nonconvex = false);
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+   * @param allow_nonconvex If allow_nonconvex is false and Q is not positive
+   * semidefinite, then throw a std::invalid_argument error.
    */
   Binding<QuadraticCost> AddQuadraticErrorCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
-      const VariableRefList& vars) {
-    return AddQuadraticErrorCost(Q, x_desired,
-                                 ConcatenateVariableRefList(vars));
+      const VariableRefList& vars, bool allow_nonconvex = false) {
+    return AddQuadraticErrorCost(Q, x_desired, ConcatenateVariableRefList(vars),
+                                 allow_nonconvex);
   }
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+   * @param allow_nonconvex If allow_nonconvex is false and Q is not positive
+   * semidefinite, then throw a std::invalid_argument error.
    */
   Binding<QuadraticCost> AddQuadraticErrorCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      bool allow_nonconvex = false);
 
   /**
    * Adds a cost term of the form | Ax - b |^2.
@@ -1048,32 +1069,42 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables.
+   * @param allow_nonconvex If allow_nonconvex is false and Q is not positive
+   * semidefinite, then throw a std::invalid_argument error.
    *
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
-    return AddQuadraticCost(Q, b, ConcatenateVariableRefList(vars));
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars,
+      bool allow_nonconvex = false) {
+    return AddQuadraticCost(Q, b, ConcatenateVariableRefList(vars),
+                            allow_nonconvex);
   }
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x + c
    * Applied to subset of the variables.
+   * @param allow_nonconvex If allow_nonconvex is false and Q is not positive
+   * semidefinite, then throw a std::invalid_argument error.
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      bool allow_nonconvex = false);
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables.
+   * @param allow_nonconvex If allow_nonconvex is false and Q is not positive
+   * semidefinite, then throw a std::invalid_argument error.
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      bool allow_nonconvex = false);
 
   /**
    * Adds a cost term in the polynomial form.
@@ -1088,10 +1119,15 @@ class MathematicalProgram {
    * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
    * ignored.
    * @param e The linear or quadratic expression of the cost.
+   * @param allow_nonconvex_quadratic If allow_nonconvex_quadratic=false and e
+   * is quadratic but not convex, then this function will throw a
+   * std::invalid_argument error.
    * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
    * @return The newly created cost, together with the bound variables.
+   * @pydrake_mkdoc_identifier{symbolic_expression_bool}
    */
-  Binding<Cost> AddCost(const symbolic::Expression& e);
+  Binding<Cost> AddCost(const symbolic::Expression& e,
+                        bool allow_nonconvex_quadratic = false);
 
   /**
    * Adds the cost to maximize the log determinant of symmetric matrix X.

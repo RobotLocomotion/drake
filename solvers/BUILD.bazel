@@ -740,6 +740,7 @@ drake_cc_library(
     hdrs = ["gurobi_solver.h"],
     deps = select({
         "//tools:with_gurobi": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":solver_base",
             "//math:eigen_sparse_triplet",
@@ -749,6 +750,7 @@ drake_cc_library(
             "@fmt",
         ],
         "//conditions:default": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":solver_base",
         ],
@@ -771,9 +773,10 @@ drake_cc_library(
         ],
     }),
     hdrs = ["mosek_solver.h"],
-    deps = select({
+    deps = [
+        ":aggregate_costs_constraints",
+    ] + select({
         "//tools:with_mosek": [
-            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":mathematical_program_result",
             ":solver_base",
@@ -832,12 +835,12 @@ drake_cc_library(
     }),
     hdrs = ["clp_solver.h"],
     deps = [
+        ":aggregate_costs_constraints",
         "mathematical_program",
         "solver_base",
     ] + select({
         "//conditions:default": [
             "@clp",
-            ":aggregate_costs_constraints",
             "//common:unused",
             "//math:autodiff",
         ],
@@ -915,12 +918,14 @@ drake_cc_library(
     hdrs = ["osqp_solver.h"],
     deps = select({
         "//conditions:default": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":solver_base",
             "//math:eigen_sparse_triplet",
             "@osqp",
         ],
         "//tools:no_osqp": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":solver_base",
         ],
@@ -942,6 +947,7 @@ drake_cc_library(
     hdrs = ["scs_solver.h"],
     deps = select({
         "//conditions:default": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":solver_base",
             "//common:essential",
@@ -949,6 +955,7 @@ drake_cc_library(
             "@scs//:scsdir",
         ],
         "//tools:no_scs": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":solver_base",
         ],
@@ -1113,6 +1120,7 @@ drake_cc_googletest(
         ":generic_trivial_cost",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
         "//common/test_utilities:symbolic_test_util",
         "//math:gradient",
@@ -1125,6 +1133,16 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "create_cost_test",
+    deps = [
+        ":create_cost",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 

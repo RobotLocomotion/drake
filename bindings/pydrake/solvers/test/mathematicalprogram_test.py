@@ -40,7 +40,7 @@ class TestCost(unittest.TestCase):
         self.assertEqual(cost.b(), b)
 
     def test_quadratic_cost(self):
-        Q = np.array([[1., 2.], [2., 3.]])
+        Q = np.array([[1., 2.], [2., 4.]])
         b = np.array([3., 4.])
         c = 0.4
         cost = mp.QuadraticCost(Q, b, c)
@@ -167,11 +167,14 @@ class TestMathematicalProgram(unittest.TestCase):
         # N.B. Scalar-wise logical ops work for Expression, but array ops need
         # the workaround overloads from `pydrake.math`.
         prog.AddLinearConstraint(ge(x, 1))
-        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
-        prog.AddQuadraticCost(np.eye(2), np.zeros(2), 1, x)
+        prog.AddQuadraticCost(
+            np.eye(2), np.zeros(2), x, allow_nonconvex=False)
+        prog.AddQuadraticCost(
+            np.eye(2), np.zeros(2), 1, x, allow_nonconvex=False)
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
-                                   x_desired=np.zeros(2))
+                                   x_desired=np.zeros(2),
+                                   allow_nonconvex=False)
         prog.AddL2NormCost(A=np.eye(2), b=np.zeros(2), vars=x)
 
         result = mp.Solve(prog)
@@ -317,7 +320,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x0, = prog.NewContinuousVariables(1, "x")
         lc = prog.AddLinearCost([1], 2, [x0]).evaluator()
-        qc = prog.AddQuadraticCost(0.5*x0**2 + 2*x0 + 3).evaluator()
+        qc = prog.AddQuadraticCost(
+            0.5*x0**2 + 2*x0 + 3, allow_nonconvex=False).evaluator()
 
         def check_linear_cost(cost, a, b):
             self.assertTrue(np.allclose(cost.a(), a))
@@ -333,7 +337,8 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertTrue(np.allclose(cost.c(), c))
 
         check_quadratic_cost(qc, [1.], [2.], 3.)
-        qc.UpdateCoefficients([10.], [20.])
+        qc.UpdateCoefficients(
+            new_Q=[10.], new_b=[20.], new_c=0., allow_nonconvex=False)
         check_quadratic_cost(qc, [10.], [20.], 0)
 
     def test_eval_binding(self):

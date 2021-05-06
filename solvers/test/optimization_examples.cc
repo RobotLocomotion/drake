@@ -248,7 +248,7 @@ void NonConvexQPproblem1::AddQuadraticCost() {
   Eigen::Matrix<double, 5, 1> c;
   c << 42, 44, 45, 47, 47.5;
   double r = -100;
-  prog_->AddQuadraticCost(Q, c, r, x_);
+  prog_->AddQuadraticCost(Q, c, r, x_, true /* allow_nonconvex */);
 }
 
 NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
@@ -309,7 +309,7 @@ void NonConvexQPproblem2::AddQuadraticCost() {
   Eigen::Matrix<double, 6, 1> c{};
   c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
-  prog_->AddQuadraticCost(Q, c, x_);
+  prog_->AddQuadraticCost(Q, c, x_, true /* allow_nonconvex */);
 }
 
 void NonConvexQPproblem2::AddNonSymbolicConstraint() {

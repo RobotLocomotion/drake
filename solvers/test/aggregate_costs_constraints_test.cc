@@ -34,8 +34,8 @@ TEST_F(TestAggregateCostsAndConstraints, TestQuadraticCostsOnly) {
   const Eigen::Vector2d b1(5, 0.);
   const double c1{2};
   const Vector2<symbolic::Variable> vars1(x_[0], x_[2]);
-  quadratic_costs.emplace_back(std::make_shared<QuadraticCost>(Q1, b1, c1),
-                               vars1);
+  quadratic_costs.emplace_back(
+      std::make_shared<QuadraticCost>(Q1, b1, c1, true), vars1);
 
   Eigen::SparseMatrix<double> Q_lower;
   Eigen::SparseVector<double> linear_coeff;
@@ -66,8 +66,8 @@ TEST_F(TestAggregateCostsAndConstraints, TestQuadraticCostsOnly) {
   const Eigen::Vector3d b2(10, 0, 50);
   const double c2 = 40;
   const Vector3<symbolic::Variable> vars2(x_[2], x_[1], x_[3]);
-  quadratic_costs.emplace_back(std::make_shared<QuadraticCost>(Q2, b2, c2),
-                               vars2);
+  quadratic_costs.emplace_back(
+      std::make_shared<QuadraticCost>(Q2, b2, c2, true), vars2);
   AggregateQuadraticAndLinearCosts(quadratic_costs, {}, &Q_lower,
                                    &quadratic_vars, &linear_coeff, &linear_vars,
                                    &constant_cost);
@@ -172,8 +172,8 @@ TEST_F(TestAggregateCostsAndConstraints, QuadraticAndLinearCosts) {
   const Eigen::Vector3d b1(1, 0, 2);
   const double c1{3};
   const Vector3<symbolic::Variable> vars1(x_[0], x_[2], x_[1]);
-  quadratic_costs.emplace_back(std::make_shared<QuadraticCost>(Q1, b1, c1),
-                               vars1);
+  quadratic_costs.emplace_back(
+      std::make_shared<QuadraticCost>(Q1, b1, c1, true), vars1);
 
   const Eigen::Vector3d b2(2, -1, 0);
   const double c2{1};
@@ -210,8 +210,8 @@ TEST_F(TestAggregateCostsAndConstraints, QuadraticAndLinearCosts) {
   const Eigen::Vector2d b3(20, 30);
   const double c3{40};
   const Vector2<symbolic::Variable> vars3(x_[3], x_[1]);
-  quadratic_costs.emplace_back(std::make_shared<QuadraticCost>(Q3, b3, c3),
-                               vars3);
+  quadratic_costs.emplace_back(
+      std::make_shared<QuadraticCost>(Q3, b3, c3, true), vars3);
   const Eigen::Vector4d b4(20, 0, 30, 40);
   const double c4{10};
   const Vector4<symbolic::Variable> vars4(x_[2], x_[1], x_[3], x_[0]);
@@ -306,6 +306,16 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   AggregateBoundingBoxConstraints(prog, &lower, &upper);
   EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
+}
+
+GTEST_TEST(AllQuadraticCostsConvexTest, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
+  prog.AddQuadraticCost(x(0) * x(0) + x(0) * x(1) + x(1) * x(1));
+  EXPECT_TRUE(AllQuadraticCostsConvex(prog.quadratic_costs()));
+  prog.AddQuadraticCost(-x(0) * x(0), true);
+  EXPECT_FALSE(AllQuadraticCostsConvex(prog.quadratic_costs()));
 }
 }  // namespace solvers
 }  // namespace drake

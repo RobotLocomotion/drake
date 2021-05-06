@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -27,7 +28,8 @@ bool ClpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLinearConstraint, ProgramAttribute::kLinearCost,
           ProgramAttribute::kQuadraticCost});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access());
+                                        solver_capabilities.access()) &&
+         AllQuadraticCostsConvex(prog.quadratic_costs());
 }
 }  // namespace solvers
 }  // namespace drake

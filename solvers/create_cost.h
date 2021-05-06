@@ -21,7 +21,8 @@ Binding<LinearCost> ParseLinearCost(const symbolic::Expression& e);
 /*
  * Assist MathematicalProgram::AddQuadraticCost(...).
  */
-Binding<QuadraticCost> ParseQuadraticCost(const symbolic::Expression& e);
+Binding<QuadraticCost> ParseQuadraticCost(const symbolic::Expression& e,
+                                          bool allow_nonconvex);
 
 /*
  * Assist MathematicalProgram::AddPolynomialCost(...).
@@ -31,7 +32,8 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e);
 /*
  * Assist MathematicalProgram::AddCost(...).
  */
-Binding<Cost> ParseCost(const symbolic::Expression& e);
+Binding<Cost> ParseCost(const symbolic::Expression& e,
+                        bool allow_nonconvex_quadratic);
 
 // TODO(eric.cousineau): Remove this when functor cost is no longer exposed
 // externally, and must be explicitly called.

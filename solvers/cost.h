@@ -111,13 +111,34 @@ class QuadraticCost : public Cost {
    * @param Q Quadratic term.
    * @param b Linear term.
    * @param c (optional) Constant term.
+   * @param allow_nonconvex (optional) If set to false, then we require Q to be
+   * positive semidefinite, and throw an error when Q is not positive
+   * semi-definite. If set to true, then we don't put the positive semidefinite
+   * constraint on Q.
    */
   template <typename DerivedQ, typename Derivedb>
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
-                const Eigen::MatrixBase<Derivedb>& b, double c = 0.)
-      : Cost(Q.rows()), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
+                const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
+                bool allow_nonconvex = false)
+      : Cost(Q.rows()),
+        Q_((Q + Q.transpose()) / 2),
+        b_(b),
+        c_(c),
+        allow_nonconvex_{allow_nonconvex} {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
+    if (!allow_nonconvex_) {
+      Eigen::LDLT<Eigen::Matrix<double, DerivedQ::RowsAtCompileTime,
+                                DerivedQ::ColsAtCompileTime>>
+          ldlt_solver;
+      ldlt_solver.compute(Q_);
+      if (!ldlt_solver.isPositive()) {
+        throw std::invalid_argument(
+            "QuadraticCost: the input Hessian matrix is not positive "
+            "semidefinite. If you really want to use such Hessian matrix, set "
+            "allow_nonconvex to true.");
+      }
+    }
   }
 
   ~QuadraticCost() override {}
@@ -129,6 +150,8 @@ class QuadraticCost : public Cost {
 
   double c() const { return c_; }
 
+  bool allow_nonconvex() const { return allow_nonconvex_; }
+
   /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
@@ -139,7 +162,7 @@ class QuadraticCost : public Cost {
   template <typename DerivedQ, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
                           const Eigen::MatrixBase<DerivedB>& new_b,
-                          double new_c = 0.) {
+                          double new_c = 0., bool allow_nonconvex = false) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
         new_b.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -149,9 +172,23 @@ class QuadraticCost : public Cost {
       throw std::runtime_error("Can't change the number of decision variables");
     }
 
+    if (!allow_nonconvex) {
+      Eigen::LDLT<Eigen::Matrix<double, DerivedQ::RowsAtCompileTime,
+                                DerivedQ::ColsAtCompileTime>>
+          ldlt_solver;
+      ldlt_solver.compute((new_Q + new_Q.transpose()) / 2);
+      if (!ldlt_solver.isPositive()) {
+        throw std::invalid_argument(
+            "QuadraticCost: the input Hessian matrix is not positive "
+            "semidefinite. If you really want to use such Hessian matrix, set "
+            "allow_nonconvex to true.");
+      }
+    }
+
     Q_ = (new_Q + new_Q.transpose()) / 2;
     b_ = new_b;
     c_ = new_c;
+    allow_nonconvex_ = allow_nonconvex;
   }
 
  private:
@@ -173,14 +210,17 @@ class QuadraticCost : public Cost {
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
   double c_{};
+  bool allow_nonconvex_{};
 };
 
 /**
  * Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+ * @param allow_nonconvex If allow_nonconvex is false and Q is not positive
+ * semidefinite, then throw a std::invalid_argument error.
  */
 std::shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::VectorXd>& x_desired);
+    const Eigen::Ref<const Eigen::VectorXd>& x_desired, bool allow_nonconvex);
 
 /**
  * Creates a cost term of the form | Ax - b |^2.

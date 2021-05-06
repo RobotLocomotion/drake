@@ -220,6 +220,13 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
   }
 }
 
+GTEST_TEST(OsqpSolverTest, NonconvexQP) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, true);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

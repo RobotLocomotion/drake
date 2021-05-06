@@ -103,9 +103,10 @@ std::ostream& QuadraticCost::DoDisplay(
 
 shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
     const Eigen::Ref<const MatrixXd>& Q,
-    const Eigen::Ref<const VectorXd>& x_desired) {
+    const Eigen::Ref<const VectorXd>& x_desired, bool allow_nonconvex) {
   const double c = x_desired.dot(Q * x_desired);
-  return make_shared<QuadraticCost>(2 * Q, -2 * Q * x_desired, c);
+  return make_shared<QuadraticCost>(2 * Q, -2 * Q * x_desired, c,
+                                    allow_nonconvex);
 }
 
 shared_ptr<QuadraticCost> MakeL2NormCost(

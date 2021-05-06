@@ -177,6 +177,13 @@ GTEST_TEST(ClpSolverTest, EqualityConstrainedQPDualSolution2) {
   ClpSolver solver;
   TestEqualityConstrainedQPDualSolution2(solver);
 }
+
+GTEST_TEST(ClpSolverTest, NonconvexQP) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, true);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
