@@ -315,6 +315,24 @@ GTEST_TEST(JointLimitsTest, KukaArmFloating) {
                               plant.GetPositionUpperLimits()));
 }
 
+// Invokes a method that putatively uses joint limits, but which are ignored
+// for a continuous plant. This is merely to confirm that nothing crashes.
+GTEST_TEST(JointLimitsTest, ContinuousLimitsDoNotFault) {
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  plant.get_actuation_input_port().FixValue(context.get(),
+      Eigen::VectorXd::Zero(7));
+
+  // The reaction forces putatively use joint limits, and will log a warning.
+  plant.get_reaction_forces_output_port().Eval<AbstractValue>(*context);
+
+  // A second attempt also does not crash, and will not log a warning.
+  context->DisableCaching();
+  plant.get_reaction_forces_output_port().Eval<AbstractValue>(*context);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
