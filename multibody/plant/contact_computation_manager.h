@@ -13,7 +13,6 @@ namespace multibody {
 namespace internal {
 template <typename T>
 class AccelerationKinematicsCache;
-}
 
 // This class is meant to perform all calculations needed to advance state for a
 // MultibodyPlant with discrete state.
@@ -42,16 +41,14 @@ class ContactComputationManager {
   // MultibodyPlant calls this from within set_contact_manager() given the
   // manager a chance to declare additional state, cache and ports.
   // Default is a no-op.
-  virtual void DeclareStateCacheAndPorts(systems::LeafSystem<T>* system) {
-    unused(system);
-  }
+  virtual void DeclareStateCacheAndPorts(systems::LeafSystem<T>*) {}
 
   // Given the state of the model stored in `context`, this method performs the
   // entire computation that is needed to obtain contact forces and advance
   // state to the next step. Results are stored as CalcContactSolverResults.
   virtual void CalcContactSolverResults(
       const systems::Context<T>& context,
-      contact_solvers::internal::ContactSolverResults<T>* results) = 0;
+      contact_solvers::internal::ContactSolverResults<T>* results) const = 0;
 
   // Method used to compute acceleration kinematics quantities. MultibodyPlant
   // evaluates (in the systems:: sense of the word) the acceleration kinematics
@@ -60,15 +57,16 @@ class ContactComputationManager {
   // TODO(amcastro-tri): update AccelerationKinematicsCache to allow storing
   // additional acceleration kinematics data for deformable models.
   virtual void CalcAccelerationKinematicsCache(
-      const drake::systems::Context<T>& context,
+      const systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const = 0;
 
   // MultibodyPlant invokes this method to perform the discrete variables
   // update.
   virtual void CalcDiscreteValues(
-      const drake::systems::Context<T>& context0,
-      drake::systems::DiscreteValues<T>* updates) const = 0;
+      const systems::Context<T>& context0,
+      systems::DiscreteValues<T>* updates) const = 0;
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -1622,7 +1622,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(manager != nullptr);
     static_assert(
-        std::is_base_of<ContactComputationManager<T>, ManagerType>::value,
+        std::is_base_of<internal::ContactComputationManager<T>,
+                        ManagerType>::value,
         "ManagerType must be a sub-class of ContactComputationManager.");
     ManagerType* manager_ptr = manager.get();
     contact_computation_manager_ = std::move(manager);
@@ -4718,7 +4719,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // states.
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
   // resolution into a default contact manager.
-  std::unique_ptr<ContactComputationManager<T>> contact_computation_manager_;
+  std::unique_ptr<internal::ContactComputationManager<T>>
+      contact_computation_manager_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 

@@ -27,19 +27,22 @@ class MultibodyPlantAccess {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantAccess);
 
   // Provides access to const private methods and members.
-  MultibodyPlantAccess(const MultibodyPlant<T>* plant) : plant_(plant) {
+  explicit MultibodyPlantAccess(const MultibodyPlant<T>* plant)
+      : plant_(plant) {
     DRAKE_DEMAND(plant != nullptr);
   }
 
   // Provides access to mutable private methods and members.
-  // TODO: unit test this.
-  MultibodyPlantAccess(MultibodyPlant<T>* plant)
+  // TODO(xuchenhan-tri): unit test this.
+  explicit MultibodyPlantAccess(MultibodyPlant<T>* plant)
       : mutable_plant_(plant) {
     DRAKE_DEMAND(plant != nullptr);
   }
 
   const MultibodyTree<T>& internal_tree() const {
-    return plant_->internal_tree();
+    DRAKE_DEMAND((plant_ == nullptr) ^ (mutable_plant_ == nullptr));
+    if (plant_) return plant_->internal_tree();
+    return mutable_plant_->internal_tree();
   }
 
  private:

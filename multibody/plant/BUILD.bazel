@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
+        ":multibody_plant_access",
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
@@ -51,6 +52,15 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//geometry:geometry_ids",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_access",
+    srcs = [],
+    hdrs = ["multibody_plant_access.h"],
+    deps = [
+        ":multibody_plant_core",
     ],
 )
 
@@ -676,6 +686,16 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_computation_manager_test",
+    deps = [
+        ":contact_computation_manager",
+        ":multibody_plant_access",
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
