@@ -10,6 +10,9 @@
 
 namespace drake {
 namespace multibody {
+template <typename T>
+class MultibodyPlant;
+
 namespace internal {
 template <typename T>
 class AccelerationKinematicsCache;
@@ -41,7 +44,7 @@ class ContactComputationManager {
   // MultibodyPlant calls this from within set_contact_manager() given the
   // manager a chance to declare additional state, cache and ports.
   // Default is a no-op.
-  virtual void DeclareStateCacheAndPorts(systems::LeafSystem<T>*) {}
+  virtual void DeclareStateCacheAndPorts(MultibodyPlant<T>*) {}
 
   // Given the state of the model stored in `context`, this method performs the
   // entire computation that is needed to obtain contact forces and advance

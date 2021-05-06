@@ -46,6 +46,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "contact_computation_manager_impl",
+    hdrs = ["contact_computation_manager_impl.h"],
+    deps = [
+        ":contact_computation_manager",
+        ":multibody_plant_access",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "discrete_contact_pair",
     srcs = [],
     hdrs = ["discrete_contact_pair.h"],
@@ -692,7 +702,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "contact_computation_manager_test",
     deps = [
-        ":contact_computation_manager",
+        ":contact_computation_manager_impl",
         ":multibody_plant_access",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
