@@ -718,24 +718,21 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
 
   // Since currently MBP only handles joint limits for discrete models, we
   // verify that there are no joint limits when the model is continuous.
-  // Therefore we print an appropriate warning message when a user
-  // specifies joint limits for a continuous model.
+  // If there are limits defined, we prepare a warning message that will be
+  // logged iff the user attempts to do anything that would have needed them.
   if (!is_discrete() && !joint_limits_parameters_.joints_with_limits.empty()) {
-    drake::log()->warn(
-        "Currently MultibodyPlant does not handle joint limits for "
-        "continuous models. "
-        "However some joints do specify limits. "
-        "Consider setting a non-zero time step in the MultibodyPlant "
-        "constructor; this will put MultibodyPlant in discrete-time mode, "
-        "which does support joint limits.");
-
-    std::string joints_names;
-    for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
-      const JointIndex index = joint_limits_parameters_.joints_with_limits[i];
-      if (i > 0) joints_names += ", ";
-      joints_names += fmt::format("`{}`", get_joint(index).name());
+    std::string joint_names_with_limits;
+    for (auto joint_index : joint_limits_parameters_.joints_with_limits) {
+      joint_names_with_limits += fmt::format(
+          ", '{}'", get_joint(joint_index).name());
     }
-    drake::log()->warn("Joints that specify limits are: {}.", joints_names);
+    joint_names_with_limits = joint_names_with_limits.substr(2);  // Nix ", ".
+    joint_limits_parameters_.pending_warning_message =
+        "Currently MultibodyPlant does not handle joint limits for continuous "
+        "models. However some joints do specify limits. Consider setting a "
+        "non-zero time step in the MultibodyPlant constructor; this will put "
+        "the plant in discrete-time mode, which does support joint limits. "
+        "Joints that specify limits are: " + joint_names_with_limits;
   }
 }
 
@@ -2427,7 +2424,15 @@ void MultibodyPlant<T>::CalcNonContactForces(
   AddInForcesFromInputPorts(context, forces);
 
   // Only discrete models support joint limits.
-  if (discrete) AddJointLimitsPenaltyForces(context, forces);
+  if (discrete) {
+    AddJointLimitsPenaltyForces(context, forces);
+  } else {
+    auto& warning = joint_limits_parameters_.pending_warning_message;
+    if (!warning.empty()) {
+      drake::log()->warn(warning);
+      warning.clear();
+    }
+  }
 }
 
 template <typename T>
