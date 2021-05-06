@@ -676,22 +676,31 @@ class HydroelasticContactVisualizer:
 
         # TODO(drum) Consider exiting early if no visualization options are
         # enabled.
+        view = applogic.getCurrentRenderView()
         for surface in msg.hydroelastic_contacts:
-            # Though strangely named, DebugData() is the object through which
-            # drawing is done in DrakeVisualizer.
-            spatial_force_data = DebugData()
-            traction_data = DebugData()
-            slip_velocity_data = DebugData()
+            # Adds a collection of debug data to the console with the given
+            # folder name.
+            def add_contact_data(debug_data, item_name):
+                # Exploit the fact that debug_data.append is a vtkAppendPolyData
+                # instance. The number of input connections on port zero is the
+                # number of *actual* geometries added. If zero have been added,
+                # do no work.
+                if (debug_data is None or
+                    debug_data.append.GetNumberOfInputConnections(0) == 0):
+                    return
+                contact_data_folder = om.getOrCreateContainer(
+                        f'Contact data between {surface.body1_name} and '
+                        f'{surface.body2_name}', folder)
+                cls = vis.PolyDataItem
+                item = cls(item_name, debug_data.getPolyData(), view)
+                om.addToObjectModel(item, contact_data_folder)
+                item.setProperty('Visible', True)
+                item.setProperty('Alpha', 1.0)
+                item.colorBy('RGB255')
 
-            view = applogic.getCurrentRenderView()
-            # Keep track if any DebugData is written to.
-            # Necessary to keep DrakeVisualizer from spewing messages to the
-            # console when no DebugData is sent to director.
-            has_spatial_force_data = False
-            has_traction_data = False
-            has_slip_velocity_data = False
             # Draw the spatial force.
             if self.show_spatial_force:
+                force_data = DebugData()
                 point = np.array([surface.centroid_W[0],
                                   surface.centroid_W[1],
                                   surface.centroid_W[2]])
@@ -712,12 +721,11 @@ class HydroelasticContactVisualizer:
                         # skipped.
                         scale /= force_mag
 
-                    spatial_force_data.addArrow(
+                    force_data.addArrow(
                         start=point,
                         end=point + auto_force_scale * force * scale,
                         tubeRadius=0.001,
                         headRadius=0.002, color=[1, 0, 0])
-                    has_spatial_force_data = True
 
                 # Draw the moment arrow if it's of sufficient magnitude.
                 if moment_mag > self.min_magnitude:
@@ -727,23 +735,25 @@ class HydroelasticContactVisualizer:
                         # skipped.
                         scale /= moment_mag
 
-                    spatial_force_data.addArrow(
+                    force_data.addArrow(
                         start=point,
                         end=point + auto_moment_scale * moment * scale,
                         tubeRadius=0.001,
                         headRadius=0.002, color=[0, 0, 1])
-                    has_spatial_force_data = True
+                add_contact_data(force_data, "Spatial force")
 
             # Iterate over all quadrature points, drawing traction and slip
             # velocity vectors.
             if self.show_traction_vectors or self.show_slip_velocity_vectors:
+                traction_data = DebugData()
+                slip_data = DebugData()
+
                 for quad_point_data in surface.quadrature_point_data:
                     origin = np.array([quad_point_data.p_WQ[0],
                                        quad_point_data.p_WQ[1],
                                        quad_point_data.p_WQ[2]])
 
                     if self.show_traction_vectors:
-                        has_traction_data = True
                         traction = np.array([quad_point_data.traction_Aq_W[0],
                                              quad_point_data.traction_Aq_W[1],
                                              quad_point_data.traction_Aq_W[2]])
@@ -770,7 +780,6 @@ class HydroelasticContactVisualizer:
                                 color=[1, 0, 1])
 
                     if self.show_slip_velocity_vectors:
-                        has_slip_velocity_data = True
                         slip = np.array([quad_point_data.vt_BqAq_W[0],
                                          quad_point_data.vt_BqAq_W[1],
                                          quad_point_data.vt_BqAq_W[2]])
@@ -786,49 +795,17 @@ class HydroelasticContactVisualizer:
                                 scale /= slip_mag
 
                             offset = auto_slip_velocity_scale * slip * scale
-                            slip_velocity_data.addArrow(
+                            slip_data.addArrow(
                                 start=origin, end=origin + offset,
                                 tubeRadius=0.000125,
                                 headRadius=0.00025, color=[0, 1, 1])
                         else:
-                            slip_velocity_data.addSphere(
+                            slip_data.addSphere(
                                 center=origin,
                                 radius=0.000125,
                                 color=[0, 1, 1])
-            # Send everything except contact surface edges to director.
-            if has_spatial_force_data or \
-               has_traction_data or \
-               has_slip_velocity_data:
-                # Creates the contact data subfolder
-                contact_data_folder = om.getOrCreateContainer(
-                    f'Contact data between {surface.body1_name} and '
-                    f'{surface.body2_name}', folder)
-                if has_spatial_force_data:
-                    item_name = 'Spatial force'
-                    cls = vis.PolyDataItem
-                    item = cls(item_name, spatial_force_data.getPolyData(),
-                               view)
-                    om.addToObjectModel(item, contact_data_folder)
-                    item.setProperty('Visible', True)
-                    item.setProperty('Alpha', 1.0)
-                    item.colorBy('RGB255')
-                if has_traction_data:
-                    item_name = 'Traction'
-                    cls = vis.PolyDataItem
-                    item = cls(item_name, traction_data.getPolyData(), view)
-                    om.addToObjectModel(item, contact_data_folder)
-                    item.setProperty('Visible', True)
-                    item.setProperty('Alpha', 1.0)
-                    item.colorBy('RGB255')
-                if has_slip_velocity_data:
-                    item_name = 'Slip velocity'
-                    cls = vis.PolyDataItem
-                    item = cls(item_name, slip_velocity_data.getPolyData(),
-                               view)
-                    om.addToObjectModel(item, contact_data_folder)
-                    item.setProperty('Visible', True)
-                    item.setProperty('Alpha', 1.0)
-                    item.colorBy('RGB255')
+                add_contact_data(traction_data, "Traction")
+                add_contact_data(slip_data, "Slip velocity")
 
             if self.show_pressure or self.show_contact_edges:
                 pos, uvs, tri_mesh, seg_mesh = \
