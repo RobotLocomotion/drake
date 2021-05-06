@@ -1126,20 +1126,20 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-      "[^]+ nan 1.0 nan[^]+ is not less than or equal to .+");
+      "[^]+ nan 1.* nan[^]+ is not less than or equal to .+");
 
     // Verify vector with infinity throws an exception.
     constexpr double kInfinity = std::numeric_limits<double>::infinity();
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(kInfinity, 1, 0), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-      "[^]+ inf 1.0 0[^]+ is not less than or equal to .+");
+      "[^]+ inf 1.* 0[^]+ is not less than or equal to .+");
 
     // Verify non-unit vector throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-      "[^]+ 1.0 2.0 3.0[^]+ is not less than or equal to .+");
+      "[^]+ 1.* 2.* 3.*[^]+ is not less than or equal to .+");
 
     // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
     // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
