@@ -1416,7 +1416,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
     const RigidTransformd X_WR_d = convert_to_double(X_WR_);
     const Vector3d n_R{0, 0, 1};
     // We want to make sure that p_SoRo is completely non-zero. So, we pick
-    // a point N on the plane offset from its origin and position the triangle
+    // a point N on the plane offset from its origin and position the tet
     // with respect to that point.
     const Vector3d p_RN{0.25, -0.3, 0};
     const Vector3d p_RS_d(p_RN - kDepth * n_R);
@@ -1830,7 +1830,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
       /* Confirm the normal direction. */
       EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(tri_n_W),
                                   plane_n_W, 5 * kEps));
-      /* Confirm the normal gradient w.r.t. position. */
+      /* Confirm the normal gradient w.r.t. theta. */
       EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(tri_n_W),
                                   Vector3d::Zero(), 10 * kEps));
     }

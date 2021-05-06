@@ -46,7 +46,7 @@ namespace internal {
 template <typename T>
 Vector3<T> SurfaceVolumeIntersector<T>::CalcIntersection(
     const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-    const PosedHalfSpace<T>& H_F) {
+    const PosedHalfSpace<double>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
@@ -63,10 +63,16 @@ Vector3<T> SurfaceVolumeIntersector<T>::CalcIntersection(
   const T kEps(1e-14);
   // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into*
   //  PosedHalfSpace if it turns out we need to perform this test at other
-  //  sites.
+  //  sites. Also, the precision that works depends on the size of the triangles
+  //  in play. Generally, as long as the triangles are no larger than unit size
+  //  this should be fine.
+  // TODO(SeanCurtis-TRI): This probably shouldn't be executed in release
+  //  builds. This type of test is best suited for a unit test (do we trust this
+  //  math or not?)
   // Verify that the intersection point is on the plane of the half space.
   using std::abs;
-  DRAKE_DEMAND(abs(H_F.CalcSignedDistance(intersection)) < kEps);
+  DRAKE_DEMAND(abs(H_F.CalcSignedDistance(convert_to_double(intersection))) <
+               kEps);
   return intersection;
   // Justification.
   // 1. We set up the weights wa and wb such that wa + wb = 1, which
@@ -89,7 +95,8 @@ Vector3<T> SurfaceVolumeIntersector<T>::CalcIntersection(
 template <typename T>
 void SurfaceVolumeIntersector<T>::ClipPolygonByHalfSpace(
     const std::vector<Vector3<T>>& input_vertices_F,
-    const PosedHalfSpace<T>& H_F, std::vector<Vector3<T>>* output_vertices_F) {
+    const PosedHalfSpace<double>& H_F,
+    std::vector<Vector3<T>>* output_vertices_F) {
   DRAKE_ASSERT(output_vertices_F != nullptr);
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
   // clipping a polygon.
@@ -106,8 +113,12 @@ void SurfaceVolumeIntersector<T>::ClipPolygonByHalfSpace(
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = input_vertices_F[i];
     const Vector3<T>& previous = input_vertices_F[(i - 1 + size) % size];
-    const bool current_contained = H_F.CalcSignedDistance(current) <= 0;
-    const bool previous_contained = H_F.CalcSignedDistance(previous) <= 0;
+    // Again, avoid doing classification on T-valued quantities so we don't
+    // waste computation in applying the chain rule.
+    const bool current_contained =
+        H_F.CalcSignedDistance(convert_to_double(current)) <= 0;
+    const bool previous_contained =
+        H_F.CalcSignedDistance(convert_to_double(previous)) <= 0;
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where
@@ -144,10 +155,15 @@ void SurfaceVolumeIntersector<T>::RemoveDuplicateVertices(
     // TODO(SeanCurtis-TRI): This represents 5-6 bits of loss. Confirm that a
     //  tighter epsilon can't be used. This should probably be a function of the
     //  longest edge involved.
+
     // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
     // too small, especially when the objects are not axis-aligned.
     const double kEpsSquared(1e-14 * 1e-14);
-    return (p - q).squaredNorm() < kEpsSquared;
+    // We don't want to do this *classification* problem with generic T; it
+    // would be prohibitively expensive to propagate calculations to derivatives
+    // just to throw the work away.
+    return (convert_to_double(p) - convert_to_double(q)).squaredNorm() <
+           kEpsSquared;
   };
 
   // Remove consecutive vertices that are duplicated in the linear order.  It
@@ -176,8 +192,8 @@ void SurfaceVolumeIntersector<T>::RemoveDuplicateVertices(
 template <typename T>
 const std::vector<Vector3<T>>&
 SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
-    VolumeElementIndex element, const VolumeMesh<T>& volume_M,
-    SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
+    VolumeElementIndex element, const VolumeMesh<double>& volume_M,
+    SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
     const math::RigidTransform<T>& X_MN) {
   // Although polygon_M starts out pointing to polygon_[0] that is not an
   // invariant in this function.
@@ -189,12 +205,14 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
     SurfaceVertexIndex v = surface_N.element(face).vertex(i);
     // TODO(SeanCurtis-TRI): The `M` in `r_MV()` is different from the M in this
     //  function. More evidence that the `vertex(v).r_MV()` notation is *bad*.
-    const Vector3<T>& p_NV = surface_N.vertex(v).r_MV();
+    const Vector3<T>& p_NV = surface_N.vertex(v).r_MV().cast<T>();
     polygon_M->push_back(X_MN * p_NV);
   }
   // Get the positions, in M's frame, of the four vertices of the tetrahedral
-  // `element` of volume_M.
-  Vector3<T> p_MVs[4];
+  // `element` of volume_M. Because we are doing this in the M frame, we can
+  // leave the volume mesh's quantities as double-valued -- T-values will arise
+  // as we do transformed computations below.
+  Vector3<double> p_MVs[4];
   for (int i = 0; i < 4; ++i) {
     VolumeVertexIndex v = volume_M.element(element).vertex(i);
     p_MVs[i] = volume_M.vertex(v).r_MV();
@@ -228,12 +246,12 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   std::vector<Vector3<T>>* in_M = polygon_M;
   std::vector<Vector3<T>>* out_M = &(polygon_[1]);
   for (auto& face_vertex : faces) {
-    const Vector3<T>& p_MA = p_MVs[face_vertex[0]];
-    const Vector3<T>& p_MB = p_MVs[face_vertex[1]];
-    const Vector3<T>& p_MC = p_MVs[face_vertex[2]];
+    const Vector3<double>& p_MA = p_MVs[face_vertex[0]];
+    const Vector3<double>& p_MB = p_MVs[face_vertex[1]];
+    const Vector3<double>& p_MC = p_MVs[face_vertex[2]];
     // We'll allow the PosedHalfSpace to normalize our vector.
-    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
-    PosedHalfSpace<T> half_space_M(normal_M, p_MA);
+    const Vector3<double> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
+    PosedHalfSpace<double> half_space_M(normal_M, p_MA);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     ClipPolygonByHalfSpace(*in_M, half_space_M, out_M);
@@ -263,19 +281,20 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
 
 template <typename T>
 bool SurfaceVolumeIntersector<T>::IsFaceNormalAlongPressureGradient(
-    const VolumeMeshFieldLinear<T, T>& volume_field_M,
-    const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
+    const VolumeMeshFieldLinear<double, double>& volume_field_M,
+    const SurfaceMesh<double>& surface_N,
+    const math::RigidTransform<double>& X_MN,
     const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
-  const Vector3<T> grad_p_M = volume_field_M.EvaluateGradient(tet_index);
+  const Vector3<double> grad_p_M = volume_field_M.EvaluateGradient(tet_index);
   return IsFaceNormalInNormalDirection(grad_p_M.normalized(), surface_N,
                                        tri_index, X_MN.rotation());
 }
 
 template <typename T>
 void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
-    const VolumeMeshFieldLinear<T, T>& volume_field_M,
-    const Bvh<VolumeMesh<T>>& bvh_M, const SurfaceMesh<T>& surface_N,
-    const Bvh<SurfaceMesh<T>>& bvh_N, const math::RigidTransform<T>& X_MN,
+    const VolumeMeshFieldLinear<double, double>& volume_field_M,
+    const Bvh<VolumeMesh<double>>& bvh_M, const SurfaceMesh<double>& surface_N,
+    const Bvh<SurfaceMesh<double>>& bvh_N, const math::RigidTransform<T>& X_MN,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
@@ -287,20 +306,21 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   std::vector<SurfaceFace> surface_faces;
   std::vector<SurfaceVertex<T>> surface_vertices_M;
   std::vector<T> surface_e;
-  const auto& mesh_M = volume_field_M.mesh();
+  const VolumeMesh<double>& mesh_M = volume_field_M.mesh();
   // We know that each contact polygon has at most 7 vertices because
   // each surface triangle is clipped by four half-spaces of the four
   // triangular faces of a tetrahedron.
   std::vector<SurfaceVertexIndex> contact_polygon;
   contact_polygon.reserve(7);
 
+  const math::RigidTransform<double> X_MN_d = convert_to_double(X_MN);
   auto callback = [&volume_field_M, &surface_N, &surface_faces,
-                   &surface_vertices_M, &surface_e, &mesh_M, &X_MN,
+                   &surface_vertices_M, &surface_e, &mesh_M, &X_MN_d, &X_MN,
                    &contact_polygon, grad_eM_Ms,
                    this](VolumeElementIndex tet_index,
                          SurfaceFaceIndex tri_index) -> BvttCallbackResult {
     if (!this->IsFaceNormalAlongPressureGradient(
-            volume_field_M, surface_N, X_MN, tet_index, tri_index)) {
+            volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
       return BvttCallbackResult::Continue;
     }
 
@@ -329,8 +349,8 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
       contact_polygon.emplace_back(surface_vertices_M.size());
       surface_vertices_M.emplace_back(polygon_vertices_M[i]);
     }
-    const Vector3<T>& nhat_M =
-        X_MN.rotation() * surface_N.face_normal(tri_index);
+    const Vector3<T> nhat_M =
+        X_MN.rotation() * surface_N.face_normal(tri_index).cast<T>();
 
     size_t old_count = surface_faces.size();
     AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
@@ -338,9 +358,10 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
 
     // TODO(SeanCurtis-TRI) Consider rolling this operation into
     // AddPolygonToMeshData to eliminate the extra pass through triangles.
-    const Vector3<T>& grad_eMi_M = volume_field_M.EvaluateGradient(tet_index);
+    const Vector3<double>& grad_eMi_M =
+        volume_field_M.EvaluateGradient(tet_index);
     for (size_t i = old_count; i < surface_faces.size(); ++i) {
-      grad_eM_Ms->push_back(grad_eMi_M);
+      grad_eM_Ms->push_back(grad_eMi_M.cast<T>());
     }
 
     const int num_current_vertices = surface_vertices_M.size();
@@ -353,7 +374,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     }
     return BvttCallbackResult::Continue;
   };
-  bvh_M.Collide(bvh_N, convert_to_double(X_MN), callback);
+  bvh_M.Collide(bvh_N, X_MN_d, callback);
 
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
   if (surface_faces.empty()) return;
@@ -368,10 +389,11 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId id_S, const VolumeMeshFieldLinear<T, T>& field_S,
-    const Bvh<VolumeMesh<T>>& bvh_S, const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
-    const Bvh<SurfaceMesh<T>>& bvh_R, const math::RigidTransform<T>& X_WR) {
+    const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
+    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
+    const GeometryId id_R, const SurfaceMesh<double>& mesh_R,
+    const Bvh<SurfaceMesh<double>>& bvh_R,
+    const math::RigidTransform<T>& X_WR) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
   //  scalar, and the mesh vertex-position scalar. However, short term, it is
@@ -438,27 +460,11 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 
 template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId, const VolumeMeshFieldLinear<AutoDiffXd, AutoDiffXd>&,
-    const Bvh<VolumeMesh<AutoDiffXd>>&, const math::RigidTransform<AutoDiffXd>&,
-    const GeometryId, const SurfaceMesh<AutoDiffXd>&,
-    const Bvh<SurfaceMesh<AutoDiffXd>>&,
-    const math::RigidTransform<AutoDiffXd>&);
-
-// NOTE: This is a short-term hack to allow ProximityEngine to compile when
-// invoking this method. There are currently a host of issues preventing us from
-// doing contact surface computation with AutoDiffXd. This curtails those
-// issues for now by short-circuiting the functionality. (See the note on the
-// templated version of this function.)
-std::unique_ptr<ContactSurface<AutoDiffXd>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
     const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
     const GeometryId, const SurfaceMesh<double>&,
-    const Bvh<SurfaceMesh<double>>&, const math::RigidTransform<AutoDiffXd>&) {
-  throw std::logic_error(
-      "AutoDiff-valued ContactSurface calculation between meshes is not "
-      "currently supported");
-}
+    const Bvh<SurfaceMesh<double>>&,
+    const math::RigidTransform<AutoDiffXd>&);
 
 }  // namespace internal
 }  // namespace geometry

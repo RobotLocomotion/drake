@@ -79,9 +79,11 @@ class SurfaceVolumeIntersector {
        The output surface mesh may have duplicate vertices.
    */
   void SampleVolumeFieldOnSurface(
-      const VolumeMeshFieldLinear<T, T>& volume_field_M,
-      const Bvh<VolumeMesh<T>>& bvh_M, const SurfaceMesh<T>& surface_N,
-      const Bvh<SurfaceMesh<T>>& bvh_N, const math::RigidTransform<T>& X_MN,
+      const VolumeMeshFieldLinear<double, double>& volume_field_M,
+      const Bvh<VolumeMesh<double>>& bvh_M,
+      const SurfaceMesh<double>& surface_N,
+      const Bvh<SurfaceMesh<double>>& bvh_N,
+      const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
       std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
       std::vector<Vector3<T>>* grad_eM_Ms);
@@ -102,7 +104,7 @@ class SurfaceVolumeIntersector {
    */
   static Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
                                      const Vector3<T>& p_FB,
-                                     const PosedHalfSpace<T>& H_F);
+                                     const PosedHalfSpace<double>& H_F);
 
   // TODO(SeanCurtis-TRI): This function duplicates functionality implemented in
   //  mesh_half_space_intersection.h. Reconcile the two implementations.
@@ -145,7 +147,8 @@ class SurfaceVolumeIntersector {
   */
   static void ClipPolygonByHalfSpace(
       const std::vector<Vector3<T>>& input_vertices_F,
-      const PosedHalfSpace<T>& H_F, std::vector<Vector3<T>>* output_vertices_F);
+      const PosedHalfSpace<double>& H_F,
+      std::vector<Vector3<T>>* output_vertices_F);
 
   /* Remove duplicate vertices from a polygon represented as a cyclical
    sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
@@ -204,8 +207,8 @@ class SurfaceVolumeIntersector {
           tetrahedron (non-zero area restriction still applies).
    */
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
-      VolumeElementIndex element, const VolumeMesh<T>& volume_M,
-      SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
+      VolumeElementIndex element, const VolumeMesh<double>& volume_M,
+      SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN);
 
   /* Determines whether a triangle of a rigid surface N and a tetrahedron of a
@@ -287,8 +290,9 @@ class SurfaceVolumeIntersector {
             See @ref module_contact_surface.
    */
   static bool IsFaceNormalAlongPressureGradient(
-      const VolumeMeshFieldLinear<T, T>& volume_field_M,
-      const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
+      const VolumeMeshFieldLinear<double, double>& volume_field_M,
+      const SurfaceMesh<double>& surface_N,
+      const math::RigidTransform<double>& X_MN,
       const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
 
   // To avoid heap allocation by std::vector in low-level functions, we use
@@ -348,41 +352,19 @@ class SurfaceVolumeIntersector {
            +----------------------+
     If there is no contact, nullptr is returned.
 
- @tparam T While both T = double and T = AutoDiffXd will compile,
-         T = AutoDiffXd will throw.
- */
+ @tparam_nonsymbolic_scalar
+
+ @note This definition of the function assumes that the meshes involved are
+ *double* valued -- in other words, they are constant parameters in the
+ calculation. If derivatives are to be found, the point of injection is through
+ the definition of the relative position of the two meshes. */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId id_S, const VolumeMeshFieldLinear<T, T>& field_S,
-    const Bvh<VolumeMesh<T>>& bvh_S, const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
-    const Bvh<SurfaceMesh<T>>& bvh_R, const math::RigidTransform<T>& X_WR);
-
-// TODO(SeanCurtis-TRI): ComputeContactSurfaceFromSoftVolumeRigidSurface is
-//  incorrectly templated. We currently have no reasonable expectation that the
-//  meshes provided as inputs will be AutoDiffXd-valued. Currently, all meshes
-//  we construct are strictly double-valued. So, the fact that the meshes are
-//  described as T-valued is probably inappropriate and needs to have careful
-//  reasoning applied.
-//
-//  One of the proofs of the incorrectness of the templating is the declaration
-//  given below. ProximityEngine calls this method with double-valued meshes
-//  and AutoDiffXd-valued transforms. Thus, the function below is *not* a
-//  specialization of the templated function but an overload.
-//  See issue #14136.
-
-// NOTE: This is a short-term hack to allow ProximityEngine to compile when
-// invoking this method. There are currently a host of issues preventing us from
-// doing contact surface computation with AutoDiffXd. This curtails those
-// issues for now by short-circuiting the functionality. (See the note on the
-// templated version of this function.)
-std::unique_ptr<ContactSurface<AutoDiffXd>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
-    const GeometryId, const SurfaceMesh<double>&,
-    const Bvh<SurfaceMesh<double>>&, const math::RigidTransform<AutoDiffXd>&);
+    const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
+    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
+    const GeometryId id_R, const SurfaceMesh<double>& mesh_R,
+    const Bvh<SurfaceMesh<double>>& bvh_R, const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
