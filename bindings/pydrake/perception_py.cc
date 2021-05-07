@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
 #include "drake/perception/point_cloud.h"
+#include "drake/perception/point_cloud_to_lcm.h"
 
 namespace drake {
 namespace pydrake {
@@ -139,6 +140,14 @@ void init_perception(py::module m) {
             py_rvp::reference_internal, cls_doc.color_image_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,
             py_rvp::reference_internal, cls_doc.point_cloud_output_port.doc);
+  }
+
+  {
+    using Class = PointCloudToLcm;
+    constexpr auto& cls_doc = doc.PointCloudToLcm;
+    py::class_<Class, LeafSystem<double>>(m, "PointCloudToLcm", cls_doc.doc)
+        .def(py::init<std::string>(), py::arg("frame_name") = std::string(),
+            cls_doc.ctor.doc);
   }
 }
 

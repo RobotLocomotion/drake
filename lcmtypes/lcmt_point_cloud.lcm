@@ -1,0 +1,48 @@
+package drake;
+
+// Generic point cloud with runtime typing.
+//
+// Modeled after PCL and ROS conventions:
+// https://pointclouds.org/documentation/structpcl_1_1_p_c_l_point_cloud2.html
+// https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html
+//
+struct lcmt_point_cloud {
+  // Timestamp in microseconds.
+  int64_t utime;
+
+  // The name of a frame this data is associated with.
+  string frame_name;
+
+  // If the cloud is structured, this is the 2D width.
+  // If the cloud is unstructured, this is the number of points in the cloud.
+  int32_t width;
+
+  // If the cloud is structured, this is the 2D height.
+  // If the cloud is unstructured, this is set to 1.
+  int32_t height;
+
+  // Descriptions of the fields.
+  int32_t num_fields;
+  lcmt_point_cloud_field fields[num_fields];
+
+  // Whether the data is big-endian.
+  boolean is_bigendian;
+
+  // Number of bytes between each successive point.  This is always at least the
+  // sum of all field sizes, but may be larger if the data has internal padding.
+  int32_t point_step;
+
+  // Number of bytes between each successive row.
+  int32_t row_step;
+
+  // Whether all the points are valid (i.e., finite).
+  boolean is_dense;
+
+  // Optional filler bytes to allow the raw point data to be aligned in memory.
+  int8_t filler_size;
+  byte filler[filler_size];
+
+  // The raw point data.
+  int32_t data_size;
+  byte data[data_size];
+}

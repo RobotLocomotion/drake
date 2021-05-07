@@ -121,6 +121,15 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "point_cloud",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_point_cloud.lcm",
+        "lcmt_point_cloud_field.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "point_pair_contact_info_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_point_pair_contact_info_for_viz.lcm"],
@@ -264,6 +273,7 @@ LCMTYPES_CC = [
     ":allegro",
     ":call_python",
     ":point",
+    ":point_cloud",
     ":header",
     ":quaternion",
     ":image",
