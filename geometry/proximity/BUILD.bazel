@@ -63,7 +63,7 @@ drake_cc_library(
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
-        "//common",
+        "//common:essential",
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
@@ -337,7 +337,7 @@ drake_cc_library(
         ":tessellation_strategy",
         ":volume_mesh",
         ":volume_to_surface_mesh",
-        "//common:essential",
+        "//common:sorted_pair",
         "//geometry:shape_specification",
     ],
 )
@@ -357,7 +357,8 @@ drake_cc_library(
         ":mesh_traits",
         ":surface_mesh",
         ":volume_mesh",
-        "//common",
+        "//common:reset_on_copy",
+        "//common:sorted_pair",
     ],
 )
 
@@ -372,7 +373,7 @@ drake_cc_library(
         ":contact_surface_utility",
         ":posed_half_space",
         ":surface_mesh",
-        "//common",
+        "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:utilities",
         "//geometry/query_results:contact_surface",
@@ -390,7 +391,7 @@ drake_cc_library(
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
-        "//common",
+        "//common:essential",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],
@@ -446,7 +447,7 @@ drake_cc_library(
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
-        "//common",
+        "//common:essential",
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
@@ -460,6 +461,7 @@ drake_cc_library(
     deps = [
         ":surface_mesh",
         "//common:essential",
+        "//common:filesystem",
         "@fmt",
         "@tinyobjloader",
     ],
@@ -538,7 +540,7 @@ drake_cc_library(
     hdrs = ["surface_mesh.h"],
     deps = [
         ":mesh_traits",
-        "//common",
+        "//common:type_safe_index",
         "//math:geometric_transform",
     ],
 )
@@ -559,7 +561,8 @@ drake_cc_library(
     ],
     deps = [
         ":mesh_traits",
-        "//common",
+        "//common:default_scalars",
+        "//common:type_safe_index",
         "//geometry:geometry_ids",
     ],
 )
@@ -576,7 +579,7 @@ drake_cc_library(
         ":sorted_triplet",
         ":surface_mesh",
         ":volume_mesh",
-        "//common",
+        "//common:essential",
     ],
 )
 
