@@ -39,7 +39,6 @@ drake_cc_package_library(
         ":rgbd_sensor",
         ":robotlocomotion_compat",
         ":rotary_encoders",
-        ":vtk_util",
     ],
 )
 
@@ -194,29 +193,6 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",
-    ],
-)
-
-drake_cc_library(
-    name = "vtk_util",
-    srcs = ["vtk_util.cc"],
-    hdrs = ["vtk_util.h"],
-    # We must not expose `#include <vtk/...>` in any of our installed headers;
-    # vtk_util.h is only included internally within this package.
-    install_hdrs_exclude = ["vtk_util.h"],
-    # TODO(SeanCurtis-TRI): Remove this from sensors when the VTK rendering
-    # completely lives in geometry/render.
-    # Temporarily public so this can be shared by the old RgbdCamera in sensors
-    # and the *new* rendering infrastructure in geometry/render. Once the old
-    # is deprecated, this can be moved into geometry/render and made private.
-    visibility = ["//visibility:public"],
-    deps = [
-        "//common:essential",
-        "//math:geometric_transform",
-        "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersSources",
     ],
 )
 
@@ -377,11 +353,6 @@ drake_cc_googletest(
         "//common/test_utilities:symbolic_test_util",
         "//systems/framework/test_utilities",
     ],
-)
-
-drake_cc_googletest(
-    name = "vtk_util_test",
-    deps = [":vtk_util"],
 )
 
 drake_cc_googletest(

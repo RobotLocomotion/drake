@@ -21,8 +21,8 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/render_engine_vtk_base.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
+#include "drake/geometry/render/vtk_util.h"
 #include "drake/systems/sensors/color_palette.h"
-#include "drake/systems/sensors/vtk_util.h"
 
 namespace drake {
 namespace geometry {
@@ -39,9 +39,9 @@ using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::InvalidDepth;
-using systems::sensors::vtk_util::ConvertToVtkTransform;
-using systems::sensors::vtk_util::CreateSquarePlane;
-using systems::sensors::vtk_util::MakeVtkPointerArray;
+using vtk_util::ConvertToVtkTransform;
+using vtk_util::CreateSquarePlane;
+using vtk_util::MakeVtkPointerArray;
 
 namespace {
 

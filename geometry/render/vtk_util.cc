@@ -1,4 +1,4 @@
-#include "drake/systems/sensors/vtk_util.h"
+#include "drake/geometry/render/vtk_util.h"
 
 #include <Eigen/Dense>
 #include <vtkNew.h>
@@ -9,8 +9,8 @@
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace geometry {
+namespace render {
 namespace vtk_util {
 
 vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size) {
@@ -65,6 +65,6 @@ vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
 }
 
 }  // namespace vtk_util
-}  // namespace sensors
-}  // namespace systems
+}  // namespace render
+}  // namespace geometry
 }  // namespace drake
