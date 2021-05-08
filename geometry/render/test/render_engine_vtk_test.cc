@@ -48,7 +48,8 @@ using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
-using systems::sensors::InvalidDepth;
+using systems::sensors::ImageTraits;
+using systems::sensors::PixelType;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -533,7 +534,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   SCOPED_TRACE("Closer than near");
   VerifyUniformColor(kTerrainColorI, 255u);
   VerifyUniformLabel(RenderLabel::kDontCare);
-  VerifyUniformDepth(InvalidDepth::kTooClose);
+  VerifyUniformDepth(ImageTraits<PixelType::kDepth32F>::kTooClose);
 
   // Farther than kZFar.
   X_WC_.set_translation({p_WR(0), p_WR(1), kZFar + 1e-3});
@@ -542,7 +543,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   SCOPED_TRACE("Farther than far");
   VerifyUniformColor(kTerrainColorI, 255u);
   VerifyUniformLabel(RenderLabel::kDontCare);
-  VerifyUniformDepth(InvalidDepth::kTooFar);
+  VerifyUniformDepth(ImageTraits<PixelType::kDepth32F>::kTooFar);
 }
 
 // Creates a terrain and then positions the camera such that a horizon between
@@ -1592,10 +1593,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
-    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
-                                InvalidDepth::kTooClose, 0.0));
     EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{0, 0}, InvalidDepth::kTooFar, 0.0));
+        IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+            ImageTraits<PixelType::kDepth32F>::kTooClose, 0.0));
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, ScreenCoord{0, 0},
+            ImageTraits<PixelType::kDepth32F>::kTooFar, 0.0));
   }
 
   {
@@ -1609,10 +1612,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
-    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
-                                InvalidDepth::kTooFar, 0.0));
     EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{0, 0}, InvalidDepth::kTooFar, 0.0));
+        IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+            ImageTraits<PixelType::kDepth32F>::kTooFar, 0.0));
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, ScreenCoord{0, 0},
+            ImageTraits<PixelType::kDepth32F>::kTooFar, 0.0));
   }
 
   {
@@ -1629,10 +1634,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
-    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
-                                InvalidDepth::kTooClose, 0.0));
-    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{0, 0},
-                                InvalidDepth::kTooClose, 0.0));
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+            ImageTraits<PixelType::kDepth32F>::kTooClose, 0.0));
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, ScreenCoord{0, 0},
+            ImageTraits<PixelType::kDepth32F>::kTooClose, 0.0));
   }
 }
 

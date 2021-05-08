@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/systems/sensors/pixel_types.h"
 
@@ -155,12 +156,12 @@ class Image {
   std::vector<T> data_;
 };
 
-// TODO(jwnimmer-tri) Deprecate these float-only constants; code should be
-// using ImageTraits exclusively (i.e., based on the pixel type).
 /// Set of constants used to represent invalid depth values.
 /// Note that in the case that a depth is not measurable, the constants defined
 /// here are not used. Instead we set the depth to NaN.
-class InvalidDepth {
+class DRAKE_DEPRECATED("2021-09-01",
+    "Use ImageTraits<PixelType::kDepth32F> instead.")
+InvalidDepth {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
 
@@ -174,7 +175,9 @@ class InvalidDepth {
 };
 
 /// Set of labels used for label image.
-class Label {
+class DRAKE_DEPRECATED("2021-09-01",
+    "There is no replacement; these values are unused within Drake.")
+Label {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
   /// The label used for pixels correspond to nothing.
