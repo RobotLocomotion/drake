@@ -2,8 +2,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/unused.h"
-
 namespace drake {
 namespace math {
 
