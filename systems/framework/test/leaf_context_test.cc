@@ -443,6 +443,9 @@ TEST_F(LeafContextTest, Clone) {
   ContinuousState<double>& xc = clone->get_mutable_continuous_state();
   EXPECT_TRUE(xc.get_system_id().is_valid());
   EXPECT_EQ(xc.get_system_id(), context_.get_system_id());
+  const DiscreteValues<double>& xd = clone->get_discrete_state();
+  EXPECT_TRUE(xd.get_system_id().is_valid());
+  EXPECT_EQ(xd.get_system_id(), context_.get_system_id());
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
@@ -523,9 +526,14 @@ TEST_F(LeafContextTest, CloneState) {
   VerifyClonedState(*clone);
 
   // Verify that the system id was copied.
+  EXPECT_TRUE(clone->get_system_id().is_valid());
+  EXPECT_EQ(clone->get_system_id(), context_.get_system_id());
   const ContinuousState<double>& xc = clone->get_continuous_state();
   EXPECT_TRUE(xc.get_system_id().is_valid());
   EXPECT_EQ(xc.get_system_id(), context_.get_system_id());
+  const DiscreteValues<double>& xd = clone->get_discrete_state();
+  EXPECT_TRUE(xd.get_system_id().is_valid());
+  EXPECT_EQ(xd.get_system_id(), context_.get_system_id());
 }
 
 // Tests that the State can be copied from another State.

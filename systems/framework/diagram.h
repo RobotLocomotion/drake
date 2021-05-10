@@ -104,11 +104,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
-  /// Allocates a DiagramEventCollection for this Diagram.
-  /// @sa System::AllocateCompositeEventCollection().
-  std::unique_ptr<CompositeEventCollection<T>>
-  AllocateCompositeEventCollection() const final;
-
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override;
 
@@ -327,6 +322,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // Allocates a default-constructed diagram context containing the complete
   // diagram substructure of default-constructed subcontexts.
   std::unique_ptr<ContextBase> DoAllocateContext() const final;
+
+  std::unique_ptr<CompositeEventCollection<T>>
+  DoAllocateCompositeEventCollection() const final;
 
   // Evaluates the value of the specified subsystem input
   // port in the given context. The port has already been determined _not_ to

@@ -31,6 +31,7 @@ class MyContextBase : public ContextBase {
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
     return std::make_unique<MyContextBase>(*this);
   }
+  void do_set_system_id(internal::SystemId id) final {}
 };
 
 // Creates a MySystemBase and its context and wires up fixed input values
