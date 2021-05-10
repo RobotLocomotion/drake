@@ -175,6 +175,8 @@ class ContinuousState {
 
   /// Copies the values from `other` into `this`, converting the scalar type as
   /// necessary.
+  // Does not copy the system_id value, since system_id is not preserved across
+  // scalar conversion.
   template <typename U>
   void SetFrom(const ContinuousState<U>& other) {
     DRAKE_THROW_UNLESS(size() == other.size());

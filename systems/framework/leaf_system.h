@@ -44,11 +44,6 @@ class LeafSystem : public System<T> {
 
   ~LeafSystem() override;
 
-  /** Allocates a CompositeEventCollection object for this system.
-  @sa System::AllocateCompositeEventCollection(). */
-  std::unique_ptr<CompositeEventCollection<T>>
-      AllocateCompositeEventCollection() const final;
-
   /** Shadows System<T>::AllocateContext to provide a more concrete return
   type LeafContext<T>. */
   std::unique_ptr<LeafContext<T>> AllocateContext() const;
@@ -1969,6 +1964,9 @@ class LeafSystem : public System<T> {
   // BasicVector, or else for abstract ports throws an exception.
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const final;
+
+  std::unique_ptr<CompositeEventCollection<T>>
+      DoAllocateCompositeEventCollection() const final;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
       PeriodicEventDataComparator> DoGetPeriodicEvents() const override;

@@ -48,7 +48,7 @@ LeafSystem<T>::~LeafSystem() {}
 
 template <typename T>
 std::unique_ptr<CompositeEventCollection<T>>
-LeafSystem<T>::AllocateCompositeEventCollection() const {
+LeafSystem<T>::DoAllocateCompositeEventCollection() const {
   return std::make_unique<LeafCompositeEventCollection<T>>();
 }
 
@@ -144,6 +144,7 @@ void LeafSystem<T>::SetDefaultState(
     const Context<T>& context, State<T>* state) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(state != nullptr);
+  this->ValidateCreatedForThisSystem(state);
   ContinuousState<T>& xc = state->get_mutable_continuous_state();
   xc.SetFromVector(model_continuous_state_vector_->get_value());
 
@@ -165,6 +166,9 @@ void LeafSystem<T>::SetDefaultState(
 
   AbstractValues& xa = state->get_mutable_abstract_state();
   xa.SetFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
+
+  // Ensure that constituent states are properly labeled.
+  state->set_system_id(this->get_system_id());
 }
 
 template <typename T>
@@ -328,6 +332,10 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
           },
           [](const ContextBase&, AbstractValue*) { /* do nothing */ },
           {this->nothing_ticket()}).cache_index();
+
+  model_discrete_state_.set_system_id(this->get_system_id());
+  per_step_events_.set_system_id(this->get_system_id());
+  initialization_events_.set_system_id(this->get_system_id());
 }
 
 template <typename T>

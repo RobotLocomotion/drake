@@ -514,6 +514,8 @@ class CompositeEventCollection {
    * Copies the collections of homogeneous events from `other` to `this`.
    */
   void SetFrom(const CompositeEventCollection<T>& other) {
+    DRAKE_DEMAND(other.get_system_id().is_valid());
+    set_system_id(other.get_system_id());
     publish_events_->SetFrom(other.get_publish_events());
     discrete_update_events_->SetFrom(other.get_discrete_update_events());
     unrestricted_update_events_->SetFrom(
@@ -567,6 +569,18 @@ class CompositeEventCollection {
     return *unrestricted_update_events_;
   }
 
+  /**
+   * (Internal use only) Gets the id of the subsystem that created this
+   * collection.
+   */
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  /**
+   * (Internal use only) Records the id of the subsystem that created this
+   * collection.
+   */
+  void set_system_id(internal::SystemId id) { system_id_ = id; }
+
  protected:
   /**
    * Takes ownership of `pub`, `discrete` and `unrestricted`. Aborts if any
@@ -590,6 +604,9 @@ class CompositeEventCollection {
       discrete_update_events_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
       unrestricted_update_events_{nullptr};
+
+  // Unique id of the subsystem that created this collection.
+  internal::SystemId system_id_;
 };
 
 /**

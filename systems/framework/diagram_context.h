@@ -184,6 +184,10 @@ class DiagramContext final : public Context<T> {
       const ContextBase& source,
       const DependencyTracker::PointerMap& tracker_map) final;
 
+  void do_set_system_id(internal::SystemId id) final {
+    state_->set_system_id(id);
+  }
+
   // The contexts are stored in SubsystemIndex order, and contexts_ is equal in
   // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<Context<T>>> contexts_;

@@ -106,6 +106,8 @@ class State {
   }
 
   /// Initializes this state from a State<U>.
+  // Does not copy the system_id value, since system_id is not preserved across
+  // scalar conversion.
   template <typename U>
   void SetFrom(const State<U>& other) {
     continuous_state_->SetFrom(other.get_continuous_state());
@@ -113,10 +115,24 @@ class State {
     abstract_state_->SetFrom(other.get_abstract_state());
   }
 
+  /// (Internal use only) Gets the id of the subsystem that created this state.
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  /// (Internal use only) Records the id of the subsystem that created this
+  /// state.
+  void set_system_id(internal::SystemId id) {
+    system_id_ = id;
+    get_mutable_continuous_state().set_system_id(this->get_system_id());
+    get_mutable_discrete_state().set_system_id(this->get_system_id());
+  }
+
  private:
   std::unique_ptr<AbstractValues> abstract_state_;
   std::unique_ptr<ContinuousState<T>> continuous_state_;
   std::unique_ptr<DiscreteValues<T>> discrete_state_;
+
+  // Unique id of the subsystem that created this state.
+  internal::SystemId system_id_;
 };
 
 }  // namespace systems

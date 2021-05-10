@@ -26,6 +26,14 @@ std::unique_ptr<Context<T>> System<T>::AllocateContext() const {
 }
 
 template <typename T>
+std::unique_ptr<CompositeEventCollection<T>>
+System<T>::AllocateCompositeEventCollection() const {
+  auto result = DoAllocateCompositeEventCollection();
+  result->set_system_id(get_system_id());
+  return result;
+}
+
+template <typename T>
 std::unique_ptr<BasicVector<T>> System<T>::AllocateInputVector(
     const InputPort<T>& input_port) const {
   DRAKE_THROW_UNLESS(input_port.get_data_type() == kVectorValued);

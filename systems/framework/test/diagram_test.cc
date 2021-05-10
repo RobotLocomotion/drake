@@ -878,6 +878,7 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   AttachInputs();
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
+  EXPECT_EQ(derivatives->get_system_id(), context_->get_system_id());
 
   diagram_->CalcTimeDerivatives(*context_, derivatives.get());
 
@@ -1970,6 +1971,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
       diagram_.AllocateDiscreteVariables();
+  EXPECT_EQ(updates->get_system_id(), context_->get_system_id());
   const DiscreteValues<double>& updates1 =
       diagram_
           .GetSubsystemDiscreteValues(*diagram_.hold1(), *updates);
@@ -3175,6 +3177,7 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
   MyEventTestSystem dut("sys", 0.2);
   auto events = dut.AllocateCompositeEventCollection();
   auto context = dut.CreateDefaultContext();
+  EXPECT_EQ(events->get_system_id(), context->get_system_id());
 
   double time = dut.CalcNextUpdateTime(*context, events.get());
   context->SetTime(time);

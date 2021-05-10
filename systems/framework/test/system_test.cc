@@ -60,7 +60,7 @@ class TestSystem : public System<double> {
   }
 
   std::unique_ptr<CompositeEventCollection<double>>
-  AllocateCompositeEventCollection() const override {
+  DoAllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
   }
 
@@ -644,7 +644,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<CompositeEventCollection<T>>
-  AllocateCompositeEventCollection() const override {
+  DoAllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<T>>();
   }
 
@@ -1020,7 +1020,7 @@ class ComputationTestSystem final : public System<double> {
 
   // These are required by the base class but not used here.
   std::unique_ptr<CompositeEventCollection<double>>
-  AllocateCompositeEventCollection() const final { return {}; }
+  DoAllocateCompositeEventCollection() const final { return {}; }
   void SetDefaultState(const Context<double>&, State<double>*) const final {}
   void SetDefaultParameters(const Context<double>&,
                             Parameters<double>*) const final {}
