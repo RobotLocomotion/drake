@@ -738,8 +738,9 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   const Vector3<double> xyz_double(4, 3, 2);
   const RigidTransform<double> X_double(rpy_double, xyz_double);
   std::stringstream streamA;  streamA << X_double;
-  std::string expected_string = "rpy = 0.125 0.25 0.5 xyz = 4 3 2";
-  EXPECT_EQ(expected_string, streamA.str());
+  std::string expected_string = "rpy = 0.125 0.25 0.5 xyz = 4.* 3.* 2.*";
+  std::string streamA_string = streamA.str();
+  std::regex_match(streamA_string, std::regex(expected_string));
 
   // Test stream insertion for RigidTransform<AutoDiffXd>.
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.125, 0.25, 0.5);
@@ -760,20 +761,18 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   expected_string = "rpy = symbolic xyz = x y z";
   EXPECT_EQ(expected_string, streamC.str());
 
-  // TODO(Mitiguy) Per issue #14926, add clever programming so the function
-  //  std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X)
-  //  can test whether the rotation matrix underlying RigidTransform X can be
-  //  evaluated to real numbers without an "environment" so that the calculated
-  //  RollPitchYaw rpy can output numbers. For now, show the work-around is to
-  //  output "rpy = symbolic ..." and show exception associated with problem.
+  // Verify that a RotationMatrix with underlying type symbolic::Expression
+  // cannot output a meaningful RollPitchYaw string.
   const symbolic::Variable vroll("roll"), vpitch("pitch"), vyaw("yaw");
   rpy_symbolic = RollPitchYaw<symbolic::Expression>(vroll, vpitch, vyaw);
   X_symbolic = RigidTransform<symbolic::Expression>(rpy_symbolic, xyz_symbolic);
   std::stringstream streamD;  streamD << X_symbolic;
   expected_string = "rpy = symbolic xyz = x y z";
   EXPECT_EQ(expected_string, streamD.str());
+
+  // TODO(Mitiguy) Per issue #14927, provide a better exception message or
+  //  better yet, perhaps just print out the matrix element-by-element.
   const RotationMatrix<symbolic::Expression>& R = X_symbolic.rotation();
-  // TODO(Mitiguy) Per issue #14927, provide a better exception message.
   DRAKE_EXPECT_THROWS_MESSAGE(
       streamC << RollPitchYaw<symbolic::Expression>(R), std::exception,
       "The following environment does not have an entry "

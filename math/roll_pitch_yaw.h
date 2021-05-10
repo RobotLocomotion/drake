@@ -2,6 +2,9 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
+
+#include <fmt/ostream.h>
 
 #include <Eigen/Dense>
 
@@ -655,10 +658,15 @@ class RollPitchYaw {
 /// @relates RollPitchYaw.
 template <typename T>
 inline std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
-  const T& roll = rpy.roll_angle();
-  const T& pitch = rpy.pitch_angle();
-  const T& yaw = rpy.yaw_angle();
-  out << "rpy = " << roll << " " << pitch << " " << yaw;
+  const T &roll = rpy.roll_angle();
+  const T &pitch = rpy.pitch_angle();
+  const T &yaw = rpy.yaw_angle();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    std::string message = fmt::format("rpy = {} {} {}", roll, pitch, yaw);
+    out << message;
+  } else {
+    out << "rpy = " << roll << " " << pitch << " " << yaw;
+  }
   return out;
 }
 

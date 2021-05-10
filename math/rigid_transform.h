@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -617,20 +618,18 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
 /// `std::ostream`. Especially useful for debugging.
 /// @relates RigidTransform.
 template <typename T>
-inline std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
-  if constexpr (scalar_predicate<T>::is_bool) {
-     const RotationMatrix<T>& R = X.rotation();
-     const RollPitchYaw<T> rpy(R);
-     out << rpy;
-  } else {
-    // TODO(Mitiguy) Update this code pending resolution of issue #14926.
-    //  Test if the symbolic RotationMatrix underlying RigidTransform X can be
-    //  evaluated to real numbers (doubles) without an "environment" so that the
-    //  RotationMatrix can be converted to RollPitchYaw with real numbers.
-    out << "rpy = symbolic";
-  }
+std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
   const Vector3<T>& p = X.translation();
-  out << " xyz = " << p(0) << " " << p(1) << " " << p(2);
+  if constexpr (scalar_predicate<T>::is_bool) {
+    const RotationMatrix<T>& R = X.rotation();
+    const RollPitchYaw<T> rpy(R);
+    out << rpy;
+    std::string message = fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());
+    out << message;
+  } else {
+    out << "rpy = symbolic";
+    out << " xyz = " << p.x() << " " << p.y() << " " << p.z();
+  }
   return out;
 }
 
