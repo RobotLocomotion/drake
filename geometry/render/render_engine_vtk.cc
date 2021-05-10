@@ -38,7 +38,8 @@ using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
-using systems::sensors::InvalidDepth;
+using systems::sensors::ImageTraits;
+using systems::sensors::PixelType;
 using vtk_util::ConvertToVtkTransform;
 using vtk_util::CreateSquarePlane;
 using vtk_util::MakeVtkPointerArray;
@@ -66,8 +67,8 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
   // inside the image itself. This includes sentinel values:
   //   - The value 1 indicates the depth is too far away.
   //   - The value 0 indicates the depth is too near.
-  if (z_buffer_value == 0) return InvalidDepth::kTooClose;
-  if (z_buffer_value == 1) return InvalidDepth::kTooFar;
+  if (z_buffer_value == 0) return ImageTraits<PixelType::kDepth32F>::kTooClose;
+  if (z_buffer_value == 1) return ImageTraits<PixelType::kDepth32F>::kTooFar;
   return static_cast<float>(z_buffer_value * (z_far - z_near) + z_near);
 }
 
@@ -259,7 +260,8 @@ void RenderEngineVtk::DoRenderDepthImage(
     for (int u = 0; u < intrinsics.width(); ++u) {
       if (image.at(u, v)[0] == 255u && image.at(u, v)[1] == 255u &&
           image.at(u, v)[2] == 255u) {
-        depth_image_out->at(u, v)[0] = InvalidDepth::kTooFar;
+        depth_image_out->at(u, v)[0] =
+            ImageTraits<PixelType::kDepth32F>::kTooFar;
       } else {
         // Decoding three channel color values to a float value. For the detail,
         // see depth_shaders.h.

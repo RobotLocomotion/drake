@@ -40,7 +40,8 @@ using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
-using systems::sensors::InvalidDepth;
+using systems::sensors::ImageTraits;
+using systems::sensors::PixelType;
 
 namespace {
 
@@ -736,7 +737,7 @@ void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
   // pixel value if nothing draws there -- i.e., nothing there implies that
   // whatever *might* be there is "too far" beyond the depth range.
   glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &InvalidDepth::kTooFar);
+                            &ImageTraits<PixelType::kDepth32F>::kTooFar);
   glClear(GL_DEPTH_BUFFER_BIT);
 
   // Matrix mapping a geometry vertex from the camera frame C to the device

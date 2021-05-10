@@ -167,14 +167,18 @@ PYBIND11_MODULE(sensors, m) {
     type_visit(instantiation_visitor, PixelTypeList{});
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Constants.
-  py::class_<InvalidDepth> invalid_depth(m, "InvalidDepth");
+  py::class_<InvalidDepth> invalid_depth(
+      m, "InvalidDepth", doc.InvalidDepth.doc_deprecated);
   invalid_depth.attr("kTooFar") = InvalidDepth::kTooFar;
   invalid_depth.attr("kTooClose") = InvalidDepth::kTooClose;
 
-  py::class_<Label> label(m, "Label");
+  py::class_<Label> label(m, "Label", doc.Label.doc_deprecated);
   label.attr("kNoBody") = Label::kNoBody;
   label.attr("kFlatTerrain") = Label::kFlatTerrain;
+#pragma GCC diagnostic pop
 
   using T = double;
 
