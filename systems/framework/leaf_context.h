@@ -73,6 +73,8 @@ class LeafContext : public Context<T> {
     return *state_;
   }
 
+  void notify_set_system_id(internal::SystemId id) final;
+
   /// Returns a partial textual description of the Context, intended to be
   /// human-readable.  It is not guaranteed to be unambiguous nor complete.
   std::string do_to_string() const final;

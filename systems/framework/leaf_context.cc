@@ -101,6 +101,11 @@ std::string LeafContext<T>::do_to_string() const {
   return os.str();
 }
 
+template <typename T>
+void LeafContext<T>::notify_set_system_id(internal::SystemId id) {
+  state_->set_system_id(id);
+}
+
 }  // namespace systems
 }  // namespace drake
 
