@@ -577,7 +577,13 @@ class ContextBase : public internal::ContextMessageInterface {
   void set_system_name(const std::string& name) { system_name_ = name; }
 
   // Records the id of the subsystem that created this context.
-  void set_system_id(internal::SystemId id) { system_id_ = id; }
+  void set_system_id(internal::SystemId id) {
+    system_id_ = id;
+    do_set_system_id(id);
+  }
+
+  // Notifies subclasses of the id of the subsystem that created this context.
+  virtual void do_set_system_id(internal::SystemId id) = 0;
 
   // Fixes the input port at `index` to the internal value source `port_value`.
   // If the port wasn't previously fixed, assigns a ticket and tracker for the

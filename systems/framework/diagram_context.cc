@@ -150,7 +150,7 @@ void DiagramContext<T>::MakeState() {
     state->set_substate(i, &Context<T>::access_mutable_state(&subcontext));
   }
   state->Finalize();
-  state->get_mutable_continuous_state().set_system_id(this->get_system_id());
+  state->set_system_id(this->get_system_id());
   state_ = std::move(state);
 }
 
@@ -325,6 +325,9 @@ void DiagramContext<T>::DoPropagateFixContextPointers(
                                     &*contexts_[i]);
   }
 }
+
+template <typename T>
+void DiagramContext<T>::do_set_system_id(internal::SystemId) {}
 
 }  // namespace systems
 }  // namespace drake

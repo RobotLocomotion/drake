@@ -30,6 +30,7 @@ class MyContextBase final : public ContextBase {
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
     return std::make_unique<MyContextBase>(*this);
   }
+  void do_set_system_id(internal::SystemId id) final {}
 };
 
 // A minimal concrete SystemBase object suitable for some simple tests.

@@ -102,6 +102,7 @@ GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
   ForcedDispatchOverrideSystem system;
   auto context = system.CreateDefaultContext();
   auto discrete_values = system.AllocateDiscreteVariables();
+  EXPECT_EQ(discrete_values->get_system_id(), context->get_system_id());
   auto state = context->CloneState();
   system.Publish(*context);
   system.CalcDiscreteVariableUpdates(*context, discrete_values.get());
@@ -845,6 +846,7 @@ TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
   // Successfully calc using a storage that was created by the system.
   std::unique_ptr<ContinuousState<double>> derivatives =
       system_.AllocateTimeDerivatives();
+  EXPECT_EQ(derivatives->get_system_id(), context_.get_system_id());
   DRAKE_EXPECT_NO_THROW(
       system_.CalcTimeDerivatives(context_, derivatives.get()));
 
@@ -2724,6 +2726,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   auto discrete_updates = dut.AllocateDiscreteVariables();
   auto state = context->CloneState();
   auto init_events = dut.AllocateCompositeEventCollection();
+  EXPECT_EQ(init_events->get_system_id(), context->get_system_id());
   dut.GetInitializationEvents(*context, init_events.get());
 
   dut.Publish(*context, init_events->get_publish_events());

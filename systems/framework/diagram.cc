@@ -85,7 +85,7 @@ std::multimap<int, int> Diagram<T>::GetDirectFeedthroughs() const {
 
 template <typename T>
 std::unique_ptr<CompositeEventCollection<T>>
-Diagram<T>::AllocateCompositeEventCollection() const {
+Diagram<T>::DoAllocateCompositeEventCollection() const {
   const int num_systems = num_subsystems();
   std::vector<std::unique_ptr<CompositeEventCollection<T>>> subevents(
       num_systems);
@@ -104,6 +104,7 @@ void Diagram<T>::SetDefaultState(const Context<T>& context,
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
 
+  this->ValidateCreatedForThisSystem(state);
   auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
   DRAKE_DEMAND(diagram_state != nullptr);
 
@@ -276,7 +277,10 @@ std::unique_ptr<DiscreteValues<T>> Diagram<T>::AllocateDiscreteVariables()
   for (const auto& system : registered_systems_) {
     sub_discretes.push_back(system->AllocateDiscreteVariables());
   }
-  return std::make_unique<DiagramDiscreteValues<T>>(std::move(sub_discretes));
+  auto result =
+      std::make_unique<DiagramDiscreteValues<T>>(std::move(sub_discretes));
+  result->set_system_id(this->get_system_id());
+  return result;
 }
 
 template <typename T>
@@ -354,7 +358,7 @@ template <typename T>
 const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
     const System<T>& subsystem,
     const ContinuousState<T>& derivatives) const {
-  System<T>::ValidateCreatedForThisSystem(&derivatives);
+  this->ValidateCreatedForThisSystem(&derivatives);
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
   DRAKE_DEMAND(diagram_derivatives != nullptr);
@@ -366,6 +370,7 @@ template <typename T>
 const DiscreteValues<T>& Diagram<T>::GetSubsystemDiscreteValues(
     const System<T>& subsystem,
     const DiscreteValues<T>& discrete_values) const {
+  this->ValidateCreatedForThisSystem(&discrete_values);
   auto diagram_discrete_state =
       dynamic_cast<const DiagramDiscreteValues<T>*>(&discrete_values);
   DRAKE_DEMAND(diagram_discrete_state != nullptr);
@@ -377,6 +382,7 @@ template <typename T>
 const CompositeEventCollection<T>&
 Diagram<T>::GetSubsystemCompositeEventCollection(const System<T>& subsystem,
     const CompositeEventCollection<T>& events) const {
+  this->ValidateCreatedForThisSystem(&events);
   auto ret = DoGetTargetSystemCompositeEventCollection(subsystem, &events);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -386,6 +392,7 @@ template <typename T>
 CompositeEventCollection<T>&
 Diagram<T>::GetMutableSubsystemCompositeEventCollection(
     const System<T>& subsystem, CompositeEventCollection<T>* events) const {
+  this->ValidateCreatedForThisSystem(events);
   auto ret = DoGetMutableTargetSystemCompositeEventCollection(
       subsystem, events);
   DRAKE_DEMAND(ret != nullptr);
@@ -403,6 +410,7 @@ State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
 template <typename T>
 State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
                                                State<T>* state) const {
+  this->ValidateCreatedForThisSystem(state);
   auto ret = DoGetMutableTargetSystemState(subsystem, state);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -411,6 +419,7 @@ State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
 template <typename T>
 const State<T>& Diagram<T>::GetSubsystemState(const System<T>& subsystem,
                                               const State<T>& state) const {
+  this->ValidateCreatedForThisSystem(&state);
   auto ret = DoGetTargetSystemState(subsystem, &state);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -927,8 +936,10 @@ std::unique_ptr<ContextBase> Diagram<T>::DoAllocateContext() const {
   }
 
   // Creates this diagram's composite data structures that collect its
-  // subsystems' resources, which must have already been allocated above.
-  // No dependencies are set up in these two calls.
+  // subsystems' resources, which must have already been allocated above. No
+  // dependencies are set up in these two calls. Note that MakeState()
+  // establishes the system_id labels for all the helper objects at the root of
+  // the state tree.
   context->MakeParameters();
   context->MakeState();
 
