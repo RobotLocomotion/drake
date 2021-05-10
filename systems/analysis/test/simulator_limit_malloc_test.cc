@@ -18,21 +18,35 @@ class EventfulSystem final : public LeafSystem<double> {
     // These events were found to cause allocations at AdvanceTo() as
     // originally implemented.
     DeclarePeriodicPublishEvent(1.0, 0.5, &EventfulSystem::Update);
+    DeclarePeriodicDiscreteUpdateEvent(1.0, 0.5, &EventfulSystem::Update);
+    DeclarePeriodicUnrestrictedUpdateEvent(1.0, 0.5, &EventfulSystem::Update);
     DeclarePerStepPublishEvent(&EventfulSystem::Update);
+    DeclarePerStepDiscreteUpdateEvent(&EventfulSystem::Update);
+    DeclarePerStepUnrestrictedUpdateEvent(&EventfulSystem::Update);
 
     // These events were not found to allocate at AdvanceTo(); they are
     // included for completeness.
     DeclareForcedPublishEvent(&EventfulSystem::Update);
+    DeclareForcedDiscreteUpdateEvent(&EventfulSystem::Update);
+    DeclareForcedUnrestrictedUpdateEvent(&EventfulSystem::Update);
 
     // It turns out that declaring an init event can actually *reduce* the
     // allocation count, by forcing earlier allocations in underlying storage
     // objects. See #14543 for discussion of this problem.
     // TODO(rpoyner-tri): expand testing to cover this problem.
     DeclareInitializationPublishEvent(&EventfulSystem::Update);
+    DeclareInitializationDiscreteUpdateEvent(&EventfulSystem::Update);
+    DeclareInitializationUnrestrictedUpdateEvent(&EventfulSystem::Update);
   }
 
  private:
   EventStatus Update(const Context<double>&) const {
+    return EventStatus::Succeeded();
+  }
+  EventStatus Update(const Context<double>&, DiscreteValues<double>*) const {
+    return EventStatus::Succeeded();
+  }
+  EventStatus Update(const Context<double>&, State<double>*) const {
     return EventStatus::Succeeded();
   }
 };
@@ -62,7 +76,7 @@ GTEST_TEST(SimulatorLimitMallocTest,
     // heap-free simulation after initialization, given careful system
     // construction.
     // TODO(rpoyner-tri): whittle allocations down to 0.
-    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 28});
+    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 126});
     simulator.AdvanceTo(1.0);
     simulator.AdvanceTo(2.0);
     simulator.AdvanceTo(3.0);
