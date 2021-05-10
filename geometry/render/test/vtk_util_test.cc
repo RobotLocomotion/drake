@@ -1,4 +1,4 @@
-#include "drake/systems/sensors/vtk_util.h"
+#include "drake/geometry/render/vtk_util.h"
 
 #include <cmath>
 #include <limits>
@@ -11,8 +11,8 @@
 #include <vtkSmartPointer.h>
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace geometry {
+namespace render {
 namespace vtk_util {
 namespace {
 
@@ -91,6 +91,6 @@ GTEST_TEST(MakeVtkPointerArrayTest, ValidTest) {
 
 }  // namespace
 }  // namespace vtk_util
-}  // namespace sensors
-}  // namespace systems
+}  // namespace render
+}  // namespace geometry
 }  // namespace drake

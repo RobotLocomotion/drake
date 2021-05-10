@@ -12,8 +12,8 @@
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace geometry {
+namespace render {
 namespace vtk_util {
 /// An array type for vtkSmartPointer.
 ///
@@ -54,6 +54,6 @@ const vtkPointerArray<T, N> MakeVtkPointerArray(
 }
 
 }  // namespace vtk_util
-}  // namespace sensors
-}  // namespace systems
+}  // namespace render
+}  // namespace geometry
 }  // namespace drake

@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":render_engine_vtk_base",
         ":render_label",
         ":render_label_class",
+        ":vtk_util",
     ],
 )
 
@@ -73,10 +74,10 @@ drake_cc_library(
     deps = [
         ":render_engine",
         ":render_engine_vtk_base",
+        ":vtk_util",
         "//common",
         "//geometry/render/shaders:depth_shaders",
         "//systems/sensors:color_palette",
-        "//systems/sensors:vtk_util",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
@@ -137,6 +138,24 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "vtk_util",
+    srcs = ["vtk_util.cc"],
+    hdrs = ["vtk_util.h"],
+    # We must not expose `#include <vtk/...>` in any of our installed headers;
+    # vtk_util.h is only included internally within this package.
+    install_hdrs_exclude = ["vtk_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersSources",
+    ],
+)
+
 # === test/ ===
 
 filegroup(
@@ -186,6 +205,11 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
+)
+
+drake_cc_googletest(
+    name = "vtk_util_test",
+    deps = [":vtk_util"],
 )
 
 add_lint_tests()
