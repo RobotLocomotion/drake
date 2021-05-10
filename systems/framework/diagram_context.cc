@@ -9,7 +9,9 @@ namespace systems {
 template <typename T>
 DiagramContext<T>::DiagramContext(int num_subcontexts)
     : contexts_(num_subcontexts),
-      state_(std::make_unique<DiagramState<T>>(num_subcontexts)) {}
+      state_(std::make_unique<DiagramState<T>>(num_subcontexts)) {
+  state_->set_system_id(this->get_system_id());
+}
 
 template <typename T>
 void DiagramContext<T>::AddSystem(
@@ -144,6 +146,7 @@ void DiagramContext<T>::SubscribeDiagramCompositeTrackersToChildrens() {
 template <typename T>
 void DiagramContext<T>::MakeState() {
   auto state = std::make_unique<DiagramState<T>>(num_subcontexts());
+  state->set_system_id(this->get_system_id());
   for (SubsystemIndex i(0); i < num_subcontexts(); ++i) {
     Context<T>& subcontext = *contexts_[i].get();
     // Using `access` here to avoid sending invalidations.

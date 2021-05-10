@@ -313,6 +313,7 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
       AllocateForcedDiscreteUpdateEventCollection());
   this->set_forced_unrestricted_update_events(
       AllocateForcedUnrestrictedUpdateEventCollection());
+  model_discrete_state_.set_system_id(this->get_system_id());
 }
 
 template <typename T>
