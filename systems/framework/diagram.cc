@@ -93,8 +93,10 @@ Diagram<T>::AllocateCompositeEventCollection() const {
     subevents[i] = registered_systems_[i]->AllocateCompositeEventCollection();
   }
 
-  return std::make_unique<DiagramCompositeEventCollection<T>>(
+  auto result = std::make_unique<DiagramCompositeEventCollection<T>>(
       std::move(subevents));
+  result->set_system_id(this->get_system_id());
+  return result;
 }
 
 template <typename T>
@@ -276,7 +278,10 @@ std::unique_ptr<DiscreteValues<T>> Diagram<T>::AllocateDiscreteVariables()
   for (const auto& system : registered_systems_) {
     sub_discretes.push_back(system->AllocateDiscreteVariables());
   }
-  return std::make_unique<DiagramDiscreteValues<T>>(std::move(sub_discretes));
+  auto result =
+      std::make_unique<DiagramDiscreteValues<T>>(std::move(sub_discretes));
+  result->set_system_id(this->get_system_id());
+  return result;
 }
 
 template <typename T>
@@ -354,7 +359,7 @@ template <typename T>
 const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
     const System<T>& subsystem,
     const ContinuousState<T>& derivatives) const {
-  System<T>::ValidateCreatedForThisSystem(&derivatives);
+  this->ValidateCreatedForThisSystem(&derivatives);
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
   DRAKE_DEMAND(diagram_derivatives != nullptr);
@@ -366,6 +371,7 @@ template <typename T>
 const DiscreteValues<T>& Diagram<T>::GetSubsystemDiscreteValues(
     const System<T>& subsystem,
     const DiscreteValues<T>& discrete_values) const {
+  this->ValidateCreatedForThisSystem(&discrete_values);
   auto diagram_discrete_state =
       dynamic_cast<const DiagramDiscreteValues<T>*>(&discrete_values);
   DRAKE_DEMAND(diagram_discrete_state != nullptr);
@@ -377,6 +383,7 @@ template <typename T>
 const CompositeEventCollection<T>&
 Diagram<T>::GetSubsystemCompositeEventCollection(const System<T>& subsystem,
     const CompositeEventCollection<T>& events) const {
+  this->ValidateCreatedForThisSystem(&events);
   auto ret = DoGetTargetSystemCompositeEventCollection(subsystem, &events);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -386,6 +393,7 @@ template <typename T>
 CompositeEventCollection<T>&
 Diagram<T>::GetMutableSubsystemCompositeEventCollection(
     const System<T>& subsystem, CompositeEventCollection<T>* events) const {
+  this->ValidateCreatedForThisSystem(events);
   auto ret = DoGetMutableTargetSystemCompositeEventCollection(
       subsystem, events);
   DRAKE_DEMAND(ret != nullptr);
@@ -403,6 +411,7 @@ State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
 template <typename T>
 State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
                                                State<T>* state) const {
+  this->ValidateCreatedForThisSystem(state);
   auto ret = DoGetMutableTargetSystemState(subsystem, state);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -411,6 +420,7 @@ State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
 template <typename T>
 const State<T>& Diagram<T>::GetSubsystemState(const System<T>& subsystem,
                                               const State<T>& state) const {
+  this->ValidateCreatedForThisSystem(&state);
   auto ret = DoGetTargetSystemState(subsystem, &state);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;

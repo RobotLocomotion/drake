@@ -167,6 +167,13 @@ class DiscreteValues {
     return std::unique_ptr<DiscreteValues<T>>(DoClone());
   }
 
+  // (Internal use only) Gets the id of the subsystem that created this state.
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  // (Internal use only) Records the id of the subsystem that created this
+  // state.
+  void set_system_id(internal::SystemId id) { system_id_ = id; }
+
  private:
   // Throw unless this object is compatible with convenience methods; i.e., it
   // has exactly one group.
@@ -189,7 +196,9 @@ class DiscreteValues {
     cloned_data.reserve(data_.size());
     for (const BasicVector<T>* datum : data_)
       cloned_data.push_back(datum->Clone());
-    return std::make_unique<DiscreteValues<T>>(std::move(cloned_data));
+    auto result = std::make_unique<DiscreteValues<T>>(std::move(cloned_data));
+    result->set_system_id(get_system_id());
+    return result;
   }
 
   // Pointers to the data comprising the values. If the data is owned,
@@ -199,6 +208,9 @@ class DiscreteValues {
   // pointers is to maintain ownership in leaf DiscreteValues. They may be
   // populated at construction/append time, and are never accessed thereafter.
   std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
+
+  // Unique id of the subsystem that created this state.
+  internal::SystemId system_id_;
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

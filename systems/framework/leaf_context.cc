@@ -10,7 +10,9 @@ namespace systems {
 
 template <typename T>
 LeafContext<T>::LeafContext()
-    : state_(std::make_unique<State<T>>()) {}
+    : state_(std::make_unique<State<T>>()) {
+  state_->set_system_id(this->get_system_id());
+}
 
 template <typename T>
 LeafContext<T>::~LeafContext() {}
@@ -46,6 +48,7 @@ std::unique_ptr<State<T>> LeafContext<T>::DoCloneState() const {
   clone->set_discrete_state(state_->get_discrete_state().Clone());
   clone->set_abstract_state(state_->get_abstract_state().Clone());
 
+  clone->set_system_id(this->get_system_id());
   return clone;
 }
 
