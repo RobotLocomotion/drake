@@ -740,7 +740,13 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   std::stringstream streamA;  streamA << X_double;
   std::string expected_string = "rpy = 0.125 0.25 0.5 xyz = 4.* 3.* 2.*";
   std::string streamA_string = streamA.str();
+#if 1
   std::regex_match(streamA_string, std::regex(expected_string));
+#else
+  EXPECT_TRUE(std::regex_match(streamA_string, std::regex(expected_string)));
+  std::cout << "\nexpected_string = " << expected_string;
+  std::cout << "\nstreamA_string = " << streamA_string;
+#endif
 
   // Test stream insertion for RigidTransform<AutoDiffXd>.
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.125, 0.25, 0.5);
