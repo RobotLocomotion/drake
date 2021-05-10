@@ -90,8 +90,8 @@ class System : public SystemBase {
   instance is used for populating collections of triggered events; for
   example, Simulator passes this object to System::CalcNextUpdateTime() to
   allow the system to identify and handle upcoming events. */
-  virtual std::unique_ptr<CompositeEventCollection<T>>
-  AllocateCompositeEventCollection() const = 0;
+  std::unique_ptr<CompositeEventCollection<T>>
+  AllocateCompositeEventCollection() const;
 
   /** Given an input port, allocates the vector storage.  The @p input_port
   must match a port declared via DeclareInputPort. */
@@ -1739,6 +1739,13 @@ class System : public SystemBase {
   // specified by @p input_port.  This is final in LeafSystem and Diagram.
   virtual std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const = 0;
+
+  // Allocates a composite event collection for use with this system.
+  // Implementers should not set system_id; that is done by the wrapping
+  // AllocateCompositeEventCollection method. This method is final in
+  // LeafSystem and Diagram.
+  virtual std::unique_ptr<CompositeEventCollection<T>>
+  DoAllocateCompositeEventCollection() const = 0;
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex port_index) const final;

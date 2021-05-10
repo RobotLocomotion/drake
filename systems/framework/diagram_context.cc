@@ -150,7 +150,7 @@ void DiagramContext<T>::MakeState() {
     state->set_substate(i, &Context<T>::access_mutable_state(&subcontext));
   }
   state->Finalize();
-  state->get_mutable_continuous_state().set_system_id(this->get_system_id());
+  state->set_system_id(this->get_system_id());
   state_ = std::move(state);
 }
 
@@ -324,6 +324,13 @@ void DiagramContext<T>::DoPropagateFixContextPointers(
     ContextBase::FixContextPointers(*source_diagram.contexts_[i], tracker_map,
                                     &*contexts_[i]);
   }
+}
+
+template <typename T>
+void DiagramContext<T>::do_set_system_id(internal::SystemId) {
+  // Do nothing here, because the obvious implementation (set state_'s
+  // system_id) will be undone and re-done by MakeState() in every reasonable
+  // situation.
 }
 
 }  // namespace systems

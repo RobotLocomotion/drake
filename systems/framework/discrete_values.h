@@ -157,15 +157,24 @@ class DiscreteValues {
     }
   }
 
-  /// Creates a deep copy of this object with the same substructure but with all
-  /// data owned by the copy. That is, if the original was a
-  /// DiagramDiscreteValues object that maintains a tree of substates, the clone
-  /// will not include any references to the original substates and is thus
-  /// decoupled from the Context containing the original. The concrete type of
-  /// the BasicVector underlying each leaf DiscreteValue is preserved.
+  /// Creates a deep copy of this object with the same substructure but with
+  /// all data owned by the copy. That is, if the original was a
+  /// DiagramDiscreteValues object that maintains a tree of sub-objects, the
+  /// clone will not include any references to the original sub-objects and is
+  /// thus decoupled from the Context containing the original. The concrete
+  /// type of the BasicVector underlying each leaf DiscreteValue is preserved.
   std::unique_ptr<DiscreteValues<T>> Clone() const {
-    return std::unique_ptr<DiscreteValues<T>>(DoClone());
+    auto result = std::unique_ptr<DiscreteValues<T>>(DoClone());
+    result->set_system_id(get_system_id());
+    return result;
   }
+
+  /// (Internal use only) Gets the id of the subsystem that created this object.
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  /// (Internal use only) Records the id of the subsystem that created this
+  /// object.
+  void set_system_id(internal::SystemId id) { system_id_ = id; }
 
  private:
   // Throw unless this object is compatible with convenience methods; i.e., it
@@ -183,6 +192,8 @@ class DiscreteValues {
   // internal substructure, and to perform a deep copy so that the result
   // owns all its own data. The default implementation here requires that this
   // is a leaf DiscreteValues object so that we need only clone BasicVectors.
+  // The implementation should not set_system_id on the result, the caller
+  // will set an id on the object after this method returns.
   virtual std::unique_ptr<DiscreteValues<T>> DoClone() const {
     std::vector<std::unique_ptr<BasicVector<T>>> cloned_data;
     // Make deep copies regardless of previous ownership.
@@ -199,6 +210,9 @@ class DiscreteValues {
   // pointers is to maintain ownership in leaf DiscreteValues. They may be
   // populated at construction/append time, and are never accessed thereafter.
   std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
+
+  // Unique id of the subsystem that created this object.
+  internal::SystemId system_id_;
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
