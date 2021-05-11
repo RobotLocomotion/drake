@@ -657,12 +657,11 @@ class RollPitchYaw {
 /// @relates RollPitchYaw.
 template <typename T>
 inline std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
-  const T &roll = rpy.roll_angle();
-  const T &pitch = rpy.pitch_angle();
-  const T &yaw = rpy.yaw_angle();
+  const T& roll = rpy.roll_angle();
+  const T& pitch = rpy.pitch_angle();
+  const T& yaw = rpy.yaw_angle();
   if constexpr (scalar_predicate<T>::is_bool) {
-    std::string message = fmt::format("rpy = {} {} {}", roll, pitch, yaw);
-    out << message;
+    out << fmt::format("rpy = {} {} {}", roll, pitch, yaw);
   } else {
     out << "rpy = " << roll << " " << pitch << " " << yaw;
   }

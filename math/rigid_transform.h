@@ -624,8 +624,7 @@ std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
     const RotationMatrix<T>& R = X.rotation();
     const RollPitchYaw<T> rpy(R);
     out << rpy;
-    std::string message = fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());
-    out << message;
+    out << fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());;
   } else {
     out << "rpy = symbolic";
     out << " xyz = " << p.x() << " " << p.y() << " " << p.z();

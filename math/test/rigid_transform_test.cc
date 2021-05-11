@@ -1,5 +1,6 @@
 #include "drake/math/rigid_transform.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -731,6 +732,38 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
   EXPECT_EQ(sizeof(X), 12 * sizeof(double));
 }
 
+// This utility function helps verify the output string from RigidTransform's
+// stream insertion operator <<.  Specifically, it does the following:
+// 1. Verifies the output string has form: "rpy = 0.125 0.25 0.5 xyz = 7 6 5";
+// 2. Verifies the numerical values for roll (r), pitch (p) and yaw (y) that are
+//    contained in the output string are within a 8 epsilon of their expected
+//    values, where epsilon ≈ 2.22E-16.
+// 3. Verifies that output string's xyz matches (with regular expressions) the
+//    expected string.
+void VerifyStreamInsertionOperator(const std::string stream_string,
+                                   const RollPitchYaw<double>& rpy_expected,
+                                   const std::string& xyz_expected_string) {
+  // Due to the conversion from a RollPitchYaw to a RotationMatrix and then back
+  // to a RollPitchYaw, the input rpy_double may slightly mismatch output,
+  // so streamA_string may be something like
+  // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
+  const std::size_t index_found = stream_string.find("rpy = ");
+  EXPECT_TRUE(index_found != std::string::npos);
+  const char* cstring = stream_string.c_str() + 6;
+  EXPECT_TRUE(cstring && cstring[1]);
+  char* endptr;
+  const double roll_from_stream = strtod(cstring, &endptr);
+  EXPECT_TRUE(endptr && endptr[0] == ' ' && endptr[1] !=  '\0');
+  const double pitch_from_stream = strtod(cstring = endptr+1, &endptr);
+  EXPECT_TRUE(endptr && endptr[0] == ' ' && endptr[1] !=  '\0');
+  const double yaw_from_stream = strtod(cstring = endptr+1, &endptr);
+  EXPECT_TRUE(endptr && endptr[0] == ' ' && endptr[1] !=  '\0');
+  EXPECT_NEAR(roll_from_stream, rpy_expected.roll_angle(), 4 * kEpsilon);
+  EXPECT_NEAR(pitch_from_stream, rpy_expected.pitch_angle(), 4 * kEpsilon);
+  EXPECT_NEAR(yaw_from_stream, rpy_expected.yaw_angle(), 4 * kEpsilon);
+  EXPECT_THAT(stream_string, testing::ContainsRegex(xyz_expected_string));
+}
+
 // Test the stream insertion operator to write into a stream.
 GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   // Test stream insertion for RigidTransform<double>.
@@ -738,22 +771,16 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   const Vector3<double> xyz_double(4, 3, 2);
   const RigidTransform<double> X_double(rpy_double, xyz_double);
   std::stringstream streamA;  streamA << X_double;
-  std::string expected_string = "rpy = 0.125 0.25 0.5 xyz = 4.* 3.* 2.*";
+  std::string xyz_expected = "xyz = 4.* 3.* 2.*";
   std::string streamA_string = streamA.str();
-#if 1
-  std::regex_match(streamA_string, std::regex(expected_string));
-#else
-  EXPECT_TRUE(std::regex_match(streamA_string, std::regex(expected_string)));
-  std::cout << "\nexpected_string = " << expected_string;
-  std::cout << "\nstreamA_string = " << streamA_string;
-#endif
+  VerifyStreamInsertionOperator(streamA_string, rpy_double, xyz_expected);
 
   // Test stream insertion for RigidTransform<AutoDiffXd>.
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.125, 0.25, 0.5);
   const Vector3<AutoDiffXd> xyz_autodiff(7, 6, 5);
   const RigidTransform<AutoDiffXd> X_autodiff(rpy_autodiff, xyz_autodiff);
   std::stringstream streamB;  streamB << X_autodiff;
-  expected_string = "rpy = 0.125 0.25 0.5 xyz = 7 6 5";
+  std::string expected_string = "rpy = 0.125 0.25 0.5 xyz = 7 6 5";
   EXPECT_EQ(expected_string, streamB.str());
 
   // Test stream insertion for RigidTransform<symbolic::Expression>.
