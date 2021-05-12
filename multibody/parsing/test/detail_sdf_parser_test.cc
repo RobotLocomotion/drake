@@ -1319,8 +1319,9 @@ GTEST_TEST(SdfParser, ReflectedInertiaParametersParsing) {
 
 // Verifies that the SDFormat loader can add directly nested models to a
 // multibody plant. For reference, the files test/integration/model_dom.cc and
-// test/integration/nested_model.cc in the libsdformat source code contain
-// tests that show more detailed behavior of SDFormat's nested model support.
+// test/integration/nested_model.cc in the libsdformat source code (tag
+// sdformat11_11.0.0) contain tests that show more detailed behavior of
+// SDFormat's nested model support.
 GTEST_TEST(SdfParser, LoadDirectlyNestedModelsInWorld) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
