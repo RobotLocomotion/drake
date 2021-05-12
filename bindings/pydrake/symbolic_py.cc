@@ -116,6 +116,20 @@ PYBIND11_MODULE(symbolic, m) {
             return pow(self, other);
           },
           py::is_operator())
+      // We add the following methods (exp, sqrt, sin, cos, tan, arcsin, arccos,
+      // arctan, sinh, cosh, tanh) to support corresponding numpy functions such
+      // as np.sin(x).
+      .def("exp", [](const Variable& self) { return exp(self); })
+      .def("sqrt", [](const Variable& self) { return sqrt(self); })
+      .def("sin", [](const Variable& self) { return sin(self); })
+      .def("cos", [](const Variable& self) { return cos(self); })
+      .def("tan", [](const Variable& self) { return tan(self); })
+      .def("arcsin", [](const Variable& self) { return asin(self); })
+      .def("arccos", [](const Variable& self) { return acos(self); })
+      .def("arctan", [](const Variable& self) { return atan(self); })
+      .def("sinh", [](const Variable& self) { return sinh(self); })
+      .def("cosh", [](const Variable& self) { return cosh(self); })
+      .def("tanh", [](const Variable& self) { return tanh(self); })
       // We add `EqualTo` instead of `equal_to` to maintain consistency among
       // symbolic classes (Variable, Expression, Formula, Polynomial) on Python
       // side. This enables us to achieve polymorphism via ducktyping in Python.
