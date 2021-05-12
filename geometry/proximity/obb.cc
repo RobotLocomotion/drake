@@ -24,7 +24,7 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b,
   // the canonical frame B of box `b` is posed in the hierarchy frame H.
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
-  const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
+  const RigidTransformd X_AB = X_GA.InvertAndCompose(X_GH * X_HB);
   return BoxesOverlap(a.half_width(), b.half_width(), X_AB);
 }
 
