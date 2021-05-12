@@ -116,20 +116,6 @@ PYBIND11_MODULE(symbolic, m) {
             return pow(self, other);
           },
           py::is_operator())
-      // We add the following methods (exp, sqrt, sin, cos, tan, arcsin, arccos,
-      // arctan, sinh, cosh, tanh) to support corresponding numpy functions such
-      // as np.sin(x).
-      .def("exp", [](const Variable& self) { return exp(self); })
-      .def("sqrt", [](const Variable& self) { return sqrt(self); })
-      .def("sin", [](const Variable& self) { return sin(self); })
-      .def("cos", [](const Variable& self) { return cos(self); })
-      .def("tan", [](const Variable& self) { return tan(self); })
-      .def("arcsin", [](const Variable& self) { return asin(self); })
-      .def("arccos", [](const Variable& self) { return acos(self); })
-      .def("arctan", [](const Variable& self) { return atan(self); })
-      .def("sinh", [](const Variable& self) { return sinh(self); })
-      .def("cosh", [](const Variable& self) { return cosh(self); })
-      .def("tanh", [](const Variable& self) { return tanh(self); })
       // We add `EqualTo` instead of `equal_to` to maintain consistency among
       // symbolic classes (Variable, Expression, Formula, Polynomial) on Python
       // side. This enables us to achieve polymorphism via ducktyping in Python.
@@ -164,6 +150,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != Expression())
       .def(py::self != py::self)
       .def(py::self != double());
+  internal::BindSymbolicMathOverloads<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
 
   // Bind the free functions for MakeVectorXXXVariable
@@ -420,35 +407,14 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != double())
       .def("Differentiate", &Expression::Differentiate,
           doc.Expression.Differentiate.doc)
-      .def("Jacobian", &Expression::Jacobian, doc.Expression.Jacobian.doc)
-      // TODO(eric.cousineau): Figure out how to consolidate with the `math`
-      // methods.
-      .def("log", &symbolic::log, doc.log.doc)
-      .def("__abs__", &symbolic::abs)
-      .def("exp", &symbolic::exp, doc.exp.doc)
-      .def("sqrt", &symbolic::sqrt, doc.sqrt.doc)
-      // TODO(eric.cousineau): Move `__pow__` here.
-      .def("sin", &symbolic::sin, doc.sin.doc)
-      .def("cos", &symbolic::cos, doc.cos.doc)
-      .def("tan", &symbolic::tan, doc.tan.doc)
-      .def("arcsin", &symbolic::asin, doc.asin.doc)
-      .def("arccos", &symbolic::acos, doc.acos.doc)
-      .def("arctan2", &symbolic::atan2, doc.atan2.doc)
-      .def("sinh", &symbolic::sinh, doc.sinh.doc)
-      .def("cosh", &symbolic::cosh, doc.cosh.doc)
-      .def("tanh", &symbolic::tanh, doc.tanh.doc)
-      .def("min", &symbolic::min, doc.min.doc)
-      .def("max", &symbolic::max, doc.max.doc)
-      .def("ceil", &symbolic::ceil, doc.ceil.doc)
-      .def("__ceil__", &symbolic::ceil, doc.ceil.doc)
-      .def("floor", &symbolic::floor, doc.floor.doc)
-      .def("__floor__", &symbolic::floor, doc.floor.doc);
+      .def("Jacobian", &Expression::Jacobian, doc.Expression.Jacobian.doc);
+  pydrake::internal::BindSymbolicMathOverloads<Expression>(&expr_cls);
   DefCopyAndDeepCopy(&expr_cls);
 
   // TODO(eric.cousineau): These should actually exist on the class, and should
   // be should be consolidated with the above repeated definitions. This would
   // yield the same parity with AutoDiff.
-  pydrake::internal::BindSymbolicMathOverloads(&m);
+  pydrake::internal::BindSymbolicMathModuleOverloads(m);
 
   m.def("if_then_else", &symbolic::if_then_else);
 
