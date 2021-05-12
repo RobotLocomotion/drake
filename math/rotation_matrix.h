@@ -699,6 +699,15 @@ class RotationMatrix {
     return theta_lambda;
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
+  // Here for internal use by RigidTransform but no one else.
+  struct DoNotInitializeMemberFields{};
+  explicit RotationMatrix(DoNotInitializeMemberFields) {}
+  // Returns the Matrix3 underlying a RotationMatrix.
+  Matrix3<T>& mutable_matrix() { return R_AB_; }
+#endif
+
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
@@ -712,9 +721,6 @@ class RotationMatrix {
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon() };
 
-  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
-  struct DoNotInitializeMemberFields{};
-  explicit RotationMatrix(DoNotInitializeMemberFields) {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
