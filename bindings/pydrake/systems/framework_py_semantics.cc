@@ -427,7 +427,14 @@ void DefineFrameworkPySemantics(py::module m) {
                    return std::make_unique<UnrestrictedUpdateEvent<T>>(
                        callback);
                  })),
-            py::arg("callback"), doc.UnrestrictedUpdateEvent.ctor.doc_1args);
+            py::arg("callback"),
+            doc.UnrestrictedUpdateEvent.ctor.doc_1args_callback)
+        .def(py::init(WrapCallbacks([](const typename UnrestrictedUpdateEvent<
+                                        T>::SystemCallback& system_callback) {
+          return std::make_unique<UnrestrictedUpdateEvent<T>>(system_callback);
+        })),
+            py::arg("system_callback"),
+            doc.UnrestrictedUpdateEvent.ctor.doc_1args_system_callback);
 
     // Glue mechanisms.
     DefineTemplateClassWithDefault<DiagramBuilder<T>>(
