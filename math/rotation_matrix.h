@@ -453,6 +453,28 @@ class RotationMatrix {
     return R_AC;
   }
 
+  /// Calculates the product of `this` inverted times another %RotationMatrix.
+  /// If you consider `this` to be the rotation matrix R_AB, and `other` to be
+  /// R_AC, then this method returns R_BC = R_AB⁻¹ * R_AC. For T==double, this
+  /// method can be _much_ faster than inverting first and then performing the
+  /// composition.
+  /// @param[in] other %RotationMatrix that post-multiplies `this` inverted.
+  /// @retval R_BC where R_BC = this⁻¹ * other.
+  /// @note It is possible (albeit improbable) to create an invalid rotation
+  /// matrix by accumulating round-off error with a large number of multiplies.
+  RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const {
+    const RotationMatrix<T>& R_AC = other;  // Nicer name.
+    RotationMatrix<T> R_BC(DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      ComposeRinvR(R_AB_.data(), R_AC.matrix().data(),
+                   R_BC.mutable_matrix().data());
+    } else {
+      const RotationMatrix<T> R_BA = inverse();
+      R_BC = R_BA * R_AC;
+    }
+    return R_BC;
+  }
+
   /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
   /// Vector3 expressed in the B frame.
   /// @param[in] v_B 3x1 vector that post-multiplies `this`.
@@ -970,6 +992,8 @@ class RotationMatrix {
 
     return m;
   }
+
+  Matrix3<T>& mutable_matrix() { return R_AB_; }
 
   // Throws an exception if the vector v does not have a measurable magnitude
   // within 4ε of 1 (where machine epsilon ε ≈ 2.22E-16).
