@@ -26,6 +26,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/physical_model_manager.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
@@ -66,7 +67,10 @@ struct HydroelasticContactInfoAndBodySpatialForces {
 };
 
 // Forward declaration.
-template <typename> class MultibodyPlantAccess;
+template <typename>
+class MultibodyPlantModelAttorney;
+template <typename>
+class MultibodyPlantContactAttorney;
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -1596,9 +1600,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // developers wanting to try out their custom time stepping strategies,
   // including contact resolution. We choose not to show it in public
   // documentations rather than making it private with friends.
-  // With this method MultibodyPlant takes ownership of `manager` and calls its
-  // DeclareStateCacheAndPorts() method, giving specific manager implementations
-  // a chance to declare state, cache and/or ports.
+  // With this method MultibodyPlant takes ownership of `manager`.
   //
   // @note Setting a contact manager bypasses the mechanism to set a different
   // contact solver with set_contact_solver(). Use only on of these two
@@ -1607,8 +1609,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @param manager
   //   After this call the new manager is used to advance discrete states.
   // @pre manager must not be nullptr.
-  // @pre ManagerType must be a subclass of
-  // multibody::internal::ContactComputationManager.
+  // @pre ManagerType is a subclass of
+  //   multibody::internal::ContactComputationManager.
+  // @pre The MultibodyPlant associated with the given `manager` is `this`
+  //   MultibodyPlant.
   // @returns a mutable reference to `manager`, now owned by `this`
   // MultibodyPlant.
   /// @throws std::exception if called pre-finalize. See Finalize().
@@ -1624,13 +1628,46 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         std::is_base_of<internal::ContactComputationManager<T>,
                         ManagerType>::value,
         "ManagerType must be a sub-class of ContactComputationManager.");
+    DRAKE_DEMAND(&manager->plant() == this);
+
     contact_computation_manager_ = std::move(manager);
-    // Give the manager a chance to declare additional state and ports.
-    contact_computation_manager_->DeclareStateCacheAndPorts(this);
+    contact_computation_manager_->ExtractModelInfo();
     ManagerType* concrete_manager_ptr =
         static_cast<ManagerType*>(contact_computation_manager_.get());
     return *concrete_manager_ptr;
   }
+
+  // (Experimental) AddExternalModel() should only be called by advanced
+  // developers wanting to try out their new physical models. We choose not to
+  // show it in public documentations rather than making it private with
+  // friends. With this method MultibodyPlant takes ownership of `model` and
+  // calls its DeclareStateCacheAndPorts() method at Finalize(), giving specific
+  // model manager implementations a chance to declare state, cache and/or
+  // ports.
+  //
+  // @param model
+  //   After this call the new manager is used to advance discrete states.
+  // @pre model != nullptr.
+  // @pre ModelType must be a subclass of
+  // multibody::internal::PhysicalModelManager.
+  // @returns a mutable reference to `model`, now owned by `this`
+  // MultibodyPlant.
+  /// @throws std::exception if called post-finalize. See Finalize().
+  template <class ModelType>
+  ModelType& AddExternalModel(std::unique_ptr<ModelType> model) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_DEMAND(model != nullptr);
+    static_assert(
+        std::is_base_of_v<internal::PhysicalModelManager<T>, ModelType>,
+        "ModelType must be a sub-class of PhysicalModelManager.");
+    external_models_.emplace_back(std::move(model));
+    ModelType* concrete_model_ptr =
+        static_cast<ModelType*>(external_models_.back().get());
+    return *concrete_model_ptr;
+  }
+
+  const std::vector<std::unique_ptr<internal::PhysicalModelManager<T>>>&
+  external_models() const { return external_models_; }
 #endif
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
@@ -3899,7 +3936,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Friend attorney class to provide private access to those internal::
   // implementations that need it.
-  friend class internal::MultibodyPlantAccess<T>;
+  friend class internal::MultibodyPlantModelAttorney<T>;
+  friend class internal::MultibodyPlantContactAttorney<T>;
 
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
@@ -4726,6 +4764,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // resolution into a default contact manager.
   std::unique_ptr<internal::ContactComputationManager<T>>
       contact_computation_manager_;
+
+  // (Experimental) The vector of external models owned by MultibodyPlant.
+  std::vector<std::unique_ptr<internal::PhysicalModelManager<T>>>
+      external_models_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 

@@ -233,6 +233,22 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return this->get_cache_entry(cache_indexes_.acceleration_kinematics);
   }
 
+  /* Returns the DiscreteStateIndex for the one and only multibody discrete
+  state if the system is discrete and finalized. Throws otherwise. */
+  systems::DiscreteStateIndex get_discrete_state_index_or_throw() const {
+    if (!is_discrete_) {
+      throw std::runtime_error(
+          "The MultibodyTreeSystem is modeled as a continuous system and there "
+          "does not exist any discrete state.");
+    }
+    if (!already_finalized_) {
+      throw std::logic_error(
+          "get_discrete_state_index_or_throw() can only be "
+          "called post-Finalize().");
+    }
+    return discrete_state_index_;
+  }
+
  protected:
   /* @name        Alternate API for derived classes
   Derived classes may use these methods to create a MultibodyTreeSystem
@@ -491,6 +507,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
+
+  // The discrete state index for the one and only multibody tree discrete state
+  // if the system is discrete.
+  systems::DiscreteStateIndex discrete_state_index_;
 };
 
 /* Access internal tree outside of MultibodyTreeSystem. */

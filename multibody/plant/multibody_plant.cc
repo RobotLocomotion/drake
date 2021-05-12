@@ -1572,7 +1572,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Body<T>& bodyA = get_body(bodyA_index);
     const Body<T>& bodyB = get_body(bodyB_index);
 
-    // The the poses and spatial velocities of bodies A and B.
+    // The poses and spatial velocities of bodies A and B.
     const RigidTransform<T>& X_WA = bodyA.EvalPoseInWorld(context);
     const RigidTransform<T>& X_WB = bodyB.EvalPoseInWorld(context);
     const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
@@ -2735,6 +2735,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
+
+    // Let external physical models declare their state, cache and ports in
+    // `this` MultibodyPlant.
+    for (auto& external_model : external_models_) {
+      external_model->DeclareStateCacheAndPorts();
+    }
 }
 
 template <typename T>

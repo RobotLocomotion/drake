@@ -2,12 +2,13 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/multibody_plant_access.h"
+#include "drake/multibody/plant/test/dummy_model_manager.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+namespace test {
 using contact_solvers::internal::ContactSolverResults;
 using Eigen::VectorXd;
 using systems::BasicVector;
@@ -15,9 +16,12 @@ using systems::Context;
 using systems::DiscreteStateIndex;
 using systems::DiscreteValues;
 using systems::OutputPortIndex;
+// Dummy state data.
 constexpr int kNumRigidDofs = 6;
 constexpr int kNumAdditionalDofs = 9;
 constexpr int kNumTotalDofs = kNumRigidDofs + kNumAdditionalDofs;
+constexpr double kDummyStateValue = 3.15;
+// Dummy contact data.
 constexpr int kNumContacts = 4;
 constexpr double kDummyVNext = 1.0;
 constexpr double kDummyFn = 2.0;
@@ -29,78 +33,44 @@ constexpr double kDummyVdot = 7.0;
 constexpr double kDt = 0.1;
 
 /* A dummy manager class derived from ContactComputationManager for testing
- purpose. This dummy manager declares a discrete state in addition to the MbP's
- discrete state. The additional state is of size `kNumAdditionalDofs` and is
- intialized to zeros. The discrete update event increments each entry in the
- additional discrete state vector by 1. This class has a vector output port that
- reports this additional state and an abstract output port that reports the the
- same state. */
-class DummyContactComputationManager : public ContactComputationManager<double>,
-                                       private MultibodyPlantAccess<double> {
+ purpose. It implements the interface in ContactComputationManager by filling in
+ dummy data. */
+class DummyContactManager : public ContactComputationManager<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyContactComputationManager);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyContactManager);
 
-  ~DummyContactComputationManager() = default;
+  explicit DummyContactManager(const MultibodyPlant<double>* plant)
+      : ContactComputationManager<double>(plant) {}
 
-  explicit DummyContactComputationManager(MultibodyPlant<double>* plant)
-      : MultibodyPlantAccess<double>(plant) {}
-
-  const systems::OutputPort<double>& get_abstract_output_port() const {
-    return this->get_output_port(abstract_output_port_index_);
-  }
-  const systems::OutputPort<double>& get_vector_output_port() const {
-    return this->get_output_port(vector_output_port_index_);
-  }
-
-  const ContactSolverResults<double>& EvalContactSolverResults(
-      const Context<double>& context) {
-    return MultibodyPlantAccess<double>::EvalContactSolverResults(context);
-  }
+  ~DummyContactManager() = default;
 
  private:
-  /* Declares a dummy discrete state of size `kNumAdditionalDofs` along with two
-   output ports that reports the value of the dummy discrete state: one abstract
-   output port with underlying value type VectorXd and one plain-old vector
-   port. */
-  void DeclareStateCacheAndPorts(MultibodyPlant<double>* plant) final {
-    discrete_state_index_ =
-        this->DeclareDiscreteState(VectorXd::Zero(kNumAdditionalDofs));
-    abstract_output_port_index_ =
-        this->DeclareAbstractOutputPort(
-                "dummy_abstract_output_port",
-                []() {
-                  VectorXd model_value = VectorXd::Zero(kNumAdditionalDofs);
-                  return AbstractValue::Make(model_value);
-                },
-                [this](const Context<double>& context, AbstractValue* output) {
-                  VectorXd& data = output->get_mutable_value<VectorXd>();
-                  data = context.get_discrete_state(discrete_state_index_)
-                             .get_value();
-                },
-                // TODO(xuchenhan_tri): It may be worthwhile to expose the
-                // discrete_state_ticket() method from MbP so that more
-                // fine-grained ticket can be created.
-                {systems::System<double>::xd_ticket()})
-            .get_index();
-    vector_output_port_index_ =
-        this->DeclareVectorOutputPort(
-                "dummy_vector_output_port",
-                BasicVector<double>(kNumAdditionalDofs),
-                [this](const Context<double>& context,
-                       BasicVector<double>* output) {
-                  auto data = output->get_mutable_value();
-                  data = context.get_discrete_state(discrete_state_index_)
-                             .get_value();
-                },
-                // TODO(xuchenhan_tri): It may be worthwhile to expose the
-                // discrete_state_ticket() method from MbP so that more
-                // fine-grained ticket can be created.
-                {systems::System<double>::xd_ticket()})
-            .get_index();
+  /* Extracts information about the additional discrete state that
+   DummyModelManager declares if one exists in the owning MultibodyPlant. */
+  void DoExtractModelInfo() final {
+    bool extracted_dummy_model = false;
+    for (const auto& model_manager : plant().external_models()) {
+      const auto* dummy_model =
+          dynamic_cast<const DummyModelManager*>(model_manager.get());
+      if (dummy_model) {
+        if (extracted_dummy_model) {
+          throw std::runtime_error(
+              "Found more than one DummyModelManager. Please only register one "
+              "DummyModelManager to a MultibodyPlant when testing");
+        }
+        additional_state_index_ = dummy_model->discrete_state_index();
+        extracted_dummy_model = true;
+      } else {
+        throw std::runtime_error(
+            "DummyContactManager can only handle multibody models and a single "
+            "dummy model but not any other external models described by "
+            "PhysicalModelManager.");
+      }
+    }
   }
 
   /* Assigns dummy values to the output ContactSolverResults. */
-  void CalcContactSolverResults(
+  void DoCalcContactSolverResults(
       const Context<double>&,
       ContactSolverResults<double>* results) const final {
     results->Resize(kNumTotalDofs, kNumContacts);
@@ -116,38 +86,60 @@ class DummyContactComputationManager : public ContactComputationManager<double>,
   // acceleration for rigid dofs. Modify the dummy manager to test for
   // deformable acclerations when they are supported.
   /* Assigns dummy values to an AccelerationKinematicsCache. */
-  void CalcAccelerationKinematicsCache(
+  void DoCalcAccelerationKinematicsCache(
       const Context<double>& context,
       internal::AccelerationKinematicsCache<double>* ac) const final {
     VectorXd& vdot = ac->get_mutable_vdot();
     vdot = VectorXd::Ones(vdot.size()) * kDummyVdot;
   }
 
-  /* Increments the additional discrete state by 1. */
-  void CalcDiscreteValues(const Context<double>& context0,
-                          DiscreteValues<double>* updates) const final {
-    auto discrete_data =
-        updates->get_mutable_vector(discrete_state_index_).get_mutable_value();
-    discrete_data += VectorXd::Ones(discrete_data.size());
+  /* Increments the discrete rigid dofs by 1 and additional discrete state by 2
+   if there is any. */
+  void DoCalcDiscreteValues(const Context<double>& context0,
+                            DiscreteValues<double>* updates) const final {
+    auto multibody_data = updates->get_mutable_vector(multibody_state_index())
+                              .get_mutable_value();
+    multibody_data += VectorXd::Ones(multibody_data.size());
+    if (additional_state_index_.is_valid()) {
+      auto additional_data =
+          updates->get_mutable_vector(additional_state_index_)
+              .get_mutable_value();
+      additional_data += 2.0 * VectorXd::Ones(additional_data.size());
+    }
   }
 
-  OutputPortIndex abstract_output_port_index_;
-  OutputPortIndex vector_output_port_index_;
-  DiscreteStateIndex discrete_state_index_;
+ private:
+  systems::DiscreteStateIndex additional_state_index_;
 };
 
+namespace {
 class ContactComputationManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     plant_.AddRigidBody("rigid body", SpatialInertia<double>());
+    model_manager_ =
+        &plant_.AddExternalModel(std::make_unique<DummyModelManager>(&plant_));
+    model_manager_->AppendDiscreteState(dummy_discrete_state());
+    model_manager_->Finalize();
     plant_.Finalize();
+    // MultibodyPlant::num_velocities() only reports the number of rigid
+    // generalized velocities for the rigid model.
     EXPECT_EQ(plant_.num_velocities(), kNumRigidDofs);
-    manager_ = &plant_.set_contact_manager(
-        std::make_unique<DummyContactComputationManager>(&plant_));
+    contact_manager_ = &plant_.set_contact_manager(
+        std::make_unique<DummyContactManager>(&plant_));
   }
 
-  MultibodyPlant<double> plant_{kDt};                 // A discrete MbP.
-  DummyContactComputationManager* manager_{nullptr};  // The manager under test.
+  static VectorXd dummy_discrete_state() {
+    return VectorXd::Ones(kNumAdditionalDofs) * kDummyStateValue;
+  }
+
+  // A discrete MbP.
+  MultibodyPlant<double> plant_{kDt};
+  // A PhysicalModelManager to illustrate how model managers and contact
+  // managers interact.
+  DummyModelManager* model_manager_{nullptr};
+  // The contact manager under test.
+  DummyContactManager* contact_manager_{nullptr};
 };
 
 /* Tests that the CalcDiscrete() method is correctly wired to MultibodyPlant. */
@@ -156,17 +148,14 @@ TEST_F(ContactComputationManagerTest, CalcDiscreteState) {
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
   const int time_steps = 10;
   simulator.AdvanceTo(time_steps * kDt);
-  const VectorXd final_state =
-      manager_->get_vector_output_port().Eval(simulator.get_context());
-  EXPECT_EQ(final_state.size(), kNumAdditionalDofs);
-  EXPECT_TRUE(CompareMatrices(final_state,
-                              VectorXd::Ones(kNumAdditionalDofs) * time_steps));
-
-  // Verifies that the vector and abstract output reports the same state.
-  const VectorXd final_state_through_abstract_port =
-      manager_->get_abstract_output_port().Eval<VectorXd>(
-          simulator.get_context());
-  EXPECT_TRUE(CompareMatrices(final_state, final_state_through_abstract_port));
+  const VectorXd final_additional_state =
+      model_manager_->get_vector_output_port().Eval(simulator.get_context());
+  EXPECT_EQ(final_additional_state.size(), kNumAdditionalDofs);
+  EXPECT_TRUE(
+      CompareMatrices(final_additional_state,
+                      dummy_discrete_state() +
+                          2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
+                      std::numeric_limits<double>::epsilon()));
 }
 
 /* Tests that the CalcContactSolverResults() method is correctly wired to
@@ -174,7 +163,7 @@ TEST_F(ContactComputationManagerTest, CalcDiscreteState) {
 TEST_F(ContactComputationManagerTest, CalcContactSolverResults) {
   auto context = plant_.CreateDefaultContext();
   const ContactSolverResults<double>& results =
-      manager_->EvalContactSolverResults(*context);
+      contact_manager_->EvalContactSolverResults(*context);
   EXPECT_TRUE(CompareMatrices(results.v_next,
                               VectorXd::Ones(kNumTotalDofs) * kDummyVNext));
   EXPECT_TRUE(
@@ -198,6 +187,8 @@ TEST_F(ContactComputationManagerTest, CalcAccelerationKinematicsCache) {
   EXPECT_TRUE(CompareMatrices(generalized_acceleration,
                               VectorXd::Ones(kNumRigidDofs) * kDummyVdot));
 }
+}  // namespace
+}  // namespace test
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

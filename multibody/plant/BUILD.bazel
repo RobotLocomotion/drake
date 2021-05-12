@@ -18,7 +18,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
-        ":contact_computation_manager",
         ":contact_jacobians",
         ":contact_permutation",
         ":contact_results",
@@ -28,20 +27,10 @@ drake_cc_package_library(
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
-        ":multibody_plant_access",
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_computation_manager",
-    hdrs = ["contact_computation_manager.h"],
-    deps = [
-        "//multibody/contact_solvers:contact_solver_results",
-        "//systems/framework:context",
     ],
 )
 
@@ -56,15 +45,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_plant_access",
-    srcs = [],
-    hdrs = ["multibody_plant_access.h"],
-    deps = [
-        ":multibody_plant_core",
-    ],
-)
-
-drake_cc_library(
     name = "tamsi_solver",
     srcs = ["tamsi_solver.cc"],
     hdrs = ["tamsi_solver.h"],
@@ -75,16 +55,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dummy_model_manager",
+    testonly = 1,
+    hdrs = ["test/dummy_model_manager.h"],
+    deps = [
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
+        "contact_computation_manager.cc",
         "multibody_plant.cc",
+        "physical_model_manager.cc",
     ],
     hdrs = [
+        "contact_computation_manager.h",
         "multibody_plant.h",
+        "multibody_plant_contact_attorney.h",
+        "multibody_plant_model_attorney.h",
+        "physical_model_manager.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
-        ":contact_computation_manager",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -701,8 +695,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "contact_computation_manager_test",
     deps = [
-        ":contact_computation_manager",
-        ":multibody_plant_access",
+        ":dummy_model_manager",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
@@ -722,6 +715,15 @@ drake_cc_googletest(
         ":plant",
         "//common:find_resource",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "physical_model_manager_test",
+    deps = [
+        ":dummy_model_manager",
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
