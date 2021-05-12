@@ -415,7 +415,7 @@ GTEST_TEST(RigidTransform, Inverse) {
 }
 
 // Tests RigidTransform multiplied by another RigidTransform, for both the
-// infix operator*() and assignment operator*=(). Note that these may be
+// infix operator*() and assignment operator*=(). Note that these are
 // specialized for double, so we have to test both double and some non-double
 // type to make sure both paths are exercised.
 GTEST_TEST(RigidTransform, OperatorMultiplyByRigidTransform) {
@@ -465,7 +465,30 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByRigidTransform) {
                               X_CA_expected.GetAsMatrix34(), 32 * kEpsilon));
 }
 
-// TODO(sherm1) Test for RigidTransform::InvertAndCompose().
+// Test the faster combined invert-then-compose method. Like the multiply
+// operators, the implementation of InvertAndCompose() is specialized for double
+// so we need to test both double and one other scalar type to make sure both
+// paths are exercised.
+GTEST_TEST(RigidTransform, InvertAndCompose) {
+  const RigidTransform<double> X_BA = GetRigidTransformA();
+  const RigidTransform<double> X_BC = GetRigidTransformB();
+
+  // The inverse() method and multiply operator are tested separately.
+  const RigidTransform<double> X_AC_expected = X_BA.inverse() * X_BC;
+
+  // This is what we're testing here.
+  const RigidTransform<double> X_AC = X_BA.InvertAndCompose(X_BC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AC_expected, 32 * kEpsilon));
+
+  // Now check the implementation for T ≠ double.
+  using symbolic::Expression;
+
+  const RigidTransform<Expression> X_BAx = X_BA.cast<Expression>();
+  const RigidTransform<Expression> X_BCx = X_BC.cast<Expression>();
+  const RigidTransform<Expression> X_ACx = X_BAx.InvertAndCompose(X_BCx);
+  EXPECT_TRUE(CompareMatrices(symbolic::Evaluate(X_ACx.GetAsMatrix34()),
+                              X_AC_expected.GetAsMatrix34(), 32 * kEpsilon));
+}
 
 // Tests RigidTransform multiplied by a position vector.
 GTEST_TEST(RigidTransform, OperatorMultiplyByPositionVector) {

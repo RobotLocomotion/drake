@@ -1,6 +1,5 @@
 #include "drake/math/fast_pose_composition_functions.h"
 
-#include <cstdio>
 #include <limits>
 
 #include <Eigen/Dense>
@@ -13,6 +12,8 @@ namespace math {
 
 namespace  {
 using Eigen::Matrix3d;
+using Eigen::Matrix4d;
+using Matrix34d = Eigen::Matrix<double, 3, 4>;
 
 GTEST_TEST(TestFastPoseCompositionFunctions, UsingAVX) {
 #ifdef __APPLE__
@@ -70,8 +71,6 @@ void RawTestRxR(
   EXPECT_TRUE(CompareMatrices(Mwork, MxM_expected, 0));
 }
 
-// TODO(sherm1) TestXxX() function for ComposeXX() and ComposeXinvX().
-
 // Wraps the given composition function in one that can work directly with
 // arrays of doubles for testing.
 void TestRxR(std::function<void(const RotationMatrix<double>& R1,
@@ -88,6 +87,73 @@ void TestRxR(std::function<void(const RotationMatrix<double>& R1,
       invert_first_matrix);
 }
 
+// Test the given RigidTransform composition function for correct functionality
+// and that it still works when the output overlaps in memory with the inputs.
+void RawTestXxX(
+    std::function<void(const double*, const double*, double*)> compose_XxX,
+    bool invert_first_matrix) {
+
+  // Note that M and N are not legitimate RigidTransform values. We are just
+  // testing that the correct matrix operations are performed.
+  Matrix34d M, N;
+  M << 1, 4, 7, 10,
+       2, 5, 8, 11,
+       3, 6, 9, 12;
+  N << 13, 16, 19, 22,
+       14, 17, 20, 23,
+       15, 18, 21, 24;
+
+  // Append 0001 row so we can use straight matrix operations to get the
+  // result.
+  Matrix4d M0, N0;
+  M0.topRows(3) = M;
+  M0.row(3) << 0, 0, 0, 1;
+  N0.topRows(3) = N;
+  N0.row(3) << 0, 0, 0, 1;
+
+  const Matrix3d Rt = M.leftCols(3).transpose();  // RotationMatrix inverse
+  Matrix4d M0inv;
+  M0inv.block<3, 3>(0, 0) = Rt;
+  M0inv.block<3, 1>(0, 3) = -Rt * M.col(3);
+  M0inv.row(3) << 0, 0, 0, 1;
+
+  const Matrix4d M0x = invert_first_matrix ? M0inv : M0;
+  const Matrix34d MxN_expected = (M0x*N0).topRows(3);
+  const Matrix34d MxM_expected = (M0x*M0).topRows(3);
+
+  Matrix34d MxN;
+  compose_XxX(M.data(), N.data(), MxN.data());
+
+  // Should be a perfect match with integer elements.
+  EXPECT_TRUE(CompareMatrices(MxN, MxN_expected, 0));
+
+  // Now test in-place compositions.
+  Matrix34d Mwork = M, Nwork = N;
+  compose_XxX(Mwork.data(), Nwork.data(), Mwork.data());  // Mwork=Mx*N
+  EXPECT_TRUE(CompareMatrices(Mwork, MxN_expected, 0));
+  Mwork = M;  // Restore value.
+  compose_XxX(Mwork.data(), Nwork.data(), Nwork.data());  // Nwork=Mx*N
+  EXPECT_TRUE(CompareMatrices(Nwork, MxN_expected, 0));
+  compose_XxX(Mwork.data(), Mwork.data(), Mwork.data());  // Mwork=Mx*M
+  EXPECT_TRUE(CompareMatrices(Mwork, MxM_expected, 0));
+}
+
+// Wraps the given composition function in one that can work directly with
+// arrays of doubles for testing.
+void TestXxX(std::function<void(const RigidTransform<double>& X1,
+                                const RigidTransform<double>& X2,
+                                RigidTransform<double>* XOut)>
+                 compose_XxX,
+             bool invert_first_matrix) {
+  RawTestXxX(
+      [&](const double* X_1, const double* X_2, double* X_out) {
+        compose_XxX(reinterpret_cast<const RigidTransform<double>&>(*X_1),
+                    reinterpret_cast<const RigidTransform<double>&>(*X_2),
+                    reinterpret_cast<RigidTransform<double>*>(X_out));
+      },
+      invert_first_matrix);
+}
+
 /* Test the user-callable methods first. Those are ideally implemented
 with SIMD instructions, however they may just punt to the plain C++ fallback
 methods, which we'll test separately below. */
@@ -100,8 +166,14 @@ GTEST_TEST(TestFastPoseCompositionFunctions, TestRinvR) {
   SCOPED_TRACE("testing ComposeRinvR()");
   TestRxR(internal::ComposeRinvR, true);
 }
-
-// TODO(sherm1) ComposeXX() and ComposeXinvX() tests.
+GTEST_TEST(TestFastPoseCompositionFunctions, TestXX) {
+  SCOPED_TRACE("testing ComposeXX()");
+  TestXxX(internal::ComposeXX, false);
+}
+GTEST_TEST(TestFastPoseCompositionFunctions, TestXinvX) {
+  SCOPED_TRACE("testing ComposeXinvX()");
+  TestXxX(internal::ComposeXinvX, true);
+}
 
 /* Now repeat these tests for the portable methods. */
 
@@ -113,8 +185,14 @@ GTEST_TEST(TestFastPoseCompositionFunctions, TestRinvRPortable) {
   SCOPED_TRACE("testing internal::ComposeRinvRPortable()");
   TestRxR(internal::ComposeRinvRPortable, true);
 }
-
-// TODO(sherm1) ComposeXXPortable() and ComposeXinvXPortable() tests.
+GTEST_TEST(TestFastPoseCompositionFunctions, TestXXPortable) {
+  SCOPED_TRACE("testing internal::ComposeXXPortable()");
+  TestXxX(internal::ComposeXXPortable, false);
+}
+GTEST_TEST(TestFastPoseCompositionFunctions, TestXinvXPortable) {
+  SCOPED_TRACE("testing internal::ComposeXinvXPortable()");
+  TestXxX(internal::ComposeXinvXPortable, true);
+}
 
 }  // namespace
 
