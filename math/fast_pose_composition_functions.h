@@ -46,7 +46,30 @@ void ComposeRinvR(const RotationMatrix<double>& R_BA,
                   const RotationMatrix<double>& R_BC,
                   RotationMatrix<double>* R_AC);
 
-// TODO(sherm1) ComposeXX() and ComposeXinvX().
+/** Composes two drake::math::RigidTransform<double> objects as quickly as
+possible. Drake RigidTransforms are stored as 3x4 column-ordered matrices in 12
+consecutive doubles. The first nine elements comprise a 3x3 RotationMatrix and
+the last three are a translation vector.
+
+Note that this is a function specialized for RigidTransforms and is not just a
+matrix multiply.
+
+Here we calculate `X_AC = X_AB * X_BC`. It is OK for X_AC to overlap
+with one or both inputs. */
+void ComposeXX(const double* X_AB, const double* X_BC, double* X_AC);
+
+/** Composes the inverse of a drake::math::RigidTransform<double> object with
+another (non-inverted) drake::math::RigidTransform<double> as quickly as
+possible. Drake RigidTransforms are stored as 3x4 column-ordered matrices in 12
+consecutive doubles. The first nine elements comprise a 3x3 RotationMatrix and
+the last three are a translation vector.
+
+Note that this is a function specialized for RigidTransforms and is not just a
+matrix multiply.
+
+Here we calculate `X_AC = X_BA⁻¹ * X_BC`. It is OK for X_AC to overlap
+with one or both inputs. */
+void ComposeXinvX(const double* X_BA, const double* X_BC, double* X_AC);
 
 /* Returns `true` if we are using the portable fallback implementations for
 the above functions. */
@@ -63,7 +86,8 @@ void ComposeRinvRPortable(const RotationMatrix<double>& R_BA,
                           const RotationMatrix<double>& R_BC,
                           RotationMatrix<double>* R_AC);
 
-// TODO(sherm1) ComposeXXPortable() and ComposeXinvXPortable().
+void ComposeXXPortable(const double* X_AB, const double* X_BC, double* X_AC);
+void ComposeXinvXPortable(const double* X_BA, const double* X_BC, double* X_AC);
 
 }  // namespace internal
 }  // namespace math
