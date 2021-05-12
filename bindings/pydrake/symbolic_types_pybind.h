@@ -67,7 +67,7 @@ void BindSymbolicMathOverloads(PyObject* obj) {
       .def("__floor__", &symbolic::floor, doc.floor.doc);
 }
 
-void BindSymbolicMathModuleOverloads(py::module m) {
+inline void BindSymbolicMathModuleOverloads(py::module m) {
   using symbolic::Expression;
   BindSymbolicMathOverloads<Expression>(&m);
   m  // BR
