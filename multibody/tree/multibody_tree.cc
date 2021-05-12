@@ -1199,7 +1199,7 @@ RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
   const RigidTransform<T>& X_WB = pc.get_X_WB(B.node_index());
   const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(context);
   const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(context);
-  return X_WF.inverse() * X_WG;  // X_FG = X_FW * X_WG;
+  return X_WF.InvertAndCompose(X_WG);  // X_FG = X_FW * X_WG;
 }
 
 template <typename T>
@@ -1219,7 +1219,7 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
   const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
   const RotationMatrix<T> R_WF = R_WA * R_AF;
   const RotationMatrix<T> R_WG = R_WB * R_BG;
-  return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
+  return R_WF.InvertAndCompose(R_WG);  // R_FG = R_FW * R_WG;
 }
 
 template <typename T>

@@ -434,16 +434,55 @@ class RigidTransform {
   /// @returns `this` %RigidTransform which has been multiplied by `other`.
   /// On return, `this = X_AC`, where `X_AC = X_AB * X_BC`.
   RigidTransform<T>& operator*=(const RigidTransform<T>& other) {
-    p_AoBo_A_ = *this * other.translation();
-    R_AB_ *= other.rotation();
+    if constexpr (std::is_same_v<T, double>) {
+      // Note that we're depending on (R_AB, p_AB) contiguous in memory.
+      ComposeXX(R_AB_.matrix().data(), other.R_AB_.matrix().data(),
+                R_AB_.mutable_matrix().data());
+    } else {
+      p_AoBo_A_ = *this * other.translation();
+      R_AB_ *= other.rotation();
+    }
     return *this;
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the `other` %RigidTransform
   /// `X_BC` and returns the %RigidTransform `X_AC = X_AB * X_BC`.
   RigidTransform<T> operator*(const RigidTransform<T>& other) const {
-    const Vector3<T> p_AoCo_A = *this * other.translation();
-    return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
+    RigidTransform<T> X_AC(
+        typename RotationMatrix<T>::DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      // Note that we're depending on (R_AB, p_AB) contiguous in memory.
+      ComposeXX(rotation().matrix().data(), other.rotation().matrix().data(),
+                X_AC.R_AB_.mutable_matrix().data());
+    } else {
+      X_AC.set(rotation() * other.rotation(), *this * other.translation());
+    }
+    return X_AC;
+  }
+
+  /// Calculates the product of `this` inverted times another %RigidTransform.
+  /// If you consider `this` to be the transform X_BA, and `other` to be
+  /// X_BC, then this method returns X_AC = X_BA⁻¹ * X_BC. For T==double, this
+  /// method can be _much_ faster than inverting first and then performing the
+  /// composition.
+  /// @param[in] other %RigidTransform that post-multiplies inverted `this`.
+  /// @retval X_AC where X_AC = this⁻¹ * other.
+  /// @note It is possible (albeit improbable) to create an invalid rigid
+  /// transform by accumulating round-off error with a large number of
+  /// multiplies.
+  RigidTransform<T> InvertAndCompose(const RigidTransform<T>& other) const {
+    const RigidTransform<T>& X_BC = other;  // Nicer name.
+    RigidTransform<T> X_AC(
+        typename RotationMatrix<T>::DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      // Note that we're depending on (R_AB, p_AB) contiguous in memory.
+      ComposeXinvX(rotation().matrix().data(), X_BC.rotation().matrix().data(),
+                   X_AC.R_AB_.mutable_matrix().data());
+    } else {
+      const RigidTransform<T> X_AB = inverse();
+      X_AC = X_AB * X_BC;
+    }
+    return X_AC;
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the translation-only transform
@@ -580,6 +619,11 @@ class RigidTransform {
   // epsilon) used to check whether or not a matrix is homogeneous.
   static constexpr double kInternalToleranceForHomogeneousCheck{
       4 * std::numeric_limits<double>::epsilon() };
+
+  // Constructs a RotationMatrix without initializing the underlying 3x4 matrix.
+  explicit RigidTransform(
+      typename RotationMatrix<T>::DoNotInitializeMemberFields)
+      : R_AB_{typename RotationMatrix<T>::DoNotInitializeMemberFields{}} {}
 
   // Throw an exception if the bottom row of a 4x4 matrix is not [0, 0, 0, 1].
   // Note: To allow this method to be used with other %RigidTransform methods
