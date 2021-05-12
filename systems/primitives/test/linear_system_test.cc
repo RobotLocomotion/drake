@@ -22,13 +22,14 @@ namespace drake {
 namespace systems {
 namespace {
 
-class LinearSystemPlusEmptyVectorPort : public LinearSystem<double> {
+class LinearSystemPlusEmptyVectorPort final : public LinearSystem<double> {
  public:
   LinearSystemPlusEmptyVectorPort(
         const Eigen::Ref<const Eigen::MatrixXd>& A,
         const Eigen::Ref<const Eigen::MatrixXd>& B,
         const Eigen::Ref<const Eigen::MatrixXd>& C,
-        const Eigen::Ref<const Eigen::MatrixXd>& D) : LinearSystem(A, B, C, D) {
+        const Eigen::Ref<const Eigen::MatrixXd>& D)
+      : LinearSystem(SystemScalarConverter{}, A, B, C, D, 0.0) {
     this->DeclareInputPort(kVectorValued, 0);
   }
 };
@@ -879,6 +880,28 @@ GTEST_TEST(LinearSystemIssueTest, Issue12706) {
   // Check feedthrough.
   EXPECT_FALSE(plant->HasDirectFeedthrough(0));
   EXPECT_TRUE(controller->HasDirectFeedthrough(0));
+}
+
+class DoubleOnlyLinearSystem final : public LinearSystem<double> {
+ public:
+  DoubleOnlyLinearSystem(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::MatrixXd>& B,
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::MatrixXd>& D)
+      : LinearSystem(SystemScalarConverter{}, A, B, C, D, 0.0) {}
+};
+
+// Tests that non-feedthrough is avilable without symbolic expressions.
+GTEST_TEST(LinearSystemIssueTest, NonSymbolicFeedthrough) {
+  const MatrixXd ones = MatrixXd::Ones(1, 1);
+  const MatrixXd zeros = MatrixXd::Zero(1, 1);
+  const DoubleOnlyLinearSystem dut1(ones, ones, ones, ones);
+  const DoubleOnlyLinearSystem dut2(ones, ones, ones, zeros);
+  EXPECT_EQ(dut1.ToSymbolicMaybe(), nullptr);
+  EXPECT_EQ(dut2.ToSymbolicMaybe(), nullptr);
+  EXPECT_TRUE(dut1.HasAnyDirectFeedthrough());
+  EXPECT_FALSE(dut2.HasAnyDirectFeedthrough());
 }
 
 }  // namespace
