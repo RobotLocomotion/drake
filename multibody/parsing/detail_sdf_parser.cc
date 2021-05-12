@@ -101,7 +101,7 @@ void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
     if (!frame_name.empty()) {
       throw std::runtime_error(
           "<pose relative_to='{non-empty}'/> is presently not supported "
-          "in <inertial/> or <model/> tags.");
+          "in <inertial/> or top-level <model/> tags in model files.");
     }
   }
 }
@@ -908,6 +908,10 @@ ModelInstanceIndex AddModelFromSdf(
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
 
+  // //sdf/model/pose/@relative_to is invalid. Note, libsdformat should emit an
+  // error during Load, but currently doesn't. See sdformat#567
+  ThrowIfPoseFrameSpecified(model.Element());
+
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
@@ -978,6 +982,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       const sdf::Model& model = *root.ModelByIndex(i);
 #pragma GCC diagnostic pop
+      // //sdf/model/pose/@relative_to is invalid. Note, libsdformat should emit
+      // an error during Load, but currently doesn't. See sdformat#567
+      ThrowIfPoseFrameSpecified(model.Element());
+
       model_instances.push_back(AddModelFromSpecification(
             model, model.Name(), {}, plant, package_map, root_dir));
     }

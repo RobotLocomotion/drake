@@ -1007,6 +1007,15 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
 </model>)");
 }
 
+void FailWithUnsupportedRelativeTo(const std::string& inner) {
+  SCOPED_TRACE(inner);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
+      R"(in <inertial/> or top-level <model/> tags in model files.)");
+}
+
 void FailWithInvalidWorld(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1052,6 +1061,11 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 )", bad_name));
   }
 
+  FailWithUnsupportedRelativeTo(R"(
+<model name='bad'>
+  <pose relative_to='invalid_usage'/>
+  <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
+</model>)");
   // TODO(eric.cousineau): Change this to `FailWithUnsupportedRelativeTo`
   // once sdformat#543 merges and is released.
   ParseTestString(R"(
