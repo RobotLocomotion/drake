@@ -745,18 +745,15 @@ void VerifyStreamInsertionOperator(const std::string stream_string,
                                    const Vector3<double>& rpy_expected,
                                    const std::string& xyz_expected_string) {
   // Due to the conversion from a RollPitchYaw to a RotationMatrix and then back
-  // to a RollPitchYaw, the input rpy_double may slightly mismatch output,
-  // so streamA_string may be something like
+  // to a RollPitchYaw, the input rpy_double may slightly mismatch output, so
+  // stream_string may be something like
   // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
   EXPECT_EQ(stream_string.find("rpy = "), 0);
   const char* cstring = stream_string.c_str() + 6;  // Start of double value.
-  for (int i = 0; i < 3; ++i) {
-    char* endptr;  // Character after the double value should be a blank space.
-    const double rpy_value = strtod(cstring, &endptr);
-    EXPECT_TRUE(endptr != nullptr && endptr[0] == ' ' && endptr[1] != '\0');
-    cstring = endptr + 1;  // Next double starts after the blank space.
-    EXPECT_NEAR(rpy_value, rpy_expected(i), 4 * kEpsilon);
-  }
+  double roll, pitch, yaw;
+  sscanf(cstring, "%lf %lf %lf ", &roll, &pitch, &yaw);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(roll, pitch, yaw), rpy_expected,
+                              4 * kEpsilon));
 
   // Verify string contains something like xyz = 7 6 5 or xyz = 7.0 6.0 5.0.
   EXPECT_THAT(stream_string, testing::ContainsRegex(xyz_expected_string));
