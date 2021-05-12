@@ -626,9 +626,9 @@ std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
     out << rpy;
     out << fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());;
   } else {
-    // TODO(14927) For a symbolic type T, consider printing the 3x3 rotation
-    //  matrix or otherwise stream roll, pitch, yaw when conversion to
-    //  RollPitchYaw does not requires an Environment for symbolics.
+    // TODO(14927) For symbolic type T, maybe print the 3x3 rotation matrix.
+    //  Alternatively, stream roll, pitch, yaw if conversion from RotationMatrix
+    //  to RollPitchYaw does not require an Environment for symbolic type T.
     out << "rpy = symbolic";
     out << " xyz = " << p.x() << " " << p.y() << " " << p.z();
   }
