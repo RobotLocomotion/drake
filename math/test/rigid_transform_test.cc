@@ -741,13 +741,16 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
 //    values, where epsilon ≈ 2.22E-16.
 // 3. Verifies that output string's xyz matches (with regular expressions) the
 //    expected string.
-void VerifyStreamInsertionOperator(const std::string stream_string,
+template <typename T>
+void VerifyStreamInsertionOperator(const RigidTransform<T> X_AB,
                                    const Vector3<double>& rpy_expected,
                                    const std::string& xyz_expected_string) {
   // Due to the conversion from a RollPitchYaw to a RotationMatrix and then back
   // to a RollPitchYaw, the input rpy_double may slightly mismatch output, so
   // stream_string may be something like
   // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
+  std::stringstream stream;  stream << X_AB;
+  const std::string stream_string = stream.str();
   EXPECT_EQ(stream_string.find("rpy = "), 0);
   const char* cstring = stream_string.c_str() + 6;  // Start of double value.
   double roll, pitch, yaw;
@@ -765,33 +768,29 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   // Verify streamA.str() is similar to "rpy = 0.125 0.25 0.5 xyz = 4 3 2";
   RollPitchYaw<double> rpy_double(0.125, 0.25, 0.5);
   Vector3<double> xyz_double(4, 3, 2);
-  RigidTransform<double> X_double(rpy_double, xyz_double);
-  std::stringstream streamA;  streamA << X_double;
   std::string xyz_expected_string = "xyz = 4.* 3.* 2.*";
-  VerifyStreamInsertionOperator(streamA.str(), rpy_double.vector(),
-                                xyz_expected_string);
+  VerifyStreamInsertionOperator(RigidTransform<double>(rpy_double, xyz_double),
+                                rpy_double.vector(), xyz_expected_string);
 
   // Test stream insertion for RigidTransform<double> with NaN and inf.
   // Verify streamA.str() is similar to "rpy = 0.125 0.25 0.5 xyz = Inf 3 NaN";
   constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   xyz_double = Vector3<double>(kInfinity, 3, kNaN);
-  X_double = RigidTransform<double>(rpy_double, xyz_double);
-  std::stringstream streamB;  streamB << X_double;
   xyz_expected_string = "xyz = inf 3.* nan";
-  VerifyStreamInsertionOperator(streamB.str(), rpy_double.vector(),
-                                xyz_expected_string);
+  VerifyStreamInsertionOperator(RigidTransform<double>(rpy_double, xyz_double),
+                                rpy_double.vector(), xyz_expected_string);
 
   // Test stream insertion for RigidTransform<AutoDiffXd>.
   // Verify streamB.str() is similar to "rpy = -0.33 0.17 0.9 xyz = 7 6 5";
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(-0.33, 0.17, 0.9);
   const Vector3<AutoDiffXd> xyz_autodiff(-17, 987, 6.5432);
-  const RigidTransform<AutoDiffXd> X_autodiff(rpy_autodiff, xyz_autodiff);
-  std::stringstream streamC;  streamC << X_autodiff;
   xyz_expected_string = "xyz = -17.* 987.* 6.5432.*";
   const Vector3<double> rpy_values =
       autoDiffToValueMatrix(rpy_autodiff.vector());
-  VerifyStreamInsertionOperator(streamC.str(), rpy_values, xyz_expected_string);
+  VerifyStreamInsertionOperator(
+      RigidTransform<AutoDiffXd>(rpy_autodiff, xyz_autodiff), rpy_values,
+      xyz_expected_string);
 
   // Test stream insertion for RigidTransform<symbolic::Expression>.
   // Note: A numerical process calculates RollPitchYaw from a RotationMatrix.
@@ -802,9 +801,9 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   const Vector3<symbolic::Expression> xyz_symbolic(x, y, z);
   RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
   RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
-  std::stringstream streamD;  streamD << X_symbolic;
+  std::stringstream stream;  stream << X_symbolic;
   const std::string expected_string = "rpy = symbolic xyz = x y z";
-  EXPECT_EQ(expected_string, streamD.str());
+  EXPECT_EQ(expected_string, stream.str());
 }
 
 }  // namespace
