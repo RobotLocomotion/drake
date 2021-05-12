@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 #include <Eigen/Dense>
 
@@ -15,6 +16,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
@@ -427,7 +429,11 @@ class RotationMatrix {
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
   RotationMatrix<T>& operator*=(const RotationMatrix<T>& other) {
-    SetUnchecked(matrix() * other.matrix());
+    if constexpr (std::is_same_v<T, double>) {
+      ComposeRR(R_AB_.data(), other.matrix().data(), R_AB_.data());
+    } else {
+      SetUnchecked(matrix() * other.matrix());
+    }
     return *this;
   }
 
@@ -438,7 +444,13 @@ class RotationMatrix {
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
   RotationMatrix<T> operator*(const RotationMatrix<T>& other) const {
-    return RotationMatrix<T>(matrix() * other.matrix(), true);
+    RotationMatrix<T> R_AC(DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      ComposeRR(R_AB_.data(), other.matrix().data(), R_AC.R_AB_.data());
+    } else {
+      R_AC.R_AB_ = matrix() * other.matrix();
+    }
+    return R_AC;
   }
 
   /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
