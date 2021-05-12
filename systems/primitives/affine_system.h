@@ -285,6 +285,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
+  const bool has_meaningful_C_{};
   const bool has_meaningful_D_{};
 };
 
