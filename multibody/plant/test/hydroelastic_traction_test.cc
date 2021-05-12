@@ -649,6 +649,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
               std::numeric_limits<double>::epsilon());
 }
 
+#if 0
 GTEST_TEST(HydroelasticTractionCalculatorTest,
            CalcAtanXOverXFromXSquared_Symbolic) {
   symbolic::Variable x("x");
@@ -659,6 +660,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   const symbolic::Expression fx_expected = atan(abs(x)) / abs(x);
   EXPECT_EQ(fx, fx_expected);
 }
+#endif
 
 // This is a direct test of the underlying helper function CalcTractionAtQHelper
 // and how it responds to interesting cases with derivatives. Specifically,

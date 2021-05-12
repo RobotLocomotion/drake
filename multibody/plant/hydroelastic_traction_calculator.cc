@@ -257,29 +257,23 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
 
 template <typename T>
 T HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(const T& x2) {
-  // N.B. We use a compile time iff statement below to provide distinct
-  // implementations for numeric and non-numeric scalar types. Numeric scalar
-  // types such as double and AutoDiffXd must use the numeric implementation
-  // continuous to machine epsilon. Non-numeric types such as
-  // symbolic::Expression must use the true expression atan(x)/x.
-  if constexpr (scalar_predicate<T>::is_bool) {
-    // We are protecting the computation near x = 0 specifically so that
-    // numerical values (say double and AutoDiffXd) do not lead to ill-formed
-    // expressions with divisions by zero.
-    constexpr double x_cuttoff = 0.12;
-    constexpr double x_cutoff_squared = x_cuttoff * x_cuttoff;
-    if (x2 <= x_cutoff_squared) {
-      // We use the Taylor expansion of f(x)=atan(x)/x below a given cutoff
-      // x_cuttoff, since neither atan(x)/x nor its automatic derivatives with
-      // AutodiffXd can be evaluated at x = 0. However, f(x) is well defined
-      // mathematically given its limits from left and right exist. Choosing
-      // the value of x_cutoff and the number of terms is done to minimize the
-      // amount of round-off errors. We estimated these values by comparing
-      // against reference values computed with Variable Precision Arithmetic.
-      // For further details please refer to Drake issue #15029 documenting this
-      // process.
+  // We are protecting the computation near x = 0 specifically so that
+  // numerical values (say double and AutoDiffXd) do not lead to ill-formed
+  // expressions with divisions by zero.
+  constexpr double x_cuttoff = 0.12;
+  constexpr double x_cutoff_squared = x_cuttoff * x_cuttoff;
+  if (x2 <= x_cutoff_squared) {
+    // We use the Taylor expansion of f(x)=atan(x)/x below a given cutoff
+    // x_cuttoff, since neither atan(x)/x nor its automatic derivatives with
+    // AutodiffXd can be evaluated at x = 0. However, f(x) is well defined
+    // mathematically given its limits from left and right exist. Choosing
+    // the value of x_cutoff and the number of terms is done to minimize the
+    // amount of round-off errors. We estimated these values by comparing
+    // against reference values computed with Variable Precision Arithmetic.
+    // For further details please refer to Drake issue #15029 documenting this
+    // process.
 
-      // clang-format off
+    // clang-format off
       return 1. -
              x2 * (1. / 3. -
              x2 * (1. / 5. -
@@ -289,8 +283,7 @@ T HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(const T& x2) {
              x2 * (1. / 13. -
              x2 * (1. / 15. -
              x2 / 17.)))))));
-      // clang-format on
-    }
+    // clang-format on
   }
   using std::atan;
   using std::sqrt;
@@ -302,5 +295,8 @@ T HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(const T& x2) {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+// N.B. SurfaceMesh is only compatible with 'double' and 'AutoDiffXd' scalar
+// types. Since hydroelastic calculations rely on our mesh support, they are
+// also only compatible on the same scalar types.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::internal::HydroelasticTractionCalculator)
