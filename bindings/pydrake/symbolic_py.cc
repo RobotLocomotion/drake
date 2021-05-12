@@ -99,7 +99,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self / py::self)
       .def(py::self / double())
       .def(double() / py::self)
-      // Pow.
+      // Pow (Object Model).
       .def(
           "__pow__",
           [](const Variable& self, double other) { return pow(self, other); },

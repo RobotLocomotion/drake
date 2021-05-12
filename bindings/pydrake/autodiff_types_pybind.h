@@ -44,10 +44,13 @@ namespace internal {
 //   `pydrake.math`.
 template <typename PyObject>
 void BindAutoDiffMathOverloads(PyObject* obj) {
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
+  // N.B. We will explicitly denote which spelling we want.
   (*obj)  // BR
+      // UFunc, C++
       .def("log", [](const AutoDiffXd& x) { return log(x); })
+      // UFunc, C++
       .def("abs", [](const AutoDiffXd& x) { return abs(x); })
+      .def("__abs__", &symbolic::abs, doc.abs.doc)
       .def("exp", [](const AutoDiffXd& x) { return exp(x); })
       .def("sqrt", [](const AutoDiffXd& x) { return sqrt(x); })
       .def("pow", [](const AutoDiffXd& x, double y) { return pow(x, y); })
@@ -66,7 +69,9 @@ void BindAutoDiffMathOverloads(PyObject* obj) {
       .def("max",
           [](const AutoDiffXd& x, const AutoDiffXd& y) { return max(x, y); })
       .def("ceil", [](const AutoDiffXd& x) { return ceil(x); })
+      // Emulating numeric types
       .def("__ceil__", [](const AutoDiffXd& x) { return ceil(x); })
+      // UFunc, C++ API.
       .def("floor", [](const AutoDiffXd& x) { return floor(x); })
       .def("__floor__", [](const AutoDiffXd& x) { return floor(x); })
       // TODO(eric.cousineau): This is not a NumPy-overridable method using

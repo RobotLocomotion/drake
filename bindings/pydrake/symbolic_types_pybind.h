@@ -33,37 +33,72 @@ namespace internal {
 //   `pydrake.symbolic` or `pydrake.math`.
 template <typename Class, typename PyObject>
 void BindSymbolicMathOverloads(PyObject* obj) {
+  // We denote each method as satisfying the following:
+  // * UFunc - for use as a NumPy UFunc
+  // * Object model - for use as Python's object model
+  // * C++ - just re-spelling C++ API
   using symbolic::Expression;
   constexpr auto& doc = pydrake_doc.drake.symbolic;
   (*obj)  // BR
+      // UFunc, C++
       .def("log", &symbolic::log, doc.log.doc)
+      // UFunc, C++
       .def("abs", &symbolic::abs, doc.abs.doc)
+      // Object model
       .def("__abs__", &symbolic::abs, doc.abs.doc)
+      // UFunc, C++
       .def("exp", &symbolic::exp, doc.exp.doc)
+      // UFunc, C++
       .def("sqrt", &symbolic::sqrt, doc.sqrt.doc)
+      // UFunc, C++
       .def("pow",
           [](const Class& base, const Expression& exponent) {
             return pow(base, exponent);
           })
+      // Object model
+      .def("__pow__",
+          [](const Class& base, const Expression& exponent) {
+            return pow(base, exponent);
+          })
+      // UFunc, C++
       .def("sin", &symbolic::sin, doc.sin.doc)
+      // UFunc, C++
       .def("cos", &symbolic::cos, doc.cos.doc)
+      // UFunc, C++
       .def("tan", &symbolic::tan, doc.tan.doc)
+      // UFunc
       .def("arcsin", &symbolic::asin, doc.asin.doc)
+      // C++
       .def("asin", &symbolic::asin, doc.asin.doc)
+      // UFunc
       .def("arccos", &symbolic::acos, doc.acos.doc)
+      // C++
       .def("acos", &symbolic::acos, doc.acos.doc)
+      // UFunc
       .def("arctan", &symbolic::atan, doc.atan.doc)
+      // C++
       .def("atan", &symbolic::atan, doc.atan.doc)
+      // UFunc
       .def("arctan2", &symbolic::atan2, doc.atan2.doc)
+      // C++
       .def("atan2", &symbolic::atan2, doc.atan2.doc)
+      // UFunc, C++
       .def("sinh", &symbolic::sinh, doc.sinh.doc)
+      // UFunc, C++
       .def("cosh", &symbolic::cosh, doc.cosh.doc)
+      // UFunc, C++
       .def("tanh", &symbolic::tanh, doc.tanh.doc)
+      // C++
       .def("min", &symbolic::min, doc.min.doc)
+      // C++
       .def("max", &symbolic::max, doc.max.doc)
+      // UFunc, C++
       .def("ceil", &symbolic::ceil, doc.ceil.doc)
+      // Object Model
       .def("__ceil__", &symbolic::ceil, doc.ceil.doc)
+      // UFunc, C++
       .def("floor", &symbolic::floor, doc.floor.doc)
+      // Object Model
       .def("__floor__", &symbolic::floor, doc.floor.doc);
 }
 
