@@ -24,6 +24,9 @@ namespace internal {
  A pressure field model for fast, robust approximation of net contact force and
  moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
  Intelligent Robots and Systems (IROS), 2019.
+
+ This class is only compatible with 'double' and 'AutoDiffXd' scalar types since
+ it relies on SurfaceMesh functionality limited to the those same scalar types.
  */
 template <typename T>
 class HydroelasticTractionCalculator {
@@ -176,7 +179,8 @@ class HydroelasticTractionCalculator {
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(edrumwri) instantiate on SymbolicExpression when it no longer
-// causes a linker error complaining about an unresolved symbol in SceneGraph.
+// N.B. SurfaceMesh is only compatible with 'double' and 'AutoDiffXd' scalar
+// types. Since hydroelastic calculations rely on our mesh support, they are
+// also only compatible on the same scalar types.
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::internal::HydroelasticTractionCalculator)

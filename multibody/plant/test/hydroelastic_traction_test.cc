@@ -605,12 +605,11 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // values are obtained with Variable Precision Arithmetic, please refer to
   // Drake issue #15029.
   std::vector<double> x_samples = {1e-6, 1e-4, 0.119999, 0.12, 0.120001, 1.0};
-  std::vector<double> df_ref = {-0.000000666666666665866666666667523809518933,
-                                -0.0000666666658666666752380951492063501156,
-                                -0.0786379815978989977854295807539066059,
-                                -0.0786386145752911896973786153090645626,
-                                -0.0786392475521360928119456981478271152,
-                                -0.285398163397448309615660845819875721};
+  std::vector<double> df_ref = {
+      -6.6666666666586668e-07, -6.6666665866666670e-05,
+      -7.8637981597899004e-02, -7.8638614575291185e-02,
+      -7.8639247552136096e-02, -2.8539816339744833e-01};
+
   // Expected precissio after detailed study in Drake issue #15029.
   std::vector<double> dfdx_expected_precision(
       x_samples.size(), std::numeric_limits<double>::epsilon());
@@ -647,17 +646,6 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   EXPECT_NEAR(fx0.value(), 1.0, std::numeric_limits<double>::epsilon());
   EXPECT_NEAR(fx0.derivatives()[0], 0.0,
               std::numeric_limits<double>::epsilon());
-}
-
-GTEST_TEST(HydroelasticTractionCalculatorTest,
-           CalcAtanXOverXFromXSquared_Symbolic) {
-  symbolic::Variable x("x");
-  const symbolic::Expression x2 = x * x;
-  const symbolic::Expression fx =
-      HydroelasticTractionCalculatorTester::CalcAtanXOverXFromXSquared<
-          symbolic::Expression>(x2);
-  const symbolic::Expression fx_expected = atan(abs(x)) / abs(x);
-  EXPECT_EQ(fx, fx_expected);
 }
 
 // This is a direct test of the underlying helper function CalcTractionAtQHelper
