@@ -396,6 +396,33 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyNonScalarType) {
                               R_CAd.matrix(), 10 * kEpsilon));
 }
 
+// Test the faster combined invert-then-compose method. Like the multiply
+// operators, the implementation of InvertAndCompose() is specialized for double
+// so we need to test both double and one other scalar type to make sure both
+// paths are exercised.
+GTEST_TEST(RotationMatrix, InvertAndCompose) {
+  const RollPitchYaw<double> rpy0(0.2, 0.3, 0.4);
+  const RollPitchYaw<double> rpy1(-0.5, -0.6, 0.9);
+  const RotationMatrix<double> R_BAd(rpy0);
+  const RotationMatrix<double> R_BCd(rpy1);
+
+  // The inverse() method and multiply operator are tested separately.
+  const RotationMatrix<double> R_AC_expected = R_BAd.inverse() * R_BCd;
+
+  // This is what we're testing here.
+  const RotationMatrix<double> R_ACd = R_BAd.InvertAndCompose(R_BCd);
+  EXPECT_TRUE(R_ACd.IsNearlyEqualTo(R_AC_expected, 10 * kEpsilon));
+
+  // Now check the implementation for T ≠ double.
+  using symbolic::Expression;
+
+  const RotationMatrix<Expression> R_BA = R_BAd.cast<Expression>();
+  const RotationMatrix<Expression> R_BC = R_BCd.cast<Expression>();
+  const RotationMatrix<Expression> R_AC = R_BA.InvertAndCompose(R_BC);
+  EXPECT_TRUE(CompareMatrices(symbolic::Evaluate(R_AC.matrix()), R_ACd.matrix(),
+                              10 * kEpsilon));
+}
+
 // Test IsOrthonormal, IsValid.
 GTEST_TEST(RotationMatrix, IsValid) {
   const double cos_theta = std::cos(0.5);
