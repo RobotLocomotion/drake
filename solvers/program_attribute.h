@@ -40,9 +40,12 @@ using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;
 
 /**
  * Returns true if @p required is a subset of @p supported.
+ * If this returns false and the error_message is non-null, then also sets the
+ * error_message to contain a description of the incompatibility.
  */
 bool AreRequiredAttributesSupported(const ProgramAttributes& required,
-                                    const ProgramAttributes& supported);
+                                    const ProgramAttributes& supported,
+                                    std::string* error_message = nullptr);
 
 std::string to_string(const ProgramAttribute&);
 std::ostream& operator<<(std::ostream&, const ProgramAttribute&);

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <optional>
+#include <string>
 
 #include <Eigen/Core>
 
@@ -36,7 +37,8 @@ class SolverBase : public SolverInterface {
   bool available() const override;
   bool enabled() const override;
   SolverId solver_id() const override;
-  bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
+  bool AreProgramAttributesSatisfied(
+      const MathematicalProgram&, std::string* = nullptr) const override;
 
  protected:
   /// Constructs a SolverBase with the given default implementations of the
@@ -45,6 +47,12 @@ class SolverBase : public SolverInterface {
   /// static method, e.g. `&id`, for these functors.)  Any of the functors can
   /// be nullptr, in which case the subclass should override the virtual method
   /// instead.
+  SolverBase(
+      std::function<SolverId()> id,
+      std::function<bool()> available,
+      std::function<bool()> enabled,
+      std::function<bool(const MathematicalProgram&, std::string*)> satisfied);
+  /// Overload for cases where `satisfied` does not support an `error_message`.
   SolverBase(
       std::function<SolverId()> id,
       std::function<bool()> available,
@@ -67,7 +75,8 @@ class SolverBase : public SolverInterface {
   std::function<SolverId()> default_id_;
   std::function<bool()> default_available_;
   std::function<bool()> default_enabled_;
-  std::function<bool(const MathematicalProgram&)> default_satisfied_;
+  std::function<bool(const MathematicalProgram&, std::string*)>
+      default_satisfied_;
 };
 
 }  // namespace solvers

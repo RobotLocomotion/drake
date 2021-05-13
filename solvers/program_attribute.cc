@@ -3,21 +3,69 @@
 #include <algorithm>
 #include <deque>
 #include <sstream>
+#include <vector>
+
+#include <fmt/format.h>
 
 namespace drake {
 namespace solvers {
 
 bool AreRequiredAttributesSupported(const ProgramAttributes& required,
-                                    const ProgramAttributes& supported) {
-  if (required.size() > supported.size()) {
+                                    const ProgramAttributes& supported,
+                                    std::string* error_message) {
+  // Quick short-circuit if we're guaranteed to fail.
+  if ((error_message == nullptr) && (required.size() > supported.size())) {
     return false;
   }
+
+  // Check required vs supported.  If a mismatch is found and we don't need to
+  // produce an error message, then we can bail immediately.  Otherwise, tally
+  // any unsupported attributes to populate the error_message at the end.
+  std::vector<ProgramAttribute> unsupported;
   for (const auto& attribute : required) {
-    if (supported.find(attribute) == supported.end()) {
-      return false;
+    if (supported.count(attribute) == 0) {
+      if (error_message == nullptr) {
+        return false;
+      } else {
+        unsupported.push_back(attribute);
+      }
     }
   }
-  return true;
+  if (error_message == nullptr) {
+    return true;
+  }
+
+  // We need to produce an error message.  If nothing was missing, that's easy.
+  error_message->clear();
+  if (unsupported.empty()) {
+    return true;
+  }
+
+  // Otherwise, we'll set the error message, i.e.,
+  // "a FooCost was declared but is not supported" or
+  // "a FooCost and BarCost were declared but are not supported" or
+  // "a FooCost, BarCost, and QuuxCost were declared but are not supported".
+  std::sort(unsupported.begin(), unsupported.end());
+  const int size = unsupported.size();
+  std::string baddies;
+  for (int i = 0; i < size; ++i) {
+    if (i >= 1) {
+      if (size == 2) {
+        baddies += " and ";
+      } else if (i == (size - 1)) {
+        baddies += ", and ";
+      } else {
+        baddies += ", ";
+      }
+    }
+    baddies += to_string(unsupported[i]);
+  }
+  *error_message = fmt::format(
+      (size == 1) ?
+          "a {} was declared but is not supported" :
+          "a {} were declared but are not supported",
+      baddies);
+  return false;
 }
 
 std::string to_string(const ProgramAttribute& attr) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/solver_base.h"
 
@@ -50,7 +52,8 @@ class OsqpSolver final : public SolverBase {
   static SolverId id();
   static bool is_available();
   static bool is_enabled();
-  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  static bool ProgramAttributesSatisfied(
+      const MathematicalProgram&, std::string* = nullptr);
   //@}
 
   // A using-declaration adds these methods into our class's Doxygen.

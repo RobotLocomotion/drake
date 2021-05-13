@@ -274,10 +274,25 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
         solvers::SolverId, solvers::SolverInterface, solver_id);
   }
 
-  bool AreProgramAttributesSatisfied(
-      const solvers::MathematicalProgram& prog) const override {
-    PYBIND11_OVERLOAD_PURE(
-        bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
+  bool AreProgramAttributesSatisfied(const solvers::MathematicalProgram& prog,
+      std::string* error_message) const override {
+    pybind11::gil_scoped_acquire gil;
+    pybind11::function override =
+        pybind11::get_override(this, "AreProgramAttributesSatisfied");
+    if (!override) {
+      pybind11::pybind11_fail(
+          "Tried to call pure virtual function "
+          "SolverInterface::AreProgramAttributesSatisfied");
+    }
+    const bool result = override(prog).cast<bool>();
+    if (error_message) {
+      if (result) {
+        error_message->clear();
+      } else {
+        *error_message = "unknown reason";
+      }
+    }
+    return result;
   }
 };
 }  // namespace

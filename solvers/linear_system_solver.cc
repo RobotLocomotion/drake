@@ -87,11 +87,22 @@ SolverId LinearSystemSolver::id() {
 }
 
 bool LinearSystemSolver::ProgramAttributesSatisfied(
-    const MathematicalProgram& prog) {
+    const MathematicalProgram& prog,
+    std::string* error_message) {
   static const never_destroyed<ProgramAttributes> solver_capability(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint});
-  return prog.required_capabilities() == solver_capability.access();
+
+  const ProgramAttributes& required_capabilities = prog.required_capabilities();
+  if (required_capabilities.empty()) {
+    if (error_message) {
+      *error_message =
+          "a LinearEqualityConstraint is required but has not beed declared";
+    }
+    return false;
+  }
+  return AreRequiredAttributesSupported(
+      required_capabilities, solver_capability.access(), error_message);
 }
 
 }  // namespace solvers

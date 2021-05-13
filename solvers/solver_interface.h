@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include <Eigen/Core>
 
@@ -44,10 +45,13 @@ class SolverInterface {
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;
 
-  /// Returns true if the program attributes are satisfied by the solver's
-  /// capability.
+  /// Returns true iff the program attributes are satisfied by the solver's
+  /// capability.  If this returns false and the error_message is non-null,
+  /// then also sets the error_message to contain a description of the
+  /// incompatibility.
   virtual bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const = 0;
+      const MathematicalProgram& prog,
+      std::string* error_message = nullptr) const = 0;
 
  protected:
   SolverInterface();

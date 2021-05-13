@@ -24,16 +24,36 @@ SolverId OsqpSolver::id() {
 
 bool OsqpSolver::is_enabled() { return true; }
 
-bool OsqpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+bool OsqpSolver::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog, std::string* error_message) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
-          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
+          ProgramAttribute::kLinearCost,
+          ProgramAttribute::kQuadraticCost,
           ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLinearEqualityConstraint});
-  return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access()) &&
-         prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
-             0;
+
+  const ProgramAttributes& required_capabilities = prog.required_capabilities();
+  const bool capabilities_match = AreRequiredAttributesSupported(
+      required_capabilities, solver_capabilities.access(), error_message);
+  if (!capabilities_match) {
+    return false;
+  }
+  if (required_capabilities.count(ProgramAttribute::kQuadraticCost) == 0) {
+    if (error_message) {
+      *error_message =
+          "a QuadraticCost is required but has not beed declared;"
+          " OSQP works best with a quadratic cost."
+          " Please use a different solver such as CLP (for linear programming)"
+          " or IPOPT/SNOPT (for nonlinear programming) if you don't want to add"
+          " a quadratic cost to this program.";
+    }
+    return false;
+  }
+  if (error_message) {
+    error_message->clear();
+  }
+  return true;
 }
 
 }  // namespace solvers

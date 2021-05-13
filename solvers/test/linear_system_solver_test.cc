@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
@@ -28,6 +29,14 @@ GTEST_TEST(testLinearSystemSolver, trivialExample) {
 
   LinearSystemExample3 example3{};
   TestLinearSystemExample(&example1);
+}
+
+GTEST_TEST(testLinearSystemSolver, EmptyProblem) {
+  MathematicalProgram prog;
+  LinearSystemSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog), std::exception,
+      ".*LinearEqualityConstraint is required.*");
 }
 
 /**

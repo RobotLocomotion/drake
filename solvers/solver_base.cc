@@ -15,11 +15,24 @@ SolverBase::SolverBase(
     std::function<SolverId()> id,
     std::function<bool()> available,
     std::function<bool()> enabled,
-    std::function<bool(const MathematicalProgram&)> satisfied)
+    std::function<bool(const MathematicalProgram&, std::string*)> satisfied)
     : default_id_(std::move(id)),
       default_available_(std::move(available)),
       default_enabled_(std::move(enabled)),
       default_satisfied_(std::move(satisfied)) {}
+
+SolverBase::SolverBase(
+    std::function<SolverId()> id,
+    std::function<bool()> available,
+    std::function<bool()> enabled,
+    std::function<bool(const MathematicalProgram&)> satisfied)
+    : default_id_(std::move(id)),
+      default_available_(std::move(available)),
+      default_enabled_(std::move(enabled)),
+      default_satisfied_([satisfied](
+          const MathematicalProgram& prog, std::string*) {
+        return satisfied(prog);
+      }) {}
 
 SolverBase::~SolverBase() = default;
 
@@ -46,11 +59,9 @@ void SolverBase::Solve(const MathematicalProgram& prog,
         "{}::is_enabled() is false; see its documentation for how to enable.",
         NiceTypeName::Get(*this)));
   }
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(fmt::format(
-        "The capabilities of {} do not meet the requirements of the "
-        "MathematicalProgram ({})", NiceTypeName::Get(*this),
-        to_string(prog.required_capabilities())));
+  std::string error_message;
+  if (!AreProgramAttributesSatisfied(prog, &error_message)) {
+    throw std::invalid_argument(error_message);
   }
   result->set_solver_id(solver_id());
   result->set_decision_variable_index(prog.decision_variable_index());
@@ -86,9 +97,24 @@ SolverId SolverBase::solver_id() const {
 }
 
 bool SolverBase::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
+    const MathematicalProgram& prog, std::string* error_message) const {
   DRAKE_DEMAND(default_satisfied_ != nullptr);
-  return default_satisfied_(prog);
+  if (error_message) {
+    error_message->clear();
+  }
+  const bool result = default_satisfied_(prog, error_message);
+  if (!result && error_message) {
+    if (error_message->empty()) {
+      *error_message = fmt::format(
+          "{} is unable to solve a MathematicalProgram with {}",
+          NiceTypeName::Get(*this), to_string(prog.required_capabilities()));
+    } else {
+      *error_message = fmt::format(
+          "{} is unable to solve because {}",
+          NiceTypeName::Get(*this), *error_message);
+    }
+  }
+  return result;
 }
 
 }  // namespace solvers
