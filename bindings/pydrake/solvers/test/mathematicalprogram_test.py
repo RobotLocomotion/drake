@@ -93,6 +93,8 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = mp.MakeSolver(solver_id)
         self.assertEqual(solver.solver_id().name(), "Linear system")
         self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
+        result = solver.Solve(prog)
+        self.assertTrue(result.is_success())
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
 
@@ -989,8 +991,12 @@ class TestMathematicalProgram(unittest.TestCase):
 
 
 class DummySolverInterface(SolverInterface):
+
+    ID = SolverId("dummy")
+
     def __init__(self):
         SolverInterface.__init__(self)
+        self.can_solve = False
 
     def available(self):
         return True
@@ -999,13 +1005,30 @@ class DummySolverInterface(SolverInterface):
         return True
 
     def solver_id(self):
-        return SolverId("dummy")
+        return DummySolverInterface.ID
 
-    def Solve(self, prog, initial_guess, solver_options, result):
-        raise Exception("Dummy solver cannot solve")
+    def Solve(self, prog, initial_guess=None, solver_options=None,
+              result=None):
+        # TODO(jwnimmer-tri) This trampoline for Solve is quite awkward.
+        if result is not None:
+            self._DoSolve(prog, initial_guess, solver_options, result)
+            return
+        else:
+            result = mp.MathematicalProgramResult()
+            self._DoSolve(prog, initial_guess, solver_options, result)
+            return result
+
+    def _DoSolve(self, prog, initial_guess, solver_options, result):
+        assert(isinstance(result, mp.MathematicalProgramResult))
+        if not self.can_solve:
+            raise Exception("Dummy solver cannot solve")
+        # TODO(jwnimmer-tri) We should be setting the result here, but the
+        # result class doesn't have any setters bound!  I'm not sure why we
+        # have a Solve trampoline in the first place, if no solver can ever
+        # produce any results?
 
     def AreProgramAttributesSatisfied(self, prog):
-        return True
+        return self.can_solve
 
 
 class TestSolverInterface(unittest.TestCase):
@@ -1016,12 +1039,13 @@ class TestSolverInterface(unittest.TestCase):
         self.assertEqual(solver.solver_id().name(), "dummy")
         self.assertIsInstance(solver, SolverInterface)
         prog = mp.MathematicalProgram()
-        result = mp.MathematicalProgramResult()
-        with self.assertRaises(Exception) as context:
-            solver.Solve(prog, None, None, result)
-        self.assertTrue("Dummy solver cannot solve" in str(context.exception))
-        self.assertIsInstance(result, mp.MathematicalProgramResult)
+        with self.assertRaisesRegex(Exception, "Dummy.*cannot solve"):
+            unused_result = mp.MathematicalProgramResult()
+            solver.Solve(prog, None, None, unused_result)
+        with self.assertRaisesRegex(Exception, "Dummy.*cannot solve"):
+            _ = solver.Solve(prog)
+        self.assertFalse(solver.AreProgramAttributesSatisfied(prog))
+        solver.can_solve = True
         self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
-        with self.assertRaises(Exception) as context:
-            result2 = solver.Solve(prog)
-            self.assertIsInstance(result2, mp.MathematicalProgramResult)
+        result = solver.Solve(prog)
+        self.assertIsInstance(result, mp.MathematicalProgramResult)
