@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -36,6 +37,8 @@ namespace internal {
 // @param scene_graph
 //   A pointer to a mutable SceneGraph object used for geometry registration
 //   (either to model visual or contact geometry).  May be nullptr.
+// @param diagnostic
+//   An optional DiagnosticPolicy object used to control diagnostic handling.
 // @returns The model instance index for the newly added model.
 ModelInstanceIndex AddModelFromUrdf(
     const DataSource& data_source,
@@ -43,7 +46,8 @@ ModelInstanceIndex AddModelFromUrdf(
     const std::optional<std::string>& parent_model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    const drake::internal::DiagnosticPolicy& diagnostic = {});
 
 }  // namespace internal
 }  // namespace multibody

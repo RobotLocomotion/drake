@@ -172,6 +172,7 @@ drake_cc_library(
         ":detail_misc",
         ":package_map",
         ":scoped_names",
+        "//common:diagnostic_policy",
         "//multibody/plant",
         "@fmt",
         "@tinyxml2",
@@ -218,6 +219,7 @@ drake_cc_library(
     deps = [
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        "//common:diagnostic_policy",
         "//common:filesystem",
     ],
 )

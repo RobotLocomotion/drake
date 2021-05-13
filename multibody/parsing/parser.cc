@@ -8,6 +8,7 @@
 namespace drake {
 namespace multibody {
 
+using drake::internal::DiagnosticDetail;
 using internal::AddModelFromSdf;
 using internal::AddModelFromUrdf;
 using internal::AddModelsFromSdf;
@@ -18,6 +19,19 @@ Parser::Parser(
     geometry::SceneGraph<double>* scene_graph)
     : plant_(plant), scene_graph_(scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
+
+  auto warnings_obey_options =
+      [this](const DiagnosticDetail& detail) {
+        if (options_.quiet) { return; }
+        if (options_.strict) {
+          diagnostic_policy_.Error(detail);
+        } else {
+          diagnostic_policy_.Warning(detail);
+        }
+      };
+  // TODO(rpoyner-tri): implement accumulated errors, as opposed to
+  // throw-on-first-error.
+  diagnostic_policy_.SetActionForWarnings(warnings_obey_options);
 }
 
 namespace {
@@ -30,6 +44,7 @@ FileType DetermineFileType(const std::string& file_name) {
   if ((ext == ".sdf") || (ext == ".SDF")) {
     return FileType::kSdf;
   }
+  // TODO(jwnimmer-tri) Use the DiagnosticPolicy here instead.
   throw std::runtime_error(fmt::format(
       "The file type '{}' is not supported for '{}'",
       ext, file_name));
@@ -52,7 +67,8 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
         data_source, package_map_, plant_, scene_graph_);
   } else {
     return {AddModelFromUrdf(
-        data_source, {}, {}, package_map_, plant_, scene_graph_)};
+        data_source, {}, {}, package_map_, plant_, scene_graph_,
+        diagnostic_policy_)};
   }
 }
 
@@ -73,7 +89,8 @@ ModelInstanceIndex Parser::AddModelFromFile(
         data_source, model_name, package_map_, plant_, scene_graph_);
   } else {
     return AddModelFromUrdf(
-        data_source, model_name, {}, package_map_, plant_, scene_graph_);
+        data_source, model_name, {}, package_map_, plant_, scene_graph_,
+        diagnostic_policy_);
   }
 }
 
@@ -89,7 +106,8 @@ ModelInstanceIndex Parser::AddModelFromString(
         data_source, model_name, package_map_, plant_, scene_graph_);
   } else {
     return AddModelFromUrdf(
-        data_source, model_name, {}, package_map_, plant_, scene_graph_);
+        data_source, model_name, {}, package_map_, plant_, scene_graph_,
+        diagnostic_policy_);
   }
 }
 
