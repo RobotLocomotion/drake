@@ -120,6 +120,33 @@ GTEST_TEST(FileParserTest, MultiModelTest) {
   }
 }
 
+std::vector<std::string> GetModelInstanceNames(
+    const MultibodyPlant<double>& plant,
+    const std::vector<ModelInstanceIndex>& models) {
+  std::vector<std::string> names;
+  for (auto model : models) {
+    names.push_back(plant.GetModelInstanceName(model));
+  }
+  return names;
+}
+
+GTEST_TEST(FileParserTest, MultiModelViaWorldIncludesTest) {
+  const std::string sdf_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "world_with_directly_nested_models.sdf");
+  MultibodyPlant<double> plant(0.0);
+  const std::vector<ModelInstanceIndex> models =
+      Parser(&plant).AddAllModelsFromFile(sdf_name);
+  const std::vector<std::string> model_names_actual =
+      GetModelInstanceNames(plant, models);
+  const std::vector<std::string> model_names_expected = {
+      "parent_model",
+      "parent_model::robot_1",
+      "parent_model::robot_2",
+  };
+  EXPECT_EQ(model_names_actual, model_names_expected);
+}
+
 GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   // An unknown extension is an error.
   // (Check both singular and plural overloads.)
