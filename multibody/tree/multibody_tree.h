@@ -1053,8 +1053,8 @@ class MultibodyTree {
       std::string_view name) const {
     const auto it = instance_name_to_index_.find(name);
     if (it == instance_name_to_index_.end()) {
-      throw std::logic_error(fmt::format("There is no model instance named '{}'"
-          "in the model.", name));
+      throw std::logic_error(fmt::format(
+          "There is no model instance named '{}' in the model.", name));
     }
     return it->second;
   }

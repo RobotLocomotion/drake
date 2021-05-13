@@ -153,39 +153,50 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         layout.addWidget(self.show_contact_edges, row, 1)
         row += 1
 
+        contact_data_grp = QtGui.QGroupBox("Contact data")
+        contact_layout = QtGui.QGridLayout()
+        contact_data_grp.setLayout(contact_layout)
+        contact_layout.setColumnStretch(0, 0)
+        contact_layout.setColumnStretch(1, 1)
+        contact_row = 0
+        layout.addWidget(contact_data_grp, row, 0, 1, 2)
+        row += 1
+
         # Whether to show the force and moment vectors.
-        layout.addWidget(QtGui.QLabel('Render contact force and moment '
-                                      'vectors'),
-                         row, 0)
+        contact_layout.addWidget(
+            QtGui.QLabel('Render contact force and moment '
+                         'vectors'),
+            contact_row, 0)
         self.show_spatial_force = QtGui.QCheckBox()
         self.show_spatial_force.setChecked(visualizer.show_spatial_force)
         self.show_spatial_force.setToolTip('Renders the contact forces (in '
                                            'red) and moments (in blue)')
-        layout.addWidget(self.show_spatial_force, row, 1)
-        row += 1
+        contact_layout.addWidget(self.show_spatial_force, contact_row, 1)
+        contact_row += 1
 
         # Whether to show the per-quadrature-point traction vectors.
-        layout.addWidget(QtGui.QLabel('Render traction vectors'),
-                         row, 0)
+        contact_layout.addWidget(QtGui.QLabel('Render traction vectors'),
+                                 contact_row, 0)
         self.show_traction_vectors = QtGui.QCheckBox()
         self.show_traction_vectors.setChecked(visualizer.show_traction_vectors)
         self.show_traction_vectors.setToolTip('Renders the traction vectors '
                                               '(per quadrature point) in '
                                               'magenta')
-        layout.addWidget(self.show_traction_vectors, row, 1)
-        row += 1
+        contact_layout.addWidget(self.show_traction_vectors, contact_row, 1)
+        contact_row += 1
 
         # Whether to show the per-quadrature-point slip velocity vectors.
-        layout.addWidget(QtGui.QLabel('Render slip velocity vectors'),
-                         row, 0)
+        contact_layout.addWidget(QtGui.QLabel('Render slip velocity vectors'),
+                                 contact_row, 0)
         self.show_slip_velocity_vectors = QtGui.QCheckBox()
         self.show_slip_velocity_vectors.setChecked(
             visualizer.show_slip_velocity_vectors)
         self.show_slip_velocity_vectors.setToolTip('Renders the slip velocity '
                                                    'vectors (per quadrature '
                                                    'point) in cyan')
-        layout.addWidget(self.show_slip_velocity_vectors, row, 1)
-        row += 1
+        contact_layout.addWidget(
+            self.show_slip_velocity_vectors, contact_row, 1)
+        contact_row += 1
 
         # TODO(DamrongGuoy): The following three widgets "Magnitude
         #  representation", "Global scale", and "Magnitude cut-off" are copied
@@ -541,12 +552,11 @@ class HydroelasticContactVisualizer:
     # information instead of just information about individual triangles.
     def process_triangles(self, surface):
         """Process a hydroelastic surface message and return the positions of
-        the vertices, the positions of the vertices with an offset (see below),
-        the texture coordinates, the pressure triangle mesh and the contact
-        edge segment mesh. Both the pressure triangle mesh and the contact edge
-        segment mesh index into the positions of the vertices. The pressure
-        triangle mesh forms the contact patch while the contact edge segment
-        mesh forms the wireframe of the contact patch."""
+        the vertices the texture coordinates, the pressure triangle mesh and
+        the contact edge segment mesh. Both the pressure triangle mesh and the
+        contact edge segment mesh index into the positions of the vertices. The
+        pressure triangle mesh forms the contact patch while the contact edge
+        segment mesh forms the wireframe of the contact patch."""
         triangles = surface.triangles
         vertex_id = 0
         tri_mesh_id = 0
@@ -554,70 +564,45 @@ class HydroelasticContactVisualizer:
         max_num_verts = surface.num_triangles*3
         pos = np.empty((max_num_verts, 3))
         uvs = np.empty((max_num_verts, 2))
-        # Compute a normal to each vertex. We need this normal
-        # because the visualized pressure surface can be coplanar
-        # with parts of the visualized geometry, in which case a
-        # dithering type effect would appear. So we use the normal
-        # to draw two triangles slightly offset to both sides of
-        # the contact surface.
-        normals = np.full((max_num_verts, 3), 0.0)
-        # TODO(xuchenhan-tri): Expose this so that users can modify it.
-        offset_scalar = 1e-4
         tri_mesh = np.empty((surface.num_triangles, 3), dtype=int)
         seg_mesh_set = set()
         for tri in triangles:
             va_np = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
             vb_np = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
             vc_np = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
-            normal = np.cross(vb_np - va_np, vc_np - vb_np)
-            norm_normal = np.linalg.norm(normal)
-            # Zero area triangles are ignored.
-            if norm_normal > 0:
-                va = (tri.p_WA[0], tri.p_WA[1], tri.p_WA[2])
-                vb = (tri.p_WB[0], tri.p_WB[1], tri.p_WB[2])
-                vc = (tri.p_WC[0], tri.p_WC[1], tri.p_WC[2])
-                for v, pressure, v_np in \
-                    zip([va, vb, vc],
-                        [tri.pressure_A, tri.pressure_B, tri.pressure_C],
-                        [va_np, vb_np, vc_np]):
-                    if v not in vertex_position_to_id:
-                        vertex_position_to_id[v] = vertex_id
-                        pos[vertex_id] = v_np
-                        uvs[vertex_id] = self.calc_uv(pressure)
-                        self.max_pressure_observed = max(
-                            self.max_pressure_observed, pressure)
-                        vertex_id += 1
-                va_id = vertex_position_to_id[va]
-                vb_id = vertex_position_to_id[vb]
-                vc_id = vertex_position_to_id[vc]
-                # Accumulate area-weighted normals.
-                for id in [va_id, vb_id, vc_id]:
-                    normals[id] += normal
-                # Record trimesh.
-                tri_mesh[tri_mesh_id] = [va_id, vb_id, vc_id]
-                tri_mesh_id += 1
-                # Record segmesh.
-                if (min(va_id, vb_id), max(va_id, vb_id)) not in seg_mesh_set:
-                    seg_mesh_set.add((min(va_id, vb_id), max(va_id, vb_id)))
-                if (min(va_id, vc_id), max(va_id, vc_id)) not in seg_mesh_set:
-                    seg_mesh_set.add((min(va_id, vc_id), max(va_id, vc_id)))
-                if (min(vb_id, vc_id), max(vb_id, vc_id)) not in seg_mesh_set:
-                    seg_mesh_set.add((min(vb_id, vc_id), max(vb_id, vc_id)))
+            va = (tri.p_WA[0], tri.p_WA[1], tri.p_WA[2])
+            vb = (tri.p_WB[0], tri.p_WB[1], tri.p_WB[2])
+            vc = (tri.p_WC[0], tri.p_WC[1], tri.p_WC[2])
+            for v, pressure, v_np in \
+                zip([va, vb, vc],
+                    [tri.pressure_A, tri.pressure_B, tri.pressure_C],
+                    [va_np, vb_np, vc_np]):
+                if v not in vertex_position_to_id:
+                    vertex_position_to_id[v] = vertex_id
+                    pos[vertex_id] = v_np
+                    uvs[vertex_id] = self.calc_uv(pressure)
+                    self.max_pressure_observed = max(
+                        self.max_pressure_observed, pressure)
+                    vertex_id += 1
+            va_id = vertex_position_to_id[va]
+            vb_id = vertex_position_to_id[vb]
+            vc_id = vertex_position_to_id[vc]
+            # Record trimesh.
+            tri_mesh[tri_mesh_id] = [va_id, vb_id, vc_id]
+            tri_mesh_id += 1
+            # Record segmesh.
+            if (min(va_id, vb_id), max(va_id, vb_id)) not in seg_mesh_set:
+                seg_mesh_set.add((min(va_id, vb_id), max(va_id, vb_id)))
+            if (min(va_id, vc_id), max(va_id, vc_id)) not in seg_mesh_set:
+                seg_mesh_set.add((min(va_id, vc_id), max(va_id, vc_id)))
+            if (min(vb_id, vc_id), max(vb_id, vc_id)) not in seg_mesh_set:
+                seg_mesh_set.add((min(vb_id, vc_id), max(vb_id, vc_id)))
         # Cut off values that were not written to.
-        normals = normals[:vertex_id]
         tri_mesh = tri_mesh[:tri_mesh_id]
         pos = pos[:vertex_id]
         uvs = uvs[:vertex_id]
-        # Normalize normals while preventing division by 0.
-        epsilon = 1e-12
-        unit_normals = [n / (np.linalg.norm(n)+epsilon) for n in normals]
-        # The positions of the offset vertices.
-        pos_above = [
-            vertex + offset_scalar * n for vertex, n in zip(pos, unit_normals)]
-        pos_below = [
-            vertex - offset_scalar * n for vertex, n in zip(pos, unit_normals)]
         seg_mesh = list(seg_mesh_set)
-        return pos, pos_above, pos_below, uvs, tri_mesh, seg_mesh
+        return pos, uvs, tri_mesh, seg_mesh
 
     def handle_message(self, msg):
         # Limits the rate of message handling, since redrawing is done in the
@@ -629,10 +614,6 @@ class HydroelasticContactVisualizer:
 
         # Recreates folder.
         folder = om.getOrCreateContainer(self._folder_name)
-
-        # Though strangely named, DebugData() is the object through which
-        # drawing is done in DrakeVisualizer.
-        d = DebugData()
 
         # Set the color map.
         color_map = self.create_color_map()
@@ -695,14 +676,31 @@ class HydroelasticContactVisualizer:
 
         # TODO(drum) Consider exiting early if no visualization options are
         # enabled.
+        view = applogic.getCurrentRenderView()
         for surface in msg.hydroelastic_contacts:
-            view = applogic.getCurrentRenderView()
-            # Keep track if any DebugData is written to.
-            # Necessary to keep DrakeVisualizer from spewing messages to the
-            # console when no DebugData is sent to director.
-            has_debug_data = False
+            contact_data_folder = om.getOrCreateContainer(
+                    f'Contact data between {surface.body1_name} and '
+                    f'{surface.body2_name}', folder)
+
+            # Adds a collection of debug data to the console with the given
+            # item name.
+            def add_contact_data(data, item_name):
+                # Exploit the fact that data.append is a vtkAppendPolyData
+                # instance. The number of input connections on port zero is the
+                # number of *actual* geometries added. If zero have been added,
+                # do no work.
+                if (data is None
+                        or data.append.GetNumberOfInputConnections(0) == 0):
+                    return
+                item = vis.PolyDataItem(item_name, data.getPolyData(), view)
+                om.addToObjectModel(item, contact_data_folder)
+                item.setProperty('Visible', True)
+                item.setProperty('Alpha', 1.0)
+                item.colorBy('RGB255')
+
             # Draw the spatial force.
             if self.show_spatial_force:
+                force_data = DebugData()
                 point = np.array([surface.centroid_W[0],
                                   surface.centroid_W[1],
                                   surface.centroid_W[2]])
@@ -723,11 +721,11 @@ class HydroelasticContactVisualizer:
                         # skipped.
                         scale /= force_mag
 
-                    d.addArrow(start=point,
-                               end=point + auto_force_scale * force * scale,
-                               tubeRadius=0.001,
-                               headRadius=0.002, color=[1, 0, 0])
-                    has_debug_data = True
+                    force_data.addArrow(
+                        start=point,
+                        end=point + auto_force_scale * force * scale,
+                        tubeRadius=0.001,
+                        headRadius=0.002, color=[1, 0, 0])
 
                 # Draw the moment arrow if it's of sufficient magnitude.
                 if moment_mag > self.min_magnitude:
@@ -737,19 +735,19 @@ class HydroelasticContactVisualizer:
                         # skipped.
                         scale /= moment_mag
 
-                    d.addArrow(start=point,
-                               end=point + auto_moment_scale * moment * scale,
-                               tubeRadius=0.001,
-                               headRadius=0.002, color=[0, 0, 1])
-                    has_debug_data = True
+                    force_data.addArrow(
+                        start=point,
+                        end=point + auto_moment_scale * moment * scale,
+                        tubeRadius=0.001,
+                        headRadius=0.002, color=[0, 0, 1])
+                add_contact_data(force_data, "Spatial force")
 
             # Iterate over all quadrature points, drawing traction and slip
             # velocity vectors.
             if self.show_traction_vectors or self.show_slip_velocity_vectors:
-                # Arrows and/or spheres are drawn through debug data if there
-                # exists a quadrature point.
-                if surface.num_quadrature_points > 0:
-                    has_debug_data = True
+                traction_data = DebugData()
+                slip_data = DebugData()
+
                 for quad_point_data in surface.quadrature_point_data:
                     origin = np.array([quad_point_data.p_WQ[0],
                                        quad_point_data.p_WQ[1],
@@ -771,13 +769,15 @@ class HydroelasticContactVisualizer:
                                 scale /= traction_mag
 
                             offset = auto_traction_scale * traction * scale
-                            d.addArrow(start=origin, end=origin + offset,
-                                       tubeRadius=0.000125,
-                                       headRadius=0.00025, color=[1, 0, 1])
+                            traction_data.addArrow(
+                                start=origin, end=origin + offset,
+                                tubeRadius=0.000125,
+                                headRadius=0.00025, color=[1, 0, 1])
                         else:
-                            d.addSphere(center=origin,
-                                        radius=0.000125,
-                                        color=[1, 0, 1])
+                            traction_data.addSphere(
+                                center=origin,
+                                radius=0.000125,
+                                color=[1, 0, 1])
 
                     if self.show_slip_velocity_vectors:
                         slip = np.array([quad_point_data.vt_BqAq_W[0],
@@ -795,71 +795,45 @@ class HydroelasticContactVisualizer:
                                 scale /= slip_mag
 
                             offset = auto_slip_velocity_scale * slip * scale
-                            d.addArrow(start=origin, end=origin + offset,
-                                       tubeRadius=0.000125,
-                                       headRadius=0.00025, color=[0, 1, 1])
+                            slip_data.addArrow(
+                                start=origin, end=origin + offset,
+                                tubeRadius=0.000125,
+                                headRadius=0.00025, color=[0, 1, 1])
                         else:
-                            d.addSphere(center=origin,
-                                        radius=0.000125,
-                                        color=[0, 1, 1])
-            # Send everything except pressure and contact edges to director.
-            if has_debug_data:
-                item_name = '{}, {}'.format(
-                    surface.body1_name, surface.body2_name)
-                cls = vis.PolyDataItem
-                item = cls(item_name, d.getPolyData(), view)
-                om.addToObjectModel(item, folder)
-                item.setProperty('Visible', True)
-                item.setProperty('Alpha', 1.0)
-                # Coloring for force and moment vectors.
-                item.colorBy('RGB255')
+                            slip_data.addSphere(
+                                center=origin,
+                                radius=0.000125,
+                                color=[0, 1, 1])
+                add_contact_data(traction_data, "Traction")
+                add_contact_data(slip_data, "Slip velocity")
 
             if self.show_pressure or self.show_contact_edges:
-                pos, pos_above, pos_below, uvs, tri_mesh, seg_mesh = \
+                pos, uvs, tri_mesh, seg_mesh = \
                     self.process_triangles(surface)
             if self.show_pressure and len(tri_mesh) > 0:
                 # Copy data to VTK objects.
                 vtk_uvs = vnp.getVtkFromNumpy(uvs)
-                vtk_tris_above = vtk.vtkCellArray()
-                vtk_tris_below = vtk.vtkCellArray()
-                vtk_tris_above.Allocate(len(tri_mesh))
-                vtk_tris_below.Allocate(len(tri_mesh))
+                vtk_tris = vtk.vtkCellArray()
+                vtk_tris.Allocate(len(tri_mesh))
                 for tri in tri_mesh:
-                    vtk_tris_above.InsertNextCell(3, tri)
-                    vtk_tris_below.InsertNextCell(3, tri)
+                    vtk_tris.InsertNextCell(3, tri)
 
-                vtk_polydata_tris_above = vtk.vtkPolyData()
-                vtk_polydata_tris_above.SetPoints(
-                    vnp.getVtkPointsFromNumpy(pos_above))
-                vtk_polydata_tris_above.SetPolys(vtk_tris_above)
-                vtk_polydata_tris_above.GetPointData().SetTCoords(vtk_uvs)
+                vtk_polydata_tris = vtk.vtkPolyData()
+                vtk_polydata_tris.SetPoints(
+                    vnp.getVtkPointsFromNumpy(pos))
+                vtk_polydata_tris.SetPolys(vtk_tris)
+                vtk_polydata_tris.GetPointData().SetTCoords(vtk_uvs)
 
-                vtk_polydata_tris_below = vtk.vtkPolyData()
-                vtk_polydata_tris_below.SetPoints(
-                    vnp.getVtkPointsFromNumpy(pos_below))
-                vtk_polydata_tris_below.SetPolys(vtk_tris_below)
-                vtk_polydata_tris_below.GetPointData().SetTCoords(vtk_uvs)
-
-                vtk_mapper_above = vtk.vtkPolyDataMapper()
-                vtk_mapper_above.SetInputData(vtk_polydata_tris_above)
-                vtk_mapper_below = vtk.vtkPolyDataMapper()
-                vtk_mapper_below.SetInputData(vtk_polydata_tris_below)
+                vtk_mapper = vtk.vtkPolyDataMapper()
+                vtk_mapper.SetInputData(vtk_polydata_tris)
 
                 # Feed VTK objects into director.
-                item_name = 'Pressure between {}, {}'.format(
-                    surface.body1_name, surface.body2_name)
-                polydata_item_above = vis.PolyDataItem(
-                    item_name, vtk_polydata_tris_above, view)
-                polydata_item_above.actor.SetMapper(vtk_mapper_above)
-                polydata_item_above.actor.SetTexture(self.texture)
-                om.addToObjectModel(polydata_item_above, folder)
-                item_name = 'Pressure between {}, {}'.format(
-                    surface.body1_name, surface.body2_name)
-                polydata_item_below = vis.PolyDataItem(
-                    item_name, vtk_polydata_tris_below, view)
-                polydata_item_below.actor.SetMapper(vtk_mapper_below)
-                polydata_item_below.actor.SetTexture(self.texture)
-                om.addToObjectModel(polydata_item_below, folder)
+                item_name = 'Contact surface'
+                polydata_item = vis.PolyDataItem(
+                    item_name, vtk_polydata_tris, view)
+                polydata_item.actor.SetMapper(vtk_mapper)
+                polydata_item.actor.SetTexture(self.texture)
+                om.addToObjectModel(polydata_item, contact_data_folder)
 
             if self.show_contact_edges and len(seg_mesh) > 0:
                 # Copy data to VTK objects.
@@ -877,15 +851,14 @@ class HydroelasticContactVisualizer:
                 vtk_mapper.Update()
 
                 # Feed VTK objects into director.
-                item_name = 'Contact edges between {}, {}'.format(
-                    surface.body1_name, surface.body2_name)
+                item_name = 'Mesh edges'
                 polydata_item = vis.PolyDataItem(
                     item_name, vtk_polydata_segs, view)
                 polydata_item.actor.SetMapper(vtk_mapper)
                 [r, g, b] = color_map.get_contrasting_color()
                 contrasting_color = [r*255, g*255, b*255]
                 polydata_item.actor.GetProperty().SetColor(contrasting_color)
-                om.addToObjectModel(polydata_item, folder)
+                om.addToObjectModel(polydata_item, contact_data_folder)
 
 
 @scoped_singleton_func

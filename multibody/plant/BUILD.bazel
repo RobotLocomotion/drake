@@ -19,6 +19,7 @@ drake_cc_package_library(
     deps = [
         ":calc_distance_and_time_derivative",
         ":contact_jacobians",
+        ":contact_permutation",
         ":contact_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
@@ -253,6 +254,15 @@ drake_cc_library(
     hdrs = ["propeller.h"],
     deps = [
         ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_permutation",
+    srcs = ["contact_permutation.cc"],
+    hdrs = ["contact_permutation.h"],
+    deps = [
+        "//multibody/tree:multibody_tree_topology",
     ],
 )
 
@@ -664,6 +674,22 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_permutation_test",
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/simple_gripper:simple_gripper_models",
+        "//manipulation/models/allegro_hand_description:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":contact_permutation",
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
     ],
 )
 

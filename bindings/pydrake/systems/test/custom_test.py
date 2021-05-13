@@ -27,6 +27,7 @@ from pydrake.systems.framework import (
     PortDataType,
     PublishEvent,
     State,
+    System,
     TriggerType,
     UnrestrictedUpdateEvent,
     VectorSystem,
@@ -248,6 +249,7 @@ class TestCustom(unittest.TestCase):
                 self.called_witness = False
                 self.called_guard = False
                 self.called_reset = False
+                self.called_system_reset = False
                 # Ensure we have desired overloads.
                 self.DeclarePeriodicPublish(1.0)
                 self.DeclarePeriodicPublish(1.0, 0)
@@ -282,9 +284,14 @@ class TestCustom(unittest.TestCase):
                 self.witness = self.MakeWitnessFunction(
                     "witness", WitnessFunctionDirection.kCrossesZero,
                     self._witness)
+                # Test bindings for both callback function signatures.
                 self.reset_witness = self.MakeWitnessFunction(
                     "reset", WitnessFunctionDirection.kCrossesZero,
                     self._guard, UnrestrictedUpdateEvent(self._reset))
+                self.system_reset_witness = self.MakeWitnessFunction(
+                    "system reset", WitnessFunctionDirection.kCrossesZero,
+                    self._guard, UnrestrictedUpdateEvent(
+                        system_callback=self._system_reset))
 
             def DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
@@ -312,7 +319,8 @@ class TestCustom(unittest.TestCase):
 
             def DoGetWitnessFunctions(self, context):
                 self.called_getwitness = True
-                return [self.witness, self.reset_witness]
+                return [self.witness, self.reset_witness,
+                        self.system_reset_witness]
 
             def _on_initialize(self, context, event):
                 test.assertIsInstance(context, Context)
@@ -347,6 +355,13 @@ class TestCustom(unittest.TestCase):
                 test.assertIsInstance(state, State)
                 self.called_reset = True
 
+            def _system_reset(self, system, context, event, state):
+                test.assertIsInstance(system, System)
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, UnrestrictedUpdateEvent)
+                test.assertIsInstance(state, State)
+                self.called_system_reset = True
+
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
         self.assertFalse(system.called_continuous)
@@ -376,7 +391,7 @@ class TestCustom(unittest.TestCase):
             derivatives=context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
         witnesses = system.GetWitnessFunctions(context)
-        self.assertEqual(len(witnesses), 2)
+        self.assertEqual(len(witnesses), 3)
         system.CalcDiscreteVariableUpdates(
             context=context,
             discrete_state=context_update.get_mutable_discrete_state())
@@ -394,6 +409,7 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_witness)
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
+        self.assertTrue(system.called_system_reset)
 
     def test_vector_system_overrides(self):
         dt = 0.5
