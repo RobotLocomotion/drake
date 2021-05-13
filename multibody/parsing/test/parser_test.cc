@@ -141,8 +141,8 @@ GTEST_TEST(FileParserTest, MultiModelViaWorldIncludesTest) {
       GetModelInstanceNames(plant, models);
   const std::vector<std::string> model_names_expected = {
       "parent_model",
-      "parent_model::robot_1",
-      "parent_model::robot_2",
+      "parent_model::robot1",
+      "parent_model::robot2",
   };
   EXPECT_EQ(model_names_actual, model_names_expected);
 }

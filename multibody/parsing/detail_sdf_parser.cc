@@ -739,7 +739,7 @@ bool AreWelded(
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-ModelInstanceIndex AddModelFromSpecification(
+std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
     const RigidTransformd& X_WPm,
@@ -749,6 +749,8 @@ ModelInstanceIndex AddModelFromSpecification(
     bool is_nested = false) {
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
+
+  std::vector <ModelInstanceIndex> added_model_instances{model_instance};
 
   // "P" is the parent frame. If the model is in a child of //world or //sdf,
   // this world be the world frame. Otherwise, this would be the parent model
@@ -763,14 +765,23 @@ ModelInstanceIndex AddModelFromSpecification(
   for (uint64_t model_index = 0; model_index < model.ModelCount();
        ++model_index) {
     const sdf::Model& nested_model = *model.ModelByIndex(model_index);
-    const ModelInstanceIndex nested_model_instance = AddModelFromSpecification(
-        nested_model, sdf::JoinName(model_name, nested_model.Name()), X_WM,
-        plant, package_map, root_dir, true);
+    std::vector<ModelInstanceIndex> nested_model_instances =
+        AddModelsFromSpecification(
+            nested_model, sdf::JoinName(model_name, nested_model.Name()), X_WM,
+            plant, package_map, root_dir, true);
+
+    DRAKE_DEMAND(!nested_model_instances.empty());
+    const ModelInstanceIndex nested_model_instance =
+        nested_model_instances.front();
 
     plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
         nested_model.Name(),
         plant->GetFrameByName("__model__", nested_model_instance),
         RigidTransformd::Identity(), model_instance));
+
+    added_model_instances.insert(added_model_instances.end(),
+                                 nested_model_instances.begin(),
+                                 nested_model_instances.end());
   }
 
   drake::log()->trace("sdf_parser: Add links");
@@ -877,7 +888,7 @@ ModelInstanceIndex AddModelFromSpecification(
     }
   }
 
-  return model_instance;
+  return added_model_instances;
 }
 
 }  // namespace
@@ -919,8 +930,12 @@ ModelInstanceIndex AddModelFromSdf(
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
-  return AddModelFromSpecification(
-      model, model_name, {}, plant, package_map, root_dir);
+  std::vector<ModelInstanceIndex> added_model_instances =
+      AddModelsFromSpecification(model, model_name, {}, plant, package_map,
+                                 root_dir);
+
+  DRAKE_DEMAND(!added_model_instances.empty());
+  return added_model_instances.front();
 }
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
@@ -986,8 +1001,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       // an error during Load, but currently doesn't. See sdformat#567
       ThrowIfPoseFrameSpecified(model.Element());
 
-      model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), {}, plant, package_map, root_dir));
+      std::vector<ModelInstanceIndex> added_model_instances =
+          AddModelsFromSpecification(model, model.Name(), {}, plant,
+                                     package_map, root_dir);
+      model_instances.insert(model_instances.end(),
+                             added_model_instances.begin(),
+                             added_model_instances.end());
     }
   } else {
     // Load the world and all the models in the world.
@@ -1000,8 +1019,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++model_index) {
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
-      model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), {}, plant, package_map, root_dir));
+      std::vector<ModelInstanceIndex> added_model_instances =
+          AddModelsFromSpecification(model, model.Name(), {}, plant,
+                                     package_map, root_dir);
+      model_instances.insert(model_instances.end(),
+                             added_model_instances.begin(),
+                             added_model_instances.end());
     }
 
     for (uint64_t frame_index = 0; frame_index < world.FrameCount();
