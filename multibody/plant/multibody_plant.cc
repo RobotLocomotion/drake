@@ -2084,8 +2084,8 @@ void MultibodyPlant<T>::CalcContactSolverResults(
   // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
   // This requires one of our custom managers to become the default
   // MultibodyPlant manager.
-  if (contact_computation_manager_ != nullptr) {
-    contact_computation_manager_->CalcContactSolverResults(context0, results);
+  if (discrete_update_manager_ != nullptr) {
+    discrete_update_manager_->CalcContactSolverResults(context0, results);
     return;
   } else {
     DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
@@ -2472,8 +2472,8 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
   // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
   // This requires one of our custom managers to become the default
   // MultibodyPlant manager.
-  if (contact_computation_manager_) {
-    contact_computation_manager_->CalcAccelerationKinematicsCache(context0, ac);
+  if (discrete_update_manager_) {
+    discrete_update_manager_->CalcAccelerationKinematicsCache(context0, ac);
     return;
   }
 
@@ -2506,8 +2506,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
   // This requires one of our custom managers to become the default
   // MultibodyPlant manager.
-  if (contact_computation_manager_) {
-    contact_computation_manager_->CalcDiscreteValues(context0, updates);
+  if (discrete_update_manager_) {
+    discrete_update_manager_->CalcDiscreteValues(context0, updates);
     return;
   }
 
@@ -2736,11 +2736,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
 
-    // Let external physical models declare their state, cache and ports in
-    // `this` MultibodyPlant.
-    for (auto& external_model : external_models_) {
-      external_model->DeclareStateCacheAndPorts();
-    }
+  // Let external model managers declare their state, cache and ports in
+  // `this` MultibodyPlant.
+  for (auto& model_manager : model_managers_) {
+    model_manager->DeclareStateCacheAndPorts();
+  }
 }
 
 template <typename T>

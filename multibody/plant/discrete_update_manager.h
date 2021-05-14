@@ -13,36 +13,35 @@ namespace internal {
 template <typename T>
 class AccelerationKinematicsCache;
 
-/* This class is meant to perform all calculations needed to advance state for a
+/* This class is used to perform all calculations needed to advance state for a
  MultibodyPlant with discrete state.
 
  It is an interface class that MultibodyPlant knows how to invoke. As of today
  a new manager can be set with the experimental method
- MultibodyPlant::set_contact_computation_manager(). This allows Drake developers
- to experiment with a variety of time stepping methods.
+ MultibodyPlant::set_discrete_update_manager(). This allows Drake developers to
+ experiment with a variety of time stepping methods.
 
  @tparam_default_scalar */
 template <typename T>
-class ContactComputationManager {
+class DiscreteUpdateManager {
  public:
-  /* Constructs a ContactComputationManager to be owned by `plant`.
+  /* Constructs a DiscreteUpdateManager to be owned by `plant`.
    @pre plant != nullptr.
    @pre plant is discrete. */
-  explicit ContactComputationManager(const MultibodyPlant<T>* plant)
+  explicit DiscreteUpdateManager(const MultibodyPlant<T>* plant)
       : plant_(plant) {
     DRAKE_DEMAND(plant_ != nullptr);
     DRAKE_DEMAND(plant_->is_discrete());
   }
 
-  virtual ~ContactComputationManager() = default;
+  virtual ~DiscreteUpdateManager() = default;
 
-  /* Returns the MultibodyPlant owning this ContactComputationManager. */
+  /* Returns the MultibodyPlant that owns this DiscreteUpdateManager. */
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
-  // TODO(xuchenhan-tri): Ensure this is invoked before the manager is used.
-  /* Extracts the information the ContactComputationManagers needs about the
-   multibody model as well as any external model in the system to be able to
-   solve them. Needs to be invoked after the MultibodyPlant owning this
+  /* Extracts the information the DiscreteUpdateManager needs about the
+   multibody model as well as any external model manager in the system to be
+   able to solve them. Needs to be invoked after the MultibodyPlant owning this
    manager has been finalized for the manager to be able to function. */
   void ExtractModelInfo() {
     DRAKE_DEMAND(plant_->is_finalized());
@@ -87,7 +86,7 @@ class ContactComputationManager {
 
  protected:
   /* Extract information from the model in the owning plant specific to the
-   derived contact manager. Default is no-op. */
+   derived discrete update manager. Default is no-op. */
   virtual void DoExtractModelInfo() {}
 
   systems::DiscreteStateIndex multibody_state_index() const {
@@ -97,9 +96,9 @@ class ContactComputationManager {
   /* Exposed MultibodyPlant private/protected methods. */
   const MultibodyTree<T>& internal_tree() const;
 
-  /* Concrete ContactComputationManagers must override these Calc methods to
+  /* Concrete DiscreteUpdateManagers must override these Calc methods to
    provide an implementation. The output parameters are guranteed to be
-  non-null and do not need to be checked again. */
+   non-null and do not need to be checked again. */
   virtual void DoCalcContactSolverResults(
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const = 0;
@@ -120,4 +119,4 @@ class ContactComputationManager {
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::internal::ContactComputationManager);
+    class ::drake::multibody::internal::DiscreteUpdateManager);

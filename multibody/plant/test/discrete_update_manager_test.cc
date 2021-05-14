@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/contact_computation_manager.h"
+#include "drake/multibody/plant/discrete_update_manager.h"
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -32,24 +32,24 @@ constexpr double kDummyTau = 6.0;
 constexpr double kDummyVdot = 7.0;
 constexpr double kDt = 0.1;
 
-/* A dummy manager class derived from ContactComputationManager for testing
- purpose. It implements the interface in ContactComputationManager by filling in
+/* A dummy manager class derived from DiscreteUpdateManager for testing
+ purpose. It implements the interface in DiscreteUpdateManager by filling in
  dummy data. */
-class DummyContactManager : public ContactComputationManager<double> {
+class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyContactManager);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyDiscreteUpdateManager);
 
-  explicit DummyContactManager(const MultibodyPlant<double>* plant)
-      : ContactComputationManager<double>(plant) {}
+  explicit DummyDiscreteUpdateManager(const MultibodyPlant<double>* plant)
+      : DiscreteUpdateManager<double>(plant) {}
 
-  ~DummyContactManager() = default;
+  ~DummyDiscreteUpdateManager() = default;
 
  private:
   /* Extracts information about the additional discrete state that
    DummyModelManager declares if one exists in the owning MultibodyPlant. */
   void DoExtractModelInfo() final {
     bool extracted_dummy_model = false;
-    for (const auto& model_manager : plant().external_models()) {
+    for (const auto& model_manager : plant().model_managers()) {
       const auto* dummy_model =
           dynamic_cast<const DummyModelManager*>(model_manager.get());
       if (dummy_model) {
@@ -62,8 +62,8 @@ class DummyContactManager : public ContactComputationManager<double> {
         extracted_dummy_model = true;
       } else {
         throw std::runtime_error(
-            "DummyContactManager can only handle multibody models and a single "
-            "dummy model but not any other external models described by "
+            "DummyDiscreteUpdateManager can only handle multibody models and a "
+            "single dummy model but not models from any other "
             "PhysicalModelManager.");
       }
     }
@@ -113,20 +113,19 @@ class DummyContactManager : public ContactComputationManager<double> {
 };
 
 namespace {
-class ContactComputationManagerTest : public ::testing::Test {
+class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     plant_.AddRigidBody("rigid body", SpatialInertia<double>());
     model_manager_ =
-        &plant_.AddExternalModel(std::make_unique<DummyModelManager>(&plant_));
+        &plant_.AddModelManager(std::make_unique<DummyModelManager>(&plant_));
     model_manager_->AppendDiscreteState(dummy_discrete_state());
-    model_manager_->Finalize();
     plant_.Finalize();
     // MultibodyPlant::num_velocities() only reports the number of rigid
     // generalized velocities for the rigid model.
     EXPECT_EQ(plant_.num_velocities(), kNumRigidDofs);
-    contact_manager_ = &plant_.set_contact_manager(
-        std::make_unique<DummyContactManager>(&plant_));
+    discrete_update_manager_ = &plant_.set_discrete_update_manager(
+        std::make_unique<DummyDiscreteUpdateManager>(&plant_));
   }
 
   static VectorXd dummy_discrete_state() {
@@ -135,15 +134,15 @@ class ContactComputationManagerTest : public ::testing::Test {
 
   // A discrete MbP.
   MultibodyPlant<double> plant_{kDt};
-  // A PhysicalModelManager to illustrate how model managers and contact
+  // A PhysicalModelManager to illustrate how model managers and discrete update
   // managers interact.
   DummyModelManager* model_manager_{nullptr};
-  // The contact manager under test.
-  DummyContactManager* contact_manager_{nullptr};
+  // The discrete update manager under test.
+  DummyDiscreteUpdateManager* discrete_update_manager_{nullptr};
 };
 
 /* Tests that the CalcDiscrete() method is correctly wired to MultibodyPlant. */
-TEST_F(ContactComputationManagerTest, CalcDiscreteState) {
+TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
   auto context = plant_.CreateDefaultContext();
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
   const int time_steps = 10;
@@ -160,10 +159,10 @@ TEST_F(ContactComputationManagerTest, CalcDiscreteState) {
 
 /* Tests that the CalcContactSolverResults() method is correctly wired to
  MultibodyPlant. */
-TEST_F(ContactComputationManagerTest, CalcContactSolverResults) {
+TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
   auto context = plant_.CreateDefaultContext();
   const ContactSolverResults<double>& results =
-      contact_manager_->EvalContactSolverResults(*context);
+      discrete_update_manager_->EvalContactSolverResults(*context);
   EXPECT_TRUE(CompareMatrices(results.v_next,
                               VectorXd::Ones(kNumTotalDofs) * kDummyVNext));
   EXPECT_TRUE(
@@ -180,7 +179,7 @@ TEST_F(ContactComputationManagerTest, CalcContactSolverResults) {
 
 /* Tests that the CalcAccelerationKinematicsCache() method is correctly wired
  to MultibodyPlant. */
-TEST_F(ContactComputationManagerTest, CalcAccelerationKinematicsCache) {
+TEST_F(DiscreteUpdateManagerTest, CalcAccelerationKinematicsCache) {
   auto context = plant_.CreateDefaultContext();
   const auto generalized_acceleration =
       plant_.get_generalized_acceleration_output_port().Eval(*context);

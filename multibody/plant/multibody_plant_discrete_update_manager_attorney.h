@@ -7,18 +7,18 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
-class ContactComputationManager;
+class DiscreteUpdateManager;
 
 /* This class is used to grant access to a selected collection of
- MultibodyPlant's private methods to ContactComputationManager.
+ MultibodyPlant's private methods to DiscreteUpdateManager.
 
  @tparam_default_scalar */
 template <typename T>
-class MultibodyPlantContactAttorney {
+class MultibodyPlantDiscreteUpdateManagerAttorney {
  private:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantContactAttorney);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantDiscreteUpdateManagerAttorney);
 
-  friend class ContactComputationManager<T>;
+  friend class DiscreteUpdateManager<T>;
 
   static const MultibodyTree<T>& internal_tree(const MultibodyPlant<T>& plant) {
     return plant.internal_tree();

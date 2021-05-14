@@ -66,14 +66,14 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
-        "contact_computation_manager.cc",
+        "discrete_update_manager.cc",
         "multibody_plant.cc",
         "physical_model_manager.cc",
     ],
     hdrs = [
-        "contact_computation_manager.h",
+        "discrete_update_manager.h",
         "multibody_plant.h",
-        "multibody_plant_contact_attorney.h",
+        "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model_manager.h",
     ],
@@ -693,7 +693,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "contact_computation_manager_test",
+    name = "discrete_update_manager_test",
     deps = [
         ":dummy_model_manager",
         ":multibody_plant_core",
@@ -724,6 +724,7 @@ drake_cc_googletest(
         ":dummy_model_manager",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

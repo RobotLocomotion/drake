@@ -12,17 +12,20 @@ class MultibodyPlant;
 
 namespace internal {
 
-/* PhysicalModelManager provides the functionalities to extend the physical
- model of MultibodyPlant. Developers can derive from this PhysicalModelManager
- to incorporate additional discrete models coupled with the rigid body dynamics.
- For instance, simulation of deformable objects requires additional state and
- ports to interact with externals systems such as visualization. Similar to the
- routine of adding models in MultibodyPlant, users should add all the models
- they wish to add with a certain manager and then call `Finalize()`. After
- `Finalize()` is called, adding more models should not be allowed. When
- MultibodyPlant::Finalize() is invoked, MultibodyPlant will allocate the context
- resources for the state, cache and ports for each PhysicalModelManager it owns.
- At that moment, all the PhysicalModelManager must be finalized.
+/* PhysicalModelManager provides the functionalities to extend the type of
+ physical model of MultibodyPlant. Developers can derive from this
+ PhysicalModelManager to incorporate additional discrete models coupled with the
+ rigid body dynamics. For instance, simulation of deformable objects requires
+ additional state and ports to interact with externals systems such as
+ visualization.
+
+ Similar to the routine of adding multiple model instances in MultibodyPlant,
+ users should add all the model instances they wish to add to a certain
+ manager before the owning MultibodyPlant calls `Finalize()`. When `Finalize()`
+ is invoked, MultibodyPlant will allocate the context resources for the state,
+ cache and ports for each PhysicalModelManager it owns. After `Finalize()` is
+ invoked, adding more model instances in any model managers that the
+ MultibodyPlant owns is not allowed.
 
  @tparam_default_scalar */
 template <typename T>
@@ -38,27 +41,46 @@ class PhysicalModelManager {
    state, cache and ports. `DeclareStateCacheAndPorts()` will throw an
    exception when called before `Finalize()`.*/
   void DeclareStateCacheAndPorts() {
-    DRAKE_THROW_UNLESS(finalized_);
+    ThrowIfNotFinalized(__func__);
     DoDeclareStateCacheAndPorts();
   }
 
-  /* `Finalize()` should be called when all the models have been added. */
-  void Finalize() {
-    ThrowIfFinalized();
-    finalized_ = true;
-  }
-
-  bool is_finalized() const { return finalized_; }
-
- protected:
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
+ protected:
   /* Derived class must override this to declare the state, cache and ports for
    its specific model. */
   virtual void DoDeclareStateCacheAndPorts() = 0;
 
-  void ThrowIfFinalized() const { DRAKE_THROW_UNLESS(!finalized_); }
+  /* Helper method for throwing an exception within public methods that should
+   not be called after the owning MultibodyPlant is Finalized. The invoking
+   method should pass it's name so that the error message can include that
+   detail. */
+  void ThrowIfFinalized(const char* source_method) const {
+    if (plant_->is_finalized()) {
+      throw std::logic_error("Post-finalize calls to '" +
+                             std::string(source_method) +
+                             "()' are not allowed; calls to this method must "
+                             "happen before the owning "
+                             "MultibodyPlant calls Finalize().");
+    }
+  }
 
+  /* Helper method for throwing an exception within public methods that should
+   not be called before the owning MultibodyPlant is Finalized. The invoking
+   method should pass it's name so that the error message can include that
+   detail. */
+  void ThrowIfNotFinalized(const char* source_method) const {
+    if (!plant_->is_finalized()) {
+      throw std::logic_error("Pre-finalize calls to '" +
+                             std::string(source_method) +
+                             "()' are not allowed; calls to this method must "
+                             "happen after the owning "
+                             "MultibodyPlant calls Finalize().");
+    }
+  }
+
+  /* Exposed private/protected MultibodyPlant methods. */
   systems::DiscreteStateIndex DeclareDiscreteState(
       const VectorX<T>& model_value);
 
@@ -78,7 +100,6 @@ class PhysicalModelManager {
 
  private:
   MultibodyPlant<T>* plant_{nullptr};
-  bool finalized_{false};
 };
 }  // namespace internal
 }  // namespace multibody

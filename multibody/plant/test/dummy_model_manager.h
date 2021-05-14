@@ -30,6 +30,7 @@ class DummyModelManager : public PhysicalModelManager<double> {
   /* Appends additional entries to the single group of discrete state with the
    given `model_value`. */
   void AppendDiscreteState(const VectorXd& model_value) {
+    ThrowIfFinalized(__func__);
     num_dofs_ += model_value.size();
     discrete_states_.emplace_back(model_value);
   }
@@ -37,6 +38,7 @@ class DummyModelManager : public PhysicalModelManager<double> {
   const systems::OutputPort<double>& get_abstract_output_port() const {
     return this->plant().get_output_port(abstract_output_port_index_);
   }
+
   const systems::OutputPort<double>& get_vector_output_port() const {
     return this->plant().get_output_port(vector_output_port_index_);
   }
