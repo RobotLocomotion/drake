@@ -393,6 +393,13 @@ GTEST_TEST(TestScs, UnivariateNonnegative1) {
     dut.CheckResult(result, 1E-6);
   }
 }
+
+GTEST_TEST(TestScs, TestNonconvexQP) {
+  ScsSolver solver;
+  if (solver.is_available()) {
+    TestNonconvexQP(solver, true);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

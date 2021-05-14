@@ -31,7 +31,8 @@ namespace {
 
 Binding<QuadraticCost> DoParseQuadraticCost(
     const symbolic::Polynomial& poly, const VectorXDecisionVariable& vars_vec,
-    const unordered_map<Variable::Id, int>& map_var_to_index) {
+    const unordered_map<Variable::Id, int>& map_var_to_index,
+    std::optional<bool> is_convex = std::nullopt) {
   // We want to write the expression e in the form 0.5 * x' * Q * x + b' * x + c
   // TODO(hongkai.dai): use a sparse matrix to represent Q and b.
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
@@ -39,8 +40,8 @@ Binding<QuadraticCost> DoParseQuadraticCost(
   double constant_term;
   symbolic::DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b,
                                          &constant_term);
-  return CreateBinding(make_shared<QuadraticCost>(Q, b, constant_term),
-                       vars_vec);
+  return CreateBinding(
+      make_shared<QuadraticCost>(Q, b, constant_term, is_convex), vars_vec);
 }
 
 Binding<LinearCost> DoParseLinearCost(
@@ -61,7 +62,8 @@ Binding<LinearCost> ParseLinearCost(const Expression& e) {
   return DoParseLinearCost(e, p.first, p.second);
 }
 
-Binding<QuadraticCost> ParseQuadraticCost(const Expression& e) {
+Binding<QuadraticCost> ParseQuadraticCost(const Expression& e,
+                                          std::optional<bool> is_convex) {
   // First build an Eigen vector, that contains all the bound variables.
   auto p = symbolic::ExtractVariablesFromExpression(e);
   const auto& vars_vec = p.first;
@@ -69,7 +71,7 @@ Binding<QuadraticCost> ParseQuadraticCost(const Expression& e) {
 
   // Now decomposes the expression into coefficients and monomials.
   const symbolic::Polynomial poly{e};
-  return DoParseQuadraticCost(poly, vars_vec, map_var_to_index);
+  return DoParseQuadraticCost(poly, vars_vec, map_var_to_index, is_convex);
 }
 
 Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
@@ -95,7 +97,8 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
                        var_vec);
 }
 
-Binding<Cost> ParseCost(const symbolic::Expression& e) {
+Binding<Cost> ParseCost(const symbolic::Expression& e,
+                        std::optional<bool> is_convex) {
   if (!e.is_polynomial()) {
     ostringstream oss;
     oss << "Expression " << e << " is not a polynomial. ParseCost does not"
@@ -111,7 +114,7 @@ Binding<Cost> ParseCost(const symbolic::Expression& e) {
   if (total_degree > 2) {
     return ParsePolynomialCost(e);
   } else if (total_degree == 2) {
-    return DoParseQuadraticCost(poly, vars_vec, map_var_to_index);
+    return DoParseQuadraticCost(poly, vars_vec, map_var_to_index, is_convex);
   } else {
     return DoParseLinearCost(e, vars_vec, map_var_to_index);
   }
