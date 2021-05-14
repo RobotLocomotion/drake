@@ -123,3 +123,14 @@ wrote this beginner's tutorial: [https://drake.guzhaoyuan.com](https://drake.guz
 <img class="gallery" height="224px" src="https://blobscdn.gitbook.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-LgYfwVg89cfloOSocyC%2F-LhJQm219Jka_jubcY86%2F-LhJQsQLlSIty5iywZxX%2FUntitled.gif?alt=media&token=c343b42a-5927-48c9-981b-b2074ae3da56"/>
 
 <img class="gallery" height="224px" src="https://blobscdn.gitbook.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-LgYfwVg89cfloOSocyC%2F-Lhq9MPiXqZNYqPUQ9bG%2F-Lhq9Tp8S5LlQUyPQaW-%2Fcart_pole_tracking.gif?alt=media&token=d5e653f0-810e-4008-8279-f1607cb12664"/>
+
+
+## Shoe simulation
+{% include video.html
+  url = "https://www.youtube.com/embed/ImKYMKyVdZc"
+  full_width = true
+%}
+
+*Interactive visualization:* [https://mntan3.github.io/](https://mntan3.github.io/)
+
+*Source Code:* [https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe](https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe)
