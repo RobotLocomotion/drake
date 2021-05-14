@@ -2301,9 +2301,10 @@ GTEST_TEST(TestMathematicalProgram, TestExponentialConeConstraint) {
 
 void CheckAddedQuadraticCost(MathematicalProgram* prog,
                              const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
-                             const VectorXDecisionVariable& x) {
+                             const VectorXDecisionVariable& x,
+                             std::optional<bool> is_convex = std::nullopt) {
   int num_quadratic_cost = prog->quadratic_costs().size();
-  auto cnstr = prog->AddQuadraticCost(Q, b, x).evaluator();
+  auto cnstr = prog->AddQuadraticCost(Q, b, x, is_convex).evaluator();
 
   EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
   // Check if the newly added quadratic constraint, and the returned
@@ -2320,6 +2321,12 @@ GTEST_TEST(TestMathematicalProgram, AddQuadraticCost) {
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d::Zero(), x);
 
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x,
+                          true);
+
+  CheckAddedQuadraticCost(&prog, -Matrix3d::Identity(), Vector3d(1, 2, 3), x,
+                          false);
 }
 
 void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
@@ -2356,22 +2363,27 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
   // Identity diagonal term.
   Expression e1 = x.transpose() * x;
   CheckAddedSymbolicQuadraticCost(&prog, e1);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Identity diagonal term.
   Expression e2 = x.transpose() * x + 1;
   CheckAddedSymbolicQuadraticCost(&prog, e2);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Identity diagonal term.
   Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
   CheckAddedSymbolicQuadraticCost(&prog, e3);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Non-identity diagonal term.
   Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
   CheckAddedSymbolicQuadraticCost(&prog, e4);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Cross terms.
   Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
   CheckAddedSymbolicQuadraticCost(&prog, e5);
+  EXPECT_FALSE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Linear terms.
   Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
@@ -2579,7 +2591,7 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   GenericTrivialCost2 generic_trivial_cost2;
   prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(2), x(1)));
   prog.AddLinearCost(x(0) + 2);
-  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1), true);
   prog.AddLinearCost(x(0) + 2 * x(2));
   prog.AddQuadraticCost(x(1) * x(1) + 1);
 

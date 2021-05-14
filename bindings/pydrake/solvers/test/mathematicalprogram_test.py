@@ -47,6 +47,13 @@ class TestCost(unittest.TestCase):
         np.testing.assert_allclose(cost.Q(), Q)
         np.testing.assert_allclose(cost.b(), b)
         self.assertEqual(cost.c(), c)
+        self.assertFalse(cost.is_convex())
+
+        cost = mp.QuadraticCost(Q, b, c, is_convex=False)
+        self.assertFalse(cost.is_convex())
+
+        cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
+        self.assertTrue(cost.is_convex())
 
 
 class TestQP:
@@ -169,6 +176,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(ge(x, 1))
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), 1, x)
+        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x, is_convex=True)
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
@@ -335,6 +343,9 @@ class TestMathematicalProgram(unittest.TestCase):
         check_quadratic_cost(qc, [1.], [2.], 3.)
         qc.UpdateCoefficients([10.], [20.])
         check_quadratic_cost(qc, [10.], [20.], 0)
+
+        qc.UpdateCoefficients([-10.], [20.])
+        self.assertFalse(qc.is_convex())
 
     def test_eval_binding(self):
         qp = TestQP()

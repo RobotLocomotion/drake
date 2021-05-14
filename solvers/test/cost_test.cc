@@ -169,7 +169,7 @@ GTEST_TEST(testCost, testLinearCost) {
       "LinearCost (100 + $(0) + 2 * $(1)) described as 'simple linear cost'");
 }
 
-GTEST_TEST(testCost, testQuadraticCost) {
+GTEST_TEST(TestQuadraticCost, NonconvexCost) {
   const double tol = numeric_limits<double>::epsilon();
 
   // Simple ground truth test.
@@ -181,6 +181,8 @@ GTEST_TEST(testCost, testQuadraticCost) {
 
   auto cost = make_shared<QuadraticCost>(Q, b);
   Eigen::VectorXd y(1);
+
+  EXPECT_FALSE(cost->is_convex());
 
   EXPECT_TRUE(CompareMatrices(cost->Q(), (Q + Q.transpose()) / 2, 1E-10,
                               MatrixCompareType::absolute));
@@ -239,6 +241,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
   cost->UpdateCoefficients(2 * Q, b);
   EXPECT_TRUE(CompareMatrices(cost->Q(), (Q + Q.transpose()), 1E-10,
                               MatrixCompareType::absolute));
+  EXPECT_FALSE(cost->is_convex());
 
   // Update with a constant term.
   const double c = 100;
@@ -255,6 +258,42 @@ GTEST_TEST(testCost, testQuadraticCost) {
   auto new_cost = make_shared<QuadraticCost>(Q, b, c);
   new_cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + c, tol);
+
+  // Now construct cost with is_hessian_psd=false.
+  cost = std::make_shared<QuadraticCost>(Q, b, 0., false);
+  EXPECT_FALSE(cost->is_convex());
+
+  // Now update the Hessian such that it is PSD.
+  // UpdateCoefficients function will check if the new Hessian is PSD.
+  cost->UpdateCoefficients(Q + 100 * Eigen::Matrix2d::Identity(),
+                           Eigen::Vector2d::Zero());
+  EXPECT_TRUE(cost->is_convex());
+  // By specifying is_hessian_psd=true, UpdateCoefficients() function will
+  // bypass checking if the new Hessian is PSD.
+  cost->UpdateCoefficients(Q + 100 * Eigen::Matrix2d::Identity(),
+                           Eigen::Vector2d::Zero(), 0., true);
+  EXPECT_TRUE(cost->is_convex());
+}
+
+GTEST_TEST(TestQuadraticCost, ConvexCost) {
+  Eigen::Matrix2d Q;
+  Q << 1, 2, 3, 10;
+  const Eigen::Vector2d b(5, 6);
+  auto cost = std::make_shared<QuadraticCost>(Q, b, 0.5);
+  EXPECT_TRUE(cost->is_convex());
+
+  cost = std::make_shared<QuadraticCost>(Q, b, 0.5, true);
+  EXPECT_TRUE(cost->is_convex());
+
+  // Call UpdateCoefficients(). This function determines if the new Hessian is
+  // psd.
+  cost->UpdateCoefficients(-Q, b, 0.1);
+  EXPECT_FALSE(cost->is_convex());
+
+  // Call UpdateCoefficients() and tell the function that the new Hessian is not
+  // psd.
+  cost->UpdateCoefficients(-Q, b, 0.1, false);
+  EXPECT_FALSE(cost->is_convex());
 }
 
 // TODO(eric.cousineau): Move QuadraticErrorCost and L2NormCost tests here from
