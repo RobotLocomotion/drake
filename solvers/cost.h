@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -111,13 +112,25 @@ class QuadraticCost : public Cost {
    * @param Q Quadratic term.
    * @param b Linear term.
    * @param c (optional) Constant term.
+   * @param is_hessian_psd (optional) Indicates if the Hessian matrix Q is
+   * positive semidefinite (psd) or not. If set to true, then the user
+   * guarantees that Q is psd; if set to false, then the user guarantees that Q
+   * is not psd. If set to std::nullopt, then the constructor will check if Q is
+   * psd or not. The default is std::nullopt. To speed up the constructor, set
+   * is_hessian_psd to either true or false.
    */
   template <typename DerivedQ, typename Derivedb>
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
-                const Eigen::MatrixBase<Derivedb>& b, double c = 0.)
+                const Eigen::MatrixBase<Derivedb>& b, double c = 0.,
+                std::optional<bool> is_hessian_psd = std::nullopt)
       : Cost(Q.rows()), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
+    if (is_hessian_psd.has_value()) {
+      is_convex_ = is_hessian_psd.value();
+    } else {
+      is_convex_ = CheckHessianPsd();
+    }
   }
 
   ~QuadraticCost() override {}
@@ -130,16 +143,29 @@ class QuadraticCost : public Cost {
   double c() const { return c_; }
 
   /**
+   * Returns true if this cost is convex. A quadratic cost if convex if and only
+   * if its Hessian matrix Q is positive semidefinite.
+   */
+  bool is_convex() const { return is_convex_; }
+
+  /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
    * @param new_Q New quadratic term.
    * @param new_b New linear term.
    * @param new_c (optional) New constant term.
+   * @param is_hessian_psd (optional) Indicates if the Hessian matrix Q is
+   * positive semidefinite (psd) or not. If set to true, then the user
+   * guarantees that Q is psd; if set to false, then the user guarantees that Q
+   * is not psd. If set to std::nullopt, then this function will check if Q is
+   * psd or not. The default is std::nullopt. To speed up the computation, set
+   * is_hessian_psd to either true or false.
    */
   template <typename DerivedQ, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
                           const Eigen::MatrixBase<DerivedB>& new_b,
-                          double new_c = 0.) {
+                          double new_c = 0.,
+                          std::optional<bool> is_hessian_psd = std::nullopt) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
         new_b.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
@@ -152,6 +178,11 @@ class QuadraticCost : public Cost {
     Q_ = (new_Q + new_Q.transpose()) / 2;
     b_ = new_b;
     c_ = new_c;
+    if (is_hessian_psd.has_value()) {
+      is_convex_ = is_hessian_psd.value();
+    } else {
+      is_convex_ = CheckHessianPsd();
+    }
   }
 
  private:
@@ -170,9 +201,12 @@ class QuadraticCost : public Cost {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
+  bool CheckHessianPsd();
+
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
   double c_{};
+  bool is_convex_{};
 };
 
 /**

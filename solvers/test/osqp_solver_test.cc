@@ -251,6 +251,12 @@ GTEST_TEST(OsqpSolverTest, ProgramAttributesMisfit) {
               HasSubstr("QuadraticCost is required"));
 }
 
+GTEST_TEST(OsqpSolverTest, TestNonconvexQP) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, true);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
