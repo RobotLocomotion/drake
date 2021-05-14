@@ -2301,9 +2301,10 @@ GTEST_TEST(TestMathematicalProgram, TestExponentialConeConstraint) {
 
 void CheckAddedQuadraticCost(MathematicalProgram* prog,
                              const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
-                             const VectorXDecisionVariable& x) {
+                             const VectorXDecisionVariable& x,
+                             std::optional<bool> is_convex = std::nullopt) {
   int num_quadratic_cost = prog->quadratic_costs().size();
-  auto cnstr = prog->AddQuadraticCost(Q, b, x).evaluator();
+  auto cnstr = prog->AddQuadraticCost(Q, b, x, is_convex).evaluator();
 
   EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
   // Check if the newly added quadratic constraint, and the returned
@@ -2320,6 +2321,70 @@ GTEST_TEST(TestMathematicalProgram, AddQuadraticCost) {
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d::Zero(), x);
 
   CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+
+  CheckAddedQuadraticCost(&prog, Matrix3d::Identity(), Vector3d(1, 2, 3), x,
+                          true);
+
+  CheckAddedQuadraticCost(&prog, -Matrix3d::Identity(), Vector3d(1, 2, 3), x,
+                          false);
+
+  // Now check AddQuadraticCost(Q, b, x) without passing is_convex flag.
+  auto cost1 =
+      prog.AddQuadraticCost(Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+  EXPECT_TRUE(cost1.evaluator()->is_convex());
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
+  // Intentionlly pass the wrong is_convex flag. MathematicalProgram will
+  // use this wrong flag in the added cost.
+  cost1 =
+      prog.AddQuadraticCost(Matrix3d::Identity(), Vector3d(1, 2, 3), x, false);
+  EXPECT_FALSE(cost1.evaluator()->is_convex());
+
+  auto cost2 =
+      prog.AddQuadraticCost(-Matrix3d::Identity(), Vector3d(1, 2, 3), x);
+  EXPECT_FALSE(cost2.evaluator()->is_convex());
+  EXPECT_FALSE(prog.quadratic_costs().back().evaluator()->is_convex());
+
+  // Test with x being a VariableRefList.
+  auto cost3 = prog.AddQuadraticCost(Matrix3d::Identity(), Vector3d(1, 2, 3),
+                                     {x.tail<2>(), x.head<1>()});
+  EXPECT_TRUE(cost3.evaluator()->is_convex());
+  VectorX<symbolic::Expression> cost_eval_sym;
+  cost3.evaluator()->Eval(cost3.variables(), &cost_eval_sym);
+  EXPECT_PRED2(ExprEqual, cost_eval_sym(0).Expand(),
+               (0.5 * (x(0) * x(0) + x(1) * x(1) + x(2) * x(2)) + x(1) +
+                2 * x(2) + 3 * x(0))
+                   .Expand());
+  auto cost4 =
+      prog.AddQuadraticCost(Matrix3d(Vector3d(-1, -2, -3).asDiagonal()),
+                            Vector3d(1, 2, 3), {x.tail<2>(), x.head<1>()});
+  EXPECT_FALSE(cost4.evaluator()->is_convex());
+  cost4.evaluator()->Eval(cost4.variables(), &cost_eval_sym);
+  EXPECT_PRED2(ExprEqual, cost_eval_sym(0).Expand(),
+               (-0.5 * (x(1) * x(1) + 2 * x(2) * x(2) + 3 * x(0) * x(0)) +
+                x(1) + 2 * x(2) + 3 * x(0))
+                   .Expand());
+  // Intentionlly pass the wrong is_convex flag. MathematicalProgram will
+  // use this wrong flag in the added cost.
+  cost4 = prog.AddQuadraticCost(Matrix3d(Vector3d(-1, -2, -3).asDiagonal()),
+                                Vector3d(1, 2, 3), {x.tail<2>(), x.head<1>()},
+                                true);
+  EXPECT_TRUE(cost4.evaluator()->is_convex());
+
+  // Now check AddQuadraticCost(Q, b, c, x) without passing is_convex flag.
+  auto cost5 = prog.AddQuadraticCost(Eigen::Matrix3d::Identity(),
+                                     Vector3d(1, 2, 3), 1.5, x);
+  EXPECT_TRUE(cost5.evaluator()->is_convex());
+  EXPECT_EQ(cost5.evaluator()->c(), 1.5);
+
+  auto cost6 = prog.AddQuadraticCost(-Eigen::Matrix3d::Identity(),
+                                     Vector3d(1, 2, 3), 2.5, x);
+  EXPECT_FALSE(cost6.evaluator()->is_convex());
+  EXPECT_EQ(cost6.evaluator()->c(), 2.5);
+  // Intentionlly pass the wrong is_convex flag. MathematicalProgram will
+  // use this wrong flag in the added cost.
+  cost6 = prog.AddQuadraticCost(-Eigen::Matrix3d::Identity(), Vector3d(1, 2, 3),
+                                2.5, x, true);
+  EXPECT_TRUE(cost6.evaluator()->is_convex());
 }
 
 void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
@@ -2339,9 +2404,11 @@ void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
 }
 
 void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
-                                     const Expression& e) {
+                                     const Expression& e,
+                                     bool is_convex_expected) {
   int num_quadratic_cost = prog->quadratic_costs().size();
   auto binding1 = prog->AddQuadraticCost(e);
+  EXPECT_EQ(binding1.evaluator()->is_convex(), is_convex_expected);
   CheckAddedSymbolicQuadraticCostUserFun(*prog, e, binding1,
                                          ++num_quadratic_cost);
   auto binding2 = prog->AddCost(e);
@@ -2355,36 +2422,54 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
 
   // Identity diagonal term.
   Expression e1 = x.transpose() * x;
-  CheckAddedSymbolicQuadraticCost(&prog, e1);
+  CheckAddedSymbolicQuadraticCost(&prog, e1, true);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Identity diagonal term.
   Expression e2 = x.transpose() * x + 1;
-  CheckAddedSymbolicQuadraticCost(&prog, e2);
+  CheckAddedSymbolicQuadraticCost(&prog, e2, true);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Identity diagonal term.
   Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
-  CheckAddedSymbolicQuadraticCost(&prog, e3);
+  CheckAddedSymbolicQuadraticCost(&prog, e3, true);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Non-identity diagonal term.
   Expression e4 = x(0) * x(0) + 2 * x(1) * x(1) + 3 * x(2) * x(2) + 3;
-  CheckAddedSymbolicQuadraticCost(&prog, e4);
+  CheckAddedSymbolicQuadraticCost(&prog, e4, true);
+  EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Cross terms.
   Expression e5 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0) * x(1) + 2;
-  CheckAddedSymbolicQuadraticCost(&prog, e5);
+  CheckAddedSymbolicQuadraticCost(&prog, e5, false);
+  EXPECT_FALSE(prog.quadratic_costs().back().evaluator()->is_convex());
 
   // Linear terms.
   Expression e6 = x(0) * x(0) + 2 * x(1) * x(1) + 4 * x(0);
-  CheckAddedSymbolicQuadraticCost(&prog, e6);
+  CheckAddedSymbolicQuadraticCost(&prog, e6, true);
 
   // Cross terms and linear terms.
   Expression e7 = (x(0) + 2 * x(1) + 3) * (x(0) + x(1) + 4) + 3 * x(0) * x(0) +
                   6 * pow(x(1) + 1, 2);
-  CheckAddedSymbolicQuadraticCost(&prog, e7);
+  CheckAddedSymbolicQuadraticCost(&prog, e7, true);
 
   // Cubic polynomial case.
   Expression e8 = pow(x(0), 3) + 1;
   EXPECT_THROW(prog.AddQuadraticCost(e8), runtime_error);
+
+  // Call AddQuadraticCost with user-specified is_convex flag.
+  const Expression e9 = x(0) * x(0) + 2 * x(1);
+  auto cost9 = prog.AddQuadraticCost(e9, true);
+  EXPECT_TRUE(cost9.evaluator()->is_convex());
+  // We lie about the convexity of this cost, that we set is_convex=false. The
+  // returned cost should also report is_convex=false.
+  cost9 = prog.AddQuadraticCost(e9, false);
+  EXPECT_FALSE(cost9.evaluator()->is_convex());
+
+  const Expression e10 = -x(0) * x(0) + x(1) * x(1);
+  auto cost10 = prog.AddQuadraticCost(e10, false);
+  EXPECT_FALSE(cost10.evaluator()->is_convex());
 }
 
 GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
@@ -2579,7 +2664,7 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   GenericTrivialCost2 generic_trivial_cost2;
   prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(2), x(1)));
   prog.AddLinearCost(x(0) + 2);
-  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1), true);
   prog.AddLinearCost(x(0) + 2 * x(2));
   prog.AddQuadraticCost(x(1) * x(1) + 1);
 
