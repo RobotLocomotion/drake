@@ -367,15 +367,6 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     const int UNKNOWN_PARAMETER{10007};
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
               UNKNOWN_PARAMETER);
-
-    // Report error if the Q matrix in the QP cost is not positive semidefinite.
-    prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
-    result = solver.Solve(prog, {}, {});
-    // The error code is listed in
-    // https://www.gurobi.com/documentation/9.0/refman/error_codes.html
-    const int Q_NOT_PSD{10020};
-    EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
-              Q_NOT_PSD);
   }
 }
 
@@ -534,6 +525,13 @@ GTEST_TEST(GurobiTest, SOCPDualSolution2) {
     // price is 0.
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
                                 Vector1d(0), 1e-8));
+  }
+}
+
+GTEST_TEST(GurobiTest, TestNonconvexQP) {
+  GurobiSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, true);
   }
 }
 

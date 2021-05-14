@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 // This file contains implementations that are common to both the available and
@@ -42,7 +43,8 @@ bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kBinaryVariable});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access());
+                                        solver_capabilities.access()) &&
+         AreAllQuadraticCostsConvex(prog.quadratic_costs());
 }
 }  // namespace solvers
 }  // namespace drake

@@ -307,5 +307,16 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
 }
+
+GTEST_TEST(TestAreAllQuadraticCostsConvex, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
+  EXPECT_TRUE(AreAllQuadraticCostsConvex(prog.quadratic_costs()));
+  // The aggregated cost 2 * x(0)^2 + x(1)^2, which is still convex, but the
+  // individual cost is not convex.
+  prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
+  EXPECT_FALSE(AreAllQuadraticCostsConvex(prog.quadratic_costs()));
+}
 }  // namespace solvers
 }  // namespace drake
