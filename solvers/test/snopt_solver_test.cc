@@ -524,6 +524,13 @@ GTEST_TEST(SnoptSolverTest, BadStringParameter) {
 }
 
 
+GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
+  SnoptSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, false);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

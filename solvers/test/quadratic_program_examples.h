@@ -184,6 +184,12 @@ void TestEqualityConstrainedQPDualSolution1(const SolverInterface& solver);
  * Test getting the dual solution for an equality constrained QP.
  */
 void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver);
+
+/**
+ * Test nonconvex QP.
+ */
+void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
+                     double tol = 1E-5);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

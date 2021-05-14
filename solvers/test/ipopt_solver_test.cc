@@ -192,6 +192,13 @@ GTEST_TEST(IpoptSolverTest, EckhardtDualSolution) {
   IpoptSolver solver;
   TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
 }
+
+GTEST_TEST(IpoptSolverTest, TestNonconvexQP) {
+  IpoptSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, false);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
