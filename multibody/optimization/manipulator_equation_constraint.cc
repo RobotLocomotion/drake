@@ -53,7 +53,8 @@ void ManipulatorEquationConstraint::DoEval(
   const auto num_positions = plant_->num_positions();
   const auto num_velocities = plant_->num_velocities();
   const auto& v = x.head(num_velocities);
-  const auto& q_next = x.segment(num_velocities, num_positions);
+  const auto& qv_next =
+      x.segment(num_velocities, num_positions + num_velocities);
   const auto& v_next =
       x.segment(num_velocities + num_positions, num_velocities);
   const auto& u_next =
@@ -63,16 +64,7 @@ void ManipulatorEquationConstraint::DoEval(
 
   *y = B_actuation_ * u_next;
 
-  // TODO(rcory): Use UpdateContextConfiguration when it supports
-  //  MultibodyPlant<AutoDiffXd> and Context<AutoDiffXd>
-  if (!internal::AreAutoDiffVecXdEqual(q_next,
-                                       plant_->GetPositions(*context_))) {
-    plant_->SetPositions(context_, q_next);
-  }
-  if (!internal::AreAutoDiffVecXdEqual(v_next,
-                                       plant_->GetVelocities(*context_))) {
-    plant_->SetVelocities(context_, v_next);
-  }
+  UpdateContextPositionsAndVelocities(context_, *plant_, qv_next);
   *y += plant_->CalcGravityGeneralizedForces(*context_);  // g(q[n+1])
 
   // Calc the bias term C(qₙ₊₁, vₙ₊₁)
