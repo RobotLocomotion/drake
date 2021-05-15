@@ -38,6 +38,8 @@ PYBIND11_MODULE(quadrotor, m) {
 
   py::class_<QuadrotorGeometry, LeafSystem<double>>(
       m, "QuadrotorGeometry", doc.QuadrotorGeometry.doc)
+      .def("get_frame_id", &QuadrotorGeometry::get_frame_id,
+          doc.QuadrotorGeometry.get_frame_id.doc)
       .def_static("AddToBuilder", &QuadrotorGeometry::AddToBuilder,
           py::arg("builder"), py::arg("quadrotor_state_port"),
           py::arg("scene_graph"), py::return_value_policy::reference,

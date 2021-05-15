@@ -25,4 +25,5 @@ class TestQuadrotor(unittest.TestCase):
         quadrotor = builder.AddSystem(QuadrotorPlant())
         scene_graph = builder.AddSystem(SceneGraph())
         state_port = quadrotor.get_output_port(0)
-        QuadrotorGeometry.AddToBuilder(builder, state_port, scene_graph)
+        geom = QuadrotorGeometry.AddToBuilder(builder, state_port, scene_graph)
+        self.assertTrue(geom.get_frame_id().is_valid())

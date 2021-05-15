@@ -20,6 +20,8 @@ GTEST_TEST(QuadrotorGeometryTest, AcceptanceTest) {
       &builder, plant->get_output_port(0), scene_graph);
   auto diagram = builder.Build();
   ASSERT_NE(geom, nullptr);
+
+  EXPECT_TRUE(geom->get_frame_id().is_valid());
 }
 
 }  // namespace
