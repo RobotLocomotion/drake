@@ -34,6 +34,7 @@ namespace pydrake {
 
 using std::pow;
 using symbolic::Expression;
+using symbolic::Variable;
 
 namespace {
 template <typename T>
@@ -474,7 +475,7 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
-  pydrake::internal::BindSymbolicMathOverloads(&m);
+  pydrake::internal::BindSymbolicMathOverloads<Expression>(&m);
 }
 }  // namespace
 

@@ -531,7 +531,28 @@ If using CLion, you can still connect to the `gdbserver` instance.
 There are analogs for `lldb` / `lldbserver` but for brevity, only GDB is
 covered.
 
+# Special Scalar Types
+
+Drake's special scalar types (`AutoDiffXd`, `Expression`, etc.) leverage the
+`dtype=object` feature of NumPy, and override some of Python's methods to
+emulate numeric types.
+
+For emulating numeric types, this is done as described in the Python
+documentation: [Data Model: Emulating Numeric
+Types](https://docs.python.org/3.6/reference/datamodel.html#emulating-numeric-types))
+
+For leveraging NumPy's `dtype=object` feature, we simply add some overloads to
+the class; NumPy has a heuristic where the UFunc can be resolved by looking up
+an object's class, and using a method on the class of the same name as the
+UFunc. For more informatino, see NumPy Docs:
+[Universal functions (ufunc)](https://numpy.org/doc/1.13/reference/ufuncs.html)
+
+For completeness with C++ API, we also bind the C++ spellings of the methods
+(for better or worse).
 */
+
+// TODO(eric.cousineau): Find authoritative source on how `dtype=object`
+// behaves, e.g. with ufunc (or make the docs and PR to NumPy).
 
 // TODO(eric.cousineau): If it ever stops redirecting stdin, use
 // `bazel run --run_under='gdb --args python' --script_path=...`.
