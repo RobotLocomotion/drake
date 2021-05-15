@@ -103,7 +103,7 @@ class SymbolicOverloads(Overloads):
         supported = backwards_compat
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
-            assert hasattr(self.m, func.__name__)
+            assert hasattr(self.m, func.__name__), self.m.__name__
         return func.__name__ in supported
 
     def to_float(self, y_T):
@@ -158,22 +158,35 @@ class MathOverloadsTest(unittest.TestCase):
             args_T = list(map(overload.to_type, args_float))
             # Check each supported function.
             for f_drake, f_builtin in functions:
-                if not overload.supports(f_drake):
-                    continue
-                debug_print(
-                    "- Functions: ", qualname(f_drake), qualname(f_builtin))
-                y_builtin = f_builtin(*args_float)
-                y_float = f_drake(*args_float)
-                debug_print(" - - Float Eval:", repr(y_builtin), repr(y_float))
-                self.assertEqual(y_float, y_builtin)
-                self.assertIsInstance(y_float, float)
-                # Test method current overload, and ensure value is accurate.
-                y_T = f_drake(*args_T)
-                y_T_float = overload.to_float(y_T)
-                debug_print(" - - Overload Eval:", repr(y_T), repr(y_T_float))
-                self.assertIsInstance(y_T, overload.T)
-                # - Ensure the translated value is accurate.
-                self.assertEqual(y_T_float, y_float)
+                with self.subTest(function=f_drake.__name__, nargs=nargs):
+                    if not overload.supports(f_drake):
+                        continue
+                    debug_print(
+                        "- Functions: ",
+                        qualname(f_drake),
+                        qualname(f_builtin),
+                    )
+                    y_builtin = f_builtin(*args_float)
+                    y_float = f_drake(*args_float)
+                    debug_print(
+                        " - - Float Eval:",
+                        repr(y_builtin),
+                        repr(y_float),
+                    )
+                    self.assertEqual(y_float, y_builtin)
+                    self.assertIsInstance(y_float, float)
+                    # Test method current overload, and ensure value is
+                    # accurate.
+                    y_T = f_drake(*args_T)
+                    y_T_float = overload.to_float(y_T)
+                    debug_print(
+                        " - - Overload Eval:",
+                        repr(y_T),
+                        repr(y_T_float),
+                    )
+                    self.assertIsInstance(y_T, overload.T)
+                    # - Ensure the translated value is accurate.
+                    self.assertEqual(y_T_float, y_float)
 
         debug_print("\n\nOverload: ", qualname(type(overload)))
         float_overload = FloatOverloads()
