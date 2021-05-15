@@ -177,6 +177,12 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
       .FixValue(context.get(), VectorX<double>::Zero(num_actuators));
   auto derivatives = plant.AllocateTimeDerivatives();
   EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
+
+  // Verify that the implicit dynamics match the continuous ones.
+  Eigen::VectorXd residual = plant.AllocateImplicitTimeDerivativesResidual();
+  plant.CalcImplicitTimeDerivativesResidual(*context, *derivatives, &residual);
+  EXPECT_TRUE(CompareMatrices(
+      residual, Eigen::VectorXd::Zero(plant.num_velocities() * 2), 1e-12));
 }
 
 // TODO(amcastro-tri): Include test with non-zero actuation and external forces.
