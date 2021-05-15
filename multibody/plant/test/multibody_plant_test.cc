@@ -453,6 +453,10 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   EXPECT_EQ(new_derivatives->size(), 0);
   DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, new_derivatives.get()));
+  VectorXd residual = plant.AllocateImplicitTimeDerivativesResidual();
+  EXPECT_EQ(residual.size(), 0);
+  DRAKE_EXPECT_NO_THROW(plant.CalcImplicitTimeDerivativesResidual(
+      *context, *new_derivatives, &residual));
 }
 
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
@@ -721,6 +725,12 @@ class AcrobotPlantTests : public ::testing::Test {
 
     EXPECT_TRUE(CompareMatrices(
         xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
+
+    // Verify that the implicit dynamics match the continuous ones.
+    VectorXd residual = diagram_->AllocateImplicitTimeDerivativesResidual();
+    diagram_->CalcImplicitTimeDerivativesResidual(*context_, *derivatives_,
+                                                  &residual);
+    EXPECT_TRUE(CompareMatrices(residual, VectorXd::Zero(4), 1e-14));
   }
 
   // Verifies the computation performed by

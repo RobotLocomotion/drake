@@ -317,6 +317,12 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const final;
 
+  // Public documentation for this overload can be found in multibody_plant.h.
+  void DoCalcImplicitTimeDerivativesResidual(
+      const systems::Context<T>& context,
+      const systems::ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const final;
+
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const final {
     return internal_tree().CalcPotentialEnergy(context);
   }
