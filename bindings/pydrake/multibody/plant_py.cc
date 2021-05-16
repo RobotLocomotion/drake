@@ -285,22 +285,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
     // overload that (a) services MBP directly and (b) uses body
     // association that is less awkward than implicit BodyNodeIndex.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("CalcCenterOfMassPosition",
-            WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
-                overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                    &Class::CalcCenterOfMassPosition)),
-            py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_deprecated)
-        .def("CalcCenterOfMassPosition",
-            WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
-                overload_cast_explicit<Vector3<T>, const Context<T>&,
-                    const std::vector<ModelInstanceIndex>&>(
-                    &Class::CalcCenterOfMassPosition)),
-            py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassPosition.doc_deprecated);
-#pragma GCC diagnostic pop
     cls  // BR
         .def("CalcTotalMass",
             overload_cast_explicit<T, const Context<T>&>(&Class::CalcTotalMass),

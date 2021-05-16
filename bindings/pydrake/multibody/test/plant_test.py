@@ -795,13 +795,6 @@ class TestPlant(unittest.TestCase):
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
 
-        with catch_drake_warnings(expected_count=2):
-            p_com = plant.CalcCenterOfMassPosition(context=context)
-            self.assertTupleEqual(p_com.shape, (3, ))
-            p_com = plant.CalcCenterOfMassPosition(
-                context=context, model_instances=[instance])
-            self.assertTupleEqual(p_com.shape, (3, ))
-
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [

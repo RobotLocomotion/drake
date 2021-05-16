@@ -27,15 +27,6 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
       "CalcCenterOfMassPositionInWorld\\(\\): This MultibodyPlant contains "
       "only the world_body\\(\\) so its center of mass is undefined.");
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CalcCenterOfMassPosition(*context_),
-      std::exception,
-      "CalcCenterOfMassPositionInWorld\\(\\): This MultibodyPlant contains "
-      "only the world_body\\(\\) so its center of mass is undefined.");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CalcCenterOfMassTranslationalVelocityInWorld(*context_),
       std::exception,
@@ -90,14 +81,6 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
     // Allow for 3 bits (2^3 = 8) of error.
     const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
     EXPECT_TRUE(CompareMatrices(p_WCcm, p_WCcm_expected, kTolerance));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    Eigen::Vector3d p_WCcm_deprecated =
-        plant_.CalcCenterOfMassPosition(*context_);
-    EXPECT_TRUE(
-        CompareMatrices(p_WCcm_deprecated, p_WCcm_expected, kTolerance));
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
   const RigidBody<double>& GetSphereBody() {
@@ -223,13 +206,6 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(p_WCcm, result, kTolerance));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  Eigen::Vector3d p_WCcm_deprecatedA =
-      plant_.CalcCenterOfMassPosition(*context_);
-  EXPECT_TRUE(CompareMatrices(p_WCcm_deprecatedA, result, kTolerance));
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-
   // Verify the plant's center of mass location for an arbitrary input.
   const Eigen::Vector3d p_WSo_W(1.1, 2.3, 3.7);
   const Eigen::Vector3d p_WTo_W(-5.2, 10.4, -6.8);
@@ -297,13 +273,6 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
            (mass_S_ + mass_T_);
   p_WCcm = plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances);
   EXPECT_TRUE(CompareMatrices(p_WCcm, result, kTolerance));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  Eigen::Vector3d p_WCcm_deprecatedB =
-      plant_.CalcCenterOfMassPosition(*context_, model_instances);
-  EXPECT_TRUE(CompareMatrices(p_WCcm_deprecatedB, result, kTolerance));
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Verify CalcCenterOfMassPositionInWorld() works for 2 objects in
   // model_instances, where the 2 objects have arbitrary orientation/position.
