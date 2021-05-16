@@ -2479,13 +2479,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPositionInWorld(context);
   }
 
-  DRAKE_DEPRECATED("2021-04-21", "Use CalcCenterOfMassPositionInWorld() "
-                   "instead of CalcCenterOfMassPosition().")
-  Vector3<T> CalcCenterOfMassPosition(
-      const systems::Context<T>& context) const {
-    return CalcCenterOfMassPositionInWorld(context);
-  }
-
   /// Calculates the position vector from the world origin Wo to the center of
   /// mass of all bodies contained in model_instances, expressed in the world
   /// frame W.
@@ -2505,14 +2498,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     return internal_tree().
         CalcCenterOfMassPositionInWorld(context, model_instances);
-  }
-
-  DRAKE_DEPRECATED("2021-04-21", "Use CalcCenterOfMassPositionInWorld() "
-                   "instead of CalcCenterOfMassPosition().")
-  Vector3<T> CalcCenterOfMassPosition(
-      const systems::Context<T>& context,
-      const std::vector<ModelInstanceIndex>& model_instances) const {
-    return CalcCenterOfMassPositionInWorld(context, model_instances);
   }
 
   /// Calculates system center of mass translational velocity in world frame W.
