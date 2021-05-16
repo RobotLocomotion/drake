@@ -66,6 +66,16 @@ class TestAll(unittest.TestCase):
         diagram = builder.Build()
         simulator = pydrake.systems.analysis.Simulator(diagram)
 
+    def test_math_overloads_shadowing(self):
+        """Tests that we end up with the more capable pydrake.math functions in
+        the all module, not the more limited pydrake.symbolic functions.
+        """
+        from pydrake.all import AutoDiffXd, Expression, Variable, sin
+        self.assertIsInstance(sin(1), float)
+        self.assertIsInstance(sin(AutoDiffXd(1, [1, 0])), AutoDiffXd)
+        self.assertIsInstance(sin(Expression(Variable('e'))), Expression)
+        self.assertIsInstance(sin(Variable('x')), Expression)
+
     def test_symbols_subset(self):
         """Tests a subset of symbols provided by `drake.all`. At least one
         symbol per submodule should be included.
