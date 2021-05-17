@@ -24,6 +24,7 @@ Note:
 To see example usages, please see `doc/python_bindings.rst`.
 """
 
+import inspect as __inspect
 
 # Normal symbols.
 from . import getDrakePath
@@ -33,7 +34,11 @@ from .lcm import *
 from .math import *
 from .perception import *
 from .polynomial import *
-from .symbolic import *
+# "from .symbolic import *" but don't shadow pydrake.math's existing functions.
+from . import symbolic as __symbolic
+for __name, __value in __inspect.getmembers(__symbolic):
+    if __name[0] != '_':
+        locals().setdefault(__name, __value)
 from .trajectories import *
 
 # Submodules.
