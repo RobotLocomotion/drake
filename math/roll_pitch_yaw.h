@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <limits>
-#include <string>
 
 #include <Eigen/Dense>
 #include <fmt/ostream.h>
