@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <optional>
+#include <string>
 
 #include <Eigen/Core>
 
@@ -37,19 +38,24 @@ class SolverBase : public SolverInterface {
   bool enabled() const override;
   SolverId solver_id() const override;
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
+  std::string ExplainUnsatisfiedProgramAttributes(
+      const MathematicalProgram&) const override;
 
  protected:
   /// Constructs a SolverBase with the given default implementations of the
-  /// solver_id(), available(), enabled(), and AreProgramAttributesSatisfied()
-  /// methods.  (Typically, the subclass will just pass the address of its
-  /// static method, e.g. `&id`, for these functors.)  Any of the functors can
-  /// be nullptr, in which case the subclass should override the virtual method
-  /// instead.
+  /// solver_id(), available(), enabled(), AreProgramAttributesSatisfied(),
+  /// and ExplainUnsatisfiedProgramAttributes() methods.  Typically, the
+  /// subclass will simply pass the address of its static method, e.g. `&id`,
+  /// for these functors.)  Any of the functors can be nullptr, in which case
+  /// the subclass must override the matching virtual method instead, except
+  /// for `explain_unsatisfied` which already has a default implementation.
   SolverBase(
       std::function<SolverId()> id,
       std::function<bool()> available,
       std::function<bool()> enabled,
-      std::function<bool(const MathematicalProgram&)> satisfied);
+      std::function<bool(const MathematicalProgram&)> are_satisfied,
+      std::function<std::string(const MathematicalProgram&)>
+          explain_unsatisfied = nullptr);
 
   /// Hook for subclasses to implement Solve.  Prior to the SolverBase's call
   /// to this method, the solver's availability and capabilities vs the program
@@ -67,7 +73,9 @@ class SolverBase : public SolverInterface {
   std::function<SolverId()> default_id_;
   std::function<bool()> default_available_;
   std::function<bool()> default_enabled_;
-  std::function<bool(const MathematicalProgram&)> default_satisfied_;
+  std::function<bool(const MathematicalProgram&)> default_are_satisfied_;
+  std::function<std::string(const MathematicalProgram&)>
+      default_explain_unsatisfied_;
 };
 
 }  // namespace solvers

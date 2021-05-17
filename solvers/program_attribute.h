@@ -38,11 +38,16 @@ enum class ProgramAttribute {
 
 using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;
 
-/**
- * Returns true if @p required is a subset of @p supported.
- */
+/** Returns true iff @p required is a subset of @p supported.
+
+@param[out] unsupported_message (Optional) When provided, if this function
+returns false, the message will be set to a phrase describing the unsupported
+attributes; or if this function returns true, the message will be set to the
+empty string.
+*/
 bool AreRequiredAttributesSupported(const ProgramAttributes& required,
-                                    const ProgramAttributes& supported);
+                                    const ProgramAttributes& supported,
+                                    std::string* unsupported_message = nullptr);
 
 std::string to_string(const ProgramAttribute&);
 std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
