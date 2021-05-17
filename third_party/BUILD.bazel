@@ -1,31 +1,8 @@
 # -*- python -*-
 
+# This file exists to make our directory into a Bazel package, so that our
+# neighboring *.bzl file can be loaded elsewhere.
+
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
-
-exports_files(
-    select({
-        "@drake//tools/cc_toolchain:apple": ["net_sf_jchart2d/LICENSE"],
-        "//conditions:default": [],
-    }),
-    licenses = ["restricted"],  # LGPL-3.0+
-    visibility = select({
-        "@drake//tools/cc_toolchain:apple": ["//tools/workspace/net_sf_jchart2d:__pkg__"],
-        "//conditions:default": [],
-    }),
-)
-
-exports_files(
-    glob(["com_github_pybind_pybind11/**"]),
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = [
-        "//tools/workspace/pybind11:__pkg__",
-    ],
-)
-
-add_lint_tests(
-    bazel_lint_extra_srcs = [
-        "com_github_bazelbuild_rules_cc/whole_archive.bzl",
-    ],
-)
+add_lint_tests()
