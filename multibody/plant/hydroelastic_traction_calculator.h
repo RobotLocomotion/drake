@@ -24,6 +24,9 @@ namespace internal {
  A pressure field model for fast, robust approximation of net contact force and
  moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
  Intelligent Robots and Systems (IROS), 2019.
+
+ This class is only compatible with 'double' and 'AutoDiffXd' scalar types since
+ it relies on SurfaceMesh functionality limited to the those same scalar types.
  */
 template <typename T>
 class HydroelasticTractionCalculator {
@@ -132,6 +135,7 @@ class HydroelasticTractionCalculator {
   // HydroelasticTractionCalculator in HydroelasticReportingTests if we have
   // to "friend" too many testing functions.
   // To allow GTEST to test private functions.
+  friend class HydroelasticTractionCalculatorTester;
   friend class MultibodyPlantHydroelasticTractionTests;
   friend class HydroelasticReportingTests;
   friend class HydroelasticReportingTests_LinearTraction_Test;
@@ -152,6 +156,20 @@ class HydroelasticTractionCalculator {
       const Data& data, const Vector3<T>& p_WQ,
       const Vector3<T>& traction_Aq_W) const;
 
+  // Computes the function f(x) = atan(x)/x given x_squared = x² as input. In
+  // general, this should always be preferred over calling:
+  //   double x = sqrt(x_squared);
+  //   double f = atan(x)/x;
+  //
+  // This method avoids the numerical pitfalls in atan(x)/x that would lead to
+  // bad values and derivatives at x = 0. For |x| > 0.12, this method is
+  // identical to the above code. Below 0.12, this function is safer, faster,
+  // and provides superior derivatives when T = AutoDiffXd.
+  // Note: there is a small discontinuity in the derivative at |x| = 0.12, but
+  // likely negligible for most applications. For the full explanation of
+  // these properties, see issue #15029.
+  static T CalcAtanXOverXFromXSquared(const T& x_squared);
+
   // The parameter (in m/s) for regularizing the Coulomb friction model.
   double vslip_regularizer_{};
 };
@@ -160,7 +178,5 @@ class HydroelasticTractionCalculator {
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(edrumwri) instantiate on SymbolicExpression when it no longer
-// causes a linker error complaining about an unresolved symbol in SceneGraph.
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::internal::HydroelasticTractionCalculator)
