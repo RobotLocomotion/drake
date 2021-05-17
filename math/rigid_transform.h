@@ -619,6 +619,7 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
 /// @relates RigidTransform.
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
+  // TODO(MITIGUY) Move this function to rigid_transform.cc.
   const Vector3<T>& p = X.translation();
   if constexpr (scalar_predicate<T>::is_bool) {
     const RotationMatrix<T>& R = X.rotation();
@@ -626,9 +627,10 @@ std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
     out << rpy;
     out << fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());;
   } else {
-    // TODO(14927) For symbolic type T, maybe print the 3x3 rotation matrix.
-    //  Alternatively, stream roll, pitch, yaw if conversion from RotationMatrix
-    //  to RollPitchYaw does not require an Environment for symbolic type T.
+    // TODO(14927) For symbolic type T, stream roll, pitch, yaw if conversion
+    //  from RotationMatrix to RollPitchYaw can be done in a way that provides
+    //  meaningful output to the end-user or developer (it is not trivial how
+    //  to do this symbolic conversion) and does not require an Environment.
     out << "rpy = symbolic";
     out << " xyz = " << p.x() << " " << p.y() << " " << p.z();
   }
