@@ -3,21 +3,69 @@
 #include <algorithm>
 #include <deque>
 #include <sstream>
+#include <vector>
+
+#include <fmt/format.h>
 
 namespace drake {
 namespace solvers {
 
 bool AreRequiredAttributesSupported(const ProgramAttributes& required,
-                                    const ProgramAttributes& supported) {
-  if (required.size() > supported.size()) {
+                                    const ProgramAttributes& supported,
+                                    std::string* unsupported_message) {
+  // Quick short-circuit if we're guaranteed to fail.
+  if ((required.size() > supported.size())
+      && (unsupported_message == nullptr)) {
     return false;
   }
+
+  // Check required vs supported.  If a mismatch is found and we don't need to
+  // produce a descriptive message, then we can bail immediately.  Otherwise,
+  // tally any unsupported attributes to populate the message at the end.
+  std::vector<ProgramAttribute> unsupported_enums;
   for (const auto& attribute : required) {
-    if (supported.find(attribute) == supported.end()) {
-      return false;
+    if (supported.count(attribute) == 0) {
+      if (unsupported_message == nullptr) {
+        return false;
+      } else {
+        unsupported_enums.push_back(attribute);
+      }
     }
   }
-  return true;
+
+  // If nothing was missing, then we're all done.
+  if (unsupported_enums.empty()) {
+    if (unsupported_message != nullptr) {
+      unsupported_message->clear();
+    }
+    return true;
+  }
+
+  // We need to produce an error message, i.e.,
+  // "a FooCost was declared but is not supported" or
+  // "a FooCost and BarCost were declared but are not supported" or
+  // "a FooCost, BarCost, and QuuxCost were declared but are not supported".
+  std::sort(unsupported_enums.begin(), unsupported_enums.end());
+  const int size = unsupported_enums.size();
+  std::string noun_phrase;
+  for (int i = 0; i < size; ++i) {
+    if (i >= 1) {
+      if (size == 2) {
+        noun_phrase += " and ";
+      } else if (i == (size - 1)) {
+        noun_phrase += ", and ";
+      } else {
+        noun_phrase += ", ";
+      }
+    }
+    noun_phrase += to_string(unsupported_enums[i]);
+  }
+  *unsupported_message = fmt::format(
+      (size == 1) ?
+          "a {} was declared but is not supported" :
+          "a {} were declared but are not supported",
+      noun_phrase);
+  return false;
 }
 
 std::string to_string(const ProgramAttribute& attr) {

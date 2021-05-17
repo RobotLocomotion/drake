@@ -279,6 +279,12 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
     PYBIND11_OVERLOAD_PURE(
         bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
   }
+
+  std::string ExplainUnsatisfiedProgramAttributes(
+      const MathematicalProgram& prog) const override {
+    PYBIND11_OVERLOAD_PURE(std::string, solvers::SolverInterface,
+        ExplainUnsatisfiedProgramAttributes, prog);
+  }
 };
 }  // namespace
 
@@ -312,6 +318,14 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("prog"),
           doc.SolverInterface.AreProgramAttributesSatisfied.doc)
+      .def(
+          "ExplainUnsatisfiedProgramAttributes",
+          [](const SolverInterface& self,
+              const solvers::MathematicalProgram& prog) {
+            return self.ExplainUnsatisfiedProgramAttributes(prog);
+          },
+          py::arg("prog"),
+          doc.SolverInterface.ExplainUnsatisfiedProgramAttributes.doc)
       .def(
           "Solve",
           [](const SolverInterface& self,
