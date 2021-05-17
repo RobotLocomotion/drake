@@ -105,16 +105,14 @@ void DirectCollocationConstraint::DoEval(
   const auto u0 = x.segment(1 + (2 * num_states_), num_inputs_);
   const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
 
-  // TODO(sam.creasey): Use caching (when it arrives) to avoid recomputing
-  // the dynamics.  Currently the dynamics evaluated here as {u1,x1} are
-  // recomputed in the next constraint as {u0,x0}.
+  // TODO(sam.creasey): Use caching to avoid recomputing the dynamics.
+  // Currently the dynamics evaluated here as {u1,x1} are recomputed in the
+  // next constraint as {u0,x0}.
   AutoDiffVecXd xdot0;
   dynamics(x0, u0, &xdot0);
-  const Eigen::MatrixXd dxdot0 = math::autoDiffToGradientMatrix(xdot0);
 
   AutoDiffVecXd xdot1;
   dynamics(x1, u1, &xdot1);
-  const Eigen::MatrixXd dxdot1 = math::autoDiffToGradientMatrix(xdot1);
 
   // Cubic interpolation to get xcol and xdotcol.
   const AutoDiffVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
