@@ -4,6 +4,7 @@
 #include <limits>
 
 #include <Eigen/Dense>
+#include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -649,6 +650,22 @@ class RollPitchYaw {
   // 7 of the 52 bits in max_error's mantissa, which we deem acceptable.
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
+
+/// Stream insertion operator to write an instance of RollPitchYaw into a
+/// `std::ostream`. Especially useful for debugging.
+/// @relates RollPitchYaw.
+template <typename T>
+inline std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
+  const T& roll = rpy.roll_angle();
+  const T& pitch = rpy.pitch_angle();
+  const T& yaw = rpy.yaw_angle();
+  if constexpr (scalar_predicate<T>::is_bool) {
+    out << fmt::format("rpy = {} {} {}", roll, pitch, yaw);
+  } else {
+    out << "rpy = " << roll << " " << pitch << " " << yaw;
+  }
+  return out;
+}
 
 /// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
 /// @relates RollPitchYaw

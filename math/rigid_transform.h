@@ -2,6 +2,8 @@
 
 #include <limits>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
@@ -612,6 +614,12 @@ class RigidTransform {
 static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
     "Low-level optimizations depend on RigidTransform<double> being "
     "stored as 12 sequential doubles in memory.");
+
+/// Stream insertion operator to write an instance of RigidTransform into a
+/// `std::ostream`. Especially useful for debugging.
+/// @relates RigidTransform.
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X);
 
 /// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 /// @relates RigidTransform

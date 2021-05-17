@@ -514,6 +514,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_transform_test",
     deps = [
+        ":autodiff",
         ":geometric_transform",
         "//common/test_utilities",
     ],
