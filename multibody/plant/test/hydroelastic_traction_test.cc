@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -6,6 +8,8 @@
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -24,6 +28,7 @@ using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
+using math::RigidTransformd;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -556,11 +561,173 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
   EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
 }
 
+// Friend class which provides access to HydroelasticTractionCalculator's
+// private method.
+class HydroelasticTractionCalculatorTester {
+ public:
+  template <typename T>
+  static HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
+      const HydroelasticTractionCalculator<T>& calculator,
+      const typename HydroelasticTractionCalculator<T>::Data& data,
+      geometry::SurfaceFaceIndex face_index, const T& e,
+      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
+      const Vector3<T>& p_WQ) {
+    return calculator.CalcTractionAtQHelper(data, face_index, e, nhat_W,
+                                            dissipation, mu_coulomb, p_WQ);
+  }
+
+  template <typename T>
+  static T CalcAtanXOverXFromXSquared(const T& x_squared) {
+    return HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(
+        x_squared);
+  }
+};
+
+GTEST_TEST(HydroelasticTractionCalculatorTest,
+           CalcAtanXOverXFromXSquared_AutoDiffXd) {
+  using std::atan;
+
+  // Arbitrary values where to sample atan(x)/x.
+  // Our implementation of CalcAtanXOverXFromXSquared() uses a Taylor expansion
+  // for values of x < 0.12, so that the function is valid even at x = 0. For
+  // x >= 0.12 CalcAtanXOverXFromXSquared() simply returns atan(x)/x and we
+  // expect a perfect match. Therefore we choose these sample values so that
+  // first three show the progression of error after we've crossed the line x =
+  // 0.12 and move closer to zero. The last two show where the line is and
+  // that the answers exactly match thereafter.
+  // x = 0 is explicitly included to test our implementation returns the
+  // desired mathematical limit as x goes to zero.
+  //
+  // For a detailed discussion on how the cutoff is chosen and on how reference
+  // values are obtained with Variable Precision Arithmetic, please refer to
+  // Drake issue #15029.
+  const std::vector<double> x_samples = {0.0,  1e-6,     1e-4, 0.119999,
+                                         0.12, 0.120001, 1.0};
+  const std::vector<double> f_ref = {1.0,
+                                     9.9999999999966671e-01,
+                                     9.9999999666666672e-01,
+                                     9.9524112879111848e-01,
+                                     9.9524105015282038e-01,
+                                     9.9524097151388935e-01,
+                                     7.8539816339744828e-01};
+  const std::vector<double> df_ref = {0.0,
+                                      -6.6666666666586668e-07,
+                                      -6.6666665866666670e-05,
+                                      -7.8637981597899004e-02,
+                                      -7.8638614575291185e-02,
+                                      -7.8639247552136096e-02,
+                                      -2.8539816339744833e-01};
+
+  // Expected precissio after detailed study in Drake issue #15029.
+  std::vector<double> dfdx_expected_precision(
+      x_samples.size(), std::numeric_limits<double>::epsilon());
+  // Near x=0.12 we observe the maximum round-off error, all below 1e-15.
+  dfdx_expected_precision[3] = 1.0e-15;  // @ x = 0.12-1e-6
+  dfdx_expected_precision[4] = 1.0e-15;  // @ x = 0.12
+  dfdx_expected_precision[5] = 1.0e-15;  // @ x = 0.12+1e-16
+
+  for (size_t i = 0; i < x_samples.size(); ++i) {
+    const double sample = x_samples[i];
+    const AutoDiffXd x(sample, 1.0, 0);
+    const AutoDiffXd x2 = x * x;
+    const AutoDiffXd fx =
+        HydroelasticTractionCalculatorTester::CalcAtanXOverXFromXSquared<
+            AutoDiffXd>(x2);
+
+    // Per issue #15029, we expect a perfect match with our VPA reference.
+    EXPECT_NEAR(fx.value(), f_ref[i], 0);
+
+    // Derivatives computed with AutoDiffXd are within dfdx_expected_precision
+    // estimated in issue #15029.
+    EXPECT_NEAR(fx.derivatives()[0], df_ref[i], dfdx_expected_precision[i]);
+  }
+}
+
+// This is a direct test of the underlying helper function CalcTractionAtQHelper
+// and how it responds to interesting cases with derivatives. Specifically,
+// we need to make sure that zero relative velocity does *not* lead to
+// NaN-valued derivatives.
+GTEST_TEST(HydroelasticTractionCalculatorTest,
+           CalcTractionAtQHelperDerivatives) {
+  HydroelasticTractionCalculator<AutoDiffXd> calculator;
+
+  RigidTransform<AutoDiffXd> X_WA(
+      math::initializeAutoDiff(Vector3<double>(0, 0, 1)));
+  RigidTransform<AutoDiffXd> X_WB;
+
+  // For this test, we need just enough contact surface so that the mesh can
+  // report a centroid point (part of Data constructor).
+  const Vector3<AutoDiffXd> p_WC =
+      (X_WA.translation() + X_WB.translation()) / 2;
+  std::vector<SurfaceVertex<AutoDiffXd>> vertices;
+  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0));
+  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5));
+  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5));
+
+  std::vector<SurfaceFace> faces({SurfaceFace{
+      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2)}});
+  auto mesh_W = std::make_unique<geometry::SurfaceMesh<AutoDiffXd>>(
+      std::move(faces), std::move(vertices));
+  // Note: these values are garbage. They merely allow us to instantiate the
+  // field so the Data can be instantiated. The *actual* field value passed
+  // to CalcTractionAtQHelper is found below.
+  std::vector<AutoDiffXd> values{0, 0, 0};
+  auto field = std::make_unique<
+      geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
+      "junk", std::move(values), mesh_W.get(), false);
+  geometry::ContactSurface<AutoDiffXd> surface(
+      geometry::GeometryId::get_new_id(), geometry::GeometryId::get_new_id(),
+      std::move(mesh_W), std::move(field));
+
+  // Parameters for CalcTractionAtQHelper().
+  const geometry::SurfaceFaceIndex f0(0);
+  const Vector3<AutoDiffXd>& nhat_W = surface.mesh_W().face_normal(f0);
+  const AutoDiffXd e = 1e5;
+  const double dissipation = 0.1;
+  const double mu_coulomb = 1.0;
+
+  // Case: nothing is moving, so the relative velocity is zero.
+  SpatialVelocity<AutoDiffXd> V_WA{Vector3<AutoDiffXd>::Zero(),
+                                   Vector3<AutoDiffXd>::Zero()};
+  SpatialVelocity<AutoDiffXd> V_WB(V_WA);
+  HydroelasticTractionCalculator<AutoDiffXd>::Data data(X_WA, X_WB, V_WA, V_WB,
+                                                        &surface);
+
+  auto point_data =
+      HydroelasticTractionCalculatorTester::CalcTractionAtQHelper<AutoDiffXd>(
+          calculator, data, f0, e, nhat_W, dissipation, mu_coulomb, p_WC);
+
+  // Note: we're differentiating w.r.t. p_WAo, the normal direction does *not*
+  // change, so the Jacobean of nhat_W is all zeros. We'll do a quick reality
+  // check to confirm this.
+  //
+  // This is relevant, because the traction_Aq_W is computed *using* the normal.
+  // So, derivatives on nhat_W are what propagate to become derivatives on
+  // traction_Aq_W. In this case, the zeros should win out. This confirms that
+  // we get well-defined (non-NaN) derivatives even when relative velocity is
+  // zero.
+  //
+  // Note: if derivatives didn't propagate down to traction_Aq_W, then the
+  // call to math::autoDiffToGradientMatrix() would produce a 3x0 matrix which
+  // would fail the call to CompareMatrices(). So, we know that the zero matrix
+  // is the result of the chain rule, properly applied. However, to be doubly
+  // sure, we'll also test the size of the derivatives() vectors.
+  const Matrix3<double> zeros = Matrix3<double>::Zero();
+  EXPECT_TRUE(
+      CompareMatrices(math::autoDiffToGradientMatrix(nhat_W), zeros, 1e-15));
+  EXPECT_EQ(point_data.traction_Aq_W.x().derivatives().size(), 3);
+  EXPECT_EQ(point_data.traction_Aq_W.y().derivatives().size(), 3);
+  EXPECT_EQ(point_data.traction_Aq_W.z().derivatives().size(), 3);
+  const Matrix3<double> grad_traction_Aq_W =
+      math::autoDiffToGradientMatrix(point_data.traction_Aq_W);
+  EXPECT_TRUE(CompareMatrices(grad_traction_Aq_W, zeros));
+}
+
 // This fixture defines a contacting configuration between a box and a
 // half-space in a local frame, Y. See MultibodyPlantHydroelasticTractionTests
 // class documentation for a description of Frame Y.
-class HydroelasticReportingTests :
-public ::testing::TestWithParam<RigidTransform<double>> {
+class HydroelasticReportingTests
+    : public ::testing::TestWithParam<RigidTransform<double>> {
  public:
   const ContactSurface<double>& contact_surface() const {
       return *contact_surface_;
