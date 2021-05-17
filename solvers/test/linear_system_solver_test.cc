@@ -1,11 +1,15 @@
 #include "drake/solvers/linear_system_solver.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
+
+using ::testing::HasSubstr;
 
 namespace drake {
 namespace solvers {
@@ -13,7 +17,11 @@ namespace test {
 
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
-  const MathematicalProgramResult result = Solve(*(example->prog()));
+  const MathematicalProgram& prog = *example->prog();
+  EXPECT_TRUE(LinearSystemSolver::ProgramAttributesSatisfied(prog));
+  EXPECT_EQ(LinearSystemSolver::UnsatisfiedProgramAttributes(prog), "");
+
+  const MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
   example->CheckSolution(result);
 }
@@ -24,10 +32,38 @@ GTEST_TEST(testLinearSystemSolver, trivialExample) {
   TestLinearSystemExample(&example1);
 
   LinearSystemExample2 example2{};
-  TestLinearSystemExample(&example1);
+  TestLinearSystemExample(&example2);
 
   LinearSystemExample3 example3{};
-  TestLinearSystemExample(&example1);
+  TestLinearSystemExample(&example3);
+}
+
+GTEST_TEST(testLinearSystemSolver, EmptyProblem) {
+  MathematicalProgram prog;
+
+  EXPECT_FALSE(LinearSystemSolver::ProgramAttributesSatisfied(prog));
+  EXPECT_THAT(LinearSystemSolver::UnsatisfiedProgramAttributes(prog),
+              HasSubstr("LinearEqualityConstraint is required"));
+
+  LinearSystemSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog), std::exception,
+      ".*LinearEqualityConstraint is required.*");
+}
+
+GTEST_TEST(testLinearSystemSolver, QuadraticProblem) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddQuadraticCost(x(0) * x(0));
+
+  EXPECT_FALSE(LinearSystemSolver::ProgramAttributesSatisfied(prog));
+  EXPECT_THAT(LinearSystemSolver::UnsatisfiedProgramAttributes(prog),
+              HasSubstr("QuadraticCost was declared"));
+
+  LinearSystemSolver solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog), std::exception,
+      ".*QuadraticCost was declared.*");
 }
 
 /**

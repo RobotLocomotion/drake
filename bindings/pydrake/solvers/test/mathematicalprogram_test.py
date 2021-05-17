@@ -93,6 +93,7 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = mp.MakeSolver(solver_id)
         self.assertEqual(solver.solver_id().name(), "Linear system")
         self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
+        self.assertEqual(solver.ExplainUnsatisfiedProgramAttributes(prog), "")
         result = solver.Solve(prog)
         self.assertTrue(result.is_success())
         result = solver.Solve(prog, None, None)
@@ -102,6 +103,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # doesn't work anymore.
         prog.AddLinearConstraint(x[0] >= 0)
         self.assertFalse(solver.AreProgramAttributesSatisfied(prog))
+        self.assertTrue(solver.ExplainUnsatisfiedProgramAttributes(prog))
         with self.assertRaises(ValueError):
             solver.Solve(prog, None, None)
 
