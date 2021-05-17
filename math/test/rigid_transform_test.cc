@@ -802,7 +802,8 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
   RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
   std::stringstream stream;  stream << X_symbolic;
-  const std::string expected_string = "rpy = symbolic xyz = x y z";
+  const std::string expected_string =
+      "rpy = symbolic (not supported) xyz = x y z";
   EXPECT_EQ(expected_string, stream.str());
 }
 

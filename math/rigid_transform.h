@@ -3,6 +3,8 @@
 #include <limits>
 #include <string>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
@@ -618,24 +620,7 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
 /// `std::ostream`. Especially useful for debugging.
 /// @relates RigidTransform.
 template <typename T>
-std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
-  // TODO(MITIGUY) Move this function to rigid_transform.cc.
-  const Vector3<T>& p = X.translation();
-  if constexpr (scalar_predicate<T>::is_bool) {
-    const RotationMatrix<T>& R = X.rotation();
-    const RollPitchYaw<T> rpy(R);
-    out << rpy;
-    out << fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());;
-  } else {
-    // TODO(14927) For symbolic type T, stream roll, pitch, yaw if conversion
-    //  from RotationMatrix to RollPitchYaw can be done in a way that provides
-    //  meaningful output to the end-user or developer (it is not trivial how
-    //  to do this symbolic conversion) and does not require an Environment.
-    out << "rpy = symbolic";
-    out << " xyz = " << p.x() << " " << p.y() << " " << p.z();
-  }
-  return out;
-}
+std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X);
 
 /// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 /// @relates RigidTransform
