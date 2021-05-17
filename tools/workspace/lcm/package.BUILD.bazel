@@ -240,7 +240,6 @@ py_library(
     deps = [":lcm-python-upstream"],
 )
 
-
 java_library(
     name = "lcm-java",
     srcs = glob(["lcm-java/lcm/**/*.java"]),

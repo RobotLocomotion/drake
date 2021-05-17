@@ -6,18 +6,19 @@ load(
 )
 load(
     "@bazel_tools//tools/build_defs/repo:java.bzl",
-    "java_import_external"
+    "java_import_external",
 )
 
 def _impl(repo_ctx):
-     # Only available on macOS. On Ubuntu, no targets should depend on @com_jidesoft_jide_oss.
+    # Only available on macOS. On Ubuntu, no targets should depend on
+    # @com_jidesoft_jide_oss.
     os_result = determine_os(repo_ctx)
     if os_result.error != None:
         fail(os_result.error)
 
     if os_result.is_ubuntu:
         repo_ctx.symlink(
-            Label("@drake//tools/workspace/com_jidesoft_jide_oss:package-ubuntu.BUILD.bazel"),
+            Label("@drake//tools/workspace/com_jidesoft_jide_oss:package-ubuntu.BUILD.bazel"),  # noqa
             "BUILD.bazel",
         )
     else:
@@ -33,7 +34,7 @@ def _impl(repo_ctx):
 
 com_jidesoft_jide_oss_repository = repository_rule(
     attrs = {
-        "mirrors": attr.string_list_dict()
+        "mirrors": attr.string_list_dict(),
     },
     implementation = _impl,
 )
