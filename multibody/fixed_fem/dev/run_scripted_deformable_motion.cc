@@ -16,8 +16,8 @@ bazel-bin/tools/drake_visualizer
 
 In another terminal, launch the demo
 ```
-bazel-bin/multibody/fixed_fem/dev/run_scripted_deformable_motion
--simulator_target_realtime_rate 1
+bazel-bin/multibody/fixed_fem/dev/run_scripted_deformable_motion \
+    --simulator_target_realtime_rate=1
 ```
 
 Notice that without the realtime flag the simulation is likely to progress too
