@@ -11,6 +11,8 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace geometry {
@@ -23,6 +25,8 @@ using fcl::CollisionObjectd;
 using fcl::Halfspaced;
 using fcl::Sphered;
 using math::RigidTransform;
+using math::RollPitchYaw;
+using math::RotationMatrix;
 using std::make_shared;
 using std::make_unique;
 using std::unique_ptr;
@@ -51,126 +55,8 @@ ProximityProperties soft_properties() {
   return props;
 }
 
-// TODO(SeanCurtis-TRI): When autodiff is more generally supported, replace the
-//  simple exception-expecting call (AutoDiffBlanketFailure) and add AutoDiff
-//  into the type list: ScalarTypes.
-
 // Infrastructure to repeat tests on both double (and, someday, AutoDiffXd).
-using ScalarTypes = ::testing::Types<double>;
-
-// Confirmation of the short-term behavior that invoking the callback on
-// potentially colliding geometry using AutoDiffXd-valued transformsi
-// 1. If the colliding geometries are supported (soft-sphere to soft-sphere),
-// then we produce PenetrationAsPointPair<AutoDiffXd>.
-// 2. If the colliding geometries are not currently supported (soft-sphere to
-// rigid box), then we throw an error.
-// 3. If the colliding geometries do not currently support support AutoDiffXd,
-// but support double (rigid-box to rigid-box), then we throw an error message
-// that reflect it's a lack of support for contact as point pair.
-// When the two geometries are not in collision, but could collide (i.e., the
-// collision filter doesn't rule out the collision), then the callback assumes
-// the worst. If the two geometries are not supported with the AutoDiffXd in the
-// contact surface callback, then we always throw the error.
-GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
-  // We have two soft spheres (S1, S2) and two rigid boxes (B1, B2) in the
-  // scene. There are contact between the pairs(S1, S2), (B1, B2) and (S1, B1).
-  const double radius = 0.25;
-  const double cube_size = 0.4;
-  GeometryId id_S1 = GeometryId::get_new_id();
-  GeometryId id_S2 = GeometryId::get_new_id();
-  GeometryId id_B1 = GeometryId::get_new_id();
-  GeometryId id_B2 = GeometryId::get_new_id();
-  EncodedData data_S1(id_S1, true);
-  EncodedData data_S2(id_S2, true);
-  EncodedData data_B1(id_B1, true);
-  EncodedData data_B2(id_B2, true);
-  CollisionFilterLegacy collision_filter;
-  collision_filter.AddGeometry(data_S1.encoding());
-  collision_filter.AddGeometry(data_S2.encoding());
-  collision_filter.AddGeometry(data_B1.encoding());
-  collision_filter.AddGeometry(data_B2.encoding());
-  unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id_S1, RigidTransform<AutoDiffXd>::Identity()},
-      {id_S2,
-       RigidTransform<AutoDiffXd>(Vector3<AutoDiffXd>(0, 0, -1.5 * radius))},
-      {id_B1, RigidTransform<AutoDiffXd>(
-                  Vector3<AutoDiffXd>{0, 0, 0.9 * (radius + cube_size / 2)})},
-      {id_B2, RigidTransform<AutoDiffXd>(
-                  Vector3<AutoDiffXd>(0, 0, 0.9 * radius + cube_size * 1.2))}};
-
-  CollisionObjectd object_S1(make_shared<Sphered>(radius));
-  data_S1.write_to(&object_S1);
-  CollisionObjectd object_S2(make_shared<Sphered>(radius));
-  data_S2.write_to(&object_S2);
-  CollisionObjectd object_B1(
-      make_shared<Boxd>(cube_size, cube_size, cube_size));
-  data_B1.write_to(&object_B1);
-  CollisionObjectd object_B2(
-      make_shared<Boxd>(cube_size, cube_size, cube_size));
-  data_B2.write_to(&object_B2);
-
-  hydroelastic::Geometries hydroelastic_geometries;
-  hydroelastic_geometries.MaybeAddGeometry(Sphere(radius), id_S1,
-                                           soft_properties());
-  hydroelastic_geometries.MaybeAddGeometry(Sphere(radius), id_S2,
-                                           soft_properties());
-  hydroelastic_geometries.MaybeAddGeometry(Box(cube_size, cube_size, cube_size),
-                                           id_B1, rigid_properties());
-  hydroelastic_geometries.MaybeAddGeometry(Box(cube_size, cube_size, cube_size),
-                                           id_B2, rigid_properties());
-
-  vector<ContactSurface<AutoDiffXd>> surfaces;
-  CallbackData<AutoDiffXd> data(&collision_filter, &X_WGs,
-                                &hydroelastic_geometries, &surfaces);
-  // S1 and B1 are in contact, but we don't support AutoDiffXd yet.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<AutoDiffXd>(&object_S1, &object_B1, &data), std::logic_error,
-      "Requested AutoDiff-valued contact surface between two geometries with "
-      "hydroelastic representation but for scalar type.*");
-
-  vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-  CallbackWithFallbackData<AutoDiffXd> fallback_data{
-      {&collision_filter, &X_WGs, &hydroelastic_geometries, &surfaces},
-      &point_pairs};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      CallbackWithFallback<AutoDiffXd>(&object_S1, &object_B1, &fallback_data),
-      std::logic_error,
-      "Requested AutoDiff-valued contact surface between two geometries with "
-      "hydroelastic representation but for scalar type.*");
-
-  // S1 and S2 are in contact, and we support AutoDiffXd with fall-back.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<AutoDiffXd>(&object_S1, &object_S2, &data), std::logic_error,
-      "Requested contact between two soft objects .* only rigid-soft pairs "
-      "are currently supported");
-  point_pairs.clear();
-  CallbackWithFallback<AutoDiffXd>(&object_S1, &object_S2, &fallback_data);
-  EXPECT_EQ(point_pairs.size(), 1u);
-
-  // B1 and B2 are in contact, we don't support AutoDiffXd for box-to-box.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<AutoDiffXd>(&object_B1, &object_B2, &data), std::logic_error,
-      "Requested contact between two rigid objects .* only rigid-soft pairs "
-      "are currently supported");
-  point_pairs.clear();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      CallbackWithFallback<AutoDiffXd>(&object_B1, &object_B2, &fallback_data),
-      std::logic_error,
-      "Penetration queries between shapes .* are not supported for scalar type "
-      ".*");
-
-  // S1 and B2 are not in contact, but the collision filter doesn't rule out the
-  // collision between S1 and B2..
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<AutoDiffXd>(&object_S1, &object_B2, &data), std::logic_error,
-      "Requested AutoDiff-valued contact surface between two geometries with "
-      "hydroelastic representation but for scalar type.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      CallbackWithFallback<AutoDiffXd>(&object_S1, &object_B2, &fallback_data),
-      std::logic_error,
-      "Requested AutoDiff-valued contact surface between two geometries with "
-      "hydroelastic representation but for scalar type.*");
-}
+using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 
 // Specification of the shape types to use with TestScene.
 enum class ShapeType {
@@ -256,6 +142,19 @@ class TestScene {
     return shape;
   }
 
+  // Produce a rotation from a roll-pitch-yaw. If T = AutoDiffXd, the rotation
+  // will have non-zero derivatives for roll, pitch, and yaw. The derivatives
+  // will have size() == 3 and be *identical* for every RotationMatrix this
+  // function creates.
+  static RotationMatrix<T> MakeRotation(const Vector3d& rpy) {
+    if constexpr (std::is_same_v<T, double>) {
+      return RotationMatrix<T>(RollPitchYaw<T>(rpy));
+    } else {
+      const Vector3<T> rpy_ad = math::initializeAutoDiff(rpy);
+      return RotationMatrix<T>(RollPitchYaw<T>(rpy_ad));
+    }
+  }
+
   void PoseGeometry(bool are_colliding) {
     // If both shapes are half spaces, that is not contact we support and the
     // configuration is irrelevant (technically, their boundary planes could be
@@ -273,29 +172,36 @@ class TestScene {
     //    - A's orientation is reversed, so that its outward normal points in
     //      the -Wz direction.
     //    - B is still placed "below" A based on the same kind of logic.
+    //
+    // For detecting "successful" differentiation, we define R_WA and R_WB as
+    // having derivatives w.r.t. some arbitrary quantities. That way, the
+    // transformation of both points and vectors will accumulate derivatives.
 
     if (this->shape_A_type_ == ShapeType::kHalfSpace &&
         this->shape_B_type_ == ShapeType::kHalfSpace)
       return;
 
     // The distance from the world origin to the surface of shape A. In other
-    // words, a point at Wo needs to be moved distance to lie on the surface of
-    // A.
-    double dist_WoA{std::numeric_limits<double>::infinity()};
-    if (this->shape_A_type_ == ShapeType::kSphere) {
-      dist_WoA = kRadius;
-    } else {
-      dist_WoA = 0;
-      X_WGs_[id_A_] = RigidTransform<T>{AngleAxis<T>{M_PI, Vector3<T>::UnitX()},
-                                        Vector3<T>{0, 0, 0}};
-    }
+    // words, a point at Wo needs to be moved `distance` units to lie on the
+    // surface of A.
+    const double dist_WoA =
+        this->shape_A_type_ == ShapeType::kSphere ? kRadius : 0;
+    const Vector3d rpy_WA{M_PI, 0, 0};
+
+    // Remember that every AutoDiffXd-valued RotationMatrix we make has
+    // derivatives with respect to three arbitrary, magical quantities. That is
+    // why we only expect the results to have derivatives.size() == 3.
+    X_WGs_[id_A_] =
+        RigidTransform<T>(MakeRotation(rpy_WA), Vector3<T>(0, 0, 0));
 
     // Similarly, the distance to the surface of B (see dist_WoA).
     const double dist_WoB =
         this->shape_B_type_ == ShapeType::kSphere ? kRadius : 0;
     const double z_offset =
         -(dist_WoA + dist_WoB) + (are_colliding ? 0.125 : -0.125);
-    X_WGs_[id_B_] = RigidTransform<T>(Vector3<T>{0, 0, z_offset});
+    const Vector3d p_WB{0, 0, z_offset};
+    const Vector3d rpy_WB{0, 0, 0};
+    X_WGs_[id_B_] = RigidTransform<T>(MakeRotation(rpy_WB), p_WB.cast<T>());
   }
 
   // Filters contact between the two spheres.
@@ -336,6 +242,55 @@ class TestScene {
   CallbackData<T> data_;
 };
 
+// All double-valued contact surfaces have "valid" derivatives (aka none).
+::testing::AssertionResult ValidateDerivatives(const ContactSurface<double>&) {
+  return ::testing::AssertionSuccess();
+}
+
+// For an AutoDiffXd-valued surface, we rely on the fact that the scene has been
+// configured to be differentiated with respect to three unknown quantities.
+// And those derivatives are introduced via rpy_WA and rpy_WB. So, any quantity
+// that ultimately depends on the relative orientation of those bases should
+// exhibit derivatives with size() == 3. In this case, *all* of these quantities
+// depend on the relative orientation of bases of A and B. So, we poke at a
+// couple of different quantities to make sure they have appropriately *sized*
+// derivatives. We don't worry about the *values* here, relying on other code to
+// have already tested that. This isn't an *exhaustive* test at all; it's merely
+// looking for positive indicators that the rigorously tested intersection code
+// has been properly connected in the callback.
+//
+// Only one of grad e_N or grad e_M will be defined -- it is the field from the
+// soft mesh.
+::testing::AssertionResult ValidateDerivatives(
+    const ContactSurface<AutoDiffXd>& surface) {
+  const SurfaceVertexIndex v0(0);
+  const SurfaceFaceIndex f0(0);
+  const auto& mesh_W = surface.mesh_W();
+  if (mesh_W.vertex(v0).r_MV().x().derivatives().size() != 3) {
+    return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
+  }
+
+  if (surface.e_MN().EvaluateAtVertex(v0).derivatives().size() != 3) {
+    return ::testing::AssertionFailure()
+           << "Pressure field at vertex 0 is missing derivatives";
+  }
+
+  if (surface.HasGradE_M()) {
+    if (surface.EvaluateGradE_M_W(f0).x().derivatives().size() != 3) {
+      return ::testing::AssertionFailure()
+             << "Face 0's grad eM is missing derivatives";
+    }
+  }
+  if (surface.HasGradE_N()) {
+    if (surface.EvaluateGradE_N_W(f0).x().derivatives().size() != 3) {
+      return ::testing::AssertionFailure()
+             << "Face 0's grad eN is missing derivatives";
+    }
+  }
+
+  return ::testing::AssertionSuccess();
+}
+
 TYPED_TEST_SUITE(DispatchRigidSoftCalculationTests, ScalarTypes);
 
 // Test suite for exercising DispatchRigidSoftCalculation with different scalar
@@ -366,6 +321,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
         geometries.soft_geometry(id_A), X_WA, id_A,
         geometries.rigid_geometry(id_B), X_WB, id_B);
     EXPECT_NE(surface, nullptr);
+    EXPECT_TRUE(ValidateDerivatives(*surface));
   }
 
   {
@@ -402,6 +358,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
         geometries.soft_geometry(id_A), X_WA, id_A,
         geometries.rigid_geometry(id_B), X_WB, id_B);
     EXPECT_NE(surface, nullptr);
+    EXPECT_TRUE(ValidateDerivatives(*surface));
   }
 
   {
@@ -437,6 +394,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
         geometries.soft_geometry(id_B), X_WB, id_A,
         geometries.rigid_geometry(id_A), X_WA, id_B);
     EXPECT_NE(surface, nullptr);
+    EXPECT_TRUE(ValidateDerivatives(*surface));
   }
 
   {
@@ -557,6 +515,7 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, HandleSoftMeshRigidMesh) {
       &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
   EXPECT_EQ(scene.surfaces().size(), 1u);
+  EXPECT_TRUE(ValidateDerivatives(scene.surfaces()[0]));
 }
 
 // Confirms that MaybeCalcContactSurface relies on DispatchRigidSoftCalculation
@@ -571,6 +530,7 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, HandleSoftMeshRigidHalfspace) {
       &scene.shape_A(), &scene.shape_B(), &scene.data());
   EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
   EXPECT_EQ(scene.surfaces().size(), 1u);
+  EXPECT_TRUE(ValidateDerivatives(scene.surfaces()[0]));
 }
 
 TYPED_TEST_SUITE(StrictHydroelasticCallbackTyped, ScalarTypes);
@@ -678,6 +638,7 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ValidPairProducesResult) {
   DRAKE_EXPECT_NO_THROW(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()));
   EXPECT_EQ(scene.surfaces().size(), 1u);
+  EXPECT_TRUE(ValidateDerivatives(scene.surfaces()[0]));
 }
 
 TYPED_TEST_SUITE(HydroelasticCallbackFallbackTyped, ScalarTypes);
@@ -785,6 +746,7 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, ValidPairProducesResult) {
   DRAKE_EXPECT_NO_THROW(
       CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 1u);
+  EXPECT_TRUE(ValidateDerivatives(scene.surfaces()[0]));
   EXPECT_EQ(point_pairs.size(), 0u);
 }
 
