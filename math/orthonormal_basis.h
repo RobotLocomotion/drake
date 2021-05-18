@@ -24,6 +24,11 @@ namespace math {
 ///         @p axis_index does not lie in the range [0,2].
 template <class T>
 Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
+  const RotationMatrix<T> R_WL =
+      RotationMatrix<T>::MakeFromOneVector(axis_W, axis_index);
+  return R_WL.matrix();
+
+#if 0
   // Verify that the correct axis is given.
   if (axis_index < 0 || axis_index > 2)
     throw std::logic_error("Invalid axis specified: must be 0, 1, or 2.");
@@ -34,11 +39,6 @@ Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
   if (norm < zero_tol)
     throw std::logic_error("Vector appears to be nearly zero.");
 
-  const RotationMatrix<T> R_WL =  RotationMatrix<T>::MakeFromOneUnitVector(
-    axis_W / norm, axis_index);
-  return R_WL.matrix();
-
-#if 0
   // The axis corresponding to the smallest component of axis_W will be *most*
   // perpendicular.
   const Vector3<T> u(axis_W.cwiseAbs());
