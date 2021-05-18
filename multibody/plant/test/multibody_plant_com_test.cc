@@ -249,8 +249,8 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
           world_model_instance_array),
       std::exception,
-      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This system only "
-      "contains the world_body\\(\\) so its center of mass is undefined.");
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): There were no "
+      "bodies specified. You must provide at least one selected body.");
 
   // Ensure an exception is thrown when a model instance has two world bodies.
   world_model_instance_array.push_back(world_model_instance);
@@ -258,8 +258,8 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
           world_model_instance_array),
       std::exception,
-      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This system only "
-      "contains the world_body\\(\\) so its center of mass is undefined.");
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): There were no "
+      "bodies specified. You must provide at least one selected body.");
 
   // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);

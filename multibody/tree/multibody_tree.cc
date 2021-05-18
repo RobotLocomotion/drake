@@ -1269,9 +1269,9 @@ template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context) const {
   if (num_bodies() <= 1) {
-    throw std::runtime_error(
-        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
-        "the world_body() so its center of mass is undefined.");
+    throw std::logic_error(
+        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains "
+        "only the world_body() so its center of mass is undefined.");
   }
 
   T total_mass = 0;
@@ -1303,18 +1303,21 @@ template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
+  // Reminder: MultibodyTree always declares a world body and 2 model instances
+  // "world" and "default" so num_model_instances() should always be >= 2.
   if (num_bodies() <= 1 || num_model_instances() <= 1) {
-    throw std::runtime_error(
-        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
-        "the world_body() so its center of mass is undefined.");
+    throw std::logic_error(
+        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains "
+        "only the world_body() so its center of mass is undefined.");
   }
 
   T total_mass = 0;
   Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
   // Sum over all the bodies that are in model_instances except for the 0th body
-  // (which is the world body).  It is considered an error for the same body to
-  // appear in multiple model_instances, so count each body only once.
+  // (which is the world body).  It is a upstream user error for the same body
+  // to appear in multiple model_instances, so count each body only once.
+  int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
@@ -1322,12 +1325,20 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
       // total mass = ∑ mᵢ.
       const T& body_mass = body.get_mass(context);
       total_mass += body_mass;
+      ++number_of_non_world_bodies_processed;
 
       // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
       const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
       const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
       sum_mi_pi += body_mass * pi_WoBcm_W;
     }
+  }
+
+  // Throw an exception if there are zero non-world bodies in model_instances.
+  if (number_of_non_world_bodies_processed == 0) {
+    throw std::logic_error(
+        "CalcCenterOfMassPositionInWorld(): There were no bodies specified. "
+        "You must provide at least one selected body.");
   }
 
   if (total_mass <= 0) {
@@ -1341,89 +1352,95 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
 template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context) const {
-  // Each multibody tree contains the world body.
-  // Ensure this multibody tree contains at least one non-world body.
   if (num_bodies() <= 1) {
     std::string message = fmt::format("{}(): This MultibodyPlant only contains "
         "the world_body() so its center of mass is undefined.", __func__);
     throw std::logic_error(message);
   }
 
-  std::vector<ModelInstanceIndex> model_instances;
-  for (ModelInstanceIndex model_instance_index(1);
-       model_instance_index < num_model_instances(); ++model_instance_index)
-    model_instances.push_back(model_instance_index);
+  T total_mass = 0;
+  Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
-  return CalcCenterOfMassTranslationalVelocityInWorld(context, model_instances);
+  // Sum over all the bodies except the 0th body (which is the world body).
+  for (BodyIndex body_index{1}; body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+
+    // total mass = ∑ mᵢ.
+    const T& body_mass = body.get_mass(context);
+    total_mass += body_mass;
+
+    // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
+    const Vector3<T> vi_WBcm_W =
+        body.CalcCenterOfMassTranslationalVelocityInWorld(context);
+    sum_mi_vi += body_mass * vi_WBcm_W;
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's "
+        "total mass must be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  // For a system S with center of mass Scm, Scm's translational velocity in the
+  // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bcm's velocity in world frame W
+  // (Bcm is the center of mass of the iᵗʰ body).
+  return sum_mi_vi / total_mass;
 }
 
 template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  // Reminder: MultibodyTree always declares 2 model instances "world" and
-  // "default" so num_model_instances() should always be >= 2.
-  std::vector<BodyIndex> body_indexes;
-  for (auto model_instance : model_instances) {
-    DRAKE_THROW_UNLESS(model_instance.is_valid());
-    DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-    const std::vector<BodyIndex> body_index_in_instance =
-        GetBodyIndices(model_instance);
-    for (BodyIndex body_index : body_index_in_instance)
-      body_indexes.push_back(body_index);
-  }
-
-  return CalcCenterOfMassTranslationalVelocityInWorldHelper(context,
-                                                            body_indexes,
-                                                            __func__);
-}
-
-template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorldHelper(
-    const systems::Context<T>& context,
-    const std::vector<BodyIndex>& body_indexes,
-    const char* function_name) const {
-  if (body_indexes.empty()) {
-    std::string message = fmt::format("{}(): There were no bodies specified. "
-        "You must provide at least one selected body.", function_name);
+  // Reminder: MultibodyTree always declares a world body and 2 model instances
+  // "world" and "default" so num_model_instances() should always be >= 2.
+  if (num_bodies() <= 1 || num_model_instances() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
     throw std::logic_error(message);
   }
 
-  // For a system S with center of mass Scm, Scm's translational velocity in
-  // frame A is calculated as v_AScm = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
-  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is the velocity of Bcm in frame A
-  // (Bcm is the center of mass of the iᵗʰ body).
-  T composite_mass = 0;                       // mₛ = ∑ mᵢ (mass of the system).
-  Vector3<T> sum_mi_vi = Vector3<T>::Zero();  // sum_mi_vi = ∑ (mᵢ vᵢ).
+  T total_mass = 0;
+  Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
+  // Sum over all the bodies that are in model_instances except for the 0th body
+  // (which is the world body).  It is a upstream user error for the same body
+  // to appear in multiple model_instances, so count each body only once.
   int number_of_non_world_bodies_processed = 0;
-  for (BodyIndex body_index : body_indexes) {
-    if (body_index == 0) continue;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      // total mass = ∑ mᵢ.
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;
+      ++number_of_non_world_bodies_processed;
 
-    const Body<T>& body_B = get_body(body_index);
-    const Vector3<T> v_ABcm_E =
-        body_B.CalcCenterOfMassTranslationalVelocityInWorld(context);
-
-    // Form (mᵢ vᵢ) and add to sum, i.e., sum_mi_vi = ∑ (mᵢ vᵢ).
-    const T& body_mass = body_B.get_mass(context);
-    sum_mi_vi += body_mass * v_ABcm_E;
-    composite_mass += body_mass;
-    ++number_of_non_world_bodies_processed;
+      // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
+      const Vector3<T> vi_WBcm_W =
+        body.CalcCenterOfMassTranslationalVelocityInWorld(context);
+      sum_mi_vi += body_mass * vi_WBcm_W;
+    }
   }
 
-  // Throw an exception if body_indexes only contains one (or more) world_body.
+  // Throw an exception if there are zero non-world bodies in model_instances.
   if (number_of_non_world_bodies_processed == 0) {
-    std::string message = fmt::format("{}(): This system only contains "
-        "the world_body() so its center of mass is undefined.", function_name);
+    std::string message = fmt::format("{}(): There were no bodies specified. "
+        "You must provide at least one selected body.", __func__);
     throw std::logic_error(message);
   }
 
-  if (composite_mass <= 0) {
+  if (total_mass <= 0) {
     std::string message = fmt::format("{}(): The system's "
-        "total mass must be greater than zero.", function_name);
+        "total mass must be greater than zero.", __func__);
     throw std::logic_error(message);
   }
-  return sum_mi_vi / composite_mass;
+
+  // For a system S with center of mass Scm, Scm's translational velocity in the
+  // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bcm's velocity in world frame W
+  // (Bcm is the center of mass of the iᵗʰ body).
+  return sum_mi_vi / total_mass;
 }
 
 template <typename T>
