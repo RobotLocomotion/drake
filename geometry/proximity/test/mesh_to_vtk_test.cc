@@ -64,7 +64,7 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
   const double kElasticModulus = 1.0e+5;
   const VolumeMeshFieldLinear<double, double> field_S =
       MakeBoxPressureField<double>(soft_box, &volume_S, kElasticModulus);
-  const Bvh<VolumeMesh<double>> bvh_volume_S(volume_S);
+  const Bvh<Obb, VolumeMesh<double>> bvh_volume_S(volume_S);
   // The soft box is at the center of World.
   RigidTransformd X_WS = RigidTransformd::Identity();
 
@@ -72,7 +72,7 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
   // Very coarse resolution_hint 4.0 should give the coarsest mesh.
   const SurfaceMesh<double> surface_R =
       MakeBoxSurfaceMesh<double>(rigid_box, 4.0);
-  const Bvh<SurfaceMesh<double>> bvh_surface_R(surface_R);
+  const Bvh<Obb, SurfaceMesh<double>> bvh_surface_R(surface_R);
   // The rigid box intersects the soft box in a unit cube at the corner
   // (2.0, 2.0, 1.0).
   RigidTransformd X_WR(Vector3d{3., 3., 1.});

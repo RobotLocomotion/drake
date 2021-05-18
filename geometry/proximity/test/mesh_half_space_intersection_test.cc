@@ -788,7 +788,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       Vector3<double>(1.0, 2.0, 3.0));
   const SurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB);
   const GeometryId mesh_id = GeometryId::get_new_id();
-  const Bvh<SurfaceMesh<double>> bvh_F(mesh_F);
+  const Bvh<Obb, SurfaceMesh<double>> bvh_F(mesh_F);
 
   // Construct the half-space.
   const GeometryId hs_id = GeometryId::get_new_id();
@@ -911,7 +911,7 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
 
   const SurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB);
   const GeometryId mesh_id = GeometryId::get_new_id();
-  const Bvh<SurfaceMesh<double>> bvh_F(mesh_F);
+  const Bvh<Obb, SurfaceMesh<double>> bvh_F(mesh_F);
 
   // Construct the half-space.
   const GeometryId hs_id = GeometryId::get_new_id();
@@ -1040,7 +1040,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     vector<Face> faces{{Face{VIndex(0), VIndex(1), VIndex(2)}}};
     id_R_ = GeometryId::get_new_id();
     mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
-    bvh_R_ = make_unique<Bvh<SurfaceMesh<double>>>(*mesh_R_);
+    bvh_R_ = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*mesh_R_);
   }
 
   /* Indicator for the relative pose of the mesh (tri) relative to the half
@@ -1176,7 +1176,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
   /* The rigid mesh. */
   GeometryId id_R_;
   unique_ptr<SurfaceMesh<double>> mesh_R_;
-  unique_ptr<Bvh<SurfaceMesh<double>>> bvh_R_;
+  unique_ptr<Bvh<Obb, SurfaceMesh<double>>> bvh_R_;
 
   /* The amount we penetrate the triangle mesh into the half space.  */
   static constexpr double kDepth = 0.25;
