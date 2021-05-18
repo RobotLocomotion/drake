@@ -22,16 +22,17 @@ SolverId ScsSolver::id() {
 bool ScsSolver::is_enabled() { return true; }
 
 bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
-  return AreRequiredAttributesSupported(
-      prog.required_capabilities(),
-      ProgramAttributes({ProgramAttribute::kLinearEqualityConstraint,
-                         ProgramAttribute::kLinearConstraint,
-                         ProgramAttribute::kLorentzConeConstraint,
-                         ProgramAttribute::kRotatedLorentzConeConstraint,
-                         ProgramAttribute::kPositiveSemidefiniteConstraint,
-                         ProgramAttribute::kExponentialConeConstraint,
-                         ProgramAttribute::kLinearCost,
-                         ProgramAttribute::kQuadraticCost}));
+  static const never_destroyed<ProgramAttributes> solver_capabilities(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearEqualityConstraint,
+          ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kLorentzConeConstraint,
+          ProgramAttribute::kRotatedLorentzConeConstraint,
+          ProgramAttribute::kPositiveSemidefiniteConstraint,
+          ProgramAttribute::kExponentialConeConstraint,
+          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost});
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers
