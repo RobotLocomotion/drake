@@ -196,8 +196,9 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const math::RigidTransform<T>& X_WR) {
+    const Bvh<Obb, VolumeMesh<double>>& bvh_S,
+    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
+    const math::RigidTransform<T>& X_WR) {
   std::vector<VolumeElementIndex> tet_indices;
   tet_indices.reserve(field_S.mesh().num_elements());
   auto callback = [&tet_indices](VolumeElementIndex tet_index) {
@@ -253,15 +254,15 @@ template std::unique_ptr<ContactSurface<AutoDiffXd>> ComputeContactSurface(
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<double>&,
+    const Bvh<Obb, VolumeMesh<double>>&, const math::RigidTransform<double>&,
     const GeometryId, const math::RigidTransform<double>&);
 
 template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
-    const GeometryId, const math::RigidTransform<AutoDiffXd>&);
-
+    const Bvh<Obb, VolumeMesh<double>>&,
+    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
+    const math::RigidTransform<AutoDiffXd>&);
 
 }  // namespace internal
 }  // namespace geometry

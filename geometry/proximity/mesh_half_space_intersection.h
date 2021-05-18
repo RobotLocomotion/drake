@@ -143,7 +143,8 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<SurfaceMesh<double>>& bvh_R, const math::RigidTransform<T>& X_WR);
+    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
