@@ -39,8 +39,7 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyDiscreteUpdateManager);
 
-  explicit DummyDiscreteUpdateManager(const MultibodyPlant<double>* plant)
-      : DiscreteUpdateManager<double>(plant) {}
+  DummyDiscreteUpdateManager() = default;
 
   ~DummyDiscreteUpdateManager() = default;
 
@@ -95,7 +94,7 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
 
   /* Increments the discrete rigid dofs by 1 and additional discrete state by 2
    if there is any. */
-  void DoCalcDiscreteValues(const Context<double>& context0,
+  void DoCalcDiscreteValues(const Context<double>& context,
                             DiscreteValues<double>* updates) const final {
     auto multibody_data = updates->get_mutable_vector(multibody_state_index())
                               .get_mutable_value();
@@ -125,7 +124,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
     // generalized velocities for the rigid model.
     EXPECT_EQ(plant_.num_velocities(), kNumRigidDofs);
     discrete_update_manager_ = &plant_.set_discrete_update_manager(
-        std::make_unique<DummyDiscreteUpdateManager>(&plant_));
+        std::make_unique<DummyDiscreteUpdateManager>());
   }
 
   static VectorXd dummy_discrete_state() {

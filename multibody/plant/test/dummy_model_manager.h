@@ -36,10 +36,12 @@ class DummyModelManager : public PhysicalModelManager<double> {
   }
 
   const systems::OutputPort<double>& get_abstract_output_port() const {
+    this->ThrowIfNotFinalized(__func__);
     return this->plant().get_output_port(abstract_output_port_index_);
   }
 
   const systems::OutputPort<double>& get_vector_output_port() const {
+    this->ThrowIfNotFinalized(__func__);
     return this->plant().get_output_port(vector_output_port_index_);
   }
 
@@ -49,10 +51,11 @@ class DummyModelManager : public PhysicalModelManager<double> {
 
  private:
   /* Declares a single group of discrete state by concatenating all the state
-   added so far. Also declares two output ports that reports the value of the
+   added so far. It also declares two output ports that reports the value of the
    dummy discrete state: one abstract output port with underlying value type
-   VectorXd and one plain-old vector port. */
-  void DoDeclareStateCacheAndPorts() final {
+   VectorXd and one plain-old vector port. We can verify the two ports report
+   the same results as a sanity check. */
+  void DoDeclareContextResources() final {
     /* Declares the single group of discrete state. */
     VectorXd model_state(num_dofs_);
     int dof_offset = 0;

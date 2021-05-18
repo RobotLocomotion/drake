@@ -38,11 +38,11 @@ class PhysicalModelManager {
   virtual ~PhysicalModelManager() = default;
 
   /* MultibodyPlant calls this from within Finalize() to declare additional
-   state, cache and ports. `DeclareStateCacheAndPorts()` will throw an
+   state, cache and ports. `DeclareContextResources()` will throw an
    exception when called before `Finalize()`.*/
-  void DeclareStateCacheAndPorts() {
+  void DeclareContextResources() {
     ThrowIfNotFinalized(__func__);
-    DoDeclareStateCacheAndPorts();
+    DoDeclareContextResources();
   }
 
   const MultibodyPlant<T>& plant() const { return *plant_; }
@@ -50,7 +50,7 @@ class PhysicalModelManager {
  protected:
   /* Derived class must override this to declare the state, cache and ports for
    its specific model. */
-  virtual void DoDeclareStateCacheAndPorts() = 0;
+  virtual void DoDeclareContextResources() = 0;
 
   /* Helper method for throwing an exception within public methods that should
    not be called after the owning MultibodyPlant is Finalized. The invoking
@@ -80,7 +80,7 @@ class PhysicalModelManager {
     }
   }
 
-  /* Exposed private/protected MultibodyPlant methods. */
+  /* Protected LeafSystem methods exposed through MultibodyPlant. */
   systems::DiscreteStateIndex DeclareDiscreteState(
       const VectorX<T>& model_value);
 

@@ -1603,7 +1603,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // method MultibodyPlant takes ownership of `manager`.
   //
   // @note Setting a contact manager bypasses the mechanism to set a different
-  // contact solver with set_contact_solver(). Use only on of these two
+  // contact solver with set_contact_solver(). Use only one of these two
   // experimental mechanims but never both.
   //
   // @param manager
@@ -1628,12 +1628,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     static_assert(
         std::is_base_of<internal::DiscreteUpdateManager<T>, ManagerType>::value,
         "ManagerType must be a sub-class of DiscreteUpdateManager.");
-    // Make sure that we can plugging the manager into the correct
-    // MultibodyPlant.
-    DRAKE_DEMAND(&manager->plant() == this);
-
+    manager->SetOwningMultibodyPlant(this);
     discrete_update_manager_ = std::move(manager);
-    discrete_update_manager_->ExtractModelInfo();
     ManagerType* concrete_manager_ptr =
         static_cast<ManagerType*>(discrete_update_manager_.get());
     return *concrete_manager_ptr;
@@ -1643,7 +1639,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // developers wanting to try out their new physical models. We choose not to
   // show it in public documentations rather than making it private with
   // friends. With this method MultibodyPlant takes ownership of `model_manager`
-  // and calls its DeclareStateCacheAndPorts() method at Finalize(), giving
+  // and calls its DeclareContextResources() method at Finalize(), giving
   // specific model manager implementations a chance to declare state, cache
   // and/or ports.
   //

@@ -235,7 +235,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   /* Returns the DiscreteStateIndex for the one and only multibody discrete
   state if the system is discrete and finalized. Throws otherwise. */
-  systems::DiscreteStateIndex get_discrete_state_index_or_throw() const {
+  systems::DiscreteStateIndex GetDiscreteStateIndexOrThrow() const {
     if (!is_discrete_) {
       throw std::runtime_error(
           "The MultibodyTreeSystem is modeled as a continuous system and there "
@@ -243,7 +243,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     }
     if (!already_finalized_) {
       throw std::logic_error(
-          "get_discrete_state_index_or_throw() can only be "
+          "GetDiscreteStateIndexOrThrow() can only be "
           "called post-Finalize().");
     }
     return discrete_state_index_;

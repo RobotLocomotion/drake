@@ -2739,7 +2739,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
   for (auto& model_manager : model_managers_) {
-    model_manager->DeclareStateCacheAndPorts();
+    model_manager->DeclareContextResources();
   }
 }
 

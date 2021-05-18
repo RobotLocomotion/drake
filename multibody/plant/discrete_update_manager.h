@@ -16,36 +16,35 @@ class AccelerationKinematicsCache;
 /* This class is used to perform all calculations needed to advance state for a
  MultibodyPlant with discrete state.
 
- It is an interface class that MultibodyPlant knows how to invoke. As of today
- a new manager can be set with the experimental method
- MultibodyPlant::set_discrete_update_manager(). This allows Drake developers to
- experiment with a variety of time stepping methods.
+ It is an abstract base class providing an interface for MultibodyPlant to
+ invoke, with the intent that a variety of concrete DiscreteUpdateManagers will
+ be derived from this base class. As of today a new manager can be set with the
+ experimental method MultibodyPlant::set_discrete_update_manager(). This allows
+ Drake developers to experiment with a variety of discrete update methods.
 
  @tparam_default_scalar */
 template <typename T>
 class DiscreteUpdateManager {
  public:
-  /* Constructs a DiscreteUpdateManager to be owned by `plant`.
-   @pre plant != nullptr.
-   @pre plant is discrete. */
-  explicit DiscreteUpdateManager(const MultibodyPlant<T>* plant)
-      : plant_(plant) {
-    DRAKE_DEMAND(plant_ != nullptr);
-    DRAKE_DEMAND(plant_->is_discrete());
-  }
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteUpdateManager);
+
+  DiscreteUpdateManager() = default;
 
   virtual ~DiscreteUpdateManager() = default;
 
-  /* Returns the MultibodyPlant that owns this DiscreteUpdateManager. */
-  const MultibodyPlant<T>& plant() const { return *plant_; }
+  /* Returns the MultibodyPlant that owns this DiscreteUpdateManager.
+   @pre SetOwningMultibodyPlant() has been successfully invoked. */
+  const MultibodyPlant<T>& plant() const {
+    DRAKE_DEMAND(plant_ != nullptr);
+    return *plant_;
+  }
 
-  /* Extracts the information the DiscreteUpdateManager needs about the
-   multibody model as well as any external model manager in the system to be
-   able to solve them. Needs to be invoked after the MultibodyPlant owning this
-   manager has been finalized for the manager to be able to function. */
-  void ExtractModelInfo() {
+  /* Sets the given `plant` as the MultibodyPlant owning this
+   DiscreteUpdateManager. */
+  void SetOwningMultibodyPlant(const MultibodyPlant<T>* plant) {
+    plant_ = plant;
     DRAKE_DEMAND(plant_->is_finalized());
-    multibody_state_index_ = plant_->get_discrete_state_index_or_throw();
+    multibody_state_index_ = plant_->GetDiscreteStateIndexOrThrow();
     DoExtractModelInfo();
   }
 
@@ -74,30 +73,33 @@ class DiscreteUpdateManager {
 
   /* MultibodyPlant invokes this method to perform the discrete variables
    update. */
-  void CalcDiscreteValues(const systems::Context<T>& context0,
+  void CalcDiscreteValues(const systems::Context<T>& context,
                           systems::DiscreteValues<T>* updates) const {
     DRAKE_DEMAND(updates != nullptr);
-    DoCalcDiscreteValues(context0, updates);
+    DoCalcDiscreteValues(context, updates);
   }
 
-  /* Exposed MultibodyPlant private/protected methods. */
+  /* Exposed MultibodyPlant private/protected method. */
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
 
  protected:
-  /* Extract information from the model in the owning plant specific to the
-   derived discrete update manager. Default is no-op. */
+  /* The NVI method has verified that the MultibodyPlant has been finalized. If
+   derived DiscreteUpdateManager needs to extract information from it, it
+   override this method and do so here. */
   virtual void DoExtractModelInfo() {}
 
+  /* Returns the discrete state index of the rigid position and velocity states
+   declared by MultibodyPlant. */
   systems::DiscreteStateIndex multibody_state_index() const {
     return multibody_state_index_;
   }
 
-  /* Exposed MultibodyPlant private/protected methods. */
+  /* Exposed MultibodyPlant private/protected method. */
   const MultibodyTree<T>& internal_tree() const;
 
   /* Concrete DiscreteUpdateManagers must override these Calc methods to
-   provide an implementation. The output parameters are guranteed to be
+   provide an implementation. The output parameters are guaranteed to be
    non-null and do not need to be checked again. */
   virtual void DoCalcContactSolverResults(
       const systems::Context<T>& context,
@@ -108,11 +110,11 @@ class DiscreteUpdateManager {
       internal::AccelerationKinematicsCache<T>* ac) const = 0;
 
   virtual void DoCalcDiscreteValues(
-      const systems::Context<T>& context0,
+      const systems::Context<T>& context,
       systems::DiscreteValues<T>* updates) const = 0;
 
  private:
-  const MultibodyPlant<T>* plant_;
+  const MultibodyPlant<T>* plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
 };
 }  // namespace internal
