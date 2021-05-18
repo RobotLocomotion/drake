@@ -48,7 +48,7 @@ GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
 
     // Check a zero vector.
     v.setZero();
-    EXPECT_THROW(ComputeBasisFromAxis(i, v), std::logic_error);
+    EXPECT_THROW(ComputeBasisFromAxis(i, v), std::exception);
 
     // Check the x-, y- and z-axes.
     const Vector3d x_axis = Vector3d::UnitX();
