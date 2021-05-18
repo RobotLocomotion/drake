@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -33,6 +34,11 @@ Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
   if (norm < zero_tol)
     throw std::logic_error("Vector appears to be nearly zero.");
 
+  const RotationMatrix<T> R_WL =  RotationMatrix<T>::MakeFromOneUnitVector(
+    axis_W / norm, axis_index);
+  return R_WL.matrix();
+
+#if 0
   // The axis corresponding to the smallest component of axis_W will be *most*
   // perpendicular.
   const Vector3<T> u(axis_W.cwiseAbs());
@@ -53,6 +59,7 @@ Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
   R_WL.col((axis_index + 2) % 3) = v2_W;
 
   return R_WL;
+#endif
 }
 
 }  // namespace math

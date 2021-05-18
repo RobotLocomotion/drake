@@ -155,6 +155,7 @@ drake_cc_library(
     srcs = ["orthonormal_basis.cc"],
     hdrs = ["orthonormal_basis.h"],
     deps = [
+        ":geometric_transform",
         "//common:essential",
     ],
 )
