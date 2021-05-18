@@ -1,5 +1,6 @@
 #include "drake/solvers/solver_base.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -8,6 +9,8 @@ namespace drake {
 namespace solvers {
 namespace test {
 namespace {
+
+using ::testing::HasSubstr;
 
 // A stub subclass of SolverBase, so that we can instantiate and test it.
 class StubSolverBase final : public SolverBase {
@@ -18,6 +21,19 @@ class StubSolverBase final : public SolverBase {
       [this](){ return available_; },
       [this](){ return enabled_; },
       [this](const auto& prog){ return satisfied_; }) {}
+
+  // This overload passes the explain_unsatisfied functor to the base class,
+  // in contrast to the above constructor which leaves it defaulted.
+  explicit StubSolverBase(std::string explanation)
+    : SolverBase(
+        &id,
+        [this](){ return available_; },
+        [this](){ return enabled_; },
+        [this](const auto& prog){ return satisfied_; },
+        [this](const auto& prog){
+          return satisfied_ ? "" : unsatisfied_explanation_;
+        }),
+      unsatisfied_explanation_(std::move(explanation)) {}
 
   void DoSolve(
       const MathematicalProgram& prog, const Eigen::VectorXd& x_init,
@@ -46,9 +62,10 @@ class StubSolverBase final : public SolverBase {
   bool available_{true};
   bool enabled_{true};
   bool satisfied_{true};
+  std::string unsatisfied_explanation_;
 };
 
-GTEST_TEST(SolverBaseTest, Accessors) {
+GTEST_TEST(SolverBaseTest, BasicAccessors) {
   StubSolverBase dut;
   EXPECT_EQ(dut.solver_id(), StubSolverBase::id());
 
@@ -61,12 +78,38 @@ GTEST_TEST(SolverBaseTest, Accessors) {
   EXPECT_FALSE(dut.enabled());
   dut.enabled_ = true;
   EXPECT_TRUE(dut.enabled());
+}
 
+// Check AreProgramAttributesSatisfied when the subclass does nothing to
+// customize the error message.
+GTEST_TEST(SolverBaseTest, ProgramAttributesDefault) {
   const MathematicalProgram prog;
+
+  StubSolverBase dut;
   dut.satisfied_ = false;
   EXPECT_FALSE(dut.AreProgramAttributesSatisfied(prog));
+  EXPECT_THAT(dut.ExplainUnsatisfiedProgramAttributes(prog),
+              HasSubstr("StubSolverBase is unable to solve"));
+
   dut.satisfied_ = true;
   EXPECT_TRUE(dut.AreProgramAttributesSatisfied(prog));
+  EXPECT_EQ(dut.ExplainUnsatisfiedProgramAttributes(prog), "");
+}
+
+// Check AreProgramAttributesSatisfied when the subclass customizes the error
+// message.
+GTEST_TEST(SolverBaseTest, ProgramAttributesCustom) {
+  const MathematicalProgram prog;
+
+  StubSolverBase dut("Do not meddle in the affairs of wizards!");
+  dut.satisfied_ = false;
+  EXPECT_FALSE(dut.AreProgramAttributesSatisfied(prog));
+  EXPECT_THAT(dut.ExplainUnsatisfiedProgramAttributes(prog),
+              HasSubstr("affairs of wizards"));
+
+  dut.satisfied_ = true;
+  EXPECT_TRUE(dut.AreProgramAttributesSatisfied(prog));
+  EXPECT_EQ(dut.ExplainUnsatisfiedProgramAttributes(prog), "");
 }
 
 GTEST_TEST(SolverBaseTest, SolveAsOutputArgument) {
@@ -126,8 +169,7 @@ GTEST_TEST(SolverBaseTest, ProgramAttributesError) {
   dut.satisfied_ = false;
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.Solve(prog, {}, {}), std::exception,
-      "The capabilities of .*StubSolverBase do not meet the requirements of "
-      "the MathematicalProgram.*");
+      ".*StubSolverBase is unable to solve.*");
 }
 
 GTEST_TEST(SolverBaseTest, SolveAndReturn) {

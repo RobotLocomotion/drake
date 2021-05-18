@@ -15,11 +15,13 @@ SolverBase::SolverBase(
     std::function<SolverId()> id,
     std::function<bool()> available,
     std::function<bool()> enabled,
-    std::function<bool(const MathematicalProgram&)> satisfied)
+    std::function<bool(const MathematicalProgram&)> are_satisfied,
+    std::function<std::string(const MathematicalProgram&)> explain_unsatisfied)
     : default_id_(std::move(id)),
       default_available_(std::move(available)),
       default_enabled_(std::move(enabled)),
-      default_satisfied_(std::move(satisfied)) {}
+      default_are_satisfied_(std::move(are_satisfied)),
+      default_explain_unsatisfied_(std::move(explain_unsatisfied)) {}
 
 SolverBase::~SolverBase() = default;
 
@@ -47,10 +49,7 @@ void SolverBase::Solve(const MathematicalProgram& prog,
         NiceTypeName::Get(*this)));
   }
   if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(fmt::format(
-        "The capabilities of {} do not meet the requirements of the "
-        "MathematicalProgram ({})", NiceTypeName::Get(*this),
-        to_string(prog.required_capabilities())));
+    throw std::invalid_argument(ExplainUnsatisfiedProgramAttributes(prog));
   }
   result->set_solver_id(solver_id());
   result->set_decision_variable_index(prog.decision_variable_index());
@@ -87,8 +86,21 @@ SolverId SolverBase::solver_id() const {
 
 bool SolverBase::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
-  DRAKE_DEMAND(default_satisfied_ != nullptr);
-  return default_satisfied_(prog);
+  DRAKE_DEMAND(default_are_satisfied_ != nullptr);
+  return default_are_satisfied_(prog);
+}
+
+std::string SolverBase::ExplainUnsatisfiedProgramAttributes(
+    const MathematicalProgram& prog) const {
+  if (default_explain_unsatisfied_ != nullptr) {
+    return default_explain_unsatisfied_(prog);
+  }
+  if (AreProgramAttributesSatisfied(prog)) {
+    return {};
+  }
+  return fmt::format(
+      "{} is unable to solve a MathematicalProgram with {}.",
+      NiceTypeName::Get(*this), to_string(prog.required_capabilities()));
 }
 
 }  // namespace solvers

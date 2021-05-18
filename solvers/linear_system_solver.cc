@@ -15,8 +15,8 @@ namespace drake {
 namespace solvers {
 
 LinearSystemSolver::LinearSystemSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+                 &UnsatisfiedProgramAttributes) {}
 
 LinearSystemSolver::~LinearSystemSolver() = default;
 
@@ -86,12 +86,47 @@ SolverId LinearSystemSolver::id() {
   return singleton.access();
 }
 
-bool LinearSystemSolver::ProgramAttributesSatisfied(
-    const MathematicalProgram& prog) {
-  static const never_destroyed<ProgramAttributes> solver_capability(
+namespace {
+// If the program is compatible with this solver, returns true and clears the
+// explanation.  Otherwise, returns false and sets the explanation.  In either
+// case, the explanation can be nullptr in which case it is ignored.
+bool CheckAttributes(
+      const MathematicalProgram& prog,
+      std::string* explanation) {
+  static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint});
-  return prog.required_capabilities() == solver_capability.access();
+  const ProgramAttributes& required_capabilities = prog.required_capabilities();
+  const bool capabilities_match = AreRequiredAttributesSupported(
+      required_capabilities, solver_capabilities.access(), explanation);
+  if (!capabilities_match || required_capabilities.empty()) {
+    if (explanation) {
+      if (required_capabilities.empty()) {
+        *explanation =
+          " a LinearEqualityConstraint is required but has not beed declared";
+      }
+      *explanation = fmt::format(
+          "LinearSystemSolver is unable to solve because {}.", *explanation);
+    }
+    return false;
+  }
+  if (explanation) {
+    explanation->clear();
+  }
+  return true;
+}
+}  // namespace
+
+bool LinearSystemSolver::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  return CheckAttributes(prog, nullptr);
+}
+
+std::string LinearSystemSolver::UnsatisfiedProgramAttributes(
+    const MathematicalProgram& prog) {
+  std::string explanation;
+  CheckAttributes(prog, &explanation);
+  return explanation;
 }
 
 }  // namespace solvers
