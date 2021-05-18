@@ -80,9 +80,9 @@ class SurfaceVolumeIntersector {
    */
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const Bvh<VolumeMesh<double>>& bvh_M,
+      const Bvh<Obb, VolumeMesh<double>>& bvh_M,
       const SurfaceMesh<double>& surface_N,
-      const Bvh<SurfaceMesh<double>>& bvh_N,
+      const Bvh<Obb, SurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
       std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
@@ -362,9 +362,11 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<SurfaceMesh<double>>& bvh_R, const math::RigidTransform<T>& X_WR);
+    const Bvh<Obb, VolumeMesh<double>>& bvh_S,
+    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
+    const SurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
