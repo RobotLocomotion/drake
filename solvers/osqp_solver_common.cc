@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 // This file contains implementations that are common to both the available and
@@ -55,6 +56,15 @@ bool CheckAttributes(
           " Please use a different solver such as CLP (for linear programming)"
           " or IPOPT/SNOPT (for nonlinear programming) if you don't want to add"
           " a quadratic cost to this program.";
+    }
+    return false;
+  }
+  if (!AreAllQuadraticCostsConvex(prog.quadratic_costs())) {
+    if (explanation) {
+      // TODO(hongkai.dai): print the non-convex quadratic cost.
+      *explanation =
+          "OsqpSolver is unable to solve because one quadratic cost is "
+          "non-convex.";
     }
     return false;
   }

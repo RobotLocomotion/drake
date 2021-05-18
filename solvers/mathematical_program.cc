@@ -438,8 +438,8 @@ Binding<QuadraticCost> MathematicalProgram::AddCost(
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
-    const Expression& e) {
-  return AddCost(internal::ParseQuadraticCost(e));
+    const Expression& e, std::optional<bool> is_convex) {
+  return AddCost(internal::ParseQuadraticCost(e, is_convex));
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
@@ -452,15 +452,17 @@ Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddCost(make_shared<QuadraticCost>(Q, b, c), vars);
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    std::optional<bool> is_convex) {
+  return AddCost(make_shared<QuadraticCost>(Q, b, c, is_convex), vars);
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-  return AddQuadraticCost(Q, b, 0., vars);
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    std::optional<bool> is_convex) {
+  return AddQuadraticCost(Q, b, 0., vars, is_convex);
 }
 
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(

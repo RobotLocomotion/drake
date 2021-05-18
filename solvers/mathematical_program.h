@@ -1002,10 +1002,16 @@ class MathematicalProgram {
    * Notice that in the optimization program, the constant term `c` in the cost
    * is ignored.
    * @param e A quadratic symbolic expression.
+   * @param is_convex Whether the cost is already known to be convex. If
+   * is_convex=nullopt (the default), then Drake will determine if `e` is a
+   * convex quadratic cost or not. To improve the computation speed, the user
+   * can set is_convex if the user knows whether the cost is convex or not.
    * @throws std::runtime error if the expression is not quadratic.
    * @return The newly added cost together with the bound variables.
    */
-  Binding<QuadraticCost> AddQuadraticCost(const symbolic::Expression& e);
+  Binding<QuadraticCost> AddQuadraticCost(
+      const symbolic::Expression& e,
+      std::optional<bool> is_convex = std::nullopt);
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
@@ -1048,32 +1054,47 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables.
-   *
+   * @param is_convex Whether the cost is already known to be convex. If
+   * is_convex=nullopt (the default), then Drake will determine if this is a
+   * convex quadratic cost or not (by checking if matrix Q is positive
+   * semidefinite or not). To improve the computation speed, the user can set
+   * is_convex if the user knows whether the cost is convex or not.
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
-    return AddQuadraticCost(Q, b, ConcatenateVariableRefList(vars));
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars,
+      std::optional<bool> is_convex = std::nullopt) {
+    return AddQuadraticCost(Q, b, ConcatenateVariableRefList(vars), is_convex);
   }
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x + c
    * Applied to subset of the variables.
+   * @param is_convex Whether the cost is already known to be convex. If
+   * is_convex=nullopt (the default), then Drake will determine if this is a
+   * convex quadratic cost or not. To improve the computation speed, the user
+   * can set is_convex if the user knows whether the cost is convex or not.
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b, double c,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      std::optional<bool> is_convex = std::nullopt);
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables.
+   * @param is_convex Whether the cost is already known to be convex. If
+   * is_convex=nullopt (the default), then Drake will determine if this is a
+   * convex quadratic cost or not. To improve the computation speed, the user
+   * can set is_convex if the user knows whether the cost is convex or not.
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& b,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      std::optional<bool> is_convex = std::nullopt);
 
   /**
    * Adds a cost term in the polynomial form.

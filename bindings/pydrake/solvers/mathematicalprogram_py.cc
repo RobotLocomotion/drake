@@ -915,22 +915,26 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddQuadraticCost),
+              const Eigen::Ref<const VectorXDecisionVariable>&,
+              std::optional<bool>)>(&MathematicalProgram::AddQuadraticCost),
           py::arg("Q"), py::arg("b"), py::arg("vars"),
-          doc.MathematicalProgram.AddQuadraticCost.doc_3args)
+          py::arg("is_convex") = py::none(),
+          doc.MathematicalProgram.AddQuadraticCost.doc_4args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&, double,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddQuadraticCost),
+              const Eigen::Ref<const VectorXDecisionVariable>&,
+              std::optional<bool>)>(&MathematicalProgram::AddQuadraticCost),
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("vars"),
-          doc.MathematicalProgram.AddQuadraticCost.doc_4args)
+          py::arg("is_convex") = py::none(),
+          doc.MathematicalProgram.AddQuadraticCost.doc_5args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
-              const Expression&)>(&MathematicalProgram::AddQuadraticCost),
-          py::arg("e"), doc.MathematicalProgram.AddQuadraticCost.doc_1args)
+              const Expression&, std::optional<bool>)>(
+              &MathematicalProgram::AddQuadraticCost),
+          py::arg("e"), py::arg("is_convex") = py::none(),
+          doc.MathematicalProgram.AddQuadraticCost.doc_2args)
       .def("AddQuadraticErrorCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -1465,19 +1469,26 @@ for every column of ``prog_var_vals``. )""")
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost", doc.QuadraticCost.doc)
       .def(py::init([](const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
-                        double c) {
-        return std::unique_ptr<QuadraticCost>(new QuadraticCost(Q, b, c));
+                        double c, std::optional<bool> is_convex) {
+        return std::unique_ptr<QuadraticCost>(
+            new QuadraticCost(Q, b, c, is_convex));
       }),
-          py::arg("Q"), py::arg("b"), py::arg("c"), doc.QuadraticCost.ctor.doc)
+          py::arg("Q"), py::arg("b"), py::arg("c"),
+          py::arg("is_convex") = py::none(), doc.QuadraticCost.ctor.doc)
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
       .def("b", &QuadraticCost::b, doc.QuadraticCost.b.doc)
       .def("c", &QuadraticCost::c, doc.QuadraticCost.c.doc)
+      .def("is_convex", &QuadraticCost::is_convex,
+          doc.QuadraticCost.is_convex.doc)
       .def(
           "UpdateCoefficients",
           [](QuadraticCost& self, const Eigen::MatrixXd& new_Q,
-              const Eigen::VectorXd& new_b,
-              double new_c) { self.UpdateCoefficients(new_Q, new_b, new_c); },
+              const Eigen::VectorXd& new_b, double new_c,
+              std::optional<bool> is_convex) {
+            self.UpdateCoefficients(new_Q, new_b, new_c, is_convex);
+          },
           py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0,
+          py::arg("is_convex") = py::none(),
           doc.QuadraticCost.UpdateCoefficients.doc);
 
   RegisterBinding<Cost>(&m, "Cost");

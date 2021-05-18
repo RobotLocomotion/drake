@@ -1,5 +1,6 @@
 #include "drake/solvers/aggregate_costs_constraints.h"
 
+#include <algorithm>
 #include <limits>
 #include <map>
 
@@ -196,6 +197,14 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
       }
     }
   }
+}
+
+bool AreAllQuadraticCostsConvex(
+    const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
+  return std::all_of(quadratic_costs.begin(), quadratic_costs.end(),
+                     [](const Binding<QuadraticCost>& cost) {
+                       return cost.evaluator()->is_convex();
+                     });
 }
 }  // namespace solvers
 }  // namespace drake
