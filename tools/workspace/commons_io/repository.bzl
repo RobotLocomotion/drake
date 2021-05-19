@@ -21,6 +21,14 @@ def _impl(repo_ctx):
             Label("@drake//tools/workspace/commons_io:package-ubuntu.BUILD.bazel"),  # noqa
             "BUILD.bazel",
         )
+        repo_ctx.symlink(
+            "/usr/share/java/commons-io.jar",
+            "jar/commons-io.jar",
+        )
+        repo_ctx.symlink(
+            "BUILD.bazel",
+            "jar/BUILD.bazel",
+        )
     else:
         java_import_external(
             name = repo_ctx.name,

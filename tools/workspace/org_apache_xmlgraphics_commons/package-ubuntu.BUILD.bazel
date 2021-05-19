@@ -2,8 +2,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# On Ubuntu, no targets should depend on @org_apache_xmlgraphics_commons.
-cc_library(
-    name = "org_apache_xmlgraphics_commons",
-    srcs = ["missing-ubuntu.cc"],
+java_import(
+    name = "jar",
+    jars = ["jar/org_apache_xmlgraphics_commons.jar"],
 )

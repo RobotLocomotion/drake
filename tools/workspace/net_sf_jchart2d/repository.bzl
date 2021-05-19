@@ -23,7 +23,11 @@ def _impl(repo_ctx):
         )
         repo_ctx.symlink(
             "/usr/share/java/jchart2d.jar",
-            "jchart2d.jar",
+            "jar/jchart2d.jar",
+        )
+        repo_ctx.symlink(
+            "BUILD.bazel",
+            "jar/BUILD.bazel",
         )
     else:
         repo_ctx.symlink(

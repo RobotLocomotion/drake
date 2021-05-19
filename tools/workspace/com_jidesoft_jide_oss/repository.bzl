@@ -21,13 +21,21 @@ def _impl(repo_ctx):
             Label("@drake//tools/workspace/com_jidesoft_jide_oss:package-ubuntu.BUILD.bazel"),  # noqa
             "BUILD.bazel",
         )
+        repo_ctx.symlink(
+            "/usr/share/java/jide-oss.jar",
+            "jar/jide-os.jar",
+        )
+        repo_ctx.symlink(
+            "BUILD.bazel",
+            "jar/BUILD.bazel",
+        )
     else:
         java_import_external(
             name = repo_ctx.name,
             licenses = ["restricted"],  # GPL-2.0 WITH Classpath-exception-2.0
             jar_urls = [
                 x.format(fulljar = "com/jidesoft/jide-oss/2.9.7/jide-oss-2.9.7.jar")  # noqa
-                for x in repo_ctx.mirrors.get("maven")
+                for x in repo_ctx.attr.mirrors.get("maven")
             ],
             jar_sha256 = "a2edc2749cf482f6b2b1331f35f0383a1a11c19b1cf6d9a8cf7c69ce4cc8e04b",  # noqa
         )

@@ -21,6 +21,14 @@ def _impl(repo_ctx):
             Label("@drake//tools/workspace/org_apache_xmlgraphics_commons:package-ubuntu.BUILD.bazel"),  # noqa
             "BUILD.bazel",
         )
+        repo_ctx.symlink(
+            "/usr/share/java/xmlgraphics-commons.jar",
+            "jar/xmlgraphics-commons.jar",
+        )
+        repo_ctx.symlink(
+            "BUILD.bazel",
+            "jar/BUILD.bazel",
+        )
     else:
         java_import_external(
             name = repo_ctx.name,

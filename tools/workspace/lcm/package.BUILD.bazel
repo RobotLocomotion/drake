@@ -255,12 +255,7 @@ java_library(
         ],
         "//conditions:default": [],
     }),
-    deps = select({
-        "@drake//tools/cc_toolchain:apple": [
-            "@net_sf_jchart2d//jar",
-        ],
-        "//conditions:default": ["@net_sf_jchart2d//:jchart2d"],
-    }),
+    deps = ["@net_sf_jchart2d//jar"],
 )
 
 drake_java_binary(
