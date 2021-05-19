@@ -59,12 +59,15 @@ bool CheckAttributes(
     }
     return false;
   }
-  if (!AreAllQuadraticCostsConvex(prog.quadratic_costs())) {
+  const Binding<QuadraticCost>* nonconvex_quadratic_cost =
+      FindNonconvexQuadraticCost(prog.quadratic_costs());
+  if (nonconvex_quadratic_cost != nullptr) {
     if (explanation) {
-      // TODO(hongkai.dai): print the non-convex quadratic cost.
       *explanation =
-          "OsqpSolver is unable to solve because one quadratic cost is "
-          "non-convex.";
+          "OsqpSolver is unable to solve because the quadratic cost " +
+          nonconvex_quadratic_cost->to_string() +
+          " is non-convex. Either change this cost to a convex one, or switch "
+          "to a different solver like SNOPT/IPOPT/NLOPT.";
     }
     return false;
   }
