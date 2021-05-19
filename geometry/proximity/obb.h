@@ -15,6 +15,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// Forward declarations.
+class Aabb;
+
 /* Oriented bounding box used in Bvh. The box is defined in a canonical
  frame B such that it is centered on Bo and its extents are aligned with
  B's axes. However, the box is posed in a hierarchical frame H (see pose()).
@@ -75,6 +78,13 @@ class Obb {
    OBB overlap test. Box `a` has its frame A posed in hierarchy frame G, and
    box `b` has its frame B posed in hierarchy frame H. */
   static bool HasOverlap(const Obb& a_G, const Obb& b_H,
+                         const math::RigidTransformd& X_GH);
+
+  /* Checks whether the two bounding volumes `a` and `b` overlap by applying
+   transforms between frames of boxes and hierarchies and using Gottschalk's
+   OBB overlap test. Box `a` has its frame A posed in hierarchy frame G, and
+   box `b` has its frame B posed in hierarchy frame H. */
+  static bool HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
                          const math::RigidTransformd& X_GH);
 
   /* Checks whether bounding volume `bv` intersects the given plane. The
@@ -170,7 +180,7 @@ class ObbMaker {
   }
 
   /* Computes the bounding volume of the vertices specified in the constructor.
-   @return obb_M   The oriented bounding box posed in frame M.  */
+   @retval obb_M   The oriented bounding box posed in frame M.  */
   Obb Compute() const;
 
  private:
