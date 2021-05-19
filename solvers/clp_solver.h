@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
@@ -45,6 +47,7 @@ class ClpSolver final : public SolverBase {
   static bool is_available();
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  static std::string UnsatisfiedProgramAttributes(const MathematicalProgram&);
   //@}
 
   // A using-declaration adds these methods into our class's Doxygen.

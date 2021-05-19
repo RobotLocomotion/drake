@@ -3,6 +3,7 @@
 #include <limits>
 #include <optional>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -20,6 +21,8 @@ using Eigen::Matrix3d;
 using Eigen::Matrix2d;
 using std::numeric_limits;
 using drake::symbolic::Expression;
+
+using ::testing::HasSubstr;
 
 namespace drake {
 namespace solvers {
@@ -650,10 +653,12 @@ void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
                      double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddQuadraticCost(-x(0) * x(0) + x(1) * x(1) + 2);
+  auto nonconvex_cost = prog.AddQuadraticCost(-x(0) * x(0) + x(1) * x(1) + 2);
   prog.AddBoundingBoxConstraint(0, 1, x);
   if (convex_solver) {
     EXPECT_FALSE(solver.AreProgramAttributesSatisfied(prog));
+    EXPECT_THAT(solver.ExplainUnsatisfiedProgramAttributes(prog),
+                HasSubstr(nonconvex_cost.to_string() + " is non-convex"));
   } else {
     MathematicalProgramResult result;
     // Use a non-zero initial guess, since at x = [0, 0], the gradient is 0.
