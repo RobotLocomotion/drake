@@ -15,6 +15,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// Forward declarations.
+class Aabb;
+
 /* Oriented bounding box used in Bvh. The box is defined in a canonical
  frame B such that it is centered on Bo and its extents are aligned with
  B's axes. However, the box is posed in a hierarchical frame H (see pose()).
@@ -70,11 +73,28 @@ class Obb {
     return half_width_[0] * half_width_[1] * half_width_[2] * 8;
   }
 
-  /* Checks whether the two bounding volumes `a` and `b` overlap by applying
-   transforms between frames of boxes and hierarchies and using Gottschalk's
-   OBB overlap test. Box `a` has its frame A posed in hierarchy frame G, and
-   box `b` has its frame B posed in hierarchy frame H. */
+  /* Reports whether the two oriented bounding boxes `a_G` and `b_H` intersect.
+   The poses of `a_G` and `b_H` are defined in their corresponding hierarchy
+   frames G and H, respectively.
+
+   @param a_G       The first oriented box.
+   @param b_H       The second oriented box.
+   @param X_GH      The relative pose between hierarchy frame G and hierarchy
+                    frame H.
+   @returns `true` if the boxes intersect.   */
   static bool HasOverlap(const Obb& a_G, const Obb& b_H,
+                         const math::RigidTransformd& X_GH);
+
+  /* Reports whether oriented bounding box `obb_G` intersects the given
+   axis-aligned bounding box `aabb_H`. The poses of `obb_G` and `aabb_H` are
+   defined in their corresponding hierarchy frames G and H, respectively.
+
+   @param obb_G     The oriented box.
+   @param aabb_H    The axis-aligned box.
+   @param X_GH      The relative pose between the obb hierarchy frame G and the
+                    aabb hierarchy frame H.
+   @returns `true` if the boxes intersect.   */
+  static bool HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
                          const math::RigidTransformd& X_GH);
 
   /* Checks whether bounding volume `bv` intersects the given plane. The
@@ -170,7 +190,7 @@ class ObbMaker {
   }
 
   /* Computes the bounding volume of the vertices specified in the constructor.
-   @return obb_M   The oriented bounding box posed in frame M.  */
+   @retval obb_M   The oriented bounding box posed in frame M.  */
   Obb Compute() const;
 
  private:
