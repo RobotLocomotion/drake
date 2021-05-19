@@ -12,7 +12,6 @@
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/utilities.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {

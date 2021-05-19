@@ -607,7 +607,6 @@ drake_cc_library(
         "//geometry:proximity_engine",
         "//geometry:utilities",
         "//math:geometric_transform",
-        "//math:orthonormal_basis",
     ],
 )
 
@@ -829,8 +828,8 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
+        "//math:geometric_transform",
         "//math:gradient",
-        "//math:orthonormal_basis",
     ],
 )
 
@@ -842,8 +841,8 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
+        "//math:geometric_transform",
         "//math:gradient",
-        "//math:orthonormal_basis",
     ],
 )
 

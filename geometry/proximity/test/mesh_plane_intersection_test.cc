@@ -15,7 +15,6 @@
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 

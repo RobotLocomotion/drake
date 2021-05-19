@@ -15,9 +15,9 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
