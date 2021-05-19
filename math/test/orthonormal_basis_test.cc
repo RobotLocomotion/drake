@@ -1,10 +1,9 @@
-#include "drake/math/rotation_matrix.h"
-
 #include <stdexcept>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rotation_matrix.h"
 
 using Eigen::Vector3d;
 
