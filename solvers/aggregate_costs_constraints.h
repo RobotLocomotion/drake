@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -85,5 +86,22 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
  */
 bool AreAllQuadraticCostsConvex(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs);
+
+/**
+ * Returns the first non-convex quadratic cost among @p quadratic_costs. If all
+ * quadratic costs are convex, then return a nullptr.
+ */
+const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
+    const std::vector<Binding<QuadraticCost>>& quadratic_costs);
+
+namespace internal {
+// If the program is compatible with this solver, returns true and clears the
+// explanation.  Otherwise, returns false and sets the explanation.  In either
+// case, the explanation can be nullptr in which case it is ignored.
+bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
+                                 const ProgramAttributes& solver_capabilities,
+                                 const std::string& solver_name,
+                                 std::string* explanation);
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake
