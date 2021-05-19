@@ -153,7 +153,7 @@ drake_cc_library(
 drake_cc_library(
     name = "orthonormal_basis",
     srcs = [],
-    hdrs = ["orthonormal_basis.h"],
+    hdrs = ["rotation_matrix.h"],
     deps = [
         ":geometric_transform",
         "//common:essential",

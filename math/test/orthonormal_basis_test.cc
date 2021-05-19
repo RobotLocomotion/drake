@@ -1,4 +1,4 @@
-#include "drake/math/orthonormal_basis.h"
+#include "drake/math/rotation_matrix.h"
 
 #include <stdexcept>
 
