@@ -70,7 +70,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "picosat",
 ]] + select({
     "//conditions:default": [],
-    "@drake//tools/cc_toolchain:apple": [],
+    "@drake//tools/cc_toolchain:apple": ["//tools/workspace/net_sf_jchart2d:install"],
 }) + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
