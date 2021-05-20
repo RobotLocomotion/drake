@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -22,7 +23,7 @@ class AccelerationKinematicsCache;
  experimental method MultibodyPlant::set_discrete_update_manager(). This allows
  Drake developers to experiment with a variety of discrete update methods.
 
- @tparam_default_scalar */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class DiscreteUpdateManager {
  public:
@@ -31,6 +32,23 @@ class DiscreteUpdateManager {
   DiscreteUpdateManager() = default;
 
   virtual ~DiscreteUpdateManager() = default;
+
+  /* Creates a deep copy of `this` DiscreteUpdateManager. */
+  std::unique_ptr<DiscreteUpdateManager<T>> Clone() const {
+    return CloneToScalar<T>();
+  }
+
+  /* Creates a deep copy of `this` DiscreteUpdateManager templated on the scalar
+    type `U`. */
+  template <typename U>
+  std::unique_ptr<DiscreteUpdateManager<U>> CloneToScalar() const {
+    if constexpr (std::is_same_v<U, double>) {
+      return DoCloneToDouble();
+    } else if constexpr (std::is_same_v<U, AutoDiffXd>) {
+      return DoCloneToAutoDiffXd();
+    }
+    DRAKE_UNREACHABLE();
+  }
 
   /* Returns the MultibodyPlant that owns this DiscreteUpdateManager.
    @pre SetOwningMultibodyPlant() has been successfully invoked. */
@@ -83,6 +101,23 @@ class DiscreteUpdateManager {
   }
 
  protected:
+  /* Creates a deep copy of the concrete DiscreteUpdateManager object with the
+   scalar type double. Derived classes must implement this so that it performs
+   the complete deep copy of the object, including all base class members. */
+  virtual std::unique_ptr<DiscreteUpdateManager<double>> DoCloneToDouble()
+      const = 0;
+
+  /* Creates a deep copy of the concrete DiscreteUpdateManager object with the
+   scalar type AutoDiffXd. Derived classes that supports AutoDiffXd as a scalar
+   type must implement this so that it performs the complete deep copy of the
+   object, including all base class members.*/
+  virtual std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
+  DoCloneToAutoDiffXd() const {
+    throw std::logic_error(
+        "Scalar type AutodiffXd is not supported by this "
+        "DiscreteUpdateManager.");
+  }
+
   /* The NVI method has verified that the MultibodyPlant has been finalized. If
    derived DiscreteUpdateManager needs to extract information from it, it should
    override this method and do so here. */

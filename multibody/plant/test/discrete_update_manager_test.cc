@@ -48,6 +48,15 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
   }
 
  private:
+  /* Creats a deep copy of this DummyDiscreteUpdateManager() with scalar type
+   double. */
+  std::unique_ptr<DiscreteUpdateManager<double>> DoCloneToDouble() const final {
+    auto clone = std::make_unique<DummyDiscreteUpdateManager>();
+    clone->num_calls_to_calc_contact_solver_results_ =
+        this->num_calls_to_calc_contact_solver_results_;
+    return clone;
+  }
+
   /* Extracts information about the additional discrete state that
    DummyModel declares if one exists in the owning MultibodyPlant. */
   void DoExtractModelInfo() final {
