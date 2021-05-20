@@ -6,7 +6,7 @@ namespace fixed_fem {
 /** A simple viscous Rayleigh damping model. The resulting damping matrix is a
 nonnegative linear combination of mass and stiffness matrices. Namely, D = αM +
 βK where α and β are nonnegative. The damping ratio ξ for a given frequency of
-the mode of vibration ω can be calculated by (α/ω + βω)/2. Noticably, the
+the mode of vibration ω can be calculated by (α/ω + βω)/2. Noticeably, the
 contribution by the stiffness term βK is proportional to the frequency of the
 mode while the damping ratio contributed by the mass term αM is inversely
 proportional to the frequency. Furthermore, one should note that the mass

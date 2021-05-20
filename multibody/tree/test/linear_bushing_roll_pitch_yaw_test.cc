@@ -767,7 +767,7 @@ GTEST_TEST(LinearBushingRollPitchYawTest, BushingParameters) {
   bushing.SetForceStiffnessConstants(context.get(), new_force_stiffness);
   bushing.SetForceDampingConstants(context.get(), new_force_damping);
 
-  // Verify parameter changes propogate.
+  // Verify parameter changes propagate.
   const Vector3<double> new_default_torque_stiffness =
       bushing.GetTorqueStiffnessConstants(*context);
   const Vector3<double> new_default_torque_damping =

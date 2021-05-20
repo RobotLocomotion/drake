@@ -53,7 +53,7 @@ class DeformableVisualizer : public systems::LeafSystem<double> {
       lcm::DrakeLcmInterface* lcm = nullptr);
 
   // TODO(xuchenhan-tri): Rethink the initialization/update paradigm as the
-  //  intialization event may be received after update events.
+  //  initialization event may be received after update events.
   /** Send the mesh initialization message. This can be invoked explicitly but
    is generally not necessary. The initialization method is also called by
    an initialization event.  */
