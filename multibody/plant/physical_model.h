@@ -26,7 +26,7 @@ namespace internal {
  each PhysicalModel it owns. After `Finalize()` is invoked, model mutation in
  the PhysicalModels owned by MultibodyPlant is not allowed.
 
- @tparam_default_scalar */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class PhysicalModel {
  public:

@@ -2369,7 +2369,7 @@ class MultibodyTree {
     tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
     tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
     tree_clone->joint_to_mobilizer_ = this->joint_to_mobilizer_;
-    // Copy the multibody state index in the systen that the tree belongs to.
+    // Copy the multibody state index in the system that the tree belongs to.
     tree_clone->discrete_state_index_ = this->discrete_state_index_;
 
     // All other internals templated on T are created with the following call to
