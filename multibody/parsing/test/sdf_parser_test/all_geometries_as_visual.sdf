@@ -37,12 +37,22 @@
       </visual>
       <!-- This element is for testing the <drake:capsule> spelling. -->
       <!-- Immediately above, we tested the standard <capsule> spelling. -->
+      <!-- TODO(azeey): We should deprecate use of <drake:capsule>
+        per https://github.com/RobotLocomotion/drake/issues/14837 -->
       <visual name="DrakeCapsule">
         <geometry>
           <drake:capsule>
             <length>1</length>
             <radius>0.1</radius>
           </drake:capsule>
+        </geometry>
+      </visual>
+      <visual name="CapsuleSdf">
+        <geometry>
+          <capsule>
+            <length>1</length>
+            <radius>0.1</radius>
+          </capsule>
         </geometry>
       </visual>
       <visual name="Convex">
@@ -72,6 +82,8 @@
       </visual>
       <!-- This element is for testing the <drake:ellipsoid> spelling. -->
       <!-- Immediately above, we tested the standard <ellipsoid> spelling. -->
+      <!-- TODO(azeey): We should deprecate use of <drake:ellipsoid>
+        per https://github.com/RobotLocomotion/drake/issues/14837 -->
       <visual name="DrakeEllipsoid">
         <geometry>
           <drake:ellipsoid>
@@ -79,6 +91,13 @@
             <b>2.0</b>
             <c>3.0</c>
           </drake:ellipsoid>
+        </geometry>
+      </visual>
+      <visual name="EllipsoidSdf">
+        <geometry>
+          <ellipsoid>
+            <radii>1.0 2.0 3.0</radii>
+          </ellipsoid>
         </geometry>
       </visual>
       <visual name="Mesh">
