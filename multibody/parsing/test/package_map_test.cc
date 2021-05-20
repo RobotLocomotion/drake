@@ -6,6 +6,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
 using std::map;
@@ -87,10 +88,13 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   // Adding a duplicate package with the same path is OK.
   package_map.Add("package_foo", "package_foo");
   // Adding a duplicate package with a different path throws.
-  EXPECT_THROW(
-      package_map.Add("package_foo", "package_baz"), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.Add("package_foo", "package_baz"), std::runtime_error,
+      ".*conflicts with.*");
   // Adding a package with a nonexistent path throws.
-  EXPECT_THROW(package_map.Add("garbage", "garbage"), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.Add("garbage", "garbage"), std::runtime_error,
+      ".*does not exist.*");
 
   VerifyMatch(package_map, expected_packages);
 
@@ -159,17 +163,9 @@ GTEST_TEST(PackageMapTest, TestAddMap) {
   VerifyMatch(package_map_1_copy, expected_packages_combined);
 
   // Combining package maps with a conflicting package + path throws.
-  EXPECT_THROW({
-      try {
-        package_map_1_copy.AddMap(package_map_conflicting);
-      } catch (const std::runtime_error& ex) {
-        EXPECT_STREQ(
-            "PackageMap already contains package \"package_baz\" with path "
-            "\"package_baz\" that conflicts with provided path \"package_bar\"",
-            ex.what());
-        throw;
-      }
-    }, std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map_1_copy.AddMap(package_map_conflicting), std::runtime_error,
+      ".*conflicts with.*");
 }
 
 // Tests that PackageMap can be populated by a package.xml.
@@ -197,8 +193,9 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
   const string conflicting_xml_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/package_map_test_package_conflicting/"
       "package.xml");
-  EXPECT_THROW(
-      package_map.AddPackageXml(conflicting_xml_filename), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.AddPackageXml(conflicting_xml_filename), std::runtime_error,
+      ".*conflicts with.*");
 }
 
 // Tests that PackageMap can be populated by crawling down a directory tree.
