@@ -96,7 +96,7 @@ GTEST_TEST(PlaneTest, CalcHeight) {
 
 // Confirm that mixed-scalar computation "works". In the case of this test,
 // "works" means that the query point scalar type and plane scalar types are
-// indpendent, the return type is the promoted type, and derivatives propagate
+// independent, the return type is the promoted type, and derivatives propagate
 // through.
 GTEST_TEST(PlaneTest, MixedScalar) {
   // Arbitrary Normal and origins.

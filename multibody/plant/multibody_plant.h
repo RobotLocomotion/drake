@@ -1591,7 +1591,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 #endif
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
-  // deprecate/remove this method alltogether or at least promote to proper
+  // deprecate/remove this method altogether or at least promote to proper
   // camel case per GSG.
   /// Sets the penetration allowance used to estimate the coefficients in the
   /// penalty method used to impose non-penetration among bodies. Refer to the
@@ -2457,7 +2457,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   model_instances or 0 if model_instances is empty.
   /// @note The mass of the world_body() does not contribute to the total mass
   ///   and each body only contributes to the total mass once, even if the body
-  ///   has repeated occurence (instance) in model_instances.
+  ///   has repeated occurrence (instance) in model_instances.
   T CalcTotalMass(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {

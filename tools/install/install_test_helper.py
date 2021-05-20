@@ -73,7 +73,7 @@ def get_python_executable():
 
     Call python3.9 on macOS to force using the Python executable from the
     python@3.9 formula. Calling a different Python executable would result in a
-    crash since pydrake was not built agains the Python library corresponding
+    crash since pydrake was not built against the Python library corresponding
     to that executable. On other systems, it will just fall back to the current
     Python executable.
     """

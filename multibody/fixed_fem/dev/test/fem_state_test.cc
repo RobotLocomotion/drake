@@ -107,7 +107,7 @@ TEST_F(FemStateTest, MakeElementData) {
 /* Tests that element data cache is invalidated when the state changes and that
  the request for the cached data triggers appropriate recalculations. */
 TEST_F(FemStateTest, ElementCache) {
-  /* Verify that cache entries are intially invalid and becomes valid after the
+  /* Verify that cache entries are initially invalid and becomes valid after the
    request for data triggers computation. */
   VerifyCacheEntries();
 

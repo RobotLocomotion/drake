@@ -308,7 +308,7 @@ class JointActuator final
 
   // The gear ratio between this actuator's rotor and output shaft. The default
   // value is set to 1.0 to allow convenient sysId by just varying the single
-  // rotor inertia paramter.
+  // rotor inertia parameter.
   double default_gear_ratio_{1.0};
 
   // System parameter index for `this` actuator's rotor inertia stored in a

@@ -70,7 +70,7 @@ class vtkCapsuleSource : public vtkPolyDataAlgorithm {
   vtkGetMacro(ThetaResolution,int);
 
   // Description:
-  // Set the number of points used in the lattitude direction
+  // Set the number of points used in the latitude direction
   // for the capsule extremities.
   vtkSetClampMacro(PhiResolution,int,3,VTK_MAX_SPHERE_RESOLUTION);
   vtkGetMacro(PhiResolution,int);

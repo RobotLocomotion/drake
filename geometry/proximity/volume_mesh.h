@@ -170,7 +170,7 @@ class VolumeMesh {
   //    VolumeMesh<double>::Barycentric<double>
   //    VolumeMesh<AutoDiffXd>::Barycentric<double>
   // But, ultimately both become Vector4d and, because they are simply aliases,
-  // are interchangable. It would be nice to have some way of formulating this
+  // are interchangeable. It would be nice to have some way of formulating this
   // that *doesn't* imply dependency on the scalar type of VolumeMesh.
   /** Type of barycentric coordinates on a tetrahedral element. Barycentric
    coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds

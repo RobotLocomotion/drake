@@ -1543,7 +1543,7 @@ MSKrescodee SetDualSolution(
     // Mosek dual variables for variable lower bounds (slx) and upper bounds
     // (sux). Refer to
     // https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsolution
-    // for more explaination.
+    // for more explanation.
     std::vector<MSKrealt> slx(num_mosek_vars);
     std::vector<MSKrealt> sux(num_mosek_vars);
     rescode = MSK_getslx(task, which_sol, slx.data());
@@ -1562,7 +1562,7 @@ MSKrescodee SetDualSolution(
     // Mosek dual variables for linear constraints lower bounds (slc) and upper
     // bounds (suc). Refer to
     // https://docs.mosek.com/9.2/capi/alphabetic-functionalities.html#mosek.task.getsolution
-    // for more explaination.
+    // for more explanation.
     std::vector<MSKrealt> slc(num_linear_constraints);
     std::vector<MSKrealt> suc(num_linear_constraints);
     rescode = MSK_getslc(task, which_sol, slc.data());
