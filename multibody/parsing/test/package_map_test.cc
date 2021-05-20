@@ -28,12 +28,12 @@ string GetTestDataRoot() {
 void VerifyMatch(const PackageMap& package_map,
     const map<string, string>& expected_packages) {
   EXPECT_EQ(package_map.size(), static_cast<int>(expected_packages.size()));
-  for (const auto& path_entry : expected_packages) {
-    const std::string& package_name = path_entry.first;
-    const std::string& package_path = path_entry.second;
-
+  for (const auto& [package_name, package_path] : expected_packages) {
     ASSERT_TRUE(package_map.Contains(package_name));
     EXPECT_EQ(package_map.GetPath(package_name), package_path);
+  }
+  for (const auto& package_name : package_map.GetPackageNames()) {
+    ASSERT_EQ(expected_packages.count(package_name), 1);
   }
 }
 
@@ -68,13 +68,22 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
     {"my_package", "package_bar"}
   };
 
+  // Add packages + paths.
   PackageMap package_map;
-  for (const auto& it : expected_packages) {
-    package_map.Add(it.first, it.second);
+  for (const auto& [package, path] : expected_packages) {
+    package_map.Add(package, path);
   }
 
   VerifyMatch(package_map, expected_packages);
 
+  // Adding a duplicate package with the same path is OK.
+  package_map.Add("package_foo", "package_foo");
+  // Adding a duplicate package with a different path throws.
+  EXPECT_THROW(package_map.Add("package_foo", "garbage"), std::runtime_error);
+
+  VerifyMatch(package_map, expected_packages);
+
+  // Remove packages + paths.
   map<string, string> expected_remaining_packages(expected_packages);
   for (const auto& it : expected_packages) {
     package_map.Remove(it.first);
@@ -85,6 +94,61 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   VerifyMatch(package_map, std::map<string, string>());
 
   EXPECT_THROW(package_map.Remove("package_baz"), std::runtime_error);
+}
+
+// Tests that PackageMaps can be combined via AddMap.
+GTEST_TEST(PackageMapTest, TestAddMap) {
+  filesystem::create_directory("package_foo");
+  filesystem::create_directory("package_bar");
+  filesystem::create_directory("package_baz");
+  map<string, string> expected_packages_1 = {
+    {"package_foo", "package_foo"},
+    {"package_bar", "package_bar"}
+  };
+  map<string, string> expected_packages_2 = {
+    {"package_foo", "package_foo"},
+    {"package_baz", "package_baz"}
+  };
+  map<string, string> expected_packages_combined = {
+    {"package_foo", "package_foo"},
+    {"package_bar", "package_bar"},
+    {"package_baz", "package_baz"}
+  };
+  map<string, string> expected_packages_conflicting = {
+    {"package_foo", "package_foo"},
+    {"package_baz", "package_bar"}
+  };
+
+  // Populate package maps.
+  PackageMap package_map_1;
+  for (const auto& [package, path] : expected_packages_1) {
+    package_map_1.Add(package, path);
+  }
+
+  VerifyMatch(package_map_1, expected_packages_1);
+
+  PackageMap package_map_2;
+  for (const auto& [package, path] : expected_packages_2) {
+    package_map_2.Add(package, path);
+  }
+
+  VerifyMatch(package_map_2, expected_packages_2);
+
+  PackageMap package_map_conflicting;
+  for (const auto& [package, path] : expected_packages_conflicting) {
+    package_map_conflicting.Add(package, path);
+  }
+
+  VerifyMatch(package_map_conflicting, expected_packages_conflicting);
+
+  // Combine package maps with a matching duplicate package + path.
+  package_map_1.AddMap(package_map_2);
+
+  VerifyMatch(package_map_1, expected_packages_combined);
+
+  // Combining package maps with a conflicting package + path throws.
+  EXPECT_THROW(
+      package_map_1.AddMap(package_map_conflicting), std::runtime_error);
 }
 
 // Tests that PackageMap can be populated by a package.xml.

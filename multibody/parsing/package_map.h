@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 
@@ -11,17 +12,21 @@ namespace multibody {
 /// Maps ROS package names to their full path on the local file system. It is
 /// used by the SDF and URDF parsers when parsing files that reference ROS
 /// packages for resources like mesh files.
-class PackageMap {
+class PackageMap final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PackageMap)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PackageMap)
 
   /// A constructor that initializes an empty map.
   PackageMap();
 
   /// Adds package @p package_name and its path, @p package_path.
-  /// Throws if @p package_name is already present in this PackageMap, or
-  /// if @p package_path does not exist.
+  /// Throws if @p package_name is already present in this PackageMap with a
+  /// different path, or if @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path);
+
+  /// Adds package->path mappings from another PackageMap @p other_map. Throws
+  /// if the other PackageMap contains the same package with a different path.
+  void AddMap(const PackageMap& other_map);
 
   /// Returns true if and only if this PackageMap contains @p package_name.
   bool Contains(const std::string& package_name) const;
@@ -32,6 +37,9 @@ class PackageMap {
 
   /// Returns the number of entries in this PackageMap.
   int size() const;
+
+  /// Returns the package names in this PackageMap.
+  std::vector<std::string> GetPackageNames() const;
 
   /// Obtains the path associated with package @p package_name. Aborts if no
   /// package named @p package_name exists in this PackageMap.
@@ -80,11 +88,10 @@ class PackageMap {
   // three different paths.
   void CrawlForPackages(const std::string& path);
 
-  // This method is the same as Add() except it first checks to ensure that
-  // package_name is not already in this PackageMap. If it was already present
-  // with a different path, then this method prints a warning and returns
-  // without adding the new path.
-  void AddPackageIfNew(const std::string& package_name,
+  // This method is the same as Add() except if package_name is already present
+  // with a different path, then this method prints a warning and returns false
+  // without adding the new path. Returns true otherwise.
+  bool AddPackageIfNew(const std::string& package_name,
       const std::string& path);
 
   // Recursively searches up the directory path searching for package.xml files.

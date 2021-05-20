@@ -27,14 +27,19 @@ class TestParsing(unittest.TestCase):
 
     def test_package_map(self):
         dut = PackageMap()
+        dut2 = PackageMap()
         tmpdir = os.environ.get('TEST_TMPDIR')
         model = FindResourceOrThrow(
             "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
 
-        # Simple coverage test for Add, Contains, size, GetPath, AddPackageXml.
+        # Simple coverage test for Add, AddMap, Contains, size,
+        # GetPackageNames, GetPath, AddPackageXml.
         dut.Add(package_name="root", package_path=tmpdir)
-        self.assertEqual(dut.size(), 1)
+        dut2.Add(package_name="root", package_path=tmpdir)
+        dut.AddMap(dut2)
         self.assertTrue(dut.Contains(package_name="root"))
+        self.assertEqual(dut.size(), 1)
+        self.assertEqual(dut.GetPackageNames(), ["root"])
         self.assertEqual(dut.GetPath(package_name="root"), tmpdir)
         dut.AddPackageXml(filename=FindResourceOrThrow(
             "drake/multibody/parsing/test/box_package/package.xml"))
