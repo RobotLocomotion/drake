@@ -26,7 +26,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
-#include "drake/multibody/plant/physical_model_manager.h"
+#include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
@@ -1635,43 +1635,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return *concrete_manager_ptr;
   }
 
-  // (Experimental) AddModelManager() should only be called by advanced
+  // (Experimental) AddPhysicalModel() should only be called by advanced
   // developers wanting to try out their new physical models. We choose not to
   // show it in public documentations rather than making it private with
-  // friends. With this method MultibodyPlant takes ownership of `model_manager`
-  // and calls its DeclareContextResources() method at Finalize(), giving
-  // specific model manager implementations a chance to declare state, cache
-  // and/or ports.
+  // friends. With this method MultibodyPlant takes ownership of `model`
+  // and calls its DeclareSystemResources() method at Finalize(), giving
+  // specific physical model implementations a chance to declare the system
+  // resources it needs.
   //
-  // @param model_manager
-  //   After this call the model manager is owned by `this` MultibodyPlant.
+  // @param model After this call the model is owned by `this` MultibodyPlant.
   // @pre model != nullptr.
-  // @pre ModelManagerType must be a subclass of
-  //   multibody::internal::PhysicalModelManager.
+  // @pre ModelType must be a subclass of multibody::internal::PhysicalModel.
   // @returns a mutable reference to `model`, now owned by `this`
-  //   MultibodyPlant.
-  /// @throws std::exception if called post-finalize. See Finalize().
-  template <class ModelManagerType>
-  ModelManagerType& AddModelManager(
-      std::unique_ptr<ModelManagerType> model_manager) {
+  //          MultibodyPlant.
+  // @throws std::exception if called post-finalize. See Finalize().
+  template <class ModelType>
+  ModelType& AddPhysicalModel(std::unique_ptr<ModelType> model) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_DEMAND(model_manager != nullptr);
-    static_assert(
-        std::is_base_of_v<internal::PhysicalModelManager<T>, ModelManagerType>,
-        "ModelManagerType must be a sub-class of PhysicalModelManager.");
-    // Make sure that we are plugging the manager into the correct
-    // MultibodyPlant.
-    DRAKE_DEMAND(&model_manager->plant() == this);
-
-    model_managers_.emplace_back(std::move(model_manager));
-    ModelManagerType* concrete_model_manager_ptr =
-        static_cast<ModelManagerType*>(model_managers_.back().get());
-    return *concrete_model_manager_ptr;
+    DRAKE_DEMAND(model != nullptr);
+    static_assert(std::is_base_of_v<internal::PhysicalModel<T>, ModelType>,
+                  "ModelType must be a sub-class of PhysicalModel.");
+    physical_models_.emplace_back(std::move(model));
+    ModelType* concrete_model_ptr =
+        static_cast<ModelType*>(physical_models_.back().get());
+    return *concrete_model_ptr;
   }
 
-  const std::vector<std::unique_ptr<internal::PhysicalModelManager<T>>>&
-  model_managers() const {
-    return model_managers_;
+  const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
+  physical_models() const {
+    return physical_models_;
   }
 #endif
 
@@ -4769,9 +4761,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // resolution into a default contact manager.
   std::unique_ptr<internal::DiscreteUpdateManager<T>> discrete_update_manager_;
 
-  // (Experimental) The vector of external models owned by MultibodyPlant.
-  std::vector<std::unique_ptr<internal::PhysicalModelManager<T>>>
-      model_managers_;
+  // (Experimental) The vector of physical models owned by MultibodyPlant.
+  std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 

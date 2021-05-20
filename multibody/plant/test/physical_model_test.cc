@@ -1,7 +1,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/test/dummy_model_manager.h"
+#include "drake/multibody/plant/test/dummy_model.h"
 
 namespace drake {
 namespace multibody {
@@ -15,12 +15,11 @@ constexpr double kState1Value = 3.14;
 constexpr double kState2Value = 3.15;
 constexpr double kDt = 0.1;
 
-class PhysicalModelManagerTest : public ::testing::Test {
+class PhysicalModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // TODO(xuchenhan-tri): Add a test with more than one model manager.
-    manager_ =
-        &plant_.AddModelManager(std::make_unique<DummyModelManager>(&plant_));
+    manager_ = &plant_.AddPhysicalModel(std::make_unique<DummyModel>());
     // An artificial scenario where the state is added in multiple passes.
     manager_->AppendDiscreteState(dummy_state1());
     manager_->AppendDiscreteState(dummy_state2());
@@ -35,12 +34,12 @@ class PhysicalModelManagerTest : public ::testing::Test {
     return VectorXd::Ones(kState2Dofs) * kState2Value;
   }
 
-  MultibodyPlant<double> plant_{kDt};    // A discrete MbP.
-  DummyModelManager* manager_{nullptr};  // The manager under test.
+  MultibodyPlant<double> plant_{kDt};  // A discrete MbP.
+  DummyModel* manager_{nullptr};       // The manager under test.
 };
 
 // Tests that the state and output ports are properly set up.
-TEST_F(PhysicalModelManagerTest, DiscreteStateAndOutputPorts) {
+TEST_F(PhysicalModelTest, DiscreteStateAndOutputPorts) {
   auto context = plant_.CreateDefaultContext();
   const VectorXd additional_state =
       manager_->get_vector_output_port().Eval(*context);
@@ -57,7 +56,7 @@ TEST_F(PhysicalModelManagerTest, DiscreteStateAndOutputPorts) {
 }
 
 // Tests that adding new state after Finalize is not allowed.
-TEST_F(PhysicalModelManagerTest, PostFinalizeStateAdditionNotAllowed) {
+TEST_F(PhysicalModelTest, PostFinalizeStateAdditionNotAllowed) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       manager_->AppendDiscreteState(dummy_state1()), std::exception,
       "Post-finalize calls to 'AppendDiscreteState\\(\\)' are not allowed; "

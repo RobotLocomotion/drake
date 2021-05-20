@@ -39,8 +39,9 @@ class DiscreteUpdateManager {
     return *plant_;
   }
 
-  /* Sets the given `plant` as the MultibodyPlant owning this
-   DiscreteUpdateManager.
+  /* (Internal) Sets the given `plant` as the MultibodyPlant owning this
+   DiscreteUpdateManager. This method is meant to be called by
+   MultibodyPlant::set_discrete_update_manager() only.
    @pre plant is Finalized. */
   void SetOwningMultibodyPlant(const MultibodyPlant<T>* plant) {
     plant_ = plant;

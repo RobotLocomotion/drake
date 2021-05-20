@@ -11,10 +11,10 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
-class PhysicalModelManager;
+class PhysicalModel;
 
 /* This class is used to grant access to a selected collection of
- MultibodyPlant's private methods to PhysicalModelManager.
+ MultibodyPlant's private methods to PhysicalModel.
 
  @tparam_default_scalar */
 template <typename T>
@@ -22,7 +22,7 @@ class MultibodyPlantModelAttorney {
  private:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantModelAttorney);
 
-  friend class PhysicalModelManager<T>;
+  friend class PhysicalModel<T>;
 
   static systems::DiscreteStateIndex DeclareDiscreteState(
       MultibodyPlant<T>* plant, const VectorX<T>& model_value) {

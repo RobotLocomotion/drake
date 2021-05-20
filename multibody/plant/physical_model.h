@@ -12,9 +12,9 @@ class MultibodyPlant;
 
 namespace internal {
 
-/* PhysicalModelManager provides the functionalities to extend the type of
+/* PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
- PhysicalModelManager to incorporate additional model elements coupled with the
+ PhysicalModel to incorporate additional model elements coupled with the
  rigid body dynamics. For instance, simulation of deformable objects requires
  additional state and ports to interact with externals systems such as
  visualization.
@@ -23,41 +23,45 @@ namespace internal {
  users should add all the model elements they wish to add to a certain
  manager before the owning MultibodyPlant calls `Finalize()`. When `Finalize()`
  is invoked, MultibodyPlant will allocate the system level context resources
- for each PhysicalModelManager it owns. After `Finalize()` is invoked, model
- mutation in the PhysicalModelManager owned by MultibodyPlant is not allowed.
+ for each PhysicalModel it owns. After `Finalize()` is invoked, model
+ mutation in the PhysicalModel owned by MultibodyPlant is not allowed.
 
  @tparam_default_scalar */
 template <typename T>
-class PhysicalModelManager {
+class PhysicalModel {
  public:
-  explicit PhysicalModelManager(MultibodyPlant<T>* plant) : plant_(plant) {
-    DRAKE_DEMAND(plant_ != nullptr);
-  }
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModel);
 
-  virtual ~PhysicalModelManager() = default;
+  PhysicalModel() = default;
+
+  virtual ~PhysicalModel() = default;
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
-   additional context resources. `DeclareContextResources()` will throw an
-   exception when called before `Finalize()`. This method is only meant to be
-   called by MultibodyPlant. */
-  void DeclareContextResources() {
-    ThrowIfNotFinalized(__func__);
-    DoDeclareContextResources();
+   additional system resources. This method is only meant to be called by
+   MultibodyPlant.
+   @pre plant != nullptr. */
+  void DeclareSystemResources(MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    plant_ = plant;
+    DoDeclareSystemResources(plant);
   }
 
-  const MultibodyPlant<T>& plant() const { return *plant_; }
+  const MultibodyPlant<T>& plant() const {
+    DRAKE_DEMAND(plant_ != nullptr);
+    return *plant_;
+  }
 
  protected:
-  /* Derived class must override this to declare the state, cache and ports for
-   its specific model. */
-  virtual void DoDeclareContextResources() = 0;
+  /* Derived class must override this to declare system resources for its
+   specific model. */
+  virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;
 
   /* Helper method for throwing an exception within public methods that should
    not be called after the owning MultibodyPlant is Finalized. The invoking
    method should pass it's name so that the error message can include that
    detail. */
   void ThrowIfFinalized(const char* source_method) const {
-    if (plant_->is_finalized()) {
+    if (plant_ != nullptr) {
       throw std::logic_error("Post-finalize calls to '" +
                              std::string(source_method) +
                              "()' are not allowed; calls to this method must "
@@ -71,7 +75,7 @@ class PhysicalModelManager {
    method should pass it's name so that the error message can include that
    detail. */
   void ThrowIfNotFinalized(const char* source_method) const {
-    if (!plant_->is_finalized()) {
+    if (plant_ == nullptr) {
       throw std::logic_error("Pre-finalize calls to '" +
                              std::string(source_method) +
                              "()' are not allowed; calls to this method must "
@@ -82,27 +86,28 @@ class PhysicalModelManager {
 
   /* Protected LeafSystem methods exposed through MultibodyPlant. */
   systems::DiscreteStateIndex DeclareDiscreteState(
-      const VectorX<T>& model_value);
+      MultibodyPlant<T>* plant, const VectorX<T>& model_value) const;
 
   systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
-      std::string name,
+      MultibodyPlant<T>* plant, std::string name,
       typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
       typename systems::LeafOutputPort<T>::CalcCallback calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
-          systems::System<T>::all_sources_ticket()});
+          systems::System<T>::all_sources_ticket()}) const;
 
   systems::LeafOutputPort<T>& DeclareVectorOutputPort(
-      std::string name, const systems::BasicVector<T>& model_vector,
+      MultibodyPlant<T>* plant, std::string name,
+      const systems::BasicVector<T>& model_vector,
       typename systems::LeafOutputPort<T>::CalcVectorCallback
           vector_calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
-          systems::System<T>::all_sources_ticket()});
+          systems::System<T>::all_sources_ticket()}) const;
 
  private:
-  MultibodyPlant<T>* plant_{nullptr};
+  const MultibodyPlant<T>* plant_{nullptr};
 };
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::internal::PhysicalModelManager);
+    class ::drake::multibody::internal::PhysicalModel);

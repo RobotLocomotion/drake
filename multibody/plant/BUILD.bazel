@@ -55,9 +55,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "dummy_model_manager",
+    name = "dummy_model",
     testonly = 1,
-    hdrs = ["test/dummy_model_manager.h"],
+    hdrs = ["test/dummy_model.h"],
     deps = [
         ":multibody_plant_core",
     ],
@@ -68,14 +68,14 @@ drake_cc_library(
     srcs = [
         "discrete_update_manager.cc",
         "multibody_plant.cc",
-        "physical_model_manager.cc",
+        "physical_model.cc",
     ],
     hdrs = [
         "discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
-        "physical_model_manager.h",
+        "physical_model.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -695,7 +695,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "discrete_update_manager_test",
     deps = [
-        ":dummy_model_manager",
+        ":dummy_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
@@ -719,9 +719,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "physical_model_manager_test",
+    name = "physical_model_test",
     deps = [
-        ":dummy_model_manager",
+        ":dummy_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/physical_model_manager.h"
+#include "drake/multibody/plant/physical_model.h"
 
 namespace drake {
 namespace multibody {
@@ -13,19 +13,18 @@ using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteStateIndex;
 using systems::OutputPortIndex;
-/* A dummy manager class derived from PhysicalModelManager for testing
+/* A dummy manager class derived from PhysicalModel for testing
  purpose. This dummy manager declares a single group of discrete state that
  concatenates the state added through `AppendDiscreteState()`. It also declares
  a vector output port that reports this additional state and an abstract output
  port that reports the the same state. */
-class DummyModelManager : public PhysicalModelManager<double> {
+class DummyModel : public PhysicalModel<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyModelManager);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyModel);
 
-  explicit DummyModelManager(MultibodyPlant<double>* plant)
-      : PhysicalModelManager<double>(plant) {}
+  DummyModel() = default;
 
-  ~DummyModelManager() = default;
+  ~DummyModel() = default;
 
   /* Appends additional entries to the single group of discrete state with the
    given `model_value`. */
@@ -55,7 +54,7 @@ class DummyModelManager : public PhysicalModelManager<double> {
    dummy discrete state: one abstract output port with underlying value type
    VectorXd and one plain-old vector port. We can verify the two ports report
    the same results as a sanity check. */
-  void DoDeclareContextResources() final {
+  void DoDeclareSystemResources(MultibodyPlant<double>* plant) final {
     /* Declares the single group of discrete state. */
     VectorXd model_state(num_dofs_);
     int dof_offset = 0;
@@ -64,12 +63,12 @@ class DummyModelManager : public PhysicalModelManager<double> {
       model_state.segment(dof_offset, s.size()) = s;
       dof_offset += s.size();
     }
-    discrete_state_index_ = this->DeclareDiscreteState(model_state);
+    discrete_state_index_ = this->DeclareDiscreteState(plant, model_state);
 
     /* Declare output ports. */
     abstract_output_port_index_ =
         this->DeclareAbstractOutputPort(
-                "dummy_abstract_output_port",
+                plant, "dummy_abstract_output_port",
                 [=]() { return AbstractValue::Make(model_state); },
                 [this](const Context<double>& context, AbstractValue* output) {
                   VectorXd& data = output->get_mutable_value<VectorXd>();
@@ -80,7 +79,8 @@ class DummyModelManager : public PhysicalModelManager<double> {
             .get_index();
     vector_output_port_index_ =
         this->DeclareVectorOutputPort(
-                "dummy_vector_output_port", BasicVector<double>(num_dofs_),
+                plant, "dummy_vector_output_port",
+                BasicVector<double>(num_dofs_),
                 [this](const Context<double>& context,
                        BasicVector<double>* output) {
                   auto data = output->get_mutable_value();
