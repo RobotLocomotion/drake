@@ -2468,11 +2468,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Calculates the position vector from the world origin Wo to the center of
   /// mass of all bodies in this MultibodyPlant, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
-  /// @retval p_WScm_W position vector from Wo to Scm expressed in world frame
+  /// @retval p_WoScm_W position vector from Wo to Scm expressed in world frame
   /// W, where Scm is the center of mass of the system S stored by `this` plant.
   /// @throws std::exception if `this` has no body except world_body().
-  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of `this` system S).
-  /// @note The world_body() is ignored.
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
+  /// @note The world_body() is ignored.  p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and pᵢ is Bcm's position vector
+  /// from Wo expressed in frame W (Bcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
@@ -2480,18 +2482,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Calculates the position vector from the world origin Wo to the center of
-  /// mass of all bodies contained in model_instances, expressed in the world
-  /// frame W.
+  /// mass of all non-world bodies contained in model_instances, expressed in
+  /// the world frame W.
   /// @param[in] context Contains the state of the model.
-  /// @param[in] model_instances Vector of selected model instances. This method
-  /// does not distinguish between welded, joint connected, or floating bodies.
-  /// @retval p_WScm_W position vector from world origin Wo to Scm expressed in
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
+  /// @retval p_WoScm_W position vector from world origin Wo to Scm expressed in
   /// the world frame W, where Scm is the center of mass of the system S of
-  /// bodies contained in model_instances.
-  /// @throws std::exception if model_instance only has world_model_instance(),
-  /// i.e., model_instances has no body except world_body().
-  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
-  /// @note The world_body() is ignored.
+  /// non-world bodies contained in model_instances.
+  /// @throws std::exception if model_instances is empty or only has world body.
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
+  /// @note The world_body() is ignored.  p_WoScm_W = ∑ (mᵢ pᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
+  /// and pᵢ is Bcm's position vector from Wo expressed in frame W
+  /// (Bcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
@@ -2505,8 +2509,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
   /// where Scm is the center of mass of the system S stored by `this` plant.
   /// @throws std::exception if `this` has no body except world_body().
-  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of `this` system S).
-  /// @note The world_body() is ignored.
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
+  /// @note The world_body() is ignored.  v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body, and vᵢ is Bcm's velocity in
+  /// world W (Bcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const {
     return internal_tree().CalcCenterOfMassTranslationalVelocityInWorld(
@@ -2515,13 +2521,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Calculates system center of mass translational velocity in world frame W.
   /// @param[in] context The context contains the state of the model.
-  /// @param[in] model_instances The vector of selected model instances.
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
   /// @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
-  /// where Scm is the center of mass of the system S in model_instances.
-  /// @throws std::exception if `this` has no body except world_body().
-  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of `this` system S).
-  /// @note This method does not distinguish between welded bodies, joint
-  /// connected bodies, and free bodies.  The world_body() is ignored.
+  /// where Scm is the center of mass of the system S of non-world bodies
+  /// contained in model_instances.
+  /// @throws std::exception if model_instances is empty or only has world body.
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of system S).
+  /// @note The world_body() is ignored.  v_WScm_W = ∑ (mᵢ vᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
+  /// and vᵢ is Bcm's velocity in world W expressed in frame W
+  /// (Bcm is the center of mass of the iᵗʰ body).
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {

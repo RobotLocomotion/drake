@@ -1307,22 +1307,6 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
-  // Calculates the position vector from the world origin Wo to the center of
-  // mass of all bodies specified by body_indexes, expressed in world frame W.
-  // @param[in] context Contains the state of the model.
-  // @param[in] body_indexes  The vector of selected bodies.  This method does
-  // not distinguish between welded, joint connected, or floating bodies.
-  // @retval p_WScm_W position vector from Wo to Scm expressed in world frame W,
-  // where Scm is the center of mass of the system S of bodies specified by
-  // body_indexes.
-  // @throws std::exception if body_indexes is empty or body_indexes has no body
-  // except world_body().
-  // @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
-  // @note The world_body() is ignored.
-  Vector3<T> CalcCenterOfMassPositionInWorld(
-      const systems::Context<T>& context,
-      const std::vector<BodyIndex>& body_indexes) const;
-
   // See MultibodyPlant method.
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const;
@@ -2601,22 +2585,6 @@ class MultibodyTree {
   // The world body is special in that it is the only body in the model with no
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
-
-
-  // Calculates system center of mass translational velocity in world frame W.
-  // @param[in] context The context contains the state of the model.
-  // @param[in] body_indexes The vector of selected bodies (cannot be empty)..
-  // @retval v_WScm_W Scm's translational velocity in frame W, expressed in W,
-  // where Scm is the center of mass of the system S in body_indexes.
-  // @throws std::exception if `this` has no body except world_body().
-  // @throws std::exception if mₛ ≤ 0 (mₛ is the mass of `this` system S).
-  // @throws std::exception if `body_indexes.empty() == true`.
-  // @note This method does not distinguish between welded bodies, joint
-  // connected bodies, and free bodies.  The world_body() is ignored.
-  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorldHelper(
-      const systems::Context<T>& context,
-      const std::vector<BodyIndex>& body_indexes,
-      const char* function_name) const;
 
   // For a frame Fp that is fixed/welded to a frame_F, this method computes
   // A_AFp_E, Fp's spatial acceleration in a body_A, expressed in a frame_E.
