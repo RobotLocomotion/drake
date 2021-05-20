@@ -38,7 +38,8 @@ class PackageMap final {
   /// Returns the number of entries in this PackageMap.
   int size() const;
 
-  /// Returns the package names in this PackageMap.
+  /// Returns the package names in this PackageMap. The order of package names
+  /// returned is unspecified.
   std::vector<std::string> GetPackageNames() const;
 
   /// Obtains the path associated with package @p package_name. Aborts if no

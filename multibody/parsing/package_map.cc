@@ -26,7 +26,12 @@ using tinyxml2::XMLElement;
 PackageMap::PackageMap() {}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
-  DRAKE_THROW_UNLESS(AddPackageIfNew(package_name, package_path));
+  if (!AddPackageIfNew(package_name, package_path)) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap already contains package \"{}\" with path \"{}\" that "
+        "conflicts with provided path \"{}\"",
+        package_name, GetPath(package_name), package_path));
+  }
 }
 
 void PackageMap::AddMap(const PackageMap& other_map) {
@@ -250,7 +255,7 @@ void PackageMap::CrawlForPackages(const string& path) {
 void PackageMap::AddPackageXml(const string& filename) {
   const string package_name = GetPackageName(filename);
   const string package_path = GetParentDirectory(filename);
-  AddPackageIfNew(package_name, package_path);
+  Add(package_name, package_path);
 }
 
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {

@@ -6,6 +6,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/unused.h"
 
 using std::map;
 using std::string;
@@ -16,9 +17,9 @@ namespace {
 
 string GetTestDataRoot() {
   const string desired_dir =
-      "drake/multibody/parsing/test/";
+      "drake/multibody/parsing/test/package_map_test_packages/";
   const string contained_file =
-      "package_map_test_packages/package_map_test_package_a/package.xml";
+      "package_map_test_package_a/package.xml";
   const string absolute_file_path = FindResourceOrThrow(
       desired_dir + contained_file);
   return absolute_file_path.substr(
@@ -32,8 +33,21 @@ void VerifyMatch(const PackageMap& package_map,
     ASSERT_TRUE(package_map.Contains(package_name));
     EXPECT_EQ(package_map.GetPath(package_name), package_path);
   }
+
+  std::map<std::string, int> package_name_counts;
   for (const auto& package_name : package_map.GetPackageNames()) {
+    package_name_counts[package_name]++;
+  }
+  // Confirm that every package name occurs only once, and is in the expected
+  // packages.
+  for (const auto& [package_name, count] : package_name_counts) {
+    ASSERT_EQ(count, 1);
     ASSERT_EQ(expected_packages.count(package_name), 1);
+  }
+  // Confirm that every expected package is in the set of package names.
+  for (const auto& [package_name, path] : expected_packages) {
+    unused(path);
+    ASSERT_EQ(package_name_counts.count(package_name), 1);
   }
 }
 
@@ -41,20 +55,13 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   const string root_path = GetTestDataRoot();
   map<string, string> expected_packages = {
     {"package_map_test_package_a", root_path +
-        "package_map_test_packages/package_map_test_package_a/"},
+        "package_map_test_package_a/"},
     {"package_map_test_package_b", root_path +
-        "package_map_test_packages/package_map_test_package_b/"},
+        "package_map_test_package_b/"},
     {"package_map_test_package_c", root_path +
-        "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_c/"},
+        "package_map_test_package_set/package_map_test_package_c/"},
     {"package_map_test_package_d", root_path +
-        "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_d/"},
-    {"box_model", root_path +
-        "box_package/"},
-    // TODO(#10531) This should use `package://drake`.
-    {"process_model_directives_test", root_path +
-        "process_model_directives_test/"},
+        "package_map_test_package_set/package_map_test_package_d/"},
   };
   VerifyMatch(package_map, expected_packages);
 }
@@ -63,6 +70,7 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   filesystem::create_directory("package_foo");
   filesystem::create_directory("package_bar");
+  filesystem::create_directory("package_baz");
   map<string, string> expected_packages = {
     {"package_foo", "package_foo"},
     {"my_package", "package_bar"}
@@ -79,7 +87,10 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   // Adding a duplicate package with the same path is OK.
   package_map.Add("package_foo", "package_foo");
   // Adding a duplicate package with a different path throws.
-  EXPECT_THROW(package_map.Add("package_foo", "garbage"), std::runtime_error);
+  EXPECT_THROW(
+      package_map.Add("package_foo", "package_baz"), std::runtime_error);
+  // Adding a package with a nonexistent path throws.
+  EXPECT_THROW(package_map.Add("garbage", "garbage"), std::runtime_error);
 
   VerifyMatch(package_map, expected_packages);
 
@@ -142,13 +153,23 @@ GTEST_TEST(PackageMapTest, TestAddMap) {
   VerifyMatch(package_map_conflicting, expected_packages_conflicting);
 
   // Combine package maps with a matching duplicate package + path.
-  package_map_1.AddMap(package_map_2);
+  PackageMap package_map_1_copy = package_map_1;
+  package_map_1_copy.AddMap(package_map_2);
 
-  VerifyMatch(package_map_1, expected_packages_combined);
+  VerifyMatch(package_map_1_copy, expected_packages_combined);
 
   // Combining package maps with a conflicting package + path throws.
-  EXPECT_THROW(
-      package_map_1.AddMap(package_map_conflicting), std::runtime_error);
+  EXPECT_THROW({
+      try {
+        package_map_1_copy.AddMap(package_map_conflicting);
+      } catch (const std::runtime_error& ex) {
+        EXPECT_STREQ(
+            "PackageMap already contains package \"package_baz\" with path "
+            "\"package_baz\" that conflicts with provided path \"package_bar\"",
+            ex.what());
+        throw;
+      }
+    }, std::runtime_error);
 }
 
 // Tests that PackageMap can be populated by a package.xml.
@@ -165,6 +186,19 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
     {"package_map_test_package_a", xml_dirname},
   };
   VerifyMatch(package_map, expected_packages);
+
+  // Adding the same package.xml again is OK, since it provides an identical
+  // package name + path.
+  package_map.AddPackageXml(xml_filename);
+  VerifyMatch(package_map, expected_packages);
+
+  // Adding a conflicting package.xml with the same package name but different
+  // path throws.
+  const string conflicting_xml_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/package_map_test_package_conflicting/"
+      "package.xml");
+  EXPECT_THROW(
+      package_map.AddPackageXml(conflicting_xml_filename), std::runtime_error);
 }
 
 // Tests that PackageMap can be populated by crawling down a directory tree.
@@ -196,8 +230,7 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   package_map.PopulateUpstreamToDrake(sdf_file_name);
 
   map<string, string> expected_packages = {
-    {"package_map_test_package_a",
-        root_path + "package_map_test_packages/package_map_test_package_a"}
+    {"package_map_test_package_a", root_path + "package_map_test_package_a"}
   };
 
   VerifyMatch(package_map, expected_packages);
