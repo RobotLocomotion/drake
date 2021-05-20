@@ -36,37 +36,43 @@ class Parser final {
   /// Parses the SDF or URDF file named in @p file_name and adds all of its
   /// model(s) to @p plant.
   ///
-  /// SDF files may contain multiple `<model>` elements.  New model instances
-  /// will be added to @p plant for each `<model>` tag in the file.
+  /// SDFormat files may contain multiple `<model>` elements.  New model
+  /// instances will be added to @p plant for each `<model>` tag in the file.
+  ///
+  /// @note Adding multiple root-level models, i.e, `<model>`s direclty under
+  /// `<sdf>`, is deprecated. If you need multiple models in a single file,
+  /// please use an SDFormat world file.
   ///
   /// URDF files contain a single `<robot>` element.  Only a single model
   /// instance will be added to @p plant.
   ///
   /// @param file_name The name of the SDF or URDF file to be parsed.  The file
   ///   type will be inferred from the extension.
-  /// @returns The set of model instance indices for the newly added models.
+  /// @returns The set of model instance indices for the newly added models,
+  /// including nested models.
   /// @throws std::exception in case of errors.
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  /// Parses the SDF or URDF file named in @p file_name and adds one model to
-  /// @p plant.  It is an error to call this using an SDF file with more than
-  /// one `<model>` element.
+  /// Parses the SDFormat or URDF file named in @p file_name and adds one
+  /// top-level model to @p plant. It is an error to call this using an SDFormat
+  /// file with more than one root-level `<model>` element.
   ///
-  /// @param file_name The name of the SDF or URDF file to be parsed.  The file
-  ///   type will be inferred from the extension.
-  /// @param model_name The name given to the newly created instance of this
-  ///   model.  If empty, the "name" attribute from the `<model>` or `<robot>`
-  ///   tag will be used.
-  /// @returns The instance index for the newly added model.
-  /// @throws std::exception in case of errors.
+  /// @note This function might create additional model instances corresponding
+  /// to nested models found in the top level SDFormat model. This means that
+  /// elements contained by the returned model instance may not comprise all of
+  /// the added elements due to how model instances are mutually exclusive and
+  /// not hierarchical (#14043).
+  ///
+  /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
+  /// nesting in SDFormat.
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name = {});
 
-  /// Parses the SDF or URDF XML data passed given in @p file_contents and adds
-  /// one model to @p plant.  It is an error to call this using an SDF with
-  /// more than one `<model>` element.
+  /// Provides same functionality as AddModelFromFile, but instead parses the
+  /// SDFormat or URDF XML data via @p file_contents with type dictated by
+  /// @p file_type.
   ///
   /// @param file_contents The XML data to be parsed.
   /// @param file_type The data format; must be either "sdf" or "urdf".

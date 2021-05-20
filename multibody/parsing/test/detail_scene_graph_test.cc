@@ -185,6 +185,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
 
 // Verify MakeShapeFromSdfGeometry can make a Drake capsule from an
 // sdf::Geometry.
+// TODO(azeey): We should deprecate use of <drake:capsule> per
+// https://github.com/RobotLocomotion/drake/issues/14837
 GTEST_TEST(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
@@ -200,6 +202,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry checks for invalid capsules.
+// TODO(azeey): We should deprecate use of <drake:capsule> per
+// https://github.com/RobotLocomotion/drake/issues/14837
 GTEST_TEST(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
   unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
@@ -251,6 +255,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
 
 // Verify MakeShapeFromSdfGeometry can make a Drake ellipsoid from an
 // sdf::Geometry.
+// TODO(azeey): We should deprecate use of <drake:ellipsoid> per
+// https://github.com/RobotLocomotion/drake/issues/14837
 GTEST_TEST(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -268,6 +274,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry checks for invalid ellispoids.
+// TODO(azeey): We should deprecate use of <drake:ellipsoid> per
+// https://github.com/RobotLocomotion/drake/issues/14837
 GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
   unique_ptr<sdf::Geometry> no_a_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
