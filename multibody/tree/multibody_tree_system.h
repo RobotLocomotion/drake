@@ -444,7 +444,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   // This method is called during Finalize(). It tells each MultibodyElement
-  // owned by `this` system to declare their system paramters on `this`.
+  // owned by `this` system to declare their system parameters on `this`.
   void DeclareMultibodyElementParameters();
 
   // Allow different specializations to access each other's private data for

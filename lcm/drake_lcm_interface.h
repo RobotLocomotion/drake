@@ -151,7 +151,7 @@ class DrakeSubscriptionInterface {
   virtual void set_unsubscribe_on_delete(bool enabled) = 0;
 
   /**
-   * Sets this subscription's queue depth to store messages inbetween calls to
+   * Sets this subscription's queue depth to store messages between calls to
    * DrakeLcmInterface::HandleSubscriptions.  When the queue becomes full, new
    * received messages will be discarded.  The default depth is 1.
    *

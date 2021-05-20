@@ -1,6 +1,6 @@
 # The trio of `add_scoped_*.yaml` files are a test yaml structure that uses
 # each feature of the model directives system.  This file is the middle level
-# of a three-file inclusion hierarcy of model directives, and is also used as
+# of a three-file inclusion hierarchy of model directives, and is also used as
 # a smoke test of the inclusion mechanism.
 
 directives:

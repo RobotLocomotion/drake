@@ -153,7 +153,7 @@ class SurfaceMesh {
   //    SurfaceMesh<double>::Barycentric<double>
   //    SurfaceMesh<AutoDiffXd>::Barycentric<double>
   // But, ultimately both become Vector3d and, because they are simply aliases,
-  // are interchangable. It would be nice to have some way of formulating this
+  // are interchangeable. It would be nice to have some way of formulating this
   // that *doesn't* imply dependency on the scalar type of SurfaceMesh.
   /**
    Type of barycentric coordinates on a triangular element. Barycentric
