@@ -894,6 +894,26 @@ TEST_F(SymbolicExpressionTest, EigenNotEqualStrict) {
 }
 
 #endif
+
+// Confirm the other Eigen::numext specializations:
+//  - isfinite
+//  - isnan
+//  - isinf
+// They all trivially forward to our own functions.
+TEST_F(SymbolicExpressionTest, EigenNumext) {
+  // isnan is only valid for non-NaN Expressions. Trying to evaluate
+  // a NaN expression will throw an exception. So we can't check that.
+  EXPECT_FALSE(Eigen::numext::isnan(one_));
+
+  const Expression num_infinity = std::numeric_limits<Expression>::infinity();
+
+  EXPECT_FALSE(Eigen::numext::isinf(one_));
+  EXPECT_TRUE(Eigen::numext::isinf(num_infinity));
+
+  EXPECT_TRUE(Eigen::numext::isfinite(one_));
+  EXPECT_FALSE(Eigen::numext::isfinite(num_infinity));
+}
+
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
   EXPECT_PRED2(ExprEqual, -Expression(var_x_), -var_x_);
   EXPECT_PRED2(ExprNotEqual, c3_, -c3_);
