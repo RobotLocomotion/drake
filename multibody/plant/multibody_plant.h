@@ -1659,7 +1659,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     static_assert(
         std::is_base_of_v<internal::PhysicalModelManager<T>, ModelManagerType>,
         "ModelManagerType must be a sub-class of PhysicalModelManager.");
-    // Make sure that we can plugging the manager into the correct
+    // Make sure that we are plugging the manager into the correct
     // MultibodyPlant.
     DRAKE_DEMAND(&model_manager->plant() == this);
 

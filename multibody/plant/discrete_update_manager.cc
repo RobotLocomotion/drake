@@ -9,14 +9,6 @@ template <typename T>
 const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::internal_tree(plant());
 }
-
-template <typename T>
-const contact_solvers::internal::ContactSolverResults<T>&
-DiscreteUpdateManager<T>::EvalContactSolverResults(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalContactSolverResults(plant(), context);
-}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

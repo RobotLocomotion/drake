@@ -40,7 +40,8 @@ class DiscreteUpdateManager {
   }
 
   /* Sets the given `plant` as the MultibodyPlant owning this
-   DiscreteUpdateManager. */
+   DiscreteUpdateManager.
+   @pre plant is Finalized. */
   void SetOwningMultibodyPlant(const MultibodyPlant<T>* plant) {
     plant_ = plant;
     DRAKE_DEMAND(plant_->is_finalized());
@@ -79,13 +80,9 @@ class DiscreteUpdateManager {
     DoCalcDiscreteValues(context, updates);
   }
 
-  /* Exposed MultibodyPlant private/protected method. */
-  const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const systems::Context<T>& context) const;
-
  protected:
   /* The NVI method has verified that the MultibodyPlant has been finalized. If
-   derived DiscreteUpdateManager needs to extract information from it, it
+   derived DiscreteUpdateManager needs to extract information from it, it should
    override this method and do so here. */
   virtual void DoExtractModelInfo() {}
 
@@ -98,7 +95,7 @@ class DiscreteUpdateManager {
   /* Exposed MultibodyPlant private/protected method. */
   const MultibodyTree<T>& internal_tree() const;
 
-  /* Concrete DiscreteUpdateManagers must override these Calc methods to
+  /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to
    provide an implementation. The output parameters are guaranteed to be
    non-null and do not need to be checked again. */
   virtual void DoCalcContactSolverResults(

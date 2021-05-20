@@ -43,42 +43,36 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
 
   ~DummyDiscreteUpdateManager() = default;
 
+  /* Returns the number of times CalcContactSolverResults() is called. */
+  int num_calc_contact_solver_results_called() const {
+    return num_calc_contact_solver_results_called_;
+  }
+
  private:
   /* Extracts information about the additional discrete state that
    DummyModelManager declares if one exists in the owning MultibodyPlant. */
   void DoExtractModelInfo() final {
-    bool extracted_dummy_model = false;
-    for (const auto& model_manager : plant().model_managers()) {
-      const auto* dummy_model =
-          dynamic_cast<const DummyModelManager*>(model_manager.get());
-      if (dummy_model) {
-        if (extracted_dummy_model) {
-          throw std::runtime_error(
-              "Found more than one DummyModelManager. Please only register one "
-              "DummyModelManager to a MultibodyPlant when testing");
-        }
-        additional_state_index_ = dummy_model->discrete_state_index();
-        extracted_dummy_model = true;
-      } else {
-        throw std::runtime_error(
-            "DummyDiscreteUpdateManager can only handle multibody models and a "
-            "single dummy model but not models from any other "
-            "PhysicalModelManager.");
-      }
-    }
+    /* For unit testing we verify there is a single manager of type
+     DummyModelManager. */
+    DRAKE_DEMAND(plant().model_managers().size() == 1);
+    const auto* dummy_model_manager = dynamic_cast<const DummyModelManager*>(
+        plant().model_managers()[0].get());
+    DRAKE_DEMAND(dummy_model_manager != nullptr);
+    additional_state_index_ = dummy_model_manager->discrete_state_index();
   }
 
-  /* Assigns dummy values to the output ContactSolverResults. */
-  void DoCalcContactSolverResults(
-      const Context<double>&,
-      ContactSolverResults<double>* results) const final {
-    results->Resize(kNumTotalDofs, kNumContacts);
-    results->v_next = VectorXd::Ones(kNumTotalDofs) * kDummyVNext;
+  /* Increments the number of times CalcContactSolverResults() is called for
+   testing. */
+  void DoCalcContactSolverResults(const Context<double>&,
+                                  ContactSolverResults<double>* results) const final {
+    ++num_calc_contact_solver_results_called_;
+    results->Resize(kNumRigidDofs, kNumContacts);
+    results->v_next = VectorXd::Ones(kNumRigidDofs) * kDummyVNext;
     results->fn = VectorXd::Ones(kNumContacts) * kDummyFn;
     results->ft = VectorXd::Ones(2 * kNumContacts) * kDummyFt;
     results->vn = VectorXd::Ones(kNumContacts) * kDummyVn;
     results->vt = VectorXd::Ones(2 * kNumContacts) * kDummyVt;
-    results->tau_contact = VectorXd::Ones(kNumTotalDofs) * kDummyTau;
+    results->tau_contact = VectorXd::Ones(kNumRigidDofs) * kDummyTau;
   }
 
   // TODO(xuchenhan-tri): Currently AccelerationKinematicsCache only caches
@@ -109,6 +103,7 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
 
  private:
   systems::DiscreteStateIndex additional_state_index_;
+  mutable int num_calc_contact_solver_results_called_{0};
 };
 
 namespace {
@@ -131,7 +126,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
     return VectorXd::Ones(kNumAdditionalDofs) * kDummyStateValue;
   }
 
-  // A discrete MbP.
+  // A discrete MultibodyPlant.
   MultibodyPlant<double> plant_{kDt};
   // A PhysicalModelManager to illustrate how model managers and discrete update
   // managers interact.
@@ -160,20 +155,15 @@ TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
  MultibodyPlant. */
 TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
   auto context = plant_.CreateDefaultContext();
-  const ContactSolverResults<double>& results =
-      discrete_update_manager_->EvalContactSolverResults(*context);
-  EXPECT_TRUE(CompareMatrices(results.v_next,
-                              VectorXd::Ones(kNumTotalDofs) * kDummyVNext));
-  EXPECT_TRUE(
-      CompareMatrices(results.fn, VectorXd::Ones(kNumContacts) * kDummyFn));
-  EXPECT_TRUE(
-      CompareMatrices(results.ft, VectorXd::Ones(2 * kNumContacts) * kDummyFt));
-  EXPECT_TRUE(
-      CompareMatrices(results.vn, VectorXd::Ones(kNumContacts) * kDummyVn));
-  EXPECT_TRUE(
-      CompareMatrices(results.vt, VectorXd::Ones(2 * kNumContacts) * kDummyVt));
-  EXPECT_TRUE(CompareMatrices(results.tau_contact,
-                              VectorXd::Ones(kNumTotalDofs) * kDummyTau));
+  context->DisableCaching();
+  // Evaluates an output port whose Calc function invokes
+  // CalcContactSolverResults.
+  const auto& port = plant_.get_generalized_contact_forces_output_port(
+      default_model_instance());
+  port.Eval(*context);
+  std::cout << 1 << std::endl;
+  EXPECT_EQ(discrete_update_manager_->num_calc_contact_solver_results_called(),
+            1);
 }
 
 /* Tests that the CalcAccelerationKinematicsCache() method is correctly wired

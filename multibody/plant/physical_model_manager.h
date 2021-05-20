@@ -14,18 +14,17 @@ namespace internal {
 
 /* PhysicalModelManager provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
- PhysicalModelManager to incorporate additional discrete models coupled with the
+ PhysicalModelManager to incorporate additional model elements coupled with the
  rigid body dynamics. For instance, simulation of deformable objects requires
  additional state and ports to interact with externals systems such as
  visualization.
 
- Similar to the routine of adding multiple model instances in MultibodyPlant,
- users should add all the model instances they wish to add to a certain
+ Similar to the routine of adding multiple model elements in MultibodyPlant,
+ users should add all the model elements they wish to add to a certain
  manager before the owning MultibodyPlant calls `Finalize()`. When `Finalize()`
- is invoked, MultibodyPlant will allocate the context resources for the state,
- cache and ports for each PhysicalModelManager it owns. After `Finalize()` is
- invoked, adding more model instances in any model managers that the
- MultibodyPlant owns is not allowed.
+ is invoked, MultibodyPlant will allocate the system level context resources
+ for each PhysicalModelManager it owns. After `Finalize()` is invoked, model
+ mutation in the PhysicalModelManager owned by MultibodyPlant is not allowed.
 
  @tparam_default_scalar */
 template <typename T>
@@ -37,9 +36,10 @@ class PhysicalModelManager {
 
   virtual ~PhysicalModelManager() = default;
 
-  /* MultibodyPlant calls this from within Finalize() to declare additional
-   state, cache and ports. `DeclareContextResources()` will throw an
-   exception when called before `Finalize()`.*/
+  /* (Internal) MultibodyPlant calls this from within Finalize() to declare
+   additional context resources. `DeclareContextResources()` will throw an
+   exception when called before `Finalize()`. This method is only meant to be
+   called by MultibodyPlant. */
   void DeclareContextResources() {
     ThrowIfNotFinalized(__func__);
     DoDeclareContextResources();

@@ -18,6 +18,7 @@ constexpr double kDt = 0.1;
 class PhysicalModelManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    // TODO(xuchenhan-tri): Add a test with more than one model manager.
     manager_ =
         &plant_.AddModelManager(std::make_unique<DummyModelManager>(&plant_));
     // An artificial scenario where the state is added in multiple passes.
