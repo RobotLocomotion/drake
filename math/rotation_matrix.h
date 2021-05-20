@@ -1097,44 +1097,12 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
 /// @retval R_WL        The computed basis.
 /// @throws std::logic_error if the norm of @p axis_W is within 1e-10 to zero or
 ///         @p axis_index does not lie in the range [0,2].
+// TODO(Mitiguy) Deprecate this function.
 template <class T>
 Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
   const RotationMatrix<T> R_WL =
       RotationMatrix<T>::MakeFromOneVector(axis_W, axis_index);
   return R_WL.matrix();
-
-#if 0
-  // Verify that the correct axis is given.
-  if (axis_index < 0 || axis_index > 2)
-    throw std::logic_error("Invalid axis specified: must be 0, 1, or 2.");
-
-  // Verify that the vector is not nearly zero.
-  const double zero_tol = 1e-10;
-  const T norm = axis_W.norm();
-  if (norm < zero_tol)
-    throw std::logic_error("Vector appears to be nearly zero.");
-
-  // The axis corresponding to the smallest component of axis_W will be *most*
-  // perpendicular.
-  const Vector3<T> u(axis_W.cwiseAbs());
-  int minAxis;
-  u.minCoeff(&minAxis);
-  Vector3<T> perpAxis = Vector3<T>::Zero();
-  perpAxis[minAxis] = 1;
-  const Vector3<T> axis_W_unit = axis_W / norm;
-
-  // Now define additional vectors in the basis.
-  Vector3<T> v1_W = axis_W_unit.cross(perpAxis).normalized();
-  Vector3<T> v2_W = axis_W_unit.cross(v1_W);
-
-  // Set the columns of the matrix.
-  Matrix3<T> R_WL;
-  R_WL.col(axis_index) = axis_W_unit;
-  R_WL.col((axis_index + 1) % 3) = v1_W;
-  R_WL.col((axis_index + 2) % 3) = v2_W;
-
-  return R_WL;
-#endif
 }
 
 }  // namespace math
