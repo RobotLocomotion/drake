@@ -1611,11 +1611,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @pre manager must not be nullptr.
   // @pre ManagerType is a subclass of
   //   multibody::internal::DiscreteUpdateManager.
-  // @pre The MultibodyPlant associated with the given `manager` is `this`
-  //   MultibodyPlant.
   // @returns a mutable reference to `manager`, now owned by `this`
   // MultibodyPlant.
-  /// @throws std::exception if called pre-finalize. See Finalize().
+  // @throws std::exception if called pre-finalize. See Finalize().
   template <class ManagerType>
   ManagerType& set_discrete_update_manager(
       std::unique_ptr<ManagerType> manager) {

@@ -10,7 +10,7 @@ namespace internal {
 
 template <typename T>
 systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
-    MultibodyPlant<T>* plant, const VectorX<T>& model_value) const {
+    MultibodyPlant<T>* plant, const VectorX<T>& model_value) {
   return MultibodyPlantModelAttorney<T>::DeclareDiscreteState(plant,
                                                               model_value);
 }
@@ -20,7 +20,7 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareAbstractOutputPort(
     MultibodyPlant<T>* plant, std::string name,
     typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
     typename systems::LeafOutputPort<T>::CalcCallback calc_function,
-    std::set<systems::DependencyTicket> prerequisites_of_calc) const {
+    std::set<systems::DependencyTicket> prerequisites_of_calc) {
   return MultibodyPlantModelAttorney<T>::DeclareAbstractOutputPort(
       plant, std::move(name), std::move(alloc_function),
       std::move(calc_function), std::move(prerequisites_of_calc));
@@ -32,7 +32,7 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareVectorOutputPort(
     const systems::BasicVector<T>& model_vector,
     typename systems::LeafOutputPort<T>::CalcVectorCallback
         vector_calc_function,
-    std::set<systems::DependencyTicket> prerequisites_of_calc) const {
+    std::set<systems::DependencyTicket> prerequisites_of_calc) {
   return MultibodyPlantModelAttorney<T>::DeclareVectorOutputPort(
       plant, std::move(name), model_vector, std::move(vector_calc_function),
       std::move(prerequisites_of_calc));

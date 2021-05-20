@@ -20,11 +20,11 @@ namespace internal {
  visualization.
 
  Similar to the routine of adding multiple model elements in MultibodyPlant,
- users should add all the model elements they wish to add to a certain
- manager before the owning MultibodyPlant calls `Finalize()`. When `Finalize()`
- is invoked, MultibodyPlant will allocate the system level context resources
- for each PhysicalModel it owns. After `Finalize()` is invoked, model
- mutation in the PhysicalModel owned by MultibodyPlant is not allowed.
+ users should add all the model elements they wish to add to a PhysicalModel
+ before the owning MultibodyPlant calls `Finalize()`. When `Finalize()` is
+ invoked, MultibodyPlant will allocate the system level context resources for
+ each PhysicalModel it owns. After `Finalize()` is invoked, model mutation in
+ the PhysicalModels owned by MultibodyPlant is not allowed.
 
  @tparam_default_scalar */
 template <typename T>
@@ -38,17 +38,15 @@ class PhysicalModel {
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
    additional system resources. This method is only meant to be called by
-   MultibodyPlant.
+   MultibodyPlant. We pass in a MultibodyPlant pointer due to the technical
+   reason that the MultibodyPlantModelAttorney only allows access into
+   MultibodyPlant's private/protected methods. Otherwise, a pointer to
+   LeafSystem would suffice.
    @pre plant != nullptr. */
   void DeclareSystemResources(MultibodyPlant<T>* plant) {
     DRAKE_DEMAND(plant != nullptr);
-    plant_ = plant;
     DoDeclareSystemResources(plant);
-  }
-
-  const MultibodyPlant<T>& plant() const {
-    DRAKE_DEMAND(plant_ != nullptr);
-    return *plant_;
+    finalized_ = true;
   }
 
  protected:
@@ -60,8 +58,8 @@ class PhysicalModel {
    not be called after the owning MultibodyPlant is Finalized. The invoking
    method should pass it's name so that the error message can include that
    detail. */
-  void ThrowIfFinalized(const char* source_method) const {
-    if (plant_ != nullptr) {
+  void ThrowIfMultibodyPlantIsFinalized(const char* source_method) const {
+    if (finalized_) {
       throw std::logic_error("Post-finalize calls to '" +
                              std::string(source_method) +
                              "()' are not allowed; calls to this method must "
@@ -74,8 +72,8 @@ class PhysicalModel {
    not be called before the owning MultibodyPlant is Finalized. The invoking
    method should pass it's name so that the error message can include that
    detail. */
-  void ThrowIfNotFinalized(const char* source_method) const {
-    if (plant_ == nullptr) {
+  void ThrowIfMultibodyPlantIsNotFinalized(const char* source_method) const {
+    if (!finalized_) {
       throw std::logic_error("Pre-finalize calls to '" +
                              std::string(source_method) +
                              "()' are not allowed; calls to this method must "
@@ -85,26 +83,27 @@ class PhysicalModel {
   }
 
   /* Protected LeafSystem methods exposed through MultibodyPlant. */
-  systems::DiscreteStateIndex DeclareDiscreteState(
-      MultibodyPlant<T>* plant, const VectorX<T>& model_value) const;
+  static systems::DiscreteStateIndex DeclareDiscreteState(
+      MultibodyPlant<T>* plant, const VectorX<T>& model_value);
 
-  systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
+  static systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
       MultibodyPlant<T>* plant, std::string name,
       typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
       typename systems::LeafOutputPort<T>::CalcCallback calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
-          systems::System<T>::all_sources_ticket()}) const;
+          systems::System<T>::all_sources_ticket()});
 
-  systems::LeafOutputPort<T>& DeclareVectorOutputPort(
+  static systems::LeafOutputPort<T>& DeclareVectorOutputPort(
       MultibodyPlant<T>* plant, std::string name,
       const systems::BasicVector<T>& model_vector,
       typename systems::LeafOutputPort<T>::CalcVectorCallback
           vector_calc_function,
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
-          systems::System<T>::all_sources_ticket()}) const;
+          systems::System<T>::all_sources_ticket()});
 
  private:
-  const MultibodyPlant<T>* plant_{nullptr};
+  // Flag to track whether the owning MultibodyPlant is finalized.
+  bool finalized_{false};
 };
 }  // namespace internal
 }  // namespace multibody

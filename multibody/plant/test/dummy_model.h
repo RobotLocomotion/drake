@@ -29,22 +29,23 @@ class DummyModel : public PhysicalModel<double> {
   /* Appends additional entries to the single group of discrete state with the
    given `model_value`. */
   void AppendDiscreteState(const VectorXd& model_value) {
-    ThrowIfFinalized(__func__);
+    ThrowIfMultibodyPlantIsFinalized(__func__);
     num_dofs_ += model_value.size();
     discrete_states_.emplace_back(model_value);
   }
 
   const systems::OutputPort<double>& get_abstract_output_port() const {
-    this->ThrowIfNotFinalized(__func__);
-    return this->plant().get_output_port(abstract_output_port_index_);
+    this->ThrowIfMultibodyPlantIsNotFinalized(__func__);
+    return *abstract_output_port_;
   }
 
   const systems::OutputPort<double>& get_vector_output_port() const {
-    this->ThrowIfNotFinalized(__func__);
-    return this->plant().get_output_port(vector_output_port_index_);
+    this->ThrowIfMultibodyPlantIsNotFinalized(__func__);
+    return *vector_output_port_;
   }
 
   systems::DiscreteStateIndex discrete_state_index() const {
+    this->ThrowIfMultibodyPlantIsNotFinalized(__func__);
     return discrete_state_index_;
   }
 
@@ -66,35 +67,27 @@ class DummyModel : public PhysicalModel<double> {
     discrete_state_index_ = this->DeclareDiscreteState(plant, model_state);
 
     /* Declare output ports. */
-    abstract_output_port_index_ =
-        this->DeclareAbstractOutputPort(
-                plant, "dummy_abstract_output_port",
-                [=]() { return AbstractValue::Make(model_state); },
-                [this](const Context<double>& context, AbstractValue* output) {
-                  VectorXd& data = output->get_mutable_value<VectorXd>();
-                  data = context.get_discrete_state(discrete_state_index_)
-                             .get_value();
-                },
-                {systems::System<double>::xd_ticket()})
-            .get_index();
-    vector_output_port_index_ =
-        this->DeclareVectorOutputPort(
-                plant, "dummy_vector_output_port",
-                BasicVector<double>(num_dofs_),
-                [this](const Context<double>& context,
-                       BasicVector<double>* output) {
-                  auto data = output->get_mutable_value();
-                  data = context.get_discrete_state(discrete_state_index_)
-                             .get_value();
-                },
-                {systems::System<double>::xd_ticket()})
-            .get_index();
+    abstract_output_port_ = &this->DeclareAbstractOutputPort(
+        plant, "dummy_abstract_output_port",
+        [=]() { return AbstractValue::Make(model_state); },
+        [this](const Context<double>& context, AbstractValue* output) {
+          VectorXd& data = output->get_mutable_value<VectorXd>();
+          data = context.get_discrete_state(discrete_state_index_).get_value();
+        },
+        {systems::System<double>::xd_ticket()});
+    vector_output_port_ = &this->DeclareVectorOutputPort(
+        plant, "dummy_vector_output_port", BasicVector<double>(num_dofs_),
+        [this](const Context<double>& context, BasicVector<double>* output) {
+          auto data = output->get_mutable_value();
+          data = context.get_discrete_state(discrete_state_index_).get_value();
+        },
+        {systems::System<double>::xd_ticket()});
   }
 
   std::vector<VectorXd> discrete_states_{};
   int num_dofs_{0};
-  OutputPortIndex abstract_output_port_index_;
-  OutputPortIndex vector_output_port_index_;
+  const systems::OutputPort<double>* abstract_output_port_{nullptr};
+  const systems::OutputPort<double>* vector_output_port_{nullptr};
   DiscreteStateIndex discrete_state_index_;
 };
 }  // namespace test

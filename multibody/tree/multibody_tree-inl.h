@@ -579,6 +579,7 @@ Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_discrete_state_vector(
     const systems::Context<T>& context) const {
   DRAKE_ASSERT(is_state_discrete());
+  DRAKE_ASSERT(discrete_state_index_.is_valid());
   // Only q and v.
   const systems::BasicVector<T>& discrete_state_vector =
       context.get_discrete_state(discrete_state_index_);
@@ -593,6 +594,7 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
     systems::Context<T>* context) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(is_state_discrete());
+  DRAKE_ASSERT(discrete_state_index_.is_valid());
   // Only q and v.
   systems::BasicVector<T>& discrete_state_vector =
       context->get_mutable_discrete_state(discrete_state_index_);
@@ -607,6 +609,7 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
     systems::State<T>* state) const {
   DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(is_state_discrete());
+  DRAKE_ASSERT(discrete_state_index_.is_valid());
   // Only q and v.
   systems::BasicVector<T>& discrete_state_vector =
       state->get_mutable_discrete_state(discrete_state_index_);

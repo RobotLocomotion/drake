@@ -19,7 +19,6 @@ using systems::OutputPortIndex;
 // Dummy state data.
 constexpr int kNumRigidDofs = 6;
 constexpr int kNumAdditionalDofs = 9;
-constexpr int kNumTotalDofs = kNumRigidDofs + kNumAdditionalDofs;
 constexpr double kDummyStateValue = 3.15;
 // Dummy contact data.
 constexpr int kNumContacts = 4;
