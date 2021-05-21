@@ -422,7 +422,8 @@ RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
     if (cos_theta < -kAlmostOne) {
       /* We need a normal perpendicular to nhat. Extract it from a valid
        basis. */
-      const Matrix3<T> basis = math::ComputeBasisFromAxis(2, nhat);
+      const RotationMatrix<T> basis =
+          math::RotationMatrix<T>::MakeFromOneVector(nhat, 2);
       const Vector3<T> rhat = basis.col(0);
       R = math::RotationMatrix<T>(AngleAxis<T>{M_PI, rhat});
     } else {
