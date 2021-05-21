@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
 namespace geometry {

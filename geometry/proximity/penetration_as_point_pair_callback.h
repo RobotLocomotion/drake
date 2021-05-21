@@ -7,6 +7,7 @@
 
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {

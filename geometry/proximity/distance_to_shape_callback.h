@@ -8,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/math/rigid_transform.h"
 

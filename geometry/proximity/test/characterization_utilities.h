@@ -20,7 +20,9 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

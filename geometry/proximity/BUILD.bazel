@@ -74,7 +74,6 @@ drake_cc_library(
     name = "collision_filter_legacy",
     hdrs = ["collision_filter_legacy.h"],
     deps = [
-        ":proximity_utilities",
         "//common:essential",
         "//common:sorted_vectors_have_intersection",
     ],
@@ -91,6 +90,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter_legacy",
+        ":proximity_utilities",
         "//geometry:geometry_ids",
         "@fcl",
     ],
@@ -221,6 +221,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "make_box_field",
+    srcs = ["make_box_field.cc"],
     hdrs = ["make_box_field.h"],
     deps = [
         ":distance_to_point_callback",
@@ -246,10 +247,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "make_cylinder_field",
+    srcs = ["make_cylinder_field.cc"],
     hdrs = ["make_cylinder_field.h"],
     deps = [
         ":distance_to_point_callback",
         ":mesh_field",
+        ":volume_to_surface_mesh",
         "//common:essential",
         "//common:unused",
         "//geometry:shape_specification",
