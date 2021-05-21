@@ -1,0 +1,8 @@
+<package format="2">
+  <name>drake</name>
+  <description>
+  Model-Based Design and Verification for Robotics.
+  </description>
+  <maintainer>Drake Developers</maintainer>
+  <license>BSD-3-Clause</license>
+</package>

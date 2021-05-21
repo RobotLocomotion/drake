@@ -50,6 +50,9 @@ drake_cc_library(
     hdrs = [
         "package_map.h",
     ],
+    data = [
+        "//:package.xml",
+    ],
     visibility = [
         "//visibility:public",
     ],
@@ -377,6 +380,21 @@ drake_cc_googletest(
         ":package_map",
         "//common:filesystem",
         "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_pkg_uri_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
     ],
 )
 

@@ -31,7 +31,10 @@ class TestParsing(unittest.TestCase):
         model = FindResourceOrThrow(
             "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
 
-        # Simple coverage test for Add, Contains, size, GetPath, AddPackageXml.
+        # Simple coverage test for Remove, Add, Contains, size, GetPath,
+        # AddPackageXml.
+        dut.Remove('drake')
+        self.assertEqual(dut.size(), 0)
         dut.Add(package_name="root", package_path=tmpdir)
         self.assertEqual(dut.size(), 1)
         self.assertTrue(dut.Contains(package_name="root"))
