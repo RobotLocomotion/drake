@@ -182,12 +182,6 @@ TEST_F(DiscreteUpdateManagerTest, CalcAccelerationKinematicsCache) {
   EXPECT_TRUE(CompareMatrices(generalized_acceleration,
                               VectorXd::Ones(kNumRigidDofs) * kDummyVdot));
 }
-
-TEST_F(DiscreteUpdateManagerTest, ScalarConvertCopyConstructor){
-  // MultibodyPlant<double> plant_clone(plant_);
-  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_clone =
-      systems::System<double>::ToAutoDiffXd(plant_);
-}
 }  // namespace
 }  // namespace test
 }  // namespace internal

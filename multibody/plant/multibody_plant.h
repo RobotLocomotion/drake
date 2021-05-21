@@ -789,8 +789,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
     if (other.discrete_update_manager_ != nullptr) {
-      discrete_update_manager_ =
-          other.discrete_update_manager_->template CloneToScalar<T>();
+      set_discrete_update_manager(
+          other.discrete_update_manager_->template CloneToScalar<T>());
     }
 
     DeclareSceneGraphPorts();

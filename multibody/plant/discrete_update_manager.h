@@ -103,19 +103,24 @@ class DiscreteUpdateManager {
 
  protected:
   /* Creates a deep copy of the concrete DiscreteUpdateManager object with the
-   scalar type double. Derived classes must implement this so that it performs
-   the complete deep copy of the object, including all base class members. */
+   scalar type double. Derived classes that supports double as a scalar type
+   must implement this so that it performs the complete deep copy of the
+   object. */
   virtual std::unique_ptr<DiscreteUpdateManager<double>> DoCloneToDouble()
-      const = 0;
+      const {
+    throw std::logic_error(
+        "Scalar conversion to double is not supported by this "
+        "DiscreteUpdateManager.");
+  }
 
   /* Creates a deep copy of the concrete DiscreteUpdateManager object with the
    scalar type AutoDiffXd. Derived classes that supports AutoDiffXd as a scalar
    type must implement this so that it performs the complete deep copy of the
-   object, including all base class members.*/
+   object. */
   virtual std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
   DoCloneToAutoDiffXd() const {
     throw std::logic_error(
-        "Scalar type AutodiffXd is not supported by this "
+        "Scalar conversion AutodiffXd is not supported by this "
         "DiscreteUpdateManager.");
   }
 

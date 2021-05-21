@@ -38,10 +38,8 @@ class PhysicalModel {
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
    additional system resources. This method is only meant to be called by
-   MultibodyPlant. We pass in a MultibodyPlant pointer due to the technical
-   reason that the MultibodyPlantModelAttorney only allows access into
-   MultibodyPlant's private/protected methods. Otherwise, a pointer to
-   LeafSystem would suffice.
+   MultibodyPlant. We pass in a MultibodyPlant pointer so that derived
+   PhysicalModels can use specific MultibodyPlant cache tickets.
    @pre plant != nullptr. */
   void DeclareSystemResources(MultibodyPlant<T>* plant) {
     DRAKE_DEMAND(plant != nullptr);
