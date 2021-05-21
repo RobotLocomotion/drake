@@ -1,9 +1,10 @@
+#include "drake/math/orthonormal_basis.h"
+
 #include <stdexcept>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/rotation_matrix.h"
 
 using Eigen::Vector3d;
 
@@ -47,7 +48,7 @@ GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
 
     // Check a zero vector.
     v.setZero();
-    EXPECT_THROW(ComputeBasisFromAxis(i, v), std::exception);
+    EXPECT_THROW(ComputeBasisFromAxis(i, v), std::logic_error);
 
     // Check the x-, y- and z-axes.
     const Vector3d x_axis = Vector3d::UnitX();

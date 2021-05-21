@@ -1083,28 +1083,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
                                   double angle_lb,
                                   double angle_ub);
 
-/// Creates a right-handed local basis from a given axis. Defines two other
-/// arbitrary axes such that the basis is orthonormal. The basis is R_WL, where
-/// W is the frame in which the input axis is expressed and L is a local basis
-/// such that v_W = R_WL * v_L.
-///
-/// @param[in] axis_index The index of the axis (in the range [0,2]), with
-///                       0 corresponding to the x-axis, 1 corresponding to the
-///                       y-axis, and z-corresponding to the z-axis.
-/// @param[in] axis_W   The vector defining the basis's given axis expressed
-///                     in frame W. The vector need not be a unit vector: this
-///                     routine will normalize it.
-/// @retval R_WL        The computed basis.
-/// @throws std::logic_error if the norm of @p axis_W is within 1e-10 to zero or
-///         @p axis_index does not lie in the range [0,2].
-// TODO(Mitiguy) Deprecate this function.
-template <class T>
-Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
-  const RotationMatrix<T> R_WL =
-      RotationMatrix<T>::MakeFromOneVector(axis_W, axis_index);
-  return R_WL.matrix();
-}
-
 }  // namespace math
 }  // namespace drake
 
