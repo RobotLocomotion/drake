@@ -147,7 +147,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
 TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
   auto context = plant_.CreateDefaultContext();
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
-  const int time_steps = 10;
+  const int time_steps = 2;
   simulator.AdvanceTo(time_steps * kDt);
   const VectorXd final_additional_state =
       dummy_model_->get_vector_output_port().Eval(simulator.get_context());
@@ -181,6 +181,12 @@ TEST_F(DiscreteUpdateManagerTest, CalcAccelerationKinematicsCache) {
       plant_.get_generalized_acceleration_output_port().Eval(*context);
   EXPECT_TRUE(CompareMatrices(generalized_acceleration,
                               VectorXd::Ones(kNumRigidDofs) * kDummyVdot));
+}
+
+TEST_F(DiscreteUpdateManagerTest, ScalarConvertCopyConstructor){
+  // MultibodyPlant<double> plant_clone(plant_);
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_clone =
+      systems::System<double>::ToAutoDiffXd(plant_);
 }
 }  // namespace
 }  // namespace test

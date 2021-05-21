@@ -62,8 +62,9 @@ class DiscreteUpdateManager {
    MultibodyPlant::set_discrete_update_manager() only.
    @pre plant is Finalized. */
   void SetOwningMultibodyPlant(const MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    DRAKE_DEMAND(plant->is_finalized());
     plant_ = plant;
-    DRAKE_DEMAND(plant_->is_finalized());
     multibody_state_index_ = plant_->GetDiscreteStateIndexOrThrow();
     DoExtractModelInfo();
   }

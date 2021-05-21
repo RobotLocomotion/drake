@@ -1633,7 +1633,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     manager->SetOwningMultibodyPlant(this);
     discrete_update_manager_ = std::move(manager);
     ManagerType* concrete_manager_ptr =
-        static_cast<ManagerType*>(discrete_update_manager_.get_mutable());
+        static_cast<ManagerType*>(discrete_update_manager_.get());
     return *concrete_manager_ptr;
   }
 
@@ -4761,7 +4761,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // states.
   // TODO(amcastro-tri): migrate the entirety of computations related to contact
   // resolution into a default contact manager.
-  copyable_unique_ptr<internal::DiscreteUpdateManager<T>>
+  std::unique_ptr<internal::DiscreteUpdateManager<T>>
       discrete_update_manager_;
 
   // (Experimental) The vector of physical models owned by MultibodyPlant.
