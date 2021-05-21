@@ -13,6 +13,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -73,6 +74,18 @@ void PackageMap::PopulateFromEnvironment(const string& environment_variable) {
       CrawlForPackages(path);
     }
   }
+}
+
+std::string PackageMap::ResolveUri(
+    const std::string& path, std::optional<std::string> root_dir) const {
+  auto result = MaybeResolveUri(path, root_dir);
+  return result.get_absolute_path_or_throw();
+}
+
+FindResourceResult PackageMap::MaybeResolveUri(
+    const std::string& path, std::optional<std::string> root_dir) const {
+  const std::string cwd = filesystem::current_path().string();
+  return internal::ResolveUriToResult(path, *this, root_dir.value_or(cwd));
 }
 
 namespace {

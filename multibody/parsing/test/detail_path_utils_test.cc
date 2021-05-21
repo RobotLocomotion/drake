@@ -155,8 +155,13 @@ GTEST_TEST(ResolveUriTest, TestNoRoot) {
   unused(FindResourceOrThrow("drake/" + rel_path));
   const PackageMap package_map;
   const std::string root_dir;
-  string path = ResolveUri(rel_path, package_map, root_dir);
-  EXPECT_EQ(path, "");
+  FindResourceResult result =
+      ResolveUriToResult(rel_path, package_map, root_dir);
+  EXPECT_EQ(
+      *result.get_error_message(),
+      "URI 'multibody/parsing/test/package_map_test_packages/"
+      "package_map_test_package_a/sdf/test_model.sdf' is invalid when parsing "
+      "a string instead of a filename.");
 }
 
 // Verifies that ResolveUri() resolves to the proper file using the scheme
