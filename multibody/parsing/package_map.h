@@ -56,6 +56,8 @@ class PackageMap final {
   /// directories, this method adds a new entry into this PackageMap where the
   /// key is the package name as specified within `package.xml` and the
   /// directory's path is the value.
+  /// If a package already known by the PackageMap is found again with a
+  /// conflicting path, a warning is logged and the original path is kept.
   void PopulateFromFolder(const std::string& path);
 
   /// Obtains one or more paths from environment variable
@@ -67,6 +69,10 @@ class PackageMap final {
   /// separating them using the ':' symbol. For example, the environment
   /// variable can contain [path 1]:[path 2]:[path 3] to search three different
   /// paths.
+  /// If a package already known by the PackageMap is found again with a
+  /// conflicting path, a warning is logged and the original path is kept. This
+  /// accomodates the expected behavior using ROS_PACKAGE_PATH, where a package
+  /// path corresponds to the "highest" overlay in which that package is found.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
   /// Crawls up the directory tree from @p model_file to `drake`
