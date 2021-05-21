@@ -73,6 +73,11 @@ drake_cc_library(
 drake_cc_library(
     name = "collision_filter_legacy",
     hdrs = ["collision_filter_legacy.h"],
+    install_hdrs_exclude = [
+        # This header includes proximity_utilities.h which itself is
+        # marked as install_hdrs_exclude, so we need to do the same.
+        "collision_filter_legacy.h",
+    ],
     deps = [
         ":proximity_utilities",
         "//common:essential",
@@ -222,6 +227,11 @@ drake_cc_library(
 drake_cc_library(
     name = "make_box_field",
     hdrs = ["make_box_field.h"],
+    install_hdrs_exclude = [
+        # This header includes distance_to_point_callback.h which itself is
+        # marked as install_hdrs_exclude, so we need to do the same.
+        "make_box_field.h",
+    ],
     deps = [
         ":distance_to_point_callback",
         ":mesh_field",
@@ -247,6 +257,11 @@ drake_cc_library(
 drake_cc_library(
     name = "make_cylinder_field",
     hdrs = ["make_cylinder_field.h"],
+    install_hdrs_exclude = [
+        # This header includes distance_to_point_callback.h which itself is
+        # marked as install_hdrs_exclude, so we need to do the same.
+        "make_cylinder_field.h",
+    ],
     deps = [
         ":distance_to_point_callback",
         ":mesh_field",
