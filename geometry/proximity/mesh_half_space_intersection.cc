@@ -353,7 +353,8 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     }
     return BvttCallbackResult::Continue;
   };
-  const math::RigidTransform<T> X_RS = X_WR.InvertAndCompose(X_WS);
+  const math::RigidTransform<T> X_RW = X_WR.inverse();
+  const math::RigidTransform<T> X_RS = X_RW * X_WS;
   // To collide half space with _BVH_ we need (as documented):
   //   - HalfSpace and
   //   - X_PH - pose of the hierarchy in the primitive frame or, in this
