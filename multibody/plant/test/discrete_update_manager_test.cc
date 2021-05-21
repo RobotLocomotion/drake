@@ -13,6 +13,7 @@ using contact_solvers::internal::ContactSolverResults;
 using Eigen::VectorXd;
 using systems::BasicVector;
 using systems::Context;
+using systems::ContextBase;
 using systems::DiscreteStateIndex;
 using systems::DiscreteValues;
 using systems::OutputPortIndex;
@@ -47,6 +48,13 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
     return num_calls_to_calc_contact_solver_results_;
   }
 
+  const VectorXd& EvalCacheEntry(
+      const systems::Context<double>& context) const {
+    const auto& data =
+        plant().get_cache_entry(cache_index_).Eval<VectorXd>(context);
+    return data;
+  }
+
  private:
   /* Extracts information about the additional discrete state that
    DummyModel declares if one exists in the owning MultibodyPlant. */
@@ -58,6 +66,29 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
         dynamic_cast<const DummyModel*>(plant().physical_models()[0].get());
     DRAKE_DEMAND(dummy_model != nullptr);
     additional_state_index_ = dummy_model->discrete_state_index();
+  }
+
+  /* Declares a cache entry that stores twice the additional state value. */
+  void DeclareCacheEntries(MultibodyPlant<double>* plant) final {
+    cache_index_ =
+        this->DeclareCacheEntry(
+                plant, "Twice the additional_state value",
+                [=]() {
+                  const VectorXd model_value =
+                      VectorXd::Zero(kNumAdditionalDofs);
+                  return AbstractValue::Make(model_value);
+                },
+                [this](const ContextBase& context_base,
+                       AbstractValue* cache_value) {
+                  const auto& context =
+                      dynamic_cast<const Context<double>&>(context_base);
+                  VectorXd& data = cache_value->get_mutable_value<VectorXd>();
+                  data =
+                      2.0 * context.get_discrete_state(additional_state_index_)
+                                .get_value();
+                },
+                {systems::System<double>::xd_ticket()})
+            .cache_index();
   }
 
   /* Increments the number of times CalcContactSolverResults() is called for
@@ -103,6 +134,7 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
 
  private:
   systems::DiscreteStateIndex additional_state_index_;
+  systems::CacheIndex cache_index_;
   mutable int num_calls_to_calc_contact_solver_results_{0};
 };
 
@@ -134,7 +166,8 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
   DummyDiscreteUpdateManager* discrete_update_manager_{nullptr};
 };
 
-/* Tests that the CalcDiscrete() method is correctly wired to MultibodyPlant. */
+/* Tests that the CalcDiscrete() method is correctly wired to MultibodyPlant and
+ that the CacheEntry is properly evaluated. */
 TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
   auto context = plant_.CreateDefaultContext();
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
@@ -148,6 +181,11 @@ TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
                       dummy_discrete_state() +
                           2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
                       std::numeric_limits<double>::epsilon()));
+  /* Verifies that the cache value is twice the the addition state value. */
+  const VectorXd& cache_value =
+      discrete_update_manager_->EvalCacheEntry(simulator.get_context());
+  EXPECT_TRUE(CompareMatrices(2.0 * final_additional_state, cache_value,
+                              std::numeric_limits<double>::epsilon()));
 }
 
 /* Tests that the CalcContactSolverResults() method is correctly wired to
