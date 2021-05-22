@@ -188,7 +188,10 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
             dut.get_mutable_prog().SetInitialGuessForAllVariables(
                 result.get_x_val())
             result = snopt_solver.Solve(dut.prog())
-            self.assertTrue(result.is_success())
+            self.assertTrue(
+                result.is_success(),
+                f"StaticEquilibriumProblem failed to solve with tol={tol} : "
+                f"{result.get_solution_result()}")
 
 
 class TestCentroidalMomentumConstraint(unittest.TestCase):
