@@ -326,15 +326,38 @@ def _collect_cc_header_info(targets):
             transitive_headers_depset = compilation_context.headers
             transitive_headers_depsets.append(transitive_headers_depset)
 
-            # Find all headers provided by the drake_cc_package_library,
-            # i.e., the set of transitively-available headers that exist in
-            # the same Bazel package as the target.
-            package_headers_depsets.append(depset(direct = [
-                transitive_header
-                for transitive_header in transitive_headers_depset.to_list()
-                if (target.label.package == transitive_header.owner.package and
-                    target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
-            ]))
+            # Find all headers provided by the drake_cc_package_library, i.e.,
+            # the set of transitively-available headers that exist in the same
+            # Bazel package as the target.
+            package_headers = [
+                header
+                for header in transitive_headers_depset.to_list()
+                if (target.label.package == header.owner.package and
+                    target.label.workspace_root == header.owner.workspace_root)
+            ]
+
+            # Remove headers that are duplicated as both a virtual include path
+            # and a source path.  We'll use the virtual include path, since it
+            # has a matching include path -- the source path does not.
+            for header in list(package_headers):
+                if header.path.startswith("bazel-out"):
+                    continue
+
+                # Confirm that the path is found elsewhere in virtual includes.
+                if not any([
+                    other
+                    for other in package_headers
+                    if (other != header and
+                        other.path.endswith(header.path))
+                ]):
+                    fail("Header {} lacks a plausible include path".format(
+                        header.path,
+                    ))
+
+                # Remove it.
+                package_headers.remove(header)
+
+            package_headers_depsets.append(depset(direct = package_headers))
 
     return struct(
         compile_flags = compile_flags,
