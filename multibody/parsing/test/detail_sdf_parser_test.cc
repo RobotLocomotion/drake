@@ -908,6 +908,15 @@ void FailWithUnsupportedRelativeTo(const std::string& inner) {
       R"(in <inertial/> or <model/> tags.)");
 }
 
+void FailWithRelativeToNotDefined(const std::string& inner) {
+  SCOPED_TRACE(inner);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*XML Attribute\[relative_to\] in element\[pose\] not )"
+      R"(defined in SDF.\n)");
+}
+
 void FailWithInvalidWorld(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -958,9 +967,7 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
-  // TODO(eric.cousineau): Change this to `FailWithUnsupportedRelativeTo`
-  // once sdformat#543 merges and is released.
-  ParseTestString(R"(
+  FailWithRelativeToNotDefined(R"(
 <model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
