@@ -10,8 +10,8 @@ namespace drake {
 namespace solvers {
 
 ScsSolver::ScsSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+                 &UnsatisfiedProgramAttributes) {}
 
 ScsSolver::~ScsSolver() = default;
 
@@ -22,7 +22,12 @@ SolverId ScsSolver::id() {
 
 bool ScsSolver::is_enabled() { return true; }
 
-bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+namespace {
+// If the program is compatible with this solver, returns true and clears the
+// explanation.  Otherwise, returns false and sets the explanation.  In either
+// case, the explanation can be nullptr in which case it is ignored.
+bool CheckAttributes(const MathematicalProgram& prog,
+                     std::string* explanation) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint,
@@ -32,9 +37,20 @@ bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kPositiveSemidefiniteConstraint,
           ProgramAttribute::kExponentialConeConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost});
-  return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access()) &&
-         AreAllQuadraticCostsConvex(prog.quadratic_costs());
+  return internal::CheckConvexSolverAttributes(
+      prog, solver_capabilities.access(), "ScsSolver", explanation);
+}
+}  // namespace
+
+bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+  return CheckAttributes(prog, nullptr);
+}
+
+std::string ScsSolver::UnsatisfiedProgramAttributes(
+    const MathematicalProgram& prog) {
+  std::string explanation;
+  CheckAttributes(prog, &explanation);
+  return explanation;
 }
 
 }  // namespace solvers

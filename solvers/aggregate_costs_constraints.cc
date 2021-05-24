@@ -199,12 +199,48 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
   }
 }
 
-bool AreAllQuadraticCostsConvex(
+const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
-  return std::all_of(quadratic_costs.begin(), quadratic_costs.end(),
-                     [](const Binding<QuadraticCost>& cost) {
-                       return cost.evaluator()->is_convex();
-                     });
+  for (const auto& cost : quadratic_costs) {
+    if (!cost.evaluator()->is_convex()) {
+      return &cost;
+    }
+  }
+  return nullptr;
 }
+
+namespace internal {
+bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
+                                 const ProgramAttributes& solver_capabilities,
+                                 std::string_view solver_name,
+                                 std::string* explanation) {
+  const ProgramAttributes& required_capabilities = prog.required_capabilities();
+  const bool capabilities_match = AreRequiredAttributesSupported(
+      required_capabilities, solver_capabilities, explanation);
+  if (!capabilities_match) {
+    if (explanation) {
+      *explanation = fmt::format("{} is unable to solve because {}.",
+                                 solver_name, *explanation);
+    }
+    return false;
+  }
+  const Binding<QuadraticCost>* nonconvex_quadratic_cost =
+      FindNonconvexQuadraticCost(prog.quadratic_costs());
+  if (nonconvex_quadratic_cost != nullptr) {
+    if (explanation) {
+      *explanation = fmt::format(
+          "{} is unable to solve because (at least) the quadratic cost {} is "
+          "non-convex. Either change this cost to a convex one, or switch "
+          "to a different solver like SNOPT/IPOPT/NLOPT.",
+          solver_name, nonconvex_quadratic_cost->to_string());
+    }
+    return false;
+  }
+  if (explanation) {
+    explanation->clear();
+  }
+  return true;
+}
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake
