@@ -85,6 +85,18 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
+const std::string& MultibodyTree<T>::GetModelInstanceName(
+    ModelInstanceIndex model_instance) const {
+  const auto it = instance_index_to_name_.find(model_instance);
+  if (it == instance_index_to_name_.end()) {
+    throw std::logic_error(
+        fmt::format("There is no model instance id {} in the model.",
+                    std::to_string(model_instance)));
+  }
+  return it->second;
+}
+
+template <typename T>
 bool MultibodyTree<T>::HasUniqueFreeBaseBodyImpl(
     ModelInstanceIndex model_instance) const {
   std::optional<BodyIndex> base_body_index =
@@ -109,6 +121,277 @@ const Body<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
                            " has a unique base body, but it is not free.");
   }
   return *owned_bodies_[base_body_index.value()];
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasBodyNamed(std::string_view name) const {
+  const int count = body_name_to_index_.count(name);
+  if (count > 1) {
+    throw std::logic_error(fmt::format(
+        "Body {} appears in multiple model instances.", std::string(name)));
+  }
+  return count > 0;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasBodyNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  // Search linearly on the assumption that we won't often have lots of
+  // bodies with the same name in different model instances.  If this turns
+  // out to be incorrect we can switch to a different data structure.
+  // N.B. Please sync with `HasFrameNamed`, `HasJointNamed`, and
+  // `HasJointActuatorNamed` if you change or remove this comment.
+  const auto range = body_name_to_index_.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    if (get_body(it->second).model_instance() == model_instance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasFrameNamed(std::string_view name) const {
+  const int count = frame_name_to_index_.count(name);
+  if (count > 1) {
+    throw std::logic_error(
+        fmt::format("Frame {} appears in multiple model instances.", name));
+  }
+  return count > 0;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasFrameNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  // See notes in `HasBodyNamed`.
+  const auto range = frame_name_to_index_.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    if (get_frame(it->second).model_instance() == model_instance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointNamed(std::string_view name) const {
+  const int count = joint_name_to_index_.count(name);
+  if (count > 1) {
+    throw std::logic_error(
+        fmt::format("Joint {} appears in multiple model instances.", name));
+  }
+  return count > 0;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  // See notes in `HasBodyNamed`.
+  const auto range = joint_name_to_index_.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    if (get_joint(it->second).model_instance() == model_instance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointActuatorNamed(std::string_view name) const {
+  const int count = actuator_name_to_index_.count(name);
+  if (count > 1) {
+    throw std::logic_error(fmt::format(
+        "Joint actuator {} appears in multiple model instances.", name));
+  }
+  return count > 0;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointActuatorNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  const auto range = actuator_name_to_index_.equal_range(name);
+  // See notes in `HasBodyNamed`.
+  for (auto it = range.first; it != range.second; ++it) {
+    if (get_joint_actuator(it->second).model_instance() == model_instance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
+  return instance_name_to_index_.find(name) != instance_name_to_index_.end();
+}
+
+template <typename T>
+const Body<T>& MultibodyTree<T>::GetBodyByName(std::string_view name) const {
+  return get_body(
+      GetElementIndex<BodyIndex>(name, "Body", body_name_to_index_));
+}
+
+template <typename T>
+const Body<T>& MultibodyTree<T>::GetBodyByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  const auto range = body_name_to_index_.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    const Body<T>& body = get_body(it->second);
+    if (body.model_instance() == model_instance) {
+      return body;
+    }
+  }
+  throw std::logic_error(
+      fmt::format("There is no body named '{}' in model instance '{}.", name,
+                  instance_index_to_name_.at(model_instance)));
+}
+
+template <typename T>
+std::vector<BodyIndex> MultibodyTree<T>::GetBodyIndices(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  std::vector<BodyIndex> indices;
+  for (auto& body : owned_bodies_) {
+    if (body->model_instance() == model_instance) {
+      indices.emplace_back(body->index());
+    }
+  }
+  return indices;
+}
+
+template <typename T>
+std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  std::vector<JointIndex> indices;
+  for (auto& joint : owned_joints_) {
+    if (joint->model_instance() == model_instance) {
+      indices.emplace_back(joint->index());
+    }
+  }
+  return indices;
+}
+
+template <typename T>
+const Frame<T>& MultibodyTree<T>::GetFrameByName(std::string_view name) const {
+  return get_frame(
+      GetElementIndex<FrameIndex>(name, "Frame", frame_name_to_index_));
+}
+
+template <typename T>
+const Frame<T>& MultibodyTree<T>::GetFrameByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  const auto range = frame_name_to_index_.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    const Frame<T>& frame = get_frame(it->second);
+    if (frame.model_instance() == model_instance) {
+      return frame;
+    }
+  }
+  throw std::logic_error(fmt::format(
+      "There is no frame named '{}' in model instance '{}'.", name,
+      instance_index_to_name_.at(model_instance)));
+}
+
+template <typename T>
+const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
+    std::string_view name) const {
+  const RigidBody<T>* body =
+      dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name));
+  if (body == nullptr) {
+    throw std::logic_error(
+        fmt::format("Body '{}' is not a RigidBody.", name));
+  }
+  return *body;
+}
+
+template <typename T>
+const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  const RigidBody<T>* body =
+      dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name, model_instance));
+  if (body == nullptr) {
+    throw std::logic_error(
+        fmt::format("Body '{}' in model instance '{}' is not a RigidBody.",
+                    name, instance_index_to_name_.at(model_instance)));
+  }
+  return *body;
+}
+
+template <typename T>
+const Joint<T>& MultibodyTree<T>::GetJointByNameImpl(
+    std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance) const {
+  const Joint<T>* joint = nullptr;
+  if (model_instance) {
+    DRAKE_THROW_UNLESS(*model_instance < instance_name_to_index_.size());
+    const auto range = joint_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const Joint<T>& this_joint = get_joint(it->second);
+      if (this_joint.model_instance() == *model_instance) {
+        joint = &this_joint;
+      }
+    }
+    if (joint == nullptr) {
+      throw std::logic_error(fmt::format(
+          "There is no joint named '{}' in model instance '{}'.", name,
+          name, instance_index_to_name_.at(*model_instance)));
+    }
+  } else {
+    joint = &get_joint(
+        GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
+  }
+  return *joint;
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowJointSubtypeMismatch(
+    const Joint<T>& joint, std::string_view desired_type) const {
+  throw std::logic_error(fmt::format(
+      "Joint '{}' in model instance {} is not of type '{}' but of type '{}'.",
+      joint.name(), instance_index_to_name_.at(joint.model_instance()),
+      desired_type, NiceTypeName::Get(joint)));
+}
+
+template <typename T>
+const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
+    std::string_view name) const {
+  return get_joint_actuator(
+      GetElementIndex<JointActuatorIndex>(
+          name, "Joint actuator", actuator_name_to_index_));
+}
+
+template <typename T>
+const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  const auto range = actuator_name_to_index_.equal_range(name);
+  for (auto it = range.first; it != range.second; ++it) {
+    const JointActuator<T>& actuator = get_joint_actuator(it->second);
+    if (actuator.model_instance() == model_instance) {
+      return actuator;
+    }
+  }
+  throw std::logic_error(fmt::format("There is no joint actuator named {}'"
+      "' in model instance '{}'.", name,
+      instance_index_to_name_.at(model_instance)));
+}
+
+template <typename T>
+ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
+    std::string_view name) const {
+  const auto it = instance_name_to_index_.find(name);
+  if (it == instance_name_to_index_.end()) {
+    throw std::logic_error(fmt::format(
+        "There is no model instance named '{}' in the model.", name));
+  }
+  return it->second;
 }
 
 template <typename T>
@@ -349,6 +632,19 @@ void MultibodyTree<T>::CreateModelInstances() {
     model_instances_.at(joint_actuator->model_instance())->add_joint_actuator(
         joint_actuator.get());
   }
+}
+
+template <typename T>
+std::unique_ptr<systems::LeafContext<T>>
+MultibodyTree<T>::CreateDefaultContext() const {
+  if (tree_system_ == nullptr) {
+    throw std::runtime_error(
+        "MultibodyTree::CreateDefaultContext(): can only be called from a "
+        "MultibodyTree that is owned by a MultibodyPlant / "
+        "MultibodyTreeSystem");
+  }
+  return dynamic_pointer_cast<systems::LeafContext<T>>(
+      tree_system_->CreateDefaultContext());
 }
 
 template <typename T>
@@ -2682,6 +2978,26 @@ VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
         joint.acceleration_upper_limits();
   }
   return vd_upper;
+}
+
+template <typename T>
+template <typename ElementIndex>
+ElementIndex MultibodyTree<T>::GetElementIndex(
+    std::string_view name, const std::string& element_description,
+    const std::unordered_multimap<StringViewMapKey, ElementIndex>&
+      name_to_index) {
+  const auto range = name_to_index.equal_range(name);
+  if (range.first == range.second) {
+    std::string lower = element_description;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    throw std::logic_error(
+        fmt::format("There is no {} named '{}' in the model.", lower, name));
+  } else if (std::next(range.first) != range.second) {
+    throw std::logic_error(
+        fmt::format("{} {} appears in multiple model instances.",
+                    element_description, name));
+  }
+  return range.first->second;
 }
 
 template <typename T>
