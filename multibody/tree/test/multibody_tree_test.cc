@@ -18,6 +18,7 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
@@ -164,6 +165,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<RevoluteJoint>(kInvalidName),
       std::logic_error, "There is no joint named '.*' in the model.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.template GetJointByName<PrismaticJoint>(kJointNames[0]),
+      std::logic_error, ".*not of type.*PrismaticJoint.*but.*RevoluteJoint.*");
 
   // Get actuators by name.
   for (const std::string& actuator_name : kActuatorNames) {
