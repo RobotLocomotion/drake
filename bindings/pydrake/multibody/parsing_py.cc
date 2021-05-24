@@ -31,9 +31,12 @@ PYBIND11_MODULE(parsing, m) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Add", &Class::Add, py::arg("package_name"),
             py::arg("package_path"), cls_doc.Add.doc)
+        .def("AddMap", &Class::AddMap, py::arg("other_map"), cls_doc.AddMap.doc)
         .def("Contains", &Class::Contains, py::arg("package_name"),
             cls_doc.Contains.doc)
         .def("size", &Class::size, cls_doc.size.doc)
+        .def("GetPackageNames", &Class::GetPackageNames,
+            cls_doc.GetPackageNames.doc)
         .def("GetPath", &Class::GetPath, py::arg("package_name"),
             cls_doc.GetPath.doc)
         .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),

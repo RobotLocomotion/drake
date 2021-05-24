@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>package_map_test_package_a</name>
+  <version>0.0.0</version>
+  <description>
+    A model of the package_map_test_package_a.
+  </description>
+  <maintainer email="user@example.com">John Doe</maintainer>
+  <author>Jane Doe</author>
+  <license>N/A</license>
+</package>

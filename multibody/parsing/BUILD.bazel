@@ -377,6 +377,7 @@ drake_cc_googletest(
         ":package_map",
         "//common:filesystem",
         "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
