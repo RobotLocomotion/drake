@@ -2108,6 +2108,11 @@ class LeafSystem : public System<T> {
 
   // Model abstract parameters to be used during Context allocation.
   internal::ModelValues model_abstract_parameters_;
+
+  // The index of a cache entry that stores a vector of event pointers for use
+  // in managing events. It is only used in DoCalcNextUpdateTime(), but is
+  // allocated as a cache entry to avoid heap operations during simulation.
+  CacheIndex next_events_cache_index_{};
 };
 
 }  // namespace systems
