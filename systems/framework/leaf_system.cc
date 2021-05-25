@@ -301,6 +301,15 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   return feedthrough;
 }
 
+namespace {
+// The type of our cache entry for temporary storage.  Any function that uses
+// this storage is responsible for resetting any values prior to their use.
+template <typename T>
+struct Scratch {
+  std::vector<const Event<T>*> next_events;
+};
+}  // namespace
+
 template <typename T>
 LeafSystem<T>::LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
 
@@ -314,18 +323,13 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
   this->set_forced_unrestricted_update_events(
       AllocateForcedUnrestrictedUpdateEventCollection());
 
-  // This cache entry just maintains temporary storage. It is only ever used
-  // by DoCalcNextUpdateTime(). Since this declaration of the cache entry
-  // invokes no invalidation support from the cache system, it is the
-  // responsibility of DoCalcNextUpdateTime() to ensure that no stale data is
-  // used.
-  next_events_cache_index_ =
+  // This cache entry maintains temporary storage. Since this declaration
+  // invokes no invalidation support from the cache system, code that uses
+  // this storage is responsible for ensuring that no stale data is used.
+  scratch_cache_index_ =
       this->DeclareCacheEntry(
-          "next_events",
-          []() {
-            std::vector<const Event<T>*> vec;
-            return AbstractValue::Make<std::vector<const Event<T>*>>(vec);
-          },
+          "scratch",
+          []() { return AbstractValue::Make(Scratch<T>{}); },
           [](const ContextBase&, AbstractValue*) { /* do nothing */ },
           {this->nothing_ticket()}).cache_index();
 }
@@ -367,11 +371,11 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
 
   // Use a cached vector to calculate which events to fire. Clear it to ensure
   // that no data values leak between invocations.
-  CacheEntryValue& value =
-      this->get_cache_entry(next_events_cache_index_)
-      .get_mutable_cache_entry_value(context);
-  auto& next_events =
-      value.GetMutableValueOrThrow<std::vector<const Event<T>*>>();
+  Scratch<T>& scratch =
+      this->get_cache_entry(scratch_cache_index_)
+      .get_mutable_cache_entry_value(context)
+      .template GetMutableValueOrThrow<Scratch<T>>();
+  std::vector<const Event<T>*>& next_events = scratch.next_events;
   next_events.clear();
 
   // Find the minimum next sample time across all declared periodic events,
