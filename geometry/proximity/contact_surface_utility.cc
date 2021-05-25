@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/contact_surface_utility.h"
 
+#include <algorithm>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -193,6 +195,46 @@ Vector3<T> CalcPolygonCentroid(
 }
 
 template <typename T>
+Vector3<T> CalcPolygonCentroid(const std::vector<Vector3<T>>& p_FVs,
+                               const Vector3<T>& n_F) {
+  int num_vertices = p_FVs.size();
+  std::vector<SurfaceVertexIndex> polygon(num_vertices);
+  std::iota(polygon.begin(), polygon.end(), SurfaceVertexIndex(0));
+
+  std::vector<SurfaceVertex<T>> vertices_F;
+  std::transform(p_FVs.begin(), p_FVs.end(), std::back_inserter(vertices_F),
+                 [](const Vector3<T>& p_FV) -> SurfaceVertex<T> {
+                   return SurfaceVertex(p_FV);
+                 });
+
+  return CalcPolygonCentroid(polygon, n_F, vertices_F);
+}
+
+template <typename T>
+T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
+                  const Vector3<T>& nhat_F) {
+  int num_vertices = p_FVs.size();
+  DRAKE_DEMAND(num_vertices >= 3);
+
+  T total_double_area{0};
+  const Vector3<T>& p_FA = p_FVs[0];
+  for (int i = 2; i < num_vertices; ++i) {
+    // Adding area of sub-triangles of the given polygon. For example, the
+    // polygon V₀V₁V₂V₃V₄ will have these sub-triangles:
+    //  i    triangle ABC
+    //  2       V₀V₁V₂
+    //  3       V₀V₂V₃
+    //  4       V₀V₃V₄
+    const Vector3<T> p_FB = p_FVs[i-1];
+    const Vector3<T> p_FC = p_FVs[i];
+    const Vector3<T> ABxAC_F = (p_FB - p_FA).cross(p_FC - p_FA);
+    T double_area = ABxAC_F.dot(nhat_F);
+    total_double_area += double_area;
+  }
+  return total_double_area / 2;
+}
+
+template <typename T>
 void AddPolygonToMeshData(
     const std::vector<SurfaceVertexIndex>& polygon,
     const Vector3<T>& n_F,
@@ -255,6 +297,18 @@ Vector3<AutoDiffXd> CalcPolygonCentroid(
     const std::vector<SurfaceVertexIndex>& polygon,
     const Vector3<AutoDiffXd>& n_F,
     const std::vector<SurfaceVertex<AutoDiffXd>>& vertices_F);
+
+template Vector3<double> CalcPolygonCentroid(
+    const std::vector<Vector3<double>>&, const Vector3<double>&);
+
+template Vector3<AutoDiffXd> CalcPolygonCentroid(
+    const std::vector<Vector3<AutoDiffXd>>&, const Vector3<AutoDiffXd>&);
+
+template double CalcPolygonArea(const std::vector<Vector3<double>>&,
+                                const Vector3<double>&);
+
+template AutoDiffXd CalcPolygonArea(const std::vector<Vector3<AutoDiffXd>>&,
+                                    const Vector3<AutoDiffXd>&);
 
 template void AddPolygonToMeshData(
     const std::vector<SurfaceVertexIndex>& polygon,
