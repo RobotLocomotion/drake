@@ -376,6 +376,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
   using namespace drake::geometry;
   py::module::import("pydrake.systems.framework");
 
+  //  CollisionFilterManager
+  {
+    using Class = CollisionFilterManager<T>;
+    constexpr auto& cls_doc = doc.CollisionFilterManager;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "CollisionFilterManager", param, cls_doc.doc);
+    cls  // BR
+        .def("ExcludeCollisionsBetween", &Class::ExcludeCollisionsBetween,
+            py::arg("setA"), py::arg("setB"),
+            cls_doc.ExcludeCollisionsBetween.doc)
+        .def("ExcludeCollisionsWithin", &Class::ExcludeCollisionsWithin,
+            py::arg("set"), cls_doc.ExcludeCollisionsWithin.doc);
+  }
+
   //  SceneGraphInspector
   {
     using Class = SceneGraphInspector<T>;
@@ -548,26 +562,53 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("collision_filter_manager",
+            overload_cast_explicit<CollisionFilterManager<T>, Context<T>*>(
+                &Class::collision_filter_manager),
+            py::arg("context"),
+            // Keep alive, reference: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(),  // BR.
+            cls_doc.collision_filter_manager.doc_1args)
+        .def("collision_filter_manager",
+            overload_cast_explicit<CollisionFilterManager<T>>(
+                &Class::collision_filter_manager),
+            // Keep alive, reference: `return` keeps `self` alive.
+            py::keep_alive<0, 1>(),  // BR
+            cls_doc.collision_filter_manager.doc_0args);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("ExcludeCollisionsBetween",
-            py::overload_cast<const GeometrySet&, const GeometrySet&>(
-                &Class::ExcludeCollisionsBetween),
+            WrapDeprecated(
+                cls_doc.ExcludeCollisionsBetween.doc_deprecated_2args,
+                py::overload_cast<const GeometrySet&, const GeometrySet&>(
+                    &Class::ExcludeCollisionsBetween)),
             py_rvp::reference_internal, py::arg("setA"), py::arg("setB"),
-            cls_doc.ExcludeCollisionsBetween.doc_2args)
+            cls_doc.ExcludeCollisionsBetween.doc_deprecated_2args)
         .def("ExcludeCollisionsBetween",
-            overload_cast_explicit<void, Context<T>*, const GeometrySet&,
-                const GeometrySet&>(&Class::ExcludeCollisionsBetween),
+            WrapDeprecated(
+                cls_doc.ExcludeCollisionsBetween.doc_deprecated_3args,
+                overload_cast_explicit<void, Context<T>*, const GeometrySet&,
+                    const GeometrySet&>(&Class::ExcludeCollisionsBetween)),
             py_rvp::reference_internal, py::arg("context"), py::arg("setA"),
-            py::arg("setB"), cls_doc.ExcludeCollisionsBetween.doc_3args)
+            py::arg("setB"),
+            cls_doc.ExcludeCollisionsBetween.doc_deprecated_3args)
         .def("ExcludeCollisionsWithin",
-            py::overload_cast<const GeometrySet&>(
-                &Class::ExcludeCollisionsWithin),
+            WrapDeprecated(cls_doc.ExcludeCollisionsWithin.doc_deprecated_1args,
+                py::overload_cast<const GeometrySet&>(
+                    &Class::ExcludeCollisionsWithin)),
             py_rvp::reference_internal, py::arg("set"),
-            cls_doc.ExcludeCollisionsWithin.doc_1args)
+            cls_doc.ExcludeCollisionsWithin.doc_deprecated_1args)
         .def("ExcludeCollisionsWithin",
-            overload_cast_explicit<void, Context<T>*, const GeometrySet&>(
-                &Class::ExcludeCollisionsWithin),
+            WrapDeprecated(cls_doc.ExcludeCollisionsWithin.doc_deprecated_2args,
+                overload_cast_explicit<void, Context<T>*, const GeometrySet&>(
+                    &Class::ExcludeCollisionsWithin)),
             py_rvp::reference_internal, py::arg("context"), py::arg("set"),
-            cls_doc.ExcludeCollisionsWithin.doc_2args)
+            cls_doc.ExcludeCollisionsWithin.doc_deprecated_2args);
+#pragma GCC diagnostic pop
+
+    cls  // BR
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
