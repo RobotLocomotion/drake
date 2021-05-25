@@ -928,6 +928,21 @@ int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
 }
 
 template <typename T>
+void GeometryState<T>::ApplyFilterDeclaration(
+    const CollisionFilterDeclaration& declaration) {
+  for (const auto& statement : declaration.statements()) {
+    switch (statement.operation) {
+      case CollisionFilterDeclaration::kExcludeWithin:
+        ExcludeCollisionsWithin(statement.set_A);
+        break;
+      case CollisionFilterDeclaration::kExcludeBetween:
+        ExcludeCollisionsBetween(statement.set_A, statement.set_B);
+        break;
+    }
+  }
+}
+
+template <typename T>
 void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   // There is no work to be done if:
   //   1. the set contains a single frame and no geometries -- geometries *on*
