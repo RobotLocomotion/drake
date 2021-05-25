@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":collision_filter_legacy",
         ":collisions_exist_callback",
         ":contact_surface_utility",
+        ":deformable_volume_mesh",
         ":distance_to_point_callback",
         ":distance_to_shape_callback",
         ":find_collision_candidates_callback",
@@ -34,6 +35,7 @@ drake_cc_package_library(
         ":make_ellipsoid_mesh",
         ":make_sphere_field",
         ":make_sphere_mesh",
+        ":mesh_deformer",
         ":mesh_field",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
@@ -125,6 +127,16 @@ drake_cc_library(
     hdrs = ["contact_surface_utility.h"],
     deps = [
         ":surface_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_volume_mesh",
+    srcs = ["deformable_volume_mesh.cc"],
+    hdrs = ["deformable_volume_mesh.h"],
+    deps = [
+        ":mesh_deformer",
+        ":volume_mesh",
     ],
 )
 
@@ -579,6 +591,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mesh_deformer",
+    srcs = ["mesh_deformer.cc"],
+    hdrs = ["mesh_deformer.h"],
+    deps = [
+        ":surface_mesh",
+        ":volume_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "volume_to_surface_mesh",
     srcs = [
         "volume_to_surface_mesh.cc",
@@ -661,6 +683,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_volume_mesh_test",
+    deps = [
+        ":deformable_volume_mesh",
+        ":make_box_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -995,6 +1026,16 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_deformer_test",
+    deps = [
+        ":make_box_mesh",
+        ":mesh_deformer",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
