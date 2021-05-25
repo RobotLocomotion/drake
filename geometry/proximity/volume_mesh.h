@@ -124,6 +124,10 @@ inline bool operator!=(const VolumeElement& e1, const VolumeElement& e2) {
   return !(e1 == e2);
 }
 
+namespace internal {
+// Forward declaration for friend declaration.
+template <typename> class MeshDeformer;
+}  // namespace internal
 
 // Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
 // friend access to VolumeMeshTester<T>.
@@ -158,6 +162,12 @@ class VolumeMesh {
   /** Index for identifying a vertex.
    */
   using VertexIndex = VolumeVertexIndex;
+  /* Note: the vertex type itself is templated (as opposed to just being an
+   alias for VolumeVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
+   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
+   */
+  template <typename U = T>
+  using VertexType = VolumeVertex<U>;
 
   /** Index for identifying a tetrahedral element.
    */
@@ -343,6 +353,10 @@ class VolumeMesh {
   }
 
  private:
+  // Client attorney class that provides a means to modify vertex positions.
+  template <typename>
+  friend class internal::MeshDeformer;
+
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
