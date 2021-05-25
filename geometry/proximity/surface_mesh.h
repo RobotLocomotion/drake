@@ -105,6 +105,11 @@ class SurfaceFace {
   std::array<SurfaceVertexIndex, 3> vertex_;
 };
 
+namespace internal {
+// Forward declaration for friend declaration.
+template <typename> class MeshDeformer;
+}  // namespace internal
+
 // Forward declaration of SurfaceMeshTester<T>. SurfaceMesh<T> will
 // grant friend access to SurfaceMeshTester<T>.
 template <typename T> class SurfaceMeshTester;
@@ -140,6 +145,12 @@ class SurfaceMesh {
    Index for identifying a vertex.
    */
   using VertexIndex = SurfaceVertexIndex;
+  /* Note: the vertex type itself is templated (as opposed to just being an
+   alias for SurfaceVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
+   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
+   */
+  template <typename U = T>
+  using VertexType = SurfaceVertex<U>;
 
   /**
    Index for identifying a triangular element.
@@ -451,6 +462,9 @@ class SurfaceMesh {
   }
 
  private:
+  // Client attorney class that provides a means to modify vertex positions.
+  friend class internal::MeshDeformer<SurfaceMesh<T>>;
+
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
   void CalcAreasNormalsAndCentroid();
