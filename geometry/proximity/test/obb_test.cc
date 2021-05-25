@@ -1,8 +1,10 @@
 #include "drake/geometry/proximity/obb.h"
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
@@ -874,8 +876,9 @@ RigidTransformd CalcEdgeTransform(const Obb& a, const Obb& b, const int a_axis,
   return RigidTransformd(R_AB, p_AoBo_A);
 }
 
-// Tests whether OBBs overlap. There are 15 cases to test, each covering a
-// separating axis between the two bounding boxes. The first 3 cases use the
+// Tests whether OBBs overlap. We use *this* test to completely test the
+// BoxesOverlap function. Therefore, there are 15 cases to test, each covering
+// a separating axis between the two bounding boxes. The first 3 cases use the
 // axes of Frame A, the next 3 cases use the axes of Frame B, and the remaining
 // 9 cases use the axes defined by the cross product of axes from Frame A and
 // Frame B. We also test that it is robust for the case of parallel boxes.
@@ -989,6 +992,61 @@ GTEST_TEST(ObbTest, TestObbOverlap) {
       // Separate along a's y-axis and b's x-axis.
       EXPECT_TRUE(Obb::HasOverlap(a, b, X_GA * X_AB * X_BH  /* X_GH */));
     }
+  }
+}
+
+// Tests the Obb-Aabb intersection.  We rely on TestObbOverlap to cover all the
+// subtleties of the test. This just confirms that the Aabb is accounted for
+// and reports contact. So, we'll pick a couple of arbitrary poses to trigger
+// true and false results.
+GTEST_TEST(ObbTest, AabbOverlap) {
+  /* Methodology:
+    - Define two boxes that are definitely overlapping.
+      - in a common frame, move them in opposite directions along the x-axis
+        so they are just in contact.
+      - Introduce two arbitrary *hierarchy* frames and define Aabb/Obb such
+        that in the *world* frame, they are in the expected position (and
+        orientation). */
+  /* The half measures of the two boxes. */
+  const Vector3d half_sizeA{0.5, 0.75, 0.125};
+  const Vector3d half_sizeB{0.3, 0.6, 0.45};
+
+  /* Produce a pair of poses such that the boxes overlap near the origin. */
+  auto world_poses = [&half_sizeA, &half_sizeB](double distance) {
+    const double half_distance = distance / 2;
+    RigidTransformd X_WA{Vector3d{-half_sizeA.x() - half_distance, 0, 0}};
+    RigidTransformd X_WB{Vector3d{half_sizeB.x() + half_distance, 0, 0}};
+    return std::make_pair(X_WA, X_WB);
+  };
+
+  for (double distance : {-0.001, 0.001}) {
+    const auto [X_WA, X_WB] = world_poses(distance);
+    const bool expect_overlap = distance < 0;
+
+    SCOPED_TRACE(fmt::format("distance = {}", distance));
+
+    /* Quick reality check -- the two boxes, in their common frame overlap. */
+    EXPECT_EQ(Obb::HasOverlap(Obb(X_WA, half_sizeA), Obb(X_WB, half_sizeB),
+                              RigidTransformd::Identity()),
+              expect_overlap);
+
+    /* We have the target poses of the boxes in the world frame. We'll define
+     hierarchy frames G and H arbitrarily but pose them in the world to
+     guarantee that the final box poses are assured. */
+    const RigidTransformd X_GA{
+        AngleAxisd{M_PI / 7, Vector3d{1, -2, 3}.normalized()},
+        Vector3d{-0.5, 3, 1.5}};
+    const RigidTransformd X_WG = X_WA * X_GA.inverse();
+
+    // B is an aabb, so R_HB = I.
+    const RigidTransformd X_HB{Vector3d{-1, 1, -1}};
+    const RigidTransformd X_WH = X_WB * X_HB.inverse();
+
+    const Obb obb_G{X_GA, half_sizeA};
+    const Aabb aabb_H{X_HB.translation(), half_sizeB};
+    const RigidTransformd X_GH = X_WG.inverse() * X_WH;
+
+    EXPECT_EQ(Obb::HasOverlap(obb_G, aabb_H, X_GH), expect_overlap);
   }
 }
 
@@ -1112,7 +1170,6 @@ GTEST_TEST(ObbTest, PlaneOverlap) {
     }
   }
 }
-
 
 // Tests Obb-halfspace itersection.
 GTEST_TEST(ObbTest, HalfSpaceOverlap) {
