@@ -135,6 +135,7 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
   /* Initial mesh for all bodies at time of registration. */
   std::vector<geometry::VolumeMesh<T>> initial_meshes_{};
   /* Solvers for all bodies. */
+  std::vector<std::unique_ptr<FemModelBase<T>>> fem_models_{};
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   /* Names of all registered bodies. */
   std::vector<std::string> names_{};

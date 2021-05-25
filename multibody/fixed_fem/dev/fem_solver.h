@@ -16,18 +16,21 @@ namespace fixed_fem {
 // TODO(xuchenhan-tri): Move the implementation of this class to a .cc file.
 /** %FemSolver solves for the state of a given FemModel at which residual of the
  model is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
- solver to solve for the zero residual state. A common workflow looks like:
+ solver to solve for the zero residual state. A common workflow for solving a
+ static FEM model looks like:
  ```
  // Creates a solver for a given FemModel and sets the LinearSystemSolver used
  // in the Newton-Raphson iterations.
- FemSolver solver(std::move(fem_model));
+ FemSolver solver(&model));
  // Optionally, sets the tolerances under which we deem the residual is
  // effectively zero.
  solver.set_absolute_tolerance(kAbsoluteTolereance);
  solver.set_relative_tolerance(kRelativeTolereance);
  // Finally, provide an initial guess and solve for the zero residual state.
- solver.SolveWithInitialGuess(&state);
+ solver.SolveStaticModelWithInitialGuess(&state);
  ```
+ The workflow for solving dynamics FEM model is similar. AdvanceOneTimeStep()
+ should be called in the place of SolveStaticModelWithInitialGuess().
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemSolver {
@@ -36,11 +39,12 @@ class FemSolver {
 
   // TODO(xuchenhan-tri): Consider allowing users to configure the linear
   //  solver.
-  /** Constructs a new FemSolver with the given FemModel and an Eigen Conjugate
-   Gradient solver as the linear solver.
+  /** Constructs a new %FemSolver with the given FemModelBase and an Eigen
+   Conjugate Gradient solver as the linear solver. The `model` pointer persists
+   in `this` %FemSolver and thus the FemModelBase object must outlive `this`
+   %FemSolver.
    @pre model != nullptr. */
-  explicit FemSolver(std::unique_ptr<FemModelBase<T>> model)
-      : model_(std::move(model)) {
+  explicit FemSolver(const FemModelBase<T>* model) : model_(model) {
     DRAKE_DEMAND(model_ != nullptr);
     Resize();
     linear_solver_ =
@@ -102,9 +106,6 @@ class FemSolver {
 
   /** Returns the FemModel that this solver owns. */
   const FemModelBase<T>& model() const { return *model_; }
-
-  /** Returns the mutable FemModel that this solver owns. */
-  FemModelBase<T>& mutable_model() { return *model_; }
 
   /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
    considered as converged if ‖dz‖ < `tolerance`⋅‖z‖ where z is the unknown
@@ -183,7 +184,7 @@ class FemSolver {
   }
 
   /* The FEM model being solved by `this` solver. */
-  std::unique_ptr<FemModelBase<T>> model_;
+  const FemModelBase<T>* model_;
   /* The linear solver used to solve the FEM model. */
   std::unique_ptr<internal::LinearSystemSolver<T>> linear_solver_;
   /* A scratch sparse matrix to store the tangent matrix of the model. */

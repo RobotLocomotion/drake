@@ -61,38 +61,30 @@ class FemSolverTest : public ::testing::Test {
 
   void SetUp() override {
     /* Builds the FemModel. */
-    std::unique_ptr<ModelType> model = MakeBoxModel();
-    model->SetGravity(kGravity);
-    /* Set up the Dirichlet BC. */
-    std::unique_ptr<DirichletBoundaryCondition<T>> bc = MakeCeilingBc();
-    model->SetDirichletBoundaryCondition(std::move(bc));
-
-    /* Builds the FemSolver. */
-    solver_ = std::make_unique<FemSolver<T>>(std::move(model));
-    solver_->set_linear_solve_tolerance(kTol);
-    solver_->set_relative_tolerance(kTol);
-    solver_->set_absolute_tolerance(kTol);
-  }
-
-  static std::unique_ptr<ModelType> MakeBoxModel() {
     const geometry::VolumeMesh<T> mesh = MakeBoxTetMesh();
     const ConstitutiveModelType constitutive_model(kYoungsModulus,
                                                    kPoissonRatio);
-    auto model = std::make_unique<ModelType>();
-    model->AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model,
+    model_.AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model,
                                                   kDensity);
-    return model;
+    model_.SetGravity(kGravity);
+    /* Set up the Dirichlet BC. */
+    std::unique_ptr<DirichletBoundaryCondition<T>> bc = MakeCeilingBc();
+    model_.SetDirichletBoundaryCondition(std::move(bc));
+
+    /* Builds the FemSolver. */
+    solver_.set_linear_solve_tolerance(kTol);
+    solver_.set_relative_tolerance(kTol);
+    solver_.set_absolute_tolerance(kTol);
   }
 
   /* Creates the undeformed state of the model under test. */
-  static State MakeReferenceState() {
-    std::unique_ptr<ModelType> model = MakeBoxModel();
-    return model->MakeFemState();
+  State MakeReferenceState() const {
+    return model_.MakeFemState();
   }
 
   /* Creates a Dirichlet boundary condition that constrains the first
    `kNumDirichlet` vertices. */
-  static std::unique_ptr<DirichletBoundaryCondition<T>> MakeCeilingBc() {
+  std::unique_ptr<DirichletBoundaryCondition<T>> MakeCeilingBc() const {
     auto bc = std::make_unique<DirichletBoundaryCondition<T>>(0);
     const State state = MakeReferenceState();
     const VectorX<T>& q = state.q();
@@ -108,7 +100,7 @@ class FemSolverTest : public ::testing::Test {
   }
 
   /* Creates an arbitrary state that respects the Dirichlet BC created above. */
-  static State MakeArbitraryState() {
+  State MakeArbitraryState() const {
     State state = MakeReferenceState();
     const VectorX<T> q = MakeArbitraryPositions();
     state.SetQ(q);
@@ -129,8 +121,9 @@ class FemSolverTest : public ::testing::Test {
     return q;
   }
 
+  ModelType model_;
   /* The solver under test. */
-  std::unique_ptr<FemSolver<T>> solver_;
+  FemSolver<T> solver_{&model_};
 };
 
 namespace {
@@ -141,18 +134,16 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
   /* Create an arbitrary state and find the nodel force exerted on the vertices
    of the mesh (in unit N). */
   const State prescribed_state = MakeArbitraryState();
-  const FemModelBase<T>& model = solver_->model();
   VectorX<T> nodal_force(kNumDofs);
-  model.CalcResidual(prescribed_state, &nodal_force);
+  model_.CalcResidual(prescribed_state, &nodal_force);
 
   /* If we exert the same force on the reference state, we should expect to
    recover the same positions as above. */
   const T initial_error = nodal_force.norm();
-  ModelType& mutable_model = dynamic_cast<ModelType&>(solver_->mutable_model());
-  mutable_model.SetExplicitExternalForce(nodal_force);
+  model_.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
   const ZerothOrderStateUpdater<State> state_updater;
-  solver_->SolveStaticModelWithInitialGuess(&state);
+  solver_.SolveStaticModelWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
 }
@@ -162,13 +153,13 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
 TEST_F(FemSolverTest, IncompatibleState) {
   FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_->SolveStaticModelWithInitialGuess(&dummy_state), std::exception,
+      solver_.SolveStaticModelWithInitialGuess(&dummy_state), std::exception,
       "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
       "incompatible "
       "with the type of the FemModel.");
   State state_with_wrong_size(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_->SolveStaticModelWithInitialGuess(&state_with_wrong_size),
+      solver_.SolveStaticModelWithInitialGuess(&state_with_wrong_size),
       std::exception,
       "SolveStaticModelWithInitialGuess\\(\\): The size of the "
       "FemState \\(3\\) is incompatible "
