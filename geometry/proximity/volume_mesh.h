@@ -124,6 +124,10 @@ inline bool operator!=(const VolumeElement& e1, const VolumeElement& e2) {
   return !(e1 == e2);
 }
 
+namespace internal {
+// Forward declaration for friend declaration.
+template <typename> class MeshDeformer;
+}  // namespace internal
 
 // Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
 // friend access to VolumeMeshTester<T>.
@@ -158,6 +162,12 @@ class VolumeMesh {
   /** Index for identifying a vertex.
    */
   using VertexIndex = VolumeVertexIndex;
+  /* Note: the vertex type itself is templated (as opposed to just being an
+   alias for VolumeVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
+   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
+   */
+  template <typename U = T>
+  using VertexType = VolumeVertex<U>;
 
   /** Index for identifying a tetrahedral element.
    */
@@ -298,11 +308,15 @@ class VolumeMesh {
   }
 
   /** Checks to see whether the given VolumeMesh object is equal via deep
-   exact comparison. NaNs are treated as not equal as per the IEEE standard.
-   @param mesh The mesh for comparison.
+   comparison (up to a tolerance). NaNs are treated as not equal as per the IEEE
+   standard. The tolerance is applied to corresponding vertex positions; the ith
+   vertex in each mesh can have a distance of no more than `vertex_tolerance`.
+   @param mesh              The mesh for comparison.
+   @param vertex_tolerance  The maximum distance allowed between two vertices to
+                            be considered equal.
    @returns `true` if the given mesh is equal.
    */
-  bool Equal(const VolumeMesh<T>& mesh) const {
+  bool Equal(const VolumeMesh<T>& mesh, double vertex_tolerance = 0) const {
     if (this == &mesh) return true;
 
     if (this->num_elements() != mesh.num_elements()) return false;
@@ -314,7 +328,10 @@ class VolumeMesh {
     }
     // Check vertices.
     for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {
-      if (this->vertex(i).r_MV() != mesh.vertex(i).r_MV()) return false;
+      if ((this->vertex(i).r_MV() - mesh.vertex(i).r_MV()).norm() >
+          vertex_tolerance) {
+        return false;
+      }
     }
 
     // All checks passed.
@@ -343,6 +360,9 @@ class VolumeMesh {
   }
 
  private:
+  // Client attorney class that provides a means to modify vertex positions.
+  friend class internal::MeshDeformer<VolumeMesh<T>>;
+
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
