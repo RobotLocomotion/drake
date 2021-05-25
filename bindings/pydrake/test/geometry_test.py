@@ -756,10 +756,21 @@ class TestGeometry(unittest.TestCase):
         sg_context = sg.CreateDefaultContext()
         geometries = mut.GeometrySet()
 
-        sg.ExcludeCollisionsBetween(geometries, geometries)
-        sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
-        sg.ExcludeCollisionsWithin(geometries)
-        sg.ExcludeCollisionsWithin(sg_context, geometries)
+        # Mutate SceneGraph model.
+        dut = sg.collision_filter_manager()
+        dut.ExcludeCollisionsBetween(geometries, geometries)
+        dut.ExcludeCollisionsWithin(geometries)
+
+        # Mutate context.
+        dut = sg.collision_filter_manager(sg_context)
+        dut.ExcludeCollisionsBetween(geometries, geometries)
+        dut.ExcludeCollisionsWithin(geometries)
+
+        with catch_drake_warnings(expected_count=4):
+            sg.ExcludeCollisionsBetween(geometries, geometries)
+            sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
+            sg.ExcludeCollisionsWithin(geometries)
+            sg.ExcludeCollisionsWithin(sg_context, geometries)
 
     @numpy_compare.check_nonsymbolic_types
     def test_value_instantiations(self, T):

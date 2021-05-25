@@ -373,10 +373,33 @@ TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
   CreateDefaultContext();
 
   GeometrySet geometry_set{frame_id};
+  DRAKE_EXPECT_NO_THROW(
+      scene_graph_.collision_filter_manager().ExcludeCollisionsWithin(
+          geometry_set));
+
+  DRAKE_EXPECT_NO_THROW(
+      scene_graph_.collision_filter_manager().ExcludeCollisionsBetween(
+          geometry_set, geometry_set));
+}
+
+// Tests that exercising the collision filtering logic *after* allocation is
+// allowed.
+TEST_F(SceneGraphTest, PostAllocationCollisionFilteringDeprecated) {
+  /* Delete this full test when the SceneGraph::ExcludeCollisionsFoo() method
+   deprecation is complete. */
+  SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
+  FrameId frame_id =
+      scene_graph_.RegisterFrame(source_id, GeometryFrame("dummy"));
+  CreateDefaultContext();
+
+  GeometrySet geometry_set{frame_id};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_EXPECT_NO_THROW(scene_graph_.ExcludeCollisionsWithin(geometry_set));
 
   DRAKE_EXPECT_NO_THROW(
       scene_graph_.ExcludeCollisionsBetween(geometry_set, geometry_set));
+#pragma GCC diagnostic pop
 }
 
 // Tests the model inspector. Exercises a token piece of functionality. The
@@ -777,6 +800,69 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
   EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
   EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
 
+  auto filter_manager = scene_graph.collision_filter_manager(context.get());
+
+  filter_manager.ExcludeCollisionsWithin(GeometrySet({g_id1, g_id2}));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
+
+  filter_manager.ExcludeCollisionsBetween(GeometrySet({g_id1, g_id2}),
+                                          GeometrySet({g_id3}));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id2, g_id3));
+
+  // TODO(SeanCurtis-TRI): When post-allocation model modification is allowed,
+  // confirm that the model didn't change.
+}
+
+GTEST_TEST(SceneGraphContextModifier, CollisionFiltersDeprecated) {
+  /* Delete this full test when the SceneGraph::ExcludeCollisionsFoo() method
+   deprecation is complete. */
+  // Initializes the scene graph and context.
+  SceneGraph<double> scene_graph;
+  // Simple scene with three frames, each with a sphere which, by default
+  // collide.
+  SourceId source_id = scene_graph.RegisterSource("source");
+  FrameId f_id1 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_1"));
+  FrameId f_id2 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_2"));
+  FrameId f_id3 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_3"));
+  GeometryId g_id1 =
+      scene_graph.RegisterGeometry(source_id, f_id1, make_sphere_instance());
+  scene_graph.AssignRole(source_id, g_id1, ProximityProperties());
+  GeometryId g_id2 =
+      scene_graph.RegisterGeometry(source_id, f_id2, make_sphere_instance());
+  scene_graph.AssignRole(source_id, g_id2, ProximityProperties());
+  GeometryId g_id3 =
+      scene_graph.RegisterGeometry(source_id, f_id3, make_sphere_instance());
+  scene_graph.AssignRole(source_id, g_id3, ProximityProperties());
+
+  // Confirm that the model reports no filtered pairs.
+  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id2, g_id3));
+
+  auto context = scene_graph.CreateDefaultContext();
+
+  // Confirms the state. NOTE: Because we're not copying the query object or
+  // changing context, this query object and inspector are valid for querying
+  // the modified context.
+  QueryObject<double> query_object;
+  SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context,
+                                            &query_object);
+  const auto& inspector = query_object.inspector();
+
+  // Confirm unfiltered state.
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   scene_graph.ExcludeCollisionsWithin(context.get(),
                                       GeometrySet({g_id1, g_id2}));
   EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
@@ -786,6 +872,7 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
   scene_graph.ExcludeCollisionsBetween(context.get(),
                                        GeometrySet({g_id1, g_id2}),
                                        GeometrySet({g_id3}));
+#pragma GCC diagnostic pop
   EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
   EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id3));
   EXPECT_TRUE(inspector.CollisionFiltered(g_id2, g_id3));

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_deprecated.h"
+#include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
@@ -799,6 +800,38 @@ class SceneGraph final : public systems::LeafSystem<T> {
   const SceneGraphInspector<T>& model_inspector() const;
 
   /** @name         Collision filtering
+   @anchor scene_graph_collision_filter_manager
+
+   Control over "collision filtering" is handled by the CollisionFilterManager.
+   %SceneGraph provides access to the manager. As with other geometry data,
+   collision filters can be configured in %SceneGraph's *model* or in the copy
+   stored in a particular context. These methods provide access to the manager
+   for the data stored in either location.
+
+   Generally, it should be considered a bad practice to hang onto the instance
+   of CollisionFilterManager returned by collision_filter_manager(). It is not
+   immediately clear whether a particular CollisionFilterManager instance
+   refers to the %SceneGraph model or the Context data and persisting the
+   reference may lead to confusion. Keeping the reference for the duration of
+   a function is appropriate, but allowing it to persist outside of the scope
+   of acquisition is dangerous. Acquiring a new CollisionFilterManager is *very*
+   cheap, so feel free to discard and reacquire.  */
+  //@{
+
+  /** Returns the collision filter manager for this %SceneGraph instance's
+   *model*. `this` %SceneGraph must remain alive for at least as long as the
+   returned manager.  */
+  CollisionFilterManager<T> collision_filter_manager();
+
+  /** Returns the collision filter manager for data stored in `context`. The
+   context must remain alive for at least as long as the returned manager.  */
+  CollisionFilterManager<T> collision_filter_manager(
+      systems::Context<T>* context);
+  //@}
+
+  // TODO(SeanCurtis-TRI) Remove this entire group when we deprecate the methods
+  //  below.
+  /** @name         Collision filtering (deprecated)
    @anchor scene_graph_collision_filtering
    The interface for limiting the scope of penetration queries (i.e., "filtering
    collisions").
@@ -853,11 +886,19 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @throws std::logic_error if the set includes ids that don't exist in the
                             scene graph.  */
+  DRAKE_DEPRECATED(
+      "2021-09-01",
+      "Please call collision_filter_manager().ExcludeCollisionsWithin() "
+      "instead")
   void ExcludeCollisionsWithin(const GeometrySet& set);
 
   /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
+  DRAKE_DEPRECATED(
+      "2021-09-01",
+      "Please call collision_filter_manager(context).ExcludeCollisionsWithin() "
+      "instead")
   void ExcludeCollisionsWithin(systems::Context<T>* context,
                                const GeometrySet& set) const;
 
@@ -873,12 +914,20 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @throws std::logic_error if the groups include ids that don't exist in the
                             scene graph.  */
+  DRAKE_DEPRECATED(
+      "2021-09-01",
+      "Please call collision_filter_manager().ExcludeCollisionsBetween() "
+      "instead")
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
   /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
+  DRAKE_DEPRECATED(
+      "2021-09-01",
+      "Please call collision_filter_manager(context).ExcludeCollisionsBetween()"
+      " instead")
   void ExcludeCollisionsBetween(systems::Context<T>* context,
                                 const GeometrySet& setA,
                                 const GeometrySet& setB) const;
