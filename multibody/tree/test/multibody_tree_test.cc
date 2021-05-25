@@ -125,7 +125,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetBodyByName(kInvalidName), std::logic_error,
-      "There is no body named '.*' in the model.");
+      ".*There is no Body named '.*' .*");
 
   // Test we can also retrieve links as RigidBody objects.
   for (const std::string& link_name : kLinkNames) {
@@ -134,7 +134,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetRigidBodyByName(kInvalidName), std::logic_error,
-      "There is no body named '.*' in the model.");
+      ".*There is no Body named '.*' .*");
 
   // Get frames by name.
   for (const std::string& frame_name : kFrameNames) {
@@ -145,7 +145,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetFrameByName(kInvalidName), std::logic_error,
-      "There is no frame named '.*' in the model.");
+      ".*There is no Frame named '.*' .*");
 
   // Get joints by name.
   for (const std::string& joint_name : kJointNames) {
@@ -154,7 +154,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointByName(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
+      ".*There is no Joint named '.*' .*");
 
   // Templatized version to obtain retrieve a particular known type of joint.
   for (const std::string& joint_name : kJointNames) {
@@ -164,7 +164,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<RevoluteJoint>(kInvalidName),
-      std::logic_error, "There is no joint named '.*' in the model.");
+      std::logic_error, ".*There is no Joint named '.*' .*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<PrismaticJoint>(kJointNames[0]),
       std::logic_error, ".*not of type.*PrismaticJoint.*but.*RevoluteJoint.*");
@@ -177,7 +177,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointActuatorByName(kInvalidName), std::logic_error,
-      "There is no joint actuator named '.*' in the model.");
+      ".*There is no JointActuator named '.*' .*");
 
   // Test we can retrieve joints from the actuators.
   int names_index = 0;
