@@ -15,7 +15,7 @@ import warnings
 from urllib.request import urlretrieve
 
 
-def setup_drake(*, version, build='nightly'):
+def setup_drake(*, version, build):
     """Installs drake on Google's Colaboratory and (if necessary) adds the
     installation location to `sys.path`.  This will take approximately two
     minutes, mostly to provision the machine with drake's prerequisites, but
@@ -24,13 +24,17 @@ def setup_drake(*, version, build='nightly'):
 
     Args:
         version: A string to identify which revision of drake to install.
-        build: An optional string to specify the hosted directory on
+        build: A string to specify the hosted directory on
             https://drake-packages.csail.mit.edu/drake/ of the build
-            identified by version.  Current options are 'nightly',
-            'continuous', or 'experimental'.  Default is 'nightly', which is
-            recommended.
+            identified by version.  Current options are 'release', 'nightly',
+            'continuous', or 'experimental'.  It is recommended that you use
+            'release' whenever possible, as these are the only packages that
+            are guaranteed to remain available indefinitely on the server.
 
     Note: Possible version names vary depending on the build.
+        - Release builds are versioned by X.Y.Z, e.g. 0.25.0.  They correspond
+          to the releases available at
+          https://github.com/RobotLocomotion/drake/releases
         - Nightly builds are versioned by date, e.g., '20200725', and the date
           represents the *morning* (not the prior evening) of the build.  You
           can also use 'latest'.
@@ -57,6 +61,11 @@ def setup_drake(*, version, build='nightly'):
     assert 'pydrake' not in sys.modules, (
         "You have already imported a version of pydrake.  Please choose "
         "'Restart runtime' from the menu to restart with a clean environment.")
+
+    valid_builds = ['release', 'nightly', 'continuous', 'experimental']
+    if build not in valid_builds:
+        raise Exception(f"Invalid argument build='{build}'.  It must be one "
+                        f"of {valid_builds}.")
 
     # Check for conflicting pydrake installations.
     v = sys.version_info
