@@ -138,7 +138,8 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   // Declare state.
   if (is_discrete_) {
-    this->DeclareDiscreteState(tree_->num_states());
+    tree_->set_discrete_state_index(
+        this->DeclareDiscreteState(tree_->num_states()));
   } else {
     this->DeclareContinuousState(BasicVector<T>(tree_->num_states()),
                                  tree_->num_positions(),

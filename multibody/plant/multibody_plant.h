@@ -25,6 +25,8 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
@@ -64,6 +66,11 @@ struct HydroelasticContactInfoAndBodySpatialForces {
   std::vector<HydroelasticContactInfo<T>> contact_info;
 };
 
+// Forward declaration.
+template <typename>
+class MultibodyPlantModelAttorney;
+template <typename>
+class MultibodyPlantDiscreteUpdateManagerAttorney;
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -1587,6 +1594,74 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
     return *solver_ptr;
+  }
+
+  // (Experimental) set_discrete_update_manager() should only be called by
+  // advanced developers wanting to try out their custom time stepping
+  // strategies, including contact resolution. We choose not to show it in
+  // public documentations rather than making it private with friends. With this
+  // method MultibodyPlant takes ownership of `manager`.
+  //
+  // @note Setting a contact manager bypasses the mechanism to set a different
+  // contact solver with set_contact_solver(). Use only one of these two
+  // experimental mechanims but never both.
+  //
+  // @param manager
+  //   After this call the new manager is used to advance discrete states.
+  // @pre manager must not be nullptr.
+  // @pre ManagerType is a subclass of
+  //   multibody::internal::DiscreteUpdateManager.
+  // @returns a mutable reference to `manager`, now owned by `this`
+  // MultibodyPlant.
+  // @throws std::exception if called pre-finalize. See Finalize().
+  template <class ManagerType>
+  ManagerType& set_discrete_update_manager(
+      std::unique_ptr<ManagerType> manager) {
+    // N.B. This requirement is really more important on the side of the
+    // manager's constructor, since most likely it'll need MBP's topology at
+    // least to build the contact problem. However, here we play safe and demand
+    // finalization right here.
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(manager != nullptr);
+    static_assert(
+        std::is_base_of<internal::DiscreteUpdateManager<T>, ManagerType>::value,
+        "ManagerType must be a sub-class of DiscreteUpdateManager.");
+    manager->SetOwningMultibodyPlant(this);
+    discrete_update_manager_ = std::move(manager);
+    ManagerType* concrete_manager_ptr =
+        static_cast<ManagerType*>(discrete_update_manager_.get());
+    return *concrete_manager_ptr;
+  }
+
+  // (Experimental) AddPhysicalModel() should only be called by advanced
+  // developers wanting to try out their new physical models. We choose not to
+  // show it in public documentations rather than making it private with
+  // friends. With this method MultibodyPlant takes ownership of `model`
+  // and calls its DeclareSystemResources() method at Finalize(), giving
+  // specific physical model implementations a chance to declare the system
+  // resources it needs.
+  //
+  // @param model After this call the model is owned by `this` MultibodyPlant.
+  // @pre model != nullptr.
+  // @pre ModelType must be a subclass of multibody::internal::PhysicalModel.
+  // @returns a mutable reference to `model`, now owned by `this`
+  //          MultibodyPlant.
+  // @throws std::exception if called post-finalize. See Finalize().
+  template <class ModelType>
+  ModelType& AddPhysicalModel(std::unique_ptr<ModelType> model) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_DEMAND(model != nullptr);
+    static_assert(std::is_base_of_v<internal::PhysicalModel<T>, ModelType>,
+                  "ModelType must be a sub-class of PhysicalModel.");
+    physical_models_.emplace_back(std::move(model));
+    ModelType* concrete_model_ptr =
+        static_cast<ModelType*>(physical_models_.back().get());
+    return *concrete_model_ptr;
+  }
+
+  const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
+  physical_models() const {
+    return physical_models_;
   }
 #endif
 
@@ -3849,6 +3924,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
+  // Friend attorney class to provide private access to those internal::
+  // implementations that need it.
+  friend class internal::MultibodyPlantModelAttorney<T>;
+  friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
+
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
@@ -3861,7 +3941,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
-    systems::CacheIndex tamsi_solver_results;
+    systems::CacheIndex contact_solver_results;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4071,19 +4151,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu, const VectorX<T>& v0, const VectorX<T>& fn0) const;
 
-  // This method uses the time stepping method described in
-  // TamsiSolver to advance the model's state stored in
-  // `context0` taking a time step of size time_step().
+  // This method performs the computation of the impulses to advance the state
+  // stored in `context0` in time.
   // Contact forces and velocities are computed and stored in `results`. See
   // ContactSolverResults for further details on the returned data.
-  void CalcTamsiResults(
+  void CalcContactSolverResults(
       const drake::systems::Context<T>& context0,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
-  // Eval version of the method CalcTamsiResults().
-  const contact_solvers::internal::ContactSolverResults<T>& EvalTamsiResults(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.tamsi_solver_results)
+  // Eval version of the method CalcContactSolverResults().
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalContactSolverResults(const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.contact_solver_results)
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
   }
@@ -4668,6 +4747,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // When not the nullptr, this is the solver to be used for discrete updates.
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
+
+  // When not the nullptr, this manager class is used to advance discrete
+  // states.
+  // TODO(amcastro-tri): migrate the entirety of computations related to contact
+  // resolution into a default contact manager.
+  std::unique_ptr<internal::DiscreteUpdateManager<T>>
+      discrete_update_manager_;
+
+  // (Experimental) The vector of physical models owned by MultibodyPlant.
+  std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 
