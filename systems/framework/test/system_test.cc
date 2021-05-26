@@ -56,7 +56,9 @@ class TestSystem : public System<double> {
 
   std::unique_ptr<DiscreteValues<double>> AllocateDiscreteVariables()
       const override {
-    return std::make_unique<DiscreteValues<double>>();
+    auto result = std::make_unique<DiscreteValues<double>>();
+    result->set_system_id(this->get_system_id());
+    return result;
   }
 
   std::unique_ptr<CompositeEventCollection<double>>
