@@ -172,6 +172,7 @@ template <typename T>
 void LeafSystem<T>::SetDefaultParameters(
     const Context<T>& context, Parameters<T>* parameters) const {
   this->ValidateContext(context);
+  this->ValidateCreatedForThisSystem(parameters);
   for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
     BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
     auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
@@ -497,8 +498,10 @@ std::unique_ptr<Parameters<T>> LeafSystem<T>::AllocateParameters() const {
     DRAKE_ASSERT(param != nullptr);
     abstract_params.emplace_back(std::move(param));
   }
-  return std::make_unique<Parameters<T>>(std::move(numeric_params),
-                                         std::move(abstract_params));
+  auto result = std::make_unique<Parameters<T>>(std::move(numeric_params),
+                                                std::move(abstract_params));
+  result->set_system_id(this->get_system_id());
+  return result;
 }
 
 template <typename T>

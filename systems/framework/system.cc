@@ -284,6 +284,7 @@ void System<T>::CalcDiscreteVariableUpdates(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
   ValidateContext(context);
+  ValidateCreatedForThisSystem(discrete_state);
 
   DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
 }
@@ -293,6 +294,7 @@ void System<T>::ApplyDiscreteVariableUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state, Context<T>* context) const {
   ValidateContext(context);
+  ValidateCreatedForThisSystem(discrete_state);
   DoApplyDiscreteVariableUpdate(events, discrete_state, context);
 }
 
@@ -310,6 +312,7 @@ void System<T>::CalcUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
   ValidateContext(context);
+  ValidateCreatedForThisSystem(state);
   const int continuous_state_dim = state->get_continuous_state().size();
   const int discrete_state_dim = state->get_discrete_state().num_groups();
   const int abstract_state_dim = state->get_abstract_state().size();
@@ -329,6 +332,7 @@ void System<T>::ApplyUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state, Context<T>* context) const {
   ValidateContext(context);
+  ValidateCreatedForThisSystem(state);
   DoApplyUnrestrictedUpdate(events, state, context);
 }
 
@@ -343,6 +347,7 @@ template <typename T>
 T System<T>::CalcNextUpdateTime(const Context<T>& context,
                                 CompositeEventCollection<T>* events) const {
   ValidateContext(context);
+  ValidateCreatedForThisSystem(events);
   DRAKE_DEMAND(events != nullptr);
   events->Clear();
   T time{NAN};
@@ -384,7 +389,7 @@ template <typename T>
 void System<T>::GetPerStepEvents(const Context<T>& context,
                                  CompositeEventCollection<T>* events) const {
   ValidateContext(context);
-  DRAKE_DEMAND(events != nullptr);
+  ValidateCreatedForThisSystem(events);
   events->Clear();
   DoGetPerStepEvents(context, events);
 }
@@ -394,7 +399,7 @@ void System<T>::GetInitializationEvents(
     const Context<T>& context,
     CompositeEventCollection<T>* events) const {
   ValidateContext(context);
-  DRAKE_DEMAND(events != nullptr);
+  ValidateCreatedForThisSystem(events);
   events->Clear();
   DoGetInitializationEvents(context, events);
 }

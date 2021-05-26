@@ -258,6 +258,9 @@ class SystemConstraint final {
   const Eigen::VectorXd& upper_bound() const { return bounds_.upper(); }
   const std::string& description() const { return description_; }
 
+  /// @name System compatibility
+  /// See @ref system_compatibility.
+  //@{
   /// (Internal use only) Gets the id of the subsystem associated with this
   /// object, if one has been set.
   const std::optional<internal::SystemId>& get_system_id() const {
@@ -267,6 +270,7 @@ class SystemConstraint final {
   /// (Internal use only) Records the id of the subsystem associated with this
   /// object.
   void set_system_id(internal::SystemId id) { system_id_ = id; }
+  //@}
 
  private:
   static void NoopSystemConstraintCalc(

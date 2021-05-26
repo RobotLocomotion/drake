@@ -91,9 +91,11 @@ class SystemOutput {
   }
 
   // Gets the id of the subsystem that created this output.
+  // See @ref system_compatibility.
   internal::SystemId get_system_id() const { return system_id_; }
 
   // Records the id of the subsystem that created this output.
+  // See @ref system_compatibility.
   void set_system_id(internal::SystemId id) { system_id_ = id; }
 
   std::vector<copyable_unique_ptr<AbstractValue>> port_values_;

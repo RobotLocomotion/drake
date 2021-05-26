@@ -125,7 +125,8 @@ class ContextBase : public internal::ContextMessageInterface {
                                 : system_name_;
   }
 
-  /** (Internal) Gets the id of the subsystem that created this context. */
+  /** (Internal) Gets the id of the subsystem that created this context. For
+   * more information, see @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
 
   /** Returns the full pathname of the subsystem for which this is the Context.

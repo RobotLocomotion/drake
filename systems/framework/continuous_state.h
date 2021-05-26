@@ -194,11 +194,15 @@ class ContinuousState {
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
   VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
 
+  /** @name System compatibility
+  See @ref system_compatibility. */
+  //@{
   /** (Internal) Gets the id of the subsystem that created this state. */
   internal::SystemId get_system_id() const { return system_id_; }
 
   /** (Internal) Records the id of the subsystem that created this state. */
   void set_system_id(internal::SystemId id) { system_id_ = id; }
+  //@}
 
  protected:
   /// Constructs a continuous state that exposes second-order structure, with
