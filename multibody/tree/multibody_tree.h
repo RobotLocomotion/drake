@@ -2760,15 +2760,6 @@ class MultibodyTree {
     return *joint_variant;
   }
 
-  // Helper function to find the element index for an element in the tree from
-  // a multimap of name to index.  It finds the element from any model
-  // instance and ensures only one element of that name exists.
-  template <typename ElementIndex>
-  static ElementIndex GetElementIndex(
-      std::string_view name, const std::string& element_description,
-      const std::unordered_multimap<StringViewMapKey, ElementIndex>&
-          name_to_index);
-
   // When using a StringViewMapKey as the key type in an unordered map, the
   // instance *stored* in the map must own its string. This interface validates
   // that invariant and should be the sole mechanism by which entries are

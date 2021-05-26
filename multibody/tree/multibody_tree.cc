@@ -1,5 +1,6 @@
 #include "drake/multibody/tree/multibody_tree.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -10,6 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/body_node_welded.h"
@@ -123,104 +125,225 @@ const Body<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
   return *owned_bodies_[base_body_index.value()];
 }
 
+namespace {
+
+// Given an ElementIndex type (e.g., BodyIndex) as a template argument, returns
+// the name of the corresponding class (e.g., "Body").
+template <typename ElementIndex>
+std::string_view GetElementClassname() {
+  if constexpr (std::is_same_v<ElementIndex, BodyIndex>) {
+    return "Body";
+  }
+  if constexpr (std::is_same_v<ElementIndex, FrameIndex>) {
+    return "Frame";
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointIndex>) {
+    return "Joint";
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointActuatorIndex>) {
+    return "JointActuator";
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Given a tree and element index, returns the corresponding `const Element&`.
+template <typename T, typename ElementIndex>
+const auto& GetElementByIndex(
+    const MultibodyTree<T>& tree,
+    const ElementIndex index) {
+  if constexpr (std::is_same_v<ElementIndex, BodyIndex>) {
+    return tree.get_body(index);
+  }
+  if constexpr (std::is_same_v<ElementIndex, FrameIndex>) {
+    return tree.get_frame(index);
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointIndex>) {
+    return tree.get_joint(index);
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointActuatorIndex>) {
+    return tree.get_joint_actuator(index);
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Shorthand type name for our name_to_index multimaps.
+template <typename ElementIndex>
+using NameToIndex = std::unordered_multimap<StringViewMapKey, ElementIndex>;
+
+// In service of error messages, returns a string listing the names of all
+// model instances that contain an element of the given name.
+template <typename T, typename ElementIndex>
+std::string GetElementModelInstancesByName(
+    const MultibodyTree<T>& tree, std::string_view name,
+    const NameToIndex<ElementIndex>& name_to_index) {
+  // Grab all of the model instance indices.
+  std::vector<ModelInstanceIndex> model_instances;
+  const auto [lower, upper] = name_to_index.equal_range(name);
+  for (auto it = lower; it != upper; ++it) {
+    const ElementIndex index = it->second;
+    const auto& element = GetElementByIndex(tree, index);
+    model_instances.push_back(element.model_instance());
+  }
+  // Sort them, because map iteration order is non-deterministic.
+  std::sort(model_instances.begin(), model_instances.end());
+  // Convert to indices to strings.
+  std::vector<std::string_view> names;
+  for (const auto& model_instance : model_instances) {
+    names.push_back(tree.GetModelInstanceName(model_instance));
+  }
+  // Concatenate and return.
+  return fmt::format("{}", fmt::join(names, ", "));
+}
+
+// Common implementation for HasBodyNamed, HasFrameNamed, etc.
+template <typename T, typename ElementIndex>
+bool HasElementNamed(
+    const MultibodyTree<T>& tree, std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance,
+    const NameToIndex<ElementIndex>& name_to_index) {
+  // Find all elements with a matching name.
+  const auto [lower, upper] = name_to_index.equal_range(name);
+
+  // Filter for the requested model_instance, if one was provided.
+  if (model_instance) {
+    // Use the name lookup for its side-effect of throwing on an invalid index.
+    unused(tree.GetModelInstanceName(*model_instance));
+    // Search linearly on the assumption that we won't often have lots of
+    // elements with the same name in different model instances.  If this
+    // turns out to be incorrect, we can switch to a different data structure.
+    for (auto it = lower; it != upper; ++it) {
+      const ElementIndex index = it->second;
+      const auto& element = GetElementByIndex(tree, index);
+      if (element.model_instance() == *model_instance) {
+        return true;
+      }
+    }
+    // No (filtered) match.
+    return false;
+  }
+
+  // No match.
+  if (lower == upper) {
+    return false;
+  }
+
+  // With no model instance requested, ensure the name is globally unique.
+  if (std::next(lower) != upper) {
+    const std::string_view element_classname =
+        GetElementClassname<ElementIndex>();
+    const std::string known_instances =
+        GetElementModelInstancesByName(tree, name, name_to_index);
+    throw std::logic_error(fmt::format(
+        "Has{}Named(): A {} named '{}' appears in multiple model instances"
+        " ({}); you must provide a model_instance argument to disambiguate.",
+        element_classname, element_classname, name, known_instances));
+  }
+
+  return true;
+}
+
+// Common implementation for GetBodyByName, GetFrameByName, etc.
+template <typename T, typename ElementIndex>
+const auto& GetElementByName(
+    const MultibodyTree<T>& tree, std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance,
+    const NameToIndex<ElementIndex>& name_to_index) {
+  // We fetch the model instance name as the first operation in this function
+  // (even though we'll only need it for error messages) because it throws an
+  // exception when the model_instance index is invalid.
+  const std::string& model_instance_name =
+      model_instance ? tree.GetModelInstanceName(*model_instance)
+                     : std::string();
+  const std::string_view element_classname =
+      GetElementClassname<ElementIndex>();
+
+  // Find all elements with a matching name.
+  auto [lower, upper] = name_to_index.equal_range(name);
+
+  // If the name is non-existent, then say so, whether or not a specific model
+  // instance was requested.
+  if (lower == upper) {
+    throw std::logic_error(fmt::format(
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model.",
+        element_classname, element_classname, name));
+  }
+
+  // Filter for the requested model_instance, if one was provided.
+  if (model_instance) {
+    for (auto it = lower; it != upper; ++it) {
+      const ElementIndex index = it->second;
+      const auto& element = GetElementByIndex(tree, index);
+      if (element.model_instance() == *model_instance) {
+        return element;
+      }
+    }
+    const std::string known_instances =
+        GetElementModelInstancesByName(tree, name, name_to_index);
+    throw std::logic_error(fmt::format(
+        "Get{}ByName(): There is no {} named '{}' in the model instance named"
+        " '{}', but one does exist in other model instances ({}).",
+        element_classname, element_classname, name, model_instance_name,
+        known_instances));
+  }
+
+  // With no model instance requested, ensure the name is globally unique.
+  if (std::next(lower) != upper) {
+    const std::string known_instances =
+        GetElementModelInstancesByName(tree, name, name_to_index);
+    throw std::logic_error(fmt::format(
+        "Get{}ByName(): A {} named '{}' appears in multiple model instances"
+        " ({}); you must provide a model_instance argument to disambiguate.",
+        element_classname, element_classname, name, known_instances));
+  }
+
+  // Success.
+  return GetElementByIndex(tree, lower->second);
+}
+
+}  // namespace
+
 template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(std::string_view name) const {
-  const int count = body_name_to_index_.count(name);
-  if (count > 1) {
-    throw std::logic_error(fmt::format(
-        "Body {} appears in multiple model instances.", std::string(name)));
-  }
-  return count > 0;
+  return HasElementNamed(*this, name, std::nullopt, body_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  // Search linearly on the assumption that we won't often have lots of
-  // bodies with the same name in different model instances.  If this turns
-  // out to be incorrect we can switch to a different data structure.
-  // N.B. Please sync with `HasFrameNamed`, `HasJointNamed`, and
-  // `HasJointActuatorNamed` if you change or remove this comment.
-  const auto range = body_name_to_index_.equal_range(name);
-  for (auto it = range.first; it != range.second; ++it) {
-    if (get_body(it->second).model_instance() == model_instance) {
-      return true;
-    }
-  }
-  return false;
+  return HasElementNamed(*this, name, model_instance, body_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasFrameNamed(std::string_view name) const {
-  const int count = frame_name_to_index_.count(name);
-  if (count > 1) {
-    throw std::logic_error(
-        fmt::format("Frame {} appears in multiple model instances.", name));
-  }
-  return count > 0;
+  return HasElementNamed(*this, name, std::nullopt, frame_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasFrameNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  // See notes in `HasBodyNamed`.
-  const auto range = frame_name_to_index_.equal_range(name);
-  for (auto it = range.first; it != range.second; ++it) {
-    if (get_frame(it->second).model_instance() == model_instance) {
-      return true;
-    }
-  }
-  return false;
+  return HasElementNamed(*this, name, model_instance, frame_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointNamed(std::string_view name) const {
-  const int count = joint_name_to_index_.count(name);
-  if (count > 1) {
-    throw std::logic_error(
-        fmt::format("Joint {} appears in multiple model instances.", name));
-  }
-  return count > 0;
+  return HasElementNamed(*this, name, std::nullopt, joint_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  // See notes in `HasBodyNamed`.
-  const auto range = joint_name_to_index_.equal_range(name);
-  for (auto it = range.first; it != range.second; ++it) {
-    if (get_joint(it->second).model_instance() == model_instance) {
-      return true;
-    }
-  }
-  return false;
+  return HasElementNamed(*this, name, model_instance, joint_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointActuatorNamed(std::string_view name) const {
-  const int count = actuator_name_to_index_.count(name);
-  if (count > 1) {
-    throw std::logic_error(fmt::format(
-        "Joint actuator {} appears in multiple model instances.", name));
-  }
-  return count > 0;
+  return HasElementNamed(*this, name, std::nullopt, actuator_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasJointActuatorNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  const auto range = actuator_name_to_index_.equal_range(name);
-  // See notes in `HasBodyNamed`.
-  for (auto it = range.first; it != range.second; ++it) {
-    if (get_joint_actuator(it->second).model_instance() == model_instance) {
-      return true;
-    }
-  }
-  return false;
+  return HasElementNamed(*this, name, model_instance, actuator_name_to_index_);
 }
 
 template <typename T>
@@ -230,24 +353,13 @@ bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
 
 template <typename T>
 const Body<T>& MultibodyTree<T>::GetBodyByName(std::string_view name) const {
-  return get_body(
-      GetElementIndex<BodyIndex>(name, "Body", body_name_to_index_));
+  return GetElementByName(*this, name, std::nullopt, body_name_to_index_);
 }
 
 template <typename T>
 const Body<T>& MultibodyTree<T>::GetBodyByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  const auto range = body_name_to_index_.equal_range(name);
-  for (auto it = range.first; it != range.second; ++it) {
-    const Body<T>& body = get_body(it->second);
-    if (body.model_instance() == model_instance) {
-      return body;
-    }
-  }
-  throw std::logic_error(
-      fmt::format("There is no body named '{}' in model instance '{}.", name,
-                  instance_index_to_name_.at(model_instance)));
+  return GetElementByName(*this, name, model_instance, body_name_to_index_);
 }
 
 template <typename T>
@@ -278,24 +390,13 @@ std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(std::string_view name) const {
-  return get_frame(
-      GetElementIndex<FrameIndex>(name, "Frame", frame_name_to_index_));
+  return GetElementByName(*this, name, std::nullopt, frame_name_to_index_);
 }
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  const auto range = frame_name_to_index_.equal_range(name);
-  for (auto it = range.first; it != range.second; ++it) {
-    const Frame<T>& frame = get_frame(it->second);
-    if (frame.model_instance() == model_instance) {
-      return frame;
-    }
-  }
-  throw std::logic_error(fmt::format(
-      "There is no frame named '{}' in model instance '{}'.", name,
-      instance_index_to_name_.at(model_instance)));
+  return GetElementByName(*this, name, model_instance, frame_name_to_index_);
 }
 
 template <typename T>
@@ -328,33 +429,15 @@ template <typename T>
 const Joint<T>& MultibodyTree<T>::GetJointByNameImpl(
     std::string_view name,
     std::optional<ModelInstanceIndex> model_instance) const {
-  const Joint<T>* joint = nullptr;
-  if (model_instance) {
-    DRAKE_THROW_UNLESS(*model_instance < instance_name_to_index_.size());
-    const auto range = joint_name_to_index_.equal_range(name);
-    for (auto it = range.first; it != range.second; ++it) {
-      const Joint<T>& this_joint = get_joint(it->second);
-      if (this_joint.model_instance() == *model_instance) {
-        joint = &this_joint;
-      }
-    }
-    if (joint == nullptr) {
-      throw std::logic_error(fmt::format(
-          "There is no joint named '{}' in model instance '{}'.", name,
-          name, instance_index_to_name_.at(*model_instance)));
-    }
-  } else {
-    joint = &get_joint(
-        GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
-  }
-  return *joint;
+  return GetElementByName(*this, name, model_instance, joint_name_to_index_);
 }
 
 template <typename T>
 void MultibodyTree<T>::ThrowJointSubtypeMismatch(
     const Joint<T>& joint, std::string_view desired_type) const {
   throw std::logic_error(fmt::format(
-      "Joint '{}' in model instance {} is not of type '{}' but of type '{}'.",
+      "GetJointByName(): Joint '{}' in model instance '{}' is not of type {} "
+      "but of type {}.",
       joint.name(), instance_index_to_name_.at(joint.model_instance()),
       desired_type, NiceTypeName::Get(joint)));
 }
@@ -362,25 +445,13 @@ void MultibodyTree<T>::ThrowJointSubtypeMismatch(
 template <typename T>
 const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
     std::string_view name) const {
-  return get_joint_actuator(
-      GetElementIndex<JointActuatorIndex>(
-          name, "Joint actuator", actuator_name_to_index_));
+  return GetElementByName(*this, name, std::nullopt, actuator_name_to_index_);
 }
 
 template <typename T>
 const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-  const auto range = actuator_name_to_index_.equal_range(name);
-  for (auto it = range.first; it != range.second; ++it) {
-    const JointActuator<T>& actuator = get_joint_actuator(it->second);
-    if (actuator.model_instance() == model_instance) {
-      return actuator;
-    }
-  }
-  throw std::logic_error(fmt::format("There is no joint actuator named {}'"
-      "' in model instance '{}'.", name,
-      instance_index_to_name_.at(model_instance)));
+  return GetElementByName(*this, name, model_instance, actuator_name_to_index_);
 }
 
 template <typename T>
@@ -389,7 +460,8 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
   const auto it = instance_name_to_index_.find(name);
   if (it == instance_name_to_index_.end()) {
     throw std::logic_error(fmt::format(
-        "There is no model instance named '{}' in the model.", name));
+        "GetModelInstanceByName(): There is no model instance named '{}'.",
+        name));
   }
   return it->second;
 }
@@ -2978,26 +3050,6 @@ VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
         joint.acceleration_upper_limits();
   }
   return vd_upper;
-}
-
-template <typename T>
-template <typename ElementIndex>
-ElementIndex MultibodyTree<T>::GetElementIndex(
-    std::string_view name, const std::string& element_description,
-    const std::unordered_multimap<StringViewMapKey, ElementIndex>&
-      name_to_index) {
-  const auto range = name_to_index.equal_range(name);
-  if (range.first == range.second) {
-    std::string lower = element_description;
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    throw std::logic_error(
-        fmt::format("There is no {} named '{}' in the model.", lower, name));
-  } else if (std::next(range.first) != range.second) {
-    throw std::logic_error(
-        fmt::format("{} {} appears in multiple model instances.",
-                    element_description, name));
-  }
-  return range.first->second;
 }
 
 template <typename T>

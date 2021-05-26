@@ -285,8 +285,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->GetForceElement<RevoluteSpring>(gravity_field_index),
       std::logic_error,
-      ".*not of type '.*RevoluteSpring<double>' but of type "
-      "'.*UniformGravityFieldElement<double>'.");
+      ".*not of type .*RevoluteSpring.* but of type "
+      ".*UniformGravityFieldElement.*");
   const ForceElementIndex invalid_force_index(plant->num_force_elements() + 1);
   EXPECT_ANY_THROW(plant->GetForceElement<RevoluteSpring>(invalid_force_index));
 
@@ -320,8 +320,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointByName<PrismaticJoint>(parameters.shoulder_joint_name(),
                                             shoulder.model_instance()),
       std::logic_error,
-      ".*not of type '.*PrismaticJoint<double>' but of type "
-      "'.*RevoluteJoint<double>'.");
+      ".*not of type .*PrismaticJoint.* but of type "
+      ".*RevoluteJoint.*");
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
