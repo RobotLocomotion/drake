@@ -120,13 +120,14 @@ PYBIND11_MODULE(test_util, m) {
       // `DoCalcDiscreteVariableUpdates`.
       auto& state = context->get_mutable_discrete_state();
       DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
+      state_copy.set_system_id(context->get_system_id());
       system.CalcDiscreteVariableUpdates(*context, &state_copy);
 
       // From t=0, return next update time for testing discrete time.
       // If there is an abstract / unrestricted update, this assumes that
       // `dt_discrete < dt_abstract`.
-      systems::LeafCompositeEventCollection<double> events;
-      results["discrete_next_t"] = system.CalcNextUpdateTime(*context, &events);
+      auto events = system.AllocateCompositeEventCollection();
+      results["discrete_next_t"] = system.CalcNextUpdateTime(*context, events.get());
     }
     return results;
   });
@@ -140,6 +141,7 @@ PYBIND11_MODULE(test_util, m) {
         if (is_discrete) {
           auto& state = context->get_mutable_discrete_state();
           DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
+          state_copy.set_system_id(context->get_system_id());
           system.CalcDiscreteVariableUpdates(*context, &state_copy);
           state.SetFrom(state_copy);
         } else {
