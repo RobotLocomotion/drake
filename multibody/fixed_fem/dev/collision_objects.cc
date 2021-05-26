@@ -1,5 +1,6 @@
 #include "drake/multibody/fixed_fem/dev/collision_objects.h"
 
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_capsule_mesh.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
@@ -28,11 +29,12 @@ using geometry::internal::MakeEllipsoidSurfaceMesh;
 using geometry::internal::MakeSphereSurfaceMesh;
 
 template <typename ShapeType>
-SurfaceMesh<double> MakeRigidSurfaceMesh(const ShapeType&, double) {
-  throw std::logic_error(
+SurfaceMesh<double> MakeRigidSurfaceMesh(const ShapeType& shape, double) {
+  throw std::logic_error(fmt::format(
       "Trying to make a rigid surface mesh for an unsupported type shape. "
       "The types supported are: Sphere, Box, Cylinder, Capsule, Ellipsoid, "
-      "Mesh and Convex.");
+      "Mesh and Convex. The shape provided is {}.",
+      NiceTypeName::Get(shape)));
   DRAKE_UNREACHABLE();
 }
 
@@ -84,8 +86,9 @@ void CollisionObjects<T>::ImplementGeometry(const Cylinder& cylinder,
 }
 
 template <typename T>
-void CollisionObjects<T>::ImplementGeometry(const HalfSpace&, void*) {
-  this->ThrowUnsupportedGeometry("HalfSpace");
+void CollisionObjects<T>::ImplementGeometry(const HalfSpace& half_space,
+                                            void* user_data) {
+  MakeRigidRepresentation(half_space, *reinterpret_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
@@ -122,8 +125,9 @@ void CollisionObjects<T>::MakeRigidRepresentation(const ShapeType& shape,
                                                   const ReifyData& data) {
   rigid_representations_[data.id] = {
       std::make_unique<SurfaceMesh<double>>(
-          MakeRigidSurfaceMesh(shape, resolution_hint_)),
+          MakeRigidSurfaceMesh(shape, kDefaultResolutionHint)),
       data.properties};
+  geometry_ids_.emplace_back(data.id);
 }
 }  // namespace internal
 }  // namespace fixed_fem

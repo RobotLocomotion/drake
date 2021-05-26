@@ -1,4 +1,5 @@
 #pragma once
+
 #include <map>
 #include <memory>
 #include <utility>
@@ -15,8 +16,8 @@ namespace multibody {
 namespace fixed_fem {
 namespace internal {
 /* Representation of a group of rigid collision objects, consisting of their
- poses in the world, surface meshes and proximity properties. Collision objects
- can be created by providing a unique GeometryId, a shape and proximity
+ poses in the world, surface meshes, and proximity properties. Collision objects
+ can be created by providing a unique GeometryId, a shape, and proximity
  properties. Internally, a surface mesh is generated to approximate the given
  shape. Collision objects can only be added but not removed. After a collision
  object has been added, its proximity properties and surface mesh can be queried
@@ -30,19 +31,16 @@ class CollisionObjects : public geometry::ShapeReifier {
 
   CollisionObjects() = default;
 
-  /* Registers the geometry with the given `id`, `shape` and
+  /* Registers the geometry with the given `id`, `shape`, and
    `proximity_properties` in `this` CollisionObjects. The newly added collision
    object assumes the identity pose.
    @pre No collision object with GeometryId `id` has been registered before. */
   void AddCollisionObject(
       geometry::GeometryId id, const geometry::Shape& shape,
       const geometry::ProximityProperties& proximity_properties) {
-    DRAKE_DEMAND(rigid_representations_.find(id) ==
-                 rigid_representations_.end());
+    DRAKE_DEMAND(rigid_representations_.count(id) == 0);
     ReifyData data{id, proximity_properties};
     shape.Reify(this, &data);
-    geometry_ids_.emplace_back(id);
-    poses_.insert({id, math::RigidTransform<T>()});
   }
 
   /* Returns the surface mesh of the geometry with GeometryId `id`.
@@ -67,21 +65,21 @@ class CollisionObjects : public geometry::ShapeReifier {
   /* Returns the world pose of the geometry with GeometryId `id`.
    @pre The geometry with `id` has been registered in `this` CollisionObject
    with AddCollisionObject(). */
-  const math::RigidTransform<T>& pose(geometry::GeometryId id) const {
-    auto it = poses_.find(id);
-    DRAKE_DEMAND(it != poses_.end());
-    return it->second;
+  const math::RigidTransform<T>& pose_in_world(geometry::GeometryId id) const {
+    const auto it = rigid_representations_.find(id);
+    DRAKE_DEMAND(it != rigid_representations_.end());
+    return it->second.pose_in_world;
   }
 
   /* Updates the pose of the geometry with GeometryId `id` in world frame to the
    given `pose`.
    @pre The geometry with `id` has been registered in `this` CollisionObject
    with AddCollisionObject(). */
-  void UpdatePoseInWorld(geometry::GeometryId id,
+  void set_pose_in_world(geometry::GeometryId id,
                          const math::RigidTransform<T>& pose) {
-    auto it = poses_.find(id);
-    DRAKE_DEMAND(it != poses_.end());
-    it->second = pose;
+    auto it = rigid_representations_.find(id);
+    DRAKE_DEMAND(it != rigid_representations_.end());
+    it->second.pose_in_world = pose;
   }
 
   /* Returns the GeometryIds for all collision objects with no particular order.
@@ -90,8 +88,13 @@ class CollisionObjects : public geometry::ShapeReifier {
     return geometry_ids_;
   }
 
+  // TODO(xuchenhan-tri): Configure this based on the measure of the geometry in
+  // question.
+  /* The default resolution hint for surface mesh representations of the rigid
+   geometries. */
+  static constexpr double kDefaultResolutionHint{0.01};
+
  private:
-  friend class CollisionObjectsTest;
   /* Data to be used during reification. It is passed as the `user_data`
    parameter in the ImplementGeometry API. */
   struct ReifyData {
@@ -106,6 +109,8 @@ class CollisionObjects : public geometry::ShapeReifier {
     /* A default constructor is required so that RigidRepresentation can be used
      as values in std::map. */
     RigidRepresentation() = default;
+    /* Constructs a rigid representation with the given mesh and proximity
+     properties and identity pose in world. */
     RigidRepresentation(std::unique_ptr<geometry::SurfaceMesh<double>> mesh,
                         const geometry::ProximityProperties& props)
         : surface_mesh(std::move(mesh)), properties(props) {}
@@ -113,6 +118,7 @@ class CollisionObjects : public geometry::ShapeReifier {
      constructed and copy assigned. */
     copyable_unique_ptr<geometry::SurfaceMesh<double>> surface_mesh;
     geometry::ProximityProperties properties;
+    math::RigidTransform<T> pose_in_world{};
   };
 
   void ImplementGeometry(const geometry::Sphere& sphere,
@@ -138,13 +144,8 @@ class CollisionObjects : public geometry::ShapeReifier {
   void MakeRigidRepresentation(const ShapeType& shape, const ReifyData& data);
 
   std::map<geometry::GeometryId, RigidRepresentation> rigid_representations_;
-  /* The current pose in world for all rigid collision objects. */
-  std::map<geometry::GeometryId, math::RigidTransform<T>> poses_;
   /* GeometryIds for all rigid collision objects. */
   std::vector<geometry::GeometryId> geometry_ids_;
-  /* The default resolution hint for surface mesh representations of the rigid
-   geometries. */
-  double resolution_hint_{0.01};
 };
 }  // namespace internal
 }  // namespace fixed_fem

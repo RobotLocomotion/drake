@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_capsule_mesh.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
@@ -14,6 +15,7 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 namespace internal {
+namespace {
 using geometry::Box;
 using geometry::Capsule;
 using geometry::Convex;
@@ -54,28 +56,26 @@ class CollisionObjectsTest : public ::testing::Test {
     EXPECT_EQ(retrieved_property, expected_property);
   }
 
-  double resolution_hint() const { return collision_objects_.resolution_hint_; }
-
   CollisionObjects<double> collision_objects_;
   ProximityProperties proximity_properties_;
 };
 
-namespace {
 TEST_F(CollisionObjectsTest, AddSphere) {
-  GeometryId id = GeometryId::get_new_id();
-  Sphere sphere(0.123);
+  const GeometryId id = GeometryId::get_new_id();
+  const Sphere sphere(0.123);
   collision_objects_.AddCollisionObject(id, sphere, proximity_properties_);
 
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeSphereSurfaceMesh<double>(sphere, resolution_hint());
+      MakeSphereSurfaceMesh<double>(
+          sphere, CollisionObjects<double>::kDefaultResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddBox) {
-  GeometryId id = GeometryId::get_new_id();
-  Box box(0.123, 0.456, 0.789);
+  const GeometryId id = GeometryId::get_new_id();
+  const Box box(0.123, 0.456, 0.789);
   collision_objects_.AddCollisionObject(id, box, proximity_properties_);
 
   VerifyProximityProperties(id);
@@ -87,44 +87,47 @@ TEST_F(CollisionObjectsTest, AddBox) {
 }
 
 TEST_F(CollisionObjectsTest, AddCylinder) {
-  GeometryId id = GeometryId::get_new_id();
-  Cylinder cylinder(0.123, 0.456);
+  const GeometryId id = GeometryId::get_new_id();
+  const Cylinder cylinder(0.123, 0.456);
   collision_objects_.AddCollisionObject(id, cylinder, proximity_properties_);
 
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeCylinderSurfaceMesh<double>(cylinder, resolution_hint());
+      MakeCylinderSurfaceMesh<double>(
+          cylinder, CollisionObjects<double>::kDefaultResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddCapsule) {
-  GeometryId id = GeometryId::get_new_id();
-  Capsule capsule(0.123, 0.456);
+  const GeometryId id = GeometryId::get_new_id();
+  const Capsule capsule(0.123, 0.456);
   collision_objects_.AddCollisionObject(id, capsule, proximity_properties_);
 
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeCapsuleSurfaceMesh<double>(capsule, resolution_hint());
+      MakeCapsuleSurfaceMesh<double>(
+          capsule, CollisionObjects<double>::kDefaultResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddEllipsoid) {
-  GeometryId id = GeometryId::get_new_id();
-  Ellipsoid ellipsoid(0.123, 0.456, 0.789);
+  const GeometryId id = GeometryId::get_new_id();
+  const Ellipsoid ellipsoid(0.123, 0.456, 0.789);
   collision_objects_.AddCollisionObject(id, ellipsoid, proximity_properties_);
 
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeEllipsoidSurfaceMesh<double>(ellipsoid, resolution_hint());
+      MakeEllipsoidSurfaceMesh<double>(
+          ellipsoid, CollisionObjects<double>::kDefaultResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddConvex) {
-  GeometryId id = GeometryId::get_new_id();
-  Convex convex{drake::FindResourceOrThrow(
+  const GeometryId id = GeometryId::get_new_id();
+  const Convex convex{drake::FindResourceOrThrow(
       "drake/multibody/fixed_fem/dev/test/quad_cube.obj")};
   collision_objects_.AddCollisionObject(id, convex, proximity_properties_);
 
@@ -136,8 +139,8 @@ TEST_F(CollisionObjectsTest, AddConvex) {
 }
 
 TEST_F(CollisionObjectsTest, AddMesh) {
-  GeometryId id = GeometryId::get_new_id();
-  Mesh mesh{drake::FindResourceOrThrow(
+  const GeometryId id = GeometryId::get_new_id();
+  const Mesh mesh{drake::FindResourceOrThrow(
       "drake/multibody/fixed_fem/dev/test/non_convex_mesh.obj")};
   collision_objects_.AddCollisionObject(id, mesh, proximity_properties_);
 
@@ -148,16 +151,30 @@ TEST_F(CollisionObjectsTest, AddMesh) {
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 }
 
+TEST_F(CollisionObjectsTest, AddHalfSpace) {
+  const GeometryId id = GeometryId::get_new_id();
+  const HalfSpace half_space;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      collision_objects_.AddCollisionObject(id, half_space,
+                                            proximity_properties_),
+      std::exception,
+      "Trying to make a rigid surface mesh for an unsupported type shape. The "
+      "types supported are: Sphere, Box, Cylinder, Capsule, Ellipsoid, Mesh "
+      "and Convex. The shape provided is drake::geometry::HalfSpace.");
+}
+
 /* Exercises pose getter and setter. */
 TEST_F(CollisionObjectsTest, Poses) {
-  GeometryId id = GeometryId::get_new_id();
-  Box box(0.123, 0.456, 0.789);
+  const GeometryId id = GeometryId::get_new_id();
+  const Box box(0.123, 0.456, 0.789);
   collision_objects_.AddCollisionObject(id, box, proximity_properties_);
   const auto identity = math::RigidTransform<double>();
-  EXPECT_TRUE(collision_objects_.pose(id).IsExactlyEqualTo(identity));
-  math::RigidTransform<double> arbitrary_pose(Vector3<double>(1., 2., 3.));
-  collision_objects_.UpdatePoseInWorld(id, arbitrary_pose);
-  EXPECT_TRUE(collision_objects_.pose(id).IsExactlyEqualTo(arbitrary_pose));
+  EXPECT_TRUE(collision_objects_.pose_in_world(id).IsExactlyEqualTo(identity));
+  const math::RigidTransform<double> arbitrary_pose(
+      math::RollPitchYaw<double>(4., 5., 6.), Vector3<double>(1., 2., 3.));
+  collision_objects_.set_pose_in_world(id, arbitrary_pose);
+  EXPECT_TRUE(
+      collision_objects_.pose_in_world(id).IsExactlyEqualTo(arbitrary_pose));
 }
 }  // namespace
 }  // namespace internal
