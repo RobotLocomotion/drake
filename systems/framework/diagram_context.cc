@@ -150,7 +150,7 @@ void DiagramContext<T>::MakeState() {
     state->set_substate(i, &Context<T>::access_mutable_state(&subcontext));
   }
   state->Finalize();
-  state->get_mutable_continuous_state().set_system_id(this->get_system_id());
+  state->set_system_id(this->get_system_id());
   state_ = std::move(state);
 }
 

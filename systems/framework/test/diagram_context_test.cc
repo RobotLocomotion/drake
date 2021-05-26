@@ -716,6 +716,9 @@ TEST_F(DiagramContextTest, Clone) {
   const ContinuousState<double>& xc = clone->get_continuous_state();
   EXPECT_TRUE(xc.get_system_id().is_valid());
   EXPECT_EQ(xc.get_system_id(), context_->get_system_id());
+  const DiscreteValues<double>& xd = clone->get_discrete_state();
+  EXPECT_TRUE(xd.get_system_id().is_valid());
+  EXPECT_EQ(xd.get_system_id(), context_->get_system_id());
 
   // Verify that the state has the same value.
   VerifyClonedState(clone->get_state());
@@ -746,10 +749,17 @@ TEST_F(DiagramContextTest, CloneState) {
   VerifyClonedState(*state);
   // Verify that the underlying type was preserved.
   EXPECT_NE(nullptr, dynamic_cast<DiagramState<double>*>(state.get()));
-  ContinuousState<double>& xc = state->get_mutable_continuous_state();
+
   // Verify that the system id was copied.
+  EXPECT_TRUE(state->get_system_id().is_valid());
+  EXPECT_EQ(state->get_system_id(), context_->get_system_id());
+  ContinuousState<double>& xc = state->get_mutable_continuous_state();
   EXPECT_TRUE(xc.get_system_id().is_valid());
   EXPECT_EQ(xc.get_system_id(), context_->get_system_id());
+  const DiscreteValues<double>& xd = state->get_discrete_state();
+  EXPECT_TRUE(xd.get_system_id().is_valid());
+  EXPECT_EQ(xd.get_system_id(), context_->get_system_id());
+
   // Verify that changes to the state do not write through to the original
   // context.
   xc[1] = 1024.0;
