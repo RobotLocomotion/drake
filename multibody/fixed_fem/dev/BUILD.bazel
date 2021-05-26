@@ -12,6 +12,28 @@ package(
 )
 
 drake_cc_library(
+    name = "collision_objects",
+    srcs = [
+        "collision_objects.cc",
+    ],
+    hdrs = [
+        "collision_objects.h",
+    ],
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry:proximity_properties",
+        "//geometry:shape_specification",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:make_capsule_mesh",
+        "//geometry/proximity:make_cylinder_mesh",
+        "//geometry/proximity:make_ellipsoid_mesh",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:surface_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "constitutive_model",
     hdrs = [
         "constitutive_model.h",
@@ -499,14 +521,24 @@ drake_cc_library(
         ":state_updater",
     ],
 )
-# === test/ ===
 
+# === test/ ===
 drake_cc_library(
     name = "test_utilities",
     testonly = 1,
     hdrs = ["test/test_utilities.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_objects_test",
+    data = ["//geometry:test_obj_files"],
+    deps = [
+        ":collision_objects",
+        "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
