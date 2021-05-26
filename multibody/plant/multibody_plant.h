@@ -2741,6 +2741,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, known_vdot, external_forces);
   }
 
+#ifdef DRAKE_DOXYGEN_CXX
+  // MultibodyPlant uses the NVI implementation of
+  // CalcImplicitTimeDerivativesResidual from
+  // MultibodyTreeSystem::DoCalcImplicitTimeDerivativesResidual.  We provide the
+  // public facing documentation for it here.
+
+  /// MultibodyPlant implements the
+  /// systems::System::CalcImplicitTimeDerivativesResidual method when the plant
+  /// is modeled as a continuous-time system, returning one residual for each
+  /// multibody state.  In particular, the first num_positions() residuals are
+  /// given by <pre>
+  ///   q̇_proposed - N(q)⋅v
+  /// </pre>
+  /// and the final num_velocities() residuals are given by <pre>
+  ///   CalcInverseDynamics(context, v_proposed)
+  /// </pre>
+  /// including all actuator and applied forces.
+  /// @see systems::System::CalcImplicitTimeDerivativesResidual for more
+  /// details.
+  void CalcImplicitTimeDerivativesResidual(
+      const systems::Context<T>& context,
+      const systems::ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const;
+#endif
+
   /// Computes the combined force contribution of ForceElement objects in the
   /// model. A ForceElement can apply forces as a spatial force per body or as
   /// generalized forces, depending on the ForceElement model.
