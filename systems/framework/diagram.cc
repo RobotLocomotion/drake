@@ -123,6 +123,8 @@ void Diagram<T>::SetDefaultParameters(const Context<T>& context,
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
 
+  this->ValidateCreatedForThisSystem(params);
+
   int numeric_parameter_offset = 0;
   int abstract_parameter_offset = 0;
 
@@ -162,6 +164,7 @@ void Diagram<T>::SetDefaultParameters(const Context<T>& context,
         std::make_unique<DiscreteValues<T>>(numeric_params));
     subparameters.set_abstract_parameters(
         std::make_unique<AbstractValues>(abstract_params));
+    subparameters.set_system_id(subcontext.get_system_id());
 
     registered_systems_[i]->SetDefaultParameters(subcontext, &subparameters);
   }
@@ -174,6 +177,7 @@ void Diagram<T>::SetRandomState(const Context<T>& context, State<T>* state,
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
 
+  this->ValidateCreatedForThisSystem(state);
   auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
   DRAKE_DEMAND(diagram_state != nullptr);
 
@@ -192,6 +196,8 @@ void Diagram<T>::SetRandomParameters(const Context<T>& context,
   this->ValidateContext(context);
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
+
+  this->ValidateCreatedForThisSystem(params);
 
   int numeric_parameter_offset = 0;
   int abstract_parameter_offset = 0;
@@ -230,6 +236,7 @@ void Diagram<T>::SetRandomParameters(const Context<T>& context,
         std::make_unique<DiscreteValues<T>>(numeric_params));
     subparameters.set_abstract_parameters(
         std::make_unique<AbstractValues>(abstract_params));
+    subparameters.set_system_id(subcontext.get_system_id());
 
     registered_systems_[i]->SetRandomParameters(subcontext, &subparameters,
                                                 generator);
