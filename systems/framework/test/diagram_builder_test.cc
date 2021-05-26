@@ -391,7 +391,9 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
   auto sys2 = builder.AddSystem<PassThrough<double>>(
       Value<Trajectoryd>(ExponentialPlusPiecewisePolynomiald{}));
   DRAKE_EXPECT_NO_THROW(builder.Connect(*sys1, *sys2));
+  EXPECT_FALSE(builder.IsConnectedOrExported(sys1->get_input_port()));
   builder.ExportInput(sys1->get_input_port());
+  EXPECT_TRUE(builder.IsConnectedOrExported(sys1->get_input_port()));
   builder.ExportOutput(sys2->get_output_port());
   auto diagram = builder.Build();
 
@@ -443,8 +445,12 @@ GTEST_TEST(DiagramBuilderTest, DefaultInputPortNamesAreUniqueTest) {
   auto sink1 = builder.AddSystem<Sink<double>>();
   auto sink2 = builder.AddSystem<Sink<double>>();
 
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink1->get_input_port(0)));
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink2->get_input_port(0)));
   builder.ExportInput(sink1->get_input_port(0));
   builder.ExportInput(sink2->get_input_port(0));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink1->get_input_port(0)));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink2->get_input_port(0)));
 
   // If the port names were not unique, then the build step would throw.
   DRAKE_EXPECT_NO_THROW(builder.Build());
@@ -531,12 +537,24 @@ GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
 
   std::vector<InputPortIndex> indices;
   // Name these ports just to make comparing easier later.
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink1->get_input_port(0)));
   indices.push_back(builder.ExportInput(sink1->get_input_port(0), "in1"));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink1->get_input_port(0)));
+
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink2->get_input_port(0)));
   indices.push_back(builder.ExportInput(sink2->get_input_port(0), "in2"));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink2->get_input_port(0)));
+
   // Fan-out connect by index.
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink3->get_input_port(0)));
   builder.ConnectInput(indices[0], sink3->get_input_port(0));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink3->get_input_port(0)));
+
   // Fan-out connect by name.
+  EXPECT_FALSE(builder.IsConnectedOrExported(sink4->get_input_port(0)));
   builder.ConnectInput("in1", sink4->get_input_port(0));
+  EXPECT_TRUE(builder.IsConnectedOrExported(sink4->get_input_port(0)));
+
   EXPECT_EQ(indices[0], 0);
   EXPECT_EQ(indices[1], 1);
 
@@ -589,7 +607,9 @@ class DiagramBuilderSolePortsTest : public ::testing::Test {
 
 // A diagram of Source->Gain->Sink is successful.
 TEST_F(DiagramBuilderSolePortsTest, SourceGainSink) {
+  EXPECT_FALSE(builder_.IsConnectedOrExported(in1out1_->get_input_port()));
   DRAKE_EXPECT_NO_THROW(builder_.Connect(*out1_, *in1out1_));
+  EXPECT_TRUE(builder_.IsConnectedOrExported(in1out1_->get_input_port()));
   DRAKE_EXPECT_NO_THROW(builder_.Connect(*in1out1_, *in1_));
   DRAKE_EXPECT_NO_THROW(builder_.Build());
 }
