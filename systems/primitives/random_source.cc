@@ -143,11 +143,7 @@ int AddRandomInputs(double sampling_interval_sec,
         continue;
       }
 
-      using InputPortLocator = Diagram<double>::InputPortLocator;
-      // Check if the input is already wired up.
-      InputPortLocator id{&port.get_system(), port.get_index()};
-      if (builder->connection_map_.count(id) > 0 ||
-          builder->diagram_input_set_.count(id) > 0) {
+      if (builder->IsConnectedOrExported(port)) {
         continue;
       }
 

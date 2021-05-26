@@ -287,6 +287,9 @@ class DiagramBuilder {
   /// already be initialized.
   void BuildInto(Diagram<T>* target);
 
+  /// Check if an input port is connected or exported.
+  bool IsConnectedOrExported(const InputPort<T>& port) const;
+
  private:
   using InputPortLocator = typename Diagram<T>::InputPortLocator;
   using OutputPortLocator = typename Diagram<T>::OutputPortLocator;
@@ -350,8 +353,6 @@ class DiagramBuilder {
   std::unordered_set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
   internal::OwnedSystems<T> registered_systems_;
-
-  friend int AddRandomInputs(double, DiagramBuilder<double>*);
 };
 
 }  // namespace systems
