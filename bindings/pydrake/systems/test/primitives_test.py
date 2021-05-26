@@ -44,7 +44,7 @@ from pydrake.systems.primitives import (
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
-    RandomSource,
+    RandomSourced,
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     Sine, Sine_,
@@ -531,8 +531,8 @@ class TestGeneral(unittest.TestCase):
                 self.assertTrue(isinstance(value, MyVector2))
 
     def test_random_source(self):
-        source = RandomSource(distribution=RandomDistribution.kUniform,
-                              num_outputs=2, sampling_interval_sec=0.01)
+        source = RandomSourced(distribution=RandomDistribution.kUniform,
+                               num_outputs=2, sampling_interval_sec=0.01)
         self.assertEqual(source.get_output_port(0).size(), 2)
 
         builder = DiagramBuilder()
