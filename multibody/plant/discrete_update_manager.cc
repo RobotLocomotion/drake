@@ -84,6 +84,18 @@ DiscreteUpdateManager<T>::collision_geometries() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
       plant());
 }
+
+template <typename T>
+double DiscreteUpdateManager<T>::default_contact_stiffness() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::default_contact_stiffness(plant());
+}
+
+template <typename T>
+double DiscreteUpdateManager<T>::default_contact_dissipation() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::default_contact_dissipation(plant());
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
