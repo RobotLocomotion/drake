@@ -2,6 +2,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -25,6 +26,15 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
 
   static const MultibodyTree<T>& internal_tree(const MultibodyPlant<T>& plant) {
     return plant.internal_tree();
+  }
+
+  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
+  //  geometries.
+  /* Returns the per-body arrays of collision geometries indexed by BodyIndex
+   for the given `plant`. */
+  static const std::vector<std::vector<geometry::GeometryId>>&
+  collision_geometries(const MultibodyPlant<T>& plant) {
+    return plant.collision_geometries_;
   }
 };
 }  // namespace internal

@@ -11,6 +11,13 @@ template <typename T>
 const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::internal_tree(plant());
 }
+
+template <typename T>
+const std::vector<std::vector<geometry::GeometryId>>&
+DiscreteUpdateManager<T>::collision_geometries() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
+      plant());
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
