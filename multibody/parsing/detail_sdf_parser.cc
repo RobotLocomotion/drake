@@ -16,6 +16,7 @@
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
+#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -81,6 +82,7 @@ std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
 
   return {resolved_model_instance, unscoped_local_name};
 }
+
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -631,11 +633,23 @@ const Frame<double>& AddFrameFromSpecification(
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
-    const auto [parent_model_instance, local_name] =
-        GetResolvedModelInstanceAndLocalName(frame_spec.AttachedTo(),
-                                           model_instance, *plant);
-    parent_frame = &plant->GetFrameByName(
-        local_name, parent_model_instance);
+    const std::string attached_to_absolute_name = parsing::PrefixName(
+        parsing::GetInstanceScopeName(*plant, model_instance),
+        frame_spec.AttachedTo());
+
+    // If the attached_to refers to a model, we use the `__model__` frame
+    // associated with the model.
+    if (plant->HasModelInstanceNamed(attached_to_absolute_name)) {
+      const auto attached_to_model_instance =
+          plant->GetModelInstanceByName(attached_to_absolute_name);
+      parent_frame =
+          &plant->GetFrameByName("__model__", attached_to_model_instance);
+    } else {
+      const auto [parent_model_instance, local_name] =
+          GetResolvedModelInstanceAndLocalName(frame_spec.AttachedTo(),
+                                               model_instance, *plant);
+      parent_frame = &plant->GetFrameByName(local_name, parent_model_instance);
+    }
   }
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
@@ -753,11 +767,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const RigidTransformd& X_WP,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
-    const std::string& root_dir,
-    bool is_nested = false) {
+    const std::string& root_dir) {
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
-
   std::vector <ModelInstanceIndex> added_model_instances{model_instance};
 
   // "P" is the parent frame. If the model is in a child of //world or //sdf,
@@ -776,7 +788,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     std::vector<ModelInstanceIndex> nested_model_instances =
         AddModelsFromSpecification(
             nested_model, sdf::JoinName(model_name, nested_model.Name()), X_WM,
-            plant, package_map, root_dir, true);
+            plant, package_map, root_dir);
 
     DRAKE_DEMAND(!nested_model_instances.empty());
     const ModelInstanceIndex nested_model_instance =
@@ -823,12 +835,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
           sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
     }
   }();
-
-  if (!is_nested) {
-    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        model_name, model_frame, RigidTransformd::Identity(),
-        world_model_instance()));
-  }
 
   drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
