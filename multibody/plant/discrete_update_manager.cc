@@ -82,7 +82,19 @@ template <typename T>
 const std::vector<std::vector<geometry::GeometryId>>&
 DiscreteUpdateManager<T>::collision_geometries() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
-      plant());
+      *plant_);
+}
+
+template <typename T>
+double DiscreteUpdateManager<T>::default_contact_stiffness() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::default_contact_stiffness(*plant_);
+}
+
+template <typename T>
+double DiscreteUpdateManager<T>::default_contact_dissipation() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::default_contact_dissipation(*plant_);
 }
 }  // namespace internal
 }  // namespace multibody

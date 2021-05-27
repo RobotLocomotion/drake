@@ -355,6 +355,58 @@ void DeformableRigidManager<T>::UpdateDeformableVertexPositions(
     deformable_meshes_[i] = {std::move(tets), std::move(vertices_D)};
   }
 }
+
+template <typename T>
+internal::DeformableRigidContactPair<T>
+DeformableRigidManager<T>::CalcDeformableRigidContactPair(
+    geometry::GeometryId rigid_id, SoftBodyIndex deformable_id) const {
+  DeformableContactSurface<T> contact_surface = ComputeTetMeshTriMeshContact(
+      deformable_meshes_[deformable_id], collision_objects_.mesh(rigid_id),
+      collision_objects_.pose_in_world(rigid_id));
+
+  const auto get_point_contact_parameters =
+      [this](const geometry::ProximityProperties& props) -> std::pair<T, T> {
+    return std::make_pair(props.template GetPropertyOrDefault<T>(
+                              geometry::internal::kMaterialGroup,
+                              geometry::internal::kPointStiffness,
+                              this->default_contact_stiffness()),
+                          props.template GetPropertyOrDefault<T>(
+                              geometry::internal::kMaterialGroup,
+                              geometry::internal::kHcDissipation,
+                              this->default_contact_dissipation()));
+  };
+  /* Extract the stiffness, dissipation and friction parameters of the
+   deformable body. */
+  DRAKE_DEMAND(deformable_model_ != nullptr);
+  const geometry::ProximityProperties& deformable_props =
+      deformable_model_->proximity_properties()[deformable_id];
+  const auto [deformable_stiffness, deformable_dissipation] =
+      get_point_contact_parameters(deformable_props);
+  const CoulombFriction<T> deformable_mu =
+      deformable_props.GetProperty<CoulombFriction<T>>(
+          geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+
+  /* Extract the stiffness, dissipation and friction parameters of the rigid
+   body. */
+  const geometry::ProximityProperties& rigid_proximity_properties =
+      collision_objects_.proximity_properties(rigid_id);
+  const auto [rigid_stiffness, rigid_dissipation] =
+      get_point_contact_parameters(rigid_proximity_properties);
+  const CoulombFriction<T> rigid_mu =
+      rigid_proximity_properties.GetProperty<CoulombFriction<T>>(
+          geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+
+  /* Combine the stiffness, dissipation and friction parameters for the
+   contact points. */
+  auto [k, d] = multibody::internal::CombinePointContactParameters(
+      deformable_stiffness, rigid_stiffness, deformable_dissipation,
+      rigid_dissipation);
+  const CoulombFriction<T> mu =
+      CalcContactFrictionFromSurfaceProperties(deformable_mu, rigid_mu);
+  return internal::DeformableRigidContactPair<T>(std::move(contact_surface),
+                                                 rigid_id, deformable_id, k, d,
+                                                 mu.dynamic_friction());
+}
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

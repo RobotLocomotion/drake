@@ -10,6 +10,7 @@
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/fixed_fem/dev/collision_objects.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
+#include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
@@ -160,6 +161,12 @@ class DeformableRigidManager final
   /* Updates the vertex positions for all deformable meshes. */
   void UpdateDeformableVertexPositions(
       const systems::Context<T>& context) const;
+
+  /* Calculates the contact information for the contact pair consisting of the
+   rigid body identified by `rigid_id` and the deformable body identified by
+   `deformable_id`. */
+  internal::DeformableRigidContactPair<T> CalcDeformableRigidContactPair(
+      geometry::GeometryId rigid_id, SoftBodyIndex deformable_id) const;
 
   /* The deformable models being solved by `this` manager. */
   const DeformableModel<T>* deformable_model_{nullptr};
