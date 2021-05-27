@@ -140,6 +140,7 @@ drake_cc_library(
         "deformable_rigid_manager.h",
     ],
     deps = [
+        ":collision_objects",
         ":deformable_model",
         ":fem_solver",
         "//common:essential",
