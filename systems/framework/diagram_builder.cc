@@ -224,6 +224,16 @@ void DiagramBuilder<T>::BuildInto(Diagram<T>* target) {
 }
 
 template <typename T>
+bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
+  InputPortLocator id{&port.get_system(), port.get_index()};
+  if (this->connection_map_.count(id) > 0 ||
+      this->diagram_input_set_.count(id) > 0) {
+    return true;
+  }
+  return false;
+}
+
+template <typename T>
 void DiagramBuilder<T>::ThrowIfInputAlreadyWired(
     const InputPortLocator& id) const {
   if (connection_map_.find(id) != connection_map_.end() ||
