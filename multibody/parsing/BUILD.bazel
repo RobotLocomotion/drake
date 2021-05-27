@@ -24,6 +24,15 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "interface_api_test_models",
+    testonly = True,
+    data = glob(["test/sdf_parser_test/interface_api_test/**"]),
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
 drake_cc_package_library(
     name = "parsing",
     visibility = [
@@ -129,6 +138,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":detail_scene_graph",
+        ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
         "@sdformat",
@@ -151,6 +161,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
+        ":scoped_names",
         "//multibody/plant",
         "@fmt",
         "@tinyxml2",
@@ -314,6 +325,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
+        ":interface_api_test_models",
         ":test_models",
         "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
