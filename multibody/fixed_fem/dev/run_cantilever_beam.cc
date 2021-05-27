@@ -66,6 +66,12 @@ int DoMain() {
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(dt);
   auto deformable_model = std::make_unique<DeformableModel<double>>(plant);
   const geometry::Box box(1.5, 0.2, 0.2);
+  /* A dummy proximity property that's used since there is no contact in this
+   demo. */
+  geometry::ProximityProperties dummy_proximity_props;
+  geometry::AddContactMaterial({}, {}, {},
+                               multibody::CoulombFriction<double>(0, 0),
+                               &dummy_proximity_props);
 
   /* Set up the corotated bar. */
   const math::RigidTransform<double> translation_left(
@@ -81,7 +87,8 @@ int DoMain() {
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_left);
   const SoftBodyIndex nonlinear_bar_body_index =
       deformable_model->RegisterDeformableBody(
-          nonlinear_bar_geometry, "Corotated", nonlinear_bar_config);
+          nonlinear_bar_geometry, "Corotated", nonlinear_bar_config,
+          dummy_proximity_props);
 
   /* Set up the linear bar. */
   DeformableBodyConfig<double> linear_bar_config(nonlinear_bar_config);
@@ -92,7 +99,8 @@ int DoMain() {
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_right);
   const SoftBodyIndex linear_bar_body_index =
       deformable_model->RegisterDeformableBody(linear_bar_geometry, "Linear",
-                                               linear_bar_config);
+                                               linear_bar_config,
+                                               dummy_proximity_props);
 
   /* Plug the two bars in to a wall. */
   const Vector3<double> wall_origin(-0.75, 0, 0);

@@ -6,7 +6,9 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
+#include "drake/multibody/fixed_fem/dev/collision_objects.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
 #include "drake/multibody/plant/contact_jacobians.h"
@@ -35,7 +37,48 @@ class DeformableRigidManager final
     contact_solver_ = std::move(contact_solver);
   }
 
+  // TODO(xuchenhan-tri): Remove this method when SceneGraph owns all rigid and
+  //  deformable geometries.
+  // TODO(xuchenhan-tri): Reconcile the names of "deformable geometries" and
+  //  "collision objects" when moving out of dev.
+  /** Registers all the rigid collision geometries from the owning
+   MultibodyPlant that are registered in the given SceneGraph into `this`
+   %DeformableRigidManager. The registered rigid collision geometries will be
+   used to generate rigid-deformable contact pairs to be used for the
+   rigid-deformable two-way coupled contact solve. A common workflow to set up a
+   simulation where deformable and rigid bodies interact with each other through
+   contact looks like the following:
+   ```
+   // Set up a deformable model assciated with a MultibodyPlant.
+   auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
+   // Add deformable bodies to the model.
+   deformable_model->RegisterDeformableBody(...);
+   deformable_model->RegisterDeformableBody(...);
+   // Done building the model. Move the DeformableModel into the MultibodyPlant.
+   plant.AddPhysicalModel(std::move(deformable_model));
+   // Register the plant as a source for scene graph for rigid geometries.
+   plant.RegisterAsSourceForSceneGraph(&scene_graph);
+   // Add rigid bodies.
+   Parser parser(&plant, &scene_graph);
+   parser.AddModelFromFile(...);
+   parser.AddModelFromFile(...);
+   // Done building the plant.
+   plant.Finalize();
+   // Use a DeformableRigidManager to perform the discrete updates.
+   auto& deformable_rigid_manager = plant.set_discrete_update_manager(
+        std::make_unqiue<DeformableRigidManager<double>());
+   // Register all rigid collision geometries at the manager.
+   deformable_rigid_manager.RegisterCollisionObjects(scene_graph);
+   ```
+   @pre `This` %DeformableRigidManager is owned by a MultibodyPlant via the call
+   MultibodyPlant::set_discrete_update_manager().
+   @pre The owning MultibodyPlant is registered as a source of the given
+   `scene_graph`. */
+  void RegisterCollisionObjects(const geometry::SceneGraph<T>& scene_graph);
+
  private:
+  friend class DeformableRigidManagerTest;
+
   /* Implements DiscreteUpdateManager::ExtractModelInfo(). Verifies that
    exactly one DeformableModel is registered in the owning plant and
    sets up FEM solvers for deformable bodies. */
@@ -43,6 +86,12 @@ class DeformableRigidManager final
 
   /* Make the FEM solvers that solve the deformable FEM models. */
   void MakeFemSolvers();
+
+  // TODO(xuchenhan-tri): Remove this temporary geometry solutions when
+  //  SceneGraph manages all deformable geometries.
+  /* Registers the geometries in the DeformableModel in the owning
+   MultibodyPlant at `this` DeformableRigidManager. */
+  void RegisterDeformableGeometries();
 
   void DeclareCacheEntries(MultibodyPlant<T>* plant) final;
 
@@ -99,6 +148,19 @@ class DeformableRigidManager final
         .template Eval<FemStateBase<T>>(context);
   }
 
+  // TODO(xuchenhan-tri): Remove this method when SceneGraph takes control of
+  //  all geometries. SceneGraph should be responsible for obtaining the most
+  //  up-to-date rigid body poses.
+  /* Updates the world poses of all rigid collision geometries registered in
+   `this` DeformableRigidManager. */
+  void UpdateCollisionObjectPoses(const systems::Context<T>& context) const;
+
+  // TODO(xuchenhan-tri): This method (or similar) should belong to SceneGraph
+  //  when SceneGraph takes control of all geometries.
+  /* Updates the vertex positions for all deformable meshes. */
+  void UpdateDeformableVertexPositions(
+      const systems::Context<T>& context) const;
+
   /* The deformable models being solved by `this` manager. */
   const DeformableModel<T>* deformable_model_{nullptr};
   /* Cached FEM state quantities. */
@@ -108,6 +170,11 @@ class DeformableRigidManager final
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
       contact_solver_{nullptr};
+
+  /* Geometries temporarily managed by DeformableRigidManager. In the future,
+   SceneGraph will manage all the geometries. */
+  mutable std::vector<geometry::VolumeMesh<T>> deformable_meshes_{};
+  mutable internal::CollisionObjects<T> collision_objects_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

@@ -16,7 +16,8 @@ namespace fixed_fem {
 template <typename T>
 SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
     const geometry::VolumeMesh<T>& mesh, std::string name,
-    const DeformableBodyConfig<T>& config) {
+    const DeformableBodyConfig<T>& config,
+    geometry::ProximityProperties proximity_props) {
   /* Throw if name is not unique. */
   for (int i = 0; i < num_bodies(); ++i) {
     if (name == names_[i]) {
@@ -36,6 +37,7 @@ SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
                                                    config);
       break;
   }
+  proximity_properties_.emplace_back(std::move(proximity_props));
   return body_index;
 }
 
