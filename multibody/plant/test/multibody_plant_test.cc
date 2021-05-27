@@ -3550,6 +3550,20 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameParameters) {
       CompareMatrices(X_WF_new.GetAsMatrix34(), X_WF_body_new.GetAsMatrix34()));
 }
 
+GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {
+  // case: k1+k2 == 0.0.
+  {
+    const auto [k, d] = internal::CombinePointContactParameters(0., 0., 0., 0.);
+    EXPECT_TRUE(k == 0 && d == 0);
+  }
+  // case: k1+k2 != 0.0.
+  {
+    const auto [k, d] = internal::CombinePointContactParameters(1., 1., 1., 1.);
+    double kEps = std::numeric_limits<double>::epsilon();
+    EXPECT_NEAR(k, 0.5, 4 * kEps);
+    EXPECT_NEAR(d, 1.0, 4 * kEps);
+  }
+}
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

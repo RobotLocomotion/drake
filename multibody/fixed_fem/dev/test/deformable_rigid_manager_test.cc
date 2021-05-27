@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -17,20 +18,24 @@ namespace fixed_fem {
 /* Deformable body parameters. These parameters (with the exception of
  kMassDamping) are dummy in the sense that they do not affect the result of
  the test as long as they are valid. */
-const double kYoungsModulus = 1.23;
-const double kPoissonRatio = 0.456;
-const double kDensity = 0.789;
+constexpr double kYoungsModulus = 1.23;
+constexpr double kPoissonRatio = 0.456;
+constexpr double kDensity = 0.789;
 /* The mass damping coefficient is set to zero so that the free fall test
  (AdvanceOneTimeStep) produces an easy analytical solution. */
-const double kMassDamping = 0.0;
-const double kStiffnessDamping = 0.02;
+constexpr double kMassDamping = 0.0;
+constexpr double kStiffnessDamping = 0.02;
 /* Time step. */
-const double kDt = 0.0123;
-const double kGravity = -9.81;
+constexpr double kDt = 0.0123;
+constexpr double kGravity = -9.81;
 /* Number of vertices in the box mesh (see below). */
 constexpr int kNumVertices = 8;
 constexpr double kBoxLength = 1;
+/* Contact parameters. */
+constexpr double kContactStiffness = 5e4;
+constexpr double kContactDissipation = 5;
 const CoulombFriction kFriction{0.3, 0.2};
+
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::GeometryId;
@@ -81,7 +86,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
    and an arbitrary friction. */
   static ProximityProperties MakeProximityProperties() {
     ProximityProperties proximity_properties;
-    geometry::AddContactMaterial({}, {}, kFriction, &proximity_properties);
+    geometry::AddContactMaterial({}, kContactDissipation, kContactStiffness,
+                                 kFriction, &proximity_properties);
     return proximity_properties;
   }
 
@@ -119,6 +125,22 @@ class DeformableRigidManagerTest : public ::testing::Test {
     return deformable_rigid_manager_->collision_objects_;
   }
 
+  /* Fowards the call to
+   DeformableRigidManager<double>::CalcDeformableRigidContactPair(). */
+  internal::DeformableRigidContactPair<double> CalcDeformableRigidContactPair(
+      GeometryId rigid_id, SoftBodyIndex deformable_id) const {
+    return deformable_rigid_manager_->CalcDeformableRigidContactPair(
+        rigid_id, deformable_id);
+  }
+
+  /* Sets the collision object in `deformable_rigid_manager_` with `id` to the
+   given `pose_in_world`. */
+  void SetCollisionObjectPoseInWorld(GeometryId id,
+                                     math::RigidTransformd pose_in_world) {
+    deformable_rigid_manager_->collision_objects_.set_pose_in_world(
+        id, pose_in_world);
+  }
+
   SceneGraph<double> scene_graph_;
   MultibodyPlant<double> plant_{kDt};
   const DeformableModel<double>* deformable_model_;
@@ -146,8 +168,8 @@ TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
   /* The factor of 0.25 seems strange but is correct. For the default mid-point
    rule used by DynamicElasticityModel,
         x = xₙ + dt ⋅ vₙ + dt² ⋅ (0.25 ⋅ a + 0.25 ⋅ aₙ).
-   In this test case vₙ and aₙ are both 0, so x - xₙ is given by
-   0.25 ⋅ a ⋅ dt². */
+   In this test case vₙ and aₙ are both 0, so x - xₙ is given by 0.25 ⋅ a ⋅ dt².
+  */
   const Vector3<double> expected_displacement(0, 0,
                                               0.25 * kGravity * kDt * kDt);
   const double kTol = 1e-14;
@@ -286,6 +308,7 @@ GTEST_TEST(RigidUpdateTest, ContactSolver) {
   /* Sanity check that the final state is not NaN. */
   EXPECT_FALSE(final_state_with_manager.hasNaN());
 }
+
 /* Verifies that RegisterCollisionGeometry registers the rigid objects from
  MultibodyPlant in DeformableRigidManager as intended. */
 TEST_F(DeformableRigidManagerTest, RegisterCollisionGeometry) {
@@ -345,6 +368,89 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
     EXPECT_TRUE(CompareMatrices(p_WV, deformed_meshes[0].vertex(i).r_MV()));
   }
 }
+
+/* Verifies that the CalcDeformableRigidContactPair() method produces expected
+ results. */
+TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
+  const internal::CollisionObjects<double>& collision_objects =
+      get_collision_objects();
+  const std::vector<GeometryId> rigid_ids = collision_objects.geometry_ids();
+  /* Verifies that there exists a unique rigid collision object. */
+  EXPECT_EQ(rigid_ids.size(), 1);
+  /* Shifts the rigid box to the -y direction so that the contact looks like
+                                    +Z
+                                     |
+                                     |
+               rigid box             |      deformable box
+                     ----------+--+--+-------
+                     |         |  ●  |      |
+                     |         |  |  |      |
+              -Y-----+---------+--+--+------+-------+Y
+                     |         |  |  |      |
+                     |         |  ●  |      |
+                     ----------+--+--+-------
+                                     |
+                                     |
+                                     |
+                                    -Z
+   where the "●"s denote representative contact points. */
+  const auto X_DR = math::RigidTransformd(Vector3d(0, -0.75 * kBoxLength, 0));
+  SetCollisionObjectPoseInWorld(rigid_ids[0], X_DR);
+  /* Calculates the contact pair between the only rigid geometry and the only
+   deformable geometry. */
+  const SoftBodyIndex deformable_id(0);
+  const internal::DeformableRigidContactPair<double> contact_pair =
+      CalcDeformableRigidContactPair(rigid_ids[0], deformable_id);
+  /* Verifies that the geometry ids are as expected. */
+  EXPECT_EQ(contact_pair.rigid_id, rigid_ids[0]);
+  EXPECT_EQ(contact_pair.deformable_id, deformable_id);
+  /* Verifies that the contact parameters are as expected. */
+  auto [expected_stiffness, expected_dissipation] =
+      multibody::internal::CombinePointContactParameters(
+          kContactStiffness, kContactStiffness, kContactDissipation,
+          kContactDissipation);
+  EXPECT_EQ(contact_pair.stiffness, expected_stiffness);
+  EXPECT_EQ(contact_pair.dissipation, expected_dissipation);
+  const CoulombFriction<double> expected_mu =
+      CalcContactFrictionFromSurfaceProperties(kFriction, kFriction);
+  EXPECT_EQ(contact_pair.friction, expected_mu.dynamic_friction());
+
+  /* Verifies that the contact surface is as expected. */
+  const DeformableContactSurface<double> expected_contact_surface =
+      ComputeTetMeshTriMeshContact<double>(
+          deformable_model_->reference_configuration_meshes()[0],
+          collision_objects.mesh(rigid_ids[0]), X_DR);
+  EXPECT_EQ(contact_pair.num_contact_points(),
+            expected_contact_surface.num_polygons());
+  const int num_contacts = expected_contact_surface.num_polygons();
+  for (int i = 0; i < num_contacts; ++i) {
+    const auto& expected_polygon_data =
+        expected_contact_surface.polygon_data(i);
+    const auto& calculated_polygon_data =
+        contact_pair.contact_surface.polygon_data(i);
+    EXPECT_EQ(expected_polygon_data.area, calculated_polygon_data.area);
+    EXPECT_TRUE(CompareMatrices(expected_polygon_data.unit_normal,
+                                calculated_polygon_data.unit_normal));
+    EXPECT_TRUE(CompareMatrices(expected_polygon_data.centroid,
+                                calculated_polygon_data.centroid));
+    EXPECT_TRUE(CompareMatrices(expected_polygon_data.b_centroid,
+                                calculated_polygon_data.b_centroid));
+    EXPECT_EQ(expected_polygon_data.tet_index,
+              calculated_polygon_data.tet_index);
+  }
+
+  /* Verifies the calculated rotation matrices map contact normals from world
+   frame to contact frame ({0,0,1}). */
+  constexpr double kTol = std::numeric_limits<double>::epsilon();
+  EXPECT_EQ(contact_pair.R_CWs.size(), num_contacts);
+  for (int i = 0; i < num_contacts; ++i) {
+    EXPECT_TRUE(CompareMatrices(
+        contact_pair.R_CWs[i] *
+            contact_pair.contact_surface.polygon_data(i).unit_normal,
+        Vector3d(0, 0, 1), kTol));
+  }
+}
+
 }  // namespace
 }  // namespace fixed_fem
 }  // namespace multibody

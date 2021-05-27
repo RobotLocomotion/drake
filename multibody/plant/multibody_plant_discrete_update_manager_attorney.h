@@ -86,6 +86,14 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   collision_geometries(const MultibodyPlant<T>& plant) {
     return plant.collision_geometries_;
   }
+
+  static double default_contact_stiffness(const MultibodyPlant<T>& plant) {
+    return plant.penalty_method_contact_parameters_.geometry_stiffness;
+  }
+
+  static double default_contact_dissipation(const MultibodyPlant<T>& plant) {
+    return plant.penalty_method_contact_parameters_.dissipation;
+  }
 };
 }  // namespace internal
 }  // namespace multibody
