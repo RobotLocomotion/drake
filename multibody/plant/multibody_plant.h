@@ -4917,6 +4917,25 @@ struct AddMultibodyPlantSceneGraphResult final {
   geometry::SceneGraph<T>* scene_graph_ptr{};
 };
 
+namespace internal {
+// Combines the contact stiffness and dissipation parameters from two bodies in
+// contact to create the contact stiffness and dissipation to be used for the
+// contact pair.
+// @tparam_default_scalar
+template <typename T>
+std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
+                                              const T& d1, const T& d2) {
+  // Simple utility to detect 0 / 0. As it is used in this method, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](const T& num, const T& denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
+  return std::pair(
+      safe_divide(k1 * k2, k1 + k2),                                   // k
+      safe_divide(k2, k1 + k2) * d1 + safe_divide(k1, k1 + k2) * d2);  // d
+}
+}  // namespace internal
+
 #ifndef DRAKE_DOXYGEN_CXX
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 // See the .cc file for an explanation why we specialize these methods.
