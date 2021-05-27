@@ -1220,21 +1220,6 @@ void MultibodyPlant<T>::AppendContactResultsContinuousHydroelastic(
   }
 }
 
-namespace {
-template <typename T>
-std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
-                                              const T& d1, const T& d2) {
-  // Simple utility to detect 0 / 0. As it is used in this method, denom
-  // can only be zero if num is also zero, so we'll simply return zero.
-  auto safe_divide = [](const T& num, const T& denom) {
-    return denom == 0.0 ? 0.0 : num / denom;
-  };
-  return std::pair(
-      safe_divide(k1 * k2, k1 + k2),                                   // k
-      safe_divide(k2, k1 + k2) * d1 + safe_divide(k1, k1 + k2) * d2);  // d
-}
-}  // namespace
-
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const systems::Context<T>& context,
@@ -1298,7 +1283,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     // Magnitude of the normal force on body A at contact point C.
     const auto [kA, dA] = GetPointContactParameters(geometryA_id, inspector);
     const auto [kB, dB] = GetPointContactParameters(geometryB_id, inspector);
-    const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
+    const auto [k, d] = internal::CombinePointContactParameters(kA, kB, dA, dB);
     const T fn_AC = k * x * (1.0 + d * vn);
 
     // Acquire friction coefficients and combine them.
@@ -1929,7 +1914,8 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
       for (const PenetrationAsPointPair<T>& pair : point_pairs) {
         const auto [kA, dA] = GetPointContactParameters(pair.id_A, inspector);
         const auto [kB, dB] = GetPointContactParameters(pair.id_B, inspector);
-        const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
+        const auto [k, d] =
+            internal::CombinePointContactParameters(kA, kB, dA, dB);
         const T phi0 = -pair.depth;
         const T fn0 = k * pair.depth;
         DRAKE_DEMAND(fn0 >= 0);  // it should be since depth >= 0.
