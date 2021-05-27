@@ -540,6 +540,9 @@ class TestGeneral(unittest.TestCase):
         # confirms the API works.
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
 
+        builder_ad = DiagramBuilder_[AutoDiffXd]()
+        AddRandomInputs(sampling_interval_sec=0.01, builder=builder_ad)
+
     def test_constant_vector_source(self):
         source = ConstantVectorSource(source_value=[1., 2.])
         context = source.CreateDefaultContext()
