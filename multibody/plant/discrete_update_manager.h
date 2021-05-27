@@ -2,7 +2,9 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
+#include "drake/geometry/geometry_ids.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/framework/context.h"
@@ -105,6 +107,8 @@ class DiscreteUpdateManager {
 
   /* Exposed MultibodyPlant private/protected method. */
   const MultibodyTree<T>& internal_tree() const;
+  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
+      const;
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to
    provide an implementation. The output parameters are guaranteed to be
