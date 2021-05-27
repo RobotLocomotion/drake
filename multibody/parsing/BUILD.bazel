@@ -129,6 +129,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":detail_scene_graph",
+        ":scoped_names",
         "//multibody/plant",
         "@sdformat",
     ],
