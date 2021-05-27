@@ -71,6 +71,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       package_map, plant, scene_graph);
 }
 
+const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
+                                         const std::string& name) {
+  const auto model_instance = plant.GetModelInstanceByName(name);
+  return plant.GetFrameByName("__model__", model_instance);
+}
+
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
@@ -156,11 +162,6 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   EXPECT_EQ(plant.GetModelInstanceByName("instance1"), instance1);
   EXPECT_EQ(plant.GetModelInstanceByName("acrobot"), acrobot1);
   EXPECT_EQ(plant.GetModelInstanceByName("acrobot2"), acrobot2);
-
-  // Check that the model name override is reflected in the model frame.
-  EXPECT_TRUE(plant.HasFrameNamed("instance1"));
-  EXPECT_TRUE(plant.HasFrameNamed("acrobot"));
-  EXPECT_TRUE(plant.HasFrameNamed("acrobot2"));
 
   // Check a couple links from the first model without specifying the model
   // instance.
@@ -504,7 +505,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
     const RigidTransformd X_WA_expected(
         RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
 
-    const auto &frame_A = pair.plant->GetFrameByName("a");
+    const auto &frame_A = GetModelFrameByName(*pair.plant, "a");
     const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(
           X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
@@ -530,7 +531,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
     const RigidTransformd X_WA_expected(
         RollPitchYawd(0.0, 0.0, 0.3), Vector3d(1, 2, 3));
 
-    const auto &frame_A = pair.plant->GetFrameByName("a");
+    const auto &frame_A = GetModelFrameByName(*pair.plant, "a");
     const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(
           X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
@@ -540,7 +541,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
     const RigidTransformd X_WB_expected(
         RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
 
-    const auto &frame_B = pair.plant->GetFrameByName("b");
+    const auto &frame_B = GetModelFrameByName(*pair.plant, "a::b");
     const RigidTransformd X_WB = frame_B.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(
           X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
@@ -579,7 +580,7 @@ GTEST_TEST(SdfParser, StaticFrameOnlyModelsSupported) {
               pair.plant->world_body().node_index());
   };
 
-  test_frame("a", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 0, 0)});
+  test_frame("__model__", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 0, 0)});
   test_frame("b", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 2, 0)});
   test_frame("c", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 2, 3)});
   test_frame("d", {RollPitchYawd(0.0, 0.0, 0.3), Vector3d(1, 2, 3)});
@@ -1767,10 +1768,10 @@ GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
   ASSERT_NE(nullptr, pair.plant);
   pair.plant->Finalize();
 
-  EXPECT_EQ(pair.plant->GetFrameByName("a").body().index(),
+  EXPECT_EQ(GetModelFrameByName(*pair.plant, "a").body().index(),
             pair.plant->GetBodyByName("e").index());
 
-  EXPECT_EQ(pair.plant->GetFrameByName("c").body().index(),
+  EXPECT_EQ(GetModelFrameByName(*pair.plant, "a::c").body().index(),
             pair.plant->GetBodyByName("f").index());
 }
 }  // namespace

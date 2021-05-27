@@ -131,6 +131,7 @@ drake_cc_library(
         ":detail_scene_graph",
         "//multibody/plant",
         "@sdformat",
+        ":scoped_names",
     ],
 )
 
