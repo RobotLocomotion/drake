@@ -22,6 +22,13 @@ systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
       plant, std::move(description), std::move(alloc_function),
       std::move(calc_function), std::move(prerequisites_of_calc));
 }
+
+template <typename T>
+const std::vector<std::vector<geometry::GeometryId>>&
+DiscreteUpdateManager<T>::collision_geometries() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
+      plant());
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

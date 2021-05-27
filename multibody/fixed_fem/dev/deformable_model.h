@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/multibody/fixed_fem/dev/deformable_body_config.h"
 #include "drake/multibody/fixed_fem/dev/fem_model_base.h"
@@ -59,14 +60,18 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   // TODO(xuchenhan-tri): Identify deformable bodies with actual identifiers,
   //  which would make deleting deformable bodies easier to track in the future.
   /** Adds a deformable body modeled with linear simplex element, linear
-   quadrature rule and the physical properties specified by the given `config`.
-   Returns the index of the newly added deformable body.
+   quadrature rule, the physical properties specified by the given `config`,
+   and proximity properties specified by the given `proximity_props`. Returns
+   the index of the newly added deformable body.
    @pre config.IsValid() == true.
+   @pre `proximity_props` includes the (`material`, `coulomb_friction`) property
+   of type CoulombFriction<double>.
    @throw std::exception if `name` is not distinct from names of all previously
    registered bodies. */
-  SoftBodyIndex RegisterDeformableBody(const geometry::VolumeMesh<T>& mesh,
-                                       std::string name,
-                                       const DeformableBodyConfig<T>& config);
+  SoftBodyIndex RegisterDeformableBody(
+      const geometry::VolumeMesh<T>& mesh, std::string name,
+      const DeformableBodyConfig<T>& config,
+      geometry::ProximityProperties proximity_props);
 
   /** Sets zero Dirichlet boundary conditions for a given body. All vertices in
    the mesh of corresponding to the deformable body with `body_id` within
@@ -102,6 +107,13 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   const std::vector<geometry::VolumeMesh<T>>& reference_configuration_meshes()
       const {
     return reference_configuration_meshes_;
+  }
+
+  /* Returns the proximity properties of the registered deformable bodies in the
+   same order as they are registered. */
+  const std::vector<geometry::ProximityProperties>& proximity_properties()
+      const {
+    return proximity_properties_;
   }
 
   /** Returns the names of all the registered deformable bodies in the same
@@ -146,6 +158,8 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    reference_configuration_meshes_, but is stored in a more convenient format.
   */
   std::vector<VectorX<T>> model_discrete_states_;
+  /* Proximity properties for all registered deformable bodies. */
+  std::vector<geometry::ProximityProperties> proximity_properties_{};
   /* Names of all registered deformable bodies. */
   std::vector<std::string> names_{};
   /* OutputPorts. */

@@ -51,11 +51,21 @@ class DeformableModelTest : public ::testing::Test {
     return config;
   }
 
+  /* Creates a dummy proximity property. */
+  static geometry::ProximityProperties MakeProximityProps() {
+    geometry::ProximityProperties dummy_proximity_props;
+    geometry::AddContactMaterial({}, {}, {},
+                                 multibody::CoulombFriction<double>(0, 0),
+                                 &dummy_proximity_props);
+    return dummy_proximity_props;
+  }
+
   /* Add a dummy box shaped deformable body with the given "name". */
   int AddDeformableBox(DeformableModel<double>* deformable_model,
                        std::string name) {
     return deformable_model_->RegisterDeformableBody(
-        MakeBoxTetMesh(), std::move(name), MakeDeformableConfig());
+        MakeBoxTetMesh(), std::move(name), MakeDeformableConfig(),
+        MakeProximityProps());
   }
 
   MultibodyPlant<double> plant_{kDt};
