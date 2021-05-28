@@ -1,0 +1,153 @@
+# For additional examples, see:
+# - https://gitlab.kitware.com/autopybind11/autopybind11
+# - https://gitlab.kitware.com/autopybind11/autopybind11/-/tree/master/Tests
+#   (look for wrapper_input.yml files)
+---
+files:
+  customization:
+    skiplist:
+      member_variables:
+        - DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE
+  "drake/common/random.h":
+    namespaces:
+      drake:
+        classes:
+          RandomGenerator: {}
+  "drake/common/constants.h":
+    namespaces:
+      drake:
+        enums:
+          ToleranceType: {}
+  "drake/math/autodiff.h":
+    namespaces:
+      drake:
+        namespaces:
+          math:
+            classes:
+              AutoDiffXd: {}
+  "drake/lcm/drake_lcm.h":
+    namespaces:
+      drake:
+        namespaces:
+          lcm:
+            classes:
+              DrakeLcm: {}
+  "drake/lcm/drake_mock_lcm.h":
+    namespaces:
+      drake:
+        namespaces:
+          lcm:
+            classes:
+              DrakeMockLcm: {}
+  "drake/math/rotation_matrix.h":
+    namespaces:
+      drake:
+        namespaces:
+          math:
+            classes:
+              RotationMatrix:
+                inst: ["double", "drake::AutoDiffXd"]
+              RollPitchYaw:
+                inst: ["double", "drake::AutoDiffXd"]
+  "drake/math/barycentric.h":
+    namespaces:
+      drake:
+        namespaces:
+          math:
+            classes:
+              BarycentricMesh:
+                inst: ["double"]
+  "drake/perception/point_cloud_flags.h":
+    namespaces:
+      drake:
+        namespaces:
+          perception:
+            namespaces:
+              pc_flags:
+                enums:
+                  BaseField:
+                classes:
+                  Fields: {}
+  "drake/perception/point_cloud.h":
+    namespaces:
+      drake:
+        namespaces:
+          perception:
+            classes:
+              PointCloud: {}
+  "drake/perception/depth_image_to_point_cloud.h":
+    namespaces:
+      drake:
+        namespaces:
+          perception:
+            classes:
+              DepthImageToPointCloud: {}
+  "drake/common/symbolic.h":
+    namespaces:
+        drake:
+          namespaces:
+            symbolic:
+              classes:
+                Variable: {}
+                Monomial: {}
+                Expression: {}
+                Environment: {}
+                Formula: {}
+  "drake/systems/framework/leaf_system.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              LeafSystem:
+                inst: ["double", "drake::AutoDiffXd", "float"]
+                cust_name: ["LeafSystem"]
+                skiplist:
+                  member_functions:
+                    - DeclareAbstractState
+                    - DoCalcWitnessValue
+  "drake/systems/framework/system.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              System:
+                inst: [double, "drake::AutoDiffXd"]
+                skiplist:
+                  member_functions:
+                    - AddConstraint
+  "drake/systems/framework/system_base.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              SystemBase:
+                skiplist:
+                  member_functions:
+                    - AddInputPort
+                    - AddOutputPort
+  "drake/systems/framework/framework_common.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            namespaces:
+              internal:
+                classes:
+                  SystemMessageInterface: {}
+  "drake/geometry/render/render_engine.h":
+    namespaces:
+      drake:
+        namespaces:
+          geometry:
+            namespaces:
+              render:
+                classes:
+                  ClippingRange: {}
+                  RenderCameraCore: {}
+                  ColorRenderCamera: {}
+                  DepthRange: {}
+                  DepthRenderCamera: {}
+                  RenderEngine: {}

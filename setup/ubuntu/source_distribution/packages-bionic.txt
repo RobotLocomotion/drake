@@ -36,5 +36,7 @@ patch
 patchelf
 pkg-config
 python3-all-dev
+python3-configargparse
 python3-semantic-version
+python3-toposort
 zlib1g-dev
