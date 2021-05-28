@@ -1,0 +1,10 @@
+# -*- mode: python; -*-
+# vi: set ft=python:
+
+licenses(["notice"])  # Apache-2.0
+
+sh_binary(
+    name = "castxml_bin",
+    srcs = ["castxml/data/bin/castxml"],
+    visibility = ["//visibility:public"],
+)
