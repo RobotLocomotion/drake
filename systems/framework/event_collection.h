@@ -134,7 +134,15 @@ class EventCollection {
    * does not permit adding new events. Derived classes must implement this
    * method to add the specified event to the homogeneous event collection.
    */
+  DRAKE_DEPRECATED("2021-09-01", "Use AddEvent instead.")
   virtual void add_event(std::unique_ptr<EventType> event) = 0;
+
+  /**
+   * Adds an event to this collection, or throws if the concrete collection
+   * does not permit adding new events. Derived classes must implement this
+   * method to add the specified event to the homogeneous event collection.
+   */
+  virtual void AddEvent(EventType event) = 0;
 
  protected:
   /**
@@ -182,8 +190,15 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   /**
    * Throws if called, because no events should be added at the Diagram level.
    */
-  void add_event(std::unique_ptr<EventType>) override {
+  void add_event(std::unique_ptr<EventType>) final {
     throw std::logic_error("DiagramEventCollection::add_event is not allowed");
+  }
+
+  /**
+   * Throws if called, because no events should be added at the Diagram level.
+   */
+  void AddEvent(EventType) final {
+    throw std::logic_error("DiagramEventCollection::AddEvent is not allowed");
   }
 
   /**
@@ -245,7 +260,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
   /**
    * Clears all subevent collections.
    */
-  void Clear() override {
+  void Clear() final {
     for (EventCollection<EventType>* subevent : subevent_collection_) {
       subevent->Clear();
     }
@@ -255,7 +270,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * Returns `true` if and only if any of the subevent collections have any
    * events.
    */
-  bool HasEvents() const override {
+  bool HasEvents() const final {
     for (const EventCollection<EventType>* subevent : subevent_collection_) {
       if (subevent->HasEvents()) return true;
     }
@@ -274,7 +289,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * DiagramEventCollection.
    */
   void DoAddToEnd(
-      const EventCollection<EventType>& other_collection) override {
+      const EventCollection<EventType>& other_collection) final {
     const DiagramEventCollection<EventType>& other =
         dynamic_cast<const DiagramEventCollection<EventType>&>(
             other_collection);
@@ -301,12 +316,21 @@ class DiagramEventCollection final : public EventCollection<EventType> {
 template <typename EventType>
 class LeafEventCollection final : public EventCollection<EventType> {
  public:
+  /**
+   * The default capacity of event storage allocation, expressed as a number of
+   * events. Chosen to be large enough that most systems won't need to allocate
+   * during simulation advance steps.
+   */
+  static constexpr int kDefaultCapacity = 32;
+
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafEventCollection)
 
   /**
    * Constructor.
    */
-  LeafEventCollection() = default;
+  LeafEventCollection() {
+    Reserve(kDefaultCapacity);
+  }
 
   /**
    * Static method that generates a LeafEventCollection with exactly
@@ -316,9 +340,18 @@ class LeafEventCollection final : public EventCollection<EventType> {
   static std::unique_ptr<LeafEventCollection<EventType>>
   MakeForcedEventCollection() {
     auto ret = std::make_unique<LeafEventCollection<EventType>>();
-    auto event = std::make_unique<EventType>(EventType::TriggerType::kForced);
-    ret->add_event(std::move(event));
+    EventType event(EventType::TriggerType::kForced);
+    ret->AddEvent(event);
     return ret;
+  }
+
+  /**
+   * Reserve storage for at least `capacity` events. At construction, there
+   * will be at least `kDefaultCapacity`; use this method to reserve more.
+   */
+  void Reserve(int capacity) {
+    events_storage_.reserve(capacity);
+    events_.reserve(capacity);
   }
 
   /**
@@ -326,34 +359,53 @@ class LeafEventCollection final : public EventCollection<EventType> {
    * events.
    */
   // TODO(siyuan): provide an iterator instead.
-  const std::vector<const EventType*>& get_events() const { return events_; }
+  const std::vector<const EventType*>& get_events() const {
+    return events_;
+  }
 
   /**
    * Add `event` to the existing collection. Ownership of `event` is
    * transferred. Aborts if event is null.
    */
-  void add_event(std::unique_ptr<EventType> event) override {
+  void add_event(std::unique_ptr<EventType> event) final {
     DRAKE_DEMAND(event != nullptr);
-    owned_events_.push_back(std::move(event));
-    events_.push_back(owned_events_.back().get());
+    AddEvent(std::move(*event));
+  }
+
+  /**
+   * Add `event` to the existing collection.
+   */
+  void AddEvent(EventType event) final {
+    events_storage_.push_back(std::move(event));
+    // Did adding an event force reallocation of storage?
+    if (events_.empty() || &events_storage_[0] == events_[0]) {
+      // No reallocation; just add the one new pointer.
+      events_.push_back(&events_storage_.back());
+    } else {
+      // Storage was reallocated; recalculate pointers.
+      events_.clear();
+      for (const auto& entry : events_storage_) {
+        events_.push_back(&entry);
+      }
+    }
   }
 
   /**
    * Returns `true` if and only if this collection is nonempty.
    */
-  bool HasEvents() const override { return !events_.empty(); }
+  bool HasEvents() const final { return !events_storage_.empty(); }
 
   /**
    * Removes all events from this collection.
    */
-  void Clear() override {
-    owned_events_.clear();
+  void Clear() final {
+    events_storage_.clear();
     events_.clear();
   }
 
  protected:
   /**
-   * All events in `other_collection` are concatanated to this.
+   * All events in `other_collection` are concatenated to this.
    *
    * Here is an example. Suppose this collection stores the following events:
    * <pre>
@@ -371,21 +423,27 @@ class LeafEventCollection final : public EventCollection<EventType> {
    * @throws std::bad_cast if `other_collection` is not an instance of
    * LeafEventCollection.
    */
-  void DoAddToEnd(const EventCollection<EventType>& other_collection) override {
+  void DoAddToEnd(const EventCollection<EventType>& other_collection) final {
     const LeafEventCollection<EventType>& other =
         dynamic_cast<const LeafEventCollection<EventType>&>(other_collection);
 
     const std::vector<const EventType*>& other_events = other.get_events();
     for (const EventType* other_event : other_events) {
-      this->add_event(static_pointer_cast<EventType>(other_event->Clone()));
+      this->AddEvent(*other_event);
     }
   }
 
  private:
-  // Owned event unique pointers.
-  std::vector<std::unique_ptr<EventType>> owned_events_;
+  // Note: the implementation is careful to pre-allocate capacity for these
+  // vectors, and never to reduce their size, in order avoid allocations at
+  // simulation run time. If the collection grows beyond kDefaultCapacity,
+  // there will be allocations. These can be shifted to initialization time by
+  // calling Reserve() with sufficient capacity.
 
-  // Points to the corresponding unique pointers. This is primarily used for
+  // The actual events.
+  std::vector<EventType> events_storage_;
+
+  // Pointers to the corresponding storage entries. Used for iteration via
   // get_events().
   std::vector<const EventType*> events_;
 };
