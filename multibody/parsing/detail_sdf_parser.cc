@@ -446,7 +446,8 @@ std::string LoadSdf(
   data_source.DemandExactlyOne();
 
   std::string root_dir;
-  sdf::ParserConfig parser_config = sdf::ParserConfig::GlobalConfig();
+  // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
+  sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
   if (data_source.file_name) {
