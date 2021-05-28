@@ -739,7 +739,8 @@ SystemConstraintIndex LeafSystem<T>::DeclareInequalityConstraint(
     SystemConstraintBounds bounds,
     std::string description) {
   return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-      this, std::move(calc), std::move(bounds), std::move(description)));
+      this, this->get_system_id(), std::move(calc), std::move(bounds),
+      std::move(description)));
 }
 
 template <typename T>

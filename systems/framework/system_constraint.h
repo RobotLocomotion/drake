@@ -15,6 +15,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/framework_common.h"
 
 namespace drake {
 namespace systems {
@@ -152,9 +153,10 @@ class SystemConstraint final {
   ///
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(const System<T>* system,
+                   internal::SystemId id,
                    std::string description)
     : SystemConstraint<T>(
-        system, &NoopSystemConstraintCalc, SystemConstraintBounds{},
+        system, id, &NoopSystemConstraintCalc, SystemConstraintBounds{},
         std::move(description)) {}
 
   /// (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
@@ -166,10 +168,12 @@ class SystemConstraint final {
   ///
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(const System<T>* system,
+                   internal::SystemId id,
                    ContextConstraintCalc<T> calc_function,
                    SystemConstraintBounds bounds,
                    std::string description)
       : system_(system),
+        system_id_(id),
         system_calc_function_{},
         context_calc_function_(std::move(calc_function)),
         bounds_(std::move(bounds)),
@@ -186,10 +190,12 @@ class SystemConstraint final {
   ///
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(const System<T>* system,
+                   internal::SystemId id,
                    SystemConstraintCalc<T> calc_function,
                    SystemConstraintBounds bounds,
                    std::string description)
       : system_(system),
+        system_id_(id),
         system_calc_function_(std::move(calc_function)),
         context_calc_function_{},
         bounds_(std::move(bounds)),
@@ -201,6 +207,7 @@ class SystemConstraint final {
   /// writing the output to @p value.  @p value will be (non-conservatively)
   /// resized to match the constraint function output.
   void Calc(const Context<T>& context, VectorX<T>* value) const {
+    DRAKE_DEMAND(context.get_system_id() == system_id_);
     value->resize(size());
     if (context_calc_function_) {
       context_calc_function_(context, value);
@@ -213,6 +220,7 @@ class SystemConstraint final {
   /// Evaluates the function pointer, and check if all of the outputs
   /// are within the desired bounds.
   boolean<T> CheckSatisfied(const Context<T>& context, double tol) const {
+    DRAKE_DEMAND(context.get_system_id() == system_id_);
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(size());
     Calc(context, &value);
@@ -260,6 +268,7 @@ class SystemConstraint final {
       const System<T>&, const Context<T>&, VectorX<T>*) {}
 
   const System<T>* const system_;
+  internal::SystemId system_id_;
   const SystemConstraintCalc<T> system_calc_function_;
   const ContextConstraintCalc<T> context_calc_function_;
   const SystemConstraintBounds bounds_;

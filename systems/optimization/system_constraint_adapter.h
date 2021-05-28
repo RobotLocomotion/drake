@@ -47,7 +47,8 @@ class SystemConstraintAdapter {
       UpdateContextFromDecisionVariablesGenericFunction updater,
       int x_size) const {
     return std::make_shared<SystemConstraintWrapper>(
-        system_double_, system_autodiff_.get(), index, context,
+        system_double_, system_autodiff_.get(),
+        index, context,
         std::forward<UpdateContextFromDecisionVariablesFunction<double>>(
             updater),
         std::forward<UpdateContextFromDecisionVariablesFunction<AutoDiffXd>>(

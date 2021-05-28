@@ -239,10 +239,11 @@ SystemConstraintIndex System<T>::AddExternalConstraint(
   const auto& calc = constraint.get_calc<T>();
   if (calc) {
     constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
-        this, calc, constraint.bounds(), constraint.description()));
+        this, this->get_system_id(), calc, constraint.bounds(),
+        constraint.description()));
   } else {
     constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
-        this, fmt::format(
+        this, this->get_system_id(), fmt::format(
             "{} (disabled for this scalar type)",
             constraint.description())));
   }

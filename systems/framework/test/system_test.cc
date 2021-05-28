@@ -478,7 +478,8 @@ TEST_F(SystemTest, SystemConstraintTest) {
   const double kInf = std::numeric_limits<double>::infinity();
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-          &system_, calc, SystemConstraintBounds(Vector1d(0), std::nullopt),
+          &system_, context_->get_system_id(), calc,
+          SystemConstraintBounds(Vector1d(0), std::nullopt),
           "test"));
   EXPECT_EQ(test_constraint, 0);
 
@@ -493,7 +494,8 @@ TEST_F(SystemTest, SystemConstraintTest) {
     (*value)[0] = -1.0;
   };
   system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-      &system_, calc_false, SystemConstraintBounds(Vector1d(0), Vector1d(kInf)),
+      &system_, context_->get_system_id(), calc_false,
+      SystemConstraintBounds(Vector1d(0), Vector1d(kInf)),
       "bad constraint"));
   EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
 }

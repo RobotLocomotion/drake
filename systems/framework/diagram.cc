@@ -1440,7 +1440,7 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
             c->Calc(this->GetSubsystemContext(*sys, context), value);
           };
       this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-          this, diagram_calc, c->bounds(),
+          this, this->get_system_id(), diagram_calc, c->bounds(),
           sys->get_name() + ":" + c->description()));
     }
   }

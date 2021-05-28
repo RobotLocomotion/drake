@@ -105,8 +105,8 @@ GTEST_TEST(SystemConstraintTest, Basic) {
 
   // Test equality constraint.
   SystemConstraint<double> equality_constraint(
-      &system, calc, SystemConstraintBounds::Equality(1),
-      "equality constraint");
+      &system, context->get_system_id(), calc,
+      SystemConstraintBounds::Equality(1), "equality constraint");
   context->get_mutable_continuous_state_vector()[1] = 5.0;
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 5.0);
@@ -124,7 +124,8 @@ GTEST_TEST(SystemConstraintTest, Basic) {
 
   // Test inequality constraint.
   SystemConstraint<double> inequality_constraint(
-      &system, calc2, { Eigen::Vector2d::Ones(), Eigen::Vector2d(4, 6) },
+      &system, context->get_system_id(), calc2,
+      { Eigen::Vector2d::Ones(), Eigen::Vector2d(4, 6) },
       "inequality constraint");
   EXPECT_TRUE(CompareMatrices(inequality_constraint.lower_bound(),
                               Eigen::Vector2d::Ones()));
