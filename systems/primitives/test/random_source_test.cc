@@ -9,6 +9,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/signal_logger.h"
 
@@ -23,7 +24,7 @@ namespace {
 void CheckStatistics(
     const std::function<double(double)>& cumulative_distribution,
     double min_value, double max_value, double h, double fudge_factor,
-    std::unique_ptr<RandomSource> random_source_system) {
+    std::unique_ptr<RandomSourced> random_source_system) {
   DiagramBuilder<double> builder;
 
   auto source = builder.AddSystem(std::move(random_source_system));
@@ -74,8 +75,8 @@ void CheckStatistics(
 }
 
 GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
-  auto random_source = std::make_unique<RandomSource>(
-      RandomDistribution::kUniform, 2, 0.0025);
+  auto random_source =
+      std::make_unique<RandomSourced>(RandomDistribution::kUniform, 2, 0.0025);
   EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kUniform);
   EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
@@ -90,9 +91,33 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
                   std::move(random_source));
 }
 
+GTEST_TEST(RandomSourceTest, ToAutoDiff) {
+  auto random_source = std::make_unique<internal::RandomSourceT<double>>(
+      RandomDistribution::kUniform, 2, 0.0025);
+  EXPECT_TRUE(is_autodiffxd_convertible(*random_source));
+}
+
+GTEST_TEST(RandomSourceTest, UniformWhiteNoiseAutoDiff) {
+  auto random_source = std::make_unique<internal::RandomSourceT<AutoDiffXd>>(
+      RandomDistribution::kUniform, 2, 0.0025);
+  EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kUniform);
+  EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
+
+  // Now take a single sample from this source. Make sure the scalar type of the
+  // sample is AutoDiffXd, and the gradient is empty.
+  auto context = random_source->CreateDefaultContext();
+  auto sample = random_source->get_output_port().Eval(*context);
+  static_assert(std::is_same<decltype(sample)::Scalar, AutoDiffXd>::value,
+                "The sample scalar type should be AutoDiffXd");
+  EXPECT_EQ(sample.rows(), 2);
+  // The derivatives are empty.
+  EXPECT_EQ(sample(0).derivatives().rows(), 0);
+  EXPECT_EQ(sample(1).derivatives().rows(), 0);
+}
+
 GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
-  auto random_source = std::make_unique<RandomSource>(
-      RandomDistribution::kGaussian, 2, 0.0025);
+  auto random_source =
+      std::make_unique<RandomSourced>(RandomDistribution::kGaussian, 2, 0.0025);
   EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kGaussian);
   EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
@@ -108,7 +133,7 @@ GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
 }
 
 GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
-  auto random_source = std::make_unique<RandomSource>(
+  auto random_source = std::make_unique<RandomSourced>(
       RandomDistribution::kExponential, 2, 0.0025);
   EXPECT_EQ(random_source->get_distribution(),
             RandomDistribution::kExponential);
@@ -126,10 +151,11 @@ GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
                   std::move(random_source));
 }
 
-class TestSystem : public LeafSystem<double> {
+template <typename T>
+class TestSystem : public LeafSystem<T> {
  public:
   // Make methods available.
-  using LeafSystem::DeclareInputPort;
+  using LeafSystem<T>::DeclareInputPort;
 };
 
 //      +-------------------------+
@@ -151,16 +177,18 @@ class TestSystem : public LeafSystem<double> {
 //      | +--------+              |
 //      |                         |
 //      +-------------------------+
-GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
-  DiagramBuilder<double> builder;
 
-  auto* sys1 = builder.AddSystem<TestSystem>();
+template <typename T>
+void AddToDiagramBuilderTest() {
+  DiagramBuilder<T> builder;
+
+  auto* sys1 = builder.template AddSystem<TestSystem<T>>();
   sys1->DeclareInputPort("uniform", kVectorValued, 3,
                          RandomDistribution::kUniform);
   sys1->DeclareInputPort("exponential", kVectorValued, 2,
                          RandomDistribution::kExponential);
 
-  auto* sys2 = builder.AddSystem<TestSystem>();
+  auto* sys2 = builder.template AddSystem<TestSystem<T>>();
   sys2->DeclareInputPort("gaussian", kVectorValued, 5,
                          RandomDistribution::kGaussian);
   sys2->DeclareInputPort("exponential", kVectorValued, 2,
@@ -173,7 +201,7 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
 
   // Connect input 2 to a different block.
   const auto* constant_input =
-      builder.AddSystem<ConstantVectorSource<double>>(14.0);
+      builder.template AddSystem<ConstantVectorSource<T>>(T(14.0));
   builder.Connect(constant_input->get_output_port(), sys2->get_input_port(2));
 
   EXPECT_EQ(AddRandomInputs(1e-3, &builder), 3);
@@ -200,7 +228,12 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
   // Check that the previously connected input remained connected.
   EXPECT_EQ(sys2->get_input_port(2).Eval(
                 diagram->GetSubsystemContext(*sys2, *context))[0],
-            14.0);
+            T(14.0));
+}
+
+GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
+  AddToDiagramBuilderTest<double>();
+  AddToDiagramBuilderTest<AutoDiffXd>();
 }
 
 GTEST_TEST(RandomSourceTest, CorrelationTest) {
@@ -210,11 +243,11 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
   DiagramBuilder<double> builder;
   const int kSize = 1;
   const double kSampleTime = 0.0025;
-  const auto* random1 = builder.AddSystem<RandomSource>(
+  const auto* random1 = builder.AddSystem<RandomSourced>(
       RandomDistribution::kGaussian, kSize, kSampleTime);
   const auto* log1 = LogOutput(random1->get_output_port(0), &builder);
 
-  const auto* random2 = builder.AddSystem<RandomSource>(
+  const auto* random2 = builder.AddSystem<RandomSourced>(
       RandomDistribution::kGaussian, kSize, kSampleTime);
   const auto* log2 = LogOutput(random2->get_output_port(0), &builder);
 
@@ -241,14 +274,14 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
 
 // Check the invariants of the seed lifecycle.
 GTEST_TEST(RandomSourceTest, SeedTest) {
-  RandomSource dut(RandomDistribution::kUniform, 1, 0.0025);
+  RandomSourced dut(RandomDistribution::kUniform, 1, 0.0025);
   const auto& port = dut.get_output_port(0);
 
   // The source does not have a fixed seed by default.
   EXPECT_EQ(dut.get_fixed_seed(), std::nullopt);
 
   // A given instance of a RandomSource always defaults to the same seed.
-  using Seed = RandomSource::Seed;
+  using Seed = RandomSourced::Seed;
   const Seed default_seed = dut.get_seed(*dut.CreateDefaultContext());
   EXPECT_EQ(dut.get_seed(*dut.CreateDefaultContext()), default_seed);
   EXPECT_EQ(dut.get_seed(*dut.CreateDefaultContext()), default_seed);
@@ -291,7 +324,7 @@ GTEST_TEST(RandomSourceTest, SeedTest) {
   EXPECT_EQ(new2b.output, new2.output);
 
   // Now let's spin up a different RandomSource.
-  RandomSource other(dut.get_distribution(), 1, 0.0025);
+  RandomSourced other(dut.get_distribution(), 1, 0.0025);
   const auto& other_port = other.get_output_port(0);
 
   // The output defaults to something fresh.
@@ -327,7 +360,7 @@ GTEST_TEST(RandomSourceTest, SeedTest) {
 // Make sure that calling SetRandomContext changes the output, and
 // SetDefaultContext returns it to the original (default) output.
 GTEST_TEST(RandomSourceTest, SetRandomContextTest) {
-  RandomSource random_source(RandomDistribution::kUniform, 2, 0.0025);
+  RandomSourced random_source(RandomDistribution::kUniform, 2, 0.0025);
 
   auto context = random_source.CreateDefaultContext();
   const Eigen::Vector2d default_values =

@@ -401,11 +401,14 @@ PYBIND11_MODULE(primitives, m) {
           &BarycentricMeshSystem<double>::get_output_values,
           doc.BarycentricMeshSystem.get_output_values.doc);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   py::class_<RandomSource, LeafSystem<double>>(
-      m, "RandomSource", doc.RandomSource.doc)
+      m, "RandomSource", doc.RandomSourced.doc)
       .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
           py::arg("num_outputs"), py::arg("sampling_interval_sec"),
           doc.RandomSource.ctor.doc);
+#pragma GCC diagnostic pop
 
   py::class_<TrajectorySource<double>, LeafSystem<double>>(
       m, "TrajectorySource", doc.TrajectorySource.doc)
@@ -414,8 +417,12 @@ PYBIND11_MODULE(primitives, m) {
           py::arg("zero_derivatives_beyond_limits") = true,
           doc.TrajectorySource.ctor.doc);
 
-  m.def("AddRandomInputs", &AddRandomInputs, py::arg("sampling_interval_sec"),
-      py::arg("builder"), doc.AddRandomInputs.doc);
+  m.def("AddRandomInputs", &AddRandomInputs<double>,
+       py::arg("sampling_interval_sec"), py::arg("builder"),
+       doc.AddRandomInputs.doc)
+      .def("AddRandomInputs", &AddRandomInputs<AutoDiffXd>,
+          py::arg("sampling_interval_sec"), py::arg("builder"),
+          doc.AddRandomInputs.doc);
 
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
       py::arg("input_port_index") =
