@@ -21,6 +21,7 @@ class TestIpoptSolver(unittest.TestCase):
         prog, x, x_expected = self._make_prog()
         solver = IpoptSolver()
         self.assertTrue(solver.available())
+        self.assertTrue(solver.enabled())
         self.assertEqual(solver.solver_id().name(), "IPOPT")
         self.assertEqual(solver.SolverName(), "IPOPT")
         self.assertEqual(solver.solver_type(), mp.SolverType.kIpopt)

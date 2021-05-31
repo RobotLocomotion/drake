@@ -17,6 +17,7 @@ class TestSnoptSolver(unittest.TestCase):
 
         solver = SnoptSolver()
         if solver.available():
+            self.assertTrue(solver.enabled())
             self.assertEqual(solver.solver_type(), mp.SolverType.kSnopt)
 
             result = solver.Solve(prog, None, None)
