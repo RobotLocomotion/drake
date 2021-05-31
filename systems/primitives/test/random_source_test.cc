@@ -92,9 +92,21 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
 }
 
 GTEST_TEST(RandomSourceTest, ToAutoDiff) {
-  auto random_source = std::make_unique<internal::RandomSourceT<double>>(
+  auto random_source = std::make_unique<RandomSourced>(
       RandomDistribution::kUniform, 2, 0.0025);
   EXPECT_TRUE(is_autodiffxd_convertible(*random_source));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const RandomSourced deprecated(RandomDistribution::kUniform, 2, 0.0025);
+  EXPECT_NO_THROW(deprecated.ToAutoDiffXd());
+#pragma GCC diagnostic pop
+}
+
+GTEST_TEST(RandomSourceTest, ToSymbolic) {
+  auto random_source = std::make_unique<RandomSourced>(
+      RandomDistribution::kUniform, 2, 0.0025);
+  EXPECT_FALSE(is_symbolic_convertible(*random_source));
 }
 
 GTEST_TEST(RandomSourceTest, UniformWhiteNoiseAutoDiff) {

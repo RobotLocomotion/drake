@@ -166,5 +166,10 @@ using RandomSourced = internal::RandomSourceT<double>;
 template <typename T>
 int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder);
 
+namespace scalar_conversion {
+template <>
+struct Traits<internal::RandomSourceT> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+
 }  // namespace systems
 }  // namespace drake
