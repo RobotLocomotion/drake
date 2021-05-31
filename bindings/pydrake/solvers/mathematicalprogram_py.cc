@@ -308,6 +308,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       // implementations of this interface.
       .def("available", &SolverInterface::available,
           doc.SolverInterface.available.doc)
+      .def(
+          "enabled", &SolverInterface::enabled, doc.SolverInterface.enabled.doc)
       .def("solver_id", &SolverInterface::solver_id,
           doc.SolverInterface.solver_id.doc)
       .def(
