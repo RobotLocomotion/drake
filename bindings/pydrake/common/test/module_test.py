@@ -40,15 +40,6 @@ class TestCommon(unittest.TestCase):
         # Simply test the spelling
         mut.ToleranceType.kAbsolute
         mut.ToleranceType.kRelative
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                mut.ToleranceType.absolute,
-                mut.ToleranceType.kAbsolute,
-            )
-            self.assertEqual(
-                mut.ToleranceType.relative,
-                mut.ToleranceType.kRelative,
-            )
 
     def test_random_distribution(self):
         # Simply test the spelling
