@@ -483,7 +483,10 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_EQ(test_constraint, 0);
 
   DRAKE_EXPECT_NO_THROW(system_.get_constraint(test_constraint));
-  EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
+  const auto& constraint_ref = system_.get_constraint(test_constraint);
+  EXPECT_EQ(constraint_ref.description(), "test");
+  EXPECT_TRUE(constraint_ref.get_system_id().has_value());
+  EXPECT_EQ(*constraint_ref.get_system_id(), context_->get_system_id());
 
   const double tol = 1e-6;
   EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
