@@ -560,6 +560,7 @@ drake_cc_googletest(
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
+        "//systems/framework/test_utilities",
     ],
 )
 

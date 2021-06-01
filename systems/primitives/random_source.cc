@@ -10,7 +10,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-using Seed = RandomSource::Seed;
+using Seed = RandomSourced::Seed;
 
 // Stores exactly one of the three supported distribution objects.  Note that
 // the distribution objects hold computational state; they are not just pure
@@ -72,38 +72,54 @@ Seed get_next_seed() {
 
 }  // namespace
 
-RandomSource::RandomSource(
-    RandomDistribution distribution, int num_outputs,
-    double sampling_interval_sec)
-    : distribution_(distribution), instance_seed_(get_next_seed()) {
+namespace internal {
+template <typename T>
+RandomSourceT<T>::RandomSourceT(RandomDistribution distribution,
+                                int num_outputs, double sampling_interval_sec)
+    : LeafSystem<T>(SystemScalarConverter(SystemTypeTag<RandomSourceT>{},
+          SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)),
+      distribution_(distribution),
+      sampling_interval_sec_{sampling_interval_sec},
+      instance_seed_{get_next_seed()} {
   this->DeclareDiscreteState(num_outputs);
   this->DeclareAbstractState(Value<SampleGenerator>());
   this->DeclarePeriodicUnrestrictedUpdateEvent(
-      sampling_interval_sec, 0., &RandomSource::UpdateSamples);
+      sampling_interval_sec, 0., &RandomSourceT<T>::UpdateSamples);
   this->DeclareVectorOutputPort(
-      "output", BasicVector<double>(num_outputs),
-      [](const Context<double>& context, BasicVector<double>* output) {
+      "output", BasicVector<T>(num_outputs),
+      [](const Context<T>& context, BasicVector<T>* output) {
         const auto& values = context.get_discrete_state(0);
         output->SetFrom(values);
       });
 }
 
-RandomSource::~RandomSource() {}
+template <typename T>
+RandomSourceT<T>::~RandomSourceT() {}
 
-Seed RandomSource::get_seed(const Context<double>& context) const {
+template <typename T>
+template <typename U>
+RandomSourceT<T>::RandomSourceT(const RandomSourceT<U>& other)
+    : RandomSourceT<T>(other.get_distribution(),
+                       other.get_output_port(0).size(),
+                       other.sampling_interval_sec_) {}
+
+template <typename T>
+Seed RandomSourceT<T>::get_seed(const Context<double>& context) const {
   const auto& source = context.template get_abstract_state<SampleGenerator>(0);
   return source.seed();
 }
 
-void RandomSource::SetDefaultState(
-    const Context<double>& context, State<double>* state) const {
+template <typename T>
+void RandomSourceT<T>::SetDefaultState(const Context<T>& context,
+                                       State<T>* state) const {
   const Seed seed = fixed_seed_.value_or(instance_seed_);
   SetSeed(seed, context, state);
 }
 
-void RandomSource::SetRandomState(
-    const Context<double>& context, State<double>* state,
-    RandomGenerator* seed_generator) const {
+template <typename T>
+void RandomSourceT<T>::SetRandomState(const Context<T>& context,
+                                      State<T>* state,
+                                      RandomGenerator* seed_generator) const {
   const Seed fresh_seed = (*seed_generator)();
   const Seed seed = fixed_seed_.value_or(fresh_seed);
   SetSeed(seed, context, state);
@@ -111,8 +127,9 @@ void RandomSource::SetRandomState(
 
 // Writes the given seed into abstract state (replacing the existing
 // SampleGenerator) and then does `UpdateSamples`.
-void RandomSource::SetSeed(
-    Seed seed, const Context<double>& context, State<double>* state) const {
+template <typename T>
+void RandomSourceT<T>::SetSeed(Seed seed, const Context<T>& context,
+                               State<T>* state) const {
   state->template get_mutable_abstract_state<SampleGenerator>(0) =
       SampleGenerator(seed, distribution_);
   UpdateSamples(context, state);
@@ -121,23 +138,48 @@ void RandomSource::SetSeed(
 // Samples random values into the discrete state, using the SampleGenerator
 // from the abstract state.  (Note that the generator's abstract state is also
 // mutated as a side effect of this method.)
-void RandomSource::UpdateSamples(
-    const Context<double>&, State<double>* state) const {
+template <typename T>
+void RandomSourceT<T>::UpdateSamples(const Context<T>&, State<T>* state) const {
   auto& source = state->template get_mutable_abstract_state<SampleGenerator>(0);
   auto& samples = state->get_mutable_discrete_state(0);
   for (int i = 0; i < samples.size(); ++i) {
-    samples[i] = source.GenerateNext();
+    samples[i] = T(source.GenerateNext());
   }
 }
 
-int AddRandomInputs(double sampling_interval_sec,
-                    DiagramBuilder<double>* builder) {
+}  // namespace internal
+
+RandomSource::RandomSource(RandomDistribution distribution, int num_outputs,
+                           double sampling_interval_sec)
+    : internal::RandomSourceT<double>(distribution, num_outputs,
+                                      sampling_interval_sec) {}
+
+RandomSource::~RandomSource() {}
+
+RandomDistribution RandomSource::get_distribution() const {
+  return internal::RandomSourceT<double>::get_distribution();
+}
+
+Seed RandomSource::get_seed(const Context<double>& context) const {
+  return internal::RandomSourceT<double>::get_seed(context);
+}
+
+std::optional<Seed> RandomSource::get_fixed_seed() const {
+  return internal::RandomSourceT<double>::get_fixed_seed();
+}
+
+void RandomSource::set_fixed_seed(const std::optional<Seed>& seed) {
+  return internal::RandomSourceT<double>::set_fixed_seed(seed);
+}
+
+template <typename T>
+int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder) {
   int count = 0;
   // Note: the mutable assignment to const below looks odd, but
   // there is (currently) no builder->GetSystems() method.
   for (const auto* system : builder->GetMutableSystems()) {
     for (int i = 0; i < system->num_input_ports(); i++) {
-      const systems::InputPort<double>& port = system->get_input_port(i);
+      const systems::InputPort<T>& port = system->get_input_port(i);
       // Check for the random label.
       if (!port.is_random()) {
         continue;
@@ -147,8 +189,15 @@ int AddRandomInputs(double sampling_interval_sec,
         continue;
       }
 
-      const auto* const source = builder->AddSystem<RandomSource>(
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      using Source =
+          typename std::conditional<std::is_same_v<T, double>, RandomSource,
+                                    internal::RandomSourceT<T>>::type;
+      const auto* const source = builder->template AddSystem<Source>(
           port.get_random_type().value(), port.size(), sampling_interval_sec);
+#pragma GCC diagnostic pop
+
       builder->Connect(source->get_output_port(0), port);
       ++count;
     }
@@ -156,5 +205,11 @@ int AddRandomInputs(double sampling_interval_sec,
   return count;
 }
 
+template int AddRandomInputs<double>(double, DiagramBuilder<double>*);
+template int AddRandomInputs<AutoDiffXd>(double, DiagramBuilder<AutoDiffXd>*);
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::internal::RandomSourceT)
