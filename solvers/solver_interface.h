@@ -21,14 +21,35 @@ class SolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface)
   virtual ~SolverInterface();
 
-  /// Returns true iff this solver was enabled at compile-time. Certain solvers
-  /// may be excluded at compile-time due to licensing or linking restrictions.
+  /// Returns true iff support for this solver has been compiled and linked
+  /// into Drake. Certain solver implementations may have been excluded at
+  /// compile-time due to licensing or linking restrictions.
+  ///
+  /// Contrast this with enabled(), which reflects whether a solver has been
+  /// enabled or disabled at runtime (not compile-time).
+  ///
+  /// Typically only commercially-licensed solvers are ever not available() or
+  /// not enabled().
+  ///
   /// When this method returns false, the Solve method will throw.
   virtual bool available() const = 0;
 
-  /// Returns true iff this solver is enabled at runtime. The toggle mechanism
+  /// Returns true iff this solver is configured to be enabled at runtime. The
+  /// mechanism to configure a particular solver implementation to be enabled
+  /// or disabled at runtime (and which choice is the default when unspecified)
   /// is specific to the solver in question, but typically uses an environment
-  /// variable. When this method returns false, the Solve method will throw.
+  /// variable.
+  ///
+  /// Contrast this with available(), which reflects whether a solver has been
+  /// incorporated into Drake at compile-time (and has nothing to do with the
+  /// runtime configuration). A solver that has been disabled at compile time
+  /// (i.e., it is not available()) may still be configured to be available at
+  /// runtime.
+  ///
+  /// Typically only commercially-licensed solvers are ever not available() or
+  /// not enabled().
+  ///
+  /// When this method returns false, the Solve method will throw.
   virtual bool enabled() const = 0;
 
   /// Solves an optimization program with optional initial guess and solver
