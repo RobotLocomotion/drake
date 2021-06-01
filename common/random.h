@@ -2,7 +2,12 @@
 
 #include <random>
 
+#include <Eigen/Core>
+
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 
 namespace drake {
 /// Defines Drake's canonical implementation of the UniformRandomBitGenerator
@@ -39,5 +44,43 @@ enum class RandomDistribution {
   kExponential = 2,  ///< Vector elements are independent and drawn from an
                      ///  exponential distribution with λ=1.0.
 };
+
+/**
+ * Calculate the density (probability density function) of the multivariate
+ * distribution.
+ * @param distribution The distribution type.
+ * @param x The value of the sampled vector.
+ */
+template <typename Derived>
+typename std::enable_if<is_eigen_vector<Derived>::value,
+                        typename Derived::Scalar>::type
+CalcProbabilityDensity(RandomDistribution distribution,
+                       const Eigen::MatrixBase<Derived>& x) {
+  using T = typename Derived::Scalar;
+  switch (distribution) {
+    case RandomDistribution::kUniform: {
+      for (int i = 0; i < x.rows(); ++i) {
+        const double xi_val = ExtractDoubleOrThrow(x(i));
+        if (xi_val < 0 || xi_val > 1) {
+          return T(0.);
+        }
+      }
+      return T(1.);
+    }
+    case RandomDistribution::kGaussian: {
+      return ((-0.5 * x.array() * x.array()).exp() / std::sqrt(2 * M_PI))
+          .prod();
+    }
+    case RandomDistribution::kExponential: {
+      for (int i = 0; i < x.rows(); ++i) {
+        if (ExtractDoubleOrThrow(x(i)) < 0) {
+          return T(0.);
+        }
+      }
+      return (-x.array()).exp().prod();
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
 
 }  // namespace drake

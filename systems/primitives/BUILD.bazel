@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":gain",
         ":integrator",
         ":linear_system",
+        ":linear_transform_density",
         ":matrix_gain",
         ":multiplexer",
         ":pass_through",
@@ -169,6 +170,15 @@ drake_cc_library(
         "//common:symbolic_decompose",
         "//math:autodiff",
         "//math:gradient",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_transform_density",
+    srcs = ["linear_transform_density.cc"],
+    hdrs = ["linear_transform_density.h"],
+    deps = [
         "//systems/framework",
     ],
 )
@@ -471,6 +481,17 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//examples/pendulum:pendulum_plant",
         "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_transform_density_test",
+    deps = [
+        ":linear_transform_density",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
         "//systems/framework/test_utilities",
     ],
 )
