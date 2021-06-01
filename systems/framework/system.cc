@@ -982,6 +982,7 @@ SystemConstraintIndex System<T>::AddConstraint(
     std::unique_ptr<SystemConstraint<T>> constraint) {
   DRAKE_DEMAND(constraint != nullptr);
   DRAKE_DEMAND(&constraint->get_system() == this);
+  constraint->set_system_id(this->get_system_id());
   if (!external_constraints_.empty()) {
     throw std::logic_error(fmt::format(
         "System {} cannot add an internal constraint (named {}) "
