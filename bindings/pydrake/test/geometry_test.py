@@ -756,6 +756,22 @@ class TestGeometry(unittest.TestCase):
         sg_context = sg.CreateDefaultContext()
         geometries = mut.GeometrySet()
 
+        # Mutate SceneGraph model
+        dut = sg.collision_filter_manager()
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeBetween(
+                geometries, geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+
+        # Mutate context data
+        dut = sg.collision_filter_manager(sg_context)
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeBetween(
+                geometries, geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+
         sg.ExcludeCollisionsBetween(geometries, geometries)
         sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
         sg.ExcludeCollisionsWithin(geometries)
