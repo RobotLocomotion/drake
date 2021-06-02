@@ -151,9 +151,11 @@ class DiscreteValues {
   void SetFrom(const DiscreteValues<U>& other) {
     DRAKE_THROW_UNLESS(num_groups() == other.num_groups());
     for (int i = 0; i < num_groups(); i++) {
-      data_[i]->set_value(
-          other.get_vector(i).get_value().unaryExpr(
-              scalar_conversion::ValueConverter<T, U>{}));
+      BasicVector<T>& this_i = *data_[i];
+      const BasicVector<U>& other_i = other.get_vector(i);
+      DRAKE_THROW_UNLESS(this_i.size() == other_i.size());
+      this_i.get_mutable_value() = other_i.get_value().unaryExpr(
+          scalar_conversion::ValueConverter<T, U>{});
     }
   }
 
