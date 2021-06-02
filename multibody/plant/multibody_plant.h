@@ -4548,6 +4548,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper to invoke ContactSolver when one is available.
   void CallContactSolver(
+      contact_solvers::internal::ContactSolver<T>* contact_solver,
       const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
       const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
       const VectorX<T>& stiffness, const VectorX<T>& damping,
@@ -4949,6 +4950,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
     internal::HydroelasticFallbackCacheData<symbolic::Expression>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CallContactSolver(
+    contact_solvers::internal::ContactSolver<symbolic::Expression>*,
     const symbolic::Expression&, const VectorX<symbolic::Expression>&,
     const MatrixX<symbolic::Expression>&, const VectorX<symbolic::Expression>&,
     const VectorX<symbolic::Expression>&, const MatrixX<symbolic::Expression>&,
