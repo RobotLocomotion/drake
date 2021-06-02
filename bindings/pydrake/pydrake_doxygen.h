@@ -185,6 +185,7 @@ avoid rebuilding a large number of components when testing, consider editing
 `//tools/install/libdrake:build_components.bzl` to reduce the number of
 components being built.
 
+@anchor PydrakeModuleDefinitions
 ## pybind Module Definitions
 
 - Modules should be defined within the drake::pydrake namespace. Please review
@@ -196,6 +197,38 @@ modules should not re-define this alias at global scope.
 - If a certain namespace is being bound (e.g. `drake::systems::sensors`), you
 may use `using namespace drake::systems::sensors` within functions or
 anonymous namespaces. Avoid `using namespace` directives otherwise.
+- If a module depends on the *bindings* for another module, then you should do
+the following:
+  - Ensure that the dependent bindings module is listed in the `py_deps`
+  attribute for the `drake_pybind_library()` target.
+  - Inside the `_py.cc`, ensure that you tell Python to import dependency
+  bindings. This is important to load the bindings at the right time (for
+  documentation), and ensure the dependent bindings are executed so that users
+  can import that module in isolation and still have it work. This is important
+  when your type signatures use dependency bindings, or a class declares its
+  inheritance, etc.
+  - As an example:
+
+        # .../my_component.h
+        #include "drake/math/rigid_transform.h"
+        RigidTransformd MyMethod();
+
+        # bindings/.../BUILD.bazel
+        drake_pybind_library(
+            name = "my_method_py",
+            ...
+            py_deps = [
+                ...
+                "//bindings/pydrake:math_py",
+            ],
+            ...
+        )
+
+        # bindings/.../my_method_py.cc
+        PYBIND_MODULE(my_method, m) {
+          py::module::import("pydrake.math");
+          m.def("MyMethod", &MyMethod, ...);
+        }
 
 @anchor PydrakeDoc
 ## Documentation
