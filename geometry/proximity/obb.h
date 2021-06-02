@@ -16,6 +16,7 @@ namespace geometry {
 namespace internal {
 
 // Forward declarations.
+template <typename> class ObbMaker;
 class Aabb;
 
 /* Oriented bounding box used in Bvh. The box is defined in a canonical
@@ -35,6 +36,10 @@ class Aabb;
 class Obb {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Obb)
+
+  /** The class used for various creation operations on this bounding volume. */
+  template <typename MeshType>
+  using Maker = ObbMaker<MeshType>;
 
   /* Constructs an oriented bounding box measured and expressed in frame H.
 

@@ -33,7 +33,7 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   // We can't simply copy the mesh field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
   pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
-  bvh_ = make_unique<Bvh<VolumeMesh<double>>>(s.bvh());
+  bvh_ = make_unique<Bvh<Obb, VolumeMesh<double>>>(s.bvh());
 
   return *this;
 }

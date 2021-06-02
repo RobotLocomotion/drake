@@ -293,8 +293,10 @@ bool SurfaceVolumeIntersector<T>::IsFaceNormalAlongPressureGradient(
 template <typename T>
 void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const VolumeMeshFieldLinear<double, double>& volume_field_M,
-    const Bvh<VolumeMesh<double>>& bvh_M, const SurfaceMesh<double>& surface_N,
-    const Bvh<SurfaceMesh<double>>& bvh_N, const math::RigidTransform<T>& X_MN,
+    const Bvh<Obb, VolumeMesh<double>>& bvh_M,
+    const SurfaceMesh<double>& surface_N,
+    const Bvh<Obb, SurfaceMesh<double>>& bvh_N,
+    const math::RigidTransform<T>& X_MN,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
@@ -390,9 +392,10 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<SurfaceMesh<double>>& bvh_R,
+    const Bvh<Obb, VolumeMesh<double>>& bvh_S,
+    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
+    const SurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
@@ -454,16 +457,16 @@ template class SurfaceVolumeIntersector<AutoDiffXd>;
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<double>&,
+    const Bvh<Obb, VolumeMesh<double>>&, const math::RigidTransform<double>&,
     const GeometryId, const SurfaceMesh<double>&,
-    const Bvh<SurfaceMesh<double>>&, const math::RigidTransform<double>&);
+    const Bvh<Obb, SurfaceMesh<double>>&, const math::RigidTransform<double>&);
 
 template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
-    const GeometryId, const SurfaceMesh<double>&,
-    const Bvh<SurfaceMesh<double>>&,
+    const Bvh<Obb, VolumeMesh<double>>&,
+    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
+    const SurfaceMesh<double>&, const Bvh<Obb, SurfaceMesh<double>>&,
     const math::RigidTransform<AutoDiffXd>&);
 
 }  // namespace internal

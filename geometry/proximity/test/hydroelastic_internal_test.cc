@@ -95,7 +95,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     const VolumeMesh<double>* const mesh_ptr = &start.mesh();
     const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure();
-    const Bvh<VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+    const Bvh<Obb, VolumeMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     SoftMesh move_constructed(std::move(start));
@@ -186,7 +186,7 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     const VolumeMesh<double>* const mesh_ptr = &start.mesh();
     const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure_field();
-    const Bvh<VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+    const Bvh<Obb, VolumeMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     SoftGeometry move_constructed(std::move(start));
@@ -249,7 +249,7 @@ GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
     const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
-    const Bvh<SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+    const Bvh<Obb, SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     RigidMesh move_constructed(std::move(start));
@@ -313,7 +313,7 @@ GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
     const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
-    const Bvh<SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+    const Bvh<Obb, SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     RigidGeometry move_constructed(std::move(start));
