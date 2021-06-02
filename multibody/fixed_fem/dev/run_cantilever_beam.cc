@@ -104,14 +104,14 @@ int DoMain() {
 
   auto* visualizer = builder.AddSystem<DeformableVisualizer>(
       1.0 / 60.0, deformable_model->names(),
-      deformable_model->initial_meshes());
+      deformable_model->reference_configuration_meshes());
   const DeformableModel<double>* deformable_model_ptr =
       &plant->AddPhysicalModel(std::move(deformable_model));
   plant->Finalize();
   /* Creates a DeformableRigidManager with no contact solver assigned as there
    is no contact in this demo. */
   auto deformable_rigid_manager =
-      std::make_unique<DeformableRigidManager<double>>(nullptr);
+      std::make_unique<DeformableRigidManager<double>>();
   plant->set_discrete_update_manager(std::move(deformable_rigid_manager));
   builder.Connect(deformable_model_ptr->get_vertex_positions_output_port(),
                   visualizer->get_input_port());

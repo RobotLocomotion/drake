@@ -1,4 +1,7 @@
 #pragma once
+#include <set>
+#include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -24,10 +27,15 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.internal_tree();
   }
 
-  static const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const MultibodyPlant<T>& plant,
-                           const systems::Context<T>& context) {
-    return plant.EvalContactSolverResults(context);
+  static systems::CacheEntry& DeclareCacheEntry(
+      MultibodyPlant<T>* plant, std::string description,
+      systems::CacheEntry::AllocCallback alloc_function,
+      systems::CacheEntry::CalcCallback calc_function,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::SystemBase::all_sources_ticket()}) {
+    return plant->DeclareCacheEntry(
+        std::move(description), std::move(alloc_function),
+        std::move(calc_function), std::move(prerequisites_of_calc));
   }
 };
 }  // namespace internal

@@ -14,8 +14,8 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 /** %DeformableRigidManager implements the interface in DiscreteUpdateManager
- and performs discrete update for deformable bodies and rigid bodies in a
- two-way coupled fashion.
+ and performs discrete update for deformable and rigid bodies with a two-way
+ coupling scheme.
  @tparam_nonsymbolic_scalar. */
 template <typename T>
 class DeformableRigidManager final
@@ -23,22 +23,26 @@ class DeformableRigidManager final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableRigidManager)
 
-  /** Constructs a %DeformableRigidManager that solves contact with the given
-   contact solver. */
-  DeformableRigidManager(
+  DeformableRigidManager() = default;
+
+  /** Sets the given `contact_solver` as the solver that `this`
+    %DeformableRigidManager uses to solve contact. */
+  void set_contact_solver(
       std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
-          contact_solver)
-      : contact_solver_(std::move(contact_solver)) {}
+          contact_solver) {
+    contact_solver_ = std::move(contact_solver);
+  }
 
  private:
   /* Implements DiscreteUpdateManager::ExtractModelInfo(). Verifies that
-   exactly one DeformableModel is registered in the owning plant and sets up FEM
-   solvers for deformable bodies. */
+   exactly one DeformableModel is registered in the owning plant and
+   sets up FEM solvers for deformable bodies. */
   void ExtractModelInfo() final;
 
-  /* Extracts the necessary information from the `deformable_model` and sets up
-   the FEM solvers that solves the model. */
-  void SetFemSolvers(const DeformableModel<T>& deformable_model);
+  /* Make the FEM solvers that solve the deformable FEM models. */
+  void MakeFemSolvers();
+
+  void DeclareCacheEntries(MultibodyPlant<T>* plant) final;
 
   // TODO(xuchenhan-tri): Implement this.
   void DoCalcContactSolverResults(
@@ -49,7 +53,8 @@ class DeformableRigidManager final
         "DeformableRigidManager yet.");
   }
 
-  // TODO(xuchenhan-tri): Implement this once AccelerationKinematicsCache also
+  // TODO(xuchenhan-tri): Implement this once AccelerationKinematicsCache
+  // also
   //  caches acceleration for deformable dofs.
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
@@ -62,12 +67,14 @@ class DeformableRigidManager final
   void DoCalcDiscreteValues(const systems::Context<T>& context,
                             systems::DiscreteValues<T>* updates) const final;
 
-  /* The discrete state indexes for all deformable bodies. */
-  std::vector<systems::DiscreteStateIndex> discrete_state_indexes_{};
+  /* The deformable models being solved by `this` manager. */
+  const DeformableModel<T>* deformable_model_{nullptr};
   /* Scratch space for the previous timestep and contact-free FEM states to
    avoid repeated allocation. */
-  mutable std::vector<std::unique_ptr<FemStateBase<T>>> state0s_{};
-  mutable std::vector<std::unique_ptr<FemStateBase<T>>> state_stars_{};
+  // mutable std::vector<std::unique_ptr<FemStateBase<T>>> state0s_{};
+  // mutable std::vector<std::unique_ptr<FemStateBase<T>>> state_stars_{};
+  std::vector<systems::CacheIndex> state0s_;
+  std::vector<systems::CacheIndex> state_stars_;
   /* Solvers for all deformable bodies. */
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>

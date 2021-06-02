@@ -346,6 +346,7 @@ drake_cc_library(
     ],
     deps = [
         ":dirichlet_boundary_condition",
+        "//common:copyable_unique_ptr",
         "//common:default_scalars",
     ],
 )

@@ -117,7 +117,7 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
   model_discrete_states_.emplace_back(discrete_state);
 
   fem_models_.emplace_back(std::move(fem_model));
-  initial_meshes_.emplace_back(mesh);
+  reference_configuration_meshes_.emplace_back(mesh);
   names_.emplace_back(std::move(name));
 }
 

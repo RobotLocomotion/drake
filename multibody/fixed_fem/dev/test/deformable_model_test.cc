@@ -12,8 +12,8 @@ namespace multibody {
 namespace fixed_fem {
 // TODO(xuchenhan-tri): Add a test to verify that the deformable body parameters
 //  are properly passed to the FemModel.
-/* Deformable body parameters. These parameters dummy and they do not affect the
- result of the test as long as they are valid. */
+/* Deformable body parameters. These parameters are arbitrary and they do not
+ affect the result of the test as long as they are valid. */
 const double kYoungsModulus = 1.23;
 const double kPoissonRatio = 0.456;
 const double kDensity = 0.789;
@@ -71,10 +71,11 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
   const std::vector<std::string>& registered_names = deformable_model_->names();
   EXPECT_EQ(registered_names.size(), 1);
   EXPECT_EQ(registered_names[0], "box");
-  const std::vector<geometry::VolumeMesh<double>>& initial_meshes =
-      deformable_model_->initial_meshes();
-  EXPECT_EQ(initial_meshes.size(), 1);
-  EXPECT_TRUE(MakeBoxTetMesh().Equal(initial_meshes[0]));
+  const std::vector<geometry::VolumeMesh<double>>&
+      reference_configuration_meshes =
+          deformable_model_->reference_configuration_meshes();
+  EXPECT_EQ(reference_configuration_meshes.size(), 1);
+  EXPECT_TRUE(MakeBoxTetMesh().Equal(reference_configuration_meshes[0]));
 }
 
 /* Verifies that registering a deformable body returns the expected body id and

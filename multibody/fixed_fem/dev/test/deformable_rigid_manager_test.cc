@@ -37,13 +37,13 @@ class DeformableRigidManagerTest : public ::testing::Test {
   void SetUp() override {
     auto deformable_model = std::make_unique<DeformableModel<double>>(&plant_);
     deformable_model->RegisterDeformableBody(MakeBoxTetMesh(), "box",
-                                             MakeDeformableConfig());
-    deformable_model_ptr_ =
+                                             MakeDeformableBodyConfig());
+    deformable_model_ =
         &plant_.AddPhysicalModel(std::move(deformable_model));
     plant_.Finalize();
     auto deformable_rigid_manager =
-        std::make_unique<DeformableRigidManager<double>>(nullptr);
-    deformable_rigid_manager_ptr_ = &plant_.set_discrete_update_manager(
+        std::make_unique<DeformableRigidManager<double>>();
+    deformable_rigid_manager_ = &plant_.set_discrete_update_manager(
         std::move(deformable_rigid_manager));
   }
 
@@ -59,7 +59,7 @@ class DeformableRigidManagerTest : public ::testing::Test {
   }
 
   /* Create a dummy DeformableConfig. */
-  static DeformableBodyConfig<double> MakeDeformableConfig() {
+  static DeformableBodyConfig<double> MakeDeformableBodyConfig() {
     DeformableBodyConfig<double> config;
     config.set_youngs_modulus(kYoungsModulus);
     config.set_poisson_ratio(kPoissonRatio);
@@ -71,8 +71,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
   }
 
   MultibodyPlant<double> plant_{kDt};
-  const DeformableModel<double>* deformable_model_ptr_;
-  const DeformableRigidManager<double>* deformable_rigid_manager_ptr_;
+  const DeformableModel<double>* deformable_model_;
+  const DeformableRigidManager<double>* deformable_rigid_manager_;
 };
 
 namespace {
@@ -82,13 +82,13 @@ TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
   auto context = plant_.CreateDefaultContext();
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
   const auto initial_positions =
-      deformable_model_ptr_->get_vertex_positions_output_port()
+      deformable_model_->get_vertex_positions_output_port()
           .Eval<std::vector<VectorXd>>(simulator.get_context());
   EXPECT_EQ(initial_positions.size(), 1);
   EXPECT_EQ(initial_positions[0].size(), kNumVertices * 3);
   simulator.AdvanceTo(kDt);
   const auto current_positions =
-      deformable_model_ptr_->get_vertex_positions_output_port()
+      deformable_model_->get_vertex_positions_output_port()
           .Eval<std::vector<VectorXd>>(simulator.get_context());
   EXPECT_EQ(current_positions.size(), 1);
   EXPECT_EQ(current_positions[0].size(), kNumVertices * 3);
@@ -114,7 +114,7 @@ TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
 TEST_F(DeformableRigidManagerTest, CalcContactSolverResults) {
   auto context = plant_.CreateDefaultContext();
   contact_solvers::internal::ContactSolverResults<double> results;
-  EXPECT_THROW(deformable_rigid_manager_ptr_->CalcContactSolverResults(
+  EXPECT_THROW(deformable_rigid_manager_->CalcContactSolverResults(
                    *context, &results),
                std::exception);
 }
