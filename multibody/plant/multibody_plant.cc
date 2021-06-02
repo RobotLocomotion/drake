@@ -2162,8 +2162,9 @@ void MultibodyPlant<T>::CalcContactSolverResults(
   }
 
   if (contact_solver_ != nullptr) {
-    CallContactSolver(context0.get_time(), v0, M0, minus_tau, phi0,
-                      contact_jacobians.Jc, stiffness, damping, mu, results);
+    CallContactSolver(contact_solver_.get(), context0.get_time(), v0, M0,
+                      minus_tau, phi0, contact_jacobians.Jc, stiffness, damping,
+                      mu, results);
   } else {
     CallTamsiSolver(context0.get_time(), v0, M0, minus_tau, fn0,
                     contact_jacobians.Jn, contact_jacobians.Jt, stiffness,
@@ -2237,6 +2238,7 @@ void MultibodyPlant<T>::CallTamsiSolver(
 
 template <>
 void MultibodyPlant<symbolic::Expression>::CallContactSolver(
+    contact_solvers::internal::ContactSolver<symbolic::Expression>*,
     const symbolic::Expression&, const VectorX<symbolic::Expression>&,
     const MatrixX<symbolic::Expression>&, const VectorX<symbolic::Expression>&,
     const VectorX<symbolic::Expression>&, const MatrixX<symbolic::Expression>&,
@@ -2250,6 +2252,7 @@ void MultibodyPlant<symbolic::Expression>::CallContactSolver(
 
 template <typename T>
 void MultibodyPlant<T>::CallContactSolver(
+    contact_solvers::internal::ContactSolver<T>* contact_solver,
     const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
     const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
     const VectorX<T>& stiffness, const VectorX<T>& damping,
@@ -2312,8 +2315,8 @@ void MultibodyPlant<T>::CallContactSolver(
   contact_solvers::internal::PointContactData<T> contact_data(
       &phi0, &Jc_op, &stiffness, &damping, &mu);
   const contact_solvers::internal::ContactSolverStatus info =
-      contact_solver_->SolveWithGuess(time_step(), dynamics_data, contact_data,
-                                      v0, &*results);
+      contact_solver->SolveWithGuess(time_step(), dynamics_data, contact_data,
+                                    v0, &*results);
 
   if (info != contact_solvers::internal::ContactSolverStatus::kSuccess) {
     const std::string msg =
