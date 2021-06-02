@@ -108,6 +108,46 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_model",
+    srcs = [
+        "deformable_model.cc",
+    ],
+    hdrs = [
+        "deformable_model.h",
+    ],
+    deps = [
+        ":corotated_model",
+        ":deformable_body_config",
+        ":dirichlet_boundary_condition",
+        ":dynamic_elasticity_element",
+        ":dynamic_elasticity_model",
+        ":fem_model_base",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_rigid_manager",
+    srcs = [
+        "deformable_rigid_manager.cc",
+    ],
+    hdrs = [
+        "deformable_rigid_manager.h",
+    ],
+    deps = [
+        ":deformable_model",
+        ":fem_solver",
+        "//common:essential",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "deformable_visualizer",
     srcs = ["deformable_visualizer.cc"],
     hdrs = ["deformable_visualizer.h"],
@@ -285,30 +325,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "softsim_system",
-    srcs = [
-        "softsim_system.cc",
-    ],
-    hdrs = [
-        "softsim_system.h",
-    ],
-    deps = [
-        ":corotated_model",
-        ":deformable_body_config",
-        ":dirichlet_boundary_condition",
-        ":dynamic_elasticity_element",
-        ":dynamic_elasticity_model",
-        ":fem_solver",
-        ":linear_constitutive_model",
-        ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
-        "//common:essential",
-        "//geometry/proximity:volume_mesh",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
     name = "fem_state",
     hdrs = [
         "fem_state.h",
@@ -459,9 +475,10 @@ drake_cc_binary(
         "run_cantilever_beam.cc",
     ],
     deps = [
+        ":deformable_model",
+        ":deformable_rigid_manager",
         ":deformable_visualizer",
         ":mesh_utilities",
-        ":softsim_system",
         "//common:add_text_logging_gflags",
         "//math:geometric_transform",
         "//systems/analysis:simulator_gflags",
@@ -549,6 +566,27 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_model_test",
+    deps = [
+        ":deformable_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_box_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_rigid_manager_test",
+    deps = [
+        ":deformable_rigid_manager",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_box_mesh",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -730,16 +768,6 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
-    ],
-)
-
-drake_cc_googletest(
-    name = "softsim_system_test",
-    deps = [
-        ":softsim_system",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//geometry/proximity:make_box_mesh",
     ],
 )
 

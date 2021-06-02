@@ -14,6 +14,7 @@ using NodeIndex = TypeSafeIndex<class NodeTag>;
 /** Index used to identify degrees of freedom (Dof) by index among FEM Dofs. */
 using DofIndex = TypeSafeIndex<class DofTag>;
 
+// TODO(xuchenhan-tri): Consider renaming to deformable.
 /** Index into a vector of deformable bodies. */
 using SoftBodyIndex = TypeSafeIndex<class BodyTag>;
 }  // namespace fixed_fem

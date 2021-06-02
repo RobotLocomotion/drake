@@ -1,24 +1,20 @@
-#include "drake/multibody/fixed_fem/dev/softsim_system.h"
+#include "drake/multibody/fixed_fem/dev/deformable_model.h"
 
 #include "drake/multibody/fixed_fem/dev/corotated_model.h"
+#include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
+#include "drake/multibody/fixed_fem/dev/dynamic_elasticity_element.h"
+#include "drake/multibody/fixed_fem/dev/dynamic_elasticity_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
+#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
+#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-template <typename T>
-SoftsimSystem<T>::SoftsimSystem(double dt) : dt_(dt) {
-  DRAKE_DEMAND(dt > 0);
-  vertex_positions_port_ =
-      this->DeclareAbstractOutputPort("vertex_positions",
-                                      &SoftsimSystem::CopyVertexPositionsOut)
-          .get_index();
-  this->DeclarePeriodicDiscreteUpdateEvent(dt, 0,
-                                           &SoftsimSystem::AdvanceOneTimeStep);
-}
 
 template <typename T>
-SoftBodyIndex SoftsimSystem<T>::RegisterDeformableBody(
+SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
     const geometry::VolumeMesh<T>& mesh, std::string name,
     const DeformableBodyConfig<T>& config) {
   /* Throw if name is not unique. */
@@ -44,20 +40,20 @@ SoftBodyIndex SoftsimSystem<T>::RegisterDeformableBody(
 }
 
 template <typename T>
-void SoftsimSystem<T>::SetWallBoundaryCondition(SoftBodyIndex body_id,
-                                                const Vector3<T>& p_WQ,
-                                                const Vector3<T>& n_W,
-                                                double distance_tolerance) {
+void DeformableModel<T>::SetWallBoundaryCondition(SoftBodyIndex body_id,
+                                                  const Vector3<T>& p_WQ,
+                                                  const Vector3<T>& n_W,
+                                                  double distance_tolerance) {
   DRAKE_DEMAND(n_W.norm() > 1e-10);
   const Vector3<T>& n_hatW = n_W.normalized();
   DRAKE_THROW_UNLESS(body_id < num_bodies());
   const int kDim = 3;
-  FemModelBase<T>& fem_model = *fem_models_[body_id];
-  const int num_nodes = fem_model.num_nodes();
+  auto& fem_model = fem_models_[body_id];
+  const int num_nodes = fem_model->num_nodes();
   // TODO(xuchenhan-tri): FemModel should support an easier way to retrieve its
   //  reference positions.
   const std::unique_ptr<FemStateBase<T>> fem_state =
-      fem_model.MakeFemStateBase();
+      fem_model->MakeFemStateBase();
   const VectorX<T>& initial_positions = fem_state->q();
   auto bc = std::make_unique<DirichletBoundaryCondition<T>>(/* ODE order */ 2);
   for (int n = 0; n < num_nodes; ++n) {
@@ -72,12 +68,12 @@ void SoftsimSystem<T>::SetWallBoundaryCondition(SoftBodyIndex body_id,
       }
     }
   }
-  fem_model.SetDirichletBoundaryCondition(std::move(bc));
+  fem_model->SetDirichletBoundaryCondition(std::move(bc));
 }
 
 template <typename T>
 template <template <class, int> class Model>
-void SoftsimSystem<T>::RegisterDeformableBodyHelper(
+void DeformableModel<T>::RegisterDeformableBodyHelper(
     const geometry::VolumeMesh<T>& mesh, std::string name,
     const DeformableBodyConfig<T>& config) {
   constexpr int kNaturalDimension = 3;
@@ -103,80 +99,57 @@ void SoftsimSystem<T>::RegisterDeformableBodyHelper(
 
   const DampingModel<T> damping_model(config.mass_damping_coefficient(),
                                       config.stiffness_damping_coefficient());
-  auto fem_model = std::make_unique<FemModelType>(dt_);
+  auto fem_model = std::make_unique<FemModelType>(plant_->time_step());
+  // TODO(xuchenhan-tri): Any changes to the gravity will not reflect on the
+  //  deformable bodies added before the gravity change. This needs to be fixed.
+  fem_model->SetGravity(plant_->gravity_field().gravity_vector());
   ConstitutiveModelType constitutive_model(config.youngs_modulus(),
                                            config.poisson_ratio());
   fem_model->AddDynamicElasticityElementsFromTetMesh(
       mesh, constitutive_model, config.mass_density(), damping_model);
-  fem_model->SetGravity(gravity_);
+
   const StateType state = fem_model->MakeFemState();
   const int num_dofs = state.num_generalized_positions();
   VectorX<T> discrete_state(num_dofs * 3);
   discrete_state.head(num_dofs) = state.q();
   discrete_state.segment(num_dofs, num_dofs) = state.qdot();
   discrete_state.tail(num_dofs) = state.qddot();
-  this->DeclareDiscreteState(discrete_state);
+  model_discrete_states_.emplace_back(discrete_state);
 
-  prev_fem_states_.emplace_back(std::make_unique<StateType>(state));
-  next_fem_states_.emplace_back(std::make_unique<StateType>(state));
-  fem_solvers_.emplace_back(std::make_unique<FemSolver<T>>(fem_model.get()));
   fem_models_.emplace_back(std::move(fem_model));
-  initial_meshes_.emplace_back(mesh);
+  reference_configuration_meshes_.emplace_back(mesh);
   names_.emplace_back(std::move(name));
 }
 
 template <typename T>
-void SoftsimSystem<T>::AdvanceOneTimeStep(
-    const systems::Context<T>& context,
-    systems::DiscreteValues<T>* next_states) const {
-  const systems::DiscreteValues<T>& all_discrete_states =
-      context.get_discrete_state();
-  for (int i = 0; i < num_bodies(); ++i) {
-    /* Extract q, qdot and qddot from context. */
-    const systems::BasicVector<T>& discrete_state =
-        all_discrete_states.get_vector(i);
-    const auto& discrete_value = discrete_state.get_value();
-    const int num_dofs = discrete_value.size() / 3;
-    const auto& q = discrete_value.head(num_dofs);
-    const auto& qdot = discrete_value.segment(num_dofs, num_dofs);
-    const auto& qddot = discrete_value.tail(num_dofs);
-    /* Set up FemState and advance to the next time step. */
-    FemStateBase<T>& prev_fem_state = *prev_fem_states_[i];
-    FemStateBase<T>& next_fem_state = *next_fem_states_[i];
-    prev_fem_state.SetQ(q);
-    prev_fem_state.SetQdot(qdot);
-    prev_fem_state.SetQddot(qddot);
-    // TODO(xuchenhan-tri): FemState needs a SetFrom() method. Setting
-    //  DiscreteValues from FemStateBase (and vice-versa) should also be made
-    //  more compact.
-    next_fem_state.SetQ(q);
-    next_fem_state.SetQdot(qdot);
-    next_fem_state.SetQddot(qddot);
-    fem_solvers_[i]->AdvanceOneTimeStep(prev_fem_state, &next_fem_state);
-    /* Copy new state to output variable. */
-    systems::BasicVector<T>& next_discrete_state =
-        next_states->get_mutable_vector(i);
-    Eigen::VectorBlock<VectorX<T>> next_discrete_value =
-        next_discrete_state.get_mutable_value();
-    next_discrete_value.head(num_dofs) = next_fem_state.q();
-    next_discrete_value.segment(num_dofs, num_dofs) = next_fem_state.qdot();
-    next_discrete_value.tail(num_dofs) = next_fem_state.qddot();
-  }
-}
+void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
+  /* Ensure that the owning plant is the one declaring system resources. */
+  DRAKE_DEMAND(plant == plant_);
+  /* Declare output ports. */
+  vertex_positions_port_ = &this->DeclareAbstractOutputPort(
+      plant, "vertex_positions",
+      []() { return AbstractValue::Make(std::vector<VectorX<T>>{}); },
+      [this](const systems::Context<T>& context, AbstractValue* output) {
+        std::vector<VectorX<T>>& output_value =
+            output->get_mutable_value<std::vector<VectorX<T>>>();
+        output_value.resize(num_bodies());
+        const systems::DiscreteValues<T>& all_discrete_states =
+            context.get_discrete_state();
+        for (int i = 0; i < num_bodies(); ++i) {
+          const systems::BasicVector<T>& discrete_state =
+              all_discrete_states.get_vector(discrete_state_indexes_[i]);
+          const auto& discrete_value = discrete_state.get_value();
+          const int num_dofs = discrete_value.size() / 3;
+          const auto& q = discrete_value.head(num_dofs);
+          output_value[i] = q;
+        }
+      },
+      {systems::System<double>::xd_ticket()});
 
-template <typename T>
-void SoftsimSystem<T>::CopyVertexPositionsOut(
-    const systems::Context<T>& context, std::vector<VectorX<T>>* output) const {
-  output->resize(num_bodies());
-  const systems::DiscreteValues<T>& all_discrete_states =
-      context.get_discrete_state();
+  /* Declare discrete states. */
   for (int i = 0; i < num_bodies(); ++i) {
-    const systems::BasicVector<T>& discrete_state =
-        all_discrete_states.get_vector(i);
-    const auto& discrete_value = discrete_state.get_value();
-    const int num_dofs = discrete_value.size() / 3;
-    const auto& q = discrete_value.head(num_dofs);
-    (*output)[i] = q;
+    discrete_state_indexes_.emplace_back(
+        this->DeclareDiscreteState(plant, model_discrete_states_[i]));
   }
 }
 }  // namespace fixed_fem
@@ -184,4 +157,4 @@ void SoftsimSystem<T>::CopyVertexPositionsOut(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::SoftsimSystem);
+    class ::drake::multibody::fixed_fem::DeformableModel);

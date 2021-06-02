@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -112,6 +113,10 @@ class FemState : public FemStateBase<typename Element::T> {
 
  private:
   friend class FemStateTest;
+
+  std::unique_ptr<FemStateBase<T>> DoClone() const final {
+    return std::make_unique<FemState<Element>>(*this);
+  }
 
   // TODO(xuchenhan-tri): Currently, all cache entries are thrashed when *any*
   //  state (q, qdot, or qddot) is changed. For many FEM models (e.g.
