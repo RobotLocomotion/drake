@@ -15,6 +15,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/framework_common.h"
 
 namespace drake {
 namespace systems {
@@ -201,6 +202,7 @@ class SystemConstraint final {
   /// writing the output to @p value.  @p value will be (non-conservatively)
   /// resized to match the constraint function output.
   void Calc(const Context<T>& context, VectorX<T>* value) const {
+    MaybeValidateSystemIdsMatch(context);
     value->resize(size());
     if (context_calc_function_) {
       context_calc_function_(context, value);
@@ -213,6 +215,7 @@ class SystemConstraint final {
   /// Evaluates the function pointer, and check if all of the outputs
   /// are within the desired bounds.
   boolean<T> CheckSatisfied(const Context<T>& context, double tol) const {
+    MaybeValidateSystemIdsMatch(context);
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(size());
     Calc(context, &value);
@@ -255,15 +258,35 @@ class SystemConstraint final {
   const Eigen::VectorXd& upper_bound() const { return bounds_.upper(); }
   const std::string& description() const { return description_; }
 
+  /// (Internal use only) Gets the id of the subsystem associated with this
+  /// object, if one has been set.
+  const std::optional<internal::SystemId>& get_system_id() const {
+    return system_id_;
+  }
+
+  /// (Internal use only) Records the id of the subsystem associated with this
+  /// object.
+  void set_system_id(internal::SystemId id) { system_id_ = id; }
+
  private:
   static void NoopSystemConstraintCalc(
       const System<T>&, const Context<T>&, VectorX<T>*) {}
+
+  // If this object has a system id, check that it matches the id of the
+  // context parameter.
+  void MaybeValidateSystemIdsMatch(const Context<T>& context) const {
+    DRAKE_DEMAND(!system_id_.has_value() ||
+                 *system_id_ == context.get_system_id());
+  }
 
   const System<T>* const system_;
   const SystemConstraintCalc<T> system_calc_function_;
   const ContextConstraintCalc<T> context_calc_function_;
   const SystemConstraintBounds bounds_;
   const std::string description_;
+
+  // The id of the subsystem associated with this object.
+  std::optional<internal::SystemId> system_id_;
 };
 
 /// An "external" constraint on a System.  This class is intended for use by
