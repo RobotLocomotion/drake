@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":bv",
         ":bvh",
+        ":collision_filter",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
         ":contact_surface_utility",
@@ -92,6 +93,18 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_filter",
+    srcs = ["collision_filter.cc"],
+    hdrs = ["collision_filter.h"],
+    deps = [
+        "//common:essential",
+        "//common:unused",
+        "//geometry:collision_filter_declaration",
+        "//geometry:geometry_ids",
     ],
 )
 
@@ -663,6 +676,13 @@ drake_cc_googletest(
     name = "collisions_exist_callback_test",
     deps = [
         ":collisions_exist_callback",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_filter_test",
+    deps = [
+        ":collision_filter",
     ],
 )
 
