@@ -76,6 +76,9 @@ class AnytimeBsplineSmoother {
    * constraint is enforced at the validation point `t_i` if
    * `(callback(curve.value(t_i)).array() <= influence_threshold).any() ==
    * true`, where `curve` is the input to the smoothing step.
+   * @note `callback` need not return the same number of constraint values
+   * for all `q`, which makes this version more flexible than the one that takes
+   * a `UserConstraintAndThreshold`.
    */
   void AddPositionConstraint(PositionConstraintCallback callback,
                              double influence_threshold,
