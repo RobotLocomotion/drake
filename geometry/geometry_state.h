@@ -11,6 +11,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
@@ -418,6 +419,9 @@ class GeometryState {
   }
 
   //@}
+
+  /** Implementation of CollisionFilterManager::ApplyFilterDeclaration(). */
+  void ApplyFilterDeclaration(const CollisionFilterDeclaration& declaration);
 
   /** @name               Proximity filters
 
