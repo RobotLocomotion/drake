@@ -295,10 +295,11 @@ void ParseJointKeyParams(XMLElement* node,
 }
 
 void ParseJointLimits(XMLElement* node, double* lower, double* upper,
-                      double* velocity, double* effort) {
+                      double* velocity, double* acceleration, double* effort) {
   *lower = -std::numeric_limits<double>::infinity();
   *upper = std::numeric_limits<double>::infinity();
   *velocity = std::numeric_limits<double>::infinity();
+  *acceleration = std::numeric_limits<double>::infinity();
   *effort = std::numeric_limits<double>::infinity();
 
   XMLElement* limit_node = node->FirstChildElement("limit");
@@ -306,6 +307,7 @@ void ParseJointLimits(XMLElement* node, double* lower, double* upper,
     ParseScalarAttribute(limit_node, "lower", lower);
     ParseScalarAttribute(limit_node, "upper", upper);
     ParseScalarAttribute(limit_node, "velocity", velocity);
+    ParseScalarAttribute(limit_node, "drake:acceleration", acceleration);
     ParseScalarAttribute(limit_node, "effort", effort);
   }
 }
@@ -397,6 +399,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
   double upper = std::numeric_limits<double>::infinity();
   double lower = -std::numeric_limits<double>::infinity();
   double velocity = std::numeric_limits<double>::infinity();
+  double acceleration = std::numeric_limits<double>::infinity();
 
   // In MultibodyPlant, the effort limit is a property of the actuator, which
   // isn't created until the transmission element is parsed.  Stash a value
@@ -420,13 +423,15 @@ void ParseJoint(ModelInstanceIndex model_instance,
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     throw_on_custom_joint(false);
-    ParseJointLimits(node, &lower, &upper, &velocity, &effort);
+    ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<RevoluteJoint>(
         name, parent_body, X_PJ,
         child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
+    joint.set_acceleration_limits(
+        Vector1d(-acceleration), Vector1d(acceleration));
   } else if (type.compare("fixed") == 0) {
     throw_on_custom_joint(false);
     plant->AddJoint<WeldJoint>(name, parent_body, X_PJ,
@@ -434,13 +439,15 @@ void ParseJoint(ModelInstanceIndex model_instance,
                                RigidTransformd::Identity());
   } else if (type.compare("prismatic") == 0) {
     throw_on_custom_joint(false);
-    ParseJointLimits(node, &lower, &upper, &velocity, &effort);
+    ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<PrismaticJoint>(
         name, parent_body, X_PJ,
         child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
+    joint.set_acceleration_limits(
+        Vector1d(-acceleration), Vector1d(acceleration));
   } else if (type.compare("floating") == 0) {
     throw_on_custom_joint(false);
     drake::log()->warn("Joint {} specified as type floating which is not "
