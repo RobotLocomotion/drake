@@ -71,6 +71,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       package_map, plant, scene_graph);
 }
 
+const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
+                                         const std::string& name) {
+  const auto model_instance = plant.GetModelInstanceByName(name);
+  return plant.GetFrameByName("__model__", model_instance);
+}
+
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
@@ -259,10 +265,11 @@ struct PlantAndSceneGraph {
   std::unique_ptr<SceneGraph<double>> scene_graph;
 };
 
-PlantAndSceneGraph ParseTestString(const std::string& inner) {
+PlantAndSceneGraph ParseTestString(const std::string& inner,
+                                   const std::string& sdf_version = "1.6") {
   const std::string filename = temp_directory() + "/test_string.sdf";
   std::ofstream file(filename);
-  file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
+  file << "<sdf version='" << sdf_version << "'>" << inner << "\n</sdf>\n";
   file.close();
   PlantAndSceneGraph pair;
   pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
@@ -455,32 +462,121 @@ GTEST_TEST(SdfParser, FloatingBodyPose) {
 }
 
 GTEST_TEST(SdfParser, StaticModelSupported) {
-  // Test that static models are partially supported.
-  PlantAndSceneGraph pair = ParseTestString(R"""(
-<model name='good'>
-  <static>true</static>
-  <link name='a'>
+  {
+    SCOPED_TRACE("Test that static models are partially supported");
+    auto [plant, scene_graph] = ParseTestString(R"""(
+  <model name='good'>
+    <static>true</static>
+    <link name='a'>
+      <pose>1 2 3  0.1 0.2 0.3</pose>
+    </link>
+    <link name='b'>
+      <pose>4 5 6  0.4 0.5 0.6</pose>
+    </link>
+  </model>)""");
+    plant->Finalize();
+    EXPECT_EQ(plant->num_positions(), 0);
+    auto context = plant->CreateDefaultContext();
+    const RigidTransformd X_WA_expected(
+        RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+    const RigidTransformd X_WA =
+        plant->GetFrameByName("a").CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    const RigidTransformd X_WB_expected(
+        RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
+    const RigidTransformd X_WB =
+        plant->GetFrameByName("b").CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+  }
+
+  {
+    SCOPED_TRACE(
+        "Verify that static models don't need to have a canonical link");
+    auto [plant, scene_graph]= ParseTestString(R"""(
+  <model name='a'>
     <pose>1 2 3  0.1 0.2 0.3</pose>
-  </link>
-  <link name='b'>
-    <pose>4 5 6  0.4 0.5 0.6</pose>
-  </link>
-</model>)""");
-  pair.plant->Finalize();
-  EXPECT_EQ(pair.plant->num_positions(), 0);
-  auto context = pair.plant->CreateDefaultContext();
-  const RigidTransformd X_WA_expected(
-      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
-  const RigidTransformd X_WA =
-      pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(
-      X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
-  const RigidTransformd X_WB_expected(
-      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
-  const RigidTransformd X_WB =
-      pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(
-      X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+    <static>true</static>
+  </model>)""", "1.8");
+    plant->Finalize();
+    auto context = plant->CreateDefaultContext();
+    const RigidTransformd X_WA_expected(
+        RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+
+    const auto& frame_A = GetModelFrameByName(*plant, "a");
+    const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame_A.body().node_index(), plant->world_body().node_index());
+  }
+
+  {
+    // Verify that models that contain static models don't need a link
+    SCOPED_TRACE(
+        "Verify that models that contain static models don't need a link");
+    auto [plant, scene_graph] = ParseTestString(R"""(
+  <model name='a'>
+    <pose>1 2 3  0.0 0.0 0.3</pose>
+    <model name='b'>
+      <pose>0 0 0  0.1 0.2 0.0</pose>
+      <static>true</static>
+    </model>
+  </model>)""", "1.8");
+    plant->Finalize();
+    auto context = plant->CreateDefaultContext();
+    const RigidTransformd X_WA_expected(
+        RollPitchYawd(0.0, 0.0, 0.3), Vector3d(1, 2, 3));
+
+    const auto& frame_A = GetModelFrameByName(*plant, "a");
+    const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame_A.body().node_index(), plant->world_body().node_index());
+
+    const RigidTransformd X_WB_expected(
+        RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+
+    const auto &frame_B = GetModelFrameByName(*plant, "a::b");
+    const RigidTransformd X_WB = frame_B.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame_B.body().node_index(), plant->world_body().node_index());
+  }
+}
+
+GTEST_TEST(SdfParser, StaticFrameOnlyModelsSupported) {
+  // Verify that static models can contain just frames
+  auto [plant, scene_graph] = ParseTestString(R"""(
+  <model name='a'>
+    <static>true</static>
+    <pose>1 0 0  0 0 0</pose>
+    <frame name='b'>
+      <pose>0 2 0 0 0 0</pose>
+    </frame>
+    <frame name='c' attached_to='b'>
+      <pose>0 0 3 0 0 0</pose>
+    </frame>
+    <frame name='d'>
+      <pose relative_to='c'>0 0 0 0 0 0.3</pose>
+    </frame>
+  </model>)""", "1.8");
+  plant->Finalize();
+  auto context = plant->CreateDefaultContext();
+
+  auto test_frame = [&, &plant = plant](const std::string& frame_name,
+                                        const RigidTransformd& X_WF_expected) {
+    const auto& frame = plant->GetFrameByName(frame_name);
+    const RigidTransformd X_WF = frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
+                                X_WF.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame.body().node_index(), plant->world_body().node_index());
+  };
+
+  test_frame("__model__", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 0, 0)});
+  test_frame("b", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 2, 0)});
+  test_frame("c", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 2, 3)});
+  test_frame("d", {RollPitchYawd(0.0, 0.0, 0.3), Vector3d(1, 2, 3)});
 }
 
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
@@ -555,9 +651,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
           "Joint damping must be a non-negative number.");
 }
 
-// TODO(addisu, eric.cousineau): Update this unittest pending proper usage of
-// SDFormat 1.8, admitting some issues with SDFormat <=1.7 + libsdformat<=10.
-GTEST_TEST(SdfParser, DISABLED_IncludeTags) {
+GTEST_TEST(SdfParser, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
@@ -574,15 +668,15 @@ GTEST_TEST(SdfParser, DISABLED_IncludeTags) {
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
-  // We should have loaded 3 more models.
-  EXPECT_EQ(plant.num_model_instances(), 5);
+  // We should have loaded 5 more models.
+  EXPECT_EQ(plant.num_model_instances(), 7);
   // The models should have added 8 more bodies.
   EXPECT_EQ(plant.num_bodies(), 9);
   // The models should have added 5 more joints.
   EXPECT_EQ(plant.num_joints(), 5);
 
   // There should be a model instance with the name "robot1".
-  EXPECT_TRUE(plant.HasModelInstanceNamed("robot1"));
+  ASSERT_TRUE(plant.HasModelInstanceNamed("robot1"));
   ModelInstanceIndex robot1_model = plant.GetModelInstanceByName("robot1");
   // There should be a body with the name "base_link".
   EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
@@ -592,7 +686,7 @@ GTEST_TEST(SdfParser, DISABLED_IncludeTags) {
   EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
 
   // There should be a model instance with the name "robot2".
-  EXPECT_TRUE(plant.HasModelInstanceNamed("robot2"));
+  ASSERT_TRUE(plant.HasModelInstanceNamed("robot2"));
   ModelInstanceIndex robot2_model = plant.GetModelInstanceByName("robot2");
 
   // There should be a body with the name "base_link".
@@ -604,20 +698,28 @@ GTEST_TEST(SdfParser, DISABLED_IncludeTags) {
 
   // There should be a model instance with the name "weld_robots".
   EXPECT_TRUE(plant.HasModelInstanceNamed("weld_models"));
-  ModelInstanceIndex weld_model = plant.GetModelInstanceByName("weld_models");
+
+  ASSERT_TRUE(plant.HasModelInstanceNamed("weld_models::robot1"));
+  ModelInstanceIndex weld_model_robot1_model =
+      plant.GetModelInstanceByName("weld_models::robot1");
+
+  ASSERT_TRUE(plant.HasModelInstanceNamed("weld_models::robot2"));
+  ModelInstanceIndex weld_model_robot2_model =
+      plant.GetModelInstanceByName("weld_models::robot2");
 
   // There should be all the bodies and joints contained in "simple_robot1"
-  // prefixed with the model's name of "robot1".
-  EXPECT_TRUE(plant.HasBodyNamed("robot1::base_link", weld_model));
-  EXPECT_TRUE(plant.HasBodyNamed("robot1::moving_link", weld_model));
-  EXPECT_TRUE(plant.HasJointNamed("robot1::slider", weld_model));
+  // which is inside "weld_models"
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", weld_model_robot1_model));
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", weld_model_robot1_model));
+  EXPECT_TRUE(plant.HasJointNamed("slider", weld_model_robot1_model));
   // There should be all the bodies and joints contained in "simple_robot2"
-  // prefixed with the model's name of "robot2".
-  EXPECT_TRUE(plant.HasBodyNamed("robot2::base_link", weld_model));
-  EXPECT_TRUE(plant.HasBodyNamed("robot2::moving_link", weld_model));
-  EXPECT_TRUE(plant.HasJointNamed("robot2::slider", weld_model));
-  // There should be a joint named "weld_robots"
-  EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model));
+  // which is inside "weld_models"
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", weld_model_robot2_model));
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", weld_model_robot2_model));
+  EXPECT_TRUE(plant.HasJointNamed("slider", weld_model_robot2_model));
+  // There should be a joint named "weld_robots". By convention, the joint
+  // will have the same model instance as the child frame.
+  EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model_robot2_model));
 }
 
 GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
@@ -905,7 +1007,7 @@ void FailWithUnsupportedRelativeTo(const std::string& inner) {
       ParseTestString(inner),
       std::runtime_error,
       R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
-      R"(in <inertial/> or <model/> tags.)");
+      R"(in <inertial/> or top-level <model/> tags in model files.)");
 }
 
 void FailWithInvalidWorld(const std::string& inner) {
@@ -1209,6 +1311,455 @@ GTEST_TEST(SdfParser, ReflectedInertiaParametersParsing) {
   }
 }
 
+// Verifies that the SDFormat loader can add directly nested models to a
+// multibody plant. For reference, the files test/integration/model_dom.cc and
+// test/integration/nested_model.cc in the libsdformat source code (tag
+// sdformat11_11.0.0) contain tests that show more detailed behavior of
+// SDFormat's nested model support.
+GTEST_TEST(SdfParser, LoadDirectlyNestedModelsInWorld) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "world_with_directly_nested_models.sdf");
+  MultibodyPlant<double> plant(0.0);
+
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant.num_model_instances(), 2);
+  ASSERT_EQ(plant.num_bodies(), 1);
+  ASSERT_EQ(plant.num_joints(), 0);
+
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  plant.Finalize();
+
+  // We should have loaded 3 more models.
+  EXPECT_EQ(plant.num_model_instances(), 5);
+  // The models should have added 4 more bodies.
+  EXPECT_EQ(plant.num_bodies(), 5);
+  // The models should have added 3 more joints.
+  EXPECT_EQ(plant.num_joints(), 3);
+
+  // There should be a model instance with the name "parent_model".
+  ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model"));
+
+  // There should be a model instance with the name "parent_model::robot1".
+  // This is the model "robot1" nested inside "parent_model"
+  ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model::robot1"));
+  ModelInstanceIndex robot1_model =
+    plant.GetModelInstanceByName("parent_model::robot1");
+
+  // There should be a body with the name "base_link".
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
+  // There should be another body with the name "moving_link".
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot1_model));
+  // There should be joint with the name "slider".
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
+
+  // There should be a model instance with the name "parent_model::robot2".
+  // This is the model "robot2" nested inside "parent_model"
+  ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model::robot2"));
+  ModelInstanceIndex robot2_model =
+    plant.GetModelInstanceByName("parent_model::robot2");
+
+  // There should be a body with the name "base_link".
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot2_model));
+  // There should be another body with the name "moving_link".
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot2_model));
+  // There should be joint with the name "slider".
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot2_model));
+
+  // There should be a joint named "weld_robots". By convention, the joint
+  // will have the same model instance as the child frame.
+  EXPECT_TRUE(plant.HasJointNamed("weld_robots", robot2_model));
+}
+
+// Same test as LoadDirectlyNestedModelsInWorld, but where a model file contains
+// direclty nested models.
+GTEST_TEST(SdfParser, LoadDirectlyNestedModelsInModel) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "model_with_directly_nested_models.sdf");
+  MultibodyPlant<double> plant(0.0);
+
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant.num_model_instances(), 2);
+  ASSERT_EQ(plant.num_bodies(), 1);
+  ASSERT_EQ(plant.num_joints(), 0);
+
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  plant.Finalize();
+
+  // We should have loaded 4 more models.
+  EXPECT_EQ(plant.num_model_instances(), 6);
+  // The models should have added 4 more bodies.
+  EXPECT_EQ(plant.num_bodies(), 5);
+  // The models should have added 3 more joints.
+  EXPECT_EQ(plant.num_joints(), 3);
+
+  // There should be a model instance with the name "grand_parent_model" (top
+  // level model).
+  ASSERT_TRUE(plant.HasModelInstanceNamed("grand_parent_model"));
+
+  // There should be a model instance with the name
+  // "grand_parent_model::parent_model". This is the model "parent_model"
+  // nested inside "grand_parent_model"
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed("grand_parent_model::parent_model"));
+
+  // There should be a model instance with the name
+  // "grand_parent_model::parent_model::robot1". This is the model "robot1"
+  // nested inside "parent_model" which itself is nested inside
+  // grand_parent_model
+  ASSERT_TRUE(plant.HasModelInstanceNamed(
+        "grand_parent_model::parent_model::robot1"));
+  ModelInstanceIndex robot1_model = plant.GetModelInstanceByName(
+      "grand_parent_model::parent_model::robot1");
+
+  // There should be a body with the name "base_link".
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
+  // There should be another body with the name "moving_link".
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot1_model));
+  // There should be joint with the name "slider".
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
+
+  // There should be a model instance with the name
+  // "grand_parent_model::parent_model::robot2". This is the model "robot2"
+  // nested inside "parent_model" which itself is nested inside
+  // grand_parent_model
+  ASSERT_TRUE(plant.HasModelInstanceNamed(
+        "grand_parent_model::parent_model::robot2"));
+  ModelInstanceIndex robot2_model = plant.GetModelInstanceByName(
+      "grand_parent_model::parent_model::robot2");
+
+  // There should be a body with the name "base_link".
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot2_model));
+  // There should be another body with the name "moving_link".
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot2_model));
+  // There should be joint with the name "slider".
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot2_model));
+
+  // There should be a joint named "weld_robots". By convention, the joint
+  // will have the same model instance as the child frame.
+  EXPECT_TRUE(plant.HasJointNamed("weld_robots", robot2_model));
+}
+
+// Example model taken from
+// http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&#1-4-4-placement-frame-model-placement_frame-and-include-placement_frame
+GTEST_TEST(SdfParser, ModelPlacementFrame) {
+  const std::string model_string = R"""(
+<model name='table'> <!-- T -->
+  <pose>0 10 0  0 0 0</pose>
+  <link name='table_top'> <!-- S -->
+    <pose>0 0 1  0 0 0</pose>
+  </link>
+
+  <model name='mug' placement_frame='base'> <!-- M -->
+    <pose relative_to='table_top'/>
+    <link name='handle'> <!-- H -->
+      <pose>0.1 0 0  0 0 0</pose>
+    </link>
+    <link name='base'> <!-- B -->
+      <pose>0 0 -0.1  0 0 0</pose>
+    </link>
+  </model>
+
+</model>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+  EXPECT_GT(plant->num_positions(), 0);
+  auto context = plant->CreateDefaultContext();
+
+  ASSERT_TRUE(plant->HasModelInstanceNamed("table::mug"));
+  ModelInstanceIndex model_m = plant->GetModelInstanceByName("table::mug");
+
+  ASSERT_TRUE(plant->HasFrameNamed("mug"));
+  const Frame<double>& frame_M = plant->GetFrameByName("mug");
+  ASSERT_TRUE(plant->HasFrameNamed("__model__", model_m));
+  // frame M is equivalent to mug::__model__
+  EXPECT_TRUE(CompareMatrices(
+      plant->GetFrameByName("__model__", model_m)
+          .CalcPoseInWorld(*context)
+          .GetAsMatrix4(),
+      plant->GetFrameByName("mug").CalcPoseInWorld(*context).GetAsMatrix4(),
+      kEps));
+
+  ASSERT_TRUE(plant->HasFrameNamed("table_top"));
+  const Frame<double>& frame_S = plant->GetFrameByName("table_top");
+
+  ASSERT_TRUE(plant->HasFrameNamed("base", model_m));
+  const Frame<double>& frame_B = plant->GetFrameByName("base", model_m);
+
+  ASSERT_TRUE(plant->HasFrameNamed("handle", model_m));
+  const Frame<double>& frame_H = plant->GetFrameByName("handle", model_m);
+
+  // X_SM = X_SB * X_MB^-1.
+  const RigidTransformd X_SM_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.0, 0.0, 0.1));
+
+  const RigidTransformd X_SB_expected = RigidTransformd::Identity();
+  // X_SH = X_SB * X_HB^-1.
+  //      = X_SB * (X_MH^-1 * X_MB)^-1.
+  const RigidTransformd X_SH_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 0.0, 0.1));
+
+  const RigidTransformd X_SM = frame_M.CalcPose(*context, frame_S);
+  const RigidTransformd X_SH = frame_H.CalcPose(*context, frame_S);
+  const RigidTransformd X_SB = frame_B.CalcPose(*context, frame_S);
+
+  EXPECT_TRUE(CompareMatrices(
+      X_SM_expected.GetAsMatrix4(), X_SM.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_SB_expected.GetAsMatrix4(), X_SB.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_SH_expected.GetAsMatrix4(), X_SH.GetAsMatrix4(), kEps));
+
+  // X_WM = X_WT * X_TM
+  // X_TM = X_TS * X_MS^-1
+  // X_MS = X_MB * X_SB^-1
+  // The model frame M is 0.1m in the +z axis from frame B, but we know from the
+  // use of placement_frame that frame B and frame S are coincident. So X_WM is
+  // 0.1m in the +z axis from frame S.
+  const RigidTransformd X_WM_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.0, 10.0, 1.1));
+
+  const RigidTransformd X_WB_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.0, 10.0, 1.0));
+
+  const RigidTransformd X_WH_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 10.0, 1.1));
+
+  const RigidTransformd X_WM = frame_M.CalcPoseInWorld(*context);
+  const RigidTransformd X_WH = frame_H.CalcPoseInWorld(*context);
+  const RigidTransformd X_WB = frame_B.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WM_expected.GetAsMatrix4(), X_WM.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WH_expected.GetAsMatrix4(), X_WH.GetAsMatrix4(), kEps));
+}
+
+// Verify that poses can be given relative to deeply nested frames.
+GTEST_TEST(SdfParser, PoseRelativeToMultiLevelNestedFrame) {
+  const std::string model_string = R"""(
+<model name='a'>
+  <pose>0.1 0 0  0 0 0</pose>
+  <model name='b'>
+    <pose>0 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <link name='d'>
+        <pose>0 0.0 0.0  0 0.5 0.6</pose>
+      </link>
+    </model>
+  </model>
+  <link name='e'>
+    <pose relative_to="b::c::d">0 0 0  0.4 0 0.0</pose>
+  </link>
+</model>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+  EXPECT_GT(plant->num_positions(), 0);
+  auto context = plant->CreateDefaultContext();
+
+  const RigidTransformd X_WE_expected(RollPitchYawd(0.4, 0.5, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const RigidTransformd X_WE =
+      plant->GetFrameByName("e").CalcPoseInWorld(*context);
+  EXPECT_TRUE(
+      CompareMatrices(X_WE_expected.GetAsMatrix4(), X_WE.GetAsMatrix4(), kEps));
+}
+
+// Verify that joint axis can be expressed in deeply nested frames.
+GTEST_TEST(SdfParser, AxisXyzExperssedInMultiLevelNestedFrame) {
+  const std::string model_string = fmt::format(R"""(
+<model name='a'>
+  <pose>0.1 0 0  0 0 0</pose>
+  <model name='b'>
+    <pose>0 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <link name='d'>
+        <pose>0 0.0 0.0  0 {} {}</pose>
+      </link>
+    </model>
+  </model>
+  <link name='e'/>
+  <link name='f'/>
+  <joint name="j" type="revolute">
+    <parent>e</parent>
+    <child>f</child>
+    <axis>
+      <xyz expressed_in="b::c::d">1 0 0</xyz>
+    </axis>
+  </joint>
+</model>)""", M_PI_2, M_PI_2);
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+  EXPECT_GT(plant->num_positions(), 0);
+  auto context = plant->CreateDefaultContext();
+
+  const RollPitchYawd R_WD(0.0, M_PI_2, M_PI_2);
+
+  const Vector3d xyz_D(1, 0, 0);
+
+  const Vector3d xyz_W_expected = R_WD.ToRotationMatrix() * xyz_D;
+
+  DRAKE_EXPECT_NO_THROW(plant->GetJointByName<RevoluteJoint>("j"));
+  const RevoluteJoint<double>& joint_j =
+      plant->GetJointByName<RevoluteJoint>("j");
+  EXPECT_TRUE(CompareMatrices(xyz_W_expected, joint_j.revolute_axis(), kEps));
+}
+
+// Verify frames can be attached to nested links or models
+GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
+  const std::string model_string = R"""(
+<model name='a'>
+  <pose>0.1 0 0  0 0 0</pose>
+  <model name='b'>
+    <pose>0 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <link name='d'>
+        <pose>0 0.0 0.0  0 0.5 0.6</pose>
+      </link>
+    </model>
+  </model>
+  <frame name='e' attached_to='b::c::d'> <!-- Frame attached to a link -->
+    <pose>0 0 0  0.4 0 0.0</pose>
+  </frame>
+  <frame name='f' attached_to='b::c'> <!-- Frame attached to a model -->
+    <pose>0 0 0  0.4 0.5 0.6</pose>
+  </frame>
+</model>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+  EXPECT_GT(plant->num_positions(), 0);
+  auto context = plant->CreateDefaultContext();
+
+  const RigidTransformd X_WE_expected(RollPitchYawd(0.4, 0.5, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd X_WF_expected(RollPitchYawd(0.4, 0.5, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const auto& frame_E = plant->GetFrameByName("e");
+  const RigidTransformd X_WE = frame_E.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WE_expected.GetAsMatrix4(), X_WE.GetAsMatrix4(), kEps));
+
+  const auto& frame_F = plant->GetFrameByName("f");
+  const RigidTransformd X_WF = frame_F.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
+
+  // Also check that the frame is attached to the right body
+  ModelInstanceIndex model_c_instance =
+      plant->GetModelInstanceByName("a::b::c");
+  EXPECT_EQ(frame_E.body().node_index(),
+            plant->GetBodyByName("d", model_c_instance).node_index());
+
+  EXPECT_EQ(frame_F.body().node_index(),
+            plant->GetBodyByName("d", model_c_instance).node_index());
+}
+
+// Verify frames and links can have the same local name without violating name
+// uniqueness requirements
+GTEST_TEST(SdfParser, RepeatedLinkName) {
+  const std::string model_string = R"""(
+<world name='a'>
+  <model name='b1'>
+    <link name='c'/>
+    <frame name='d'/>
+  </model>
+  <model name='b2'>
+    <link name='c'/>
+    <frame name='d'/>
+  </model>
+</world>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+}
+
+// Verify frames can be attached to models in a SDFormat world
+GTEST_TEST(SdfParser, FrameAttachedToModelFrameInWorld) {
+  const std::string model_string = R"""(
+<world name='a'>
+  <model name='b'>
+    <pose>0.1 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <link name='d'/>
+    </model>
+  </model>
+  <frame name='e' attached_to='b'>
+    <pose>0 0 0.3  0.0 0.0 0.0</pose>
+  </frame>
+  <frame name='f' attached_to='b::c'>
+    <pose>0 0 0  0.0 0.0 0.6</pose>
+  </frame>
+</world>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+  EXPECT_GT(plant->num_positions(), 0);
+  auto context = plant->CreateDefaultContext();
+
+  const RigidTransformd X_WE_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const auto& frame_E = plant->GetFrameByName("e");
+  const RigidTransformd X_WE = frame_E.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WE_expected.GetAsMatrix4(), X_WE.GetAsMatrix4(), kEps));
+
+  const auto& frame_F = plant->GetFrameByName("f");
+  const RigidTransformd X_WF = frame_F.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
+
+  // Also check that the frame is attached to the right body
+  EXPECT_EQ(frame_E.body().node_index(),
+            plant->GetBodyByName("d").node_index());
+
+  EXPECT_EQ(frame_F.body().node_index(),
+            plant->GetBodyByName("d").node_index());
+}
+
+GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
+  // Verify that non-default canonical links are handled properly. Here we have
+  // three different types of references used for the canonical link:
+  // * c::e - Nested link
+  // * f - Link that is not the first link in the model
+  const std::string model_string = R"""(
+  <model name='a' canonical_link='c::e'>
+    <link name='b'/>
+    <model name='c' canonical_link='f'>
+      <link name='d'/>
+      <link name='e'/>
+      <link name='f'/>
+    </model>
+  </model>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+
+  EXPECT_EQ(GetModelFrameByName(*plant, "a").body().index(),
+            plant->GetBodyByName("e").index());
+
+  EXPECT_EQ(GetModelFrameByName(*plant, "a::c").body().index(),
+            plant->GetBodyByName("f").index());
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

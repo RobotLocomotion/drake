@@ -37,6 +37,8 @@
       </collision>
       <!-- This element is for testing the <drake:capsule> spelling. -->
       <!-- Immediately above, we tested the standard <capsule> spelling. -->
+      <!-- TODO(azeey): We should deprecate use of <drake:capsule>
+        per https://github.com/RobotLocomotion/drake/issues/14837 -->
       <collision name="DrakeCapsule">
         <geometry>
           <drake:capsule>
@@ -72,6 +74,8 @@
       </collision>
       <!-- This element is for testing the <drake:ellipsoid> spelling. -->
       <!-- Immediately above, we tested the standard <ellipsoid> spelling. -->
+      <!-- TODO(azeey): We should deprecate use of <drake:ellipsoid>
+        per https://github.com/RobotLocomotion/drake/issues/14837 -->
       <collision name="DrakeEllipsoid">
         <geometry>
           <drake:ellipsoid>

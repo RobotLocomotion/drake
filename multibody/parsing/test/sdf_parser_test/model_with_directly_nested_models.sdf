@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="grand_parent_model">
+    <model name="parent_model">
+      <model name="robot1">
+        <link name="base_link"/>
+        <link name="moving_link"/>
+        <joint name="slider" type="prismatic">
+          <parent>base_link</parent>
+          <child>moving_link</child>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+      </model>
+      <model name="robot2">
+        <link name="base_link"/>
+        <link name="moving_link"/>
+        <joint name="slider" type="prismatic">
+          <parent>base_link</parent>
+          <child>moving_link</child>
+          <axis>
+            <xyz>0 0 1</xyz>
+          </axis>
+        </joint>
+      </model>
+      <joint name="weld_robots" type="revolute">
+        <parent>robot1::base_link</parent>
+        <child>robot2::base_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>
+  </model>
+</sdf>
+
