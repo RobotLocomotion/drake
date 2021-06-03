@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -21,7 +22,9 @@ Binding<LinearCost> ParseLinearCost(const symbolic::Expression& e);
 /*
  * Assist MathematicalProgram::AddQuadraticCost(...).
  */
-Binding<QuadraticCost> ParseQuadraticCost(const symbolic::Expression& e);
+Binding<QuadraticCost> ParseQuadraticCost(
+    const symbolic::Expression& e,
+    std::optional<bool> is_convex = std::nullopt);
 
 /*
  * Assist MathematicalProgram::AddPolynomialCost(...).

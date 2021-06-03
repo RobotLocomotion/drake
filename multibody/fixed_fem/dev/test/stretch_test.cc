@@ -57,37 +57,28 @@ class StretchTest : public ::testing::Test {
     return mesh;
   }
 
-  /* Create the FEM model of the geometry being stretched. */
-  static std::unique_ptr<ModelType> MakeBoxFemModel() {
-    const ConstitutiveModelType constitutive_model(kYoungsModulus,
-                                                   kPoissonRatio);
-    const VolumeMesh<T> mesh = MakeBoxTetMesh();
-    auto model = std::make_unique<ModelType>();
-    model->AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model,
-                                                  kDensity);
-    model->SetGravity({0, 0, 0});
-    return model;
-  }
-
   /* The rest positions of the vertices of the bar. */
-  static Matrix3X<T> MakeRestPositions() {
-    const std::unique_ptr<ModelType> model = MakeBoxFemModel();
-    const std::unique_ptr<FemStateBase<T>> state = model->MakeFemStateBase();
+  Matrix3X<T> MakeRestPositions() const {
+    const std::unique_ptr<FemStateBase<T>> state = model_.MakeFemStateBase();
     return Eigen::Map<const Matrix3X<T>>(state->q().data(), 3,
                                          state->q().size() / 3);
   }
 
   void SetUp() override {
     /* Set up model. */
-    std::unique_ptr<ModelType> model = MakeBoxFemModel();
-    const std::unique_ptr<FemStateBase<T>> state = model->MakeFemStateBase();
-    model->SetDirichletBoundaryCondition(MakeStretchBc(state->q()));
+    const ConstitutiveModelType constitutive_model(kYoungsModulus,
+                                                   kPoissonRatio);
+    const VolumeMesh<T> mesh = MakeBoxTetMesh();
+    model_.AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model,
+                                                  kDensity);
+    model_.SetGravity({0, 0, 0});
+    const std::unique_ptr<FemStateBase<T>> state = model_.MakeFemStateBase();
+    model_.SetDirichletBoundaryCondition(MakeStretchBc(state->q()));
 
     /* Set up solver. */
-    solver_ = std::make_unique<FemSolver<T>>(std::move(model));
-    solver_->set_linear_solve_tolerance(kTol);
-    solver_->set_relative_tolerance(kTol);
-    solver_->set_absolute_tolerance(kTol);
+    solver_.set_linear_solve_tolerance(kTol);
+    solver_.set_relative_tolerance(kTol);
+    solver_.set_absolute_tolerance(kTol);
   }
 
   /* Given the rest positions, creates a Dirichlet boundary condition that
@@ -119,16 +110,16 @@ class StretchTest : public ::testing::Test {
     return bc;
   }
 
+  ModelType model_;
   /* The solver under test. */
-  std::unique_ptr<FemSolver<T>> solver_;
+  FemSolver<T> solver_{&model_};
 };
 
 /* Tests that FEM solution matches the analytical solution provided in
  doc/stretch_bar_test.pdf. */
 TEST_F(StretchTest, Stretch) {
-  const FemModelBase<T>& model = solver_->model();
-  std::unique_ptr<FemStateBase<T>> state = model.MakeFemStateBase();
-  solver_->SolveStaticModelWithInitialGuess(state.get());
+  std::unique_ptr<FemStateBase<T>> state = model_.MakeFemStateBase();
+  solver_.SolveStaticModelWithInitialGuess(state.get());
 
   /* The equilibrium positions and the rest positions. */
   const Matrix3X<T> q = Eigen::Map<const Matrix3X<T>>(state->q().data(), 3,

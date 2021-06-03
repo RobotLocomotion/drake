@@ -22,6 +22,7 @@ class LinearSystemSolver final : public SolverBase {
   static bool is_available();
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  static std::string UnsatisfiedProgramAttributes(const MathematicalProgram&);
   //@}
 
   // A using-declaration adds these methods into our class's Doxygen.

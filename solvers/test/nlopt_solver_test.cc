@@ -34,6 +34,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
     TestQPonUnitBallExample(solver);
   }
 }
+
+GTEST_TEST(NloptSolverTest, TestNonconvexQP) {
+  NloptSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, false);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

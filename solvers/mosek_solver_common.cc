@@ -6,14 +6,15 @@
 #include <cstring>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 
 MosekSolver::MosekSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+                 &UnsatisfiedProgramAttributes) {}
 
 MosekSolver::~MosekSolver() = default;
 
@@ -28,7 +29,12 @@ bool MosekSolver::is_enabled() {
           (std::strlen(moseklm_license_file) > 0));
 }
 
-bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+namespace {
+// If the program is compatible with this solver, returns true and clears the
+// explanation.  Otherwise, returns false and sets the explanation.  In either
+// case, the explanation can be nullptr in which case it is ignored.
+bool CheckAttributes(const MathematicalProgram& prog,
+                     std::string* explanation) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint,
@@ -39,8 +45,20 @@ bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kExponentialConeConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
           ProgramAttribute::kBinaryVariable});
-  return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access());
+  return internal::CheckConvexSolverAttributes(
+      prog, solver_capabilities.access(), "MosekSolver", explanation);
+}
+}  // namespace
+
+bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+  return CheckAttributes(prog, nullptr);
+}
+
+std::string MosekSolver::UnsatisfiedProgramAttributes(
+    const MathematicalProgram& prog) {
+  std::string explanation;
+  CheckAttributes(prog, &explanation);
+  return explanation;
 }
 
 }  // namespace solvers

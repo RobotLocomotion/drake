@@ -85,7 +85,6 @@ enum class CalcContactSurfaceResult {
                         //< pair.
   kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
   kSameCompliance,      //< The two geometries have the same compliance type.
-  kUnsupportedScalar,   //< The computation scalar type is unsupported.
 };
 
 /* Computes ContactSurface using the algorithm appropriate to the Shape types
@@ -101,7 +100,7 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       DRAKE_DEMAND(!rigid.is_half_space());
       // Soft half space with rigid mesh.
       const SurfaceMesh<double>& mesh_R = rigid.mesh();
-      const Bvh<SurfaceMesh<double>>& bvh_R = rigid.bvh();
+      const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
           id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR);
@@ -111,7 +110,7 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       const auto& field_S =
           dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
               soft.pressure_field());
-      const Bvh<VolumeMesh<double>>& bvh_S = soft.bvh();
+      const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
       return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
           id_S, field_S, bvh_S, X_WS, id_R, X_WR);
     }
@@ -119,9 +118,9 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     // soft cannot be a half space; so this must be mesh-mesh.
     const VolumeMeshFieldLinear<double, double>& field_S =
         soft.pressure_field();
-    const Bvh<VolumeMesh<double>>& bvh_S = soft.bvh();
+    const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
     const SurfaceMesh<double>& mesh_R = rigid.mesh();
-    const Bvh<SurfaceMesh<double>>& bvh_R = rigid.bvh();
+    const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
     return ComputeContactSurfaceFromSoftVolumeRigidSurface(
         id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
@@ -158,12 +157,6 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   }
   if (type_A == type_B) {
     return CalcContactSurfaceResult::kSameCompliance;
-  }
-
-  // If we have *generally* bad configured hydroelastics, we want that to be
-  // reported over a "bad" scalar type.
-  if constexpr (!std::is_same<T, double>::value) {
-    return CalcContactSurfaceResult::kUnsupportedScalar;
   }
 
   bool A_is_rigid = type_A == HydroelasticType::kRigid;
@@ -243,12 +236,6 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         throw std::logic_error(fmt::format(
             "Requested contact between two half spaces with ids {} and {}; "
             "that is not allowed", encoding_a.id(), encoding_b.id()));
-      case CalcContactSurfaceResult::kUnsupportedScalar:
-        throw std::logic_error(fmt::format(
-            "Requested AutoDiff-valued contact surface between two geometries "
-            "with hydroelastic representation but for scalar type {}; not "
-            "currently supported.",
-            NiceTypeName::Get<T>()));
       case CalcContactSurfaceResult::kCalculated:
         // Already handled above.
         break;
@@ -299,13 +286,6 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
 
     // Surface calculated; we're done.
     if (result == CalcContactSurfaceResult::kCalculated) return false;
-    if (result == CalcContactSurfaceResult::kUnsupportedScalar) {
-      throw std::logic_error(fmt::format(
-          "Requested AutoDiff-valued contact surface between two geometries "
-          "with hydroelastic representation but for scalar type {}; not "
-          "currently supported.",
-          NiceTypeName::Get<T>()));
-    }
 
     // Fall back to point pair.
     penetration_as_point_pair::CallbackData<T> point_data{

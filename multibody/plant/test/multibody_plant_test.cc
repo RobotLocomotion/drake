@@ -285,8 +285,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->GetForceElement<RevoluteSpring>(gravity_field_index),
       std::logic_error,
-      ".*not of type '.*RevoluteSpring<double>' but of type "
-      "'.*UniformGravityFieldElement<double>'.");
+      ".*not of type .*RevoluteSpring.* but of type "
+      ".*UniformGravityFieldElement.*");
   const ForceElementIndex invalid_force_index(plant->num_force_elements() + 1);
   EXPECT_ANY_THROW(plant->GetForceElement<RevoluteSpring>(invalid_force_index));
 
@@ -320,8 +320,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointByName<PrismaticJoint>(parameters.shoulder_joint_name(),
                                             shoulder.model_instance()),
       std::logic_error,
-      ".*not of type '.*PrismaticJoint<double>' but of type "
-      "'.*RevoluteJoint<double>'.");
+      ".*not of type .*PrismaticJoint.* but of type "
+      ".*RevoluteJoint.*");
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
@@ -453,6 +453,10 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   EXPECT_EQ(new_derivatives->size(), 0);
   DRAKE_EXPECT_NO_THROW(
       plant.CalcTimeDerivatives(*context, new_derivatives.get()));
+  VectorXd residual = plant.AllocateImplicitTimeDerivativesResidual();
+  EXPECT_EQ(residual.size(), 0);
+  DRAKE_EXPECT_NO_THROW(plant.CalcImplicitTimeDerivativesResidual(
+      *context, *new_derivatives, &residual));
 }
 
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
@@ -721,6 +725,12 @@ class AcrobotPlantTests : public ::testing::Test {
 
     EXPECT_TRUE(CompareMatrices(
         xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
+
+    // Verify that the implicit dynamics match the continuous ones.
+    VectorXd residual = diagram_->AllocateImplicitTimeDerivativesResidual();
+    diagram_->CalcImplicitTimeDerivativesResidual(*context_, *derivatives_,
+                                                  &residual);
+    EXPECT_TRUE(CompareMatrices(residual, VectorXd::Zero(4), 1e-14));
   }
 
   // Verifies the computation performed by

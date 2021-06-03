@@ -9,7 +9,7 @@ namespace contact_solvers {
 namespace internal {
 
 struct PgsSolverParameters {
-  // Over-relaxation paramter, in (0, 1]
+  // Over-relaxation parameter, in (0, 1]
   double omega{1};
   // Absolute contact velocity tolerance, m/s. See VerifyConvergenceCriteria().
   double abs_tolerance{1.0e-4};

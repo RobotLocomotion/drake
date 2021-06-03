@@ -2,7 +2,9 @@
 
 #include <limits>
 #include <optional>
+#include <string>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -20,6 +22,8 @@ using Eigen::Matrix3d;
 using Eigen::Matrix2d;
 using std::numeric_limits;
 using drake::symbolic::Expression;
+
+using ::testing::HasSubstr;
 
 namespace drake {
 namespace solvers {
@@ -643,6 +647,33 @@ void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver) {
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
                                 Eigen::Vector2d(-0.85714286, 3.52380952),
                                 1e-5));
+  }
+}
+
+void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
+                     double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto nonconvex_cost = prog.AddQuadraticCost(-x(0) * x(0) + x(1) * x(1) + 2);
+  // Use a description that would never be mistaken as any other part of the
+  // error message.
+  const std::string description{"lorem ipsum"};
+  nonconvex_cost.evaluator()->set_description(description);
+  prog.AddBoundingBoxConstraint(0, 1, x);
+  if (convex_solver) {
+    EXPECT_FALSE(solver.AreProgramAttributesSatisfied(prog));
+    EXPECT_THAT(solver.ExplainUnsatisfiedProgramAttributes(prog),
+                HasSubstr("is non-convex"));
+    EXPECT_THAT(solver.ExplainUnsatisfiedProgramAttributes(prog),
+                HasSubstr(description));
+  } else {
+    MathematicalProgramResult result;
+    // Use a non-zero initial guess, since at x = [0, 0], the gradient is 0.
+    solver.Solve(prog, Eigen::Vector2d(0.1, 0.1), std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(1, 0), tol));
+    EXPECT_NEAR(result.get_optimal_cost(), 1., tol);
   }
 }
 

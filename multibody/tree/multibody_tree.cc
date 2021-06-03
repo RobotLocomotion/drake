@@ -1,5 +1,6 @@
 #include "drake/multibody/tree/multibody_tree.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -10,6 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/body_node_welded.h"
@@ -85,6 +87,18 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
+const std::string& MultibodyTree<T>::GetModelInstanceName(
+    ModelInstanceIndex model_instance) const {
+  const auto it = instance_index_to_name_.find(model_instance);
+  if (it == instance_index_to_name_.end()) {
+    throw std::logic_error(
+        fmt::format("There is no model instance id {} in the model.",
+                    std::to_string(model_instance)));
+  }
+  return it->second;
+}
+
+template <typename T>
 bool MultibodyTree<T>::HasUniqueFreeBaseBodyImpl(
     ModelInstanceIndex model_instance) const {
   std::optional<BodyIndex> base_body_index =
@@ -109,6 +123,347 @@ const Body<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
                            " has a unique base body, but it is not free.");
   }
   return *owned_bodies_[base_body_index.value()];
+}
+
+namespace {
+
+// Given an ElementIndex type (e.g., BodyIndex) as a template argument, returns
+// the name of the corresponding class (e.g., "Body").
+template <typename ElementIndex>
+std::string_view GetElementClassname() {
+  if constexpr (std::is_same_v<ElementIndex, BodyIndex>) {
+    return "Body";
+  }
+  if constexpr (std::is_same_v<ElementIndex, FrameIndex>) {
+    return "Frame";
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointIndex>) {
+    return "Joint";
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointActuatorIndex>) {
+    return "JointActuator";
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Given a tree and element index, returns the corresponding `const Element&`.
+template <typename T, typename ElementIndex>
+const auto& GetElementByIndex(
+    const MultibodyTree<T>& tree,
+    const ElementIndex index) {
+  if constexpr (std::is_same_v<ElementIndex, BodyIndex>) {
+    return tree.get_body(index);
+  }
+  if constexpr (std::is_same_v<ElementIndex, FrameIndex>) {
+    return tree.get_frame(index);
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointIndex>) {
+    return tree.get_joint(index);
+  }
+  if constexpr (std::is_same_v<ElementIndex, JointActuatorIndex>) {
+    return tree.get_joint_actuator(index);
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Shorthand type name for our name_to_index multimaps.
+template <typename ElementIndex>
+using NameToIndex = std::unordered_multimap<StringViewMapKey, ElementIndex>;
+
+// In service of error messages, returns a string listing the names of all
+// model instances that contain an element of the given name.
+template <typename T, typename ElementIndex>
+std::string GetElementModelInstancesByName(
+    const MultibodyTree<T>& tree, std::string_view name,
+    const NameToIndex<ElementIndex>& name_to_index) {
+  // Grab all of the model instance indices.
+  std::vector<ModelInstanceIndex> model_instances;
+  const auto [lower, upper] = name_to_index.equal_range(name);
+  for (auto it = lower; it != upper; ++it) {
+    const ElementIndex index = it->second;
+    const auto& element = GetElementByIndex(tree, index);
+    model_instances.push_back(element.model_instance());
+  }
+  // Sort them, because map iteration order is non-deterministic.
+  std::sort(model_instances.begin(), model_instances.end());
+  // Convert to indices to strings.
+  std::vector<std::string_view> names;
+  for (const auto& model_instance : model_instances) {
+    names.push_back(tree.GetModelInstanceName(model_instance));
+  }
+  // Concatenate and return.
+  return fmt::format("{}", fmt::join(names, ", "));
+}
+
+// Common implementation for HasBodyNamed, HasFrameNamed, etc.
+template <typename T, typename ElementIndex>
+bool HasElementNamed(
+    const MultibodyTree<T>& tree, std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance,
+    const NameToIndex<ElementIndex>& name_to_index) {
+  // Find all elements with a matching name.
+  const auto [lower, upper] = name_to_index.equal_range(name);
+
+  // Filter for the requested model_instance, if one was provided.
+  if (model_instance) {
+    // Use the name lookup for its side-effect of throwing on an invalid index.
+    unused(tree.GetModelInstanceName(*model_instance));
+    // Search linearly on the assumption that we won't often have lots of
+    // elements with the same name in different model instances.  If this
+    // turns out to be incorrect, we can switch to a different data structure.
+    for (auto it = lower; it != upper; ++it) {
+      const ElementIndex index = it->second;
+      const auto& element = GetElementByIndex(tree, index);
+      if (element.model_instance() == *model_instance) {
+        return true;
+      }
+    }
+    // No (filtered) match.
+    return false;
+  }
+
+  // No match.
+  if (lower == upper) {
+    return false;
+  }
+
+  // With no model instance requested, ensure the name is globally unique.
+  if (std::next(lower) != upper) {
+    const std::string_view element_classname =
+        GetElementClassname<ElementIndex>();
+    const std::string known_instances =
+        GetElementModelInstancesByName(tree, name, name_to_index);
+    throw std::logic_error(fmt::format(
+        "Has{}Named(): A {} named '{}' appears in multiple model instances"
+        " ({}); you must provide a model_instance argument to disambiguate.",
+        element_classname, element_classname, name, known_instances));
+  }
+
+  return true;
+}
+
+// Common implementation for GetBodyByName, GetFrameByName, etc.
+template <typename T, typename ElementIndex>
+const auto& GetElementByName(
+    const MultibodyTree<T>& tree, std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance,
+    const NameToIndex<ElementIndex>& name_to_index) {
+  // We fetch the model instance name as the first operation in this function
+  // (even though we'll only need it for error messages) because it throws an
+  // exception when the model_instance index is invalid.
+  const std::string& model_instance_name =
+      model_instance ? tree.GetModelInstanceName(*model_instance)
+                     : std::string();
+  const std::string_view element_classname =
+      GetElementClassname<ElementIndex>();
+
+  // Find all elements with a matching name.
+  auto [lower, upper] = name_to_index.equal_range(name);
+
+  // If the name is non-existent, then say so, whether or not a specific model
+  // instance was requested.
+  if (lower == upper) {
+    throw std::logic_error(fmt::format(
+        "Get{}ByName(): There is no {} named '{}' anywhere in the model.",
+        element_classname, element_classname, name));
+  }
+
+  // Filter for the requested model_instance, if one was provided.
+  if (model_instance) {
+    for (auto it = lower; it != upper; ++it) {
+      const ElementIndex index = it->second;
+      const auto& element = GetElementByIndex(tree, index);
+      if (element.model_instance() == *model_instance) {
+        return element;
+      }
+    }
+    const std::string known_instances =
+        GetElementModelInstancesByName(tree, name, name_to_index);
+    throw std::logic_error(fmt::format(
+        "Get{}ByName(): There is no {} named '{}' in the model instance named"
+        " '{}', but one does exist in other model instances ({}).",
+        element_classname, element_classname, name, model_instance_name,
+        known_instances));
+  }
+
+  // With no model instance requested, ensure the name is globally unique.
+  if (std::next(lower) != upper) {
+    const std::string known_instances =
+        GetElementModelInstancesByName(tree, name, name_to_index);
+    throw std::logic_error(fmt::format(
+        "Get{}ByName(): A {} named '{}' appears in multiple model instances"
+        " ({}); you must provide a model_instance argument to disambiguate.",
+        element_classname, element_classname, name, known_instances));
+  }
+
+  // Success.
+  return GetElementByIndex(tree, lower->second);
+}
+
+}  // namespace
+
+template <typename T>
+bool MultibodyTree<T>::HasBodyNamed(std::string_view name) const {
+  return HasElementNamed(*this, name, std::nullopt, body_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasBodyNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return HasElementNamed(*this, name, model_instance, body_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasFrameNamed(std::string_view name) const {
+  return HasElementNamed(*this, name, std::nullopt, frame_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasFrameNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return HasElementNamed(*this, name, model_instance, frame_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointNamed(std::string_view name) const {
+  return HasElementNamed(*this, name, std::nullopt, joint_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return HasElementNamed(*this, name, model_instance, joint_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointActuatorNamed(std::string_view name) const {
+  return HasElementNamed(*this, name, std::nullopt, actuator_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasJointActuatorNamed(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return HasElementNamed(*this, name, model_instance, actuator_name_to_index_);
+}
+
+template <typename T>
+bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
+  return instance_name_to_index_.find(name) != instance_name_to_index_.end();
+}
+
+template <typename T>
+const Body<T>& MultibodyTree<T>::GetBodyByName(std::string_view name) const {
+  return GetElementByName(*this, name, std::nullopt, body_name_to_index_);
+}
+
+template <typename T>
+const Body<T>& MultibodyTree<T>::GetBodyByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return GetElementByName(*this, name, model_instance, body_name_to_index_);
+}
+
+template <typename T>
+std::vector<BodyIndex> MultibodyTree<T>::GetBodyIndices(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  std::vector<BodyIndex> indices;
+  for (auto& body : owned_bodies_) {
+    if (body->model_instance() == model_instance) {
+      indices.emplace_back(body->index());
+    }
+  }
+  return indices;
+}
+
+template <typename T>
+std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  std::vector<JointIndex> indices;
+  for (auto& joint : owned_joints_) {
+    if (joint->model_instance() == model_instance) {
+      indices.emplace_back(joint->index());
+    }
+  }
+  return indices;
+}
+
+template <typename T>
+const Frame<T>& MultibodyTree<T>::GetFrameByName(std::string_view name) const {
+  return GetElementByName(*this, name, std::nullopt, frame_name_to_index_);
+}
+
+template <typename T>
+const Frame<T>& MultibodyTree<T>::GetFrameByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return GetElementByName(*this, name, model_instance, frame_name_to_index_);
+}
+
+template <typename T>
+const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
+    std::string_view name) const {
+  const RigidBody<T>* body =
+      dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name));
+  if (body == nullptr) {
+    throw std::logic_error(
+        fmt::format("Body '{}' is not a RigidBody.", name));
+  }
+  return *body;
+}
+
+template <typename T>
+const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  const RigidBody<T>* body =
+      dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name, model_instance));
+  if (body == nullptr) {
+    throw std::logic_error(
+        fmt::format("Body '{}' in model instance '{}' is not a RigidBody.",
+                    name, instance_index_to_name_.at(model_instance)));
+  }
+  return *body;
+}
+
+template <typename T>
+const Joint<T>& MultibodyTree<T>::GetJointByNameImpl(
+    std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance) const {
+  return GetElementByName(*this, name, model_instance, joint_name_to_index_);
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowJointSubtypeMismatch(
+    const Joint<T>& joint, std::string_view desired_type) const {
+  throw std::logic_error(fmt::format(
+      "GetJointByName(): Joint '{}' in model instance '{}' is not of type {} "
+      "but of type {}.",
+      joint.name(), instance_index_to_name_.at(joint.model_instance()),
+      desired_type, NiceTypeName::Get(joint)));
+}
+
+template <typename T>
+const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
+    std::string_view name) const {
+  return GetElementByName(*this, name, std::nullopt, actuator_name_to_index_);
+}
+
+template <typename T>
+const JointActuator<T>& MultibodyTree<T>::GetJointActuatorByName(
+    std::string_view name, ModelInstanceIndex model_instance) const {
+  return GetElementByName(*this, name, model_instance, actuator_name_to_index_);
+}
+
+template <typename T>
+ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
+    std::string_view name) const {
+  const auto it = instance_name_to_index_.find(name);
+  if (it == instance_name_to_index_.end()) {
+    throw std::logic_error(fmt::format(
+        "GetModelInstanceByName(): There is no model instance named '{}'.",
+        name));
+  }
+  return it->second;
 }
 
 template <typename T>
@@ -349,6 +704,19 @@ void MultibodyTree<T>::CreateModelInstances() {
     model_instances_.at(joint_actuator->model_instance())->add_joint_actuator(
         joint_actuator.get());
   }
+}
+
+template <typename T>
+std::unique_ptr<systems::LeafContext<T>>
+MultibodyTree<T>::CreateDefaultContext() const {
+  if (tree_system_ == nullptr) {
+    throw std::runtime_error(
+        "MultibodyTree::CreateDefaultContext(): can only be called from a "
+        "MultibodyTree that is owned by a MultibodyPlant / "
+        "MultibodyTreeSystem");
+  }
+  return dynamic_pointer_cast<systems::LeafContext<T>>(
+      tree_system_->CreateDefaultContext());
 }
 
 template <typename T>
@@ -1219,7 +1587,7 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
   const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
   const RotationMatrix<T> R_WF = R_WA * R_AF;
   const RotationMatrix<T> R_WG = R_WB * R_BG;
-  return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
+  return R_WF.InvertAndCompose(R_WG);  // R_FG = R_FW * R_WG;
 }
 
 template <typename T>
@@ -1241,7 +1609,7 @@ void MultibodyTree<T>::CalcPointsPositions(
 template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
   T total_mass = 0;
-  for (BodyIndex body_index{1}; body_index < num_bodies(); ++body_index) {
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const T& body_mass = body.get_mass(context);
     total_mass += body_mass;
@@ -1269,169 +1637,186 @@ template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context) const {
   if (num_bodies() <= 1) {
-    throw std::runtime_error(
-        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
-        "the world_body() so its center of mass is undefined.");
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
   }
 
-  std::vector<ModelInstanceIndex> model_instances;
-  for (ModelInstanceIndex model_instance_index(1);
-       model_instance_index < num_model_instances(); ++model_instance_index)
-    model_instances.push_back(model_instance_index);
+  T total_mass = 0;
+  Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
-  return CalcCenterOfMassPositionInWorld(context, model_instances);
+  // Sum over all the bodies except the 0th body (which is the world body).
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+
+    // total mass = ∑ mᵢ.
+    const T& body_mass = body.get_mass(context);
+    total_mass += body_mass;
+
+    // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
+    const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+    const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
+    sum_mi_pi += body_mass * pi_WoBcm_W;
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  return sum_mi_pi / total_mass;
 }
 
 template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  if (num_model_instances() <= 1) {
-    throw std::runtime_error(
-        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
-        "the world_body() so its center of mass is undefined.");
-  }
-
-  std::vector<BodyIndex> body_indexes;
-  for (auto model_instance : model_instances) {
-    const std::vector<BodyIndex> body_index_in_instance =
-        GetBodyIndices(model_instance);
-    for (BodyIndex body_index : body_index_in_instance)
-      body_indexes.push_back(body_index);
-  }
-
-  return CalcCenterOfMassPositionInWorld(context, body_indexes);
-}
-
-template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
-    const systems::Context<T>& context,
-    const std::vector<BodyIndex>& body_indexes) const {
-  if (num_bodies() <= 1) {
-    throw std::logic_error(
-        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
-        "the world_body() so its center of mass is undefined.");
-  }
-  if (body_indexes.empty()) {
-    throw std::logic_error(
-        "CalcCenterOfMassPositionInWorld(): There were no bodies specified. "
-        "You must provide at least one selected body.");
-  }
-
-  Vector3<T> Mp = Vector3<T>::Zero();
-  T composite_mass = 0;
-
-  for (BodyIndex body_index : body_indexes) {
-    if (body_index == 0) continue;
-
-    const Body<T>& body = get_body(body_index);
-
-    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
-    Vector3<T> pi_WBcm = body.EvalPoseInWorld(context) * pi_BoBcm;
-
-    // Calculate composite_mass and M * p in world frame.
-    const T& body_mass = body.get_mass(context);
-    // Mp = ∑ mᵢ * pi_WBcm
-    Mp += body_mass * pi_WBcm;
-    // composite_mass = ∑ mᵢ
-    composite_mass += body_mass;
-  }
-
-  if (composite_mass <= 0) {
-    throw std::logic_error(
-        "CalcCenterOfMassPositionInWorld(): The "
-        "system's total mass must be greater than zero.");
-  }
-
-  return Mp / composite_mass;
-}
-
-template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
-    const systems::Context<T>& context) const {
-  // Each multibody tree contains the world body.
-  // Ensure this multibody tree contains at least one non-world body.
+  // Reminder: MultibodyTree always declares a world body and 2 model instances
+  // "world" and "default" so num_model_instances() should always be >= 2.
   if (num_bodies() <= 1) {
     std::string message = fmt::format("{}(): This MultibodyPlant only contains "
         "the world_body() so its center of mass is undefined.", __func__);
     throw std::logic_error(message);
   }
 
-  std::vector<ModelInstanceIndex> model_instances;
-  for (ModelInstanceIndex model_instance_index(1);
-       model_instance_index < num_model_instances(); ++model_instance_index)
-    model_instances.push_back(model_instance_index);
+  T total_mass = 0;
+  Vector3<T> sum_mi_pi = Vector3<T>::Zero();
 
-  return CalcCenterOfMassTranslationalVelocityInWorld(context, model_instances);
+  // Sum over all the bodies that are in model_instances except for the 0th body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to multiple
+  // model instances [as Body::model_instance() returns a body's unique model
+  // instance], it is possible for the same model instance to be added multiple
+  // times to std::vector<ModelInstanceIndex>& model_instances).  The code below
+  // ensures a body's contribution to the sum occurs only once.  Duplicate
+  // model_instances in std::vector are considered an upstream user error.
+  int number_of_non_world_bodies_processed = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      // total mass = ∑ mᵢ.
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;
+      ++number_of_non_world_bodies_processed;
+
+      // sum_mi_pi = ∑ mᵢ * pi_WoBcm_W.
+      const Vector3<T> pi_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
+      const Vector3<T> pi_WoBcm_W = body.EvalPoseInWorld(context) * pi_BoBcm_B;
+      sum_mi_pi += body_mass * pi_WoBcm_W;
+    }
+  }
+
+  // Throw an exception if there are zero non-world bodies in model_instances.
+  if (number_of_non_world_bodies_processed == 0) {
+    std::string message = fmt::format("{}(): There must be at least one "
+        "non-world body contained in model_instances.", __func__);
+    throw std::logic_error(message);
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  return sum_mi_pi / total_mass;
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
+    const systems::Context<T>& context) const {
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
+  }
+
+  T total_mass = 0;
+  Vector3<T> sum_mi_vi = Vector3<T>::Zero();
+
+  // Sum over all the bodies except the 0th body (which is the world body).
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+
+    // total mass = ∑ mᵢ.
+    const T& body_mass = body.get_mass(context);
+    total_mass += body_mass;
+
+    // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
+    const Vector3<T> vi_WBcm_W =
+        body.CalcCenterOfMassTranslationalVelocityInWorld(context);
+    sum_mi_vi += body_mass * vi_WBcm_W;
+  }
+
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
+    throw std::logic_error(message);
+  }
+
+  // For a system S with center of mass Scm, Scm's translational velocity in the
+  // world frame W is calculated as v_WScm_W = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is Bcm's velocity in world frame W
+  // (Bcm is the center of mass of the iᵗʰ body).
+  return sum_mi_vi / total_mass;
 }
 
 template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  // Reminder: MultibodyTree always declares 2 model instances "world" and
-  // "default" so num_model_instances() should always be >= 2.
-  std::vector<BodyIndex> body_indexes;
-  for (auto model_instance : model_instances) {
-    DRAKE_THROW_UNLESS(model_instance.is_valid());
-    DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-    const std::vector<BodyIndex> body_index_in_instance =
-        GetBodyIndices(model_instance);
-    for (BodyIndex body_index : body_index_in_instance)
-      body_indexes.push_back(body_index);
-  }
-
-  return CalcCenterOfMassTranslationalVelocityInWorldHelper(context,
-                                                            body_indexes,
-                                                            __func__);
-}
-
-template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorldHelper(
-    const systems::Context<T>& context,
-    const std::vector<BodyIndex>& body_indexes,
-    const char* function_name) const {
-  if (body_indexes.empty()) {
-    std::string message = fmt::format("{}(): There were no bodies specified. "
-        "You must provide at least one selected body.", function_name);
+  // Reminder: MultibodyTree always declares a world body and 2 model instances
+  // "world" and "default" so num_model_instances() should always be >= 2.
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
     throw std::logic_error(message);
   }
 
-  // For a system S with center of mass Scm, Scm's translational velocity in
-  // frame A is calculated as v_AScm = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
-  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is the velocity of Bcm in frame A
-  // (Bcm is the center of mass of the iᵗʰ body).
-  T composite_mass = 0;                       // mₛ = ∑ mᵢ (mass of the system).
-  Vector3<T> sum_mi_vi = Vector3<T>::Zero();  // sum_mi_vi = ∑ (mᵢ vᵢ).
+  T total_mass = 0;
+  Vector3<T> sum_mi_vi = Vector3<T>::Zero();
 
+  // Sum over all the bodies that are in model_instances except for the 0th body
+  // (which is the world body), and count each body's contribution only once.
+  // Reminder: Although it is not possible for a body to belong to multiple
+  // model instances [as Body::model_instance() returns a body's unique model
+  // instance], it is possible for the same model instance to be added multiple
+  // times to std::vector<ModelInstanceIndex>& model_instances).  The code below
+  // ensures a body's contribution to the sum occurs only once.  Duplicate
+  // model_instances in std::vector are considered an upstream user error.
   int number_of_non_world_bodies_processed = 0;
-  for (BodyIndex body_index : body_indexes) {
-    if (body_index == 0) continue;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (std::find(model_instances.begin(), model_instances.end(),
+                  body.model_instance()) != model_instances.end()) {
+      // total mass = ∑ mᵢ.
+      const T& body_mass = body.get_mass(context);
+      total_mass += body_mass;
+      ++number_of_non_world_bodies_processed;
 
-    const Body<T>& body_B = get_body(body_index);
-    const Vector3<T> v_ABcm_E =
-        body_B.CalcCenterOfMassTranslationalVelocityInWorld(context);
-
-    // Form (mᵢ vᵢ) and add to sum, i.e., sum_mi_vi = ∑ (mᵢ vᵢ).
-    const T& body_mass = body_B.get_mass(context);
-    sum_mi_vi += body_mass * v_ABcm_E;
-    composite_mass += body_mass;
-    ++number_of_non_world_bodies_processed;
+      // sum_mi_vi = ∑ mᵢ * vi_WBcm_W.
+      const Vector3<T> vi_WBcm_W =
+        body.CalcCenterOfMassTranslationalVelocityInWorld(context);
+      sum_mi_vi += body_mass * vi_WBcm_W;
+    }
   }
 
-  // Throw an exception if body_indexes only contains one (or more) world_body.
+  // Throw an exception if there are zero non-world bodies in model_instances.
   if (number_of_non_world_bodies_processed == 0) {
-    std::string message = fmt::format("{}(): This system only contains "
-        "the world_body() so its center of mass is undefined.", function_name);
+    std::string message = fmt::format("{}(): There must be at least one "
+        "non-world body contained in model_instances.", __func__);
     throw std::logic_error(message);
   }
 
-  if (composite_mass <= 0) {
-    std::string message = fmt::format("{}(): The system's "
-        "total mass must be greater than zero.", function_name);
+  if (total_mass <= 0) {
+    std::string message = fmt::format("{}(): The system's total mass must "
+                                      "be greater than zero.", __func__);
     throw std::logic_error(message);
   }
-  return sum_mi_vi / composite_mass;
+
+  return sum_mi_vi / total_mass;
 }
 
 template <typename T>

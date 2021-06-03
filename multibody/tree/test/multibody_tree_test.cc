@@ -18,6 +18,7 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
@@ -124,7 +125,11 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetBodyByName(kInvalidName), std::logic_error,
-      "There is no body named '.*' in the model.");
+      ".*There is no Body named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetBodyByName(kLinkNames[0], world_model_instance()),
+      std::logic_error,
+      ".*There is no Body.*but one does exist in other model instances.*");
 
   // Test we can also retrieve links as RigidBody objects.
   for (const std::string& link_name : kLinkNames) {
@@ -133,7 +138,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetRigidBodyByName(kInvalidName), std::logic_error,
-      "There is no body named '.*' in the model.");
+      ".*There is no Body named.*");
 
   // Get frames by name.
   for (const std::string& frame_name : kFrameNames) {
@@ -144,7 +149,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetFrameByName(kInvalidName), std::logic_error,
-      "There is no frame named '.*' in the model.");
+      ".*There is no Frame named.*");
 
   // Get joints by name.
   for (const std::string& joint_name : kJointNames) {
@@ -153,9 +158,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointByName(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
+      ".*There is no Joint named.*");
 
-  // Templatized version to obtain retrieve a particular known type of joint.
+  // Templatized version to obtain a particular known type of joint.
   for (const std::string& joint_name : kJointNames) {
     const RevoluteJoint<T>& joint =
         model.template GetJointByName<RevoluteJoint>(joint_name);
@@ -163,7 +168,10 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<RevoluteJoint>(kInvalidName),
-      std::logic_error, "There is no joint named '.*' in the model.");
+      std::logic_error, ".*There is no Joint named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.template GetJointByName<PrismaticJoint>(kJointNames[0]),
+      std::logic_error, ".*not of type.*PrismaticJoint.*but.*RevoluteJoint.*");
 
   // Get actuators by name.
   for (const std::string& actuator_name : kActuatorNames) {
@@ -173,7 +181,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointActuatorByName(kInvalidName), std::logic_error,
-      "There is no joint actuator named '.*' in the model.");
+      ".*There is no JointActuator named.*");
 
   // Test we can retrieve joints from the actuators.
   int names_index = 0;
@@ -244,6 +252,35 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   EXPECT_THROW(model->Finalize(), std::logic_error);
 
   VerifyModelBasics(*model);
+}
+
+// Exercises the error detection and reporting for retrieving model elements by
+// name when the same name exists in multiple model instances.  Since the code
+// for Body, Frame, Joint, etc. all use the same templated implementation, it's
+// sufficient to just test one element type.
+GTEST_TEST(MultibodyTree, RetrievingAmbiguousNames) {
+  std::unique_ptr<MultibodyTree<double>> model =
+      MakeKukaIiwaModel<double>(false /* non-finalized model. */);
+
+  // Add a duplicate body, but on a different model instance.
+  const std::string link_name = "iiwa_link_5";
+  EXPECT_NO_THROW(
+      model->AddRigidBody(link_name, world_model_instance(),
+                          SpatialInertia<double>()));
+  EXPECT_NO_THROW(model->Finalize());
+
+  // Checking if the name exists throws (unfortunately), unless we specify the
+  // intended model instance.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->HasBodyNamed(link_name), std::logic_error,
+      ".*Body.*appears in multiple model instances.*disambiguate.*");
+  EXPECT_TRUE(model->HasBodyNamed(link_name, default_model_instance()));
+
+  // Accessing by name throws, unless we specify the intended model instance.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->GetBodyByName(link_name), std::logic_error,
+      ".*Body.*appears in multiple model instances.*disambiguate.*");
+  EXPECT_NO_THROW(model->GetBodyByName(link_name, default_model_instance()));
 }
 
 // MBPlant provides most of the testing for MBTreeSystem. Here we just want

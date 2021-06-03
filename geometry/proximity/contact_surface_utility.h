@@ -44,6 +44,38 @@ Vector3<T> CalcPolygonCentroid(
     const Vector3<T>& n_F,
     const std::vector<SurfaceVertex<T>>& vertices_F);
 
+// TODO(14579) This overload of CalcPolygonCentroid() is expected to simply go
+//  away when we implement the final support for discrete hydroelastics. If it
+//  persists (for whatever reason), we'll need to resolve the design between
+//  the overloads to eliminate wasteful work.
+
+/* Overload that takes a polygon represented as an ordered list of positional
+ vectors `p_FVs` of its vertices, each measured and expressed in frame F.
+ */
+template <typename T>
+Vector3<T> CalcPolygonCentroid(
+    const std::vector<Vector3<T>>& p_FVs,
+    const Vector3<T>& n_F);
+
+// TODO(14579) CalcPolygonArea() is expected to simply go away when we
+//  implement the final support for discrete hydroelastics. If it
+//  persists (for whatever reason), we'll need to consider an alternative
+//  design for CalcPolygonArea() to be a part of CalcPolygonCentroid() to
+//  reduce code duplication.
+
+/* Calculates area of a planar convex polygon represented as an ordered list
+ of positional vectors `p_FVs` of its vertices, each measured and expressed
+ in frame F.
+
+ @param[in] p_FVs   Positions of vertices of the polygon.
+ @param[in] nhat_F  Unit normal vector of the polygon.
+ @pre `p_FVs.size()` >= 3.
+ @pre nhat_F is consistent with the winding of the polygon.
+ */
+template <typename T>
+T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
+                  const Vector3<T>& nhat_F);
+
 // TODO(SeanCurtis-TRI): Consider creating an overload of this that *computes*
 //  the normal and then invokes this one for contexts where they don't have the
 //  normal convenient.
@@ -83,7 +115,6 @@ void AddPolygonToMeshData(
     const Vector3<T>& n_F,
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<T>>* vertices_F);
-
 
 /* Determines if the indicated triangle has a face normal that is "in the
  direction" of the given normal.

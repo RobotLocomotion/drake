@@ -800,10 +800,10 @@ VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
 
 GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   auto volume_M = TrivialVolumeMesh<double>();
-  const Bvh<VolumeMesh<double>> bvh_volume_M(*volume_M);
+  const Bvh<Obb, VolumeMesh<double>> bvh_volume_M(*volume_M);
   auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
   auto rigid_N = TrivialSurfaceMesh<double>();
-  const Bvh<SurfaceMesh<double>> bvh_rigid_N(*rigid_N);
+  const Bvh<Obb, SurfaceMesh<double>> bvh_rigid_N(*rigid_N);
   // Transform the surface (single triangle) so that it intersects with *both*
   // tets in the volume mesh. The surface lies on the y = 0.75 plane.
   // Each tet gets intersected into a isosceles right triangle with a leg
@@ -1019,9 +1019,9 @@ void TestComputeContactSurfaceSoftRigid() {
   unique_ptr<VolumeMesh<double>> mesh_S = OctahedronVolume<double>();
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S =
       OctahedronPressureField<double>(mesh_S.get());
-  const Bvh<VolumeMesh<double>> bvh_mesh_S(*mesh_S);
+  const Bvh<Obb, VolumeMesh<double>> bvh_mesh_S(*mesh_S);
   unique_ptr<SurfaceMesh<double>> surface_R = PyramidSurface<double>();
-  const Bvh<SurfaceMesh<double>> bvh_surface_R(*surface_R);
+  const Bvh<Obb, SurfaceMesh<double>> bvh_surface_R(*surface_R);
   // Move the rigid pyramid up, so only its square base intersects the top
   // part of the soft octahedron.
   const RigidTransform<T> X_SR(Vector3<T>(0, 0, 0.5));
@@ -1169,13 +1169,13 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   // Soft octahedron volume S with pressure field.
   auto s_id = GeometryId::get_new_id();
   unique_ptr<VolumeMesh<double>> volume_S = OctahedronVolume<double>();
-  const Bvh<VolumeMesh<double>> bvh_volume_S(*volume_S);
+  const Bvh<Obb, VolumeMesh<double>> bvh_volume_S(*volume_S);
   unique_ptr<VolumeMeshFieldLinear<double, double>> pressure_S =
       OctahedronPressureField<double>(volume_S.get());
   // Rigid pyramid surface R.
   auto r_id = GeometryId::get_new_id();
   unique_ptr<SurfaceMesh<double>> surface_R = PyramidSurface<double>();
-  const Bvh<SurfaceMesh<double>> bvh_surface_R(*surface_R);
+  const Bvh<Obb, SurfaceMesh<double>> bvh_surface_R(*surface_R);
 
   // We use 1e-14 instead of std::numeric_limits<double>::epsilon() to
   // compensate for the rounding due to general rigid transform.
@@ -1332,7 +1332,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
         "pressure", vector<double>{0.25, 0.5, 0.75, 1}, tet_mesh_S_.get());
-    bvh_S_ = std::make_unique<Bvh<VolumeMesh<double>>>(*tet_mesh_S_);
+    bvh_S_ = std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*tet_mesh_S_);
 
     /* Rigid triangle mesh; tilt and offset the triangle's plane so things are
      interesting. */
@@ -1343,7 +1343,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     using VIndex = SurfaceVertexIndex;
     vector<SurfaceFace> faces({SurfaceFace{VIndex(0), VIndex(1), VIndex(2)}});
     tri_mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
-    bvh_R_ = make_unique<Bvh<SurfaceMesh<double>>>(*tri_mesh_R_);
+    bvh_R_ = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*tri_mesh_R_);
     X_WR_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
                                 Vector3d{0.25, 0.1, -0.2})
                 .cast<AutoDiffXd>();
@@ -1512,12 +1512,12 @@ class MeshMeshDerivativesTest : public ::testing::Test {
   GeometryId id_S_;
   unique_ptr<VolumeMesh<double>> tet_mesh_S_;
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
-  unique_ptr<Bvh<VolumeMesh<double>>> bvh_S_;
+  unique_ptr<Bvh<Obb, VolumeMesh<double>>> bvh_S_;
 
   /* Rigid triangle mesh. */
   RigidTransform<AutoDiffXd> X_WR_;
   unique_ptr<SurfaceMesh<double>> tri_mesh_R_;
-  unique_ptr<Bvh<SurfaceMesh<double>>> bvh_R_;
+  unique_ptr<Bvh<Obb, SurfaceMesh<double>>> bvh_R_;
   GeometryId id_R_;
 
   /* The amount I penetrate triangle into the tet.  */

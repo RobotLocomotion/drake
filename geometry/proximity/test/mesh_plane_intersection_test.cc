@@ -1215,7 +1215,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
   const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
   const VolumeMeshFieldLinear<double, double> field_F{
       "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
-  const Bvh<VolumeMesh<double>> bvh_F(mesh_F);
+  const Bvh<Obb, VolumeMesh<double>> bvh_F(mesh_F);
 
   // We'll pose the plane in the soft mesh's frame S and then transform the
   // whole system.
@@ -1344,7 +1344,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
         "pressure", vector<double>{0.25, 0.5, 0.75, 1}, mesh_S_.get());
-    bvh_S_ = std::make_unique<Bvh<VolumeMesh<double>>>(*mesh_S_);
+    bvh_S_ = std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*mesh_S_);
 
     /* Rigid plane; tilt and offset the plane so things are interesting. */
     X_WR_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
@@ -1515,7 +1515,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
   GeometryId id_S_;
   unique_ptr<VolumeMesh<double>> mesh_S_;
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
-  unique_ptr<Bvh<VolumeMesh<double>>> bvh_S_;
+  unique_ptr<Bvh<Obb, VolumeMesh<double>>> bvh_S_;
 
   /* Rigid plane. No geometry is required; it's implied by the pose. */
   RigidTransform<AutoDiffXd> X_WR_;

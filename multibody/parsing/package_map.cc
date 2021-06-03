@@ -13,6 +13,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -25,13 +26,18 @@ using tinyxml2::XMLElement;
 PackageMap::PackageMap() {}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
-  DRAKE_THROW_UNLESS(map_.count(package_name) == 0);
-  if (!filesystem::is_directory(package_path)) {
-    throw std::runtime_error(
-        "Could not add package://" + package_name + " to the search path "
-        "because directory " + package_path + " does not exist");
+  if (!AddPackageIfNew(package_name, package_path)) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap already contains package \"{}\" with path \"{}\" that "
+        "conflicts with provided path \"{}\"",
+        package_name, GetPath(package_name), package_path));
   }
-  map_.insert(make_pair(package_name, package_path));
+}
+
+void PackageMap::AddMap(const PackageMap& other_map) {
+  for (const auto& [package_name, path] : other_map.map_) {
+    Add(package_name, path);
+  }
 }
 
 bool PackageMap::Contains(const string& package_name) const {
@@ -48,6 +54,16 @@ void PackageMap::Remove(const string& package_name) {
 
 int PackageMap::size() const {
   return map_.size();
+}
+
+std::vector<std::string> PackageMap::GetPackageNames() const {
+  std::vector<std::string> package_names;
+  package_names.reserve(map_.size());
+  for (const auto& [package_name, path] : map_) {
+    unused(path);
+    package_names.push_back(package_name);
+  }
+  return package_names;
 }
 
 const string& PackageMap::GetPath(const string& package_name) const {
@@ -128,7 +144,7 @@ string GetPackageName(const string& package_xml_file) {
 
 }  // namespace
 
-void PackageMap::AddPackageIfNew(const string& package_name,
+bool PackageMap::AddPackageIfNew(const string& package_name,
     const string& path) {
   DRAKE_DEMAND(!package_name.empty());
   DRAKE_DEMAND(!path.empty());
@@ -136,7 +152,12 @@ void PackageMap::AddPackageIfNew(const string& package_name,
   if (!Contains(package_name)) {
     drake::log()->trace(
         "PackageMap: Adding package://{}: {}", package_name, path);
-    Add(package_name, path);
+    if (!filesystem::is_directory(path)) {
+      throw std::runtime_error(
+          "Could not add package://" + package_name + " to the search path "
+          "because directory " + path + " does not exist");
+    }
+    map_.insert(make_pair(package_name, path));
   } else {
     // Don't warn if we've found the same path with a different spelling.
     const string existing_path = GetPath(package_name);
@@ -145,8 +166,10 @@ void PackageMap::AddPackageIfNew(const string& package_name,
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
           " and will continue using the previously-known path at \"{}\".",
           path, package_name, existing_path);
+      return false;
     }
   }
+  return true;
 }
 
 void PackageMap::PopulateUpstreamToDrakeHelper(

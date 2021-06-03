@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <limits>
 
+#include "drake/geometry/proximity/aabb.h"
+#include "drake/geometry/proximity/boxes_overlap.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -17,68 +19,32 @@ using math::RollPitchYawd;
 using math::RotationMatrixd;
 
 bool Obb::HasOverlap(const Obb& a, const Obb& b,
-                     const math::RigidTransformd& X_GH) {
+                     const RigidTransformd& X_GH) {
   // The canonical frame A of box `a` is posed in the hierarchy frame G, and
   // the canonical frame B of box `b` is posed in the hierarchy frame H.
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
   const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
+  return BoxesOverlap(a.half_width(), b.half_width(), X_AB);
+}
 
-  // We need to split the transform into the position and rotation components,
-  // `p_AB` and `R_AB`. For the purposes of streamlining the math below, they
-  // will henceforth be named `t` and `r` respectively.
-  const Vector3d& t = X_AB.translation();
-  const Matrix3d& r = X_AB.rotation().matrix();
+bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
+                     const RigidTransformd& X_GH) {
+  /* For this analysis, aabb has local frame A and obb has local frame O.
 
-  // Compute some common subexpressions and add epsilon to counteract
-  // arithmetic error, e.g. when two edges are parallel. We use the value as
-  // specified from Gottschalk's OBB robustness tests.
-  const double kEpsilon = 0.000001;
-  Matrix3d abs_r = r;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      abs_r(i, j) = abs(abs_r(i, j)) + kEpsilon;
-    }
-  }
-
-  // First category of cases separating along a's axes.
-  for (int i = 0; i < 3; ++i) {
-    if (abs(t[i]) >
-        a.half_width()[i] + b.half_width().dot(abs_r.block<1, 3>(i, 0))) {
-      return false;
-    }
-  }
-
-  // Second category of cases separating along b's axes.
-  for (int i = 0; i < 3; ++i) {
-    if (abs(t.dot(r.block<3, 1>(0, i))) >
-        b.half_width()[i] + a.half_width().dot(abs_r.block<3, 1>(0, i))) {
-      return false;
-    }
-  }
-
-  // Third category of cases separating along the axes formed from the cross
-  // products of a's and b's axes.
-  int i1 = 1;
-  for (int i = 0; i < 3; ++i) {
-    const int i2 = (i1 + 1) % 3;  // Calculate common sub expressions.
-    int j1 = 1;
-    for (int j = 0; j < 3; ++j) {
-      const int j2 = (j1 + 1) % 3;
-      if (abs(t[i2] * r(i1, j) -
-              t[i1] * r(i2, j)) >
-          a.half_width()[i1] * abs_r(i2, j) +
-              a.half_width()[i2] * abs_r(i1, j) +
-              b.half_width()[j1] * abs_r(i, j2) +
-              b.half_width()[j2] * abs_r(i, j1)) {
-        return false;
-      }
-      j1 = j2;
-    }
-    i1 = i2;
-  }
-
-  return true;
+     R_AO = R_AH * R_HG * R_GO
+          = I * R_HG * R_GO                    // A is Aabb --> R_AH = R_HA = I.
+          = R_HG * R_GO
+     p_AO_A = R_AH * p_AO_H
+            = p_AO_H                           // R_AH = R_HA = I
+            = p_HO_H - p_HA_H
+            = X_HG * p_GO_G - p_HA_H
+            = X_HG * obb_G.center() - aabb_H.center()  */
+  const RigidTransformd X_HG = X_GH.inverse();
+  const RotationMatrixd R_AO =
+      X_HG.rotation() * obb_G.pose().rotation();
+  const RigidTransformd X_AO(R_AO, X_HG * obb_G.center() - aabb_H.center());
+  return BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
 }
 
 bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,

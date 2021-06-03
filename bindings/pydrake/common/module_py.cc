@@ -105,36 +105,11 @@ PYBIND11_MODULE(_module_py, m) {
 
   internal::RedirectPythonLogging();
 
-  py::enum_<drake::ToleranceType> tolerance_enum(
-      m, "ToleranceType", doc.ToleranceType.doc);
-  tolerance_enum  // BR
+  py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("kAbsolute", drake::ToleranceType::kAbsolute,
           doc.ToleranceType.kAbsolute.doc)
       .value("kRelative", drake::ToleranceType::kRelative,
           doc.ToleranceType.kRelative.doc);
-  // Define these as properties so we can deprecate them.
-  constexpr char absolute_deprecated[] =
-      "Deprecated:\n  ToleranceType.absolute is deprecated. Please use "
-      "ToleranceType.kAbsolute instead. This will be removed on or "
-      "after 2021-06-01.";
-  tolerance_enum.def_property_static(
-      "absolute",
-      [absolute_deprecated](py::handle /* cls */) {
-        WarnDeprecated(absolute_deprecated);
-        return drake::ToleranceType::kAbsolute;
-      },
-      nullptr, absolute_deprecated);
-  constexpr char relative_deprecated[] =
-      "Deprecated:\n  ToleranceType.relative is deprecated. Please use "
-      "ToleranceType.kRelative instead. This will be removed on or "
-      "after 2021-06-01.";
-  tolerance_enum.def_property_static(
-      "relative",
-      [relative_deprecated](py::handle /* cls */) {
-        WarnDeprecated(relative_deprecated);
-        return drake::ToleranceType::kRelative;
-      },
-      nullptr, relative_deprecated);
 
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)

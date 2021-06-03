@@ -1,14 +1,18 @@
 #include "drake/solvers/osqp_solver.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
+using ::testing::HasSubstr;
+
 namespace drake {
 namespace solvers {
 namespace test {
+
 GTEST_TEST(QPtest, TestUnconstrainedQP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
@@ -220,6 +224,39 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
   }
 }
 
+GTEST_TEST(OsqpSolverTest, ProgramAttributesGood) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>("x");
+  prog.AddQuadraticCost(x(0) * x(0));
+
+  EXPECT_TRUE(OsqpSolver::ProgramAttributesSatisfied(prog));
+  EXPECT_EQ(OsqpSolver::UnsatisfiedProgramAttributes(prog), "");
+}
+
+GTEST_TEST(OsqpSolverTest, ProgramAttributesBad) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>("x");
+  prog.AddCost(x(0) * x(0) * x(0));
+  EXPECT_FALSE(OsqpSolver::ProgramAttributesSatisfied(prog));
+  EXPECT_THAT(OsqpSolver::UnsatisfiedProgramAttributes(prog),
+              HasSubstr("GenericCost was declared"));
+}
+
+GTEST_TEST(OsqpSolverTest, ProgramAttributesMisfit) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>("x");
+  prog.AddLinearCost(4 * x(0) + 5);
+  EXPECT_FALSE(OsqpSolver::ProgramAttributesSatisfied(prog));
+  EXPECT_THAT(OsqpSolver::UnsatisfiedProgramAttributes(prog),
+              HasSubstr("QuadraticCost is required"));
+}
+
+GTEST_TEST(OsqpSolverTest, TestNonconvexQP) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, true);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

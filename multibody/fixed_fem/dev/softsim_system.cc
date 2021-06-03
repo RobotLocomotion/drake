@@ -52,8 +52,7 @@ void SoftsimSystem<T>::SetWallBoundaryCondition(SoftBodyIndex body_id,
   const Vector3<T>& n_hatW = n_W.normalized();
   DRAKE_THROW_UNLESS(body_id < num_bodies());
   const int kDim = 3;
-  FemSolver<T>& fem_solver = *fem_solvers_[body_id];
-  FemModelBase<T>& fem_model = fem_solver.mutable_model();
+  FemModelBase<T>& fem_model = *fem_models_[body_id];
   const int num_nodes = fem_model.num_nodes();
   // TODO(xuchenhan-tri): FemModel should support an easier way to retrieve its
   //  reference positions.
@@ -120,8 +119,8 @@ void SoftsimSystem<T>::RegisterDeformableBodyHelper(
 
   prev_fem_states_.emplace_back(std::make_unique<StateType>(state));
   next_fem_states_.emplace_back(std::make_unique<StateType>(state));
-  fem_solvers_.emplace_back(
-      std::make_unique<FemSolver<T>>(std::move(fem_model)));
+  fem_solvers_.emplace_back(std::make_unique<FemSolver<T>>(fem_model.get()));
+  fem_models_.emplace_back(std::move(fem_model));
   initial_meshes_.emplace_back(mesh);
   names_.emplace_back(std::move(name));
 }

@@ -145,51 +145,6 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
         contact_wrenches = dut.GetContactWrenchSolution(result)
         self.assertEqual(len(contact_wrenches), 8)
 
-    def test_two_boxes(self):
-        # test with 2 boxes.
-        masses = [1., 2]
-        box_sizes = [np.array([0.1, 0.1, 0.1]), np.array([0.1, 0.1, 0.2])]
-        env = construct_environment(masses, box_sizes)
-        diagram_context = env.diagram.CreateDefaultContext()
-        plant_context = env.diagram.GetMutableSubsystemContext(
-            env.plant, diagram_context)
-        # Ignore the collision between box-box, since currently Drake doesn't
-        # support box-box collision with AutoDiffXd.
-        ignored_collision_pairs = set()
-        for i in range(len(env.boxes_geometry_id)):
-            ignored_collision_pairs.add(tuple((
-                env.ground_geometry_id, env.boxes_geometry_id[i])))
-            for j in range(i+1, len(env.boxes_geometry_id)):
-                ignored_collision_pairs.add(tuple(
-                    (env.boxes_geometry_id[i], env.boxes_geometry_id[j])))
-
-        dut = StaticEquilibriumProblem(
-            env.plant, plant_context, ignored_collision_pairs)
-
-        # Add the constraint that the quaternion should have unit length.
-        ik.AddUnitQuaternionConstraintOnPlant(
-            env.plant, dut.q_vars(), dut.get_mutable_prog())
-        for i in range(len(env.boxes)):
-            box_quaternion_start = 7 * i
-            box_quat, box_xyz = split_se3(
-                dut.q_vars()[box_quaternion_start:box_quaternion_start+7])
-            dut.get_mutable_prog().SetInitialGuess(
-                box_quat, np.array([0.5, -0.5, 0.5, 0.5]))
-            dut.get_mutable_prog().SetInitialGuess(
-                box_xyz, np.array([0, 0, 0.3 + 0.2 * i]))
-
-        dut.UpdateComplementarityTolerance(0.1)
-        snopt_solver = SnoptSolver()
-        result = snopt_solver.Solve(dut.prog())
-        self.assertTrue(result.is_success())
-        # Now progressively tighten the tolerance and solve it again.
-        for tol in (0.05, 0.01, 0.005, 0.001):
-            dut.UpdateComplementarityTolerance(tol)
-            dut.get_mutable_prog().SetInitialGuessForAllVariables(
-                result.get_x_val())
-            result = snopt_solver.Solve(dut.prog())
-            self.assertTrue(result.is_success())
-
 
 class TestCentroidalMomentumConstraint(unittest.TestCase):
     def test_autodiff_constructor(self):

@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 // This file contains implementations that are common to both the available and
@@ -15,8 +16,8 @@ namespace drake {
 namespace solvers {
 
 GurobiSolver::GurobiSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+                 &UnsatisfiedProgramAttributes) {}
 
 GurobiSolver::~GurobiSolver() = default;
 
@@ -31,7 +32,12 @@ bool GurobiSolver::is_enabled() {
           (std::strlen(grb_license_file) > 0));
 }
 
-bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+namespace {
+// If the program is compatible with this solver, returns true and clears the
+// explanation.  Otherwise, returns false and sets the explanation.  In either
+// case, the explanation can be nullptr in which case it is ignored.
+bool CheckAttributes(const MathematicalProgram& prog,
+                     std::string* explanation) {
   // TODO(hongkai.dai): Gurobi supports callback. Add callback capability.
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
@@ -41,8 +47,20 @@ bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kBinaryVariable});
-  return AreRequiredAttributesSupported(prog.required_capabilities(),
-                                        solver_capabilities.access());
+  return internal::CheckConvexSolverAttributes(
+      prog, solver_capabilities.access(), "GurobiSolver", explanation);
+}
+}  // namespace
+
+bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
+  return CheckAttributes(prog, nullptr);
+}
+
+std::string GurobiSolver::UnsatisfiedProgramAttributes(
+    const MathematicalProgram& prog) {
+  std::string explanation;
+  CheckAttributes(prog, &explanation);
+  return explanation;
 }
 }  // namespace solvers
 }  // namespace drake

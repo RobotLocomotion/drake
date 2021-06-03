@@ -3,10 +3,13 @@
 #include <limits>
 
 #include <fmt/format.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+
+using ::testing::HasSubstr;
 
 namespace drake {
 namespace solvers {
@@ -307,5 +310,64 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
 }
+
+GTEST_TEST(TestFindNonconvexQuadraticCost, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto convex_cost1 = prog.AddQuadraticCost(x(0) * x(0) + 1);
+  auto convex_cost2 = prog.AddQuadraticCost(x(1) * x(1) + 2 * x(0) + 2);
+  auto nonconvex_cost1 = prog.AddQuadraticCost(-x(0) * x(0) + 2 * x(1));
+  auto nonconvex_cost2 = prog.AddQuadraticCost(-x(0) * x(0) + x(1) * x(1));
+  EXPECT_EQ(FindNonconvexQuadraticCost({convex_cost1, convex_cost2}), nullptr);
+  EXPECT_EQ(FindNonconvexQuadraticCost({convex_cost1, nonconvex_cost1})
+                ->evaluator()
+                .get(),
+            nonconvex_cost1.evaluator().get());
+  EXPECT_EQ(FindNonconvexQuadraticCost(
+                {convex_cost1, nonconvex_cost1, nonconvex_cost2})
+                ->evaluator()
+                .get(),
+            nonconvex_cost1.evaluator().get());
+}
+
+namespace internal {
+GTEST_TEST(CheckConvexSolverAttributes, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto convex_cost = prog.AddQuadraticCost(x(0) * x(0) + x(1));
+  // Requires linear cost, but program has a quadratic cost.
+  ProgramAttributes required_capabilities{ProgramAttribute::kLinearCost};
+  EXPECT_FALSE(
+      CheckConvexSolverAttributes(prog, required_capabilities, "foo", nullptr));
+  std::string explanation;
+  EXPECT_FALSE(CheckConvexSolverAttributes(prog, required_capabilities, "foo",
+                                           &explanation));
+  EXPECT_THAT(explanation,
+              HasSubstr("foo is unable to solve because a QuadraticCost was "
+                        "declared but is not supported"));
+
+  // Test when the required capabilities matches with the program.
+  required_capabilities = {ProgramAttribute::kQuadraticCost};
+  EXPECT_TRUE(
+      CheckConvexSolverAttributes(prog, required_capabilities, "foo", nullptr));
+  EXPECT_TRUE(CheckConvexSolverAttributes(prog, required_capabilities, "foo",
+                                          &explanation));
+  EXPECT_TRUE(explanation.empty());
+
+  // program has a non-convex quadratic cost.
+  auto nonconvex_cost = prog.AddQuadraticCost(-x(1) * x(1));
+  // Use a description that would never be mistaken as any other part of the
+  // error message.
+  const std::string description{"lorem ipsum"};
+  nonconvex_cost.evaluator()->set_description(description);
+  EXPECT_FALSE(
+      CheckConvexSolverAttributes(prog, required_capabilities, "foo", nullptr));
+  EXPECT_FALSE(CheckConvexSolverAttributes(prog, required_capabilities, "foo",
+                                           &explanation));
+  EXPECT_THAT(explanation, HasSubstr("is non-convex"));
+  EXPECT_THAT(explanation, HasSubstr("foo"));
+  EXPECT_THAT(explanation, HasSubstr(description));
+}
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake

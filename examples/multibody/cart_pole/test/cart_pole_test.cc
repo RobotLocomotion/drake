@@ -157,6 +157,12 @@ TEST_F(CartPoleTest, SystemDynamics) {
   EXPECT_TRUE(CompareMatrices(xc_dot->CopyToVector(),
                               xc_dot_expected, kTolerance,
                               MatrixCompareType::relative));
+
+    // Verify that the implicit dynamics match the continuous ones.
+  Eigen::VectorXd residual =
+      cart_pole_.AllocateImplicitTimeDerivativesResidual();
+  cart_pole_.CalcImplicitTimeDerivativesResidual(*context_, *xc_dot, &residual);
+  EXPECT_TRUE(CompareMatrices(residual, Eigen::VectorXd::Zero(4), 1e-15));
 }
 
 }  // namespace

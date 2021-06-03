@@ -102,7 +102,7 @@ std::unique_ptr<Context<T>> Context<T>::Clone() const {
 template <typename T>
 std::unique_ptr<State<T>> Context<T>::CloneState() const {
   auto result = DoCloneState();
-  result->get_mutable_continuous_state().set_system_id(this->get_system_id());
+  result->set_system_id(this->get_system_id());
   return result;
 }
 

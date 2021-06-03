@@ -138,7 +138,8 @@ void MultibodyTreeSystem<T>::Finalize() {
 
   // Declare state.
   if (is_discrete_) {
-    this->DeclareDiscreteState(tree_->num_states());
+    tree_->set_discrete_state_index(
+        this->DeclareDiscreteState(tree_->num_states()));
   } else {
     this->DeclareContinuousState(BasicVector<T>(tree_->num_states()),
                                  tree_->num_positions(),
@@ -305,6 +306,55 @@ void MultibodyTreeSystem<T>::DoMapVelocityToQDot(
   VectorX<T> qdot(nq);
   internal_tree().MapVelocityToQDot(context, generalized_velocity, &qdot);
   positions_derivative->SetFromVector(qdot);
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<T>& context,
+    const systems::ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const {
+  // No residuals to compute if state is discrete.
+  if (is_discrete()) return;
+
+  DRAKE_DEMAND(residual->size() ==
+               this->implicit_time_derivatives_residual_size());
+
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
+
+  // TODO(sherm1) Heap allocation here. Get rid of it.
+  MultibodyForces<T> forces(*this);
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // Compute forces applied by force elements. Note that this resets forces
+  // to empty so must come first.
+  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
+
+  // Compute forces applied by the derived class (likely MultibodyPlant).
+  AddInForcesContinuous(context, &forces);
+
+  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
+  //              static_cast in Release builds.
+  Eigen::VectorBlock<const VectorX<T>> qvdot_proposed =
+      dynamic_cast<const systems::BasicVector<T>&>(
+          proposed_derivatives.get_vector()).get_value();
+  DRAKE_ASSERT(qvdot_proposed.size() == nq+nv);
+
+  auto qdot_residual = residual->head(nq);
+  // N(q)⋅v
+  internal_tree().MapVelocityToQDot(context,
+                                    internal_tree()
+                                        .GetPositionsAndVelocities(context)
+                                        .nestedExpression()
+                                        .tail(nv),
+                                    &qdot_residual);
+  // q̇_proposed - N(q)⋅v
+  qdot_residual = qvdot_proposed.head(nq) - qdot_residual;
+  // InverseDynamics(context, v_proposed)
+  residual->tail(nv) = internal_tree().CalcInverseDynamics(
+      context, qvdot_proposed.tail(nv), forces);
 }
 
 template <typename T>

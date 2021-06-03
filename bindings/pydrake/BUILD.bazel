@@ -65,13 +65,6 @@ generate_pybind_documentation_header(
     root_name = "pydrake_doc",
     targets = [
         "//tools/install/libdrake:drake_headers",
-        "//examples/compass_gait:compass_gait",
-        "//examples/manipulation_station:manipulation_station",
-        "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
-        "//examples/pendulum:pendulum_plant",
-        "//examples/quadrotor:quadrotor_plant",
-        "//examples/rimless_wheel:rimless_wheel",
-        "//examples/van_der_pol:van_der_pol",
     ],
 )
 

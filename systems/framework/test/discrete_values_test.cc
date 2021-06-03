@@ -89,9 +89,11 @@ TEST_F(DiscreteValuesTest, Clone) {
   // Create a DiscreteValues object with unowned contents.
   DiscreteValues<double> xd(
       std::vector<BasicVector<double>*>{data_[0].get(), data_[1].get()});
+  xd.set_system_id(internal::SystemId::get_new_id());
   std::unique_ptr<DiscreteValues<double>> clone = xd.Clone();
 
   // First check that the clone has the original values.
+  EXPECT_EQ(clone->get_system_id(), xd.get_system_id());
   EXPECT_EQ(clone->get_vector(0).get_value(), v00_);
   EXPECT_EQ(clone->get_vector(1).get_value(), v01_);
 

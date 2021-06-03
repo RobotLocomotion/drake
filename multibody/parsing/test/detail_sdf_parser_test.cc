@@ -166,7 +166,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   // isn't specified.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.HasBodyNamed("Link1"), std::logic_error,
-      "Body Link1 appears in multiple model instances.");
+      ".*Body.*Link1.*multiple model instances.*");
 
   EXPECT_FALSE(plant.HasBodyNamed("Link1", instance1));
   EXPECT_TRUE(plant.HasBodyNamed("Link1", acrobot1));
@@ -182,12 +182,12 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetBodyByName("Link1"), std::logic_error,
-      "Body Link1 appears in multiple model instances.");
+      ".*Body.*Link1.*multiple model instances.*");
 
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.HasJointNamed("ShoulderJoint"), std::logic_error,
-      "Joint ShoulderJoint appears in multiple model instances.");
+      ".*Joint.*ShoulderJoint.*multiple model instances.*");
   EXPECT_FALSE(plant.HasJointNamed("ShoulderJoint", instance1));
   EXPECT_TRUE(plant.HasJointNamed("ShoulderJoint", acrobot1));
   EXPECT_TRUE(plant.HasJointNamed("ShoulderJoint", acrobot2));
@@ -202,11 +202,11 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetJointByName("ShoulderJoint"), std::logic_error,
-      "Joint ShoulderJoint appears in multiple model instances.");
+      ".*Joint.*ShoulderJoint.*multiple model instances.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.HasJointActuatorNamed("ElbowJoint"), std::logic_error,
-      "Joint actuator ElbowJoint appears in multiple model instances.");
+      ".*JointActuator.*ElbowJoint.*multiple model instances.*");
 
   const JointActuator<double>& acrobot1_actuator =
       plant.GetJointActuatorByName("ElbowJoint", acrobot1);
@@ -216,7 +216,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetJointActuatorByName("ElbowJoint"), std::logic_error,
-      "Joint actuator ElbowJoint appears in multiple model instances.");
+      ".*JointActuator.*ElbowJoint.*multiple model instances.*");
 
   const Frame<double>& acrobot1_link1_frame =
       plant.GetFrameByName("Link1", acrobot1);
@@ -226,7 +226,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetFrameByName("Link1"), std::logic_error,
-      "Frame Link1 appears in multiple model instances.");
+      ".*Frame.*Link1.*multiple model instances.*");
 
   // Check model scope frames.
   auto context = plant.CreateDefaultContext();
@@ -802,7 +802,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
   // actuation.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetJointActuatorByName("prismatic_joint_zero_limit"),
-      std::logic_error, "There is no joint actuator named '.*' in the model.");
+      std::logic_error, ".*There is no JointActuator named.*");
 }
 
 // Verifies that the SDF parser parses the revolute spring parameters correctly.

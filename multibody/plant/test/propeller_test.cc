@@ -146,6 +146,14 @@ GTEST_TEST(PropellerTest, BiRotorTest) {
           plant->gravity_field().gravity_vector(),
       1e-14));
 
+  // Verify that the implicit dynamics match the continuous ones.
+  Eigen::VectorXd residual = diagram->AllocateImplicitTimeDerivativesResidual();
+  auto derivatives = diagram->AllocateTimeDerivatives();
+  diagram->CalcTimeDerivatives(*context, derivatives.get());
+  diagram->CalcImplicitTimeDerivativesResidual(*context, *derivatives,
+                                               &residual);
+  EXPECT_TRUE(CompareMatrices(residual, Eigen::VectorXd::Zero(13), 1e-15));
+
   // Test that I can perform scalar conversion.
   diagram->ToAutoDiffXd();
   diagram->ToSymbolic();

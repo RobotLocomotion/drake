@@ -68,6 +68,8 @@ OptimizationProgram::OptimizationProgram(CostForm cost_form,
 
 void OptimizationProgram::RunProblem(SolverInterface* solver) {
   if (solver->available()) {
+    EXPECT_TRUE(solver->AreProgramAttributesSatisfied(*prog_));
+    EXPECT_EQ(solver->ExplainUnsatisfiedProgramAttributes(*prog_), "");
     const MathematicalProgramResult result =
         RunSolver(*prog_, *solver, initial_guess());
     const std::optional<SolverType> solver_type =

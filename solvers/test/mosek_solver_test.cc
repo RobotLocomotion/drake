@@ -487,6 +487,13 @@ GTEST_TEST(MosekTest, SDPDualSolution1) {
     TestSDPDualSolution1(solver, 3E-6);
   }
 }
+
+GTEST_TEST(MosekTest, TestNonconvexQP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestNonconvexQP(solver, true);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

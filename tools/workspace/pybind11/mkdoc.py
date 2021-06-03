@@ -32,7 +32,7 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 #  Syntax:
-#     mkdoc.py [-output=<file>] [-I<path> ..] [-quiet] [.. header files ..]
+#     mkdoc.py -output=<file> [-I<path> ..] [-quiet] [.. header files ..]
 #
 #  Extract documentation from C++ header files to use it in Python bindings
 #
