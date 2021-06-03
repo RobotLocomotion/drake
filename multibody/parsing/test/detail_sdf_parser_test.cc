@@ -724,6 +724,9 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(CompareMatrices(
+      no_limit_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
 
   // Ball joint
   DRAKE_EXPECT_NO_THROW(plant.GetJointByName<BallRpyJoint>("ball_joint"));

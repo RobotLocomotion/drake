@@ -272,6 +272,9 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(CompareMatrices(
+      no_limit_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
   EXPECT_GT(no_limit_joint.index(), ball_joint.index());
 
   // Limitless revolute actuator
