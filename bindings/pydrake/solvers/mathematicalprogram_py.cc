@@ -913,6 +913,13 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddLinearCost),
           py::arg("a"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearCost.doc_3args)
+      .def("AddLinearCost",
+          static_cast<Binding<LinearCost> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearCost),
+          py::arg("a"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearCost.doc_2args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
