@@ -40,6 +40,7 @@ Defines an SDF model with various types of joints used for testing the parser.
           <upper>2</upper>
           <effort>100</effort>
           <velocity>100</velocity>
+          <drake:acceleration>200</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0.2</damping>
@@ -71,6 +72,7 @@ Defines an SDF model with various types of joints used for testing the parser.
           <upper>1</upper>
           <effort>100</effort>
           <velocity>5</velocity>
+          <drake:acceleration>10</drake:acceleration>
         </limit>
         <dynamics>
           <damping>0.3</damping>
