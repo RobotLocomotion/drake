@@ -325,6 +325,15 @@ GTEST_TEST(SystemScalarConverterTest, Remove) {
   EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
+  // We remove double => AutoDiff support.  Only double <= AutoDiff remains.
+  dut.Remove<double, AutoDiffXd>();
+  EXPECT_FALSE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
+  EXPECT_FALSE((dut.IsConvertible<double, Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double>()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
+
   // The conversion still actually works.
   const AnyToAnySystem<double> system{22};
   EXPECT_TRUE(is_dynamic_castable<AnyToAnySystem<AutoDiffXd>>(
