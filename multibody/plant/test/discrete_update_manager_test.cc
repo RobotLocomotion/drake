@@ -70,26 +70,20 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
 
   /* Declares a cache entry that stores twice the additional state value. */
   void DeclareCacheEntries(MultibodyPlant<double>* plant) final {
-    cache_index_ =
-        plant
-            ->DeclareCacheEntry(
-                "Twice the additional_state value",
-                [=]() {
-                  const VectorXd model_value =
-                      VectorXd::Zero(kNumAdditionalDofs);
-                  return AbstractValue::Make(model_value);
-                },
-                [this](const ContextBase& context_base,
-                       AbstractValue* cache_value) {
-                  const auto& context =
-                      dynamic_cast<const Context<double>&>(context_base);
-                  VectorXd& data = cache_value->get_mutable_value<VectorXd>();
-                  data =
-                      2.0 * context.get_discrete_state(additional_state_index_)
-                                .get_value();
-                },
-                {systems::System<double>::xd_ticket()})
-            .cache_index();
+    cache_index_ = plant
+                       ->DeclareCacheEntry(
+                           "Twice the additional_state value", *this,
+                           &DummyDiscreteUpdateManager::DoubleDiscreteState,
+                           {systems::System<double>::xd_ticket()})
+                       .cache_index();
+  }
+
+  void DoubleDiscreteState(const Context<double>& context,
+                           VectorXd* double_discrete_state) const {
+    plant().ValidateContext(context);
+    const VectorXd& discrete_state =
+        context.get_discrete_state(additional_state_index_).get_value();
+    *double_discrete_state = discrete_state * 2;
   }
 
   /* Increments the number of times CalcContactSolverResults() is called for

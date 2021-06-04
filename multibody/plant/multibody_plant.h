@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -1632,6 +1633,141 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         static_cast<ManagerType*>(discrete_update_manager_.get());
     return *concrete_manager_ptr;
   }
+
+  // Preserve access to base overload from this class.
+  using systems::SystemBase::DeclareCacheEntry;
+
+  // TODO(xuchenhan-tri): Removes some redundancy in the documentation for
+  //  DeclareCacheEntry() by using anchors and references when it upgrades to
+  //  Doxygen comments.
+  /* (Experimental) Sugar for declaring a cache entry by specifying a model
+   value of concrete type `ValueType` and a calculator function that is a class
+   member function (method) of an external auxiliary `DiscreteUpdateManager`
+   class with signature:
+   @code
+     void MyManager::CalcCacheValue(const Context<T>&, ValueType*) const;
+   @endcode
+   where `MyManager` is a class derived from `DiscreteUpdateManager<T>`. The
+   `calc` method is invoked on the input parameter `manager`. See
+   SystemBase::DeclareCacheEntry() for more information. */
+  template <class MyManager, typename ValueType>
+  systems::CacheEntry& DeclareCacheEntry(
+      std::string description, const MyManager& manager,
+      const ValueType& model_value,
+      void (MyManager::*calc)(const systems::Context<T>&, ValueType*) const,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::SystemBase::all_sources_ticket()}) {
+    static_assert(
+        std::is_base_of<internal::DiscreteUpdateManager<T>, MyManager>::value,
+        "The template parameter MyManager must be derived from "
+        "DiscreteUpdateManager<T>.");
+    copyable_unique_ptr<AbstractValue> owned_model(
+        std::make_unique<Value<ValueType>>(model_value));
+    auto alloc_callback = [model = std::move(owned_model)]() {
+      return model->Clone();
+    };
+    auto calc_callback = [&manager, calc](
+                             const systems::ContextBase& context_base,
+                             AbstractValue* result) {
+      const auto& context =
+          dynamic_cast<const systems::Context<T>&>(context_base);
+      ValueType& typed_result = result->get_mutable_value<ValueType>();
+      (manager.*calc)(context, &typed_result);
+    };
+    auto& entry = systems::SystemBase::DeclareCacheEntry(
+        std::move(description), std::move(alloc_callback),
+        std::move(calc_callback), std::move(prerequisites_of_calc));
+    return entry;
+  }
+
+  /* (Experimental) Sugar for declaring a cache entry by specifying a model
+   value of concrete type `ValueType` and a calculator function that is a class
+   member function (method) of an external auxiliary DiscreteUpdateManager class
+   with signature:
+   @code
+     ValueType MyManager::CalcCacheValue(const Context<T>&) const;
+   @endcode
+   where `MyManager` is a class derived from `DiscreteUpdateManager<T>`. The
+   `calc` method is invoked on the input parameter `manager`. See
+   SystemBase::DeclareCacheEntry() for more information. */
+  template <class MyManager, typename ValueType>
+  systems::CacheEntry& DeclareCacheEntry(
+      std::string description, const MyManager& manager,
+      const ValueType& model_value,
+      ValueType (MyManager::*calc)(const systems::Context<T>&) const,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::SystemBase::all_sources_ticket()}) {
+    static_assert(
+        std::is_base_of<internal::DiscreteUpdateManager<T>, MyManager>::value,
+        "The template parameter MyManager must be derived from "
+        "DiscreteUpdateManager<T>.");
+    copyable_unique_ptr<AbstractValue> owned_model(
+        std::make_unique<Value<ValueType>>(model_value));
+    auto alloc_callback = [model = std::move(owned_model)]() {
+      return model->Clone();
+    };
+    auto calc_callback = [&manager, calc](
+                             const systems::ContextBase& context_base,
+                             AbstractValue* result) {
+      const auto& context =
+          dynamic_cast<const systems::Context<T>&>(context_base);
+      ValueType& typed_result = result->get_mutable_value<ValueType>();
+      typed_result = (manager.*calc)(context);
+    };
+    auto& entry = DeclareCacheEntry(
+        std::move(description), std::move(alloc_callback),
+        std::move(calc_callback), std::move(prerequisites_of_calc));
+    return entry;
+  }
+
+  /* (Experimental) Sugar for declaring a cache entry by specifying only a
+   calculator function that is a class member function (method) of an external
+   auxiliary DiscreteUpdateManager with signature:
+   @code
+     void MyManager::CalcCacheValue(const Context<T>&, ValueType*) const;
+   @endcode
+   where `MyManager` is a class derived from `DiscreteUpdateManager<T>`. The
+   `calc` method is invoked on the input parameter `manager`. See
+   SystemBase::DeclareCacheEntry() for more information. */
+  template <class MyManager, typename ValueType>
+  systems::CacheEntry& DeclareCacheEntry(
+      std::string description, const MyManager& my_class,
+      void (MyManager::*calc)(const systems::Context<T>&, ValueType*) const,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::SystemBase::all_sources_ticket()}) {
+    static_assert(
+        std::is_default_constructible<ValueType>::value,
+        "MultibodyPlant::DeclareCacheEntry(): the calc-only overloads of "
+        "this method requires that the output type has a default constructor");
+    return DeclareCacheEntry(std::move(description), my_class, ValueType{},
+                             calc, std::move(prerequisites_of_calc));
+  }
+
+  /* (Experimental) Declares a cache entry by specifying only a calculator
+   function that is a class member function (method) of an external auxiliary
+   DiscreteUpdateManager with signature:
+   @code
+     ValueType MyManager::CalcCacheValue(const Context<T>&) const;
+   @endcode
+   where `MyManager` is a class derived from `DiscreteUpdateManager<T>`. The
+   `calc` method is invoked on the input parameter `manager`. See
+   SystemBase::DeclareCacheEntry() for more information. */
+  template <class MyManager, typename ValueType>
+  systems::CacheEntry& DeclareCacheEntry(
+      std::string description, const MyManager& manager,
+      ValueType (MyManager::*calc)(const systems::Context<T>&) const,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::SystemBase::all_sources_ticket()}) {
+    static_assert(
+        std::is_default_constructible<ValueType>::value,
+        "MultibodyPlant::DeclareCacheEntry(): the calc-only overloads of "
+        "this method requires that the output type has a default constructor");
+    return DeclareCacheEntry(std::move(description), manager, ValueType{}, calc,
+                             std::move(prerequisites_of_calc));
+  }
+
+  // TODO(xuchenhan-tri): Introduce similar sugar for other system resources if
+  // the need arises.
 
   // (Experimental) AddPhysicalModel() should only be called by advanced
   // developers wanting to try out their new physical models. We choose not to

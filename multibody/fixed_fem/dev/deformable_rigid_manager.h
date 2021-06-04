@@ -54,8 +54,7 @@ class DeformableRigidManager final
   }
 
   // TODO(xuchenhan-tri): Implement this once AccelerationKinematicsCache
-  // also
-  //  caches acceleration for deformable dofs.
+  //  also caches acceleration for deformable dofs.
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final {
