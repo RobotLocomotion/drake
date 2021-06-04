@@ -71,8 +71,9 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
   /* Declares a cache entry that stores twice the additional state value. */
   void DeclareCacheEntries(MultibodyPlant<double>* plant) final {
     cache_index_ =
-        this->DeclareCacheEntry(
-                plant, "Twice the additional_state value",
+        plant
+            ->DeclareCacheEntry(
+                "Twice the additional_state value",
                 [=]() {
                   const VectorXd model_value =
                       VectorXd::Zero(kNumAdditionalDofs);

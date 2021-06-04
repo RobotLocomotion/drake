@@ -121,14 +121,6 @@ class DiscreteUpdateManager {
       const systems::Context<T>& context,
       systems::DiscreteValues<T>* updates) const = 0;
 
-  /* Protected SystemBase method exposed through MultibodyPlant. */
-  static systems::CacheEntry& DeclareCacheEntry(
-      MultibodyPlant<T>* plant, std::string description,
-      systems::CacheEntry::AllocCallback alloc_function,
-      systems::CacheEntry::CalcCallback calc_function,
-      std::set<systems::DependencyTicket> prerequisites_of_calc = {
-          systems::SystemBase::all_sources_ticket()});
-
  private:
   const MultibodyPlant<T>* plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
