@@ -471,6 +471,165 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
   // egregious error would be obvious during visualization.
 }
 
+// Verifies that a representative triangle of a polygon satisfies these
+// properties:
+//
+//   1. The triangle has the same area as the polygon.
+//   2. The triangle has the same centroid as the polygon.
+//   3. The triangle has winding that produces the same normal as the polygon.
+//
+// @param[in] triangle_index
+//     Index into `faces` of the representative triangle.
+// @param[in] faces
+//     Set of faces that contain the representative triangle.
+// @param[in] vertices_F
+//     Set of vertices of the `faces`, whose positional vectors are expressed
+//     in frame F.
+// @param[in] polygon_F
+//     The polygon is represented by position vectors of its vertices,
+//     measured and expressed in frame F.
+// @param[in] nhat_F
+//     The unit normal vector of the polygon, expressed in frame F. We assume
+//     the winding of the polygon vertices is consistent with this normal
+//     vector.
+void VerifyRepresentativeTriangle(
+    SurfaceFaceIndex triangle_index, const vector<SurfaceFace>& faces,
+    const vector<SurfaceVertex<double>>& vertices_F,
+    const vector<Vector3d>& polygon_F, const Vector3d& nhat_F) {
+  const SurfaceFace& face = faces.at(triangle_index);
+  // The notation r_MV() does not work well. Here frame M is actually frame F.
+  const Vector3d p_FV0 = vertices_F.at(face.vertex(0)).r_MV();
+  const Vector3d p_FV1 = vertices_F.at(face.vertex(1)).r_MV();
+  const Vector3d p_FV2 = vertices_F.at(face.vertex(2)).r_MV();
+  const vector<Vector3d> triangle_F{p_FV0, p_FV1, p_FV2};
+
+  const double triangle_area = CalcPolygonArea(triangle_F, nhat_F);
+  const double polygon_area = CalcPolygonArea(polygon_F, nhat_F);
+  const double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(triangle_area, polygon_area,
+              8. * kEps * std::max(polygon_area, 1.));
+
+  const Vector3d triangle_normal_F =
+      (p_FV1 - p_FV0).cross(p_FV2 - p_FV0).normalized();
+  EXPECT_TRUE(CompareMatrices(triangle_normal_F, nhat_F, 16. * kEps));
+
+  // Triangle's centroid Cₜ.
+  const Vector3d p_FCt = (p_FV0 + p_FV1 + p_FV2) / 3.;
+  // Polygon's centroid Cₚ.
+  const Vector3d p_FCp = CalcPolygonCentroid(polygon_F, nhat_F);
+  EXPECT_TRUE(
+      CompareMatrices(p_FCt, p_FCp, 4. * kEps * std::max(p_FCp.norm(), 1.)));
+}
+
+// Tests AddPolygonToMeshDataAsOneTriangle() on a sequence of polygons. We
+// will use VerifyRepresentativeTriangle() to verify the properties of each
+// added representative triangle.
+GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle) {
+  // The robust test will be done in a general frame F, but the set up will be
+  // in a convenient frame M.
+  const RigidTransformd X_FM{
+      AngleAxisd{-9 * M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      Vector3d{0.5, 0.75, -1.25}};
+
+  vector<Vector3d> polygons_F[2];
+  Vector3d nhats_F[2];
+  {
+    const vector<Vector3d> polygon_M[2]{
+        // A triangle is a special case of a polygon.
+        {Vector3d::Zero(), 2. * Vector3d::UnitX(), 3. * Vector3d::UnitY()},
+
+        // A general convex quadrilateral.
+        //
+        //             y
+        //
+        //             │   o
+        //             o    v2
+        //           v3│
+        //             │
+        //             │
+        // ────────────┼────o───────── x
+        //             │     v1
+        //       o     │
+        //       v0    │
+        //             │
+        {Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0}, Vector3d{0.75, 1.25, 0},
+         Vector3d{0, 1, 0}}};
+    for (int i = 0; i < 2; ++i) {
+      nhats_F[i] = X_FM.rotation().col(2);
+      std::transform(
+          polygon_M[i].begin(), polygon_M[i].end(),
+          std::back_inserter(polygons_F[i]),
+          [&X_FM](const Vector3d& p_MV) -> Vector3d { return X_FM * p_MV; });
+    }
+  }
+
+  vector<SurfaceFace> faces;
+  vector<SurfaceVertex<double>> vertices_F;
+  for (int i = 0; i < 2; ++i) {
+    AddPolygonToMeshDataAsOneTriangle<double>(polygons_F[i], nhats_F[i], &faces,
+                                              &vertices_F);
+    EXPECT_EQ(faces.size(), i + 1);
+    EXPECT_EQ(vertices_F.size(), 3 * (i + 1));
+    VerifyRepresentativeTriangle(SurfaceFaceIndex(i), faces, vertices_F,
+                                 polygons_F[i], nhats_F[i]);
+  }
+}
+
+// Tests AddPolygonToMeshDataAsOneTriangle() with AutoDiffXd. It's only a
+// smoke test. We only check that it compiles, and derivatives propagate to a
+// coordinate of a vertex.
+GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_AutoDiff) {
+  using Vector3ad = Vector3<AutoDiffXd>;
+  const vector<Vector3ad> polygon_F{math::initializeAutoDiff(Vector3d::Zero()),
+                                    Vector3ad::UnitX(), Vector3ad{1, 1, 0},
+                                    Vector3ad::UnitY()};
+  const Vector3ad nhat_F = Vector3ad::UnitZ();
+
+  vector<SurfaceFace> faces;
+  vector<SurfaceVertex<AutoDiffXd>> vertices_F;
+  AddPolygonToMeshDataAsOneTriangle<AutoDiffXd>(polygon_F, nhat_F, &faces,
+                                            &vertices_F);
+  EXPECT_EQ(vertices_F[0].r_MV()[0].derivatives().size(), 3);
+}
+
+// Tests AddPolygonToMeshDataAsOneTriangle() for a special case of an input
+// polygon with near-zero area. It should skip such a polygon.
+GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_ZeroArea) {
+  // A near-zero-area polygon is skipped.
+  {
+    const double l = 0.1 * sqrt(kMinimumPolygonArea);
+    const vector<Vector3d> polygon_F{Vector3d::Zero(), l * Vector3d::UnitX(),
+                                     l * Vector3d{1, 1, 0},
+                                     l * Vector3d::UnitY()};
+    const Vector3d nhat_F = Vector3d::UnitZ();
+
+    vector<SurfaceFace> faces;
+    vector<SurfaceVertex<double>> vertices_F;
+    AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
+                                              &vertices_F);
+    EXPECT_EQ(faces.size(), 0);
+    EXPECT_EQ(vertices_F.size(), 0);
+  }
+  // This polygon is above the threshold, so it's not skipped.
+  {
+    const double l = 10 * sqrt(kMinimumPolygonArea);
+    const vector<Vector3d> polygon_F{Vector3d::Zero(), l * Vector3d::UnitX(),
+                                     l * Vector3d{1, 1, 0},
+                                     l * Vector3d::UnitY()};
+    const Vector3d nhat_F = Vector3d::UnitZ();
+
+    vector<SurfaceFace> faces;
+    vector<SurfaceVertex<double>> vertices_F;
+    AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
+                                              &vertices_F);
+    // We only check that its representative triangle was added, but we do
+    // not verify the triangle itself. Checking correctness of representative
+    // triangles was done in another test.
+    EXPECT_EQ(faces.size(), 1);
+    EXPECT_EQ(vertices_F.size(), 3);
+  }
+}
+
 // Tests the overload of CalcPolygonCentroid() that takes a polygon represented
 // as an ordered list of positional vectors. We only perform a simple test here
 // and assume its correctness follows from the extensive tests of the other

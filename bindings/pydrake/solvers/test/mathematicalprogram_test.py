@@ -342,6 +342,9 @@ class TestMathematicalProgram(unittest.TestCase):
         lc.UpdateCoefficients([10.])
         check_linear_cost(lc, [10.], 0.)
 
+        lc2 = prog.AddLinearCost([2], [x0]).evaluator()
+        check_linear_cost(lc2, [2], 0.)
+
         def check_quadratic_cost(cost, Q, b, c):
             self.assertTrue(np.allclose(cost.Q(), Q))
             self.assertTrue(np.allclose(cost.b(), b))

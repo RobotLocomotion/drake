@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <set>
+#include <string>
 
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -42,14 +44,16 @@ class DiscreteUpdateManager {
 
   /* (Internal) Sets the given `plant` as the MultibodyPlant owning this
    DiscreteUpdateManager. This method is meant to be called by
-   MultibodyPlant::set_discrete_update_manager() only.
+   MultibodyPlant::set_discrete_update_manager() only. A non-const pointer to
+   plant is passed in so that cache entries can be declared.
    @pre plant is Finalized. */
-  void SetOwningMultibodyPlant(const MultibodyPlant<T>* plant) {
+  void SetOwningMultibodyPlant(MultibodyPlant<T>* plant) {
     DRAKE_DEMAND(plant != nullptr);
     DRAKE_DEMAND(plant->is_finalized());
     plant_ = plant;
     multibody_state_index_ = plant_->GetDiscreteStateIndexOrThrow();
     ExtractModelInfo();
+    DeclareCacheEntries(plant);
   }
 
   /* Given the state of the model stored in `context`, this method performs the
@@ -89,6 +93,10 @@ class DiscreteUpdateManager {
    information from the owning MultibodyPlant. */
   virtual void ExtractModelInfo() {}
 
+  /* Derived DiscreteUpdateManager should override this method to declare
+   cache entries in the owning MultibodyPlant `plant`. */
+  virtual void DeclareCacheEntries(MultibodyPlant<T>*) {}
+
   /* Returns the discrete state index of the rigid position and velocity states
    declared by MultibodyPlant. */
   systems::DiscreteStateIndex multibody_state_index() const {
@@ -112,6 +120,14 @@ class DiscreteUpdateManager {
   virtual void DoCalcDiscreteValues(
       const systems::Context<T>& context,
       systems::DiscreteValues<T>* updates) const = 0;
+
+  /* Protected SystemBase method exposed through MultibodyPlant. */
+  static systems::CacheEntry& DeclareCacheEntry(
+      MultibodyPlant<T>* plant, std::string description,
+      systems::CacheEntry::AllocCallback alloc_function,
+      systems::CacheEntry::CalcCallback calc_function,
+      std::set<systems::DependencyTicket> prerequisites_of_calc = {
+          systems::SystemBase::all_sources_ticket()});
 
  private:
   const MultibodyPlant<T>* plant_{nullptr};

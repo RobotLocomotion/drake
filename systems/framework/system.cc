@@ -989,6 +989,7 @@ SystemConstraintIndex System<T>::AddConstraint(
         GetSystemName(), constraint->description(),
         external_constraints_.front().description()));
   }
+  constraint->set_system_id(this->get_system_id());
   constraints_.push_back(std::move(constraint));
   return SystemConstraintIndex(constraints_.size() - 1);
 }

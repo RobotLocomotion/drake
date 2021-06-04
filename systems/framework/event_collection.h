@@ -341,7 +341,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
   MakeForcedEventCollection() {
     auto ret = std::make_unique<LeafEventCollection<EventType>>();
     EventType event(EventType::TriggerType::kForced);
-    ret->AddEvent(event);
+    ret->AddEvent(std::move(event));
     return ret;
   }
 
@@ -520,11 +520,22 @@ class CompositeEventCollection {
    * transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
+  DRAKE_DEPRECATED("2021-09-01", "Use AddPublishEvent instead.")
   void add_publish_event(std::unique_ptr<PublishEvent<T>> event) {
     DRAKE_DEMAND(event != nullptr);
+    AddPublishEvent(std::move(*event));
+  }
+
+  /**
+   * Assuming the internal publish event collection is an instance of
+   * LeafEventCollection, adds the publish event `event` (ownership is also
+   * transferred) to it.
+   * @throws std::bad_cast if the assumption is incorrect.
+   */
+  void AddPublishEvent(PublishEvent<T> event) {
     auto& events = dynamic_cast<LeafEventCollection<PublishEvent<T>>&>(
         this->get_mutable_publish_events());
-    events.add_event(std::move(event));
+    events.AddEvent(std::move(event));
   }
 
   /**
@@ -533,12 +544,23 @@ class CompositeEventCollection {
    * also transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
+  DRAKE_DEPRECATED("2021-09-01", "Use AddDiscreteUpdateEvent instead.")
   void add_discrete_update_event(
       std::unique_ptr<DiscreteUpdateEvent<T>> event) {
     DRAKE_DEMAND(event != nullptr);
+    AddDiscreteUpdateEvent(std::move(*event));
+  }
+
+  /**
+   * Assuming the internal discrete update event collection is an instance of
+   * LeafEventCollection, adds the discrete update event `event` (ownership is
+   * also transferred) to it.
+   * @throws std::bad_cast if the assumption is incorrect.
+   */
+  void AddDiscreteUpdateEvent(DiscreteUpdateEvent<T> event) {
     auto& events = dynamic_cast<LeafEventCollection<DiscreteUpdateEvent<T>>&>(
         this->get_mutable_discrete_update_events());
-    events.add_event(std::move(event));
+    events.AddEvent(std::move(event));
   }
 
   /**
@@ -547,13 +569,24 @@ class CompositeEventCollection {
    * (ownership is also transferred) to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
+  DRAKE_DEPRECATED("2021-09-01", "Use AddUnrestrictedUpdateEvent instead.")
   void add_unrestricted_update_event(
       std::unique_ptr<UnrestrictedUpdateEvent<T>> event) {
     DRAKE_DEMAND(event != nullptr);
+    AddUnrestrictedUpdateEvent(std::move(*event));
+  }
+
+  /**
+   * Assuming the internal unrestricted update event collection is an instance
+   * of LeafEventCollection, adds the unrestricted update event `event`
+   * (ownership is also transferred) to it.
+   * @throws std::bad_cast if the assumption is incorrect.
+   */
+  void AddUnrestrictedUpdateEvent(UnrestrictedUpdateEvent<T> event) {
     auto& events =
         dynamic_cast<LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
             this->get_mutable_unrestricted_update_events());
-    events.add_event(std::move(event));
+    events.AddEvent(std::move(event));
   }
 
   /**

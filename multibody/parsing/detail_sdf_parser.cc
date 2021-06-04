@@ -16,6 +16,7 @@
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
+#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -42,6 +43,46 @@ using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
+
+// Given a @p relative_nested_name to an object, this function returns the model
+// instance that is an immediate parent of the object and the local name of the
+// object. The local name of the object does not have any scoping delimiters.
+//
+// @param[in] relative_nested_name
+//   The name of the object in the scope of the model associated with the given
+//   @p model_instance. The relative nested name can contain the scope delimiter
+//   to reference objects nested in child models.
+// @param[in] model_instance
+//   The model instance in whose scope @p relative_nested_name is defined.
+// @param[in] plant
+//   The MultibodyPlant object that contains the model instance identified by @p
+//   model_instance.
+// @returns A pair containing the resolved model instance and the local name of
+// the object referenced by @p relative_nested_name.
+std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
+    const std::string& relative_nested_name, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant) {
+  auto [parent_name, unscoped_local_name] =
+      sdf::SplitName(relative_nested_name);
+  ModelInstanceIndex resolved_model_instance = model_instance;
+
+  if (!parent_name.empty()) {
+    // If the parent is in the world_model_instance, the name can be looked up
+    // from the plant without creating an absolute name.
+    if (world_model_instance() == model_instance) {
+      resolved_model_instance = plant.GetModelInstanceByName(parent_name);
+    } else {
+      const std::string parent_model_absolute_name = sdf::JoinName(
+          plant.GetModelInstanceName(model_instance), parent_name);
+
+      resolved_model_instance =
+        plant.GetModelInstanceByName(parent_model_absolute_name);
+    }
+  }
+
+  return {resolved_model_instance, unscoped_local_name};
+}
+
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -70,7 +111,7 @@ void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
     if (!frame_name.empty()) {
       throw std::runtime_error(
           "<pose relative_to='{non-empty}'/> is presently not supported "
-          "in <inertial/> or <model/> tags.");
+          "in <inertial/> or top-level <model/> tags in model files.");
     }
   }
 }
@@ -100,6 +141,17 @@ Eigen::Vector3d ResolveAxisXyz(const sdf::JointAxis& axis) {
   ignition::math::Vector3d xyz;
   ThrowAnyErrors(axis.ResolveXyz(xyz));
   return ToVector3(xyz);
+}
+
+std::string ResolveJointParentLinkName(const sdf::Joint& joint) {
+  std::string link;
+  ThrowAnyErrors(joint.ResolveParentLink(link));
+  return link;
+}
+std::string ResolveJointChildLinkName(const sdf::Joint& joint) {
+  std::string link;
+  ThrowAnyErrors(joint.ResolveChildLink(link));
+  return link;
 }
 
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
@@ -145,7 +197,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
 // Helper method to retrieve a Body given the name of the link specification.
 const Body<double>& GetBodyByLinkSpecificationName(
-    const sdf::Model& model, const std::string& link_name,
+    const std::string& link_name,
     ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
   // SDF's convention to indicate a joint is connected to the world is to either
   // name the corresponding link "world" or just leave it unnamed.
@@ -153,13 +205,10 @@ const Body<double>& GetBodyByLinkSpecificationName(
   if (link_name.empty() || link_name == "world") {
     return plant.world_body();
   } else {
-    // TODO(amcastro-tri): Remove this when sdformat guarantees a model
-    // with basic structural checks.
-    if (!model.LinkNameExists(link_name)) {
-      throw std::logic_error("There is no parent link named '" +
-          link_name + "' in the model.");
-    }
-    return plant.GetBodyByName(link_name, model_instance);
+    const auto [parent_model_instance, local_name] =
+        GetResolvedModelInstanceAndLocalName(link_name, model_instance, plant);
+
+    return plant.GetBodyByName(local_name, parent_model_instance);
   }
 }
 
@@ -343,9 +392,9 @@ void AddJointFromSpecification(
     MultibodyPlant<double>* plant,
     std::set<sdf::JointType>* joint_types) {
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
-      model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
+      ResolveJointParentLinkName(joint_spec), model_instance, *plant);
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
-      model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
+      ResolveJointChildLinkName(joint_spec), model_instance, *plant);
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
@@ -591,15 +640,28 @@ const Frame<double>& AddFrameFromSpecification(
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& default_frame, MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
-  // TODO(eric.cousineau): Without supplying AttachedTo(), this ResolvePose
-  // call fails. Debug why.
   const RigidTransformd X_PF = ResolveRigidTransform(
       frame_spec.SemanticPose(), frame_spec.AttachedTo());
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
-    parent_frame = &plant->GetFrameByName(
-        frame_spec.AttachedTo(), model_instance);
+    const std::string attached_to_absolute_name = parsing::PrefixName(
+        parsing::GetInstanceScopeName(*plant, model_instance),
+        frame_spec.AttachedTo());
+
+    // If the attached_to refers to a model, we use the `__model__` frame
+    // associated with the model.
+    if (plant->HasModelInstanceNamed(attached_to_absolute_name)) {
+      const auto attached_to_model_instance =
+          plant->GetModelInstanceByName(attached_to_absolute_name);
+      parent_frame =
+          &plant->GetFrameByName("__model__", attached_to_model_instance);
+    } else {
+      const auto [parent_model_instance, local_name] =
+          GetResolvedModelInstanceAndLocalName(frame_spec.AttachedTo(),
+                                               model_instance, *plant);
+      parent_frame = &plant->GetFrameByName(local_name, parent_model_instance);
+    }
   }
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
@@ -711,45 +773,80 @@ bool AreWelded(
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-ModelInstanceIndex AddModelFromSpecification(
+std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
+    const RigidTransformd& X_WP,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
+  std::vector <ModelInstanceIndex> added_model_instances{model_instance};
 
-  // TODO(eric.cousineau): Ensure this generalizes to cases when the parent
-  // frame is not the world. At present, we assume the parent frame is the
-  // world.
-  ThrowIfPoseFrameSpecified(model.Element());
-  const RigidTransformd X_WM = ToRigidTransform(model.RawPose());
+  // "P" is the parent frame. If the model is in a child of //world or //sdf,
+  // this will be the world frame. Otherwise, this will be the parent model
+  // frame.
+  const RigidTransformd X_PM = ResolveRigidTransform(model.SemanticPose());
+  const RigidTransformd X_WM = X_WP * X_PM;
+
+  // Add nested models at root-level of <model>.
+  // Do this before the resolving canonical link because the link might be in a
+  // nested model.
+  drake::log()->trace("sdf_parser: Add nested models");
+  for (uint64_t model_index = 0; model_index < model.ModelCount();
+       ++model_index) {
+    const sdf::Model& nested_model = *model.ModelByIndex(model_index);
+    std::vector<ModelInstanceIndex> nested_model_instances =
+        AddModelsFromSpecification(
+            nested_model, sdf::JoinName(model_name, nested_model.Name()), X_WM,
+            plant, package_map, root_dir);
+
+    DRAKE_DEMAND(!nested_model_instances.empty());
+    const ModelInstanceIndex nested_model_instance =
+        nested_model_instances.front();
+
+    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+        nested_model.Name(),
+        plant->GetFrameByName("__model__", nested_model_instance),
+        RigidTransformd::Identity(), model_instance));
+
+    added_model_instances.insert(added_model_instances.end(),
+                                 nested_model_instances.begin(),
+                                 nested_model_instances.end());
+  }
 
   drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
-  drake::log()->trace("sdf_parser: Resolve canonical link");
-  std::string canonical_link_name = model.CanonicalLinkName();
-  if (canonical_link_name.empty()) {
-    // TODO(eric.cousineau): Should libsdformat auto-resolve this?
-    DRAKE_THROW_UNLESS(model.LinkCount() > 0);
-    canonical_link_name = model.LinkByIndex(0)->Name();
-  }
-  const Frame<double>& canonical_link_frame = plant->GetFrameByName(
-      canonical_link_name, model_instance);
-  const RigidTransformd X_MLc = ResolveRigidTransform(
-      model.LinkByName(canonical_link_name)->SemanticPose());
-
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
   // N.B. This follows SDFormat's convention.
   const std::string sdf_model_frame_name = "__model__";
-  const Frame<double>& model_frame =
-      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          sdf_model_frame_name, canonical_link_frame, X_MLc.inverse(),
-          model_instance));
+
+  drake::log()->trace("sdf_parser: Resolve canonical link");
+  const Frame<double>& model_frame = [&]() -> const Frame<double>& {
+    const auto [canonical_link, canonical_link_name] =
+        model.CanonicalLinkAndRelativeName();
+
+    if (canonical_link != nullptr) {
+      const auto [parent_model_instance, local_name] =
+          GetResolvedModelInstanceAndLocalName(canonical_link_name,
+                                             model_instance, *plant);
+      const Frame<double>& canonical_link_frame =
+          plant->GetFrameByName(local_name, parent_model_instance);
+      const RigidTransformd X_LcM = ResolveRigidTransform(
+          model.SemanticPose(),
+          sdf::JoinName(model.Name(), canonical_link_name));
+
+      return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          sdf_model_frame_name, canonical_link_frame, X_LcM, model_instance));
+    } else {
+      return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
+    }
+  }();
 
   drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
@@ -817,7 +914,7 @@ ModelInstanceIndex AddModelFromSpecification(
     }
   }
 
-  return model_instance;
+  return added_model_instances;
 }
 
 }  // namespace
@@ -848,6 +945,10 @@ ModelInstanceIndex AddModelFromSdf(
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
 
+  // //sdf/model/pose/@relative_to is invalid. Note, libsdformat should emit an
+  // error during Load, but currently doesn't. See sdformat#567
+  ThrowIfPoseFrameSpecified(model.Element());
+
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
@@ -855,8 +956,12 @@ ModelInstanceIndex AddModelFromSdf(
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
-  return AddModelFromSpecification(
-      model, model_name, plant, package_map, root_dir);
+  std::vector<ModelInstanceIndex> added_model_instances =
+      AddModelsFromSpecification(model, model_name, {}, plant, package_map,
+                                 root_dir);
+
+  DRAKE_DEMAND(!added_model_instances.empty());
+  return added_model_instances.front();
 }
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
@@ -918,8 +1023,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       const sdf::Model& model = *root.ModelByIndex(i);
 #pragma GCC diagnostic pop
-      model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, package_map, root_dir));
+      // //sdf/model/pose/@relative_to is invalid. Note, libsdformat should emit
+      // an error during Load, but currently doesn't. See sdformat#567
+      ThrowIfPoseFrameSpecified(model.Element());
+
+      std::vector<ModelInstanceIndex> added_model_instances =
+          AddModelsFromSpecification(model, model.Name(), {}, plant,
+                                     package_map, root_dir);
+      model_instances.insert(model_instances.end(),
+                             added_model_instances.begin(),
+                             added_model_instances.end());
     }
   } else {
     // Load the world and all the models in the world.
@@ -928,19 +1041,23 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints
     // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
 
+    for (uint64_t model_index = 0; model_index < world.ModelCount();
+        ++model_index) {
+      // Get the model.
+      const sdf::Model& model = *world.ModelByIndex(model_index);
+      std::vector<ModelInstanceIndex> added_model_instances =
+          AddModelsFromSpecification(model, model.Name(), {}, plant,
+                                     package_map, root_dir);
+      model_instances.insert(model_instances.end(),
+                             added_model_instances.begin(),
+                             added_model_instances.end());
+    }
+
     for (uint64_t frame_index = 0; frame_index < world.FrameCount();
         ++frame_index) {
       const sdf::Frame& frame = *world.FrameByIndex(frame_index);
       AddFrameFromSpecification(
           frame, world_model_instance(), plant->world_frame(), plant);
-    }
-
-    for (uint64_t model_index = 0; model_index < world.ModelCount();
-        ++model_index) {
-      // Get the model.
-      const sdf::Model& model = *world.ModelByIndex(model_index);
-      model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, package_map, root_dir));
     }
   }
 

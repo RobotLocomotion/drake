@@ -54,6 +54,7 @@ class EventfulSystem final : public LeafSystem<double> {
 // Tests that heap allocations do not occur from Simulator and the systems
 // framework for systems that do various event updates and do not have
 // continuous state.
+// TODO(rpoyner-tri): add testing for witness functions.
 GTEST_TEST(SimulatorLimitMallocTest,
            NoHeapAllocsInSimulatorForSystemsWithoutContinuousState) {
   // Build a Diagram containing the test system so we can test both Diagrams
@@ -75,8 +76,7 @@ GTEST_TEST(SimulatorLimitMallocTest,
     // goal (see #14543) is for the simulator and framework to support
     // heap-free simulation after initialization, given careful system
     // construction.
-    // TODO(rpoyner-tri): whittle allocations down to 0.
-    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 21});
+    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 0});
     simulator.AdvanceTo(1.0);
     simulator.AdvanceTo(2.0);
     simulator.AdvanceTo(3.0);

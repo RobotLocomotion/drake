@@ -785,6 +785,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "discrete_values_limit_malloc_test",
+    deps = [
+        ":discrete_values",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
     name = "dependency_tracker_test",
     deps = [
         ":context_base",

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
-
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
@@ -18,6 +19,9 @@ template <typename T>
 class FemStateBase {
  public:
   virtual ~FemStateBase() = default;
+
+  /** Creates and returns a deep identical copy of `this` %FemStateBase. */
+  std::unique_ptr<FemStateBase<T>> Clone() const { return DoClone(); }
 
   /** @name State getters. Throw an exception if the state doesn't exist.
    @{ */
@@ -114,6 +118,10 @@ class FemStateBase {
     DRAKE_DEMAND(q_.size() == qdot_.size());
     DRAKE_DEMAND(q_.size() == qddot_.size());
   }
+
+  /* Derived concrete FemState must override this to provide a clone of itself.
+   */
+  virtual std::unique_ptr<FemStateBase<T>> DoClone() const = 0;
 
  private:
   /* Invalidate state-dependent quantities. Should be called on state changes.
