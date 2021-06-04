@@ -976,6 +976,39 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 </model>)");
 }
 
+// Tests Drake's usage of sdf::EnforcementPolicy.
+GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
+<model name='model_with_bad_attribute' bad_attribute="junk">
+  <link name='a'/>
+</model>
+)"""),
+      std::runtime_error,
+      R"([\s\S]*XML Attribute\[bad_attribute\] in element\[model\] not )"
+      R"(defined in SDF.[\s\S]*)");
+
+  // TODO(#15018): This currently only emits a Drake-log deprecation warning.
+  // We should handle this more directly in the future, ideally via
+  // libsdformat's policies.
+  ParseTestString(R"""(
+<model name='model_with_too_many_top_level_elements'>
+  <link name='a'/>
+</model>
+<model name='two_models_too_many'>
+  <link name='b'/>
+</model>
+)""");
+
+  // TODO(#15018): Have this be a printed warning, and then make this an error.
+  ParseTestString(R"""(
+<model name='model_with_bad_element'>
+  <link name='a'/>
+  <bad_element/>
+</model>
+)""");
+}
+
 // Reports if the frame with the given id has a geometry with the given role
 // whose name is the same as what ShapeName(ShapeType{}) would produce.
 template <typename ShapeType>
