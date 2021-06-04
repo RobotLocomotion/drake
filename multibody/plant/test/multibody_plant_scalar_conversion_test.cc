@@ -3,7 +3,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/test/dummy_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -13,8 +15,8 @@
 namespace drake {
 
 using multibody::RevoluteSpring;
-using systems::DiagramBuilder;
 using systems::Diagram;
+using systems::DiagramBuilder;
 
 namespace multibody {
 namespace {
@@ -127,6 +129,81 @@ GTEST_TEST(ScalarConversionTest, PortIndexOrdering) {
   DRAKE_DEMAND(autodiff_plant != nullptr);
 
   CompareMultibodyPlantPortIndices(pair.plant, *autodiff_plant);
+}
+
+// A simple concrete DiscreteUpdateManager that does not support scalar
+// conversion to either AutoDiffXd or symbolic::Expression.
+template <typename T>
+class DoubleOnlyDiscreteUpdateManager
+    : public multibody::internal::DiscreteUpdateManager<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleOnlyDiscreteUpdateManager);
+  DoubleOnlyDiscreteUpdateManager() = default;
+  ~DoubleOnlyDiscreteUpdateManager() final = default;
+
+  bool is_cloneable_to_double() const final { return true; }
+
+ private:
+  std::unique_ptr<multibody::internal::DiscreteUpdateManager<double>>
+  CloneToDouble() const final {
+    auto clone = std::make_unique<DoubleOnlyDiscreteUpdateManager<double>>();
+    return clone;
+  }
+
+  void DoCalcContactSolverResults(
+      const systems::Context<T>&,
+      contact_solvers::internal::ContactSolverResults<T>*) const final {}
+
+  void DoCalcAccelerationKinematicsCache(
+      const systems::Context<T>&,
+      internal::AccelerationKinematicsCache<T>*) const final {}
+
+  void DoCalcDiscreteValues(const systems::Context<T>&,
+                            systems::DiscreteValues<T>*) const final {}
+};
+
+// This test verifies that adding external components that do not support some
+// scalar types removes MultibodyPlant's ability to scalar convert to those
+// scalar types.
+GTEST_TEST(ScalarConversionTest, ExternalComponent) {
+  MultibodyPlant<double> plant(0.1);
+  std::unique_ptr<internal::PhysicalModel<double>> dummy_physical_model =
+      std::make_unique<internal::test::DummyModel<double>>();
+  EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
+  EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
+  EXPECT_FALSE(dummy_physical_model->is_cloneable_to_symbolic());
+  plant.AddPhysicalModel(std::move(dummy_physical_model));
+  plant.Finalize();
+
+  // double -> AutoDiffXd
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
+  EXPECT_NO_THROW(plant_autodiff =
+                      drake::systems::System<double>::ToAutoDiffXd(plant));
+  // AutoDiffXd -> double
+  EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
+  // double -> symbolic::Expression
+  std::unique_ptr<MultibodyPlant<symbolic::Expression>>
+      plant_double_to_symbolic;
+  EXPECT_THROW(plant_double_to_symbolic =
+                   drake::systems::System<double>::ToSymbolic(plant),
+               std::exception);
+  // double -> symbolic::Expression
+  std::unique_ptr<MultibodyPlant<symbolic::Expression>>
+      plant_autodiff_to_symbolic;
+  EXPECT_THROW(
+      plant_autodiff_to_symbolic =
+          drake::systems::System<AutoDiffXd>::ToSymbolic(*plant_autodiff),
+      std::exception);
+
+  // Verify that adding a component that doesn't allow scalar conversion to
+  // autodiff does not prevent scalar conversion to double.
+  auto discrete_update_manager =
+      std::make_unique<DoubleOnlyDiscreteUpdateManager<AutoDiffXd>>();
+  EXPECT_TRUE(discrete_update_manager->is_cloneable_to_double());
+  EXPECT_FALSE(discrete_update_manager->is_cloneable_to_autodiff());
+  EXPECT_FALSE(discrete_update_manager->is_cloneable_to_symbolic());
+  plant_autodiff->SetDiscreteUpdateManager(std::move(discrete_update_manager));
+  EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
 }
 
 }  // namespace
