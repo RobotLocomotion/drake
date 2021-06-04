@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <set>
 #include <string>
 
@@ -36,6 +37,25 @@ class PhysicalModel {
 
   virtual ~PhysicalModel() = default;
 
+  /* (Internal) Creates a clone of the concrete PhysicalModel object
+   with the scalar type `ScalarType`. The clone should be a deep copy of the
+   original PhysicalModel with the exception of members overwritten in
+   `DeclareSystemResources()`. This method is meant to be called by the
+   scalar-converting copy constructor of MultibodyPlant only.
+   @tparam_default_scalar */
+  template <typename ScalarType>
+  std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar() const {
+    if constexpr (std::is_same_v<ScalarType, double>) {
+      return CloneToDouble();
+    } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
+      return CloneToAutoDiffXd();
+    }
+    throw std::logic_error(
+        fmt::format("Trying to clone PhysicalModel to scalar type {}, "
+                    "but only default non-symbolic scalar types are supported.",
+                    NiceTypeName::Get<ScalarType>()));
+  }
+
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
    additional system resources. This method is only meant to be called by
    MultibodyPlant. We pass in a MultibodyPlant pointer so that derived
@@ -48,6 +68,26 @@ class PhysicalModel {
   }
 
  protected:
+  /* Creates a copy of the concrete PhysicalModel object with the scalar type
+   double. Derived classes that supports double as a scalar type must implement
+   this so that it performs a copy of the object with double as scalar type
+   except for members overwritten in `DeclareSystemResources()`. */
+  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const {
+    throw std::logic_error(
+        "Scalar conversion to double is not supported by this "
+        "PhysicalModel.");
+  }
+
+  /* Creates a copy of the concrete PhysicalModel object with the scalar type
+   AutoDiffXd. Derived classes that supports double as a scalar type must
+   implement this so that it performs a copy of the object with AutoDiffXd as
+   scalar type except for members overwritten in `DeclareSystemResources()`. */
+  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const {
+    throw std::logic_error(
+        "Scalar conversion to AutodiffXd is not supported by this "
+        "PhysicalModel.");
+  }
+
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;

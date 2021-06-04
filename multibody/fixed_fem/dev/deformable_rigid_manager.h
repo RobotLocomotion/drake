@@ -34,6 +34,8 @@ class DeformableRigidManager final
   }
 
  private:
+  // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd().
+
   /* Implements DiscreteUpdateManager::ExtractModelInfo(). Verifies that
    exactly one DeformableModel is registered in the owning plant and
    sets up FEM solvers for deformable bodies. */
@@ -75,7 +77,8 @@ class DeformableRigidManager final
         .template Eval<FemStateBase<T>>(context);
   }
 
-  /* Evaluates the free motion FEM state of the deformable body with index `id`.
+  /* Evaluates the free motion FEM state of the deformable body with index
+   * `id`.
    */
   const FemStateBase<T>& EvalFreeMotionFemStateBase(
       const systems::Context<T>& context, SoftBodyIndex id) const {

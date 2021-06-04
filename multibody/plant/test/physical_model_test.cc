@@ -19,7 +19,8 @@ class PhysicalModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // TODO(xuchenhan-tri): Add a test with more than one physical model.
-    dummy_model_ = &plant_.AddPhysicalModel(std::make_unique<DummyModel>());
+    dummy_model_ =
+        &plant_.AddPhysicalModel(std::make_unique<DummyModel<double>>());
     // An artificial scenario where the state is added in multiple passes.
     dummy_model_->AppendDiscreteState(dummy_state1());
     dummy_model_->AppendDiscreteState(dummy_state2());
@@ -34,8 +35,8 @@ class PhysicalModelTest : public ::testing::Test {
     return VectorXd::Ones(kState2Dofs) * kState2Value;
   }
 
-  MultibodyPlant<double> plant_{kDt};    // A discrete MbP.
-  DummyModel* dummy_model_{nullptr};  // The PhysicalModel under test.
+  MultibodyPlant<double> plant_{kDt};         // A discrete MbP.
+  DummyModel<double>* dummy_model_{nullptr};  // The PhysicalModel under test.
 };
 
 // Tests that the state and output ports are properly set up.
