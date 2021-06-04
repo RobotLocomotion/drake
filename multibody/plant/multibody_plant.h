@@ -788,6 +788,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
+    physical_models_.clear();
+    for (auto& model : other.physical_models_) {
+      physical_models_.emplace_back(model->template CloneToScalar<T>());
+    }
 
     DeclareSceneGraphPorts();
 
@@ -805,6 +809,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
     // internals (and not the MultibodyTree).
     FinalizePlantOnly();
+
+    // Note: The discrete update manager needs to be copied *after* the plant is
+    // finalized.
+    if (other.discrete_update_manager_ != nullptr) {
+      set_discrete_update_manager(
+          other.discrete_update_manager_->template CloneToScalar<T>());
+    }
+    // TODO(xuchenhan-tri): Add scalar conversion for the contact solver when
+    // it's supported.
   }
 
   /// Creates a rigid body with the provided name and spatial inertia.  This
@@ -1585,6 +1598,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // multibody::contact_solvers::internal::ContactSolver.
   // @returns a mutable reference to `solver`, now owned by `this`
   // MultibodyPlant.
+  // @note `this` MultibodyPlant will no longer support scalar conversion to or
+  // from symbolic::Expression after a call to this method.
   template <class SolverType>
   SolverType& set_contact_solver(std::unique_ptr<SolverType> solver) {
     DRAKE_DEMAND(solver != nullptr);
@@ -1593,6 +1608,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                   "SolverType must be a sub-class of ContactSolver.");
     SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
+    // Prevent `this` MultibodyPlant to scalar convert to or from
+    // symbolic::Expression.
+    systems::SystemScalarConverter& scalar_converter =
+        this->get_mutable_system_scalar_converter();
+    scalar_converter.Remove<symbolic::Expression>();
     return *solver_ptr;
   }
 
@@ -1614,6 +1634,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @returns a mutable reference to `manager`, now owned by `this`
   // MultibodyPlant.
   // @throws std::exception if called pre-finalize. See Finalize().
+  // @note `this` MultibodyPlant will no longer support scalar conversion to or
+  // from symbolic::Expression after a call to this method.
   template <class ManagerType>
   ManagerType& set_discrete_update_manager(
       std::unique_ptr<ManagerType> manager) {
@@ -1630,6 +1652,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     discrete_update_manager_ = std::move(manager);
     ManagerType* concrete_manager_ptr =
         static_cast<ManagerType*>(discrete_update_manager_.get());
+    // Prevent `this` MultibodyPlant to scalar convert to or from
+    // symbolic::Expression.
+    systems::SystemScalarConverter& scalar_converter =
+        this->get_mutable_system_scalar_converter();
+    scalar_converter.Remove<symbolic::Expression>();
     return *concrete_manager_ptr;
   }
 
@@ -1647,6 +1674,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @returns a mutable reference to `model`, now owned by `this`
   //          MultibodyPlant.
   // @throws std::exception if called post-finalize. See Finalize().
+  // @note `this` MultibodyPlant will no longer support scalar conversion to or
+  // from symbolic::Expression after a call to this method.
   template <class ModelType>
   ModelType& AddPhysicalModel(std::unique_ptr<ModelType> model) {
     DRAKE_MBP_THROW_IF_FINALIZED();
@@ -1656,6 +1685,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     physical_models_.emplace_back(std::move(model));
     ModelType* concrete_model_ptr =
         static_cast<ModelType*>(physical_models_.back().get());
+    // Prevent `this` MultibodyPlant to scalar convert to or from
+    // symbolic::Expression.
+    systems::SystemScalarConverter& scalar_converter =
+        this->get_mutable_system_scalar_converter();
+    scalar_converter.Remove<symbolic::Expression>();
     return *concrete_model_ptr;
   }
 
