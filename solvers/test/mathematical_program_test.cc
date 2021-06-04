@@ -2485,7 +2485,7 @@ GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
   Eigen::Vector2d b = A * x_desired;
 
   auto obj1 = prog.AddQuadraticErrorCost(Q, x_desired, x).evaluator();
-  auto obj2 = prog.AddL2NormCost(A, b, x).evaluator();
+  auto obj2 = prog.Add2NormSquaredCost(A, b, x).evaluator();
 
   // Test the objective at a 6 arbitrary values (to guarantee correctness
   // of the six-parameter quadratic form.
