@@ -31,7 +31,7 @@ class DeformableRigidManager final
 
   /** Sets the given `contact_solver` as the solver that `this`
     %DeformableRigidManager uses to solve contact. */
-  void set_contact_solver(
+  void SetContactSolver(
       std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
           contact_solver) {
     contact_solver_ = std::move(contact_solver);
@@ -65,19 +65,22 @@ class DeformableRigidManager final
    // Done building the plant.
    plant.Finalize();
    // Use a DeformableRigidManager to perform the discrete updates.
-   auto& deformable_rigid_manager = plant.set_discrete_update_manager(
+   auto& deformable_rigid_manager = plant.SetDiscreteUpdateManager(
         std::make_unqiue<DeformableRigidManager<double>());
    // Register all rigid collision geometries at the manager.
    deformable_rigid_manager.RegisterCollisionObjects(scene_graph);
    ```
    @pre `This` %DeformableRigidManager is owned by a MultibodyPlant via the call
-   MultibodyPlant::set_discrete_update_manager().
+   MultibodyPlant::SetDiscreteUpdateManager().
    @pre The owning MultibodyPlant is registered as a source of the given
    `scene_graph`. */
   void RegisterCollisionObjects(const geometry::SceneGraph<T>& scene_graph);
 
  private:
   friend class DeformableRigidManagerTest;
+
+  // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd() and
+  //  the corresponding is_cloneable methods.
 
   /* Implements DiscreteUpdateManager::ExtractModelInfo(). Verifies that
    exactly one DeformableModel is registered in the owning plant and

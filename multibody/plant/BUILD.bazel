@@ -58,6 +58,7 @@ drake_cc_library(
     name = "dummy_model",
     testonly = 1,
     hdrs = ["test/dummy_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":multibody_plant_core",
     ],
@@ -76,6 +77,7 @@ drake_cc_library(
         "multibody_plant_discrete_update_manager_attorney.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
+        "scalar_convertible_component.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -668,6 +670,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_scalar_conversion_test",
     deps = [
+        ":dummy_model",
         ":plant",
     ],
 )
@@ -697,6 +700,7 @@ drake_cc_googletest(
         ":dummy_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
     ],
 )

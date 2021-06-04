@@ -137,6 +137,9 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   }
 
  private:
+  // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd() and
+  //  the corresponding is_cloneable methods.
+
   /* Registers a deformable body with the given type of constitutive model.
    @tparam Model  The type of constitutive model for the new deformable body,
                   must be derived from ConstitutiveModel. */

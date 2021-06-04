@@ -3344,6 +3344,22 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
 }
 
 template <typename T>
+void MultibodyPlant<T>::RemoveUnsupportedScalars(
+    const internal::ScalarConvertibleComponent<T>& component) {
+  systems::SystemScalarConverter& scalar_converter =
+      this->get_mutable_system_scalar_converter();
+  if (!component.is_cloneable_to_double()) {
+    scalar_converter.Remove<double, T>();
+  }
+  if (!component.is_cloneable_to_autodiff()) {
+    scalar_converter.Remove<AutoDiffXd, T>();
+  }
+  if (!component.is_cloneable_to_symbolic()) {
+    scalar_converter.Remove<symbolic::Expression, T>();
+  }
+}
+
+template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc,
     const CoulombFriction<double>& friction) const {
