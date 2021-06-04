@@ -788,6 +788,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
+    // Note: PhysicalModels are not copied when the scalar type is
+    // symbolic::Expression. Some physical models do not support scalar
+    // conversion to symbolic, and we silently skip scalar conversion for them
+    // instead of throwing.
+    if constexpr (std::is_same_v<T, double> || std::is_same_v<T, AutoDiffXd>) {
+      physical_models_.clear();
+      for (auto& model : other.physical_models_) {
+        physical_models_.emplace_back(model->template CloneToScalar<T>());
+      }
+    }
 
     DeclareSceneGraphPorts();
 
@@ -805,6 +815,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
     // internals (and not the MultibodyTree).
     FinalizePlantOnly();
+
+    // Note: DiscreteUpdateManager is not copied when the scalar type is
+    // symbolic::Expression. Some discrete update managers do not support scalar
+    // conversion to symbolic, and we silently skip scalar conversion for them
+    // instead of throwing. Note: The discrete update manager needs to be copied
+    // *after* the plant is finalized.
+    if constexpr (std::is_same_v<T, double> || std::is_same_v<T, AutoDiffXd>) {
+      if (other.discrete_update_manager_ != nullptr) {
+        set_discrete_update_manager(
+            other.discrete_update_manager_->template CloneToScalar<T>());
+      }
+    }
   }
 
   /// Creates a rigid body with the provided name and spatial inertia.  This

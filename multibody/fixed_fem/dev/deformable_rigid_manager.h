@@ -34,6 +34,8 @@ class DeformableRigidManager final
   }
 
  private:
+  // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd().
+
   /* Implements DiscreteUpdateManager::ExtractModelInfo(). Verifies that
    exactly one DeformableModel is registered in the owning plant and
    sets up FEM solvers for deformable bodies. */

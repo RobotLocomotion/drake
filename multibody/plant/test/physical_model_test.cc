@@ -19,7 +19,8 @@ class PhysicalModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // TODO(xuchenhan-tri): Add a test with more than one physical model.
-    dummy_model_ = &plant_.AddPhysicalModel(std::make_unique<DummyModel>());
+    dummy_model_ =
+        &plant_.AddPhysicalModel(std::make_unique<DummyModel<double>>());
     // An artificial scenario where the state is added in multiple passes.
     dummy_model_->AppendDiscreteState(dummy_state1());
     dummy_model_->AppendDiscreteState(dummy_state2());
@@ -34,8 +35,8 @@ class PhysicalModelTest : public ::testing::Test {
     return VectorXd::Ones(kState2Dofs) * kState2Value;
   }
 
-  MultibodyPlant<double> plant_{kDt};    // A discrete MbP.
-  DummyModel* dummy_model_{nullptr};  // The PhysicalModel under test.
+  MultibodyPlant<double> plant_{kDt};         // A discrete MbP.
+  DummyModel<double>* dummy_model_{nullptr};  // The PhysicalModel under test.
 };
 
 // Tests that the state and output ports are properly set up.
@@ -61,6 +62,16 @@ TEST_F(PhysicalModelTest, PostFinalizeStateAdditionNotAllowed) {
       dummy_model_->AppendDiscreteState(dummy_state1()), std::exception,
       "Calls to 'AppendDiscreteState\\(\\)' after system resources have been "
       "declared are not allowed.");
+}
+
+// Verifies that cloning to symbolic is not supported.
+TEST_F(PhysicalModelTest, CloneToSymbolicNotSupported) {
+  const PhysicalModel<double>* physical_model = dummy_model_;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      physical_model->CloneToScalar<symbolic::Expression>(), std::exception,
+      "Trying to clone PhysicalModel to scalar type "
+      "drake::symbolic::Expression, but only default non-symbolic scalar types "
+      "are supported.");
 }
 }  // namespace
 }  // namespace test
