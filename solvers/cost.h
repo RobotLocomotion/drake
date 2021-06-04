@@ -10,6 +10,7 @@
 
 #include <Eigen/SparseCore>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/evaluator_base.h"
 
 namespace drake {
@@ -219,7 +220,15 @@ std::shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
 /**
  * Creates a cost term of the form | Ax - b |^2.
  */
+DRAKE_DEPRECATED("2021-09-01", "Use Make2NormSquaredCost instead")
 std::shared_ptr<QuadraticCost> MakeL2NormCost(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b);
+
+/**
+ * Creates a quadratic cost of the form |Ax-b|²=(Ax-b)ᵀ(Ax-b)
+ */
+std::shared_ptr<QuadraticCost> Make2NormSquaredCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b);
 
