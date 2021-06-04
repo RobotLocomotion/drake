@@ -698,6 +698,7 @@ drake_cc_googletest(
         ":dummy_model",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
     ],
 )

@@ -35,6 +35,26 @@ class DiscreteUpdateManager {
 
   virtual ~DiscreteUpdateManager() = default;
 
+  /* (Internal) Creates a clone of the concrete DiscreteUpdateManager object
+   with the scalar type `ScalarType`. The clone should be a deep copy of the
+   original DiscreteUpdateManager with the exception of members overwritten in
+   `SetOwningMultibodyPlant()`. The only two scalar types supported at the
+   moment are double and AutoDiffXd. This method is meant to be called by the
+   scalar-converting copy constructor of MultibodyPlant only.
+   @tparam_default_scalar */
+  template <typename ScalarType>
+  std::unique_ptr<DiscreteUpdateManager<ScalarType>> CloneToScalar() const {
+    if constexpr (std::is_same_v<ScalarType, double>) {
+      return CloneToDouble();
+    } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
+      return CloneToAutoDiffXd();
+    }
+    throw std::logic_error(
+        fmt::format("Trying to clone DiscreteUpdateManager to scalar type {}, "
+                    "but only default non-symbolic scalar types are supported.",
+                    NiceTypeName::Get<ScalarType>()));
+  }
+
   /* Returns the MultibodyPlant that owns this DiscreteUpdateManager.
    @pre SetOwningMultibodyPlant() has been successfully invoked. */
   const MultibodyPlant<T>& plant() const {
@@ -89,6 +109,27 @@ class DiscreteUpdateManager {
   }
 
  protected:
+  /* Derived classes that support double as a scalar type must implement this so
+   that it creates a copy of the object with double as the scalar type. It
+   should copy all members except for those overwritten in
+   `SetOwningMultibodyPlant()`. */
+  virtual std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const {
+    throw std::logic_error(
+        "Scalar conversion to double is not supported by this "
+        "DiscreteUpdateManager.");
+  }
+
+  /* Derived classes that support AutoDiffXd as a scalar type must implement
+   this so that it creates a copy of the object with AutodDiffXd as the scalar
+   type. It should copy all members except for those overwritten in
+   `SetOwningMultibodyPlant()`. */
+  virtual std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
+      const {
+    throw std::logic_error(
+        "Scalar conversion to AutodiffXd is not supported by this "
+        "DiscreteUpdateManager.");
+  }
+
   /* Derived DiscreteUpdateManager should override this method to extract
    information from the owning MultibodyPlant. */
   virtual void ExtractModelInfo() {}
