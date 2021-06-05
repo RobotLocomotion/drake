@@ -158,6 +158,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.MakeYRotation.doc)
         .def_static("MakeZRotation", &Class::MakeZRotation, py::arg("theta"),
             cls_doc.MakeZRotation.doc)
+        .def_static("MakeFromOneVector", &Class::MakeFromOneVector,
+            py::arg("b_A"), py::arg("axis_index"),
+            cls_doc.MakeFromOneVector.doc)
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
         .def("set", &Class::set, py::arg("R"), cls_doc.set.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)

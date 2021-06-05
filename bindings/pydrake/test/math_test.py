@@ -243,6 +243,8 @@ class TestMath(unittest.TestCase):
         if T == float:
             numpy_compare.assert_float_equal(R.row(index=0), [1., 0., 0.])
             numpy_compare.assert_float_equal(R.col(index=0), [1., 0., 0.])
+            R = RotationMatrix.MakeFromOneVector(b_A=[1, 0, 0], axis_index=0)
+            numpy_compare.assert_equal(R.IsValid(), True)
         R.set(R=np.eye(3))
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         # - Cast.

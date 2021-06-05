@@ -13,8 +13,6 @@ namespace math {
 namespace {
 
 // Checks that the axes are set correctly.
-// #pragma GCC diagnostic push
-// #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void CheckBasisOrthonomality(const Matrix3<double>& R) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
   const Vector3d a = R.col(0);
@@ -61,7 +59,6 @@ GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
     CheckBasis(i, z_axis);
   }
 }
-// #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 }  // namespace
 }  // namespace math
