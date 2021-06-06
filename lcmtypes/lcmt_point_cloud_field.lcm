@@ -1,0 +1,32 @@
+package drake;
+
+// Describes one field (i.e., channel) within an lcmt_point_cloud.
+//
+// Modeled after PCL and ROS conventions:
+// https://pointclouds.org/documentation/structpcl_1_1_p_c_l_point_field.html
+// https://docs.ros.org/en/api/sensor_msgs/html/msg/PointField.html
+// http://wiki.ros.org/pcl/Overview#Common_PointCloud2_field_names
+//
+struct lcmt_point_cloud_field {
+  // Field name.
+  string name;
+
+  // Location of this field after the start of each point's data.
+  int32_t byte_offset;
+
+  // Element type, per the constants shown below.
+  int8_t datatype;
+
+  // Number of elements per field.
+  int32_t count;
+
+  // Allowed values for datatype.
+  const int8_t INT8 = 1;
+  const int8_t UINT8 = 2;
+  const int8_t INT16 = 3;
+  const int8_t UINT16 = 4;
+  const int8_t INT32 = 5;
+  const int8_t UINT32 = 6;
+  const int8_t FLOAT32 = 7;
+  const int8_t FLOAT64 = 8;
+}
