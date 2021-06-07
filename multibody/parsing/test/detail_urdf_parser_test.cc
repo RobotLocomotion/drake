@@ -207,6 +207,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
       CompareMatrices(revolute_joint.velocity_lower_limits(), Vector1d(-100)));
   EXPECT_TRUE(
       CompareMatrices(revolute_joint.velocity_upper_limits(), Vector1d(100)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.acceleration_lower_limits(), Vector1d(-200)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.acceleration_upper_limits(), Vector1d(200)));
 
   // Revolute actuator
   const JointActuator<double>& revolute_actuator =
@@ -231,6 +235,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
       CompareMatrices(prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
   EXPECT_TRUE(
       CompareMatrices(prismatic_joint.velocity_upper_limits(), Vector1d(5)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.acceleration_lower_limits(), Vector1d(-10)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.acceleration_upper_limits(), Vector1d(10)));
   EXPECT_FALSE(plant.HasJointActuatorNamed("prismatic_actuator"));
 
   // Ball joint
@@ -264,6 +272,9 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(CompareMatrices(
+      no_limit_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
   EXPECT_GT(no_limit_joint.index(), ball_joint.index());
 
   // Limitless revolute actuator

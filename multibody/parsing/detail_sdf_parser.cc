@@ -335,13 +335,13 @@ void AddRevoluteSpringFromSpecification(
 }
 
 // Returns joint limits as the tuple (lower_limit, upper_limit,
-// velocity_limit).  The units of the limits depend on the particular joint
-// type.  For prismatic joints, units are meters for the position limits and
-// m/s for the velocity limit.  For revolute joints, units are radians for the
-// position limits and rad/s for the velocity limit.  The velocity limit is
-// always >= 0.  This method throws an exception if the joint type is not one
-// of revolute or prismatic.
-std::tuple<double, double, double> ParseJointLimits(
+// velocity_limit, acceleration_limit).  The units of the limits depend on the
+// particular joint type.  For prismatic joints, units are meters for the
+// position limits and m/s for the velocity limit.  For revolute joints, units
+// are radians for the position limits and rad/s for the velocity limit.
+// Velocity and acceleration limits are always >= 0.  This method throws an
+// exception if the joint type is not one of revolute or prismatic.
+std::tuple<double, double, double, double> ParseJointLimits(
     const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -381,7 +381,23 @@ std::tuple<double, double, double> ParseJointLimits(
             "Velocity limit must be a non-negative number.");
   }
 
-  return std::make_tuple(lower_limit, upper_limit, velocity_limit);
+  // Read Drake-namespaced acceleration limit if present. If not, default to
+  // ±numeric_limits<double>::infinity().
+  double acceleration_limit = std::numeric_limits<double>::infinity();
+  if (axis->Element()->HasElement("limit")) {
+    const auto limit_element = axis->Element()->GetElement("limit");
+    if (limit_element->HasElement("drake:acceleration")) {
+      acceleration_limit = limit_element->Get<double>("drake:acceleration");
+      if (acceleration_limit < 0) {
+        throw std::runtime_error(
+          "Acceleration limit is negative for joint '" + joint_spec.Name() +
+              "'. Aceleration limit must be a non-negative number.");
+      }
+    }
+  }
+
+  return std::make_tuple(
+      lower_limit, upper_limit, velocity_limit, acceleration_limit);
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
@@ -424,6 +440,7 @@ void AddJointFromSpecification(
   double lower_limit = 0;
   double upper_limit = 0;
   double velocity_limit = 0;
+  double acceleration_limit = 0;
 
   switch (joint_spec.Type()) {
     case sdf::JointType::FIXED: {
@@ -437,7 +454,7 @@ void AddJointFromSpecification(
     case sdf::JointType::PRISMATIC: {
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
-      std::tie(lower_limit, upper_limit, velocity_limit) =
+      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
@@ -445,13 +462,15 @@ void AddJointFromSpecification(
           child_body, X_CJ, axis_J, lower_limit, upper_limit, damping);
       plant->get_mutable_joint(joint.index()).set_velocity_limits(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
+      plant->get_mutable_joint(joint.index()).set_acceleration_limits(
+          Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
-      std::tie(lower_limit, upper_limit, velocity_limit) =
+      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
@@ -459,6 +478,8 @@ void AddJointFromSpecification(
           child_body, X_CJ, axis_J, lower_limit, upper_limit, damping);
       plant->get_mutable_joint(joint.index()).set_velocity_limits(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
+      plant->get_mutable_joint(joint.index()).set_acceleration_limits(
+          Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
       break;

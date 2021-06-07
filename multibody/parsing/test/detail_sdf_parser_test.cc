@@ -783,6 +783,10 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
       revolute_joint.velocity_lower_limits(), Vector1d(-100)));
   EXPECT_TRUE(CompareMatrices(
       revolute_joint.velocity_upper_limits(), Vector1d(100)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.acceleration_lower_limits(), Vector1d(-200)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.acceleration_upper_limits(), Vector1d(200)));
 
   // Prismatic joint
   DRAKE_EXPECT_NO_THROW(
@@ -802,6 +806,10 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
       prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
   EXPECT_TRUE(CompareMatrices(
       prismatic_joint.velocity_upper_limits(), Vector1d(5)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.acceleration_lower_limits(), Vector1d(-10)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.acceleration_upper_limits(), Vector1d(10)));
 
   // Limitless revolute joint
   DRAKE_EXPECT_NO_THROW(
@@ -818,6 +826,9 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+  EXPECT_TRUE(CompareMatrices(
+      no_limit_joint.acceleration_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
 
   // Ball joint
   DRAKE_EXPECT_NO_THROW(plant.GetJointByName<BallRpyJoint>("ball_joint"));

@@ -54,7 +54,7 @@ Defines a URDF model with various types of joints.
     <parent link="link1"/>
     <child link="link2"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <limit effort="100" lower="-1" upper="2" velocity="100"/>
+    <limit effort="100" lower="-1" upper="2" velocity="100" drake:acceleration="200"/>
     <dynamics damping="0.1"/>
   </joint>
   <joint name="prismatic_joint" type="prismatic">
@@ -62,7 +62,7 @@ Defines a URDF model with various types of joints.
     <parent link="link2"/>
     <child link="link3"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
-    <limit effort="0" lower="-2" upper="1" velocity="5"/>
+    <limit effort="0" lower="-2" upper="1" velocity="5" drake:acceleration="10"/>
     <dynamics damping="0.1"/>
   </joint>
   <drake:joint name="ball_joint" type="ball">
