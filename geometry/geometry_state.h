@@ -585,34 +585,15 @@ class GeometryState {
   template <class U>
   friend class GeometryStateTester;
 
-  // Function to facilitate testing.
-  int peek_next_clique() const {
-    return internal::GeometryStateCollisionFilterAttorney::peek_next_clique(
-        *geometry_engine_);
-  }
-
-  // Defines the full set of geometry ids from the GeometrySet (which may be
-  // defined in terms of geometry ids *and* frame ids). If GeometrySet only
-  // has GeometryIds, it is essentially a copy. Ids that can't be identified
-  // will cause an exception to be thrown.
-  // The ids can be optionally filtered based on role. If `role` is nullopt,
-  // no filtering takes place. Otherwise, just those geometries with the given
-  // role will be returned.
-  // TODO(SeanCurtis-TRI): Because all geometries only have a single id
-  // type, we have two sets of the same id type. The compiler cannot know
-  // that only anchored geometries go into the anchored set and only dynamic go
-  // into the dynamic set. It relies on the correctness of the implementation.
-  // This *could* be worked around: this function could simply provide
-  // _unclassified_ geometry ids. However, the engine needs to know which
-  // are dynamic and which are anchored and currently has no facility to do
-  // so. So, it would have to, essentially, duplicate the data stored in the
-  // InternalGeometry instances to classify the union of these two sets. For
-  // now, we accept the *slightly* dissatisfying artifact of having the same
-  // id type in both sets.
-  void CollectIds(const GeometrySet& geometry_set,
-                  std::unordered_set<GeometryId>* dynamic,
-                  std::unordered_set<GeometryId>* anchored,
-                  const std::optional<Role>& role) const;
+  // Defines the full set of geometry ids implied by the contents of the given
+  // GeometrySet (which may be defined in terms of geometry ids *and* frame
+  // ids). If GeometrySet only has GeometryIds, it is essentially a copy. Ids in
+  // the set that can't be mapped to known geometries or frames will cause an
+  // exception to be thrown. The ids can be optionally filtered based on role.
+  // If `role` is nullopt, no filtering takes place. Otherwise, just those
+  // geometries with the given role will be returned.
+  std::unordered_set<GeometryId> CollectIds(
+      const GeometrySet& geometry_set, std::optional<Role> role) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.

@@ -86,7 +86,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     auto encode_data = [this](GeometryId id, CollisionObjectd* shape) {
       const EncodedData data(id, true);
       data.write_to(shape);
-      this->collision_filter_.AddGeometry(data.encoding());
+      this->collision_filter_.AddGeometry(data.id());
     };
     encode_data(id_A_, &sphere_A_);
     encode_data(id_B_, &sphere_B_);
@@ -175,12 +175,15 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCb),
                                 ExtractMatrixValue(second_result.p_WCb)));
 
-    // Now filter the geometries.
-    const int common_clique = 1;
-    collision_filter_.AddToCollisionClique(EncodedData(id_A_, true).encoding(),
-                                           common_clique);
-    collision_filter_.AddToCollisionClique(EncodedData(id_B_, true).encoding(),
-                                           common_clique);
+    // Filter the pair (A, B); we'll put the ids in a set and simply return that
+    // set for the extract ids function.
+    std::unordered_set<GeometryId> ids{id_A_, id_B_};
+    CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+      return ids;
+    };
+    collision_filter_.Apply(
+        CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A_, id_B_}),
+        extract);
 
     EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
     EXPECT_EQ(point_pairs.size(), 0u);
@@ -358,7 +361,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
   GeometryId id_cylinder_;
   GeometryId id_halfspace_;
   GeometryId id_capsule_;
-  CollisionFilterLegacy collision_filter_;
+  CollisionFilter collision_filter_;
 };
 
 // TODO(SeanCurtis-TRI): Make this static constexpr when our gcc version doesn't
@@ -510,7 +513,7 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
   const GeometryId hs2_id = GeometryId::get_new_id();
   const EncodedData data(hs2_id, true);
   data.write_to(&halfspace2);
-  this->collision_filter_.AddGeometry(data.encoding());
+  this->collision_filter_.AddGeometry(data.id());
   UnsupportedGeometry<double>(this->halfspace_, halfspace2, this->id_halfspace_,
                               hs2_id);
   UnsupportedGeometry<AutoDiffXd>(this->halfspace_, halfspace2,

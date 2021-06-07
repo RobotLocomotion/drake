@@ -121,10 +121,6 @@ class GeometryStateTester {
     state_->ValidateFrameIds(source_id, data);
   }
 
-  int peek_next_clique() const {
-    return state_->peek_next_clique();
-  }
-
   const InternalGeometry* GetGeometry(GeometryId id) const {
     return state_->GetGeometry(id);
   }
@@ -2150,15 +2146,12 @@ TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
   auto pairs = geometry_state_.ComputePointPairPenetration();
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 
-  int next_clique = gs_tester_.peek_next_clique();
   // A GeometrySet with a single frame (and no geometry) should have no change
   // on the outcome.
   geometry_state_.ExcludeCollisionsWithin(
       GeometrySet({frames_[0]}));
   pairs = geometry_state_.ComputePointPairPenetration();
   ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-  // A clique was *not* consumed.
-  EXPECT_EQ(gs_tester_.peek_next_clique(), next_clique);
 
   // A GeometrySet with a single geometry (and no frames) should have no change
   // on the outcome.
@@ -2166,8 +2159,6 @@ TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
       GeometrySet({geometries_[0]}));
   pairs = geometry_state_.ComputePointPairPenetration();
   ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-  // A clique was *not* consumed.
-  EXPECT_EQ(gs_tester_.peek_next_clique(), next_clique);
 
   // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
   // *no* impact on the number of reported collisions.

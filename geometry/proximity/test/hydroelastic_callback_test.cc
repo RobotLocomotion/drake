@@ -96,8 +96,8 @@ class TestScene {
                    const HydroelasticType type_B) {
     EncodedData data_A(id_A_, true);
     EncodedData data_B(id_B_, true);
-    collision_filter_.AddGeometry(data_A.encoding());
-    collision_filter_.AddGeometry(data_B.encoding());
+    collision_filter_.AddGeometry(data_A.id());
+    collision_filter_.AddGeometry(data_B.id());
 
     shape_A_ = MakeShape(id_A_, type_A, shape_A_type_, &data_A);
     shape_B_ = MakeShape(id_B_, type_B, shape_B_type_, &data_B);
@@ -209,8 +209,15 @@ class TestScene {
   void FilterContact() {
     EncodedData data_A(*shape_A_);
     EncodedData data_B(*shape_B_);
-    collision_filter_.AddToCollisionClique(data_A.encoding(), 1);
-    collision_filter_.AddToCollisionClique(data_B.encoding(), 1);
+    // Filter the pair (A, B); we'll put the ids in a set and simply return that
+    // set for the extract ids function.
+    std::unordered_set<GeometryId> ids{data_A.id(), data_B.id()};
+    CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+      return ids;
+    };
+    collision_filter_.Apply(CollisionFilterDeclaration().ExcludeWithin(
+                                GeometrySet{data_A.id(), data_B.id()}),
+                            extract);
   }
 
   // Note: these are non const because the callback takes non-const pointers
@@ -230,7 +237,7 @@ class TestScene {
 
  private:
   Geometries hydroelastic_geometries_;
-  CollisionFilterLegacy collision_filter_;
+  CollisionFilter collision_filter_;
   unordered_map<GeometryId, RigidTransform<T>> X_WGs_;
   GeometryId id_A_{};
   GeometryId id_B_{};

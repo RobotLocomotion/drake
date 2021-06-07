@@ -446,7 +446,7 @@ RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
 template <typename T>
 void CharacterizeResultTest<T>::RunCallback(
     const QueryInstance& query, fcl::CollisionObjectd* obj_A,
-    fcl::CollisionObjectd* obj_B, const CollisionFilterLegacy* collision_filter,
+    fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
     const std::unordered_map<GeometryId, RigidTransform<T>>* X_WGs)
     const {
   callback_->ClearResults();
@@ -619,7 +619,7 @@ GeometryId CharacterizeResultTest<T>::EncodeData(fcl::CollisionObjectd* obj) {
   const GeometryId id = GeometryId::get_new_id();
   const EncodedData data(id, true);
   data.write_to(obj);
-  collision_filter_.AddGeometry(data.encoding());
+  collision_filter_.AddGeometry(data.id());
   return id;
 }
 
