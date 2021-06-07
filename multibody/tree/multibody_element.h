@@ -145,6 +145,16 @@ class MultibodyElement {
         ::DeclareNumericParameter(tree_system, model_vector);
   }
 
+  /// To be used by MultibodyElement-derived objects when declaring parameters
+  /// in their implementation of DoDeclareParameters(). For an example, see
+  /// Joint::DoDeclareParameters().
+  systems::AbstractParameterIndex DeclareAbstractParameter(
+      internal::MultibodyTreeSystem<T>* tree_system,
+      const AbstractValue& model_value) {
+    return internal::MultibodyTreeSystemElementAttorney<T>
+        ::DeclareAbstractParameter(tree_system, model_value);
+  }
+
  private:
   // MultibodyTree<T> is a natural friend of MultibodyElement objects and
   // therefore it can set the owning parent tree and unique index in that tree.

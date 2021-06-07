@@ -208,6 +208,30 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return body_frame_;
   }
 
+  void lock(systems::Context<T>* context) const {
+    if (!is_floating()) {
+      throw std::logic_error(fmt::format(
+          "Attempted to call lock() on non-floating body {}", name()));
+    }
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(true);
+    do_lock(context);
+  }
+
+  void unlock(systems::Context<T>* context) const {
+    if (!is_floating()) {
+      throw std::logic_error(fmt::format(
+          "Attempted to call unlock() on non-floating body {}", name()));
+    }
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(false);
+  }
+
+  bool is_locked(const systems::Context<T>& context) const {
+    return context.get_parameters().template get_abstract_parameter<bool>(
+        is_locked_parameter_index_);
+  }
+
   /// (Advanced) Returns the index of the node in the underlying tree structure
   /// of the parent MultibodyTree to which this body belongs.
   internal::BodyNodeIndex node_index() const {
@@ -418,6 +442,19 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   /// @}
 
+  // Subclasses of Joint should set their generalized velocities to 0.
+  virtual void do_lock(systems::Context<T>*) const {}
+
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent classes' parameters
+    MultibodyElement<Body, T, BodyIndex>::DoDeclareParameters(tree_system);
+
+    is_locked_parameter_index_ =
+        this->DeclareAbstractParameter(tree_system, Value<bool>(false));
+  }
+
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.
@@ -465,6 +502,9 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::BodyTopology topology_;
+
+  // System parameter index for `this` body's lock state stored in a context.
+  systems::AbstractParameterIndex is_locked_parameter_index_;
 };
 
 /// @cond

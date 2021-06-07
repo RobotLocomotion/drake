@@ -4184,6 +4184,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context0,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+
   // Eval version of the method CalcContactSolverResults().
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const {
@@ -4191,6 +4192,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
   }
+
+  // 
+  MatrixX<T> CalcJointLockingConstraintMatrix(
+      const systems::Context<T>& context) const;
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
   void CalcContactSurfaces(
