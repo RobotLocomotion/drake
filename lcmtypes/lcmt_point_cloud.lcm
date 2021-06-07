@@ -1,0 +1,56 @@
+package drake;
+
+// Generic point cloud with runtime typing.
+//
+// Modeled after PCL and ROS conventions:
+// https://pointclouds.org/documentation/structpcl_1_1_p_c_l_point_cloud2.html
+// https://docs.ros.org/en/api/sensor_msgs/html/msg/PointCloud2.html
+//
+struct lcmt_point_cloud {
+  // Timestamp in microseconds.
+  int64_t utime;
+
+  // The name of a frame this data is associated with.
+  string frame_name;
+
+  // If the cloud is structured, this is the 2D width.
+  // If the cloud is unstructured, this is the number of points in the cloud.
+  int64_t width;
+
+  // If the cloud is structured, this is the 2D height.
+  // If the cloud is unstructured, this is set to 1.
+  int64_t height;
+
+  // Descriptions of the fields.
+  int32_t num_fields;
+  lcmt_point_cloud_field fields[num_fields];
+
+  // Bitfield of flags describing this.  See the "IS_..." constants below.
+  int64_t flags;
+
+  // Number of bytes between each successive point.  This is always at least the
+  // sum of all field sizes, but may be larger if the data has internal padding.
+  int32_t point_step;
+
+  // Number of bytes between each successive row.
+  int64_t row_step;
+
+  // Optional filler bytes to allow the raw point data to be aligned in memory.
+  int16_t filler_size;
+  byte filler[filler_size];
+
+  // The raw point data.
+  int64_t data_size;
+  byte data[data_size];
+
+  // === Constants for the flags bits ===
+
+  // Set iff data is big-endian.
+  const int64_t IS_BIGENDIAN = 1;
+
+  // Set iff data contains only finite values.  (ROS sometimes uses "is_dense"
+  // to refer to this concept, but not all implementations agree on whether
+  // "dense" means "strictly finite" or "provides full width x height matrix
+  // with possibly infinite values", so we use a less ambiguous term here.)
+  const int64_t IS_STRICTLY_FINITE = 2;
+}
