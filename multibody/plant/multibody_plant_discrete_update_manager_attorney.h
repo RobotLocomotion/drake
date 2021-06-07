@@ -26,17 +26,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   static const MultibodyTree<T>& internal_tree(const MultibodyPlant<T>& plant) {
     return plant.internal_tree();
   }
-
-  static systems::CacheEntry& DeclareCacheEntry(
-      MultibodyPlant<T>* plant, std::string description,
-      systems::CacheEntry::AllocCallback alloc_function,
-      systems::CacheEntry::CalcCallback calc_function,
-      std::set<systems::DependencyTicket> prerequisites_of_calc = {
-          systems::SystemBase::all_sources_ticket()}) {
-    return plant->DeclareCacheEntry(
-        std::move(description), std::move(alloc_function),
-        std::move(calc_function), std::move(prerequisites_of_calc));
-  }
 };
 }  // namespace internal
 }  // namespace multibody

@@ -44,7 +44,7 @@ class PhysicalModel {
   void DeclareSystemResources(MultibodyPlant<T>* plant) {
     DRAKE_DEMAND(plant != nullptr);
     DoDeclareSystemResources(plant);
-    system_resources_declared = true;
+    system_resources_declared_ = true;
   }
 
  protected:
@@ -56,7 +56,7 @@ class PhysicalModel {
    not be called after system resources are declared. The invoking method should
    pass its name so that the error message can include that detail. */
   void ThrowIfSystemResourcesDeclared(const char* source_method) const {
-    if (system_resources_declared) {
+    if (system_resources_declared_) {
       throw std::logic_error(
           "Calls to '" + std::string(source_method) +
           "()' after system resources have been declared are not allowed.");
@@ -67,7 +67,7 @@ class PhysicalModel {
    not be called before system resources are declared. The invoking method
    should pass its name so that the error message can include that detail. */
   void ThrowIfSystemResourcesNotDeclared(const char* source_method) const {
-    if (!system_resources_declared) {
+    if (!system_resources_declared_) {
       throw std::logic_error(
           "Calls to '" + std::string(source_method) +
           "()' before system resources have been declared are not allowed.");
@@ -96,7 +96,7 @@ class PhysicalModel {
  private:
   /* Flag to track whether the system resources requested by `this`
    PhysicalModel have been declared. */
-  bool system_resources_declared{false};
+  bool system_resources_declared_{false};
 };
 }  // namespace internal
 }  // namespace multibody

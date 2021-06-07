@@ -76,9 +76,9 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
       fem_state.SetQdot(qdot);
       fem_state.SetQddot(qddot);
     };
-    const auto& fem_state_cache_entry = this->DeclareCacheEntry(
-        plant, "FEM state", allocate_fem_state_base,
-        std::move(copy_to_fem_state), {systems::System<T>::xd_ticket()});
+    const auto& fem_state_cache_entry = plant->DeclareCacheEntry(
+        "FEM state", allocate_fem_state_base, std::move(copy_to_fem_state),
+        {systems::System<T>::xd_ticket()});
     fem_state_cache_indexes_.emplace_back(fem_state_cache_entry.cache_index());
 
     /* Lambda function to calculate the free-motion velocity for the deformable
@@ -103,7 +103,8 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
     /* Declares the free-motion cache entry which only depends on the fem state.
      */
     free_motion_cache_indexes_.emplace_back(
-        this->DeclareCacheEntry(plant, "Free motion FEM state",
+        plant
+            ->DeclareCacheEntry("Free motion FEM state",
                                 std::move(allocate_fem_state_base),
                                 std::move(calc_fem_state_star),
                                 {fem_state_cache_entry.ticket()})
