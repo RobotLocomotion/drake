@@ -389,7 +389,7 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   const GeometryId id_B = encoding_B.id();
 
   const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_A.encoding(), encoding_B.encoding());
+      encoding_A.id(), encoding_B.id());
 
   // NOTE: Here and below, false is returned regardless of whether collision
   // is detected or not because true tells the broadphase manager to terminate.

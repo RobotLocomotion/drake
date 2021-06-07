@@ -1,11 +1,13 @@
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 
+#include "drake/geometry/proximity/proximity_utilities.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace find_collision_candidates {
 
-CallbackData::CallbackData(const CollisionFilterLegacy* collision_filter_in,
+CallbackData::CallbackData(const CollisionFilter* collision_filter_in,
                            std::vector<SortedPair<GeometryId>>* pairs_in)
     : collision_filter(*collision_filter_in),
       pairs(*pairs_in) {
@@ -23,7 +25,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const EncodedData encoding_b(*object_B_ptr);
 
   const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_a.encoding(), encoding_b.encoding());
+      encoding_a.id(), encoding_b.id());
   if (can_collide) {
     data.pairs.emplace_back(encoding_a.id(), encoding_b.id());
   }

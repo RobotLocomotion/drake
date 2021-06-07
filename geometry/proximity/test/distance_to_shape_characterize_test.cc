@@ -25,7 +25,7 @@ template <typename T>
 class SignedDistanceCallback : public DistanceCallback<T> {
  public:
   bool Invoke(fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
-              const CollisionFilterLegacy* collision_filter,
+              const CollisionFilter* collision_filter,
               const std::unordered_map<GeometryId, math::RigidTransform<T>>*
                   X_WGs) override {
     CallbackData<T> data(collision_filter, X_WGs,

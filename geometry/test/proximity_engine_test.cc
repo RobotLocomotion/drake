@@ -50,11 +50,6 @@ class ProximityEngineTester {
   }
 
   template <typename T>
-  static int peek_next_clique(const ProximityEngine<T>& engine) {
-    return engine.peek_next_clique();
-  }
-
-  template <typename T>
   static math::RigidTransformd GetX_WG(GeometryId id, bool is_dynamic,
                                        const ProximityEngine<T>& engine) {
     return engine.GetX_WG(id, is_dynamic);
@@ -836,7 +831,14 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
 
   // Case: the pair is filtered.
   {
-    engine.ExcludeCollisionsWithin({id_A, id_B}, {});
+    // I know the GeometrySet only has id_A and id_B, so I'll construct the
+    // extracted set by hand.
+    auto extract_ids = [id_A, id_B](const GeometrySet&) {
+      return std::unordered_set<GeometryId>{id_A, id_B};
+    };
+    engine.collision_filter().Apply(
+        CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
+        extract_ids);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
         std::runtime_error,
@@ -2355,78 +2357,31 @@ TEST_F(SimplePenetrationTest, HasCollisionsDynamicAndDynamicSingleSource) {
   EXPECT_TRUE(ad_engine->HasCollisions());
 }
 
-// Invokes ExcludeCollisionsWithin in various scenarios which will and won't
-// generate cliques.
-TEST_F(SimplePenetrationTest, ExcludeCollisionsWithinCliqueGeneration) {
-  using PET = ProximityEngineTester;
-  const GeometryId id_dynamic1 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, id_dynamic1);
-  const GeometryId id_dynamic2 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, id_dynamic2);
-
-  RigidTransformd pose = RigidTransformd::Identity();
-  const GeometryId id_anchored1 = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, id_anchored1);
-  const GeometryId id_anchored2 = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, id_anchored2);
-
-  int expected_clique = PET::peek_next_clique(engine_);
-
-  // Named aliases for otherwise inscrutable true/false magic values. The
-  // parameter in the invoked method is called `is_dynamic`. So, we set the
-  // the constant `is_dynamic` to true and its opposite, `is_anchored` to false.
-  const bool is_anchored = false;
-  const bool is_dynamic = true;
-
-  // No dynamic geometry --> no cliques generated.
-  engine_.ExcludeCollisionsWithin({}, {id_anchored1, id_anchored2});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-  EXPECT_TRUE(engine_.CollisionFiltered(id_anchored1, is_anchored, id_anchored2,
-                                        is_anchored));
-
-  // Single dynamic and no anchored geometry --> no cliques generated.
-  engine_.ExcludeCollisionsWithin({id_dynamic1}, {});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-
-  // Multiple dynamic and no anchored geometry --> cliques generated.
-  engine_.ExcludeCollisionsWithin({id_dynamic1, id_dynamic2}, {});
-  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
-  EXPECT_TRUE(engine_.CollisionFiltered(id_dynamic1, is_dynamic, id_dynamic2,
-                                        is_dynamic));
-
-  // Single dynamic and (one or more) anchored geometry --> cliques generated.
-  engine_.ExcludeCollisionsWithin({id_dynamic1}, {id_anchored1});
-  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
-  EXPECT_TRUE(engine_.CollisionFiltered(id_anchored1, is_anchored, id_dynamic1,
-                                        is_dynamic));
-  engine_.ExcludeCollisionsWithin({id_dynamic1}, {id_anchored1, id_anchored2});
-  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
-  EXPECT_TRUE(engine_.CollisionFiltered(id_anchored2, is_anchored, id_dynamic1,
-                                        is_dynamic));
-
-  // Multiple dynamic and (one or more) anchored geometry --> cliques generated.
-  engine_.ExcludeCollisionsWithin({id_dynamic1, id_dynamic2}, {id_anchored1});
-  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
-  engine_.ExcludeCollisionsWithin({id_dynamic1, id_dynamic2},
-                                  {id_anchored1, id_anchored2});
-  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
-}
-
 // Performs the same collision test where the geometries have been filtered.
-TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
+TEST_F(SimplePenetrationTest, WithCollisionFilters) {
   GeometryId origin_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, {}, origin_id);
 
   GeometryId collide_id = GeometryId::get_new_id();
   engine_.AddDynamicGeometry(sphere_, {}, collide_id);
-  EXPECT_EQ(engine_.num_geometries(), 2);
+  ASSERT_EQ(engine_.num_geometries(), 2);
 
   X_WGs_[origin_id] = RigidTransformd::Identity();
   X_WGs_[collide_id] = RigidTransformd::Identity();
 
-  EXPECT_FALSE(engine_.CollisionFiltered(origin_id, true, collide_id, true));
-  engine_.ExcludeCollisionsWithin({origin_id, collide_id}, {});
-  EXPECT_TRUE(engine_.CollisionFiltered(origin_id, true, collide_id, true));
+  ASSERT_TRUE(engine_.collision_filter().CanCollideWith(origin_id, collide_id));
+
+  // I know the GeometrySet only has id_A and id_B, so I'll construct the
+  // extracted set by hand.
+  auto extract_ids = [origin_id, collide_id](const GeometrySet&) {
+    return std::unordered_set<GeometryId>{origin_id, collide_id};
+  };
+  engine_.collision_filter().Apply(CollisionFilterDeclaration().ExcludeWithin(
+                                       GeometrySet{origin_id, collide_id}),
+                                   extract_ids);
+
+  EXPECT_FALSE(
+      engine_.collision_filter().CanCollideWith(origin_id, collide_id));
 
   // Non-colliding case.
   MoveDynamicSphere(collide_id, false /* not colliding */);
@@ -2446,103 +2401,7 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
 }
 
-// Invokes ExcludeCollisionsBetween in various scenarios which will and won't
-// generate cliques.
-TEST_F(SimplePenetrationTest, ExcludeCollisionsBetweenCliqueGeneration) {
-  using PET = ProximityEngineTester;
-  GeometryId dynamic1 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic1);
-  GeometryId dynamic2 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic2);
-  GeometryId dynamic3 = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, dynamic3);
-
-  RigidTransformd pose = RigidTransformd::Identity();
-  GeometryId anchored1 = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, anchored1);
-  GeometryId anchored2 = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, anchored2);
-  GeometryId anchored3 = GeometryId::get_new_id();
-  engine_.AddAnchoredGeometry(sphere_, pose, anchored3);
-
-  int expected_clique = PET::peek_next_clique(engine_);
-
-  // No dynamic geometry --> no cliques generated.
-  engine_.ExcludeCollisionsBetween({}, {anchored1}, {}, {anchored2});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-
-  // One empty group --> no cliques generated
-  engine_.ExcludeCollisionsBetween({}, {}, {dynamic1}, {anchored1});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1}, {}, {});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-
-  // Two groups with the same single geometry --> no cliques generated.
-  engine_.ExcludeCollisionsBetween({dynamic1}, {}, {dynamic1}, {});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-
-  // Groups with dynamic and anchored geometry -- cliques generated for (g, a)
-  // pairs but *not* (a, a) pairs: (d1, d2), (d1, a2), (d2, a1).
-  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1}, {dynamic2},
-                                   {anchored2});
-  expected_clique += 3;
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-
-  // Repeat previous filter declaration -- no cliques added.
-  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1}, {dynamic2},
-                                   {anchored2});
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-
-  // Partial repeat -- add one anchored geometry to one set. One new clique for
-  // (d2, a3).
-  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1, anchored3},
-                                   {dynamic2}, {anchored2});
-  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
-
-  // Partial repeat -- add one dynamic geometry to one set. Two new cliques for
-  // (d3, d2) and (d3, a2).
-  engine_.ExcludeCollisionsBetween({dynamic1, dynamic3}, {anchored1},
-                                   {dynamic2}, {anchored2});
-  expected_clique += 2;
-  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
-}
-
-TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
-  GeometryId origin_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, origin_id);
-
-  GeometryId collide_id = GeometryId::get_new_id();
-  engine_.AddDynamicGeometry(sphere_, {}, collide_id);
-  EXPECT_EQ(engine_.num_geometries(), 2);
-
-  EXPECT_FALSE(engine_.CollisionFiltered(origin_id, true,
-                                         collide_id, true));
-  engine_.ExcludeCollisionsBetween({origin_id}, {}, {collide_id}, {});
-  EXPECT_TRUE(engine_.CollisionFiltered(origin_id, true,
-                                        collide_id, true));
-
-  X_WGs_[origin_id] = RigidTransformd::Identity();
-  X_WGs_[collide_id] = RigidTransformd::Identity();
-
-  // Non-colliding case.
-  MoveDynamicSphere(collide_id, false /* not colliding */);
-  ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
-
-  // Colliding case.
-  MoveDynamicSphere(collide_id, true /* colliding */);
-  ExpectIgnoredPenetration(origin_id, collide_id, &engine_);
-
-  // Test colliding case on copy.
-  ProximityEngine<double> copy_engine(engine_);
-  ExpectIgnoredPenetration(origin_id, collide_id, &copy_engine);
-
-  // Test AutoDiffXd converted engine.
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
-      engine_.ToAutoDiffXd();
-  ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
-}
-
-// Confirms that non-positve thresholds produce the right value. Creates three
+// Confirms that non-positive thresholds produce the right value. Creates three
 // spheres: A, B, & C. A is separated from B & C and B & C are penetrating.
 // We confirm that query tolerance of 0, returns B & C and that a tolerance
 // of penetration depth + epsilon returns B & C, and depth - epsilon omits

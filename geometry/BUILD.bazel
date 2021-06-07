@@ -190,6 +190,7 @@ drake_cc_library(
     srcs = ["geometry_state.cc"],
     hdrs = ["geometry_state.h"],
     deps = [
+        ":collision_filter_declaration",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",

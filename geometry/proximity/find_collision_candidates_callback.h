@@ -9,8 +9,7 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/collision_filter_legacy.h"
-#include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity/collision_filter.h"
 
 namespace drake {
 namespace geometry {
@@ -31,11 +30,11 @@ struct CallbackData {
 
    @param collision_filter_in     The collision filter system. Aliased.
    @param pairs_in                The output results. Aliased.  */
-  CallbackData(const CollisionFilterLegacy* collision_filter_in,
+  CallbackData(const CollisionFilter* collision_filter_in,
                std::vector<SortedPair<GeometryId>>* pairs_in);
 
   /* The collision filter system.  */
-  const CollisionFilterLegacy& collision_filter;
+  const CollisionFilter& collision_filter;
 
   /* The results of the collision candidates query.  */
   std::vector<SortedPair<GeometryId>>& pairs;

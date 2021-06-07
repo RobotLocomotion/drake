@@ -16,7 +16,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
@@ -392,6 +392,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     return engine;
   }
+
+  CollisionFilter& collision_filter() { return collision_filter_; }
 
   void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
                           GeometryId id, const ProximityProperties& props) {
@@ -798,115 +800,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         point_pairs);
   }
 
-  // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
-  void ExcludeCollisionsWithin(
-      const std::unordered_set<GeometryId>& dynamic,
-      const std::unordered_set<GeometryId>& anchored) {
-    // Preventing collision between members in a single set is simple: assign
-    // every geometry to the same clique.
-
-    // There are no collisions between anchored geometries. So, to meaningfully
-    // add collisions, there must be dynamic geometry. Only perform work if:
-    //   1. There are multiple dynamic geometries, or
-    //   2. There are non-zero numbers of dynamic *and* anchored geometries.
-    //
-    // NOTE: Given the set of geometries G, if the pair (gᵢ, gⱼ), gᵢ, gⱼ ∈ G
-    // is already filtered, this *will* add a redundant clique.
-    // TODO(SeanCurtis-TRI): If redundant cliques proves to have a performance
-    // impact before the alternate filtering mechanism is in place, revisit this
-    // algorithm to prevent redundancy.
-
-    if (dynamic.size() > 1 || (dynamic.size() > 0 && anchored.size() > 0)) {
-      int clique = collision_filter_.next_clique_id();
-      for (auto id : dynamic) {
-        EncodedData encoding(id, true /* is dynamic */);
-        collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
-      }
-      for (auto id : anchored) {
-        EncodedData encoding(id, false /* is dynamic */);
-        collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
-      }
-    }
-  }
-
-  void ExcludeCollisionsBetween(
-      const std::unordered_set<GeometryId>& dynamic1,
-      const std::unordered_set<GeometryId>& anchored1,
-      const std::unordered_set<GeometryId>& dynamic2,
-      const std::unordered_set<GeometryId>& anchored2) {
-    // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
-
-    // NOTE: This is a brute-force implementation. It does not claim to be
-    // optimal in any way. It merely guarantees the semantics given. If the
-    // two sets of geometries are in fact the *same* set (i.e., this is used
-    // to create the same effect as ExcludeCollisionsWithin), it will work, but
-    // be horribly inefficient (with each geometry picking up N cliques).
-    using std::transform;
-    using std::back_inserter;
-    using std::vector;
-
-    // There are no collisions between anchored geometries. So, there must be
-    // dynamic geometry for work to be necessary.
-    if (dynamic1.size() > 0 || dynamic2.size() > 0) {
-      vector<EncodedData> group1;
-      transform(dynamic1.begin(), dynamic1.end(), back_inserter(group1),
-                EncodedData::encode_dynamic);
-      transform(anchored1.begin(), anchored1.end(), back_inserter(group1),
-                EncodedData::encode_anchored);
-      vector<EncodedData> group2;
-      transform(dynamic2.begin(), dynamic2.end(), back_inserter(group2),
-                EncodedData::encode_dynamic);
-      transform(anchored2.begin(), anchored2.end(), back_inserter(group2),
-                EncodedData::encode_anchored);
-
-      // O(N²) process which generates O(N²) cliques. For the two collision
-      // groups G and H, each pair (g, h), g ∈ G, h ∈ H, requires a unique
-      // clique. If the cliques were not unique, then there would be a pair
-      // (a, b) where a, b ∈ G or a, b ∈ H where a and b have the same clique.
-      // And that would lead to removal of self-collision within one of the
-      // collision groups.
-      //
-      // NOTE: Using cliques for this purpose is *horribly* inefficient. This is
-      // exactly what collision filter groups are best at.
-      for (auto encoding1 : group1) {
-        for (auto encoding2 : group2) {
-          if ((encoding1.is_dynamic() || encoding2.is_dynamic()) &&
-              collision_filter_.CanCollideWith(encoding1.encoding(),
-                                               encoding2.encoding())) {
-            int clique = collision_filter_.next_clique_id();
-            collision_filter_.AddToCollisionClique(encoding2.encoding(),
-                                                   clique);
-            collision_filter_.AddToCollisionClique(encoding1.encoding(),
-                                                   clique);
-          }
-        }
-      }
-    }
-  }
-
-  bool CollisionFiltered(GeometryId id1, bool is_dynamic_1,
-                         GeometryId id2, bool is_dynamic_2) const {
-    // Collisions between anchored geometries are implicitly filtered.
-    if (!is_dynamic_1 && !is_dynamic_2) return true;
-    EncodedData encoding1(id1, is_dynamic_1);
-    EncodedData encoding2(id2, is_dynamic_2);
-    return !collision_filter_.CanCollideWith(encoding1.encoding(),
-                                             encoding2.encoding());
-  }
-
-  int get_next_clique() { return collision_filter_.next_clique_id(); }
-
-  void set_clique(GeometryId id, int clique) {
-    EncodedData encoding(id, true /* is dynamic */);
-    collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
-  }
-
   // Testing utilities
 
   bool IsDeepCopy(const Impl& other) const {
     if (this != &other) {
       // TODO(DamrongGuoy): Consider checking other data members such as
-      //  hydroelastic_geometries_ and collision_filter_.
+      //  hydroelastic_geometries_.
       auto are_maps_deep_copy =
           [](const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
                  this_map,
@@ -947,12 +846,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                               other.anchored_objects_)) {
         return false;
       }
+      if (this->collision_filter_ != other.collision_filter_) return false;
       return true;
     }
     return false;
   }
-
-  int peek_next_clique() const { return collision_filter_.peek_next_clique(); }
 
   const RigidTransformd GetX_WG(GeometryId id, bool is_dynamic) const {
     const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>& objects =
@@ -1002,7 +900,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     tree->update();
     (*objects)[id] = std::move(data.fcl_object);
 
-    collision_filter_.AddGeometry(encoding.encoding());
+    collision_filter_.AddGeometry(id);
   }
 
   // Removes the geometry with the given id from the given tree.
@@ -1014,8 +912,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     CollisionObjectd* fcl_object = typed_geometries.at(id).get();
     const size_t old_size = tree->size();
     tree->unregisterObject(fcl_object);
-    EncodedData filter_key(*fcl_object);
-    collision_filter_.RemoveGeometry(filter_key.encoding());
+    collision_filter_.RemoveGeometry(id);
     typed_geometries.erase(id);
     // NOTE: The FCL API provides no other mechanism for confirming the
     // unregistration was successful.
@@ -1051,7 +948,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   unordered_map<GeometryId, unique_ptr<CollisionObjectd>> anchored_objects_;
 
   // The mechanism for dictating collision filtering.
-  CollisionFilterLegacy collision_filter_;
+  CollisionFilter collision_filter_;
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
@@ -1163,6 +1060,11 @@ std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
 }
 
 template <typename T>
+CollisionFilter& ProximityEngine<T>::collision_filter() {
+  return impl_->collision_filter();
+}
+
+template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
     const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
   impl_->UpdateWorldPoses(X_WGs);
@@ -1244,51 +1146,11 @@ ProximityEngine<T>::FindCollisionCandidates() const {
   return impl_->FindCollisionCandidates();
 }
 
-template <typename T>
-void ProximityEngine<T>::ExcludeCollisionsWithin(
-    const std::unordered_set<GeometryId>& dynamic,
-    const std::unordered_set<GeometryId>& anchored) {
-  impl_->ExcludeCollisionsWithin(dynamic, anchored);
-}
-
-template <typename T>
-void ProximityEngine<T>::ExcludeCollisionsBetween(
-    const std::unordered_set<GeometryId>& dynamic1,
-    const std::unordered_set<GeometryId>& anchored1,
-    const std::unordered_set<GeometryId>& dynamic2,
-    const std::unordered_set<GeometryId>& anchored2) {
-  impl_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2, anchored2);
-}
-
-template <typename T>
-bool ProximityEngine<T>::CollisionFiltered(
-    GeometryId id1, bool is_dynamic_1,
-    GeometryId id2, bool is_dynamic_2) const {
-  return impl_->CollisionFiltered(id1, is_dynamic_1, id2, is_dynamic_2);
-}
-
-// Client-attorney interface for GeometryState to manipulate collision filters.
-
-template <typename T>
-int ProximityEngine<T>::get_next_clique() {
-  return impl_->get_next_clique();
-}
-
-template <typename T>
-void ProximityEngine<T>::set_clique(GeometryId id, int clique) {
-  impl_->set_clique(id, clique);
-}
-
 // Testing utilities
 
 template <typename T>
 bool ProximityEngine<T>::IsDeepCopy(const ProximityEngine<T>& other) const {
   return impl_->IsDeepCopy(*other.impl_);
-}
-
-template <typename T>
-int ProximityEngine<T>::peek_next_clique() const {
-  return impl_->peek_next_clique();
 }
 
 template <typename T>

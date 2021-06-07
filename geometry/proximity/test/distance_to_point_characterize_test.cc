@@ -26,7 +26,7 @@ template <typename T>
 class PointDistanceCallback : public DistanceCallback<T> {
  public:
   bool Invoke(fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
-              const CollisionFilterLegacy*,
+              const CollisionFilter*,
               const std::unordered_map<GeometryId, math::RigidTransform<T>>*
                   X_WGs) override {
     // We treat the first sphere as representing the query point.
