@@ -136,19 +136,38 @@ class Parameters {
     auto clone = std::make_unique<Parameters<T>>();
     clone->set_numeric_parameters(numeric_parameters_->Clone());
     clone->set_abstract_parameters(abstract_parameters_->Clone());
+    clone->set_system_id(get_system_id());
     return clone;
   }
 
-  /// Initializes this state from `other`.
+  /// Initializes this object from `other`.
   template <typename U>
   void SetFrom(const Parameters<U>& other) {
     numeric_parameters_->SetFrom(other.get_numeric_parameters());
     abstract_parameters_->SetFrom(other.get_abstract_parameters());
   }
 
+  /// @name System compatibility
+  /// See @ref system_compatibility.
+  //@{
+  /// (Internal use only) Gets the id of the subsystem that created this
+  /// object.
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  /// (Internal use only) Records the id of the subsystem that created this
+  /// object.
+  void set_system_id(internal::SystemId id) {
+    system_id_ = id;
+    numeric_parameters_->set_system_id(id);
+  }
+  //@}
+
  private:
   std::unique_ptr<DiscreteValues<T>> numeric_parameters_;
   std::unique_ptr<AbstractValues> abstract_parameters_;
+
+  // Unique id of the subsystem that created this object.
+  internal::SystemId system_id_;
 };
 
 }  // namespace systems

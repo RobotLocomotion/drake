@@ -113,6 +113,9 @@ class State {
     abstract_state_->SetFrom(other.get_abstract_state());
   }
 
+  /// @name System compatibility
+  /// See @ref system_compatibility.
+  //@{
   /// (Internal use only) Gets the id of the subsystem that created this state.
   internal::SystemId get_system_id() const { return system_id_; }
 
@@ -123,6 +126,7 @@ class State {
     get_mutable_continuous_state().set_system_id(this->get_system_id());
     get_mutable_discrete_state().set_system_id(this->get_system_id());
   }
+  //@}
 
  private:
   std::unique_ptr<AbstractValues> abstract_state_;

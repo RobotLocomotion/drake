@@ -108,7 +108,8 @@ class SystemBase;
 
 namespace internal {
 
-// Type used to match a Context to its System.
+// Type used to match a Context or other data object to its System. For
+// details, see @ref system_compatibility.
 using SystemId = drake::Identifier<class SystemIdTag>;
 
 // A utility to call the package-private constructor of some framework classes.

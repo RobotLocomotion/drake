@@ -1152,7 +1152,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** (Internal) Gets the id used to tag context data as being created by this
-  system. */
+  system. See @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
 
  private:

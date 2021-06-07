@@ -171,12 +171,16 @@ class DiscreteValues {
     return result;
   }
 
+  /// @name System compatibility
+  /// See @ref system_compatibility.
+  //@{
   /// (Internal use only) Gets the id of the subsystem that created this object.
   internal::SystemId get_system_id() const { return system_id_; }
 
   /// (Internal use only) Records the id of the subsystem that created this
   /// object.
   void set_system_id(internal::SystemId id) { system_id_ = id; }
+  //@}
 
  private:
   // Throw unless this object is compatible with convenience methods; i.e., it

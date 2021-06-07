@@ -25,8 +25,9 @@ namespace systems {
 /// DiagramContext and are discouraged from subclassing LeafContext.
 ///
 /// A %Context is designed to be used only with the System that created it.
-/// State and Parameter data can be copied between contexts for compatible
-/// systems as necessary.
+/// Data encapsulated with State and Parameter objects can be copied between
+/// contexts for compatible systems with some restrictions. For details, see
+/// @ref system_compatibility.
 ///
 /// @tparam_default_scalar
 template <typename T>

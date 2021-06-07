@@ -658,6 +658,9 @@ class CompositeEventCollection {
     return *unrestricted_update_events_;
   }
 
+  /** @name System compatibility
+  See @ref system_compatibility. */
+  //@{
   /**
    * (Internal use only) Gets the id of the subsystem that created this
    * collection.
@@ -669,6 +672,7 @@ class CompositeEventCollection {
    * collection.
    */
   void set_system_id(internal::SystemId id) { system_id_ = id; }
+  //@}
 
  protected:
   /**
