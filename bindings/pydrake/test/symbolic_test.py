@@ -795,6 +795,11 @@ class TestSymbolicFormula(unittest.TestCase):
 
 
 class TestSymbolicMonomial(unittest.TestCase):
+    def test_constructor_empty(self):
+        m = sym.Monomial()  # m = 1
+        self.assertEqual(m.GetVariables().size(), 0)
+        self.assertEqual(m.total_degree(), 0)
+
     def test_constructor_variable(self):
         m = sym.Monomial(x)  # m = x¹
         self.assertEqual(m.degree(x), 1)
