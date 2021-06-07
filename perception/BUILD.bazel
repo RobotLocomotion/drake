@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":depth_image_to_point_cloud",
         ":point_cloud",
         ":point_cloud_flags",
+        ":point_cloud_to_lcm",
     ],
 )
 
@@ -48,15 +49,25 @@ drake_cc_library(
         ":point_cloud",
         "//common:essential",
         "//math:geometric_transform",
-        "//systems/framework",
+        "//systems/framework:leaf_system",
         "//systems/sensors:camera_info",
         "//systems/sensors:image",
     ],
 )
 
+drake_cc_library(
+    name = "point_cloud_to_lcm",
+    srcs = ["point_cloud_to_lcm.cc"],
+    hdrs = ["point_cloud_to_lcm.h"],
+    deps = [
+        ":point_cloud",
+        "//lcmtypes:point_cloud",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_googletest(
     name = "depth_image_to_point_cloud_test",
-    srcs = ["test/depth_image_to_point_cloud_test.cc"],
     deps = [
         ":depth_image_to_point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
@@ -66,7 +77,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "point_cloud_flags_test",
-    srcs = ["test/point_cloud_flags_test.cc"],
     deps = [
         ":point_cloud_flags",
         "//common/test_utilities:expect_no_throw",
@@ -75,11 +85,18 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "point_cloud_test",
-    srcs = ["test/point_cloud_test.cc"],
     deps = [
         ":point_cloud",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
+    name = "point_cloud_to_lcm_test",
+    deps = [
+        ":point_cloud_to_lcm",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
