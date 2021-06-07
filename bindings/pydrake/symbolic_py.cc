@@ -539,6 +539,7 @@ PYBIND11_MODULE(symbolic, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)
+      .def(py::init<>(), doc.Monomial.ctor.doc_0args)
       .def(py::init<const Variable&>(), doc.Monomial.ctor.doc_1args_var)
       .def(py::init<const Variable&, int>(),
           doc.Monomial.ctor.doc_2args_var_exponent)
