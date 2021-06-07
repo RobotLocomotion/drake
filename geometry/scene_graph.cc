@@ -325,17 +325,6 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 }
 
 template <typename T>
-CollisionFilterManager<T> SceneGraph<T>::collision_filter_manager() {
-  return CollisionFilterManager<T>(&model_);
-}
-
-template <typename T>
-CollisionFilterManager<T> SceneGraph<T>::collision_filter_manager(
-    Context<T>* context) const {
-  return CollisionFilterManager<T>(&mutable_geometry_state(context));
-}
-
-template <typename T>
 void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
   model_.ExcludeCollisionsWithin(geometry_set);
 }
