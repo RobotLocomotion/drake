@@ -554,6 +554,8 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Monomial.total_degree.doc)
       .def(py::self * py::self)
       .def(py::self *= py::self)
+      .def(py::self * double{})
+      .def(double{} * py::self)
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("__hash__",

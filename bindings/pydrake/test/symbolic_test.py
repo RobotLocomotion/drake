@@ -879,6 +879,21 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m2.degree(y), 1)
         self.assertEqual(m2, m3)
 
+    def test_multiplication_float(self):
+        # Test monomial multiplies with a float. Should return a polynomial.
+        m1 = sym.Monomial(x, 2)
+        p1 = m1 * 3
+        self.assertIsInstance(p1, sym.Polynomial)
+        self.assertEqual(len(p1.monomial_to_coefficient_map()), 1)
+        numpy_compare.assert_equal(
+            p1.monomial_to_coefficient_map()[m1], sym.Expression(3))
+
+        p2 = 3 * m1
+        self.assertIsInstance(p2, sym.Polynomial)
+        self.assertEqual(len(p2.monomial_to_coefficient_map()), 1)
+        numpy_compare.assert_equal(
+            p2.monomial_to_coefficient_map()[m1], sym.Expression(3))
+
     def test_multiplication_assignment1(self):
         m = sym.Monomial(x, 2)
         m *= sym.Monomial(y, 3)
