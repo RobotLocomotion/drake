@@ -952,14 +952,14 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddQuadraticErrorCost),
           py::arg("Q"), py::arg("x_desired"), py::arg("vars"),
           doc.MathematicalProgram.AddQuadraticErrorCost.doc)
-      .def("AddL2NormCost",
+      .def("Add2NormSquaredCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&>(
-              &MathematicalProgram::AddL2NormCost),
+              &MathematicalProgram::Add2NormSquaredCost),
           py::arg("A"), py::arg("b"), py::arg("vars"),
-          doc.MathematicalProgram.AddL2NormCost.doc)
+          doc.MathematicalProgram.Add2NormSquaredCost.doc)
       .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
           static_cast<void (MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
@@ -1239,6 +1239,22 @@ for every column of ``prog_var_vals``. )""")
             update(prog.GetSolverOptionsStr(id));
             return out;
           });
+  {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    prog_cls.def("AddL2NormCost",
+        WrapDeprecated("Please use "
+                       "MathematicalProgram.Add2NormSquaredCost(A, b, vars),"
+                       " this variant will be "
+                       "removed after 2021-09-01",
+            overload_cast_explicit<Binding<QuadraticCost>,
+                const Eigen::Ref<const Eigen::MatrixXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::Ref<const VectorXDecisionVariable>&>(
+                &MathematicalProgram::Add2NormSquaredCost)),
+        py::arg("A"), py::arg("b"), py::arg("vars"));
+#pragma GCC diagnostic pop
+  }
 
   py::enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
       "NonnegativePolynomial",
