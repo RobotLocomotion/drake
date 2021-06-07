@@ -366,7 +366,7 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
 
 // Tests that exercising the collision filtering logic *after* allocation is
 // allowed.
-TEST_F(SceneGraphTest, PostAllocationCollisionFilteringLegacy) {
+TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
   SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
   FrameId frame_id =
       scene_graph_.RegisterFrame(source_id, GeometryFrame("dummy"));
@@ -735,7 +735,7 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
       "Referenced geometry \\d+ has not been registered.");
 }
 
-GTEST_TEST(SceneGraphContextModifier, CollisionFiltersLegacy) {
+GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
   // Initializes the scene graph and context.
   SceneGraph<double> scene_graph;
   // Simple scene with three frames, each with a sphere which, by default
