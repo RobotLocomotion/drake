@@ -2112,11 +2112,14 @@ TEST_F(GeometryStateTest, TestCollisionCandidates) {
   EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
                                 expected_candidates));
 
-  // This assumes that ExcludeCollisionsBetween() (tested below) works.
+  // This relies on the correctness of CollisionFilterManager(). It implicitly
+  // tests that GeometryState::collisoin_filter_manager() produces a valid
+  // manager.
   while (!expected_candidates.empty()) {
     const auto pair = expected_candidates.begin();
-    geometry_state_.ExcludeCollisionsBetween(GeometrySet{pair->first},
-                                             GeometrySet{pair->second});
+    geometry_state_.collision_filter_manager().Apply(
+        CollisionFilterDeclaration().ExcludeBetween(GeometrySet{pair->first},
+                                                    GeometrySet{pair->second}));
     expected_candidates.erase(pair);
     EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
                                   expected_candidates));
@@ -2124,111 +2127,6 @@ TEST_F(GeometryStateTest, TestCollisionCandidates) {
   // We've filtered everything, should report as empty.
   EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
                                 expected_candidates));
-}
-
-// Test disallowing collisions among members of a group (self collisions).
-TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
-  SetUpSingleSourceTree(Assign::kProximity);
-
-  // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses;
-  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    poses.set_value(frames_[f], X_PFs_[f]);
-  }
-  gs_tester_.SetFramePoses(source_id_, poses);
-  gs_tester_.FinalizePoseUpdate();
-
-  // This is *non* const; we'll decrement it as we filter more and more
-  // collisions.
-  int expected_collisions = default_collision_pair_count();
-
-  // Baseline collision - the unfiltered collisions.
-  auto pairs = geometry_state_.ComputePointPairPenetration();
-  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-
-  // A GeometrySet with a single frame (and no geometry) should have no change
-  // on the outcome.
-  geometry_state_.ExcludeCollisionsWithin(
-      GeometrySet({frames_[0]}));
-  pairs = geometry_state_.ComputePointPairPenetration();
-  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-
-  // A GeometrySet with a single geometry (and no frames) should have no change
-  // on the outcome.
-  geometry_state_.ExcludeCollisionsWithin(
-      GeometrySet({geometries_[0]}));
-  pairs = geometry_state_.ComputePointPairPenetration();
-  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-
-  // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
-  // *no* impact on the number of reported collisions.
-
-  // Confirm that geometry pairs (i, j) are reported as initially _not_ filtered
-  // from collisions where i is a geometry belonging to frame 0 and j is a
-  // geometry belonging to frame 1.
-  for (int i = 0; i < kGeometryCount; ++i) {
-    for (int j = kGeometryCount; j < kGeometryCount * 2; ++j) {
-      EXPECT_FALSE(geometry_state_.CollisionFiltered(
-          geometries_[i], geometries_[j]));
-    }
-  }
-  geometry_state_.ExcludeCollisionsWithin(
-      GeometrySet({anchored_geometry_}, {frames_[0], frames_[1]}));
-  pairs = geometry_state_.ComputePointPairPenetration();
-  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-  // Now confirm that collision filtering is reported.
-  for (int i = 0; i < kGeometryCount; ++i) {
-    for (int j = kGeometryCount; j < kGeometryCount * 2; ++j) {
-      EXPECT_TRUE(geometry_state_.CollisionFiltered(
-          geometries_[i], geometries_[j]));
-    }
-  }
-
-  // Frame 2 has *two* geometries that collide with the anchored geometry. This
-  // eliminates those collisions.
-  geometry_state_.ExcludeCollisionsWithin(
-      GeometrySet({anchored_geometry_}, {frames_[2]}));
-  expected_collisions -= 2;
-  pairs = geometry_state_.ComputePointPairPenetration();
-  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-}
-
-// Test disallowing collision between members fo two groups.
-TEST_F(GeometryStateTest, ExcludeCollisionsBetween) {
-  SetUpSingleSourceTree(Assign::kProximity);
-
-  // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses;
-  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    poses.set_value(frames_[f], X_PFs_[f]);
-  }
-  gs_tester_.SetFramePoses(source_id_, poses);
-  gs_tester_.FinalizePoseUpdate();
-
-  // This is *non* const; we'll decrement it as we filter more and more
-  // collisions.
-  int expected_collisions = default_collision_pair_count();
-
-  // Baseline collision - the unfiltered collisions.
-  auto pairs = geometry_state_.ComputePointPairPenetration();
-  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-
-  // Frames 0 & 1 do *not* have colliding geometry; adding a filter should have
-  // *no* impact on the number of reported collisions.
-  geometry_state_.ExcludeCollisionsBetween(
-      GeometrySet{frames_[0], frames_[1]},
-      GeometrySet(anchored_geometry_));
-  pairs = geometry_state_.ComputePointPairPenetration();
-  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-
-  // Frame 2 has *two* geometries that collide with the anchored geometry. Test
-  // that the removal of collision between frame 2's geometries and the anchored
-  // geometry leave the collisions *between* geometries g4 and g5 intact.
-  geometry_state_.ExcludeCollisionsBetween(GeometrySet{frames_[2]},
-                                           GeometrySet{anchored_geometry_});
-  expected_collisions -= 2;
-  pairs = geometry_state_.ComputePointPairPenetration();
-  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
 // Test collision filtering configuration when the input GeometrySet includes
@@ -2279,8 +2177,9 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
 
   // Attempting to filter collisions between a geometry with no proximity role
   // and other geometry should have no effect on the number of collisions.
-  geometry_state_.ExcludeCollisionsBetween(GeometrySet{added_id},
-                                           GeometrySet{anchored_geometry_});
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration().ExcludeBetween(
+          GeometrySet{added_id}, GeometrySet{anchored_geometry_}));
   pairs = geometry_state_.ComputePointPairPenetration();
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 
@@ -2293,63 +2192,11 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions + 1);
 
   // Now if we filter it, it should get removed.
-  geometry_state_.ExcludeCollisionsBetween(GeometrySet{added_id},
-                                           GeometrySet{anchored_geometry_});
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration().ExcludeBetween(
+          GeometrySet{added_id}, GeometrySet{anchored_geometry_}));
   pairs = geometry_state_.ComputePointPairPenetration();
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
-}
-
-// Tests the documented error conditions of ExcludeCollisionsWithin.
-TEST_F(GeometryStateTest, SelfCollisionFilterExceptions) {
-  SetUpSingleSourceTree();
-
-  // NOTE: a collision group with a single frame or geometry doesn't exercise
-  // self-collision filtering logic.
-  const GeometrySet set_bad_frame{FrameId::get_new_id(), FrameId::get_new_id()};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ExcludeCollisionsWithin(set_bad_frame), std::logic_error,
-      "Referenced frame \\d+ has not been registered.");
-
-  const GeometrySet set_bad_geometry{GeometryId::get_new_id(),
-                                     GeometryId::get_new_id()};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ExcludeCollisionsWithin(set_bad_geometry),
-      std::logic_error,
-      "Geometry set includes a geometry id that doesn't belong to the "
-          "SceneGraph: \\d+");
-}
-
-// Tests the documented error conditions of ExcludeCollisionsWithin.
-TEST_F(GeometryStateTest, CrossCollisionFilterExceptions) {
-  SetUpSingleSourceTree();
-
-  const GeometrySet set_bad_frame{FrameId::get_new_id()};
-  const GeometrySet set_good_frame{frames_[0]};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ExcludeCollisionsBetween(set_bad_frame,
-                                               set_good_frame),
-      std::logic_error,
-      "Referenced frame \\d+ has not been registered.");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ExcludeCollisionsBetween(set_good_frame,
-                                               set_bad_frame),
-      std::logic_error,
-      "Referenced frame \\d+ has not been registered.");
-
-  const GeometrySet set_bad_geometry{GeometryId::get_new_id()};
-  const GeometrySet set_good_geometry{geometries_[0]};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ExcludeCollisionsBetween(set_bad_geometry,
-                                               set_good_geometry),
-      std::logic_error,
-      "Geometry set includes a geometry id that doesn't belong to the "
-          "SceneGraph: \\d+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ExcludeCollisionsBetween(set_good_geometry,
-                                               set_bad_geometry),
-      std::logic_error,
-      "Geometry set includes a geometry id that doesn't belong to the "
-          "SceneGraph: \\d+");
 }
 
 // Test that the appropriate error messages are dispatched.
@@ -3760,12 +3607,9 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
     geometry_state_.AssignRole(source_id_, geometries_[i],
                                ProximityProperties(), RoleAssign::kNew);
   }
+
   VerifyRoleVersionModified(Role::kProximity,
-                            &GeometryState<double>::ExcludeCollisionsWithin,
-                            GeometrySet{geometries_[0], geometries_[1]});
-  VerifyRoleVersionModified(
-      Role::kProximity, &GeometryState<double>::ExcludeCollisionsBetween,
-      GeometrySet{geometries_[0], geometries_[1]}, GeometrySet{geometries_[2]});
+                            &GeometryState<double>::collision_filter_manager);
 
   // Note that geometries_[1] has perception role now.
   // When there exist geometries with perception properties, adding a renderer
