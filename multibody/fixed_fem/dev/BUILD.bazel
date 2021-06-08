@@ -585,7 +585,9 @@ drake_cc_googletest(
         ":deformable_rigid_manager",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
         "//geometry/proximity:make_box_mesh",
+        "//multibody/contact_solvers:pgs_solver",
         "//systems/analysis:simulator",
     ],
 )

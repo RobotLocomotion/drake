@@ -2,8 +2,13 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
+#include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
+#include "drake/multibody/plant/contact_jacobians.h"
+#include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/framework/context.h"
 
@@ -103,8 +108,44 @@ class DiscreteUpdateManager {
     return multibody_state_index_;
   }
 
-  /* Exposed MultibodyPlant private/protected method. */
+  /* Exposed MultibodyPlant private/protected methods.
+   @{ */
   const MultibodyTree<T>& internal_tree() const;
+
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalContactSolverResults(const systems::Context<T>& context) const;
+
+  const internal::ContactJacobians<T>& EvalContactJacobians(
+      const systems::Context<T>& context) const;
+
+  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
+      const systems::Context<T>& context,
+      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
+
+  void CalcNonContactForces(const systems::Context<T>& context, bool discrete,
+                            MultibodyForces<T>* forces) const;
+
+  std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
+      const systems::Context<T>& context) const;
+
+  // TODO(xuchenhan-tri): Remove the following calls to MbP solvers (which only
+  //  solves for rigid-rigid contact) when the deformable-rigid two-way coupled
+  //  contact solver is implemented.
+  void CallTamsiSolver(
+      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
+      const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
+      const MatrixX<T>& Jt, const VectorX<T>& stiffness,
+      const VectorX<T>& damping, const VectorX<T>& mu,
+      contact_solvers::internal::ContactSolverResults<T>* results) const;
+
+  void CallContactSolver(
+      contact_solvers::internal::ContactSolver<T>* contact_solver,
+      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
+      const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
+      const VectorX<T>& stiffness, const VectorX<T>& damping,
+      const VectorX<T>& mu,
+      contact_solvers::internal::ContactSolverResults<T>* results) const;
+  /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to
    provide an implementation. The output parameters are guaranteed to be

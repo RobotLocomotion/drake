@@ -112,26 +112,166 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
   }
 }
 
-// TODO(xuchenhan-tri): Implement the discrete update for rigid dofs.
+template <typename T>
+void DeformableRigidManager<T>::DoCalcContactSolverResults(
+    const systems::Context<T>& context,
+    contact_solvers::internal::ContactSolverResults<T>* results) const {
+  /* Assert this method was called on a context storing discrete state. */
+  this->plant().ValidateContext(context);
+  DRAKE_ASSERT(context.num_continuous_states() == 0);
+  const int nv = this->plant().num_velocities();
+
+  // TODO(xuchenhan-tri): This is not true when there are deformable dofs.
+  //  Modify it when deformable-rigid contact is supported.
+  /* Quick exit if there are no moving objects. */
+  if (nv == 0) return;
+
+  // TODO(xuchenhan-tri): Incorporate deformable-rigid contact pairs.
+  /* Compute all rigid-rigid contact pairs, including both penetration pairs
+   and quadrature pairs for discrete hydroelastic. */
+  const std::vector<multibody::internal::DiscreteContactPair<T>>
+      rigid_contact_pairs = this->CalcDiscreteContactPairs(context);
+  const int num_rigid_contacts = rigid_contact_pairs.size();
+
+  /* Extract all information needed by the contact/TAMSI solver. */
+  multibody::internal::ContactJacobians<T> rigid_contact_jacobians;
+  VectorX<T> v(nv);
+  MatrixX<T> M(nv, nv);
+  VectorX<T> minus_tau(nv);
+  VectorX<T> mu(num_rigid_contacts);
+  VectorX<T> phi(num_rigid_contacts);
+  VectorX<T> fn(num_rigid_contacts);
+  VectorX<T> stiffness(num_rigid_contacts);
+  VectorX<T> damping(num_rigid_contacts);
+  CalcContactQuantities(context, rigid_contact_pairs, &rigid_contact_jacobians,
+                        &v, &M, &minus_tau, &mu, &phi, &fn, &stiffness,
+                        &damping);
+
+  /* Call the contact solver if one exists. Otherwise, invoke the TAMSI
+   solver. */
+  if (contact_solver_ != nullptr) {
+    this->CallContactSolver(contact_solver_.get(), context.get_time(), v, M,
+                            minus_tau, phi, rigid_contact_jacobians.Jc,
+                            stiffness, damping, mu, results);
+  } else {
+    this->CallTamsiSolver(
+        context.get_time(), v, M, minus_tau, fn, rigid_contact_jacobians.Jn,
+        rigid_contact_jacobians.Jt, stiffness, damping, mu, results);
+  }
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcContactQuantities(
+    const systems::Context<T>& context,
+    const std::vector<multibody::internal::DiscreteContactPair<T>>&
+        rigid_contact_pairs,
+    multibody::internal::ContactJacobians<T>* rigid_contact_jacobians,
+    EigenPtr<VectorX<T>> v, EigenPtr<MatrixX<T>> M,
+    EigenPtr<VectorX<T>> minus_tau, EigenPtr<VectorX<T>> mu,
+    EigenPtr<VectorX<T>> phi, EigenPtr<VectorX<T>> fn,
+    EigenPtr<VectorX<T>> stiffness, EigenPtr<VectorX<T>> damping) const {
+  DRAKE_DEMAND(v != nullptr);
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(minus_tau != nullptr);
+  DRAKE_DEMAND(mu != nullptr);
+  DRAKE_DEMAND(phi != nullptr);
+  DRAKE_DEMAND(fn != nullptr);
+  DRAKE_DEMAND(stiffness != nullptr);
+  DRAKE_DEMAND(damping != nullptr);
+  /* Compute the contact Jacobians for the rigid dofs. */
+  *rigid_contact_jacobians = this->EvalContactJacobians(context);
+
+  /* Compute the generalized velocities. */
+  auto x =
+      context.get_discrete_state(this->multibody_state_index()).get_value();
+  const int nv = this->plant().num_velocities();
+  DRAKE_DEMAND(v->size() == nv);
+  DRAKE_DEMAND(M->rows() == nv);
+  DRAKE_DEMAND(M->cols() == nv);
+  DRAKE_DEMAND(minus_tau->size() == nv);
+  *v = x.bottomRows(nv);
+
+  /* Compute the mass matrix. */
+  this->plant().CalcMassMatrix(context, M);
+
+  /* Computes the negative generalized non-contact forces on the rigid dofs,
+   `minus_tau`. */
+  MultibodyForces<T> forces(this->internal_tree());
+  this->CalcNonContactForces(context, true /* discrete */, &forces);
+  /* Workspace for inverse dynamics: Bodies' accelerations, ordered by
+   BodyNodeIndex. */
+  std::vector<SpatialAcceleration<T>> A_WB_array(this->plant().num_bodies());
+  /* Generalized accelerations. */
+  const VectorX<T> vdot = VectorX<T>::Zero(nv);
+  /* Body forces (alias to forces). */
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
+  /* With vdot = 0, this computes:
+     -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W. */
+  *minus_tau = forces.mutable_generalized_forces();
+  this->internal_tree().CalcInverseDynamics(
+      context, vdot, F_BBo_W_array, *minus_tau, &A_WB_array,
+      &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
+      minus_tau);
+
+  /* Computes friction coefficient. Static friction is ignored by the time
+   stepping scheme. */
+  const int num_contacts = rigid_contact_pairs.size();
+  DRAKE_DEMAND(mu->size() == num_contacts);
+  std::vector<CoulombFriction<double>> combined_friction_pairs =
+      this->CalcCombinedFrictionCoefficients(context, rigid_contact_pairs);
+  std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
+                 mu->data(),
+                 [](const CoulombFriction<double>& coulomb_friction) {
+                   return coulomb_friction.dynamic_friction();
+                 });
+
+  /* Compute penetration, normal contact force, stiffness, and damping. */
+  DRAKE_DEMAND(phi->size() == num_contacts);
+  DRAKE_DEMAND(fn->size() == num_contacts);
+  DRAKE_DEMAND(stiffness->size() == num_contacts);
+  DRAKE_DEMAND(damping->size() == num_contacts);
+  for (int i = 0; i < num_contacts; ++i) {
+    (*phi)[i] = rigid_contact_pairs[i].phi0;
+    (*fn)[i] = rigid_contact_pairs[i].fn0;
+    (*stiffness)[i] = rigid_contact_pairs[i].stiffness;
+    (*damping)[i] = rigid_contact_pairs[i].damping;
+  }
+}
+
 template <typename T>
 void DeformableRigidManager<T>::DoCalcDiscreteValues(
     const systems::Context<T>& context,
     systems::DiscreteValues<T>* updates) const {
-  /* Only deformable dofs are supported at the moment. */
+  /* Get the rigid dofs from context. */
   auto x =
       context.get_discrete_state(this->multibody_state_index()).get_value();
-  DRAKE_DEMAND(x.size() == 0);
+  const auto& q = x.topRows(this->plant().num_positions());
+
+  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
+      this->EvalContactSolverResults(context);
+  const auto& v_next = solver_results.v_next;
+
+  VectorX<T> qdot_next(this->plant().num_positions());
+  this->plant().MapVelocityToQDot(context, v_next, &qdot_next);
+  const double dt = this->plant().time_step();
+  const auto& q_next = q + dt * qdot_next;
+
+  VectorX<T> x_next(this->plant().num_multibody_states());
+  x_next << q_next, v_next;
+  updates->get_mutable_vector(this->multibody_state_index())
+      .SetFromVector(x_next);
+
+  /* Evaluates the deformable free-motion states. */
   const std::vector<systems::DiscreteStateIndex>& discrete_state_indexes =
       deformable_model_->discrete_state_indexes();
-  /* Evaluates the deformable free-motion states. */
   for (SoftBodyIndex deformable_body_id(0);
        deformable_body_id < free_motion_cache_indexes_.size();
        ++deformable_body_id) {
     const FemStateBase<T>& state_star =
         EvalFreeMotionFemStateBase(context, deformable_body_id);
     const int num_dofs = state_star.num_generalized_positions();
-    // TODO(xuchenhan-tri): This assumes no contact exists. Modify this to
-    //  include the effect of contact.
+    // TODO(xuchenhan-tri): This assumes no deformable-rigid contact exists.
+    //  Modify this to include the effect of contact.
     /* Copy new state to output variable. */
     systems::BasicVector<T>& next_discrete_state =
         updates->get_mutable_vector(discrete_state_indexes[deformable_body_id]);
@@ -142,7 +282,6 @@ void DeformableRigidManager<T>::DoCalcDiscreteValues(
     next_discrete_value.tail(num_dofs) = state_star.qddot();
   }
 }
-
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

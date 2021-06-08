@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -8,6 +9,7 @@
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
+#include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 
 namespace drake {
@@ -44,18 +46,31 @@ class DeformableRigidManager final
 
   void DeclareCacheEntries(MultibodyPlant<T>* plant) final;
 
-  // TODO(xuchenhan-tri): Implement this.
   void DoCalcContactSolverResults(
-      const systems::Context<T>&,
-      contact_solvers::internal::ContactSolverResults<T>*) const final {
-    throw std::logic_error(
-        "CalcContactSolverResults() hasn't be implemented for "
-        "DeformableRigidManager yet.");
-  }
+      const systems::Context<T>& context,
+      contact_solvers::internal::ContactSolverResults<T>* results) const final;
+
+  /* Calculates all contact quantities needed by the contact solver and the
+   TAMSI solver from the given `context` and `rigid_contact_pairs`.
+   @pre All pointer parameters are non-null.
+   @pre The size of `v` and `minus_tau` are equal to the number of rigid
+        generalized velocities.
+   @pre `M` is square and has rows and columns equal to the number of rigid
+        generalized velocities.
+   @pre `mu`, `phi`, `fn`, `stiffness`, `damping`, and `rigid_contact_pairs`
+        have the same size. */
+  void CalcContactQuantities(
+      const systems::Context<T>& context,
+      const std::vector<multibody::internal::DiscreteContactPair<T>>&
+          rigid_contact_pairs,
+      multibody::internal::ContactJacobians<T>* rigid_contact_jacobians,
+      EigenPtr<VectorX<T>> v, EigenPtr<MatrixX<T>> M,
+      EigenPtr<VectorX<T>> minus_tau, EigenPtr<VectorX<T>> mu,
+      EigenPtr<VectorX<T>> phi, EigenPtr<VectorX<T>> fn,
+      EigenPtr<VectorX<T>> stiffness, EigenPtr<VectorX<T>> damping) const;
 
   // TODO(xuchenhan-tri): Implement this once AccelerationKinematicsCache
-  // also
-  //  caches acceleration for deformable dofs.
+  //  also caches acceleration for deformable dofs.
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final {
