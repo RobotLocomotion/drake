@@ -553,6 +553,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("collision_filter_manager",
+            overload_cast_explicit<CollisionFilterManager, Context<T>*>(
+                &Class::collision_filter_manager),
+            py::arg("context"), cls_doc.collision_filter_manager.doc_1args)
+        .def("collision_filter_manager",
+            overload_cast_explicit<CollisionFilterManager>(
+                &Class::collision_filter_manager),
+            cls_doc.collision_filter_manager.doc_0args)
         .def("ExcludeCollisionsBetween",
             py::overload_cast<const GeometrySet&, const GeometrySet&>(
                 &Class::ExcludeCollisionsBetween),
@@ -960,7 +968,28 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
+  // CollisionFilterDeclaration.
+  {
+    using Class = CollisionFilterDeclaration;
+    constexpr auto& cls_doc = doc.CollisionFilterDeclaration;
 
+    py::class_<Class>(m, "CollisionFilterDeclaration", cls_doc.doc)
+        .def(py::init(), cls_doc.ctor.doc)
+        .def("ExcludeBetween", &Class::ExcludeBetween, py::arg("set_A"),
+            py::arg("set_B"), py_rvp::reference, cls_doc.ExcludeBetween.doc)
+        .def("ExcludeWithin", &Class::ExcludeWithin, py::arg("geometry_set"),
+            py_rvp::reference, cls_doc.ExcludeWithin.doc);
+  }
+
+  //  CollisionFilterManager
+  {
+    using Class = CollisionFilterManager;
+    constexpr auto& cls_doc = doc.CollisionFilterManager;
+    py::class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
+        .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc);
+  }
+
+  // Role enumeration
   {
     constexpr auto& cls_doc = doc.Role;
     py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
@@ -970,6 +999,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kPerception", Role::kPerception, cls_doc.kPerception.doc);
   }
 
+  // RoleAssign enumeration
   {
     constexpr auto& cls_doc = doc.RoleAssign;
     using Class = RoleAssign;
@@ -978,6 +1008,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kReplace", Class::kReplace, cls_doc.kReplace.doc);
   }
 
+  // DrakeVisualizerParams
   {
     using Class = DrakeVisualizerParams;
     constexpr auto& cls_doc = doc.DrakeVisualizerParams;
@@ -1102,6 +1133,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
+  // GeometryProperties
   {
     using Class = GeometryProperties;
     constexpr auto& cls_doc = doc.GeometryProperties;
