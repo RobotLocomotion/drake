@@ -20,29 +20,9 @@ class CollisionFilter;
  "collision filters"; collision filters limit the scope of various proximity
  queries.
 
- A SceneGraph instance contains the set of geometry
- `G = D ⋃ A = {g₀, g₁, ..., gₙ}`, where D is the set of dynamic geometries and
- A is the set of anchored geometries (by definition `D ⋂ A = ∅`). `Gₚ ⊂ G` is
- the subset of geometries that have a proximity role (with an analogous
- interpretation of `Dₚ` and `Aₚ`). Many proximity queries operate on pairs of
- geometries (e.g., (gᵢ, gⱼ)). The set of proximity candidate pairs for such
- queries is initially defined as `C = (Gₚ × Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ`, where:
-
-  - `Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ` is the Cartesian product of the set
-    of SceneGraph proximity geometries.
-  - `Aₚ × Aₚ` represents all pairs consisting only of anchored geometries;
-    an anchored geometry is never tested against another anchored geometry.
-  - `Fₚ = {(gᵢ, gⱼ)} ∀ i, j`, such that `gᵢ, gⱼ ∈ Dₚ` and
-    `frame(gᵢ) == frame(gⱼ)`; the pairs where both geometries are rigidly
-    affixed to the same frame.
-  - `Iₚ = {(g, g)}, ∀ g ∈ Gₚ` is the set of all pairs consisting of a
-    geometry with itself; there is no meaningful proximity query on a
-    geometry with itself.
-
- Only pairs contained in C will be included in pairwise proximity operations.
-
- This class provides the basis for *declaring* what pairs should not be included
- in the set C.
+ This class provides the basis for *declaring* what pairs should or should not
+ be included in the set of proximity query candidates C (see documentation for
+ CollisionFilterManager for details on the set C).
 
  A declaration consists of zero or more *statements*. Each statement can
  declare, for example, that the pair (g₁, g₂) should be excluded from C (also
@@ -62,7 +42,8 @@ class CollisionFilter;
 
  It's worth noting, that the statements are evaluated in *invocation* order such
  that a later statement can partially or completely undo the effect of an
- earlier statement. */
+ earlier statement. The full declaration is evaluated by
+ CollisionFilterManager::Apply(). */
 class CollisionFilterDeclaration {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterDeclaration)
@@ -72,13 +53,14 @@ class CollisionFilterDeclaration {
   /** @name  Excluding pairs from consideration (adding collision filters)
 
    These methods provide mechanisms which implicitly define a set of pairs and
-   subtracts each implied pair from the set C. The documentation of each method
-   explains the relationship between the input parameters and the set of implied
-   geometry pairs.
+   subtracts each implied pair from the set of proximity query candidates C (see
+   the documentation for CollisionFilterManager for definition of set C). The
+   documentation of each method explains the relationship between the input
+   parameters and the set of implied geometry pairs.
 
-   The *declared* pairs may be invalid (e.g., containing GeometryId values that
+   The *declared* pairs can be invalid (e.g., containing GeometryId values that
    aren't part of the SceneGraph data). This will only be detected when applying
-   the declaration. */
+   the declaration (see CollisionFilterManager::Apply()). */
   //@{
 
   /** Excludes geometry pairs from proximity evaluation by updating the
