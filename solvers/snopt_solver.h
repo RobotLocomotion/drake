@@ -35,6 +35,22 @@ struct SnoptSolverDetails {
   Eigen::VectorXd Fmul;
 };
 
+/**
+ * An implementation of SolverInterface for the commercially-licensed SNOPT
+ * solver (https://ccom.ucsd.edu/~optimizers/solvers/snopt/).
+ *
+ * Builds of Drake from source do not compile SNOPT by default, so therefore
+ * SolverInterface::available() will return false. You must opt-in to build
+ * SNOPT per the documentation at https://drake.mit.edu/bazel.html#snopt.
+ *
+ * <a href="https://drake.mit.edu/from_binary.html">Drake's
+ * pre-compiled binary releases</a> do incorporate SNOPT, so therefore
+ * SolverInterface::available() will return true.
+ * Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
+ *
+ * There is no license configuration required to use SNOPT, so
+ * SolverInterface::enabled() will always return true.
+ */
 class SnoptSolver final : public SolverBase  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver)

@@ -159,7 +159,7 @@ GTEST_TEST(SolverBaseTest, AvailableError) {
   dut.available_ = false;
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.Solve(prog, {}, {}), std::exception,
-      "The .*StubSolverBase is not available in this build");
+      ".*StubSolverBase has not been compiled.*");
 }
 
 // Check the error message when attributes are not satisfied.
