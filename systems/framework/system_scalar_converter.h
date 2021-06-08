@@ -136,6 +136,10 @@ class SystemScalarConverter {
   /// is false.  The subtype `S` need not be the same between this and `other`.
   void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);
 
+  /// Removes from this converter the ability to convert to and from System<T>.
+  template <typename T>
+  void Remove();
+
   /// Returns true iff this object can convert a System<U> into a System<T>,
   /// i.e., whether Convert() will return non-null.
   ///
@@ -196,6 +200,20 @@ void SystemScalarConverter::Add(const ConverterFunction<T, U>& func) {
     const System<U>& other = *static_cast<const System<U>*>(bare_u);
     return func(other).release();
   });
+}
+
+template <typename T>
+void SystemScalarConverter::Remove() {
+  // Remove the items from `funcs_` whose key contains the type `T`.
+  // (This would use erase_if, if we had it.)
+  for (auto iter = funcs_.begin(); iter != funcs_.end();) {
+    const Key& key = iter->first;
+    if (key.first == typeid(T) || key.second == typeid(T)) {
+      iter = funcs_.erase(iter);
+    } else {
+      ++iter;
+    }
+  }
 }
 
 template <typename T, typename U>
