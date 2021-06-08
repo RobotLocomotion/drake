@@ -305,6 +305,32 @@ GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
       dut.Convert<AutoDiffXd, double>(system)));
 }
 
+GTEST_TEST(SystemScalarConverterTest, Remove) {
+  SystemScalarConverter dut(SystemTypeTag<AnyToAnySystem>{});
+
+  // These are the defaults per TestAnyToAnySystem above.
+  EXPECT_TRUE((dut.IsConvertible<double,     AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<Expression, AutoDiffXd>()));
+
+  // We remove symbolic support.  Only double <=> AutoDiff remains.
+  dut.Remove<symbolic::Expression>();
+  EXPECT_TRUE((dut.IsConvertible< double,     AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
+
+  // The conversion still actually works.
+  const AnyToAnySystem<double> system{22};
+  EXPECT_TRUE(is_dynamic_castable<AnyToAnySystem<AutoDiffXd>>(
+      dut.Convert<AutoDiffXd, double>(system)));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

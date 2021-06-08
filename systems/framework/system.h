@@ -36,31 +36,6 @@
 namespace drake {
 namespace systems {
 
-#if !defined(DRAKE_DOXYGEN_CXX)
-// Private helper class for System.
-class SystemImpl {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemImpl)
-  SystemImpl() = delete;
-
- private:
-  // Attorney-Client idiom to expose a subset of private elements of System.
-  // We are the attorney.  These are the clients that can access our private
-  // members, and thus access some subset of System's private members.
-  template <typename> friend class Diagram;
-
-  // Return a mutable reference to the System's SystemScalarConverter.  Diagram
-  // needs this in order to withdraw support for certain scalar type conversion
-  // operations once it learns about what its subsystems support.
-  template <typename T>
-  static SystemScalarConverter& get_mutable_system_scalar_converter(
-      System<T>* system) {
-    DRAKE_DEMAND(system != nullptr);
-    return system->system_scalar_converter_;
-  }
-};
-#endif  // DRAKE_DOXYGEN_CXX
-
 /** Base class for all System functionality that is dependent on the templatized
 scalar type T for input, state, parameters, and outputs.
 
@@ -1699,6 +1674,11 @@ class System : public SystemBase {
     forced_unrestricted_update_events_ = std::move(forced);
   }
 
+  /** Returns the SystemScalarConverter for `this` system. */
+  SystemScalarConverter& get_mutable_system_scalar_converter() {
+    return system_scalar_converter_;
+  }
+
   /** Checks whether the given object was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
   template <template <typename> class Clazz>
@@ -1726,10 +1706,6 @@ class System : public SystemBase {
   }
 
  private:
-  // Attorney-Client idiom to expose a subset of private elements of System.
-  // Refer to SystemImpl comments for details.
-  friend class SystemImpl;
-
   // For any T1 & T2, System<T1> considers System<T2> a friend, so that System
   // can safely and efficiently convert scalar types. See for example
   // System<T>::ToScalarTypeMaybe.
