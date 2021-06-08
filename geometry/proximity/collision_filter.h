@@ -42,10 +42,12 @@ class CollisionFilter {
    @param declaration       The declaration to apply.
    @param extract_ids       A callback to convert a GeometrySet into the
                             explicit set of geometry ids.
+   @param is_permanent      If `true` a filter added (via an Exclude* API) will
+                            be made permanent.
    @throws std::exception if any GeometryId referenced by the declaration has
                           not previously been added to `this` filter system. */
   void Apply(const CollisionFilterDeclaration& declaration,
-             const ExtractIds& extract_ids);
+             const ExtractIds& extract_ids, bool is_permanent = false);
 
   /* Adds a geometry to the filter system. When added, it will not be part of
    any filtered pairs.
@@ -81,7 +83,9 @@ class CollisionFilter {
   /* The collision filter state between a pair of geometries. */
   enum PairFilterState {
     kUnfiltered,      // No filter has been declared.
-    kFiltered         // A filter has been declared.
+    kFiltered,        // A user-declared filter exists, the user can remove it.
+    kLockedFiltered,  // A system filter has been created and can't be removed
+                      // by the user.
   };
 
   /* The "filter state" is a 2d table. For N registered geometries, it is
@@ -117,7 +121,13 @@ class CollisionFilter {
    filtered. For each pair, if they are already filtered, no discernible change
    is made.
 
-   @pre All ids in `id_A` and `id_B` are part of the system. */
+   The filtered pair can be made "permanent" such that subsequent calls to
+   RemoveFiltersBetween will not remove the filter. This is intended to support
+   SceneGraph invariants that geometries affixed to the same frame are filtered
+   or pairs of anchored geometries are likewise filtered. GeometryState is
+   responsible for determining permanence when adding filters.
+
+   @pre All ids in `id_A` and `id_B` are part of this filter system.  */
   void AddFiltersBetween(const GeometrySet& set_A, const GeometrySet& set_B,
                          const ExtractIds& extract_ids);
 
