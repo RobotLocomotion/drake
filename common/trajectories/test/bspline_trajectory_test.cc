@@ -245,7 +245,7 @@ TYPED_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
       VectorX<T>::LinSpaced(num_times, original_trajectory.start_time(),
                             original_trajectory.end_time());
   const double tolerance = 2 * std::numeric_limits<double>::epsilon();
-  if constexpr (std::is_same<T, double>::value) {
+  if constexpr (std::is_same_v<T, double>) {
     if (FLAGS_visualize) {
       CallPython("figure");
     }
@@ -254,7 +254,7 @@ TYPED_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
     MatrixX<T> value = trajectory_with_new_knots.value(t(k));
     MatrixX<T> expected_value = original_trajectory.value(t(k));
     EXPECT_TRUE(CompareMatrices(value, expected_value, tolerance));
-    if constexpr (std::is_same<T, double>::value) {
+    if constexpr (std::is_same_v<T, double>) {
       if (FLAGS_visualize) {
         CallPython(
             "plot", t(k), value.transpose(),
@@ -263,7 +263,7 @@ TYPED_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
       }
     }
   }
-  if constexpr (std::is_same<T, double>::value) {
+  if constexpr (std::is_same_v<T, double>) {
     if (FLAGS_visualize) {
       CallPython("grid", true);
     }

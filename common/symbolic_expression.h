@@ -1226,78 +1226,78 @@ namespace symbolic {
 
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, Expression>::value &&
-        std::is_same<typename MatrixR::Scalar, double>::value,
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, Expression> &&
+        std::is_same_v<typename MatrixR::Scalar, double>,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
 // Matrix<double> * Matrix<Expression> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, double>::value &&
-        std::is_same<typename MatrixR::Scalar, Expression>::value,
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, double> &&
+        std::is_same_v<typename MatrixR::Scalar, Expression>,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
 // Matrix<Expression> * Matrix<Variable> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, Expression>::value &&
-        std::is_same<typename MatrixR::Scalar, Variable>::value,
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, Expression> &&
+        std::is_same_v<typename MatrixR::Scalar, Variable>,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs * rhs.template cast<Expression>();
 }
 
 // Matrix<Variable> * Matrix<Expression> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, Variable>::value &&
-        std::is_same<typename MatrixR::Scalar, Expression>::value,
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, Variable> &&
+        std::is_same_v<typename MatrixR::Scalar, Expression>,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs;
 }
 
 // Matrix<Variable> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, Variable>::value &&
-        std::is_same<typename MatrixR::Scalar, double>::value,
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, Variable> &&
+        std::is_same_v<typename MatrixR::Scalar, double>,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
 // Matrix<double> * Matrix<Variable> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        std::is_same<typename MatrixL::Scalar, double>::value &&
-        std::is_same<typename MatrixR::Scalar, Variable>::value,
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, double> &&
+        std::is_same_v<typename MatrixR::Scalar, Variable>,
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
@@ -1330,7 +1330,7 @@ auto operator*(
 /// @pydrake_mkdoc_identifier{expression}
 template <typename Derived>
 std::enable_if_t<
-    std::is_same<typename Derived::Scalar, Expression>::value,
+    std::is_same_v<typename Derived::Scalar, Expression>,
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
                   Derived::MaxColsAtCompileTime>>
@@ -1372,7 +1372,7 @@ Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
               Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
               Derived::MaxColsAtCompileTime>
 Substitute(const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
-  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+  static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a symbolic matrix.");
   // Note that the return type is written out explicitly to help gcc 5 (on
   // ubuntu).
@@ -1390,7 +1390,7 @@ Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
               Derived::MaxColsAtCompileTime>
 Substitute(const Eigen::MatrixBase<Derived>& m, const Variable& var,
            const Expression& e) {
-  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+  static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a symbolic matrix.");
   // Note that the return type is written out explicitly to help gcc 5 (on
   // ubuntu).
@@ -1442,12 +1442,12 @@ Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);
 /// equal. That is, it returns true if and only if `m1(i, j)` is structurally
 /// equal to `m2(i, j)` for all `i`, `j`.
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
-        std::is_same<typename DerivedA::Scalar, Expression>::value &&
-        std::is_same<typename DerivedB::Scalar, Expression>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<DerivedA>, DerivedA> &&
+        std::is_base_of_v<Eigen::MatrixBase<DerivedB>, DerivedB> &&
+        std::is_same_v<typename DerivedA::Scalar, Expression> &&
+        std::is_same_v<typename DerivedB::Scalar, Expression>,
+    bool>
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
@@ -1487,9 +1487,9 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
  */
 template <typename DerivedV, typename DerivedB>
 struct is_eigen_nonvector_expression_double_pair
-    : std::integral_constant<
-          bool, is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
-                    is_eigen_nonvector_of<DerivedB, double>::value> {};
+    : std::bool_constant<
+          is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
+              is_eigen_nonvector_of<DerivedB, double>::value> {};
 
 /*
  * Determine if two EigenBase<> types are vectors of Expressions and doubles
@@ -1497,8 +1497,8 @@ struct is_eigen_nonvector_expression_double_pair
  */
 template <typename DerivedV, typename DerivedB>
 struct is_eigen_vector_expression_double_pair
-    : std::integral_constant<
-          bool, is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
-                    is_eigen_vector_of<DerivedB, double>::value> {};
+    : std::bool_constant<
+          is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
+              is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake

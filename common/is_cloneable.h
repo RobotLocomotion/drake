@@ -19,9 +19,9 @@ struct is_cloneable_helper : std::false_type {};
 template <typename T>
 struct is_cloneable_helper<
     T,
-    typename std::enable_if<std::is_same<
+    typename std::enable_if_t<std::is_same_v<
         decltype(std::declval<const T>().Clone().release()),
-        typename std::remove_const<T>::type*>::value>::type>
+        typename std::remove_const_t<T>*>>>
     : std::true_type {};
 
 }  // namespace is_cloneable_internal

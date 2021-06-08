@@ -18,7 +18,7 @@ struct scalar_predicate {
   using type = decltype(T() < T());
 
   /// Whether `type` is `bool`.
-  static constexpr bool is_bool = std::is_same<type, bool>::value;
+  static constexpr bool is_bool = std::is_same_v<type, bool>;
 };
 
 /// An alias for a boolean-like value, conditioned on the scalar type `T`.

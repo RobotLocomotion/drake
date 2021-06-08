@@ -23,7 +23,7 @@ void Throw(const char* condition, const char* func, const char* file, int line);
 #define DRAKE_THROW_UNLESS(condition)                                        \
   do {                                                                       \
     typedef ::drake::assert::ConditionTraits<                                \
-        typename std::remove_cv<decltype(condition)>::type> Trait;           \
+        typename std::remove_cv_t<decltype(condition)>> Trait;               \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     if (!Trait::Evaluate(condition)) {                                       \
       ::drake::internal::Throw(#condition, __func__, __FILE__, __LINE__);    \

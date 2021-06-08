@@ -98,7 +98,7 @@ namespace assert {
 // require special handling.
 template <typename Condition>
 struct ConditionTraits {
-  static constexpr bool is_valid = std::is_convertible<Condition, bool>::value;
+  static constexpr bool is_valid = std::is_convertible_v<Condition, bool>;
   static bool Evaluate(const Condition& value) {
     return value;
   }
@@ -113,7 +113,7 @@ struct ConditionTraits {
 #define DRAKE_DEMAND(condition)                                              \
   do {                                                                       \
     typedef ::drake::assert::ConditionTraits<                                \
-        typename std::remove_cv<decltype(condition)>::type> Trait;           \
+        typename std::remove_cv_t<decltype(condition)>> Trait;               \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     if (!Trait::Evaluate(condition)) {                                       \
       ::drake::internal::AssertionFailed(                                    \
@@ -130,7 +130,7 @@ constexpr bool kDrakeAssertIsDisarmed = false;
 # define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
 # define DRAKE_ASSERT_VOID(expression) do {                     \
     static_assert(                                              \
-        std::is_convertible<decltype(expression), void>::value, \
+        std::is_convertible_v<decltype(expression), void>,      \
         "Expression should be void.");                          \
     expression;                                                 \
   } while (0)
@@ -142,10 +142,10 @@ constexpr bool kDrakeAssertIsDisarmed = true;
 }  // namespace drake
 # define DRAKE_ASSERT(condition) static_assert(                        \
     ::drake::assert::ConditionTraits<                                  \
-        typename std::remove_cv<decltype(condition)>::type>::is_valid, \
+        typename std::remove_cv_t<decltype(condition)>>::is_valid,     \
     "Condition should be bool-convertible.");
 # define DRAKE_ASSERT_VOID(expression) static_assert(           \
-    std::is_convertible<decltype(expression), void>::value,     \
+    std::is_convertible_v<decltype(expression), void>,          \
     "Expression should be void.")
 #endif
 

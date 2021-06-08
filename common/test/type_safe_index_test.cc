@@ -366,10 +366,10 @@ GTEST_TEST(TypeSafeIndex, ConversionNotAllowedBetweenDifferentTypes) {
   // Conversion is not allowed between two different index types.
   // Note: the extra set of parentheses are needed to avoid the test macro
   // getting confused with the comma inside the template brackets.
-  EXPECT_FALSE((std::is_convertible<AIndex, BIndex>::value));
+  EXPECT_FALSE((std::is_convertible_v<AIndex, BIndex>));
   // The trivial case of course is true.
-  EXPECT_TRUE((std::is_convertible<AIndex, AIndex>::value));
-  EXPECT_TRUE((std::is_convertible<BIndex, BIndex>::value));
+  EXPECT_TRUE((std::is_convertible_v<AIndex, AIndex>));
+  EXPECT_TRUE((std::is_convertible_v<BIndex, BIndex>));
 }
 
 // Exercises the index in an STL context. This isn't intended to be exhaustive,

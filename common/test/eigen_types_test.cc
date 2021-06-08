@@ -48,8 +48,8 @@ bool IsEigen(...) {
   return false;
 }
 template <typename T,
-          typename Cond = typename std::enable_if<
-              is_eigen_type<T>::value>::type>
+          typename Cond = typename std::enable_if_t<
+              is_eigen_type<T>::value>>
 bool IsEigen(const T&) {
   return true;
 }
@@ -59,8 +59,8 @@ bool IsEigenOfDouble(...) {
   return false;
 }
 template <typename T,
-          typename Cond = typename std::enable_if<
-              is_eigen_scalar_same<T, double>::value>::type>
+          typename Cond = typename std::enable_if_t<
+              is_eigen_scalar_same<T, double>::value>>
 bool IsEigenOfDouble(const T&) {
   return true;
 }
