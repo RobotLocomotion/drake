@@ -944,10 +944,10 @@ class RotationMatrixConversionTests : public ::testing::Test {
     const int kSweepSize = 6;
 
     // Set up a variety of general tests for quaternions.
-    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qw = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
     for (int i = 0; i < qw.size(); ++i) {
       for (int j = 0; j < qx.size(); ++j) {
         for (int k = 0; k < qy.size(); ++k) {
