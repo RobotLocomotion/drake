@@ -64,9 +64,10 @@ class CollisionFilterTest : public ::testing::Test {
 
   /* Apply collision filters between geometries in the list. */
   static void FilterAllPairs(CollisionFilter* filter,
-                             std::initializer_list<GeometryId> ids) {
+                             std::initializer_list<GeometryId> ids,
+                             bool is_permanent) {
     filter->Apply(CollisionFilterDeclaration().ExcludeWithin(GeometrySet(ids)),
-                  get_extract_ids_functor());
+                  get_extract_ids_functor(), is_permanent);
 
     for (GeometryId id_A : ids) {
       for (GeometryId id_B : ids) {
@@ -80,6 +81,49 @@ class CollisionFilterTest : public ::testing::Test {
     return &GeometrySetTester::geometries;
   }
 };
+
+/* Tests that declaration statements that allow collisions between geometries
+ in different sets are properly handled. */
+TEST_F(CollisionFilterTest, AllowBetween) {
+  for (bool is_permanent : {true, false}) {
+    CollisionFilter filters;
+    auto [id_A, id_B, id_C] = this->InitIds(&filters);
+
+    /* To test Allowing, we have to start with filters. Filter everything. */
+    this->FilterAllPairs(&filters, {id_A, id_B, id_C}, is_permanent);
+
+    filters.Apply(CollisionFilterDeclaration().AllowBetween(
+                      GeometrySet(id_A), GeometrySet({id_B, id_C})),
+                  this->get_extract_ids_functor());
+    /* Our ability to remove the filter depends on whether it was permanent when
+     added. */
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_permanent);
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_C), !is_permanent);
+    EXPECT_FALSE(filters.CanCollideWith(id_B, id_C));
+  }
+}
+
+/* Tests that declaration statements that allow collisions between geometries
+ in a single set are properly handled. */
+TEST_F(CollisionFilterTest, AllowWithin) {
+  for (bool is_permanent : {true, false}) {
+    CollisionFilter filters;
+    auto [id_A, id_B, id_C] = this->InitIds(&filters);
+
+    /* To test Allowing, we have to start with filters. Filter everything. */
+    this->FilterAllPairs(&filters, {id_A, id_B, id_C}, is_permanent);
+
+    filters.Apply(CollisionFilterDeclaration()
+                      .AllowWithin(GeometrySet({id_A, id_B}))
+                      .AllowWithin(GeometrySet({id_A, id_C})),
+                  this->get_extract_ids_functor());
+    /* Our ability to remove the filter depends on whether it was permanent when
+     added. */
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_permanent);
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_C), !is_permanent);
+    EXPECT_FALSE(filters.CanCollideWith(id_B, id_C));
+  }
+}
 
 /* Tests that declaration statements that exclude collisions between geometries
  in different sets are properly handled. */
@@ -206,6 +250,20 @@ TEST_F(CollisionFilterTest, Equality) {
       this->get_extract_ids_functor());
   EXPECT_TRUE(filters1 == filters2);
   EXPECT_FALSE(filters1 != filters2);
+  filters1.Apply(
+      CollisionFilterDeclaration().AllowWithin(GeometrySet({id_A, id_C})),
+      this->get_extract_ids_functor());
+  EXPECT_FALSE(filters1 == filters2);
+  EXPECT_TRUE(filters1 != filters2);
+
+  /* Neither set has filters between (A, *). The first simply doesn't have A,
+   the second has A, but no filters. They should *not* be considered equal. */
+  filters1.RemoveGeometry(id_A);
+  filters2.Apply(CollisionFilterDeclaration().AllowBetween(
+                     GeometrySet(id_A), GeometrySet({id_B, id_C})),
+                 this->get_extract_ids_functor());
+  EXPECT_FALSE(filters1 == filters2);
+  EXPECT_TRUE(filters1 != filters2);
 }
 
 }  // namespace internal

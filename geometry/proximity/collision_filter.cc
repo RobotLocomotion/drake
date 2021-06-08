@@ -10,15 +10,24 @@ namespace internal {
 using std::unordered_set;
 
 void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
-                            const CollisionFilter::ExtractIds& extract_ids) {
+                            const CollisionFilter::ExtractIds& extract_ids,
+                            bool is_permanent) {
   using Operation = CollisionFilterDeclaration::StatementOp;
   for (const auto& statement : declaration.statements()) {
     switch (statement.operation) {
+      case Operation::kAllowBetween:
+        RemoveFiltersBetween(statement.set_A, statement.set_B, extract_ids);
+        break;
+      case Operation::kAllowWithin:
+        RemoveFiltersBetween(statement.set_A, statement.set_A, extract_ids);
+        break;
       case Operation::kExcludeWithin:
-        AddFiltersBetween(statement.set_A, statement.set_A, extract_ids);
+        AddFiltersBetween(statement.set_A, statement.set_A, extract_ids,
+                          is_permanent);
         break;
       case Operation::kExcludeBetween:
-        AddFiltersBetween(statement.set_A, statement.set_B, extract_ids);
+        AddFiltersBetween(statement.set_A, statement.set_B, extract_ids,
+                          is_permanent);
         break;
     }
   }
@@ -68,25 +77,50 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
 
 void CollisionFilter::AddFiltersBetween(
     const GeometrySet& set_A, const GeometrySet& set_B,
+    const CollisionFilter::ExtractIds& extract_ids, bool is_permanent) {
+  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A);
+  const std::unordered_set<GeometryId>& ids_B =
+      &set_A == &set_B ? ids_A : extract_ids(set_B);
+  for (GeometryId id_A : ids_A) {
+    for (GeometryId id_B : ids_B) {
+      AddFilteredPair(id_A, id_B, is_permanent);
+    }
+  }
+}
+
+void CollisionFilter::RemoveFiltersBetween(
+    const GeometrySet& set_A, const GeometrySet& set_B,
     const CollisionFilter::ExtractIds& extract_ids) {
   const unordered_set<GeometryId> ids_A = extract_ids(set_A);
   const unordered_set<GeometryId>& ids_B =
       &set_A == &set_B ? ids_A : extract_ids(set_B);
   for (GeometryId id_A : ids_A) {
     for (GeometryId id_B : ids_B) {
-      AddFilteredPair(id_A, id_B);
+      RemoveFilteredPair(id_A, id_B);
     }
   }
 }
 
-void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B) {
-  DRAKE_DEMAND(filter_state_.count(id_A) == 1 &&
+void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
+                                      bool is_permanent) {
+  DRAKE_ASSERT(filter_state_.count(id_A) == 1 &&
                filter_state_.count(id_B) == 1);
 
   if (id_A == id_B) return;
   PairFilterState& pair_state =
       id_A < id_B ? filter_state_[id_A][id_B] : filter_state_[id_B][id_A];
-  pair_state = kFiltered;
+  if (pair_state == kLockedFiltered) return;
+  pair_state = is_permanent ? kLockedFiltered : kFiltered;
+}
+
+void CollisionFilter::RemoveFilteredPair(GeometryId id_A, GeometryId id_B) {
+  DRAKE_ASSERT(filter_state_.count(id_A) == 1 &&
+               filter_state_.count(id_B) == 1);
+  if (id_A == id_B) return;
+  PairFilterState& pair_state =
+      id_A < id_B ? filter_state_[id_A][id_B] : filter_state_[id_B][id_A];
+  if (pair_state == kLockedFiltered) return;
+  pair_state = kUnfiltered;
 }
 
 bool CollisionFilter::operator==(const CollisionFilter& other) const {
