@@ -894,27 +894,6 @@ int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
 }
 
 template <typename T>
-void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
-  geometry_version_.modify_proximity();
-  geometry_engine_->collision_filter().Apply(
-      CollisionFilterDeclaration().ExcludeWithin(set),
-      [this](const GeometrySet& set_in) {
-        return this->CollectIds(set_in, Role::kProximity);
-      });
-}
-
-template <typename T>
-void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
-                                                const GeometrySet& setB) {
-  geometry_version_.modify_proximity();
-  geometry_engine_->collision_filter().Apply(
-      CollisionFilterDeclaration().ExcludeBetween(setA, setB),
-      [this](const GeometrySet& set_in) {
-        return this->CollectIds(set_in, Role::kProximity);
-      });
-}
-
-template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
   if (render_engines_.count(name) > 0) {
