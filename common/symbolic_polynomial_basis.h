@@ -74,8 +74,8 @@ void AddPolynomialBasisElementsOfDegreeN(
    can refactor the product: RaisePower(m, b) = RaisePower(m/xⁱ, b * xⁱ) and
    this relationship is the recursive call. */
   static_assert(
-      std::is_base_of<PolynomialBasisElement, BasisElement>::value ||
-          std::is_same<BasisElement, Monomial>::value,
+      std::is_base_of_v<PolynomialBasisElement, BasisElement> ||
+          std::is_same_v<BasisElement, Monomial>,
       "BasisElement should be a derived class of PolynomialBasisElement");
   if (degree == 0) {
     bin->insert(b);

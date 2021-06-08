@@ -89,10 +89,10 @@ GTEST_TEST(ValueTest, DefaultConstructor) {
   const AbstractValue& value_bare_struct = Value<BareStruct>();
   EXPECT_EQ(0, value_bare_struct.get_value<BareStruct>().data);
 
-  static_assert(!std::is_default_constructible<Value<CopyableInt>>::value,
+  static_assert(!std::is_default_constructible_v<Value<CopyableInt>>,
                 "Value<CopyableInt>() should not work.");
 
-  static_assert(!std::is_default_constructible<Value<CloneableInt>>::value,
+  static_assert(!std::is_default_constructible_v<Value<CloneableInt>>,
                 "Value<CloneableInt>() should not work.");
 
   const AbstractValue& value_move_or_clone_int = Value<MoveOrCloneInt>();

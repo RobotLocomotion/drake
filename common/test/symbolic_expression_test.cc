@@ -1266,7 +1266,7 @@ GTEST_TEST(ExpressionTest, NoThrowMoveConstructible) {
   // Make sure that symbolic::Expression is nothrow move-constructible so that
   // it can be moved (not copied) when a STL container (i.e. vector<Expression>)
   // is resized.
-  EXPECT_TRUE(std::is_nothrow_move_constructible<Expression>::value);
+  EXPECT_TRUE(std::is_nothrow_move_constructible_v<Expression>);
 }
 
 TEST_F(SymbolicExpressionTest, Log) {

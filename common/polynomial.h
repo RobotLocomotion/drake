@@ -206,7 +206,7 @@ class Polynomial {
       const U& x, int derivative_order = 0) const {
     // Note: have to remove_const because Product<AutoDiff, AutoDiff>::type and
     // even Product<double, AutoDiff>::type returns const AutoDiff.
-    typedef typename std::remove_const<typename Product<T, U>::type>::type
+    typedef typename std::remove_const_t<typename Product<T, U>::type>
         ProductType;
 
     if (!is_univariate_)
@@ -250,8 +250,8 @@ class Polynomial {
   typename Product<T, U>::type EvaluateMultivariate(
       const std::map<VarType, U>& var_values) const {
     using std::pow;
-    typedef typename std::remove_const<
-      typename Product<T, U>::type>::type ProductType;
+    typedef typename std::remove_const_t<
+      typename Product<T, U>::type> ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;

@@ -325,7 +325,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   // when an integer argument is provided.
   template <typename U = T>
   static constexpr std::enable_if_t<
-      std::is_same<decltype(U(std::declval<const U&>())), U>::value,
+      std::is_same_v<decltype(U(std::declval<const U&>())), U>,
       bool>
   can_copy(int) {
     return true;
@@ -341,8 +341,8 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   // when an integer argument is provide.
   template <typename U = T>
   static constexpr std::enable_if_t<
-      std::is_same<decltype(std::declval<const U>().Clone()),
-                   std::unique_ptr<std::remove_const_t<U>>>::value,
+      std::is_same_v<decltype(std::declval<const U>().Clone()),
+                     std::unique_ptr<std::remove_const_t<U>>>,
       bool>
   can_clone(int) {
     return true;
@@ -358,7 +358,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   // Selects Clone iff there is no copy constructor and the Clone method is of
   // the expected form.
   template <typename U = T>
-  static typename std::enable_if<!can_copy(1) && can_clone(1), U*>::type
+  static typename std::enable_if_t<!can_copy(1) && can_clone(1), U*>
   CopyOrNullHelper(const U* ptr, int) {
     return ptr->Clone().release();
   }

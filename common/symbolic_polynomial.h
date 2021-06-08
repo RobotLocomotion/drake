@@ -154,7 +154,7 @@ class Polynomial {
   template <typename Derived>
   Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> Jacobian(
       const Eigen::MatrixBase<Derived>& vars) const {
-    static_assert(std::is_same<typename Derived::Scalar, Variable>::value &&
+    static_assert(std::is_same_v<typename Derived::Scalar, Variable> &&
                       (Derived::ColsAtCompileTime == 1),
                   "The argument of Polynomial::Jacobian should be a vector of "
                   "symbolic variables.");
@@ -334,26 +334,26 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
 operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         // {Polynomial, Monomial, double} x {Polynomial, Monomial, double}
-        (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
-         std::is_same<typename MatrixL::Scalar, Monomial>::value ||
-         std::is_same<typename MatrixL::Scalar, double>::value) &&
-        (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
-         std::is_same<typename MatrixR::Scalar, Monomial>::value ||
-         std::is_same<typename MatrixR::Scalar, double>::value) &&
+        (std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
+         std::is_same_v<typename MatrixL::Scalar, Monomial> ||
+         std::is_same_v<typename MatrixL::Scalar, double>) &&
+        (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
+         std::is_same_v<typename MatrixR::Scalar, Monomial> ||
+         std::is_same_v<typename MatrixR::Scalar, double>) &&
         // Exclude Polynomial x Polynomial case (because the other seven
         // operations call this case. If we include this case here, we will have
         // self-recursion).
-        !(std::is_same<typename MatrixL::Scalar, Polynomial>::value &&
-          std::is_same<typename MatrixR::Scalar, Polynomial>::value) &&
+        !(std::is_same_v<typename MatrixL::Scalar, Polynomial> &&
+          std::is_same_v<typename MatrixR::Scalar, Polynomial>) &&
         // Exclude double x double case.
-        !(std::is_same<typename MatrixL::Scalar, double>::value &&
-          std::is_same<typename MatrixR::Scalar, double>::value),
+        !(std::is_same_v<typename MatrixL::Scalar, double> &&
+          std::is_same_v<typename MatrixR::Scalar, double>),
     Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   // "foo.template cast<Polynomial>()" is redundant if foo is of Polynomial.
   // However, we have checked that `-O2` compiler optimization reduces it into a
@@ -480,7 +480,7 @@ namespace symbolic {
 /// @pydrake_mkdoc_identifier{polynomial}
 template <typename Derived>
 std::enable_if_t<
-    std::is_same<typename Derived::Scalar, Polynomial>::value,
+    std::is_same_v<typename Derived::Scalar, Polynomial>,
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
                   Derived::MaxColsAtCompileTime>>

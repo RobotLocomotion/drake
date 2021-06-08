@@ -88,11 +88,11 @@ class reset_after_move {
   /// For non-pointer types these methods are not instantiated.
   //@{
   template <typename T1 = T>
-  std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const {
+  std::enable_if_t<std::is_pointer_v<T1>, T> operator->() const {
     return value_;
   }
   template <typename T1 = T>
-  std::enable_if_t<std::is_pointer<T1>::value,
+  std::enable_if_t<std::is_pointer_v<T1>,
                    std::add_lvalue_reference_t<std::remove_pointer_t<T>>>
   operator*() const {
     return *value_;
