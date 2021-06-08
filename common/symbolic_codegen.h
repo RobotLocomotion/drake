@@ -202,7 +202,7 @@ template <typename Derived>
 std::string CodeGen(const std::string& function_name,
                     const std::vector<Variable>& parameters,
                     const Eigen::PlainObjectBase<Derived>& M) {
-  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+  static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "CodeGen should take a symbolic matrix.");
   std::ostringstream oss;
   internal::CodeGenDenseData(function_name, parameters, M.data(),

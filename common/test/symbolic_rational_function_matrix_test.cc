@@ -68,9 +68,9 @@ class SymbolicRationalFunctionMatrixTest : public ::testing::Test {
 };
 
 template <typename Derived1, typename Derived2>
-typename std::enable_if<
-    std::is_same<typename Derived1::Scalar, RationalFunction>::value &&
-    std::is_same<typename Derived2::Scalar, RationalFunction>::value>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Derived1::Scalar, RationalFunction> &&
+    std::is_same_v<typename Derived2::Scalar, RationalFunction>>
 CompareMatrixWithRationalFunction(const Derived1& m1, const Derived2& m2) {
   EXPECT_EQ(m1.rows(), m2.rows());
   EXPECT_EQ(m1.cols(), m2.cols());
@@ -95,7 +95,7 @@ void CheckAddition(const Derived1& m1, const Derived2& m2) {
     }
   }
   static_assert(
-      std::is_same<typename decltype(m1 + m2)::Scalar, RationalFunction>::value,
+      std::is_same_v<typename decltype(m1 + m2)::Scalar, RationalFunction>,
       "m1 + m2 should have scalar type RationalFunction.");
   const MatrixX<RationalFunction> m1_add_m2 = m1 + m2;
   CompareMatrixWithRationalFunction(m1_add_m2, m1_add_m2_expected);
@@ -113,7 +113,7 @@ void CheckSubtraction(const Derived1& m1, const Derived2& m2) {
     }
   }
   static_assert(
-      std::is_same<typename decltype(m1 - m2)::Scalar, RationalFunction>::value,
+      std::is_same_v<typename decltype(m1 - m2)::Scalar, RationalFunction>,
       "m1 - m2 should have scalar type RationalFunction.");
   const MatrixX<RationalFunction> m1_minus_m2 = m1 - m2;
   CompareMatrixWithRationalFunction(m1_minus_m2, m1_minus_m2_expected);
@@ -136,22 +136,22 @@ void CheckProduct(const Derived1& m1, const Derived2& m2) {
   }
 
   static_assert(
-      std::is_same<typename decltype(m1 * m2)::Scalar, RationalFunction>::value,
+      std::is_same_v<typename decltype(m1 * m2)::Scalar, RationalFunction>,
       "m1 * m2 should have scalar type RationalFunction.");
   const MatrixX<RationalFunction> m1_times_m2 = m1 * m2;
   CompareMatrixWithRationalFunction(m1_times_m2, m1_times_m2_expected);
 }
 
 template <typename Derived1, typename Derived2>
-typename std::enable_if<is_eigen_vector<Derived1>::value &&
-                        is_eigen_vector<Derived2>::value>::type
+typename std::enable_if_t<is_eigen_vector<Derived1>::value &&
+                          is_eigen_vector<Derived2>::value>
 CheckConjugateProdocut(const Derived1& v1, const Derived2& v2) {
   DRAKE_DEMAND(v1.rows() == v2.rows());
   RationalFunction v1_dot_v2_expected;
   for (int i = 0; i < v1.rows(); ++i) {
     v1_dot_v2_expected += v1(i) * v2(i);
   }
-  static_assert(std::is_same<decltype(v1.dot(v2)), RationalFunction>::value,
+  static_assert(std::is_same_v<decltype(v1.dot(v2)), RationalFunction>,
                 "v1.dot(v2) should be RationalFunction.");
   const RationalFunction v1_dot_v2 = v1.dot(v2);
   EXPECT_PRED2(test::PolyEqualAfterExpansion, v1_dot_v2.denominator(),
@@ -169,14 +169,14 @@ void CheckMatrixMatrixBinaryOperations(const Derived1& m1, const Derived2& m2) {
 }
 
 template <typename Derived1, typename Derived2>
-typename std::enable_if<is_eigen_vector<Derived2>::value>::type
+typename std::enable_if_t<is_eigen_vector<Derived2>::value>
 CheckMatrixVectorBinaryOperations(const Derived1& m1, const Derived2& m2) {
   CheckProduct(m1, m2);
 }
 
 template <typename Derived1, typename Derived2>
-typename std::enable_if<is_eigen_vector<Derived1>::value &&
-                        is_eigen_vector<Derived2>::value>::type
+typename std::enable_if_t<is_eigen_vector<Derived1>::value &&
+                          is_eigen_vector<Derived2>::value>
 CheckVectorVectorBinaryOperations(const Derived1& m1, const Derived2& m2) {
   CheckAddition(m1, m2);
   CheckSubtraction(m1, m2);

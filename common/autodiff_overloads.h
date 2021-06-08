@@ -116,9 +116,9 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
   // type. This includes, but is not limited to, the same scalar type and
   // the same dimension.
   static_assert(
-      std::is_same<
+      std::is_same_v<
           typename internal::remove_all<DerTypeA>::type::PlainObject,
-          typename internal::remove_all<DerTypeB>::type::PlainObject>::value,
+          typename internal::remove_all<DerTypeB>::type::PlainObject>,
       "The derivative types must match.");
 
   internal::make_coherent(base.derivatives(), exponent.derivatives());
@@ -187,7 +187,7 @@ if_then_else(bool f_cond, const Eigen::AutoDiffScalar<DerType1>& x,
   typedef Eigen::AutoDiffScalar<
       typename Eigen::internal::remove_all<DerType2>::type::PlainObject>
       ADS2;
-  static_assert(std::is_same<ADS1, ADS2>::value,
+  static_assert(std::is_same_v<ADS1, ADS2>,
                 "The derivative types must match.");
   return f_cond ? ADS1(x) : ADS2(y);
 }

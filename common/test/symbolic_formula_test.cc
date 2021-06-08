@@ -1337,7 +1337,7 @@ GTEST_TEST(FormulaTest, NoThrowMoveConstructible) {
   // Make sure that symbolic::Formula is nothrow move-constructible so that
   // it can be moved (not copied) when a STL container (i.e. vector<Formula>)
   // is resized.
-  EXPECT_TRUE(std::is_nothrow_move_constructible<Formula>::value);
+  EXPECT_TRUE(std::is_nothrow_move_constructible_v<Formula>);
 }
 
 // Checks for compatibility with a memcpy primitive move operation.

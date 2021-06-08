@@ -170,17 +170,17 @@ Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
 operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
 template <typename MatrixL, typename MatrixR>
-typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
-        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
-        ((std::is_same<typename MatrixL::Scalar, RationalFunction>::value &&
-          (std::is_same<typename MatrixR::Scalar, Polynomial>::value ||
-           std::is_same<typename MatrixR::Scalar, double>::value)) ||
-         (std::is_same<typename MatrixR::Scalar, RationalFunction>::value &&
-          (std::is_same<typename MatrixL::Scalar, Polynomial>::value ||
-           std::is_same<typename MatrixL::Scalar, double>::value))),
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        ((std::is_same_v<typename MatrixL::Scalar, RationalFunction> &&
+          (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
+           std::is_same_v<typename MatrixR::Scalar, double>)) ||
+         (std::is_same_v<typename MatrixR::Scalar, RationalFunction> &&
+          (std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
+           std::is_same_v<typename MatrixL::Scalar, double>))),
     Eigen::Matrix<RationalFunction, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>::type
+                  MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<RationalFunction>() *
          rhs.template cast<RationalFunction>();

@@ -35,7 +35,7 @@ template <typename BasisElement>
 class GenericPolynomial {
  public:
   static_assert(
-      std::is_base_of<PolynomialBasisElement, BasisElement>::value,
+      std::is_base_of_v<PolynomialBasisElement, BasisElement>,
       "BasisElement should be a derived class of PolynomialBasisElement");
   /** Type of mapping from basis element to coefficient */
   using MapType = std::map<BasisElement, Expression>;

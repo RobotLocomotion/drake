@@ -68,12 +68,12 @@ class SymbolicExpressionArrayTest : public ::testing::Test {
 // Given two Eigen arrays a1 and a2, it checks if a1 == a2 returns an array
 // whose (i, j) element is a formula a1(i, j) == a2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::ArrayXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::ArrayXpr>,
+    bool>
 CheckArrayOperatorEq(const DerivedA& a1, const DerivedB& a2) {
   const auto arr = (a1 == a2);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -89,12 +89,12 @@ CheckArrayOperatorEq(const DerivedA& a1, const DerivedB& a2) {
 // Given a scalar-type object @p v and an Eigen array @p a, it checks if v == a
 // returns an array whose (i, j)-element is a formula v == a(i, j).
 template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() == typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(ScalarType() == typename Derived::Scalar()),
+                       Formula>,
+    bool>
 CheckArrayOperatorEq(const ScalarType& v, const Derived& a) {
   const Eigen::Array<Formula, Derived::RowsAtCompileTime,
                      Derived::ColsAtCompileTime>
@@ -112,12 +112,12 @@ CheckArrayOperatorEq(const ScalarType& v, const Derived& a) {
 // Given an Eigen array @p a and a scalar-type object @p v, it checks if a == v
 // returns an array whose (i, j)-element is a formula a(i, j) == v.
 template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() == ScalarType()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename Derived::Scalar() == ScalarType()),
+                       Formula>,
+    bool>
 CheckArrayOperatorEq(const Derived& a, const ScalarType& v) {
   const Eigen::Array<Formula, Derived::RowsAtCompileTime,
                      Derived::ColsAtCompileTime>
@@ -135,12 +135,12 @@ CheckArrayOperatorEq(const Derived& a, const ScalarType& v) {
 // Given two Eigen matrices m1 and m2, it checks if m1.array() == m2.array()
 // returns an array whose (i, j) element is a formula m1(i, j) == m2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::MatrixXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::MatrixXpr>,
+    bool>
 CheckArrayOperatorEq(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorEq(m1.array(), m2.array());
 }
@@ -148,10 +148,10 @@ CheckArrayOperatorEq(const DerivedA& m1, const DerivedB& m2) {
 // Given two Eigen arrays a1 and a2, it checks if a1 <= a2 returns an array
 // whose (i, j) element is a formula a1(i, j) <= a2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::ArrayBase<DerivedA>, DerivedA> &&
+        std::is_base_of_v<Eigen::ArrayBase<DerivedB>, DerivedB>,
+    bool>
 CheckArrayOperatorLte(const DerivedA& a1, const DerivedB& a2) {
   const auto arr = (a1 <= a2);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -167,12 +167,12 @@ CheckArrayOperatorLte(const DerivedA& a1, const DerivedB& a2) {
 // Given a scalar-type object @p v and an Eigen array @p a, it checks if v <= a
 // returns an array whose (i, j)-element is a formula v <= a(i, j).
 template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() <= typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(ScalarType() <= typename Derived::Scalar()),
+                       Formula>,
+    bool>
 CheckArrayOperatorLte(const ScalarType& v, const Derived& a) {
   const auto arr = (v <= a);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -188,12 +188,12 @@ CheckArrayOperatorLte(const ScalarType& v, const Derived& a) {
 // Given an Eigen array @p a and a scalar-type object @p v, it checks if a <= v
 // returns an array whose (i, j)-element is a formula a(i, j) <= v.
 template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() <= ScalarType()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename Derived::Scalar() <= ScalarType()),
+                       Formula>,
+    bool>
 CheckArrayOperatorLte(const Derived& a, const ScalarType& v) {
   const auto arr = (a <= v);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -209,12 +209,12 @@ CheckArrayOperatorLte(const Derived& a, const ScalarType& v) {
 // Given two Eigen matrices m1 and m2, it checks if m1.array() <= m2.array()
 // returns an array whose (i, j) element is a formula m1(i, j) <= m2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::MatrixXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::MatrixXpr>,
+    bool>
 CheckArrayOperatorLte(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorLte(m1.array(), m2.array());
 }
@@ -222,10 +222,10 @@ CheckArrayOperatorLte(const DerivedA& m1, const DerivedB& m2) {
 // Given two Eigen arrays a1 and a2, it checks if a1 < a2 returns an array whose
 // (i, j) element is a formula a1(i, j) < a2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::ArrayBase<DerivedA>, DerivedA> &&
+        std::is_base_of_v<Eigen::ArrayBase<DerivedB>, DerivedB>,
+    bool>
 CheckArrayOperatorLt(const DerivedA& a1, const DerivedB& a2) {
   const auto arr = (a1 < a2);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -241,12 +241,12 @@ CheckArrayOperatorLt(const DerivedA& a1, const DerivedB& a2) {
 // Given a scalar-type object @p v and an Eigen array @p a, it checks if v < a
 // returns an array whose (i, j)-element is a formula v < a(i, j).
 template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() < typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(ScalarType() < typename Derived::Scalar()),
+                       Formula>,
+    bool>
 CheckArrayOperatorLt(const ScalarType& v, const Derived& a) {
   const auto arr = (v < a);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -262,12 +262,12 @@ CheckArrayOperatorLt(const ScalarType& v, const Derived& a) {
 // Given an Eigen array @p a and a scalar-type object @p v, it checks if a < v
 // returns an array whose (i, j)-element is a formula a(i, j) < v.
 template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() < ScalarType()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename Derived::Scalar() < ScalarType()),
+                       Formula>,
+    bool>
 CheckArrayOperatorLt(const Derived& a, const ScalarType& v) {
   const auto arr = (a < v);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -283,12 +283,12 @@ CheckArrayOperatorLt(const Derived& a, const ScalarType& v) {
 // Given two Eigen matrices m1 and m2, it checks if m1.array() < m2.array()
 // returns an array whose (i, j) element is a formula m1(i, j) < m2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::MatrixXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::MatrixXpr>,
+    bool>
 CheckArrayOperatorLt(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorLt(m1.array(), m2.array());
 }
@@ -296,10 +296,10 @@ CheckArrayOperatorLt(const DerivedA& m1, const DerivedB& m2) {
 // Given two Eigen arrays a1 and a2, it checks if a1 >= a2 returns an array
 // whose (i, j) element is a formula a1(i, j) >= a2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::ArrayBase<DerivedA>, DerivedA> &&
+        std::is_base_of_v<Eigen::ArrayBase<DerivedB>, DerivedB>,
+    bool>
 CheckArrayOperatorGte(const DerivedA& a1, const DerivedB& a2) {
   const auto arr = (a1 >= a2);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -315,12 +315,12 @@ CheckArrayOperatorGte(const DerivedA& a1, const DerivedB& a2) {
 // Given a scalar-type object @p v and an Eigen array @p a, it checks if v >= a
 // returns an array whose (i, j)-element is a formula a(i, j) <= v.
 template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() >= typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(ScalarType() >= typename Derived::Scalar()),
+                       Formula>,
+    bool>
 CheckArrayOperatorGte(const ScalarType& v, const Derived& a) {
   const auto arr = (v >= a);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -337,12 +337,12 @@ CheckArrayOperatorGte(const ScalarType& v, const Derived& a) {
 // Given an Eigen array @p a and a scalar-type object @p v, it checks if a >= v
 // returns an array whose (i, j)-element is a formula a(i, j) >= v.
 template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() >= ScalarType()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename Derived::Scalar() >= ScalarType()),
+                       Formula>,
+    bool>
 CheckArrayOperatorGte(const Derived& a, const ScalarType& v) {
   const auto arr = (a >= v);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -359,12 +359,12 @@ CheckArrayOperatorGte(const Derived& a, const ScalarType& v) {
 // Given two Eigen matrices m1 and m2, it checks if m1.array() >= m2.array()
 // returns an array whose (i, j) element is a formula m1(i, j) >= m2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::MatrixXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::MatrixXpr>,
+    bool>
 CheckArrayOperatorGte(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorGte(m1.array(), m2.array());
 }
@@ -372,10 +372,10 @@ CheckArrayOperatorGte(const DerivedA& m1, const DerivedB& m2) {
 // Given two Eigen arrays a1 and a2, it checks if a1 > a2 returns an array whose
 // (i, j) element is a formula a1(i, j) > a2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::ArrayBase<DerivedA>, DerivedA> &&
+        std::is_base_of_v<Eigen::ArrayBase<DerivedB>, DerivedB>,
+    bool>
 CheckArrayOperatorGt(const DerivedA& a1, const DerivedB& a2) {
   const auto arr = (a1 > a2);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -391,12 +391,12 @@ CheckArrayOperatorGt(const DerivedA& a1, const DerivedB& a2) {
 // Given a scalar-type object @p v and an Eigen array @p a, it checks if v > a
 // returns an array whose (i, j)-element is a formula a(i, j) < v.
 template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() > typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(ScalarType() > typename Derived::Scalar()),
+                       Formula>,
+    bool>
 CheckArrayOperatorGt(const ScalarType& v, const Derived& a) {
   const auto arr = (v > a);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -413,12 +413,12 @@ CheckArrayOperatorGt(const ScalarType& v, const Derived& a) {
 // Given an Eigen array @p a and a scalar-type object @p v, it checks if a > v
 // returns an array whose (i, j)-element is a formula a(i, j) > v.
 template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() > ScalarType()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename Derived::Scalar() > ScalarType()),
+                       Formula>,
+    bool>
 CheckArrayOperatorGt(const Derived& a, const ScalarType& v) {
   const auto arr = (a > v);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -434,12 +434,12 @@ CheckArrayOperatorGt(const Derived& a, const ScalarType& v) {
 // Given two Eigen matrices m1 and m2, it checks if m1.array() > m2.array()
 // returns an array whose (i, j) element is a formula m1(i, j) > m2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::MatrixXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::MatrixXpr>,
+    bool>
 CheckArrayOperatorGt(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorGt(m1.array(), m2.array());
 }
@@ -447,10 +447,10 @@ CheckArrayOperatorGt(const DerivedA& m1, const DerivedB& m2) {
 // Given two Eigen arrays a1 and a2, it checks if a1 != a2 returns an array
 // whose (i, j) element is a formula a1(i, j) != a2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_base_of<Eigen::ArrayBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::ArrayBase<DerivedB>, DerivedB>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::ArrayBase<DerivedA>, DerivedA> &&
+        std::is_base_of_v<Eigen::ArrayBase<DerivedB>, DerivedB>,
+    bool>
 CheckArrayOperatorNeq(const DerivedA& a1, const DerivedB& a2) {
   const auto arr = (a1 != a2);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -466,12 +466,12 @@ CheckArrayOperatorNeq(const DerivedA& a1, const DerivedB& a2) {
 // Given a scalar-type object @p v and an Eigen array @p a, it checks if v != a
 // returns an array whose (i, j)-element is a formula v != a(i, j).
 template <typename ScalarType, typename Derived>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(ScalarType() != typename Derived::Scalar()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(ScalarType() != typename Derived::Scalar()),
+                       Formula>,
+    bool>
 CheckArrayOperatorNeq(const ScalarType& v, const Derived& a) {
   const auto arr = (v != a);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -487,12 +487,12 @@ CheckArrayOperatorNeq(const ScalarType& v, const Derived& a) {
 // Given an Eigen array @p a and a scalar-type object @p v, it checks if a != v
 // returns an array whose (i, j)-element is a formula a(i, j) != v.
 template <typename Derived, typename ScalarType>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<Derived>::XprKind,
-                 Eigen::ArrayXpr>::value &&
-        std::is_same<decltype(typename Derived::Scalar() != ScalarType()),
-                     Formula>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<Derived>::XprKind,
+                   Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename Derived::Scalar() != ScalarType()),
+                       Formula>,
+    bool>
 CheckArrayOperatorNeq(const Derived& a, const ScalarType& v) {
   const auto arr = (a != v);
   for (int i = 0; i < arr.rows(); ++i) {
@@ -508,12 +508,12 @@ CheckArrayOperatorNeq(const Derived& a, const ScalarType& v) {
 // Given two Eigen matrices m1 and m2, it checks if m1.array() != m2.array()
 // returns an array whose (i, j) element is a formula m1(i, j) != m2(i, j).
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
-                 Eigen::MatrixXpr>::value &&
-        std::is_same<typename Eigen::internal::traits<DerivedB>::XprKind,
-                     Eigen::MatrixXpr>::value,
-    bool>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                   Eigen::MatrixXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::MatrixXpr>,
+    bool>
 CheckArrayOperatorNeq(const DerivedA& m1, const DerivedB& m2) {
   return CheckArrayOperatorNeq(m1.array(), m2.array());
 }
@@ -753,17 +753,17 @@ TEST_F(SymbolicExpressionArrayTest, ArrayOperatorReturnType) {
   Eigen::Array<Variable, 2, Eigen::Dynamic> m1(2, 2);
   Eigen::Array<Variable, Eigen::Dynamic, 2> m2(2, 2);
   EXPECT_TRUE(
-      (std::is_same<decltype(m1 == m2), Eigen::Array<Formula, 2, 2>>::value));
+      (std::is_same_v<decltype(m1 == m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
-      (std::is_same<decltype(m1 != m2), Eigen::Array<Formula, 2, 2>>::value));
+      (std::is_same_v<decltype(m1 != m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
-      (std::is_same<decltype(m1 <= m2), Eigen::Array<Formula, 2, 2>>::value));
+      (std::is_same_v<decltype(m1 <= m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
-      (std::is_same<decltype(m1 < m2), Eigen::Array<Formula, 2, 2>>::value));
+      (std::is_same_v<decltype(m1 < m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
-      (std::is_same<decltype(m1 >= m2), Eigen::Array<Formula, 2, 2>>::value));
+      (std::is_same_v<decltype(m1 >= m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
-      (std::is_same<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>::value));
+      (std::is_same_v<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>));
 }
 
 TEST_F(SymbolicExpressionArrayTest, ExpressionArraySegment) {

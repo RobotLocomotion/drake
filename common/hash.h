@@ -75,7 +75,7 @@ namespace drake {
 
 /// Provides @ref hash_append for integral constants.
 template <class HashAlgorithm, class T>
-std::enable_if_t<std::is_integral<T>::value>
+std::enable_if_t<std::is_integral_v<T>>
 hash_append(
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
@@ -83,7 +83,7 @@ hash_append(
 
 /// Provides @ref hash_append for enumerations.
 template <class HashAlgorithm, class T>
-std::enable_if_t<std::is_enum<T>::value>
+std::enable_if_t<std::is_enum_v<T>>
 hash_append(
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
@@ -91,7 +91,7 @@ hash_append(
 
 /// Provides @ref hash_append for floating point values.
 template <class HashAlgorithm, class T>
-std::enable_if_t<std::is_floating_point<T>::value>
+std::enable_if_t<std::is_floating_point_v<T>>
 hash_append(
     HashAlgorithm& hasher, const T& item) noexcept {
   // Hashing a NaN makes no sense, since they cannot compare as equal.

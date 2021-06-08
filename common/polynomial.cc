@@ -530,7 +530,7 @@ typename Polynomial<T>::RootsType Polynomial<T>::Roots() const {
   // RootsType (std::complex<T>) does not currently work for AutoDiffXd nor for
   // Expression, which leaves only double.  We could, in principle, try to
   // support more types here.
-  if constexpr (std::is_same<T, double>::value) {
+  if constexpr (std::is_same_v<T, double>) {
     auto coefficients = GetCoefficients();
 
     // need to handle degree 0 and 1 explicitly because Eigen's polynomial

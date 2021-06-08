@@ -79,19 +79,19 @@ namespace drake {
 template <typename T>
 class reset_on_copy {
  public:
-  static_assert(std::is_scalar<T>::value,
+  static_assert(std::is_scalar_v<T>,
                 "reset_on_copy<T> is permitted only for integral, "
                 "floating point, and pointer types T.");
 
   /// Constructs a reset_on_copy<T> with a value-initialized wrapped value.
-  reset_on_copy() noexcept(std::is_nothrow_default_constructible<T>::value) {}
+  reset_on_copy() noexcept(std::is_nothrow_default_constructible_v<T>) {}
 
   /// Constructs a %reset_on_copy<T> with a copy of the given value. This is
   /// an implicit conversion, so that %reset_on_copy<T> behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
   reset_on_copy(const T& value) noexcept(
-      std::is_nothrow_copy_constructible<T>::value)
+      std::is_nothrow_copy_constructible_v<T>)
       : value_(value) {}
 
   /// Constructs a %reset_on_copy<T> with the given wrapped value, by move
@@ -99,7 +99,7 @@ class reset_on_copy {
   /// %reset_on_copy<T> behaves more like the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
   reset_on_copy(T&& value) noexcept(
-      std::is_nothrow_move_constructible<T>::value)
+      std::is_nothrow_move_constructible_v<T>)
       : value_(std::move(value)) {}
 
   /// @name Implements copy/move construction and assignment.
@@ -109,14 +109,14 @@ class reset_on_copy {
 
   /// Copy constructor just value-initializes instead; the source is ignored.
   reset_on_copy(const reset_on_copy&) noexcept(
-      std::is_nothrow_default_constructible<T>::value) {}
+      std::is_nothrow_default_constructible_v<T>) {}
 
   /// Copy assignment just destructs the contained value and then
   /// value-initializes it, _except_ for self-assignment which does nothing.
   /// The source argument is otherwise ignored.
   reset_on_copy& operator=(const reset_on_copy& source) noexcept(
-      std::is_nothrow_destructible<T>::value&&
-          std::is_nothrow_default_constructible<T>::value) {
+      std::is_nothrow_destructible_v<T> &&
+          std::is_nothrow_default_constructible_v<T>) {
     if (this != &source) destruct_and_reset_value();
     return *this;
   }
@@ -124,9 +124,9 @@ class reset_on_copy {
   /// Move construction uses T's move constructor, then destructs and
   /// value initializes the source.
   reset_on_copy(reset_on_copy&& source) noexcept(
-      std::is_nothrow_move_constructible<T>::value &&
-          std::is_nothrow_destructible<T>::value &&
-          std::is_nothrow_default_constructible<T>::value)
+      std::is_nothrow_move_constructible_v<T> &&
+          std::is_nothrow_destructible_v<T> &&
+          std::is_nothrow_default_constructible_v<T>)
       : value_(std::move(source.value_)) {
     source.destruct_and_reset_value();
   }
@@ -135,9 +135,9 @@ class reset_on_copy {
   /// initializes the source, _except_ for self-assignment which does nothing.
   /// The source argument is otherwise ignored.
   reset_on_copy& operator=(reset_on_copy&& source) noexcept(
-      std::is_nothrow_move_assignable<T>::value &&
-          std::is_nothrow_destructible<T>::value &&
-          std::is_nothrow_default_constructible<T>::value) {
+      std::is_nothrow_move_assignable_v<T> &&
+          std::is_nothrow_destructible_v<T> &&
+          std::is_nothrow_default_constructible_v<T>) {
     if (this != &source) {
       value_ = std::move(source);
       source.destruct_and_reset_value();
@@ -158,12 +158,12 @@ class reset_on_copy {
   /// For non-pointer types these methods are not instantiated.
   //@{
   template <typename T1 = T>
-  std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const noexcept {
+  std::enable_if_t<std::is_pointer_v<T1>, T> operator->() const noexcept {
     return value_;
   }
 
   template <typename T1 = T>
-  std::enable_if_t<std::is_pointer<T1>::value,
+  std::enable_if_t<std::is_pointer_v<T1>,
                    std::add_lvalue_reference_t<std::remove_pointer_t<T>>>
   operator*() const noexcept {
     return *value_;

@@ -356,9 +356,9 @@ namespace symbolic {
 /// equal. That is, it returns true if and only if `m1(i, j)` is structurally
 /// equal to `m2(i, j)` for all `i`, `j`.
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<is_eigen_scalar_same<DerivedA, Variable>::value &&
-                            is_eigen_scalar_same<DerivedB, Variable>::value,
-                        bool>::type
+typename std::enable_if_t<is_eigen_scalar_same<DerivedA, Variable>::value &&
+                              is_eigen_scalar_same<DerivedB, Variable>::value,
+                        bool>
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());

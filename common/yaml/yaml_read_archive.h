@@ -469,7 +469,7 @@ class YamlReadArchive final {
 
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
-    static_assert(std::is_same<Key, std::string>::value,
+    static_assert(std::is_same_v<Key, std::string>,
                   "std::map keys must be strings");
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
     if (!sub_node) { return; }

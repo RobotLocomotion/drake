@@ -108,8 +108,7 @@ that map_var_to_index[vi.get_ID()] = i.
 @return num_variable. Number of variables in the expression. 2 * x(0) + 3 has 1
 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable. */
 template <typename Derived>
-typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
-                        int>::type
+typename std::enable_if_t<std::is_same_v<typename Derived::Scalar, double>, int>
 DecomposeAffineExpression(
     const symbolic::Expression& e,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,

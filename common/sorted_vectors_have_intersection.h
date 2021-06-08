@@ -38,7 +38,7 @@ template <typename T>
 bool SortedVectorsHaveIntersection(const std::vector<T>& a,
                                    const std::vector<T>& b) {
   // Asserts that T is either an integral type or a pointer type.
-  static_assert(std::is_integral<T>::value || std::is_pointer<T>::value,
+  static_assert(std::is_integral_v<T> || std::is_pointer_v<T>,
                 "Input vectors must hold integral types or pointers.");
 
   // Checks the precondition that the lists are sorted, only in debug builds.

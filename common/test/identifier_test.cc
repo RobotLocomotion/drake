@@ -203,11 +203,11 @@ BINARY_TEST(=, Assignment)
 // to change and allow conversion between identifiers (or between identifiers
 // and ints), this would fail to compile.
 TEST_F(IdentifierTests, Convertible) {
-  static_assert(!std::is_convertible<AId, BId>::value,
+  static_assert(!std::is_convertible_v<AId, BId>,
                 "Identifiers of different types should not be convertible.");
-  static_assert(!std::is_convertible<AId, int>::value,
+  static_assert(!std::is_convertible_v<AId, int>,
                 "Identifiers should not be convertible to ints.");
-  static_assert(!std::is_convertible<int, AId>::value,
+  static_assert(!std::is_convertible_v<int, AId>,
                 "Identifiers should not be convertible from ints");
 }
 

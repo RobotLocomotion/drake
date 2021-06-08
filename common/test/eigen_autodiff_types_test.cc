@@ -12,7 +12,7 @@ GTEST_TEST(EigenAutodiffTypesTest, CheckingInheritance) {
   typedef std::numeric_limits<AD> ADLimits;
   typedef std::numeric_limits<Scalar> ScalarLimits;
 
-  bool res = std::is_base_of<ScalarLimits, ADLimits>::value;
+  bool res = std::is_base_of_v<ScalarLimits, ADLimits>;
   EXPECT_TRUE(res);
 }
 }  // namespace

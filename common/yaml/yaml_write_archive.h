@@ -354,7 +354,7 @@ class YamlWriteArchive final {
 
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
-    static_assert(std::is_same<Key, std::string>::value,
+    static_assert(std::is_same_v<Key, std::string>,
                   "Map keys must be strings");
     YAML::Node sub_node(YAML::NodeType::Map);
     // N.B. For std::unordered_map, this iteration order is non-deterministic,
