@@ -1476,7 +1476,7 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   // Identify the intersection of the subsystems' scalar conversion support.
   // Remove all conversions that at least one subsystem did not support.
   SystemScalarConverter& this_scalar_converter =
-      SystemImpl::get_mutable_system_scalar_converter(this);
+      this->get_mutable_system_scalar_converter();
   for (const auto& system : registered_systems_) {
     this_scalar_converter.RemoveUnlessAlsoSupportedBy(
         system->get_system_scalar_converter());
