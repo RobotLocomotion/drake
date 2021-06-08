@@ -37,6 +37,41 @@ GTEST_TEST(CollisionFilterDeclTest, DefaultConstructor) {
   EXPECT_EQ(Tester::statements(decl).size(), 0);
 }
 
+// Confirms that the parameters of the AllowBetween method are properly
+// encoded in the last statement.
+GTEST_TEST(CollisionFilterDeclTest, AllowBetween) {
+  const GeometrySet set_A({GeometryId::get_new_id(), GeometryId::get_new_id()});
+  const GeometrySet set_B({FrameId::get_new_id(), FrameId::get_new_id()});
+
+  CollisionFilterDeclaration decl;
+  decl.AllowBetween(set_A, set_B);
+
+  const auto& statements = Tester::statements(decl);
+  EXPECT_EQ(statements.size(), 1);
+  EXPECT_EQ(statements[0].operation, Tester::StatementOp::kAllowBetween);
+  EXPECT_TRUE(GeometrySetTester::AreEqual(statements[0].set_A, set_A));
+  EXPECT_TRUE(GeometrySetTester::AreEqual(statements[0].set_B, set_B));
+}
+
+// Confirms that the parameters of the AllowWithin method are properly
+// encoded in the last statement.
+GTEST_TEST(CollisionFilterDeclTest, AllowWithin) {
+  const GeometrySet set_A({GeometryId::get_new_id(), GeometryId::get_new_id()});
+  const GeometrySet set_B({FrameId::get_new_id(), FrameId::get_new_id()});
+
+  for (const auto& geo_set : {set_A, set_B}) {
+    CollisionFilterDeclaration decl;
+    decl.AllowWithin(geo_set);
+
+    const auto& statements = Tester::statements(decl);
+    EXPECT_EQ(statements.size(), 1);
+    EXPECT_EQ(statements[0].operation, Tester::StatementOp::kAllowWithin);
+    EXPECT_TRUE(GeometrySetTester::AreEqual(statements[0].set_A, geo_set));
+    EXPECT_TRUE(
+        GeometrySetTester::AreEqual(statements[0].set_B, GeometrySet()));
+  }
+}
+
 // Confirms that the parameters of the ExcludeBetween method are properly
 // encoded in the last statement.
 GTEST_TEST(CollisionFilterDeclTest, ExcludeBetween) {
@@ -78,6 +113,8 @@ GTEST_TEST(CollisionFilterDeclTest, ExcludeWithin) {
 GTEST_TEST(CollisionFilterDeclTest, ChainingStatements) {
   const GeometrySet set_A({GeometryId::get_new_id(), GeometryId::get_new_id()});
   CollisionFilterDeclaration decl;
+  EXPECT_EQ(&decl.AllowBetween(set_A, set_A), &decl);
+  EXPECT_EQ(&decl.AllowWithin(set_A), &decl);
   EXPECT_EQ(&decl.ExcludeBetween(set_A, set_A), &decl);
   EXPECT_EQ(&decl.ExcludeWithin(set_A), &decl);
 }
@@ -121,6 +158,19 @@ GTEST_TEST(CollisionFilterDeclTest, StatementOrder) {
 
   // Exercise each of the statement methods and confirm that it is appended to
   // the end.
+  {
+    CollisionFilterDeclaration decl(decl_original);
+    decl.AllowBetween(set_2, set_1);
+    SCOPED_TRACE("AllowBetween");
+    validate({Tester::StatementOp::kAllowBetween, set_2, set_1}, decl);
+  }
+
+  {
+    CollisionFilterDeclaration decl(decl_original);
+    decl.AllowWithin(set_2);
+    SCOPED_TRACE("AllowWithin");
+    validate({Tester::StatementOp::kAllowWithin, set_2, GeometrySet()}, decl);
+  }
 
   {
     CollisionFilterDeclaration decl(decl_original);

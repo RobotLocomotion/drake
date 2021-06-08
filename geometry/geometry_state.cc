@@ -726,7 +726,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                                       ids_for_filtering),
           [this](const GeometrySet& set) {
             return this->CollectIds(set, Role::kProximity);
-          });
+          },
+          true /* is_permanent */);
     } break;
     case RoleAssign::kReplace:
       // Give the engine a chance to compare properties before and after.
