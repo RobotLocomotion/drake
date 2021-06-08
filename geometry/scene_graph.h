@@ -835,7 +835,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
       systems::Context<T>* context) const;
   //@}
 
-  /** @name         Collision filtering (Legacy)
+  // TODO(2021-11-01) Remove this entire group when completing deprecation of
+  //  the methods below.
+  /** @name         Collision filtering (Deprecated)
    @anchor scene_graph_collision_filtering
    The *legacy* interface for limiting the scope of penetration queries (i.e.,
    "filtering collisions").
@@ -892,11 +894,19 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @throws std::exception if the set includes ids that don't exist in the
                           scene graph.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager().Apply() "
+      "instead")
   void ExcludeCollisionsWithin(const GeometrySet& set);
 
   /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager(context).Apply() "
+      "instead")
   void ExcludeCollisionsWithin(systems::Context<T>* context,
                                const GeometrySet& set) const;
 
@@ -912,12 +922,20 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @throws std::exception if the groups include ids that don't exist in the
                           scene graph.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager().Apply() "
+      "instead")
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
   /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager(context).Apply()"
+      " instead")
   void ExcludeCollisionsBetween(systems::Context<T>* context,
                                 const GeometrySet& setA,
                                 const GeometrySet& setB) const;

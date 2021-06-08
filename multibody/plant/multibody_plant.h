@@ -1351,8 +1351,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// For each of the provided `bodies`, collects up all geometries that have
   /// been registered to that body. Intended to be used in conjunction with
-  /// SceneGraph::ExcludeCollisionsWithin() and
-  /// SceneGraph::ExcludeCollisionsBetween() to filter collisions between the
+  /// CollisionFilterDeclaration and
+  /// CollisionFilterManager::Apply() to filter collisions between the
   /// geometries registered to the bodies.
   ///
   /// For example:
@@ -1361,7 +1361,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// // `body2`, or `body3`.
   /// std::vector<const RigidBody<T>*> bodies{&body1, &body2, &body3};
   /// geometry::GeometrySet set = plant.CollectRegisteredGeometries(bodies);
-  /// scene_graph.ExcludeCollisionsWithin(set);
+  /// scene_graph.collision_filter_manager().Apply(
+  ///     CollisionFilterDeclaration().ExcludeWithin(set));
   /// ```
   ///
   /// @note There is a *very* specific order of operations:
