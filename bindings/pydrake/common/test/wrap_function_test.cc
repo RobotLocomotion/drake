@@ -154,7 +154,7 @@ GTEST_TEST(WrapFunction, ConstFunctor) {
 // Wraps `const T&` or `const T*`.
 template <typename T>
 struct const_ptr {
-  static_assert(!std::is_const<T>::value, "Bad (redundant) inference");
+  static_assert(!std::is_const_v<T>, "Bad (redundant) inference");
   const T* value{};
 };
 
@@ -163,7 +163,7 @@ template <typename T>
 struct ptr {
   // Ensure that this is not being used in lieu of `const_ptr` (ensure that
   // our specializiation delegates correctly).
-  static_assert(!std::is_const<T>::value, "Should be using `const_ptr`");
+  static_assert(!std::is_const_v<T>, "Should be using `const_ptr`");
   T* value{};
 };
 
@@ -178,7 +178,7 @@ using wrap_change_t = internal::wrap_function_impl<wrap_change>::wrap_type_t<T>;
 // SFINAE. Could be achieved with specialization, but using to uphold SFINAE
 // contract provided by `WrapFunction`.
 template <typename T>
-struct wrap_change<const T*, std::enable_if_t<!std::is_same<T, int>::value>> {
+struct wrap_change<const T*, std::enable_if_t<!std::is_same_v<T, int>>> {
   static const_ptr<T> wrap(const T* arg) { return {arg}; }
   static const T* unwrap(const_ptr<T> arg_wrapped) { return arg_wrapped.value; }
 };
@@ -202,7 +202,7 @@ struct wrap_change<const T&> : public wrap_change<const T*> {
 // N.B. Prevent `const T*` from binding here, since it may be rejected from
 // SFINAE.
 template <typename T>
-struct wrap_change<T*, std::enable_if_t<!std::is_const<T>::value>> {
+struct wrap_change<T*, std::enable_if_t<!std::is_const_v<T>>> {
   static ptr<T> wrap(T* arg) { return {arg}; }
   static T* unwrap(ptr<T> arg_wrapped) { return arg_wrapped.value; }
 };
@@ -232,7 +232,7 @@ auto WrapChange(Func&& func) {
 template <typename Actual, typename Expected>
 void check_type() {
   // Use this function to inspect types when failure is encountered.
-  static_assert(std::is_same<Actual, Expected>::value, "Mismatch");
+  static_assert(std::is_same_v<Actual, Expected>, "Mismatch");
 }
 
 // Checks signature of a generic functor.
