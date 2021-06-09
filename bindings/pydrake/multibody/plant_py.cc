@@ -1028,7 +1028,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
   }
 
-  if constexpr (!std::is_same<T, symbolic::Expression>::value) {
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
     m.def(
         "AddMultibodyPlantSceneGraph",
         [](systems::DiagramBuilder<T>* builder,

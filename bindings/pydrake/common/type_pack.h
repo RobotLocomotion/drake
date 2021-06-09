@@ -49,7 +49,7 @@ struct type_visit_impl {
 template <typename T>
 struct type_pack_extract_impl {
   // Defer to show that this is a bad instantiation.
-  static_assert(!std::is_same<T, T>::value, "Wrong template");
+  static_assert(!std::is_same_v<T, T>, "Wrong template");
 };
 
 template <template <typename... Ts> class Tpl, typename... Ts>
@@ -64,7 +64,7 @@ using DummyList = bool[];
 template <typename T>
 struct assert_default_constructible {
   static_assert(
-      std::is_default_constructible<T>::value, "Must be default constructible");
+      std::is_default_constructible_v<T>, "Must be default constructible");
 };
 
 }  // namespace internal
@@ -146,16 +146,11 @@ struct type_visit_with_tag {
 template <typename T>
 using type_check_always_true = std::true_type;
 
-// TODO(eric.cousineau): Remove this once C++17 is used.
-/// Provides backport of C++17 `std::negation`.
-template <typename T>
-using negation = std::integral_constant<bool, !T::value>;
-
 /// Provides a check which returns whether `T` is different than `U`.
 template <typename T>
 struct type_check_different_from {
   template <typename U>
-  using type = negation<std::is_same<T, U>>;
+  using type = std::negation<std::is_same<T, U>>;
 };
 
 /// Visits each type in a type pack. This effectively implements a

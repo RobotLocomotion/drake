@@ -67,7 +67,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
       return_policy = py::return_value_policy::copy;
     }
     std::string set_value_docstring = "Replaces stored value with a new one.";
-    if (!std::is_copy_constructible<T>::value) {
+    if (!std::is_copy_constructible_v<T>) {
       set_value_docstring += R"""(
 
 @note The value type for this class is non-copyable.

@@ -87,7 +87,7 @@ auto RegisterBinding(py::handle* scope, const string& name) {
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
       .def("__str__", &B::to_string, cls_doc.to_string.doc);
-  if (!std::is_same<C, EvaluatorBase>::value) {
+  if (!std::is_same_v<C, EvaluatorBase>) {
     // This is required for implicit argument conversion. See below for
     // `EvaluatorBase`'s generic constructor for attempting downcasting.
     // TODO(eric.cousineau): See if there is a more elegant mechanism for this.
