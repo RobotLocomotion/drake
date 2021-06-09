@@ -2422,6 +2422,8 @@ class MathematicalProgram {
    * </pre>
    * Note that M[i][j](0, 1) = Mⁱʲ(i, j) = (X(i, j) + X(j, i)) / 2
    * for i >= j, M[i][j] is the zero matrix.
+   *
+   * @pydrake_mkdoc_identifier{expression}
    */
   std::vector<std::vector<Matrix2<symbolic::Expression>>>
   AddScaledDiagonallyDominantMatrixConstraint(
@@ -2435,6 +2437,8 @@ class MathematicalProgram {
    * @return M For i < j M[i][j] contains the slack variables, mentioned in
    * @ref addsdd "scaled diagonally dominant matrix constraint". For i >= j,
    * M[i][j] contains dummy variables.
+   *
+   * @pydrake_mkdoc_identifier{variable}
    */
   std::vector<std::vector<Matrix2<symbolic::Variable>>>
   AddScaledDiagonallyDominantMatrixConstraint(
