@@ -25,6 +25,11 @@ Note that Drake no longer supports Ubuntu 16.04 (Xenial), but older packages are
 
 Individual packages are archived two years from their date of creation.
 
+Note that for release v0.30.0 and later, Ubuntu binaries require support for
+Intel's AVX2 and FMA instruction sets, which were introduced for the Haswell
+architecture in 2013. You must build from source to run on older machines; use
+Stackoverflow to get instructions. 
+
 For the compilers used to produce these releases, see
 [Binary Packages](/developers.html#binary-packages).
 
