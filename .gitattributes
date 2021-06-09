@@ -1,7 +1,5 @@
 # These lines tell reviewable.io how to highlight source code.
-WORKSPACE diff=python
-**/*.bazel diff=python
-**/*.bzl diff=python
+WORKSPACE diff=bazel
 **/*.cps diff=json
 **/site.webmanifest diff=json
 
