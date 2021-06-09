@@ -127,12 +127,14 @@ class LinearOperator {
   // For `this` operator A, performs y = Aᵀ⋅x.
   // The default implementation throws a std::runtime_error exception.
   // Its NVI already performed checks for valid arguments.
-  virtual void DoMultiplyByTranspose(const Eigen::SparseVector<T>& x,
-                                     Eigen::SparseVector<T>* y) const;
+  virtual void DoMultiplyByTranspose(
+      const Eigen::Ref<const Eigen::SparseVector<T>>& x,
+      Eigen::SparseVector<T>* y) const;
 
   // Alternate signature to operate on dense vectors.
   // Its NVI already performed checks for valid arguments.
-  virtual void DoMultiplyByTranspose(const VectorX<T>& x, VectorX<T>* y) const;
+  virtual void DoMultiplyByTranspose(const Eigen::Ref<const VectorX<T>>& x,
+                                     VectorX<T>* y) const;
 
   // Assembles `this` operator into a sparse matrix A.
   // The default implementation throws a std::runtime_error exception.
