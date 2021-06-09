@@ -3,6 +3,7 @@ import unittest
 
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
 import pydrake.common as mut
 import pydrake.common._module_py._testing as mut_testing
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -110,3 +111,11 @@ class TestCommon(unittest.TestCase):
             mut_testing.get_nice_type_name_cc_registered_instance(
                 base_only_instance),
             unregistered_derived_type_cc_name)
+
+    def test_calc_probability_density(self):
+        density_val = mut.CalcProbabilityDensity(
+            distribution=mut.RandomDistribution.kGaussian,
+            x=np.array([0.5, 1.]))
+        density_ad = mut.CalcProbabilityDensity(
+            distribution=mut.RandomDistribution.kGaussian,
+            x=np.array([AutoDiffXd(1), AutoDiffXd(2)]))
