@@ -208,7 +208,7 @@ struct SnoptImpl<false> {
 void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
 #pragma GCC diagnostic pop
 const bool kIsSnopt76 =
-    std::is_same<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>::value;
+    std::is_same_v<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>;
 using Snopt = SnoptImpl<kIsSnopt76>;
 
 }  // namespace

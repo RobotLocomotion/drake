@@ -444,16 +444,16 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
     EXPECT_TRUE(bnb_x(i).equal_to(bnb.GetNewVariable(prog_x(i))));
   }
 
-  static_assert(std::is_same<decltype(bnb.GetNewVariables(prog_x.head<2>())),
-                             VectorDecisionVariable<2>>::value,
+  static_assert(std::is_same_v<decltype(bnb.GetNewVariables(prog_x.head<2>())),
+                               VectorDecisionVariable<2>>,
                 "Should return VectorDecisionVariable<2> object.\n");
-  static_assert(std::is_same<decltype(bnb.GetNewVariables(prog_x.head(2))),
-                             VectorXDecisionVariable>::value,
+  static_assert(std::is_same_v<decltype(bnb.GetNewVariables(prog_x.head(2))),
+                               VectorXDecisionVariable>,
                 "Should return VectorXDecisionVariable object.\n");
   MatrixDecisionVariable<2, 2> X;
   X << prog_x(0), prog_x(1), prog_x(2), prog_x(3);
-  static_assert(std::is_same<decltype(bnb.GetNewVariables(X)),
-                             MatrixDecisionVariable<2, 2>>::value,
+  static_assert(std::is_same_v<decltype(bnb.GetNewVariables(X)),
+                               MatrixDecisionVariable<2, 2>>,
                 "Should return MatrixDecisionVariable<2, 2> object.\n");
 }
 

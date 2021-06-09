@@ -57,10 +57,9 @@ using drake::symbolic::test::PolyNotEqual;
 
 using std::all_of;
 using std::cref;
-using std::enable_if;
 using std::endl;
 using std::is_permutation;
-using std::is_same;
+using std::is_same_v;
 using std::make_shared;
 using std::map;
 using std::move;
@@ -120,7 +119,7 @@ template <typename ExpectedType, typename T>
 void CheckAddedVariable(const MathematicalProgram& prog, const T& var, int rows,
                         int cols, const string& var_name, bool is_symmetric,
                         MathematicalProgram::VarType type_expected) {
-  static_assert(is_same<T, ExpectedType>::value, "Type not match");
+  static_assert(is_same_v<T, ExpectedType>, "Type not match");
   EXPECT_EQ(var.rows(), rows);
   EXPECT_EQ(var.cols(), cols);
   // Checks the name of the newly added variables.
@@ -463,7 +462,7 @@ GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates1) {
   // Adds a dynamic-sized matrix of Indeterminates.
   MathematicalProgram prog;
   auto X = prog.NewIndeterminates(2, 3, "X");
-  static_assert(is_same<decltype(X), MatrixXIndeterminate>::value,
+  static_assert(is_same_v<decltype(X), MatrixXIndeterminate>,
                 "should be a dynamic sized matrix");
   EXPECT_EQ(X.rows(), 2);
   EXPECT_EQ(X.cols(), 3);
@@ -475,7 +474,7 @@ GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates2) {
   // Adds a static-sized matrix of Indeterminates.
   MathematicalProgram prog;
   auto X = prog.NewIndeterminates<2, 3>("X");
-  static_assert(is_same<decltype(X), MatrixIndeterminate<2, 3>>::value,
+  static_assert(is_same_v<decltype(X), MatrixIndeterminate<2, 3>>,
                 "should be a static sized matrix");
   CheckAddedIndeterminates(prog, X,
                            "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
@@ -485,7 +484,7 @@ GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates3) {
   // Adds a dynamic-sized vector of Indeterminates.
   MathematicalProgram prog;
   auto x = prog.NewIndeterminates(4, "x");
-  static_assert(is_same<decltype(x), VectorXIndeterminate>::value,
+  static_assert(is_same_v<decltype(x), VectorXIndeterminate>,
                 "Should be a VectorXDecisionVariable object.");
   EXPECT_EQ(x.rows(), 4);
   CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
@@ -495,7 +494,7 @@ GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates4) {
   // Adds a static-sized vector of Indeterminate variables.
   MathematicalProgram prog;
   auto x = prog.NewIndeterminates<4>("x");
-  static_assert(is_same<decltype(x), VectorIndeterminate<4>>::value,
+  static_assert(is_same_v<decltype(x), VectorIndeterminate<4>>,
                 "Should be a VectorXDecisionVariable object.");
   CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
@@ -2207,7 +2206,7 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
 
 namespace {
 template <typename Derived>
-typename enable_if<is_same<typename Derived::Scalar, Expression>::value>::type
+typename std::enable_if_t<is_same_v<typename Derived::Scalar, Expression>>
 CheckAddedSymbolicPositiveSemidefiniteConstraint(
     MathematicalProgram* prog, const Eigen::MatrixBase<Derived>& V) {
   int num_psd_cnstr = prog->positive_semidefinite_constraints().size();

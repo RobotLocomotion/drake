@@ -72,7 +72,7 @@ namespace internal {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if<Size >= 0, typename NewVariableNames<Size>::type>::type
+typename std::enable_if_t<Size >= 0, typename NewVariableNames<Size>::type>
 CreateNewVariableNames(int) {
   typename NewVariableNames<Size>::type names;
   return names;
@@ -82,8 +82,8 @@ CreateNewVariableNames(int) {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if<Size == Eigen::Dynamic,
-                        typename NewVariableNames<Size>::type>::type
+typename std::enable_if_t<Size == Eigen::Dynamic,
+                          typename NewVariableNames<Size>::type>
 CreateNewVariableNames(int size) {
   typename NewVariableNames<Eigen::Dynamic>::type names(size);
   return names;
@@ -912,8 +912,8 @@ class MathematicalProgram {
    * @tparam F it should define functions numInputs, numOutputs and eval. Check
    */
   template <typename F>
-  typename std::enable_if<internal::is_cost_functor_candidate<F>::value,
-                          Binding<Cost>>::type
+  typename std::enable_if_t<internal::is_cost_functor_candidate<F>::value,
+                            Binding<Cost>>
   AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
@@ -924,8 +924,8 @@ class MathematicalProgram {
    * @tparam F Type that defines functions numInputs, numOutputs and eval.
    */
   template <typename F>
-  typename std::enable_if<internal::is_cost_functor_candidate<F>::value,
-                          Binding<Cost>>::type
+  typename std::enable_if_t<internal::is_cost_functor_candidate<F>::value,
+                            Binding<Cost>>
   AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     auto c = MakeFunctionCost(std::forward<F>(f));
     return AddCost(c, vars);
@@ -937,8 +937,8 @@ class MathematicalProgram {
    * @tparam F The type to check.
    */
   template <typename F, typename Vars>
-  typename std::enable_if<internal::assert_if_is_constraint<F>::value,
-                          Binding<Cost>>::type
+  typename std::enable_if_t<internal::assert_if_is_constraint<F>::value,
+                            Binding<Cost>>
   AddCost(F&&, Vars&&) {
     throw std::runtime_error("This will assert at compile-time.");
   }
@@ -1310,9 +1310,9 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename Derived>
-  typename std::enable_if<
+  typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-      Binding<Constraint>>::type
+      Binding<Constraint>>
   AddConstraint(const Eigen::ArrayBase<Derived>& formulas) {
     return AddConstraint(internal::ParseConstraint(formulas));
   }
@@ -1335,9 +1335,9 @@ class MathematicalProgram {
    * @pydrake_mkdoc_identifier{matrix_formula}
    */
   template <typename Derived>
-  typename std::enable_if<
+  typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-      Binding<Constraint>>::type
+      Binding<Constraint>>
   AddConstraint(const Eigen::MatrixBase<Derived>& formulas) {
     return AddConstraint(formulas.array());
   }
@@ -1510,9 +1510,9 @@ class MathematicalProgram {
    * @tparam Derived An Eigen Array type of Formula.
    */
   template <typename Derived>
-  typename std::enable_if<
+  typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-      Binding<LinearConstraint>>::type
+      Binding<LinearConstraint>>
   AddLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
     Binding<Constraint> binding = internal::ParseConstraint(formulas);
     Constraint* constraint = binding.evaluator().get();
@@ -1582,9 +1582,9 @@ class MathematicalProgram {
    * bound variables.
    */
   template <typename DerivedV, typename DerivedB>
-  typename std::enable_if<
+  typename std::enable_if_t<
       is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
-      Binding<LinearEqualityConstraint>>::type
+      Binding<LinearEqualityConstraint>>
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& v,
                               const Eigen::MatrixBase<DerivedB>& b) {
     return AddConstraint(internal::ParseLinearEqualityConstraint(v, b));
@@ -1612,9 +1612,9 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename DerivedV, typename DerivedB>
-  typename std::enable_if<
+  typename std::enable_if_t<
       is_eigen_nonvector_expression_double_pair<DerivedV, DerivedB>::value,
-      Binding<LinearEqualityConstraint>>::type
+      Binding<LinearEqualityConstraint>>
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
                               const Eigen::MatrixBase<DerivedB>& B,
                               bool lower_triangle = false) {
@@ -1802,10 +1802,10 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable> &&
           Derived::ColsAtCompileTime == 1,
-      Binding<BoundingBoxConstraint>>::type
+      Binding<BoundingBoxConstraint>>
   AddBoundingBoxConstraint(double lb, double ub,
                            const Eigen::MatrixBase<Derived>& vars) {
     const int kSize = Derived::RowsAtCompileTime;
@@ -1824,10 +1824,10 @@ class MathematicalProgram {
    * @param vars The decision variables.
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable> &&
           Derived::ColsAtCompileTime != 1,
-      Binding<BoundingBoxConstraint>>::type
+      Binding<BoundingBoxConstraint>>
   AddBoundingBoxConstraint(double lb, double ub,
                            const Eigen::MatrixBase<Derived>& vars) {
     const int kSize =
@@ -2313,9 +2313,9 @@ class MathematicalProgram {
    * @endcode
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
-      Binding<PositiveSemidefiniteConstraint>>::type
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
+      Binding<PositiveSemidefiniteConstraint>>
   AddPositiveSemidefiniteConstraint(const Eigen::MatrixBase<Derived>& e) {
     DRAKE_DEMAND(e.rows() == e.cols());
     DRAKE_ASSERT(e == e.transpose());
@@ -2564,10 +2564,10 @@ class MathematicalProgram {
    * @throws std::runtime_error if the pre condition is not satisfied.
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>::type
+                    Derived::ColsAtCompileTime>>
   GetInitialGuess(
       const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
@@ -2897,8 +2897,8 @@ class MathematicalProgram {
    * @throws std::logic_error if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if<is_eigen_vector<DerivedX>::value,
-                          VectorX<typename DerivedX::Scalar>>::type
+  typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
+                            VectorX<typename DerivedX::Scalar>>
   EvalBinding(const Binding<C>& binding,
               const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     using Scalar = typename DerivedX::Scalar;
@@ -2929,8 +2929,8 @@ class MathematicalProgram {
    * @throws std::logic_error if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if<is_eigen_vector<DerivedX>::value,
-                          VectorX<typename DerivedX::Scalar>>::type
+  typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
+                            VectorX<typename DerivedX::Scalar>>
   EvalBindings(const std::vector<Binding<C>>& bindings,
                const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     // TODO(eric.cousineau): Minimize memory allocations when it becomes a
@@ -2963,8 +2963,8 @@ class MathematicalProgram {
    * binding.variables()(i) in prog_var_vals.
    */
   template <typename C, typename DerivedX>
-  typename std::enable_if<is_eigen_vector<DerivedX>::value,
-                          VectorX<typename DerivedX::Scalar>>::type
+  typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
+                            VectorX<typename DerivedX::Scalar>>
   GetBindingVariableValues(
       const Binding<C>& binding,
       const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
@@ -3273,8 +3273,8 @@ class MathematicalProgram {
    * @param vars A matrix of variables.
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value>::type
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable>>
   CheckIsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) const {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {

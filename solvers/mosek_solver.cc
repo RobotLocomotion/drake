@@ -668,13 +668,12 @@ MSKrescodee AddConeConstraints(
         matrix_variable_entry_to_selection_matrix_id,
     std::unordered_map<Binding<C>, ConstraintDualIndices>* dual_indices,
     MSKtask_t* task) {
-  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
-                    std::is_same<C, RotatedLorentzConeConstraint>::value ||
-                    std::is_same<C, ExponentialConeConstraint>::value,
+  static_assert(std::is_same_v<C, LorentzConeConstraint> ||
+                    std::is_same_v<C, RotatedLorentzConeConstraint> ||
+                    std::is_same_v<C, ExponentialConeConstraint>,
                 "Should be either Lorentz cone constraint, rotated Lorentz "
                 "cone or exponential cone constraint");
-  const bool is_rotated_cone =
-      std::is_same<C, RotatedLorentzConeConstraint>::value;
+  const bool is_rotated_cone = std::is_same_v<C, RotatedLorentzConeConstraint>;
   MSKrescodee rescode = MSK_RES_OK;
   for (auto const& binding : cone_constraints) {
     const auto& A = binding.evaluator()->A();
@@ -699,11 +698,11 @@ MSKrescodee AddConeConstraints(
       }
     }
     MSKconetypee cone_type;
-    if (std::is_same<C, LorentzConeConstraint>::value) {
+    if (std::is_same_v<C, LorentzConeConstraint>) {
       cone_type = MSK_CT_QUAD;
-    } else if (std::is_same<C, RotatedLorentzConeConstraint>::value) {
+    } else if (std::is_same_v<C, RotatedLorentzConeConstraint>) {
       cone_type = MSK_CT_RQUAD;
-    } else if (std::is_same<C, ExponentialConeConstraint>::value) {
+    } else if (std::is_same_v<C, ExponentialConeConstraint>) {
       cone_type = MSK_CT_PEXP;
     } else {
       DRAKE_UNREACHABLE();

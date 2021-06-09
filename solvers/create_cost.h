@@ -39,19 +39,6 @@ Binding<Cost> ParseCost(const symbolic::Expression& e);
 // TODO(eric.cousineau): Remove this when functor cost is no longer exposed
 // externally, and must be explicitly called.
 
-// From Drake git sha 24452c1:
-// drake/solvers/mathematical_program.h:739
-// libstdc++ 4.9 evaluates
-// `std::is_convertible<std::unique_ptr<Unrelated>,
-// std::shared_ptr<Constraint>>::value`
-// incorrectly as `true` so our enable_if overload is not used.
-// Provide an explicit alternative for this case.
-template <typename A, typename B>
-struct is_convertible_workaround : std::is_convertible<A, B> {};
-template <typename A, typename B>
-struct is_convertible_workaround<std::unique_ptr<A>, std::shared_ptr<B>>
-    : std::is_convertible<A*, B*> {};
-
 /**
  * Enables us to catch and provide a meaningful assertion if a Constraint is
  * passed in, when we should have a Cost.
@@ -60,11 +47,11 @@ struct is_convertible_workaround<std::unique_ptr<A>, std::shared_ptr<B>>
  */
 template <typename F, typename C>
 struct is_binding_compatible
-    : std::integral_constant<
-          bool, (is_convertible_workaround<F, C>::value) ||
-                    (is_convertible_workaround<F, std::shared_ptr<C>>::value) ||
-                    (is_convertible_workaround<F, std::unique_ptr<C>>::value) ||
-                    (is_convertible_workaround<F, Binding<C>>::value)> {};
+    : std::bool_constant<
+          (std::is_convertible_v<F, C>) ||
+              (std::is_convertible_v<F, std::shared_ptr<C>>) ||
+              (std::is_convertible_v<F, std::unique_ptr<C>>) ||
+              (std::is_convertible_v<F, Binding<C>>)> {};
 
 /**
  * Template condition to check if @p F is a candidate to be used to construct a
@@ -75,9 +62,9 @@ struct is_binding_compatible
  */
 template <typename F>
 struct is_cost_functor_candidate
-    : std::integral_constant<bool, (!is_binding_compatible<F, Cost>::value) &&
-                                       (!is_convertible_workaround<
-                                           F, symbolic::Expression>::value)> {};
+    : std::bool_constant<(!is_binding_compatible<F, Cost>::value) &&
+                             (!std::is_convertible_v<
+                                 F, symbolic::Expression>)> {};
 
 }  // namespace internal
 }  // namespace solvers
