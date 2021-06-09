@@ -384,7 +384,7 @@ class ShapeReifier {
 
 template <typename S>
 Shape::Shape(ShapeTag<S>) {
-  static_assert(std::is_base_of<Shape, S>::value,
+  static_assert(std::is_base_of_v<Shape, S>,
                 "Concrete shapes *must* be derived from the Shape class");
   cloner_ = [](const Shape& shape_arg) {
     DRAKE_DEMAND(typeid(shape_arg) == typeid(S));

@@ -27,7 +27,7 @@
 #include "drake/geometry/proximity/penetration_as_point_pair_callback.h"
 #include "drake/geometry/utilities.h"
 
-static_assert(std::is_same<tinyobj::real_t, double>::value,
+static_assert(std::is_same_v<tinyobj::real_t, double>,
               "tinyobjloader must be compiled in double-precision mode");
 
 namespace drake {
