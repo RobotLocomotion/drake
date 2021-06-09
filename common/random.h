@@ -2,7 +2,12 @@
 
 #include <random>
 
+#include <Eigen/Core>
+
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 
 namespace drake {
 /// Defines Drake's canonical implementation of the UniformRandomBitGenerator
@@ -40,4 +45,18 @@ enum class RandomDistribution {
                      ///  exponential distribution with λ=1.0.
 };
 
+/**
+ * Calculates the density (probability density function) of the multivariate
+ * distribution.
+ * @param distribution The distribution type.
+ * @param x The value of the sampled vector.
+ * @tparam_nonsymbolic_scalar
+ *
+ * @note When instantiating this function, the user needs to explicitly pass in
+ * the scalar type, for example CalcProbabilityDensity<double>(...), the
+ * compiler might have problem to deduce the scalar type automatically.
+ */
+template <typename T>
+T CalcProbabilityDensity(RandomDistribution distribution,
+                         const Eigen::Ref<const VectorX<T>>& x);
 }  // namespace drake
