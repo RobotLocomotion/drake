@@ -17,7 +17,6 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/render/render_label.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
@@ -981,7 +980,8 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
     // arbitrary, with the only requirement being that they form a valid right
     // handed basis with nhat_BA.
-    const RotationMatrix<T> R_WC(math::ComputeBasisFromAxis(2, nhat_BA_W));
+    const math::RotationMatrix<T> R_WC =
+        math::RotationMatrix<T>::MakeFromOneVector(nhat_BA_W, 2);
     if (R_WC_set != nullptr) {
       R_WC_set->push_back(R_WC);
     }

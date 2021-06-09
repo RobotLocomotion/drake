@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"

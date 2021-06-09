@@ -92,7 +92,6 @@ drake_cc_library(
         "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//math:geometric_transform",
-        "//math:orthonormal_basis",
         "//multibody/contact_solvers:contact_solver",
         "//multibody/contact_solvers:sparse_linear_operator",
         "//multibody/hydroelastics:hydroelastic_engine",

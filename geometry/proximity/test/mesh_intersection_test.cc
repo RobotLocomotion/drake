@@ -15,9 +15,9 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -1371,7 +1371,8 @@ class MeshMeshDerivativesTest : public ::testing::Test {
       if (cos_theta < -kAlmostOne) {
         /* They are anti-parallel. We need a normal perpendicular to s_F;
          extract it from a valid basis. */
-        const Matrix3<double> basis = math::ComputeBasisFromAxis(2, s_F);
+        const math::RotationMatrix<double> basis =
+            math::RotationMatrix<double>::MakeFromOneVector(s_F, 2);
         const Vector3d rhat = basis.col(0);
         R_FA = RotationMatrixd(AngleAxisd(M_PI, rhat));
       } else {
