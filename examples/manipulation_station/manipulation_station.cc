@@ -14,9 +14,11 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/perception/depth_image_to_point_cloud.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/discrete_derivative.h"
@@ -708,12 +710,30 @@ void ManipulationStation<T>::Finalize(
       builder.Connect(scene_graph_->get_query_output_port(),
                       camera->query_object_input_port());
 
+      auto depth_to_cloud = builder.template AddSystem<
+          perception::DepthImageToPointCloud>(
+              camera->depth_camera_info(),
+              systems::sensors::PixelType::kDepth16U,
+              0.001f /* depth camera is in mm */,
+              perception::pc_flags::kXYZs |
+              perception::pc_flags::kRGBs);
+      auto x_pc_system = builder.template AddSystem<
+          systems::ConstantValueSource>(Value<RigidTransformd>(X_PC));
+      builder.Connect(camera->color_image_output_port(),
+                      depth_to_cloud->color_image_input_port());
+      builder.Connect(camera->depth_image_16U_output_port(),
+                      depth_to_cloud->depth_image_input_port());
+      builder.Connect(x_pc_system->get_output_port(),
+                      depth_to_cloud->camera_pose_input_port());
+
       builder.ExportOutput(camera->color_image_output_port(),
                            camera_name + "_rgb_image");
       builder.ExportOutput(camera->depth_image_16U_output_port(),
                            camera_name + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
                            camera_name + "_label_image");
+      builder.ExportOutput(depth_to_cloud->point_cloud_output_port(),
+                           camera_name + "_point_cloud");
     }
   }
 
