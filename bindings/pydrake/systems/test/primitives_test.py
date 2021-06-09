@@ -39,6 +39,7 @@ from pydrake.systems.primitives import (
     IsObservable,
     Linearize,
     LinearSystem, LinearSystem_,
+    LinearTransformDensity, LinearTransformDensity_,
     LogOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
@@ -89,6 +90,8 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
         self._check_instantiations(LinearSystem_)
+        self._check_instantiations(LinearTransformDensity_,
+                                   supports_symbolic=False)
         self._check_instantiations(Multiplexer_)
         self._check_instantiations(PassThrough_)
         self._check_instantiations(Saturation_)
@@ -286,6 +289,26 @@ class TestGeneral(unittest.TestCase):
         C = np.zeros((num_y, num_x))
         D = np.zeros((num_y, num_u))
         self.assertIsNotNone(LinearSystem(A, B, C, D))
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_linear_transform_density(self, T):
+        dut = LinearTransformDensity_[T](
+            distribution=RandomDistribution.kGaussian,
+            input_size=3,
+            output_size=3)
+        w_in = np.array([T(0.5), T(0.1), T(1.5)])
+        context = dut.CreateDefaultContext()
+        dut.get_input_port_w_in().FixValue(context, w_in)
+        self.assertEqual(dut.get_input_port_A().size(), 9)
+        self.assertEqual(dut.get_input_port_b().size(), 3)
+        self.assertEqual(dut.get_distribution(), RandomDistribution.kGaussian)
+        A = np.array([
+            [T(0.5), T(1), T(2)], [T(1), T(2), T(3)], [T(3), T(4), T(5)]])
+        dut.FixConstantA(context=context, A=A)
+        b = np.array([T(1), T(2), T(3)])
+        dut.FixConstantB(context=context, b=b)
+
+        dut.CalcDensity(context=context)
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])

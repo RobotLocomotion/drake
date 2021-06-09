@@ -76,6 +76,7 @@ class LinearTransformDensity final : public LeafSystem<T> {
     return this->get_input_port(b_port_id_);
   }
 
+  /** Gets the random distribution type. */
   RandomDistribution get_distribution() const { return distribution_; }
 
   /**

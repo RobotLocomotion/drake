@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -119,6 +120,12 @@ PYBIND11_MODULE(_module_py, m) {
           doc.RandomDistribution.kGaussian.doc)
       .value("kExponential", drake::RandomDistribution::kExponential,
           doc.RandomDistribution.kExponential.doc);
+
+  m.def("CalcProbabilityDensity", &CalcProbabilityDensity<double>,
+       py::arg("distribution"), py::arg("x"), doc.CalcProbabilityDensity.doc)
+      .def("CalcProbabilityDensity", &CalcProbabilityDensity<AutoDiffXd>,
+          py::arg("distribution"), py::arg("x"),
+          doc.CalcProbabilityDensity.doc);
 
   // Adds a binding for drake::RandomGenerator.
   py::class_<RandomGenerator> random_generator_cls(m, "RandomGenerator",
