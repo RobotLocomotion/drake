@@ -952,6 +952,18 @@ class TestMathematicalProgram(unittest.TestCase):
             linear_expression1=x[0]+1, linear_expression2=x[0]+x[1],
             quadratic_expression=x[0]*x[0] + 2*x[0] + x[1]*x[1] + 5)
 
+    def test_add_linear_matrix_inequality_constraint(self):
+        prog = mp.MathematicalProgram()
+        F = [np.eye(2), np.array([[0, 1], [1., 0.]])]
+        x = prog.NewContinuousVariables(1)
+        cnstr = prog.AddLinearMatrixInequalityConstraint(F=F, vars=x)
+        self.assertIsInstance(
+            cnstr.evaluator(), mp.LinearMatrixInequalityConstraint)
+        self.assertEqual(cnstr.evaluator().matrix_rows(), 2)
+        self.assertEqual(len(cnstr.evaluator().F()), 2)
+        np.testing.assert_array_equal(cnstr.evaluator().F()[0], F[0])
+        np.testing.assert_array_equal(cnstr.evaluator().F()[1], F[1])
+
     def test_solver_options(self):
         prog = mp.MathematicalProgram()
 

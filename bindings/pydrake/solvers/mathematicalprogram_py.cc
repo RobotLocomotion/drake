@@ -34,6 +34,7 @@ using solvers::LinearComplementarityConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::LinearMatrixInequalityConstraint;
 using solvers::LorentzConeConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
@@ -980,6 +981,15 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
               .doc_1args_constEigenMatrixBase)
+      .def(
+          "AddLinearMatrixInequalityConstraint",
+          [](MathematicalProgram* self,
+              const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddLinearMatrixInequalityConstraint(F, vars);
+          },
+          py::arg("F"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearMatrixInequalityConstraint.doc)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
@@ -1449,6 +1459,15 @@ for every column of ``prog_var_vals``. )""")
       std::shared_ptr<PositiveSemidefiniteConstraint>>(m,
       "PositiveSemidefiniteConstraint", doc.PositiveSemidefiniteConstraint.doc);
 
+  py::class_<LinearMatrixInequalityConstraint, Constraint,
+      std::shared_ptr<LinearMatrixInequalityConstraint>>(m,
+      "LinearMatrixInequalityConstraint",
+      doc.LinearMatrixInequalityConstraint.doc)
+      .def("F", &LinearMatrixInequalityConstraint::F,
+          doc.LinearMatrixInequalityConstraint.F.doc)
+      .def("matrix_rows", &LinearMatrixInequalityConstraint::matrix_rows,
+          doc.LinearMatrixInequalityConstraint.matrix_rows.doc);
+
   py::class_<LinearComplementarityConstraint, Constraint,
       std::shared_ptr<LinearComplementarityConstraint>>(m,
       "LinearComplementarityConstraint",
@@ -1467,6 +1486,8 @@ for every column of ``prog_var_vals``. )""")
   RegisterBinding<BoundingBoxConstraint>(&m, "BoundingBoxConstraint");
   RegisterBinding<PositiveSemidefiniteConstraint>(
       &m, "PositiveSemidefiniteConstraint");
+  RegisterBinding<LinearMatrixInequalityConstraint>(
+      &m, "LinearMatrixInequalityConstraint");
   RegisterBinding<LinearComplementarityConstraint>(
       &m, "LinearComplementarityConstraint");
   RegisterBinding<ExponentialConeConstraint>(&m, "ExponentialConeConstraint");
