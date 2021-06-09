@@ -229,8 +229,8 @@ class IsoparametricElement {
 template <class Element>
 struct is_isoparametric_element {
   static constexpr bool value =
-      std::is_base_of<IsoparametricElement<Element, typename Element::Traits>,
-                      Element>::value;
+      std::is_base_of_v<IsoparametricElement<Element, typename Element::Traits>,
+                        Element>;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

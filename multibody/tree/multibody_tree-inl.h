@@ -43,7 +43,7 @@ template <typename T>
 template <template <typename Scalar> class BodyType>
 const BodyType<T>& MultibodyTree<T>::AddBody(
     std::unique_ptr<BodyType<T>> body) {
-  static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
+  static_assert(std::is_convertible_v<BodyType<T>*, Body<T>*>,
                 "BodyType must be a sub-class of Body<T>.");
   if (topology_is_valid()) {
     throw std::logic_error(
@@ -86,7 +86,7 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
 template <typename T>
 template<template<typename Scalar> class BodyType, typename... Args>
 const BodyType<T>& MultibodyTree<T>::AddBody(Args&&... args) {
-  static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
+  static_assert(std::is_convertible_v<BodyType<T>*, Body<T>*>,
                 "BodyType must be a sub-class of Body<T>.");
   return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
 }
@@ -127,7 +127,7 @@ template <typename T>
 template <template <typename Scalar> class FrameType>
 const FrameType<T>& MultibodyTree<T>::AddFrame(
     std::unique_ptr<FrameType<T>> frame) {
-  static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
+  static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
                 "FrameType must be a sub-class of Frame<T>.");
   if (topology_is_valid()) {
     throw std::logic_error(
@@ -157,7 +157,7 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
 template <typename T>
 template<template<typename Scalar> class FrameType, typename... Args>
 const FrameType<T>& MultibodyTree<T>::AddFrame(Args&&... args) {
-  static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
+  static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
                 "FrameType must be a sub-class of Frame<T>.");
   return AddFrame(
       std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
@@ -167,7 +167,7 @@ template <typename T>
 template <template<typename Scalar> class MobilizerType>
 const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
     std::unique_ptr<MobilizerType<T>> mobilizer) {
-  static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
+  static_assert(std::is_convertible_v<MobilizerType<T>*, Mobilizer<T>*>,
                 "MobilizerType must be a sub-class of mobilizer<T>.");
   if (topology_is_valid()) {
     throw std::logic_error("This MultibodyTree is finalized already. "
@@ -221,7 +221,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 template <typename T>
 template<template<typename Scalar> class MobilizerType, typename... Args>
 const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
-  static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+  static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
                 "MobilizerType must be a sub-class of Mobilizer<T>.");
   return AddMobilizer(
       std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
@@ -232,7 +232,7 @@ template <template<typename Scalar> class ForceElementType>
 const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     std::unique_ptr<ForceElementType<T>> force_element) {
   static_assert(
-      std::is_convertible<ForceElementType<T>*, ForceElement<T>*>::value,
+      std::is_convertible_v<ForceElementType<T>*, ForceElement<T>*>,
       "ForceElementType<T> must be a sub-class of ForceElement<T>.");
   if (topology_is_valid()) {
     throw std::logic_error(
@@ -271,7 +271,7 @@ template <typename T>
 template<template<typename Scalar> class ForceElementType, typename... Args>
 const ForceElementType<T>&
 MultibodyTree<T>::AddForceElement(Args&&... args) {
-  static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
+  static_assert(std::is_base_of_v<ForceElement<T>, ForceElementType<T>>,
                 "ForceElementType<T> must be a sub-class of "
                 "ForceElement<T>.");
   return AddForceElement(
@@ -282,7 +282,7 @@ template <typename T>
 template <template<typename Scalar> class JointType>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     std::unique_ptr<JointType<T>> joint) {
-  static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+  static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
                 "JointType must be a sub-class of Joint<T>.");
 
   if (HasJointNamed(joint->name(), joint->model_instance())) {
@@ -318,7 +318,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     const Body<T>& child,
     const std::optional<math::RigidTransform<double>>& X_BM,
     Args&&... args) {
-  static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+  static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
 
   const Frame<T>* frame_on_parent{nullptr};

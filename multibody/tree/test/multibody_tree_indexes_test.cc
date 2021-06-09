@@ -18,10 +18,10 @@ GTEST_TEST(MultibodyTreeIndexes, ConversionNotAllowedBetweenDifferentTypes) {
   // Conversion is not allowed between two different index types.
   // Note: the extra set of parentheses are needed to avoid the test macro
   // getting confused with the comma inside the template brackets.
-  EXPECT_FALSE((std::is_convertible<BodyIndex, FrameIndex>::value));
+  EXPECT_FALSE((std::is_convertible_v<BodyIndex, FrameIndex>));
   // The trivial case of course is true.
-  EXPECT_TRUE((std::is_convertible<BodyIndex, BodyIndex>::value));
-  EXPECT_TRUE((std::is_convertible<FrameIndex, FrameIndex>::value));
+  EXPECT_TRUE((std::is_convertible_v<BodyIndex, BodyIndex>));
+  EXPECT_TRUE((std::is_convertible_v<FrameIndex, FrameIndex>));
 }
 
 }  // namespace

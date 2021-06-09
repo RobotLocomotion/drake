@@ -71,9 +71,9 @@ class Quadrature {
 template <class ObjectType>
 struct is_quadrature {
   static constexpr bool value =
-      std::is_base_of<Quadrature<ObjectType::natural_dimension(),
-                                 ObjectType::num_quadrature_points()>,
-                      ObjectType>::value;
+      std::is_base_of_v<Quadrature<ObjectType::natural_dimension(),
+                                   ObjectType::num_quadrature_points()>,
+                        ObjectType>;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

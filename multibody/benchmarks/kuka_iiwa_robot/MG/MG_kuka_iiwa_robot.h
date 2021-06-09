@@ -57,7 +57,7 @@ class MGKukaIIwaRobot {
   /// to this constructor, it means the gravity vector is directed opposite the
   /// world upward z-unit vector (which is correct -- gravity is downward).
   explicit MGKukaIIwaRobot(double gravity) {
-    static_assert(std::is_same<T, double>::value,
+    static_assert(std::is_same_v<T, double>,
                   "This class only supports T = double.");
     set_gravity(gravity);
   }

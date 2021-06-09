@@ -124,10 +124,10 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   using Traits = DerivedTraits;
   using T = typename Traits::T;
   static_assert(
-      std::is_base_of<
+      std::is_base_of_v<
           ElasticityElementTraits<IsoparametricElementType, QuadratureType,
                                   ConstitutiveModelType>,
-          Traits>::value,
+          Traits>,
       "The DerivedTraits template parameter must be derived from "
       "ElasticityElementTraits.");
   static_assert(Traits::kSolutionDimension == 3 &&

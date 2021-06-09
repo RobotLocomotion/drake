@@ -61,9 +61,9 @@ void UpdateContextPositionsAndVelocities(
  * @throws std::invalid_argument if the vector is close to zero.
  */
 template <typename DerivedA>
-typename std::enable_if<
+typename std::enable_if_t<
     is_eigen_vector_of<DerivedA, double>::value,
-    Eigen::Matrix<double, DerivedA::RowsAtCompileTime, 1>>::type
+    Eigen::Matrix<double, DerivedA::RowsAtCompileTime, 1>>
 NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
   const double a_norm = a.norm();
   if (a_norm < 100 * a.rows() * std::numeric_limits<double>::epsilon()) {
