@@ -64,7 +64,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "cds",
-    "drake_visualizer",
+    #"drake_visualizer",
     "dreal",
     "net_sf_jchart2d",
     "optitrack_driver",

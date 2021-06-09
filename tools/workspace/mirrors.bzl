@@ -54,7 +54,8 @@ DEFAULT_MIRRORS = {
         "https://s3.amazonaws.com/drake-mirror/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
     ],
     "vtk": [
-        "https://drake-packages.csail.mit.edu/vtk/{archive}",
-        "https://s3.amazonaws.com/drake-packages/vtk/{archive}",
+        "https://people.csail.mit.edu/gizatt/vtk/{archive}",
+        #"https://drake-packages.csail.mit.edu/vtk/{archive}",
+        #"https://s3.amazonaws.com/drake-packages/vtk/{archive}",
     ],
 }

@@ -9,12 +9,12 @@ set -euxo pipefail
 
 rm -f vtk-*-x86_64.tar.gz vtk-*-x86_64.tar.gz.sha256
 
-docker build --build-arg UBUNTU_CODENAME=bionic --tag vtk-bionic "${BASH_SOURCE%/*}"
-trap 'docker rmi vtk-bionic' EXIT
-docker run --detach --name vtk-bionic-build --tty vtk-bionic
-trap 'docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
-docker cp vtk-bionic-build:$(docker exec vtk-bionic-build \
-  find /opt/vtk/ -maxdepth 1 -name 'vtk-*-bionic-x86_64.tar.gz') .
+#docker build --build-arg UBUNTU_CODENAME=bionic --tag vtk-bionic "${BASH_SOURCE%/*}"
+#trap 'docker rmi vtk-bionic' EXIT
+#docker run --detach --name vtk-bionic-build --tty vtk-bionic
+#trap 'docker rm --force vtk-bionic-build && docker rmi vtk-bionic' EXIT
+#docker cp vtk-bionic-build:$(docker exec vtk-bionic-build \
+#  find /opt/vtk/ -maxdepth 1 -name 'vtk-*-bionic-x86_64.tar.gz') .
 
 shasum --algorithm 256 vtk-*-bionic-x86_64.tar.gz | tee vtk-bionic-x86_64.tar.gz.sha256
 

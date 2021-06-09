@@ -167,7 +167,14 @@ zlib1g-dev
 EOF
 )
 
-dpkg_install_from_wget \
-  bazel 4.1.0 \
-  https://releases.bazel.build/4.1.0/release/bazel_4.1.0-linux-x86_64.deb \
-  ce403656e027d0099187908c272c612fcebd1c5cca1b074357f0088beb15cd9c
+#dpkg_install_from_wget \
+#  bazel 4.1.0 \
+#  https://releases.bazel.build/4.1.0/release/bazel_4.1.0-linux-x86_64.deb \
+#  ce403656e027d0099187908c272c612fcebd1c5cca1b074357f0088beb15cd9c
+
+# MASSIVE SECURITY PROBLEM
+wget https://releases.bazel.build/4.1.0/release/bazel-4.1.0-linux-arm64 /usr/local/bin/bazel
+chmod +x /usr/local/bin/bazel
+# warm it up
+/usr/local/bin/bazel
+

@@ -98,6 +98,7 @@ def setup_pkg_config_repository(repository_ctx):
                 possible_libdirs = [
                     "/usr/lib",
                     "/usr/lib/x86_64-linux-gnu",
+                    "/usr/lib/aarch64-linux-gnu"
                 ]
                 suffix = ".so"
             else:

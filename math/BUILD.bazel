@@ -281,9 +281,9 @@ drake_cc_library(
     hdrs = ["fast_pose_composition_functions.h"],
     copts = select({
         "//tools/cc_toolchain:apple": [],
-        "//conditions:default": [
-            "-march=broadwell",
-        ],
+        "//conditions:default": [],
+#            "-march=broadwell",
+#        ],
     }),
     deps = [],
 )
