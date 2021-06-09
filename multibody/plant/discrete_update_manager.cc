@@ -76,6 +76,13 @@ void DiscreteUpdateManager<T>::CallContactSolver(
   MultibodyPlantDiscreteUpdateManagerAttorney<T>::CallContactSolver(
       plant(), contact_solver, time0, v0, M0, minus_tau, phi0, Jc, stiffness,
       damping, mu, results);
+    }
+
+template <typename T>
+const std::vector<std::vector<geometry::GeometryId>>&
+DiscreteUpdateManager<T>::collision_geometries() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
+      plant());
 }
 }  // namespace internal
 }  // namespace multibody

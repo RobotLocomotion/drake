@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/geometry/geometry_ids.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/contact_jacobians.h"
@@ -111,6 +112,10 @@ class DiscreteUpdateManager {
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
   const MultibodyTree<T>& internal_tree() const;
+  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
+  //  geometries.
+  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
+      const;
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;

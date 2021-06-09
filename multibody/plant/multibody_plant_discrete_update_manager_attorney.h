@@ -77,6 +77,15 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     plant.CallContactSolver(contact_solver, time0, v0, M0, minus_tau, phi0, Jc,
                             stiffness, damping, mu, results);
   }
+
+  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
+  //  geometries.
+  /* Returns the per-body arrays of collision geometries indexed by BodyIndex
+   for the given `plant`. */
+  static const std::vector<std::vector<geometry::GeometryId>>&
+  collision_geometries(const MultibodyPlant<T>& plant) {
+    return plant.collision_geometries_;
+  }
 };
 }  // namespace internal
 }  // namespace multibody
