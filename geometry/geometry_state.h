@@ -80,8 +80,7 @@ class GeometryState {
    @internal The SFINAE is required to prevent collision with the default
    defined assignment operator where T is double.  */
   template <class T1 = T>
-  typename std::enable_if<!std::is_same<T1, double>::value,
-                          GeometryState<T>&>::type
+  typename std::enable_if_t<!std::is_same_v<T1, double>, GeometryState<T>&>
   operator=(const GeometryState<double>& other) {
     // This reuses the private copy _conversion_ constructor. It is _not_
     // intended to be performant -- but no one should be copying SceneGraph's

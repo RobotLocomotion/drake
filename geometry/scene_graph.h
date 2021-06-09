@@ -987,10 +987,8 @@ namespace scalar_conversion {
 template <>
 struct Traits<geometry::SceneGraph> {
   template <typename T, typename U>
-  using supported =
-      typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
-                                    std::is_same<U, double>::value,
-                                std::true_type, std::false_type>::type;
+  using supported = typename std::bool_constant<
+    std::is_same_v<U, double> && !std::is_same_v<T, symbolic::Expression>>;
 };
 }  // namespace scalar_conversion
 }  // namespace systems
