@@ -44,8 +44,8 @@ class Binding {
 
   template <typename U>
   Binding(const Binding<U>& b,
-          typename std::enable_if<std::is_convertible<
-              std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
+          typename std::enable_if_t<std::is_convertible_v<
+              std::shared_ptr<U>, std::shared_ptr<C>>>* = nullptr)
       : Binding(b.evaluator(), b.variables()) {}
 
   const std::shared_ptr<C>& evaluator() const { return evaluator_; }

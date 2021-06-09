@@ -410,10 +410,10 @@ int AddSecondOrderConeConstraints(
     const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
     GRBmodel* model, int* num_gurobi_linear_constraints) {
   static_assert(
-      std::is_same<C, LorentzConeConstraint>::value ||
-          std::is_same<C, RotatedLorentzConeConstraint>::value,
+      std::is_same_v<C, LorentzConeConstraint> ||
+          std::is_same_v<C, RotatedLorentzConeConstraint>,
       "Expects either LorentzConeConstraint or RotatedLorentzConeConstraint");
-  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
+  bool is_rotated_cone = std::is_same_v<C, RotatedLorentzConeConstraint>;
 
   DRAKE_ASSERT(second_order_cone_constraints.size() ==
                second_order_cone_new_variable_indices.size());
@@ -728,10 +728,10 @@ void AddSecondOrderConeVariables(
     std::vector<char>* gurobi_var_type, std::vector<double>* xlow,
     std::vector<double>* xupp) {
   static_assert(
-      std::is_same<C, LorentzConeConstraint>::value ||
-          std::is_same<C, RotatedLorentzConeConstraint>::value,
+      std::is_same_v<C, LorentzConeConstraint> ||
+          std::is_same_v<C, RotatedLorentzConeConstraint>,
       "Expects LorentzConeConstraint and RotatedLorentzConeConstraint.");
-  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
+  bool is_rotated_cone = std::is_same_v<C, RotatedLorentzConeConstraint>;
 
   int num_new_second_order_cone_var = 0;
   second_order_cone_variable_indices->resize(second_order_cones.size());

@@ -25,12 +25,12 @@ GTEST_TEST(TestLogarithmicSos2, TestAddSos2) {
   auto lambda1 = prog.NewContinuousVariables(3, "lambda1");
   auto y1 =
       AddLogarithmicSos2Constraint(&prog, lambda1.cast<symbolic::Expression>());
-  static_assert(std::is_same<decltype(y1), VectorXDecisionVariable>::value,
+  static_assert(std::is_same_v<decltype(y1), VectorXDecisionVariable>,
                 "y1 should be a dynamic-sized vector.");
   auto lambda2 = prog.NewContinuousVariables<3>("lambda2");
   auto y2 =
       AddLogarithmicSos2Constraint(&prog, lambda2.cast<symbolic::Expression>());
-  static_assert(std::is_same<decltype(y2), VectorDecisionVariable<1>>::value,
+  static_assert(std::is_same_v<decltype(y2), VectorDecisionVariable<1>>,
                 "y2 should be a static-sized vector.");
 }
 
@@ -313,30 +313,30 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
       &prog, x, y, w, phi_x_static, phi_y_static, Bx, By,
       IntervalBinning::kLogarithmic);
   static_assert(
-      std::is_same<decltype(lambda1), MatrixDecisionVariable<3, 4>>::value,
+      std::is_same_v<decltype(lambda1), MatrixDecisionVariable<3, 4>>,
       "lambda should be a static matrix");
 
   auto lambda2 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_dynamic, phi_y_static, Bx, By,
       IntervalBinning::kLogarithmic);
-  static_assert(std::is_same<decltype(lambda2),
-                             MatrixDecisionVariable<Eigen::Dynamic, 4>>::value,
+  static_assert(std::is_same_v<decltype(lambda2),
+                               MatrixDecisionVariable<Eigen::Dynamic, 4>>,
                 "lambda's type is incorrect");
 
   auto lambda3 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_static, phi_y_dynamic, Bx, By,
       IntervalBinning::kLogarithmic);
-  static_assert(std::is_same<decltype(lambda3),
-                             MatrixDecisionVariable<3, Eigen::Dynamic>>::value,
+  static_assert(std::is_same_v<decltype(lambda3),
+                               MatrixDecisionVariable<3, Eigen::Dynamic>>,
                 "lambda's type is incorrect");
 
   auto lambda4 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_dynamic, phi_y_dynamic, Bx, By,
       IntervalBinning::kLogarithmic);
   static_assert(
-      std::is_same<
+      std::is_same_v<
           decltype(lambda4),
-          MatrixDecisionVariable<Eigen::Dynamic, Eigen::Dynamic>>::value,
+          MatrixDecisionVariable<Eigen::Dynamic, Eigen::Dynamic>>,
       "lambda's type is incorrect");
 }
 

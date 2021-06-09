@@ -47,7 +47,7 @@ double GetVariableValue(
  */
 template <typename Derived>
 typename std::enable_if_t<
-    std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+    std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>>
 GetVariableValue(
@@ -182,10 +182,10 @@ class MathematicalProgramResult final {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>::type
+                    Derived::ColsAtCompileTime>>
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
     return GetVariableValue(var, decision_variable_index_, x_val_);
   }
@@ -227,10 +227,10 @@ class MathematicalProgramResult final {
    * doc_was_unable_to_choose_unambiguous_name. }
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
       Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
-          Derived::ColsAtCompileTime>>::type
+          Derived::ColsAtCompileTime>>
   GetSolution(const Eigen::MatrixBase<Derived>& m) const {
     Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>
@@ -386,10 +386,10 @@ class MathematicalProgramResult final {
    * problem.
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>::type
+                    Derived::ColsAtCompileTime>>
   GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
                         int solution_number) const {
     return GetVariableValue(var, decision_variable_index_,

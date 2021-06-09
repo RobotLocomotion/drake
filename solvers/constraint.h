@@ -620,7 +620,7 @@ class LinearEqualityConstraint : public LinearConstraint {
                           const Eigen::MatrixBase<DerivedL>&,
                           const Eigen::MatrixBase<DerivedU>&) {
     static_assert(
-        !std::is_same<DerivedA, DerivedA>::value,
+        !std::is_same_v<DerivedA, DerivedA>,
         "This method should not be called form `LinearEqualityConstraint`");
   }
 

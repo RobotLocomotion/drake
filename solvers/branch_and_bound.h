@@ -344,10 +344,10 @@ class MixedIntegerBranchAndBound {
    * @throws std::runtime_error if the preconditions are not satisfied.
    */
   template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+  typename std::enable_if_t<
+      std::is_same_v<typename Derived::Scalar, symbolic::Variable>,
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>::type
+                    Derived::ColsAtCompileTime>>
   GetSolution(const Eigen::MatrixBase<Derived>& mip_vars,
               int nth_best_solution = 0) const {
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
@@ -383,10 +383,10 @@ class MixedIntegerBranchAndBound {
    * procedure.
    */
   template <typename Derived>
-  typename std::enable_if<
+  typename std::enable_if_t<
       is_eigen_scalar_same<Derived, symbolic::Variable>::value,
       MatrixDecisionVariable<Derived::RowsAtCompileTime,
-                             Derived::ColsAtCompileTime>>::type
+                             Derived::ColsAtCompileTime>>
   GetNewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
     Eigen::MatrixBase<Derived> new_variables;
     new_variables.resize(old_variables.rows(), old_variables.cols());

@@ -173,7 +173,7 @@ void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
       break;
     }
     case EvalType::kConvexSmooth: {
-      if constexpr (std::is_same<ScalarY, AutoDiffXd>::value) {
+      if constexpr (std::is_same_v<ScalarY, AutoDiffXd>) {
         LorentzConeConstraintEvalConvex2Autodiff(A_dense_, b_, x, y);
       } else {
         (*y)(0) = z(0) - z.tail(z.rows() - 1).norm();
