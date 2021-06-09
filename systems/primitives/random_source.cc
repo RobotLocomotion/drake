@@ -192,8 +192,8 @@ int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       using Source =
-          typename std::conditional<std::is_same_v<T, double>, RandomSource,
-                                    internal::RandomSourceT<T>>::type;
+          typename std::conditional_t<std::is_same_v<T, double>, RandomSource,
+                                      internal::RandomSourceT<T>>;
       const auto* const source = builder->template AddSystem<Source>(
           port.get_random_type().value(), port.size(), sampling_interval_sec);
 #pragma GCC diagnostic pop

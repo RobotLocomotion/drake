@@ -227,7 +227,7 @@ class VectorSystem : public LeafSystem<T> {
       // evaluate the input, even if the system is not supposed to have
       // feedthrough -- it is merely providing extra ignored data to the
       // DoCalcVectorOutput helper.
-      constexpr bool is_symbolic = std::is_same<T, symbolic::Expression>::value;
+      constexpr bool is_symbolic = std::is_same_v<T, symbolic::Expression>;
       const bool is_fixed_input =
           (context.MaybeGetFixedInputPortValue(0) != nullptr);
       if (is_symbolic && is_fixed_input) {

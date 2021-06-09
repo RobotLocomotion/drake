@@ -779,8 +779,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   // for potential improvements that will require changes here.
   integrator.Initialize();
   ASSERT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(1e-2));
-  if (!std::is_same<Integrator,
-      VelocityImplicitEulerIntegrator<double>>::value) {
+  if (!std::is_same_v<Integrator, VelocityImplicitEulerIntegrator<double>>) {
     EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 2);
     EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 1);
   } else {

@@ -1250,12 +1250,11 @@ BaseStuff* Diagram<T>::GetSubsystemStuff(
     std::function<BaseStuff&(DerivedStuff*, SubsystemIndex)> get_child_stuff)
     const {
   static_assert(
-      std::is_same<BaseStuff,
-                   typename std::remove_pointer<BaseStuff>::type>::value,
+      std::is_same_v<BaseStuff, typename std::remove_pointer_t<BaseStuff>>,
       "BaseStuff cannot be a pointer");
   static_assert(
-      std::is_same<DerivedStuff,
-                   typename std::remove_pointer<DerivedStuff>::type>::value,
+      std::is_same_v<DerivedStuff,
+                     typename std::remove_pointer_t<DerivedStuff>>,
       "DerivedStuff cannot be a pointer");
 
   DRAKE_DEMAND(my_stuff != nullptr);

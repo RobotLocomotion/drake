@@ -208,7 +208,7 @@ std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector(
     const System<T>& system) {
   using symbolic::Expression;
   // We use different implementations when T = Expression or not.
-  if constexpr (std::is_same<T, Expression>::value) {
+  if constexpr (std::is_same_v<T, Expression>) {
     return std::make_unique<SystemSymbolicInspector>(system);
   } else {
     std::unique_ptr<System<Expression>> converted = system.ToSymbolicMaybe();

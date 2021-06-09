@@ -1245,9 +1245,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     ValueType (MySystem::*make)() const,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  static_assert(std::is_base_of<SystemBase, MySystem>::value,
+  static_assert(std::is_base_of_v<SystemBase, MySystem>,
                 "Expected to be invoked from a SystemBase-derived System.");
-  static_assert(std::is_base_of<ContextBase, MyContext>::value,
+  static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
   auto this_ptr = dynamic_cast<const MySystem*>(this);
   DRAKE_DEMAND(this_ptr != nullptr);
@@ -1274,9 +1274,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  static_assert(std::is_base_of<SystemBase, MySystem>::value,
+  static_assert(std::is_base_of_v<SystemBase, MySystem>,
                 "Expected to be invoked from a SystemBase-derived System.");
-  static_assert(std::is_base_of<ContextBase, MyContext>::value,
+  static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
   auto this_ptr = dynamic_cast<const MySystem*>(this);
   DRAKE_DEMAND(this_ptr != nullptr);
@@ -1312,9 +1312,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
     ValueType (MySystem::*calc)(const MyContext&) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  static_assert(std::is_base_of<SystemBase, MySystem>::value,
+  static_assert(std::is_base_of_v<SystemBase, MySystem>,
                 "Expected to be invoked from a SystemBase-derived System.");
-  static_assert(std::is_base_of<ContextBase, MyContext>::value,
+  static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
   auto this_ptr = dynamic_cast<const MySystem*>(this);
   DRAKE_DEMAND(this_ptr != nullptr);
@@ -1343,7 +1343,7 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(
-      std::is_default_constructible<ValueType>::value,
+      std::is_default_constructible_v<ValueType>,
       "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
       "this method requires that the output type has a default constructor");
   // Invokes the above model-value method. Note that value initialization {}
@@ -1360,7 +1360,7 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     ValueType (MySystem::*calc)(const MyContext&) const,
     std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(
-      std::is_default_constructible<ValueType>::value,
+      std::is_default_constructible_v<ValueType>,
       "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
       "this method requires that the output type has a default constructor");
   return DeclareCacheEntry(std::move(description), ValueType{}, calc,

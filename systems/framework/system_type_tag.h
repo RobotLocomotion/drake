@@ -28,7 +28,7 @@ template <typename T> class System;
 template <template <typename> class S>
 struct SystemTypeTag {
   SystemTypeTag() {
-    static_assert(std::is_base_of<System<double>, S<double>>::value,
+    static_assert(std::is_base_of_v<System<double>, S<double>>,
                   "The type argument to SystemTypeTag must be a System");
   }
 };

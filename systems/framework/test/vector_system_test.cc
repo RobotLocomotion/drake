@@ -368,7 +368,7 @@ TEST_F(VectorSystemTest, NoFeedthroughContinuousTimeSystemTest) {
 // be precise about when it evaluates its inputs.)
 TEST_F(VectorSystemTest, ImplicitlyNoFeedthroughTest) {
   static_assert(
-      std::is_base_of<VectorSystem<double>, Integrator<double>>::value,
+      std::is_base_of_v<VectorSystem<double>, Integrator<double>>,
       "This test assumes that Integrator is implemented in terms of "
       "VectorSystem; if that changes, copy its old implementation here "
       "so that this test is unchanged.");

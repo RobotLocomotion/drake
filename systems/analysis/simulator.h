@@ -612,7 +612,7 @@ class Simulator {
   template <class Integrator>
   Integrator& reset_integrator() {
     static_assert(
-        std::is_constructible<Integrator, const System<T>&, Context<T>*>::value,
+        std::is_constructible_v<Integrator, const System<T>&, Context<T>*>,
         "Integrator needs a constructor of the form "
         "Integrator::Integrator(const System&, Context*); this "
         "constructor is usually associated with error-controlled integrators.");
@@ -637,8 +637,8 @@ class Simulator {
   template <class Integrator>
   Integrator& reset_integrator(const T max_step_size) {
     static_assert(
-        std::is_constructible<Integrator, const System<T>&, double,
-                              Context<T>*>::value,
+        std::is_constructible_v<Integrator, const System<T>&, double,
+                                Context<T>*>,
         "Integrator needs a constructor of the form "
         "Integrator::Integrator(const System&, const T&, Context*); this "
         "constructor is usually associated with fixed-step integrators.");
