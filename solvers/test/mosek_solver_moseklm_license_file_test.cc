@@ -1,5 +1,7 @@
 #include <cstdlib>
+#include <optional>
 #include <stdexcept>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -15,14 +17,22 @@ namespace {
 // These tests are deliberately not in mosek_solver_test.cc to avoid causing
 // license issues during tests in that file.
 
+std::optional<std::string> GetEnvStr(const char* name) {
+  const char* const value = std::getenv(name);
+  if (!name) {
+    return std::nullopt;
+  }
+  return std::string(value);
+}
+
 class MoseklmLicenseFileTest : public ::testing::Test {
  protected:
   MoseklmLicenseFileTest()
-      : orig_moseklm_license_file_(std::getenv("MOSEKLM_LICENSE_FILE")) {}
+      : orig_moseklm_license_file_(GetEnvStr("MOSEKLM_LICENSE_FILE")) {}
 
   void SetUp() override {
     ASSERT_EQ(solver_.available(), true);
-    ASSERT_STRNE(orig_moseklm_license_file_, nullptr);
+    ASSERT_TRUE(orig_moseklm_license_file_);
 
     // Add a variable to avoid the "Solve" function terminating without calling
     // the external MOSEK solver.
@@ -32,12 +42,12 @@ class MoseklmLicenseFileTest : public ::testing::Test {
   void TearDown() override {
     if (orig_moseklm_license_file_) {
       const int setenv_result = ::setenv(
-          "MOSEKLM_LICENSE_FILE", orig_moseklm_license_file_, 1);
+          "MOSEKLM_LICENSE_FILE", orig_moseklm_license_file_->c_str(), 1);
       EXPECT_EQ(setenv_result, 0);
     }
   }
 
-  const char* const orig_moseklm_license_file_;
+  const std::optional<std::string> orig_moseklm_license_file_;
   MathematicalProgram prog_;
   MosekSolver solver_;
 };
