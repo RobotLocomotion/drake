@@ -34,33 +34,19 @@ MathematicalProgramResult SolverBase::Solve(
   return result;
 }
 
-namespace {
-std::string ShortName(const SolverInterface& solver) {
-  return NiceTypeName::RemoveNamespaces(NiceTypeName::Get(solver));
-}
-}  // namespace
-
 void SolverBase::Solve(const MathematicalProgram& prog,
                        const std::optional<Eigen::VectorXd>& initial_guess,
                        const std::optional<SolverOptions>& solver_options,
                        MathematicalProgramResult* result) const {
   *result = {};
   if (!available()) {
-    const std::string name = ShortName(*this);
     throw std::invalid_argument(fmt::format(
-        "{} cannot Solve because {}::available() is false, i.e.,"
-        " {} has not been compiled as part of this binary."
-        " Refer to the {} class overview documentation for how to compile it.",
-        name, name, name, name));
+        "The {} is not available in this build", NiceTypeName::Get(*this)));
   }
   if (!enabled()) {
-    const std::string name = ShortName(*this);
     throw std::invalid_argument(fmt::format(
-        "{} cannot Solve because {}::enabled() is false, i.e.,"
-        " {} has not been properly configured for use."
-        " Typically this means that an environment variable has not been set."
-        " Refer to the {} class overview documentation for how to enable it.",
-        name, name, name, name));
+        "{}::is_enabled() is false; see its documentation for how to enable.",
+        NiceTypeName::Get(*this)));
   }
   if (!AreProgramAttributesSatisfied(prog)) {
     throw std::invalid_argument(ExplainUnsatisfiedProgramAttributes(prog));
@@ -114,7 +100,7 @@ std::string SolverBase::ExplainUnsatisfiedProgramAttributes(
   }
   return fmt::format(
       "{} is unable to solve a MathematicalProgram with {}.",
-      ShortName(*this), to_string(prog.required_capabilities()));
+      NiceTypeName::Get(*this), to_string(prog.required_capabilities()));
 }
 
 }  // namespace solvers

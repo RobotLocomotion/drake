@@ -32,18 +32,6 @@ struct MosekSolverDetails {
 };
 
 /**
- * An implementation of SolverInterface for the commercially-licensed MOSEK
- * solver (https://www.mosek.com/).
- *
- * The default build of Drake is not configured to use MOSEK, so therefore
- * SolverInterface::available() will return false. You must compile Drake
- * from source in order to link against MOSEK. For details, refer to the
- * documentation at https://drake.mit.edu/bazel.html#mosek.
- *
- * The MOSEKLM_LICENSE_FILE environment variable controls whether or not
- * SolverInterface::enabled() returns true.  Iff it is set to any non-empty
- * value, then the solver is enabled; otherwise, the solver is not enabled.
- *
  * @note Mosek only cares about the initial guess of integer variables. The
  * initial guess of continuous variables are not passed to MOSEK. If all the
  * integer variables are set to some integer values, then MOSEK will be forced

@@ -21,39 +21,14 @@ class SolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface)
   virtual ~SolverInterface();
 
-  /// Returns true iff support for this solver has been compiled into Drake.
+  /// Returns true iff this solver was enabled at compile-time. Certain solvers
+  /// may be excluded at compile-time due to licensing or linking restrictions.
   /// When this method returns false, the Solve method will throw.
-  ///
-  /// Most solver implementations will always return true, but certain solvers
-  /// may have been excluded at compile-time due to licensing restrictions, or
-  /// to narrow Drake's dependency footprint. In Drake's default build, only
-  /// commercially-licensed solvers might return false.
-  ///
-  /// Contrast this with enabled(), which reflects whether a solver has been
-  /// configured for use at runtime (not compile-time).
-  ///
-  /// For details on linking commercial solvers, refer to the solvers' class
-  /// overview documentation, e.g., SnoptSolver, MosekSolver, GurobiSolver.
   virtual bool available() const = 0;
 
-  /// Returns true iff this solver is properly configured for use at runtime.
-  /// When this method returns false, the Solve method will throw.
-  ///
-  /// Most solver implementation will always return true, but certain solvers
-  /// require additional configuration before they may be used, e.g., setting
-  /// an environment variable to specify a license file or license server.
-  /// In Drake's default build, only commercially-licensed solvers might return
-  /// false.
-  ///
-  /// Contrast this with available(), which reflects whether a solver has been
-  /// incorporated into Drake at compile-time (and has nothing to do with the
-  /// runtime configuration). A solver where available() returns false may still
-  /// return true for enabled() if it is properly configured.
-  ///
-  /// The mechanism to configure a particular solver implementation is specific
-  /// to the solver in question, but typically uses an environment variable.
-  /// For details on configuring commercial solvers, refer to the solvers' class
-  /// overview documentation, e.g., SnoptSolver, MosekSolver, GurobiSolver.
+  /// Returns true iff this solver is enabled at runtime. The toggle mechanism
+  /// is specific to the solver in question, but typically uses an environment
+  /// variable. When this method returns false, the Solve method will throw.
   virtual bool enabled() const = 0;
 
   /// Solves an optimization program with optional initial guess and solver

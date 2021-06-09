@@ -1248,7 +1248,6 @@ drake_cc_googletest(
         ":gurobi_solver",
         ":mathematical_program",
         "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1367,7 +1366,6 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mosek_solver",
         "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
