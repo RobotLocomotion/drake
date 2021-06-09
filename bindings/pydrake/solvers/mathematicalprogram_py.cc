@@ -990,6 +990,29 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("F"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearMatrixInequalityConstraint.doc)
+      .def("AddPositiveDiagonallyDominantMatrixConstraint",
+          &MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint,
+          py::arg("X"),
+          doc.MathematicalProgram.AddPositiveDiagonallyDominantMatrixConstraint
+              .doc)
+      .def("AddScaledDiagonallyDominantMatrixConstraint",
+          static_cast<std::vector<std::vector<Matrix2<symbolic::Expression>>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
+              &MathematicalProgram::
+                  AddScaledDiagonallyDominantMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram.AddScaledDiagonallyDominantMatrixConstraint
+              .doc_expression)
+      .def("AddScaledDiagonallyDominantMatrixConstraint",
+          static_cast<std::vector<std::vector<Matrix2<symbolic::Variable>>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&)>(
+              &MathematicalProgram::
+                  AddScaledDiagonallyDominantMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram.AddScaledDiagonallyDominantMatrixConstraint
+              .doc_variable)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
