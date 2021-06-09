@@ -130,12 +130,12 @@ class ValueToAbstractValue {
   // method rather than by a specialized method as for VectorPolicy.
   template <typename ValueType,
             typename = std::enable_if_t<
-                !(std::is_base_of<AbstractValue, ValueType>::value ||
+                !(std::is_base_of_v<AbstractValue, ValueType> ||
                   is_eigen_refable<ValueType>())>>
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
       const ValueType& value) {
     static_assert(
-        std::is_copy_constructible<ValueType>::value ||
+        std::is_copy_constructible_v<ValueType> ||
             has_accessible_clone<ValueType>(),
         "ValueToAbstractValue(): value type must be copy constructible or "
         "have an accessible Clone() method that returns std::unique_ptr.");
@@ -186,7 +186,7 @@ class ValueToAbstractValue {
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType& value, int,
                                                     ...) {
     static_assert(
-        std::is_base_of<ClonedValueType, ValueType>::value,
+        std::is_base_of_v<ClonedValueType, ValueType>,
         "ValueToAbstractValue::ToAbstract(): accessible Clone() method must "
         "return ValueType or a base class of ValueType.");
     return std::make_unique<Value<ClonedValueType>>(value.Clone());
@@ -276,8 +276,8 @@ class ValueToVectorValue {
   template <typename ValueType,
             typename = std::enable_if_t<
                 !(is_eigen_refable<ValueType>() ||
-                  std::is_base_of<BasicVector<T>, ValueType>::value ||
-                  std::is_base_of<AbstractValue, ValueType>::value)>>
+                  std::is_base_of_v<BasicVector<T>, ValueType> ||
+                  std::is_base_of_v<AbstractValue, ValueType>)>>
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
                                                    const ValueType&) {
     throw std::logic_error(

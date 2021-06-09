@@ -218,7 +218,7 @@ class LeafSystem : public System<T> {
   template <template <typename> class U = BasicVector>
   const U<T>& GetNumericParameter(const Context<T>& context, int index) const {
     this->ValidateContext(context);
-    static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
+    static_assert(std::is_base_of_v<BasicVector<T>, U<T>>,
                   "U must be a subclass of BasicVector.");
     const auto& leaf_context =
         dynamic_cast<const systems::LeafContext<T>&>(context);
@@ -234,7 +234,7 @@ class LeafSystem : public System<T> {
   template <template <typename> class U = BasicVector>
   U<T>& GetMutableNumericParameter(Context<T>* context, int index) const {
     this->ValidateContext(context);
-    static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
+    static_assert(std::is_base_of_v<BasicVector<T>, U<T>>,
                   "U must be a subclass of BasicVector.");
     auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
     DRAKE_ASSERT(leaf_context != nullptr);
@@ -294,7 +294,7 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicPublishEvent(
       double period_sec, double offset_sec,
       EventStatus (MySystem::*publish)(const Context<T>&) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(publish != nullptr);
 
@@ -320,7 +320,7 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicPublishEvent(double period_sec, double offset_sec,
                                    void (MySystem::*publish)(const Context<T>&)
                                        const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(publish != nullptr);
 
@@ -361,7 +361,7 @@ class LeafSystem : public System<T> {
       double period_sec, double offset_sec,
       EventStatus (MySystem::*update)(const Context<T>&, DiscreteValues<T>*)
           const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
@@ -390,7 +390,7 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicDiscreteUpdateEvent(
       double period_sec, double offset_sec,
       void (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
@@ -430,7 +430,7 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicUnrestrictedUpdateEvent(
       double period_sec, double offset_sec,
       EventStatus (MySystem::*update)(const Context<T>&, State<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
@@ -457,7 +457,7 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicUnrestrictedUpdateEvent(
       double period_sec, double offset_sec,
       void (MySystem::*update)(const Context<T>&, State<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
@@ -601,7 +601,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclarePerStepPublishEvent(
       EventStatus (MySystem::*publish)(const Context<T>&) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(publish != nullptr);
 
@@ -638,7 +638,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclarePerStepDiscreteUpdateEvent(EventStatus (MySystem::*update)(
       const Context<T>&, DiscreteValues<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
@@ -676,7 +676,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclarePerStepUnrestrictedUpdateEvent(
       EventStatus (MySystem::*update)(const Context<T>&, State<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
@@ -764,7 +764,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclareInitializationPublishEvent(
       EventStatus(MySystem::*publish)(const Context<T>&) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -802,7 +802,7 @@ class LeafSystem : public System<T> {
   void DeclareInitializationDiscreteUpdateEvent(
       EventStatus(MySystem::*update)
           (const Context<T>&, DiscreteValues<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -842,7 +842,7 @@ class LeafSystem : public System<T> {
   void DeclareInitializationUnrestrictedUpdateEvent(
       EventStatus(MySystem::*update)
           (const Context<T>&, State<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -936,7 +936,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclareForcedPublishEvent(
     EventStatus (MySystem::*publish)(const Context<T>&) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -974,7 +974,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclareForcedDiscreteUpdateEvent(EventStatus
       (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -1016,7 +1016,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   void DeclareForcedUnrestrictedUpdateEvent(
       EventStatus (MySystem::*update)(const Context<T>&, State<T>*) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -1321,9 +1321,9 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
-    static_assert(std::is_base_of<BasicVector<T>, BasicVectorSubtype>::value,
+    static_assert(std::is_base_of_v<BasicVector<T>, BasicVectorSubtype>,
                   "Expected vector type derived from BasicVector.");
     // We need to obtain a `this` pointer of the right derived type to capture
     // in the calculator functor, so that it will be able to invoke the given
@@ -1379,7 +1379,7 @@ class LeafSystem : public System<T> {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
     static_assert(
-        std::is_default_constructible<BasicVectorSubtype>::value,
+        std::is_default_constructible_v<BasicVectorSubtype>,
         "LeafSystem::DeclareVectorOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
     // Invokes the previous method.
@@ -1458,7 +1458,7 @@ class LeafSystem : public System<T> {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
     static_assert(
-        std::is_default_constructible<OutputType>::value,
+        std::is_default_constructible_v<OutputType>,
         "LeafSystem::DeclareAbstractOutputPort(calc): the one-argument form of "
         "this method requires that the output type has a default constructor");
     // Note that value initialization {} is required here.
@@ -1559,7 +1559,7 @@ class LeafSystem : public System<T> {
   `OutputType` std::string as that would create an ambiguity. In that
   case the name is required. */
   template <class MySystem, typename OutputType>
-  std::enable_if_t<!std::is_same<OutputType, std::string>::value,
+  std::enable_if_t<!std::is_same_v<OutputType, std::string>,
                    LeafOutputPort<T>&>
   DeclareAbstractOutputPort(const OutputType& model_value,
                             void (MySystem::*calc)(const Context<T>&,
@@ -1666,7 +1666,7 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*publish_callback)(
           const Context<T>&, const PublishEvent<T>&) const) const {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, publish_callback](
         const Context<T>& context, const PublishEvent<T>& publish_event) {
@@ -1694,7 +1694,7 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*du_callback)(const Context<T>&,
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, du_callback](const Context<T>& context,
         const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
@@ -1722,7 +1722,7 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*uu_callback)(const Context<T>&,
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, uu_callback](const Context<T>& context,
         const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
@@ -1753,7 +1753,7 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
       const Event<T>& e) const {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+    static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     return std::make_unique<WitnessFunction<T>>(
         this, this, description, direction_type, calc, e.Clone());

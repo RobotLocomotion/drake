@@ -245,7 +245,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       const trajectories::PiecewisePolynomial<T>& trajectory)
       : start_time_(trajectory.start_time()),
         end_time_(trajectory.end_time()) {
-    if constexpr (std::is_same<T, double>::value) {
+    if constexpr (std::is_same_v<T, double>) {
       continuous_trajectory_ = trajectory;
       return;
     }

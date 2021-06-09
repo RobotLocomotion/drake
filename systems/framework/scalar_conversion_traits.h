@@ -60,10 +60,9 @@ struct Traits {
 /// @endcode
 struct NonSymbolicTraits {
   template <typename T, typename U>
-  using supported = typename std::conditional<
-    !std::is_same<T, symbolic::Expression>::value &&
-    !std::is_same<U, symbolic::Expression>::value,
-    std::true_type, std::false_type>::type;
+  using supported = typename std::bool_constant<
+    !std::is_same_v<T, symbolic::Expression> &&
+    !std::is_same_v<U, symbolic::Expression>>;
 };
 
 /// A concrete traits class providing sugar to support for converting only from
@@ -82,9 +81,7 @@ struct NonSymbolicTraits {
 /// @endcode
 struct FromDoubleTraits {
   template <typename T, typename U>
-  using supported = typename std::conditional<
-    std::is_same<U, double>::value,
-    std::true_type, std::false_type>::type;
+  using supported = typename std::bool_constant<std::is_same_v<U, double>>;
 };
 
 /// Converts a scalar `U u` to its corresponding scalar `T t`.  When U == T,

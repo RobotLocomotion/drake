@@ -391,7 +391,7 @@ class System : public SystemBase {
   const Vec<T>* EvalVectorInput(const Context<T>& context,
                                 int port_index) const {
     static_assert(
-        std::is_base_of<BasicVector<T>, Vec<T>>::value,
+        std::is_base_of_v<BasicVector<T>, Vec<T>>,
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
 
     ValidateContext(context);

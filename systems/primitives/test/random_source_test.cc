@@ -119,7 +119,7 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoiseAutoDiff) {
   // sample is AutoDiffXd, and the gradient is empty.
   auto context = random_source->CreateDefaultContext();
   auto sample = random_source->get_output_port().Eval(*context);
-  static_assert(std::is_same<decltype(sample)::Scalar, AutoDiffXd>::value,
+  static_assert(std::is_same_v<decltype(sample)::Scalar, AutoDiffXd>,
                 "The sample scalar type should be AutoDiffXd");
   EXPECT_EQ(sample.rows(), 2);
   // The derivatives are empty.

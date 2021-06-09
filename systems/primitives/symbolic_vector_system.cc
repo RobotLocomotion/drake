@@ -145,7 +145,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
   }
 
   // Initialize Jacobian matrices iff T == AutoDiffXd.
-  if (std::is_same<T, AutoDiffXd>::value) {
+  if (std::is_same_v<T, AutoDiffXd>) {
     if (dynamics_.size() > 0) {
       dynamics_jacobian_ = Jacobian(dynamics_, vars_vec);
     }

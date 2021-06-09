@@ -104,24 +104,24 @@ class OutputPort : public OutputPortBase {
   }
   // With ValueType == AbstractValue, we don't need to downcast.
   template <typename ValueType, typename = std::enable_if_t<
-      std::is_same<AbstractValue, ValueType>::value>>
+      std::is_same_v<AbstractValue, ValueType>>>
   const AbstractValue& Eval(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return DoEval(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
   template <typename ValueType, typename = std::enable_if_t<
-      !std::is_same<AbstractValue, ValueType>::value && (
-        !std::is_base_of<BasicVector<T>, ValueType>::value ||
-        std::is_same<BasicVector<T>, ValueType>::value)>>
+      !std::is_same_v<AbstractValue, ValueType> && (
+        !std::is_base_of_v<BasicVector<T>, ValueType> ||
+        std::is_same_v<BasicVector<T>, ValueType>)>>
   const ValueType& Eval(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return PortEvalCast<ValueType>(DoEval(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
   template <typename ValueType, typename = std::enable_if_t<
-      std::is_base_of<BasicVector<T>, ValueType>::value &&
-      !std::is_same<BasicVector<T>, ValueType>::value>>
+      std::is_base_of_v<BasicVector<T>, ValueType> &&
+      !std::is_same_v<BasicVector<T>, ValueType>>>
   const ValueType& Eval(const Context<T>& context, int = 0) const {
     return PortEvalCast<ValueType>(Eval<BasicVector<T>>(context));
   }
