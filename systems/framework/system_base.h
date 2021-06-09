@@ -15,8 +15,8 @@
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
-#include "drake/systems/framework/output_calc.h"
 #include "drake/systems/framework/output_port_base.h"
+#include "drake/systems/framework/value_calc_function.h"
 
 namespace drake {
 namespace systems {
@@ -365,6 +365,18 @@ class SystemBase : public internal::SystemMessageInterface {
       CacheEntry::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
+
+  /** XXX */
+  CacheEntry& DeclareCacheEntry(
+      std::string description, ValueCalcFunction calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()}) {
+    return this->DeclareCacheEntry(
+        std::move(description),
+        std::move(calc_function.alloc),
+        std::move(calc_function.calc),
+        std::move(prerequisites_of_calc));
+  }
 
   /** Declares a cache entry by specifying member functions to use both for the
   allocator and calculator. The signatures are: @code
@@ -1279,12 +1291,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
-  auto this_ptr = dynamic_cast<const MySystem*>(this);
-  DRAKE_DEMAND(this_ptr != nullptr);
-  auto [alloc_func, calc_func] = BindCalcFunction(this_ptr, calc, model_value);
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_func),
-      std::move(calc_func), std::move(prerequisites_of_calc));
+      std::move(description), ValueCalcFunction::Bind(this, calc, model_value),
+      std::move(prerequisites_of_calc));
   return entry;
 }
 

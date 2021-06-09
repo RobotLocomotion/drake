@@ -24,11 +24,11 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/model_values.h"
-#include "drake/systems/framework/output_calc.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/value_calc_function.h"
 
 namespace drake {
 namespace systems {
@@ -1420,12 +1420,10 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto self = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(self != nullptr);
-    auto [alloc_func, calc_func] = BindCalcFunction(self, calc, model_value);
     auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)), std::move(alloc_func),
-        std::move(calc_func), std::move(prerequisites_of_calc));
+        NextOutputPortName(std::move(name)),
+        ValueCalcFunction::Bind(this, calc, model_value),
+        std::move(prerequisites_of_calc));
     return port;
   }
 
@@ -1484,14 +1482,9 @@ class LeafSystem : public System<T> {
           all_sources_ticket()}) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-
     auto& port = CreateAbstractLeafOutputPort(
         NextOutputPortName(std::move(name)),
-        [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->get_mutable_value<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        },
+        ValueCalcFunction::Bind(this, make, calc),
         std::move(prerequisites_of_calc));
     return port;
   }
@@ -2029,8 +2022,7 @@ class LeafSystem : public System<T> {
   // returns a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
       std::string name,
-      typename LeafOutputPort<T>::AllocCallback allocator,
-      typename LeafOutputPort<T>::CalcCallback calculator,
+      ValueCalcFunction calculator,
       std::set<DependencyTicket> calc_prerequisites);
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a

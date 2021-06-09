@@ -10,6 +10,7 @@
 #include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/framework_common.h"
+#include "drake/systems/framework/value_calc_function.h"
 
 namespace drake {
 namespace systems {
@@ -46,11 +47,11 @@ class CacheEntry {
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular cache entry. The result is always returned as an
   AbstractValue but must contain the correct concrete type. */
-  using AllocCallback = systems::AllocValueFunction;
+  using AllocCallback = ValueCalcFunction::AllocCallback;
 
   /** Signature of a function suitable for calculating a value of a particular
   cache entry, given a place to put the value. */
-  using CalcCallback = systems::CalcContextBaseValueFunction;
+  using CalcCallback = ValueCalcFunction::CalcCallback;
 
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.

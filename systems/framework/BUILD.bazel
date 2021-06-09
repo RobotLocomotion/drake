@@ -40,7 +40,6 @@ drake_cc_package_library(
         ":leaf_output_port",
         ":leaf_system",
         ":model_values",
-        ":output_calc",
         ":output_port",
         ":output_port_base",
         ":parameters",
@@ -55,6 +54,7 @@ drake_cc_package_library(
         ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":system_visitor",
+        ":value_calc_function",
         ":value_checker",
         ":value_to_abstract_value",
         ":vector",
@@ -262,6 +262,7 @@ drake_cc_library(
     ],
     deps = [
         ":context_base",
+        ":value_calc_function",
     ],
 )
 
@@ -324,8 +325,8 @@ drake_cc_library(
         ":cache_entry",
         ":context_base",
         ":input_port_base",
-        ":output_calc",
         ":output_port_base",
+        ":value_calc_function",
     ],
 )
 
@@ -433,9 +434,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "output_calc",
-    srcs = ["output_calc.cc"],
-    hdrs = ["output_calc.h"],
+    name = "value_calc_function",
+    srcs = ["value_calc_function.cc"],
+    hdrs = ["value_calc_function.h"],
     deps = [
         ":context_base",
         ":framework_common",
@@ -528,10 +529,10 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":model_values",
-        ":output_calc",
         ":system",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
+        ":value_calc_function",
         ":value_checker",
         "//common:default_scalars",
         "//common:essential",

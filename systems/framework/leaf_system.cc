@@ -682,9 +682,18 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     typename LeafOutputPort<T>::AllocCallback alloc_function,
     typename LeafOutputPort<T>::CalcCallback calc_function,
     std::set<DependencyTicket> prerequisites_of_calc) {
+  auto cache_calc_function = [calc_function](
+      const ContextBase& context_base, AbstractValue* result) {
+    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+    return calc_function(context, result);
+  };
   auto& port = CreateAbstractLeafOutputPort(
-      NextOutputPortName(std::move(name)), std::move(alloc_function),
-      std::move(calc_function), std::move(prerequisites_of_calc));
+      NextOutputPortName(std::move(name)),
+      ValueCalcFunction{
+        std::move(alloc_function),
+        std::move(cache_calc_function),
+      },
+      std::move(prerequisites_of_calc));
   return port;
 }
 
@@ -926,20 +935,11 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateAbstractLeafOutputPort(
     std::string name,
-    typename LeafOutputPort<T>::AllocCallback allocator,
-    typename LeafOutputPort<T>::CalcCallback calculator,
+    ValueCalcFunction calculator,
     std::set<DependencyTicket> calc_prerequisites) {
-  // Construct a suitable type-erased cache calculator from the given
-  // type-T calculator function.
-  auto cache_calc_function = [calculator](
-      const ContextBase& context_base, AbstractValue* result) {
-    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
-    return calculator(context, result);
-  };
-
   return CreateCachedLeafOutputPort(
-      std::move(name), std::nullopt /* size */, std::move(allocator),
-      std::move(cache_calc_function), std::move(calc_prerequisites));
+      std::move(name), std::nullopt /* size */, std::move(calculator.alloc),
+      std::move(calculator.calc), std::move(calc_prerequisites));
 }
 
 template <typename T>
