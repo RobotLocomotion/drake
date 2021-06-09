@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,6 +22,13 @@ namespace systems {
 // particular, they are shared between the System and Context classes and have
 // the same meaning in both class hierarchies. A System and its Context always
 // have parallel internal structure.
+
+using AllocValueFunction =
+    std::function<std::unique_ptr<AbstractValue>()>;
+
+class ContextBase;
+using CalcContextBaseValueFunction =
+    std::function<void(const ContextBase&, AbstractValue*)>;
 
 // This is presented as an ID to end users but is implemented internally as
 // a typed integer index for fast access into the std::vector of dependency

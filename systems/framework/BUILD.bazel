@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":leaf_output_port",
         ":leaf_system",
         ":model_values",
+        ":output_calc",
         ":output_port",
         ":output_port_base",
         ":parameters",
@@ -323,6 +324,7 @@ drake_cc_library(
         ":cache_entry",
         ":context_base",
         ":input_port_base",
+        ":output_calc",
         ":output_port_base",
     ],
 )
@@ -431,6 +433,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "output_calc",
+    srcs = ["output_calc.cc"],
+    hdrs = ["output_calc.h"],
+    deps = [
+        ":context_base",
+        ":framework_common",
+        "//common:copyable_unique_ptr",
+        "//common:value",
+    ],
+)
+
+drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
     hdrs = ["system.h"],
@@ -514,6 +528,7 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":model_values",
+        ":output_calc",
         ":system",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
@@ -903,16 +918,6 @@ drake_cc_googletest(
         ":diagram_builder",
         ":system_visitor",
         "//systems/primitives:adder",
-    ],
-)
-
-drake_cc_googletest(
-    name = "system_html_test",
-    deps = [
-        ":diagram_builder",
-        ":system_html",
-        "//examples/manipulation_station",
-        "//systems/primitives",
     ],
 )
 

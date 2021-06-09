@@ -43,18 +43,14 @@ class CacheEntry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CacheEntry)
 
-  // TODO(sherm1) These callbacks should not be specific to this class. Move
-  // elsewhere, e.g. framework_common.h so they can be shared with output port.
-
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular cache entry. The result is always returned as an
   AbstractValue but must contain the correct concrete type. */
-  using AllocCallback =
-      std::function<std::unique_ptr<AbstractValue>()>;
+  using AllocCallback = systems::AllocValueFunction;
 
   /** Signature of a function suitable for calculating a value of a particular
   cache entry, given a place to put the value. */
-  using CalcCallback = std::function<void(const ContextBase&, AbstractValue*)>;
+  using CalcCallback = systems::CalcContextBaseValueFunction;
 
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.

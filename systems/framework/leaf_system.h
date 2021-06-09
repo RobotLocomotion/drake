@@ -24,6 +24,7 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/model_values.h"
+#include "drake/systems/framework/output_calc.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_output.h"
@@ -1419,16 +1420,12 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-
+    auto self = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(self != nullptr);
+    auto [alloc_func, calc_func] = BindCalcFunction(self, calc, model_value);
     auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)), MakeAllocCallback(model_value),
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->get_mutable_value<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        },
-        std::move(prerequisites_of_calc));
+        NextOutputPortName(std::move(name)), std::move(alloc_func),
+        std::move(calc_func), std::move(prerequisites_of_calc));
     return port;
   }
 

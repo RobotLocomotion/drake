@@ -15,6 +15,7 @@
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
+#include "drake/systems/framework/output_calc.h"
 #include "drake/systems/framework/output_port_base.h"
 
 namespace drake {
@@ -1280,26 +1281,10 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked with a ContextBase-derived Context.");
   auto this_ptr = dynamic_cast<const MySystem*>(this);
   DRAKE_DEMAND(this_ptr != nullptr);
-  // The given model value may have *either* a copy constructor or a Clone()
-  // method, since it just has to be suitable for containing in an
-  // AbstractValue. We need to create a functor that is copy constructible,
-  // so need to wrap the model value to give it a copy constructor. Drake's
-  // copyable_unique_ptr does just that, so is suitable for capture by the
-  // allocator functor here.
-  copyable_unique_ptr<AbstractValue> owned_model(
-      std::make_unique<Value<ValueType>>(model_value));
-  auto alloc_callback = [model = std::move(owned_model)]() {
-    return model->Clone();
-  };
-  auto calc_callback = [this_ptr, calc](const ContextBase& context,
-                                        AbstractValue* result) {
-    const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->get_mutable_value<ValueType>();
-    (this_ptr->*calc)(typed_context, &typed_result);
-  };
+  auto [alloc_func, calc_func] = BindCalcFunction(this_ptr, calc, model_value);
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description), std::move(alloc_func),
+      std::move(calc_func), std::move(prerequisites_of_calc));
   return entry;
 }
 
