@@ -12,6 +12,8 @@ namespace drake {
 namespace math {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Checks that the axes are set correctly.
 void CheckBasisOrthonomality(const Matrix3<double>& R) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
@@ -59,6 +61,7 @@ GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
     CheckBasis(i, z_axis);
   }
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 }  // namespace
 }  // namespace math

@@ -6,6 +6,7 @@ from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.common.value import Value
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
@@ -399,10 +400,12 @@ class TestMath(unittest.TestCase):
         if T != Expression:
             self.assertEqual(value, T(.5))
 
+    # TODO(2021-10-01) Remove with completion of deprecation.
     def test_orthonormal_basis(self):
-        R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
-        self.assertAlmostEqual(np.linalg.det(R), 1.0)
-        self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
+        with catch_drake_warnings(expected_count=1):
+            R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
+            self.assertAlmostEqual(np.linalg.det(R), 1.0)
+            self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
 
     def test_random_rotations(self):
         g = RandomGenerator()
