@@ -63,7 +63,7 @@ void TestComPositionConstraint(
           p_WC -
       p_EC_val;
   const double tol{1E-12};
-  if constexpr (std::is_same<T, double>::value) {
+  if constexpr (std::is_same_v<T, double>) {
     EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
   } else {
     EXPECT_TRUE(

@@ -33,8 +33,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
    * Overloads @ref ComposeVariableValues
    */
   template <typename T, typename Derived>
-  typename std::enable_if<std::is_same<T, typename Derived::Scalar>::value,
-                          VectorX<T>>::type
+  typename std::enable_if_t<std::is_same_v<T, typename Derived::Scalar>,
+                            VectorX<T>>
   ComposeVariableValues(const systems::Context<T>& context,
                         const Derived& lambda_value) const {
     DRAKE_ASSERT(lambda_value.rows() == num_lambda_ &&
@@ -50,9 +50,9 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
    * context, λ.
    */
   template <typename DerivedQ, typename DerivedLambda>
-  typename std::enable_if<std::is_same<typename DerivedQ::Scalar,
-                                       typename DerivedLambda::Scalar>::value,
-                          VectorX<typename DerivedQ::Scalar>>::type
+  typename std::enable_if_t<std::is_same_v<typename DerivedQ::Scalar,
+                                           typename DerivedLambda::Scalar>,
+                          VectorX<typename DerivedQ::Scalar>>
   ComposeVariableValues(
       const Eigen::MatrixBase<DerivedQ>& q_value,
       const Eigen::MatrixBase<DerivedLambda>& lambda_value) const {

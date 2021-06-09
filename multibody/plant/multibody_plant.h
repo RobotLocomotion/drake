@@ -910,7 +910,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+    static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
                   "JointType must be a sub-class of Joint<T>.");
     RegisterJointInGraph(*joint);
     return this->mutable_tree().AddJoint(std::move(joint));
@@ -999,7 +999,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
     // TODO(Mitiguy) Per discussion in PR# 13961 and issues #12789 and #13040,
     //  consider changing frame F to frame Jp and changing frame M to frame Jc.
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+    static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
 
     const Frame<T>* frame_on_parent{nullptr};
@@ -1588,8 +1588,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   template <class SolverType>
   SolverType& set_contact_solver(std::unique_ptr<SolverType> solver) {
     DRAKE_DEMAND(solver != nullptr);
-    static_assert(std::is_base_of<contact_solvers::internal::ContactSolver<T>,
-                                  SolverType>::value,
+    static_assert(std::is_base_of_v<contact_solvers::internal::ContactSolver<T>,
+                                    SolverType>,
                   "SolverType must be a sub-class of ContactSolver.");
     SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
@@ -1624,7 +1624,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(manager != nullptr);
     static_assert(
-        std::is_base_of<internal::DiscreteUpdateManager<T>, ManagerType>::value,
+        std::is_base_of_v<internal::DiscreteUpdateManager<T>, ManagerType>,
         "ManagerType must be a sub-class of DiscreteUpdateManager.");
     manager->SetOwningMultibodyPlant(this);
     discrete_update_manager_ = std::move(manager);
@@ -3993,9 +3993,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // MemberSceneGraph is an alias for SceneGraph<T>, except when T = Expression.
   struct SceneGraphStub;
-  using MemberSceneGraph = typename std::conditional<
-      std::is_same<T, symbolic::Expression>::value,
-      SceneGraphStub, geometry::SceneGraph<T>>::type;
+  using MemberSceneGraph = typename std::conditional_t<
+      std::is_same_v<T, symbolic::Expression>,
+      SceneGraphStub, geometry::SceneGraph<T>>;
 
   // Returns the SceneGraph that pre-Finalize geometry operations should
   // interact with.  In most cases, that will be whatever the user has passed
@@ -4030,7 +4030,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::pair<T, T> GetPointContactParameters(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
-    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+    if constexpr (std::is_same_v<symbolic::Expression, T>) {
       throw std::domain_error(
           "This method doesn't support T = symbolic::Expression.");
     }
@@ -4052,7 +4052,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const CoulombFriction<double>& GetCoulombFriction(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
-    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+    if constexpr (std::is_same_v<symbolic::Expression, T>) {
       throw std::domain_error(
           "This method doesn't support T = symbolic::Expression.");
     }

@@ -795,7 +795,7 @@ class RotationalInertia {
                              const bool skip_validity_check = false) {
     EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<I_Type>, 3, 3);
     // Input matrix must be templated on the same scalar type as this inertia.
-    static_assert(std::is_same<typename I_Type::Scalar, T>::value,
+    static_assert(std::is_same_v<typename I_Type::Scalar, T>,
                   "Input argument I must be templated on the same scalar type "
                   "as this rotational inertia");
     I_SP_E_ = I;

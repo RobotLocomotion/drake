@@ -3097,9 +3097,9 @@ namespace {
 struct SymbolicGeometryValue {};
 // An alias for QueryObject<T>, except when T = Expression.
 template <typename T>
-using ModelQueryObject = typename std::conditional<
-    std::is_same<T, symbolic::Expression>::value,
-    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
+using ModelQueryObject = typename std::conditional_t<
+    std::is_same_v<T, symbolic::Expression>,
+    SymbolicGeometryValue, geometry::QueryObject<T>>;
 }  // namespace
 
 template <typename T>

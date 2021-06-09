@@ -694,7 +694,7 @@ class MultibodyTree {
   const ForceElementType<T>& GetForceElement(
       ForceElementIndex force_element_index) const {
     static_assert(
-        std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
+        std::is_base_of_v<ForceElement<T>, ForceElementType<T>>,
         "ForceElementType<T> must be a sub-class of ForceElement<T>.");
     const ForceElement<T>* force_element =
         &get_force_element(force_element_index);
@@ -828,7 +828,7 @@ class MultibodyTree {
   const JointType<T>& GetJointByName(
       std::string_view name,
       std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+    static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
     const Joint<T>& joint = GetJointByNameImpl(name, model_instance);
     const JointType<T>* const typed_joint =
@@ -1997,7 +1997,7 @@ class MultibodyTree {
 
   // SFINAE overload for Frame<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of<Frame<T>, MultibodyElement<T>>::value,
+  std::enable_if_t<std::is_base_of_v<Frame<T>, MultibodyElement<T>>,
                    const MultibodyElement<T>&> get_variant(
       const MultibodyElement<Scalar>& element) const {
     return get_frame_variant(element);
@@ -2005,7 +2005,7 @@ class MultibodyTree {
 
   // SFINAE overload for Body<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of<Body<T>, MultibodyElement<T>>::value,
+  std::enable_if_t<std::is_base_of_v<Body<T>, MultibodyElement<T>>,
                    const MultibodyElement<T>&> get_variant(
       const MultibodyElement<Scalar>& element) const {
     return get_body_variant(element);
@@ -2013,7 +2013,7 @@ class MultibodyTree {
 
   // SFINAE overload for Mobilizer<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
+  std::enable_if_t<std::is_base_of_v<Mobilizer<T>, MultibodyElement<T>>,
                    const MultibodyElement<T>&> get_variant(
       const MultibodyElement<Scalar>& element) const {
     return get_mobilizer_variant(element);
@@ -2021,7 +2021,7 @@ class MultibodyTree {
 
   // SFINAE overload for Mobilizer<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
+  std::enable_if_t<std::is_base_of_v<Mobilizer<T>, MultibodyElement<T>>,
                    MultibodyElement<T>&> get_mutable_variant(
       const MultibodyElement<Scalar>& element) {
     return get_mutable_mobilizer_variant(element);
@@ -2029,7 +2029,7 @@ class MultibodyTree {
 
   // SFINAE overload for Joint<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of<Joint<T>, MultibodyElement<T>>::value,
+  std::enable_if_t<std::is_base_of_v<Joint<T>, MultibodyElement<T>>,
                    const MultibodyElement<T>&> get_variant(
       const MultibodyElement<Scalar>& element) const {
     return get_joint_variant(element);
@@ -2677,7 +2677,7 @@ class MultibodyTree {
   // a MultibodyTree variant templated on Scalar.
   template <template <typename> class FrameType, typename Scalar>
   const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
-    static_assert(std::is_base_of<Frame<T>, FrameType<T>>::value,
+    static_assert(std::is_base_of_v<Frame<T>, FrameType<T>>,
                   "FrameType<T> must be a sub-class of Frame<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
@@ -2694,7 +2694,7 @@ class MultibodyTree {
   // MultibodyTree variant templated on Scalar.
   template <template <typename> class BodyType, typename Scalar>
   const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
-    static_assert(std::is_base_of<Body<T>, BodyType<T>>::value,
+    static_assert(std::is_base_of_v<Body<T>, BodyType<T>>,
                   "BodyType<T> must be a sub-class of Body<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
@@ -2712,7 +2712,7 @@ class MultibodyTree {
   template <template <typename> class MobilizerType, typename Scalar>
   const MobilizerType<T>& get_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) const {
-    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+    static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
                   "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
@@ -2730,7 +2730,7 @@ class MultibodyTree {
   template <template <typename> class MobilizerType, typename Scalar>
   MobilizerType<T>& get_mutable_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) {
-    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+    static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
                   "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
@@ -2747,7 +2747,7 @@ class MultibodyTree {
   // in a MultibodyTree variant templated on Scalar.
   template <template <typename> class JointType, typename Scalar>
   const JointType<T>& get_joint_variant(const JointType<Scalar>& joint) const {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+    static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this

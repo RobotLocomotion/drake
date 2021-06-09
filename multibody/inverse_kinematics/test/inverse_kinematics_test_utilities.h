@@ -41,9 +41,9 @@ std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
  * gradients.
  */
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same<typename DerivedA::Scalar, typename DerivedB::Scalar>::value &&
-    std::is_same<typename DerivedA::Scalar, AutoDiffXd>::value>::type
+typename std::enable_if_t<
+    std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar> &&
+    std::is_same_v<typename DerivedA::Scalar, AutoDiffXd>>
 CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
                        const Eigen::MatrixBase<DerivedB>& b, double tol) {
   EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(a),
