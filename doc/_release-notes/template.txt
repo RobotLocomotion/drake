@@ -82,9 +82,15 @@ Newly bound
 
 * TBD
 
-## Build system and dependencies
+## Build system
 
 <!-- <relnotes for cmake,doc,setup,third_party,tools go here> -->
+
+* TBD
+
+## Build dependencies
+
+<!-- Manually relocate any "Upgrade foo_external to latest" lines to here. -->
 
 * TBD
 
