@@ -1,5 +1,7 @@
 #include "drake/common/random.h"
 
+#include "drake/common/autodiff.h"
+
 namespace drake {
 template <typename T>
 T CalcProbabilityDensity(RandomDistribution distribution,

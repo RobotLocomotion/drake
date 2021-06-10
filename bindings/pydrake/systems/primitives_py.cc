@@ -18,6 +18,7 @@
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/linear_transform_density.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
@@ -338,6 +339,33 @@ PYBIND11_MODULE(primitives, m) {
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_non_symbolic_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
+
+    DefineTemplateClassWithDefault<LinearTransformDensity<T>, LeafSystem<T>>(m,
+        "LinearTransformDensity", GetPyParam<T>(),
+        doc.LinearTransformDensity.doc)
+        .def(py::init<RandomDistribution, int, int>(), py::arg("distribution"),
+            py::arg("input_size"), py::arg("output_size"),
+            doc.LinearTransformDensity.ctor.doc)
+        .def("get_input_port_w_in",
+            &LinearTransformDensity<T>::get_input_port_w_in,
+            py_rvp::reference_internal,
+            doc.LinearTransformDensity.get_input_port_w_in.doc)
+        .def("get_input_port_A", &LinearTransformDensity<T>::get_input_port_A,
+            py_rvp::reference_internal,
+            doc.LinearTransformDensity.get_input_port_A.doc)
+        .def("get_input_port_b", &LinearTransformDensity<T>::get_input_port_b,
+            py_rvp::reference_internal,
+            doc.LinearTransformDensity.get_input_port_b.doc)
+        .def("get_distribution", &LinearTransformDensity<T>::get_distribution,
+            doc.LinearTransformDensity.get_distribution.doc)
+        .def("FixConstantA", &LinearTransformDensity<T>::FixConstantA,
+            py::arg("context"), py::arg("A"), py_rvp::reference_internal,
+            doc.LinearTransformDensity.FixConstantA.doc)
+        .def("FixConstantB", &LinearTransformDensity<T>::FixConstantB,
+            py::arg("context"), py::arg("b"), py_rvp::reference_internal,
+            doc.LinearTransformDensity.FixConstantB.doc)
+        .def("CalcDensity", &LinearTransformDensity<T>::CalcDensity,
+            py::arg("context"), doc.LinearTransformDensity.CalcDensity.doc);
 
     DefineTemplateClassWithDefault<TrajectoryAffineSystem<T>, LeafSystem<T>>(m,
         "TrajectoryAffineSystem", GetPyParam<T>(),

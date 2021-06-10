@@ -45,6 +45,7 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_pybind_library(
     name = "_init_py",
     cc_deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -386,6 +387,7 @@ drake_py_unittest(
     data = ["//examples/atlas:models"],
     deps = [
         ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
