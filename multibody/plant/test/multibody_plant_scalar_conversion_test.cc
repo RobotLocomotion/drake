@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/test/dummy_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -13,8 +14,8 @@
 namespace drake {
 
 using multibody::RevoluteSpring;
-using systems::DiagramBuilder;
 using systems::Diagram;
+using systems::DiagramBuilder;
 
 namespace multibody {
 namespace {
@@ -127,6 +128,32 @@ GTEST_TEST(ScalarConversionTest, PortIndexOrdering) {
   DRAKE_DEMAND(autodiff_plant != nullptr);
 
   CompareMultibodyPlantPortIndices(pair.plant, *autodiff_plant);
+}
+
+// This test verifies that adding external components that do not support some
+// scalar types removes MultibodyPlant's ability to scalar convert to those
+// scalar types.
+GTEST_TEST(ScalarConversionTest, ExternalComponent) {
+  MultibodyPlant<double> plant(0.0);
+  auto dummy_model = std::make_unique<internal::test::DummyModel<double>>();
+  EXPECT_TRUE(dummy_model->is_cloneable_to_scalar<double>());
+  EXPECT_TRUE(dummy_model->is_cloneable_to_scalar<AutoDiffXd>());
+  EXPECT_FALSE(dummy_model->is_cloneable_to_scalar<symbolic::Expression>());
+  plant.AddPhysicalModel(std::move(dummy_model));
+  plant.Finalize();
+
+  // double -> AutoDiffXd
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
+  EXPECT_NO_THROW(plant_autodiff =
+                      drake::systems::System<double>::ToAutoDiffXd(plant));
+  // AutoDiffXd -> double
+  EXPECT_NO_THROW(plant_autodiff->ToScalarType<double>());
+  // double -> symbolic::Expression
+  auto plant_double_to_symbolic = plant.ToSymbolicMaybe();
+  EXPECT_EQ(plant_double_to_symbolic, nullptr);
+  // AutoDiffXd -> symbolic::Expression
+  auto plant_autodiff_to_symbolic = plant_autodiff->ToSymbolicMaybe();
+  EXPECT_EQ(plant_autodiff_to_symbolic, nullptr);
 }
 
 }  // namespace

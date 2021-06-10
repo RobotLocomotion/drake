@@ -63,16 +63,6 @@ TEST_F(PhysicalModelTest, PostFinalizeStateAdditionNotAllowed) {
       "Calls to 'AppendDiscreteState\\(\\)' after system resources have been "
       "declared are not allowed.");
 }
-
-// Verifies that cloning to symbolic is not supported.
-TEST_F(PhysicalModelTest, CloneToSymbolicNotSupported) {
-  const PhysicalModel<double>* physical_model = dummy_model_;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      physical_model->CloneToScalar<symbolic::Expression>(), std::exception,
-      "Trying to clone PhysicalModel to scalar type "
-      "drake::symbolic::Expression, but only default non-symbolic scalar types "
-      "are supported.");
-}
 }  // namespace
 }  // namespace test
 }  // namespace internal

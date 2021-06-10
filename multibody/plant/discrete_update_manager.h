@@ -28,7 +28,7 @@ class AccelerationKinematicsCache;
  It is an abstract base class providing an interface for MultibodyPlant to
  invoke, with the intent that a variety of concrete DiscreteUpdateManagers will
  be derived from this base class. As of today a new manager can be set with the
- experimental method MultibodyPlant::set_discrete_update_manager(). This allows
+ experimental method MultibodyPlant::SetDiscreteUpdateManager(). This allows
  Drake developers to experiment with a variety of discrete update methods.
 
  @tparam_default_scalar */
@@ -46,8 +46,7 @@ class DiscreteUpdateManager {
    MultibodyPlant. MultibodyPlant guarantees the call to ExtactModelInfo() after
    this object is scalar converted. Therefore this clone method is only
    resposible for deep copying to a state *before* the call to
-   ExtactModelInfo(). The only two scalar types supported at the moment are
-   double and AutoDiffXd.
+   ExtactModelInfo().
    @tparam_default_scalar */
   template <typename ScalarType>
   std::unique_ptr<DiscreteUpdateManager<ScalarType>> CloneToScalar() const {
@@ -55,11 +54,25 @@ class DiscreteUpdateManager {
       return CloneToDouble();
     } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
       return CloneToAutoDiffXd();
+    } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
+      return CloneToSymbolic();
     }
-    throw std::logic_error(
-        fmt::format("Trying to clone DiscreteUpdateManager to scalar type {}, "
-                    "but only default non-symbolic scalar types are supported.",
-                    NiceTypeName::Get<ScalarType>()));
+    DRAKE_UNREACHABLE();
+  }
+
+  /* Returns true if the concrete DiscreteUpdateManager object can be cloned to
+   the given ScalarType. See CloneToScalar().
+   @tparam_default_scalar */
+  template <typename ScalarType>
+  bool is_cloneable_to_scalar() const {
+    if constexpr (std::is_same_v<ScalarType, double>) {
+      return is_cloneable_to_double();
+    } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
+      return is_cloneable_to_autodiff();
+    } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
+      return is_cloneable_to_symbolic();
+    }
+    DRAKE_UNREACHABLE();
   }
 
   /* Returns the MultibodyPlant that owns this DiscreteUpdateManager.
@@ -71,7 +84,7 @@ class DiscreteUpdateManager {
 
   /* (Internal) Sets the given `plant` as the MultibodyPlant owning this
    DiscreteUpdateManager. This method is meant to be called by
-   MultibodyPlant::set_discrete_update_manager() only. A non-const pointer to
+   MultibodyPlant::SetDiscreteUpdateManager() only. A non-const pointer to
    plant is passed in so that cache entries can be declared.
    @pre plant is Finalized. */
   void SetOwningMultibodyPlant(MultibodyPlant<T>* plant) {
@@ -120,22 +133,33 @@ class DiscreteUpdateManager {
    that it creates a copy of the object with double as the scalar type. It
    should copy all members except for those overwritten in
    `SetOwningMultibodyPlant()`. */
-  virtual std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const {
-    throw std::logic_error(
-        "Scalar conversion to double is not supported by this "
-        "DiscreteUpdateManager.");
-  }
+  virtual std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const;
 
   /* Derived classes that support AutoDiffXd as a scalar type must implement
    this so that it creates a copy of the object with AutodDiffXd as the scalar
    type. It should copy all members except for those overwritten in
    `SetOwningMultibodyPlant()`. */
   virtual std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
-      const {
-    throw std::logic_error(
-        "Scalar conversion to AutodiffXd is not supported by this "
-        "DiscreteUpdateManager.");
-  }
+      const;
+
+  /* Derived classes that support symboblic::Expression as a scalar type must
+   implement this so that it creates a copy of the object with
+   symbolic::Expression as the scalar type. It should copy all members except
+   for those overwritten in `SetOwningMultibodyPlant()`. */
+  virtual std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
+  CloneToSymbolic() const;
+
+  /* Defaults to false. Derived classes that support double as a scalar type
+   must override this to return true. */
+  virtual bool is_cloneable_to_double() const;
+
+  /* Defaults to false. Derived classes that support AutoDiffXd as a scalar type
+   must override this to return true. */
+  virtual bool is_cloneable_to_autodiff() const;
+
+  /* Defaults to false. Derived classes that support symbolic::Expression as a
+   scalar type must override this to return true. */
+  virtual bool is_cloneable_to_symbolic() const;
 
   /* Derived DiscreteUpdateManager should override this method to extract
    information from the owning MultibodyPlant. */

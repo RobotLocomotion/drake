@@ -58,7 +58,7 @@ class DeformableRigidManagerTest : public ::testing::Test {
     plant_.Finalize();
     auto deformable_rigid_manager =
         std::make_unique<DeformableRigidManager<double>>();
-    deformable_rigid_manager_ = &plant_.set_discrete_update_manager(
+    deformable_rigid_manager_ = &plant_.SetDiscreteUpdateManager(
         std::move(deformable_rigid_manager));
     deformable_rigid_manager_->RegisterCollisionObjects(scene_graph_);
   }
@@ -196,15 +196,15 @@ std::unique_ptr<MultibodyPlant<double>> MakePlant(
     auto deformable_rigid_manager =
         std::make_unique<DeformableRigidManager<double>>();
     DeformableRigidManager<double>* deformable_rigid_manager_ptr =
-        &plant->set_discrete_update_manager(
+        &plant->SetDiscreteUpdateManager(
             std::move(deformable_rigid_manager));
     if (contact_solver != nullptr) {
-      deformable_rigid_manager_ptr->set_contact_solver(
+      deformable_rigid_manager_ptr->SetContactSolver(
           std::move(contact_solver));
     }
   } else {
     if (contact_solver != nullptr) {
-      plant->set_contact_solver(std::move(contact_solver));
+      plant->SetContactSolver(std::move(contact_solver));
     }
   }
   return plant;

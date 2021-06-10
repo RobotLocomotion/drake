@@ -37,7 +37,7 @@ constexpr double kDt = 0.1;
 /* A dummy manager class derived from DiscreteUpdateManager for testing
  purpose. It implements the interface in DiscreteUpdateManager by filling in
  dummy data.
- @tparam_default_scalar */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
  public:
@@ -73,6 +73,10 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
       const final {
     return CloneToScalar<AutoDiffXd>();
   }
+
+  bool is_cloneable_to_double() const final { return true; }
+
+  bool is_cloneable_to_autodiff() const final { return true; }
 
   template <typename ScalarType>
   std::unique_ptr<DiscreteUpdateManager<ScalarType>> CloneToScalar() const {
@@ -178,7 +182,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
     // MultibodyPlant::num_velocities() only reports the number of rigid
     // generalized velocities for the rigid model.
     EXPECT_EQ(plant_.num_velocities(), kNumRigidDofs);
-    dummy_manager_ = &plant_.set_discrete_update_manager(
+    dummy_manager_ = &plant_.SetDiscreteUpdateManager(
         std::make_unique<DummyDiscreteUpdateManager<double>>());
   }
 
@@ -268,17 +272,6 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
                       dummy_discrete_state() +
                           2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
                       std::numeric_limits<double>::epsilon()));
-}
-
-/* Verifies that cloning to symbolic is not supported yet. */
-TEST_F(DiscreteUpdateManagerTest, CloneToSymbolicNotSupported) {
-  const DiscreteUpdateManager<double>* discrete_update_manager = dummy_manager_;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      discrete_update_manager->CloneToScalar<symbolic::Expression>(),
-      std::exception,
-      "Trying to clone DiscreteUpdateManager to scalar type "
-      "drake::symbolic::Expression, but only default non-symbolic scalar types "
-      "are supported.");
 }
 }  // namespace
 }  // namespace test
