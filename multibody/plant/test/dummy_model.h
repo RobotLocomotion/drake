@@ -14,6 +14,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteStateIndex;
 using systems::OutputPortIndex;
+// TODO(xuchenhan-tri): Rename this class to DummyPhysicalModel.
 /* A dummy manager class derived from PhysicalModel for testing
  purpose. This dummy manager declares a single group of discrete state that
  concatenates the state added through `AppendDiscreteState()`. It also declares

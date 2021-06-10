@@ -45,7 +45,7 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
 
   DummyDiscreteUpdateManager() = default;
 
-  ~DummyDiscreteUpdateManager() = default;
+  ~DummyDiscreteUpdateManager() final = default;
 
   /* Returns the number of times CalcContactSolverResults() is called. */
   int num_calls_to_calc_contact_solver_results() const {
@@ -81,8 +81,6 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
   template <typename ScalarType>
   std::unique_ptr<DiscreteUpdateManager<ScalarType>> CloneToScalar() const {
     auto clone = std::make_unique<DummyDiscreteUpdateManager<ScalarType>>();
-    clone->num_calls_to_calc_contact_solver_results_ =
-        this->num_calls_to_calc_contact_solver_results_;
     return clone;
   }
 

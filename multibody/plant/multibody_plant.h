@@ -4596,25 +4596,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
   // unsupported by the given `component`.
-  // @tparam Component The auxiliary external component of MultibodyPlant that
-  // may affect the plant's ability to scalar convert. The Component class must
-  // support the the boolean query `is_cloneable_to_scalar()` to indicate
-  // whether the `component` instance support scalar conversion to default
-  // scalar types.
-  template <typename Component>
-  void RemoveUnsupportedScalars(const Component& component) {
-    systems::SystemScalarConverter& scalar_converter =
-        this->get_mutable_system_scalar_converter();
-    if (!component.template is_cloneable_to_scalar<double>()) {
-      scalar_converter.Remove<double>();
-    }
-    if (!component.template is_cloneable_to_scalar<AutoDiffXd>()) {
-      scalar_converter.Remove<AutoDiffXd>();
-    }
-    if (!component.template is_cloneable_to_scalar<symbolic::Expression>()) {
-      scalar_converter.Remove<symbolic::Expression>();
-    }
-  }
+  void RemoveUnsupportedScalars(
+      const internal::MultibodyPlantExternalComponent<T>& component);
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry

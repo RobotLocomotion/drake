@@ -58,6 +58,7 @@ drake_cc_library(
     name = "dummy_model",
     testonly = 1,
     hdrs = ["test/dummy_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":multibody_plant_core",
     ],
@@ -74,6 +75,7 @@ drake_cc_library(
         "discrete_update_manager.h",
         "multibody_plant.h",
         "multibody_plant_discrete_update_manager_attorney.h",
+        "multibody_plant_external_component.h",
         "multibody_plant_model_attorney.h",
         "physical_model.h",
     ],

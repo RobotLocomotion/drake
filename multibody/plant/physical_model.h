@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/plant/multibody_plant_external_component.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -29,7 +30,7 @@ namespace internal {
 
  @tparam_default_scalar */
 template <typename T>
-class PhysicalModel {
+class PhysicalModel : public MultibodyPlantExternalComponent<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModel);
 
@@ -55,20 +56,17 @@ class PhysicalModel {
     DRAKE_UNREACHABLE();
   }
 
-  /* Returns true if the concrete PhysicalModel object can be cloned to the
-   given ScalarType. See CloneToScalar().
-   @tparam_default_scalar */
-  template <typename ScalarType>
-  bool is_cloneable_to_scalar() const {
-    if constexpr (std::is_same_v<ScalarType, double>) {
-      return is_cloneable_to_double();
-    } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
-      return is_cloneable_to_autodiff();
-    } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
-      return is_cloneable_to_symbolic();
-    }
-    DRAKE_UNREACHABLE();
-  }
+  /* Defaults to false. Derived classes that support double as a scalar type
+   must override this to return true. */
+  virtual bool is_cloneable_to_double() const;
+
+  /* Defaults to false. Derived classes that support AutoDiffXd as a scalar type
+   must override this to return true. */
+  virtual bool is_cloneable_to_autodiff() const;
+
+  /* Defaults to false. Derived classes that support symbolic::Expression as a
+   scalar type must override this to return true. */
+  virtual bool is_cloneable_to_symbolic() const;
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
    additional system resources. This method is only meant to be called by
@@ -100,18 +98,6 @@ class PhysicalModel {
    for those overwritten in `DeclareSystemResources()`. */
   virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic()
       const;
-
-  /* Defaults to false. Derived classes that support double as a scalar type
-   must override this to return true. */
-  virtual bool is_cloneable_to_double() const;
-
-  /* Defaults to false. Derived classes that support AutoDiffXd as a scalar type
-   must override this to return true. */
-  virtual bool is_cloneable_to_autodiff() const;
-
-  /* Defaults to false. Derived classes that support symbolic::Expression as a
-   scalar type must override this to return true. */
-  virtual bool is_cloneable_to_symbolic() const;
 
   /* Derived class must override this to declare system resources for its
    specific model. */

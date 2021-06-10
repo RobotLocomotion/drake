@@ -135,11 +135,12 @@ GTEST_TEST(ScalarConversionTest, PortIndexOrdering) {
 // scalar types.
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.0);
-  auto dummy_model = std::make_unique<internal::test::DummyModel<double>>();
-  EXPECT_TRUE(dummy_model->is_cloneable_to_scalar<double>());
-  EXPECT_TRUE(dummy_model->is_cloneable_to_scalar<AutoDiffXd>());
-  EXPECT_FALSE(dummy_model->is_cloneable_to_scalar<symbolic::Expression>());
-  plant.AddPhysicalModel(std::move(dummy_model));
+  std::unique_ptr<internal::PhysicalModel<double>> dummy_physical_model =
+      std::make_unique<internal::test::DummyModel<double>>();
+  EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
+  EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
+  EXPECT_FALSE(dummy_physical_model->is_cloneable_to_symbolic());
+  plant.AddPhysicalModel(std::move(dummy_physical_model));
   plant.Finalize();
 
   // double -> AutoDiffXd
