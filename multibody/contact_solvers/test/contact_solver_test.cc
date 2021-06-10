@@ -153,11 +153,11 @@ class ParticleTest : public ::testing::Test {
     ASSERT_EQ(nq, 7);  // 4 dofs for a quaternion, 3 dofs for translation.
     ASSERT_EQ(nv, 6);  // 6 dofs for angular and translational velocity.
     solver_ = &driver_.mutable_plant().set_contact_solver(
-        std::make_unique<ParticleSolver<double>>(kParticleMass_));
+        std::make_unique<ParticleSolver<double>>(kParticleMass));
 
     // Verify that solvers/test/particle.sdf is in sync with this test.
     const double mass = particle.get_default_mass();
-    ASSERT_NEAR(mass, kParticleMass_, kEpsilon);
+    ASSERT_NEAR(mass, kParticleMass, kEpsilon);
 
     // MultibodyPlant state.
     SetInitialState();
@@ -168,7 +168,7 @@ class ParticleTest : public ::testing::Test {
     const auto& plant = driver_.plant();
     const auto& particle = plant.GetBodyByName("particle");
     auto& context = driver_.mutable_plant_context();
-    const Vector3d p_WB(0, 0, -kPenetrationDistance_);
+    const Vector3d p_WB(0, 0, -kPenetrationDistance);
     plant.SetFreeBodyPose(&context, particle, math::RigidTransformd(p_WB));
     plant.SetFreeBodySpatialVelocity(&context, particle,
                                      SpatialVelocity<double>::Zero());
@@ -227,7 +227,7 @@ class ParticleTest : public ::testing::Test {
 
     // The rotational component is non-zero given the non-zero offset location
     // of the contact point.
-    const double phi0 = kPenetrationDistance_;
+    const double phi0 = kPenetrationDistance;
     // MultibodyPlant places C midway between the two interacting bodies.
     const Vector3d p_PoC_W(0, 0, phi0 / 2.0);
     const Vector3d t_P_W = p_PoC_W.cross(f_Pc_W_expected);
@@ -237,8 +237,8 @@ class ParticleTest : public ::testing::Test {
 
  protected:
   const double dt_{1.0e-3};
-  const double kParticleMass_{0.5};
-  const double kPenetrationDistance_{1.2e-2};
+  const double kParticleMass{0.5};
+  const double kPenetrationDistance{1.2e-2};
   MultibodySimDriver driver_;
   ParticleSolver<double>* solver_{nullptr};
 };

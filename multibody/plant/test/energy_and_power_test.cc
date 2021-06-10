@@ -80,12 +80,12 @@ class EnergyAndPowerTester : public ::testing::Test {
   // Return an appropriate tolerance to be used in checking the given quantity.
   // Units are the same as those of the quantity.
   double absolute_tolerance(double quantity) const {
-    return kAccuracy_ * std::max(1., std::abs(quantity));
+    return kAccuracy * std::max(1., std::abs(quantity));
   }
 
  protected:
   // Require tests to achieve this fractional accuracy (except near zero).
-  const double kAccuracy_{10 * std::numeric_limits<double>::epsilon()};
+  const double kAccuracy{10 * std::numeric_limits<double>::epsilon()};
 
   MultibodyPlant<double> plant_{0.};
   std::unique_ptr<Context<double>> context_;
