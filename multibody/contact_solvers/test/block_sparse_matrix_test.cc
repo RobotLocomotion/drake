@@ -142,6 +142,22 @@ TEST_F(BlockSparseMatrixTest, Multiply) {
                               std::numeric_limits<double>::epsilon()));
 }
 
+// Tests that we allow to overestimate the capacity of non-zero blocks.
+TEST_F(BlockSparseMatrixTest, CapacityOverestimated) {
+  // An arbitrary capacity of non-zero blocks estimated to be larger than the
+  // actual number, which is 5.
+  const int kCapacityOverestimated = 6;
+  BlockSparseMatrixBuilder<double> builder(3, 4, kCapacityOverestimated);
+  builder.PushBlock(0, 0, J_.block(0, 0, 3, 2));
+  builder.PushBlock(0, 2, J_.block(0, 3, 3, 2));
+  builder.PushBlock(1, 2, J_.block(3, 3, 4, 2));
+  builder.PushBlock(2, 1, J_.block(7, 2, 3, 1));
+  builder.PushBlock(2, 3, J_.block(7, 5, 3, 4));
+  EXPECT_NO_THROW(builder.Build());
+  const MatrixXd J_reconstructed = Jblk_.MakeDenseMatrix();
+  EXPECT_TRUE(CompareMatrices(J_, J_reconstructed, 0));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers
