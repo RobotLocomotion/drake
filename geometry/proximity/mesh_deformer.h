@@ -40,12 +40,6 @@ class MeshDeformer {
     DRAKE_DEMAND(mesh_M != nullptr);
   }
 
-  /* Sets the mesh for this deformer. */
-  void set_mesh(MeshType* mesh_M) {
-    DRAKE_DEMAND(mesh_M != nullptr);
-    mesh_ = *mesh_M;
-  }
-
   /* Getter for the *const* version of the mesh to be deformed. */
   const MeshType& mesh() const { return mesh_; }
 

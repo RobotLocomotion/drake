@@ -40,7 +40,6 @@ class DeformableVolumeMesh {
   DeformableVolumeMesh& operator=(const DeformableVolumeMesh& other) {
     if (this == &other) return *this;
     mesh_ = other.mesh();
-    deformer_.set_mesh(&mesh_);
     return *this;
   }
 
@@ -52,7 +51,6 @@ class DeformableVolumeMesh {
 
   DeformableVolumeMesh& operator=(DeformableVolumeMesh&& other) {
     mesh_ = std::move(other.mesh_);
-    deformer_.set_mesh(&mesh_);
     return *this;
   }
 
