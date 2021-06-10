@@ -66,6 +66,12 @@ class MeshDeformerTest : public ::testing::Test {
     EXPECT_EQ(&deformer_.mesh(), &mesh_);
   }
 
+  void TestSetMesh() {
+    MeshType<T> another_mesh = BoxMaker<T, MeshType>().make(Box(4, 5, 6));
+    deformer_.set_mesh(&another_mesh);
+    EXPECT_EQ(&deformer_.mesh(), &another_mesh);
+  }
+
   void TestSetAllPositions() {
     // Quick reality check that we don't start in a deformed configuration.
     ASSERT_FALSE(MatchesQ());
@@ -105,6 +111,10 @@ TYPED_TEST_SUITE(VolumeMeshDeformerTest, ScalarTypes);
 
 TYPED_TEST(VolumeMeshDeformerTest, Construction) {
   this->TestConstructor();
+}
+
+TYPED_TEST(VolumeMeshDeformerTest, SetMesh) {
+  this->TestSetMesh();
 }
 
 TYPED_TEST(VolumeMeshDeformerTest, SetAllPositions) {
