@@ -152,7 +152,7 @@ class ParticleTest : public ::testing::Test {
     // Assert plant sizes.
     ASSERT_EQ(nq, 7);  // 4 dofs for a quaternion, 3 dofs for translation.
     ASSERT_EQ(nv, 6);  // 6 dofs for angular and translational velocity.
-    solver_ = &driver_.mutable_plant().set_contact_solver(
+    solver_ = &driver_.mutable_plant().SetContactSolver(
         std::make_unique<ParticleSolver<double>>(kParticleMass));
 
     // Verify that solvers/test/particle.sdf is in sync with this test.
