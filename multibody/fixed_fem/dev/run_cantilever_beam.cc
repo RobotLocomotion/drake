@@ -120,7 +120,7 @@ int DoMain() {
    is no contact in this demo. */
   auto deformable_rigid_manager =
       std::make_unique<DeformableRigidManager<double>>();
-  plant->set_discrete_update_manager(std::move(deformable_rigid_manager));
+  plant->SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
   builder.Connect(deformable_model_ptr->get_vertex_positions_output_port(),
                   visualizer->get_input_port());
   auto diagram = builder.Build();

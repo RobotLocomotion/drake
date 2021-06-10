@@ -788,9 +788,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
-    physical_models_.clear();
     for (auto& model : other.physical_models_) {
-      physical_models_.emplace_back(model->template CloneToScalar<T>());
+      auto cloned_model = model->template CloneToScalar<T>();
+      // TODO(xuchenhan-tri): Rework physical model and discrete update manager
+      //  to eliminate the requirement on the order that they are called with
+      //  respect to Finalize().
+
+      // AddPhysicalModel can't be called here because it's post-finalize. We
+      // have to manually disable scalars that the cloned physical model do not
+      // support.
+      RemoveUnsupportedScalars(*cloned_model);
+      physical_models_.emplace_back(std::move(cloned_model));
     }
 
     DeclareSceneGraphPorts();
@@ -813,7 +821,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // Note: The discrete update manager needs to be copied *after* the plant is
     // finalized.
     if (other.discrete_update_manager_ != nullptr) {
-      set_discrete_update_manager(
+      SetDiscreteUpdateManager(
           other.discrete_update_manager_->template CloneToScalar<T>());
     }
     // TODO(xuchenhan-tri): Add scalar conversion for the contact solver when
@@ -1586,7 +1594,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // (Experimental) set_contact_solver() should only be called by advanced
+  // TODO(xuchenhan-tri): Change the signature so that it's a void method taking
+  //  unique pointer to the base class. This gets rid of the template and
+  //  facilitates moving the definition to .cc file.
+  // (Experimental) SetContactSolver() should only be called by advanced
   // developers wanting to try out their custom contact solvers. We choose not
   // to show it in public documentations rather than making it private with
   // friends.
@@ -1601,29 +1612,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
   template <class SolverType>
-  SolverType& set_contact_solver(std::unique_ptr<SolverType> solver) {
+  SolverType& SetContactSolver(std::unique_ptr<SolverType> solver) {
     DRAKE_DEMAND(solver != nullptr);
     static_assert(std::is_base_of_v<contact_solvers::internal::ContactSolver<T>,
                                     SolverType>,
                   "SolverType must be a sub-class of ContactSolver.");
     SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
-    // Prevent `this` MultibodyPlant to scalar convert to or from
-    // symbolic::Expression.
-    systems::SystemScalarConverter& scalar_converter =
-        this->get_mutable_system_scalar_converter();
-    scalar_converter.Remove<symbolic::Expression>();
+    // TODO(xuchenhan-tri): Call `RemoveUnsupportedScalars()` when ContactSolver
+    //  supports scalar converting clone.
     return *solver_ptr;
   }
 
-  // (Experimental) set_discrete_update_manager() should only be called by
-  // advanced developers wanting to try out their custom time stepping
-  // strategies, including contact resolution. We choose not to show it in
-  // public documentations rather than making it private with friends. With this
-  // method MultibodyPlant takes ownership of `manager`.
+  // TODO(xuchenhan-tri): Change the signature so that it's a void method taking
+  //  unique pointer to the base class. This gets rid of the template and
+  //  facilitates moving the definition to .cc file.
+  // (Experimental) SetDiscreteUpdateManager() should only be called by advanced
+  // developers wanting to try out their custom time stepping strategies,
+  // including contact resolution. We choose not to show it in public
+  // documentations rather than making it private with friends. With this method
+  // MultibodyPlant takes ownership of `manager`.
   //
   // @note Setting a contact manager bypasses the mechanism to set a different
-  // contact solver with set_contact_solver(). Use only one of these two
+  // contact solver with SetContactSolver(). Use only one of these two
   // experimental mechanims but never both.
   //
   // @param manager
@@ -1637,7 +1648,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
   template <class ManagerType>
-  ManagerType& set_discrete_update_manager(
+  ManagerType& SetDiscreteUpdateManager(
       std::unique_ptr<ManagerType> manager) {
     // N.B. This requirement is really more important on the side of the
     // manager's constructor, since most likely it'll need MBP's topology at
@@ -1650,23 +1661,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         "ManagerType must be a sub-class of DiscreteUpdateManager.");
     manager->SetOwningMultibodyPlant(this);
     discrete_update_manager_ = std::move(manager);
-    ManagerType* concrete_manager_ptr =
-        static_cast<ManagerType*>(discrete_update_manager_.get());
-    // Prevent `this` MultibodyPlant to scalar convert to or from
-    // symbolic::Expression.
-    systems::SystemScalarConverter& scalar_converter =
-        this->get_mutable_system_scalar_converter();
-    scalar_converter.Remove<symbolic::Expression>();
-    return *concrete_manager_ptr;
+    RemoveUnsupportedScalars(*discrete_update_manager_);
+    return *static_cast<ManagerType*>(discrete_update_manager_.get());
   }
 
+  // TODO(xuchenhan-tri): Change the signature so that it's a void method taking
+  //  unique pointer to the base class. This gets rid of the template and
+  //  facilitates moving the definition to .cc file.
   // (Experimental) AddPhysicalModel() should only be called by advanced
   // developers wanting to try out their new physical models. We choose not to
   // show it in public documentations rather than making it private with
-  // friends. With this method MultibodyPlant takes ownership of `model`
-  // and calls its DeclareSystemResources() method at Finalize(), giving
-  // specific physical model implementations a chance to declare the system
-  // resources it needs.
+  // friends. With this method MultibodyPlant takes ownership of `model` and
+  // calls its DeclareSystemResources() method at Finalize(), giving specific
+  // physical model implementations a chance to declare the system resources it
+  // needs.
   //
   // @param model After this call the model is owned by `this` MultibodyPlant.
   // @pre model != nullptr.
@@ -1682,15 +1690,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(model != nullptr);
     static_assert(std::is_base_of_v<internal::PhysicalModel<T>, ModelType>,
                   "ModelType must be a sub-class of PhysicalModel.");
-    physical_models_.emplace_back(std::move(model));
-    ModelType* concrete_model_ptr =
-        static_cast<ModelType*>(physical_models_.back().get());
-    // Prevent `this` MultibodyPlant to scalar convert to or from
-    // symbolic::Expression.
-    systems::SystemScalarConverter& scalar_converter =
-        this->get_mutable_system_scalar_converter();
-    scalar_converter.Remove<symbolic::Expression>();
-    return *concrete_model_ptr;
+    auto& added_model = physical_models_.emplace_back(std::move(model));
+    RemoveUnsupportedScalars(*added_model);
+    return *static_cast<ModelType*>(added_model.get());
   }
 
   const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
@@ -4591,6 +4593,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
+
+  // Removes `this` MultibodyPlant's ability to convert to the scalar type
+  // unsupported by the given `component`.
+  // @tparam Component The auxilliary external component of MultibodyPlant that
+  // may affect the plant's ability to scalar convert. The Component class must
+  // support the the boolean queries `is_cloneable_to_double()`,
+  // `is_cloneable_to_autodiff()`, and `is_cloneable_to_symbolic()` to indicate
+  // whether the `component` instance support scalar conversion to those default
+  // scalar types.
+  template <typename Component>
+  void RemoveUnsupportedScalars(const Component& component) {
+    systems::SystemScalarConverter& scalar_converter =
+        this->get_mutable_system_scalar_converter();
+    if (!component.template is_cloneable_to_scalar<double>()) {
+      scalar_converter.Remove<double>();
+    }
+    if (!component.template is_cloneable_to_scalar<AutoDiffXd>()) {
+      scalar_converter.Remove<AutoDiffXd>();
+    }
+    if (!component.template is_cloneable_to_scalar<symbolic::Expression>()) {
+      scalar_converter.Remove<symbolic::Expression>();
+    }
+  }
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry

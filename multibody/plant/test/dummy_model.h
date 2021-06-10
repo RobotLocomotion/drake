@@ -19,7 +19,7 @@ using systems::OutputPortIndex;
  concatenates the state added through `AppendDiscreteState()`. It also declares
  a vector output port that reports this additional state and an abstract output
  port that reports the the same state.
- @tparam_default_scalar */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 class DummyModel : public PhysicalModel<T> {
  public:
@@ -65,6 +65,10 @@ class DummyModel : public PhysicalModel<T> {
   std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const final {
     return CloneToScalar<AutoDiffXd>();
   }
+
+  bool is_cloneable_to_double() const final { return true; }
+
+  bool is_cloneable_to_autodiff() const final { return true; }
 
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar() const {

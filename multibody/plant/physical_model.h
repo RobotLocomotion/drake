@@ -40,8 +40,7 @@ class PhysicalModel {
   /* (Internal) Creates a clone of the concrete PhysicalModel object
    with the scalar type `ScalarType`. The clone should be a deep copy of the
    original PhysicalModel with the exception of members overwritten in
-   `DeclareSystemResources()`. At the moment, the only two scalar types
-   supported are double and AutoDiffXd. This method is meant to be called by the
+   `DeclareSystemResources()`. This method is meant to be called by the
    scalar-converting copy constructor of MultibodyPlant only.
    @tparam_default_scalar */
   template <typename ScalarType>
@@ -50,11 +49,25 @@ class PhysicalModel {
       return CloneToDouble();
     } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
       return CloneToAutoDiffXd();
+    } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
+      return CloneToSymbolic();
     }
-    throw std::logic_error(
-        fmt::format("Trying to clone PhysicalModel to scalar type {}, "
-                    "but only default non-symbolic scalar types are supported.",
-                    NiceTypeName::Get<ScalarType>()));
+    DRAKE_UNREACHABLE();
+  }
+
+  /* Returns true if the concrete PhysicalModel object can be cloned to the
+   given ScalarType. See CloneToScalar().
+   @tparam_default_scalar */
+  template <typename ScalarType>
+  bool is_cloneable_to_scalar() const {
+    if constexpr (std::is_same_v<ScalarType, double>) {
+      return is_cloneable_to_double();
+    } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
+      return is_cloneable_to_autodiff();
+    } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
+      return is_cloneable_to_symbolic();
+    }
+    DRAKE_UNREACHABLE();
   }
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
@@ -73,21 +86,32 @@ class PhysicalModel {
    that it creates a copy of the object with double as the scalar type. It
    should copy all members except for those overwritten in
    `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const {
-    throw std::logic_error(
-        "Scalar conversion to double is not supported by this "
-        "PhysicalModel.");
-  }
+  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const;
 
   /* Derived classes that support AutoDiffXd as a scalar type must implement
    this so that it creates a copy of the object with AutoDiffXd as the scalar
    type. It should copy all members except for those overwritten in
    `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const {
-    throw std::logic_error(
-        "Scalar conversion to AutodiffXd is not supported by this "
-        "PhysicalModel.");
-  }
+  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const;
+
+  /* Derived classes that support symbolic::Expression as a scalar type must
+   implement this so that it creates a copy of the object with
+   symbolic::Expression as the scalar type. It should copy all members except
+   for those overwritten in `DeclareSystemResources()`. */
+  virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic()
+      const;
+
+  /* Defaults to false. Derived classes that support double as a scalar type
+   must override this to return true. */
+  virtual bool is_cloneable_to_double() const;
+
+  /* Defaults to false. Derived classes that support AutoDiffXd as a scalar type
+   must override this to return true. */
+  virtual bool is_cloneable_to_autodiff() const;
+
+  /* Defaults to false. Derived classes that support symbolic::Expression as a
+   scalar type must override this to return true. */
+  virtual bool is_cloneable_to_symbolic() const;
 
   /* Derived class must override this to declare system resources for its
    specific model. */
