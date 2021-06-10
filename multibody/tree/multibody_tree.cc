@@ -1567,7 +1567,7 @@ RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
   const RigidTransform<T>& X_WB = pc.get_X_WB(B.node_index());
   const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(context);
   const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(context);
-  return X_WF.inverse() * X_WG;  // X_FG = X_FW * X_WG;
+  return X_WF.InvertAndCompose(X_WG);  // X_FG = X_FW * X_WG;
 }
 
 template <typename T>

@@ -86,7 +86,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
 
   // Instantiate the final rotation matrix and write directly to it instead of
   // creating temporary values and subsequently copying.
-  RotationMatrix<T> R_AB(DoNotInitializeMemberFields{});
+  RotationMatrix<T> R_AB(internal::DoNotInitializeMemberFields{});
   R_AB.R_AB_.col(axis_index) = u_A;
 
   // The auto keyword below improves efficiency by allowing an intermediate

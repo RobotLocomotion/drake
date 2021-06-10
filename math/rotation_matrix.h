@@ -22,6 +22,12 @@
 namespace drake {
 namespace math {
 
+namespace internal {
+// This is used to select a non-initializing constructor for use by
+// RigidTransform.
+struct DoNotInitializeMemberFields {};
+}
+
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B and helps ensure users create valid rotation matrices.  This class
 /// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
@@ -177,7 +183,7 @@ class RotationMatrix {
   /// frame A (i.e., `Bx_A`, `By_A`, `Bz_A`).
   static RotationMatrix<T> MakeFromOrthonormalColumns(
       const Vector3<T>& Bx, const Vector3<T>& By, const Vector3<T>& Bz) {
-    RotationMatrix<T> R(DoNotInitializeMemberFields{});
+    RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
     R.SetFromOrthonormalColumns(Bx, By, Bz);
     return R;
   }
@@ -197,7 +203,7 @@ class RotationMatrix {
   /// frame A (i.e., `Bx_A`, `By_A`, `Bz_A`).
   static RotationMatrix<T> MakeFromOrthonormalRows(
       const Vector3<T>& Ax, const Vector3<T>& Ay, const Vector3<T>& Az) {
-    RotationMatrix<T> R(DoNotInitializeMemberFields{});
+    RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
     R.SetFromOrthonormalRows(Ax, Ay, Az);
     return R;
   }
@@ -444,7 +450,7 @@ class RotationMatrix {
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
   RotationMatrix<T> operator*(const RotationMatrix<T>& other) const {
-    RotationMatrix<T> R_AC(DoNotInitializeMemberFields{});
+    RotationMatrix<T> R_AC(internal::DoNotInitializeMemberFields{});
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRR(*this, other, &R_AC);
     } else {
@@ -453,18 +459,20 @@ class RotationMatrix {
     return R_AC;
   }
 
-  /// Calculates the product of `this` inverted times another %RotationMatrix.
+  /// Calculates the product of `this` inverted and another %RotationMatrix.
   /// If you consider `this` to be the rotation matrix R_AB, and `other` to be
   /// R_AC, then this method returns R_BC = R_AB⁻¹ * R_AC. For T==double, this
   /// method can be _much_ faster than inverting first and then performing the
-  /// composition.
+  /// composition because it can take advantage of the orthogonality of
+  /// rotation matrices. On some platforms it can use SIMD instructions for
+  /// further speedups.
   /// @param[in] other %RotationMatrix that post-multiplies `this` inverted.
   /// @retval R_BC where R_BC = this⁻¹ * other.
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
   RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const {
     const RotationMatrix<T>& R_AC = other;  // Nicer name.
-    RotationMatrix<T> R_BC(DoNotInitializeMemberFields{});
+    RotationMatrix<T> R_BC(internal::DoNotInitializeMemberFields{});
     if constexpr (std::is_same_v<T, double>) {
       internal::ComposeRinvR(*this, R_AC, &R_BC);
     } else {
@@ -699,6 +707,10 @@ class RotationMatrix {
     return theta_lambda;
   }
 
+  /// (Internal use only) Constructs a RotationMatrix without initializing the
+  /// underlying 3x3 matrix. Here for use by RigidTransform but no one else.
+  explicit RotationMatrix(internal::DoNotInitializeMemberFields) {}
+
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
@@ -712,9 +724,6 @@ class RotationMatrix {
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon() };
 
-  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
-  struct DoNotInitializeMemberFields{};
-  explicit RotationMatrix(DoNotInitializeMemberFields) {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
