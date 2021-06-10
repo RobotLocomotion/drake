@@ -88,6 +88,7 @@ RUN mkdir -p /vtk-build /opt/vtk \
     /vtk \
   && ninja install/strip \
   && rm -rf /vtk /vtk-build \
+  && find /opt/vtk -name __pycache__ -type d -exec rm -rf {} + \
   && sed --in-place \
     's|VTK_RUNTIME_DIRS "/opt/vtk/bin"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/bin"|g' \
     /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
