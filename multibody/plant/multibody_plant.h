@@ -788,7 +788,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
-    physical_models_.clear();
     for (auto& model : other.physical_models_) {
       physical_models_.emplace_back(model->template CloneToScalar<T>());
     }
@@ -813,7 +812,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // Note: The discrete update manager needs to be copied *after* the plant is
     // finalized.
     if (other.discrete_update_manager_ != nullptr) {
-      set_discrete_update_manager(
+      SetDiscreteUpdateManager(
           other.discrete_update_manager_->template CloneToScalar<T>());
     }
     // TODO(xuchenhan-tri): Add scalar conversion for the contact solver when
@@ -1586,7 +1585,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // (Experimental) set_contact_solver() should only be called by advanced
+  // (Experimental) SetContactSolver() should only be called by advanced
   // developers wanting to try out their custom contact solvers. We choose not
   // to show it in public documentations rather than making it private with
   // friends.
@@ -1601,7 +1600,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
   template <class SolverType>
-  SolverType& set_contact_solver(std::unique_ptr<SolverType> solver) {
+  SolverType& SetContactSolver(std::unique_ptr<SolverType> solver) {
     DRAKE_DEMAND(solver != nullptr);
     static_assert(std::is_base_of_v<contact_solvers::internal::ContactSolver<T>,
                                     SolverType>,
@@ -1616,14 +1615,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return *solver_ptr;
   }
 
-  // (Experimental) set_discrete_update_manager() should only be called by
+  // (Experimental) SetDiscreteUpdateManager() should only be called by
   // advanced developers wanting to try out their custom time stepping
   // strategies, including contact resolution. We choose not to show it in
   // public documentations rather than making it private with friends. With this
   // method MultibodyPlant takes ownership of `manager`.
   //
   // @note Setting a contact manager bypasses the mechanism to set a different
-  // contact solver with set_contact_solver(). Use only one of these two
+  // contact solver with SetContactSolver(). Use only one of these two
   // experimental mechanims but never both.
   //
   // @param manager
@@ -1637,7 +1636,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
   template <class ManagerType>
-  ManagerType& set_discrete_update_manager(
+  ManagerType& SetDiscreteUpdateManager(
       std::unique_ptr<ManagerType> manager) {
     // N.B. This requirement is really more important on the side of the
     // manager's constructor, since most likely it'll need MBP's topology at

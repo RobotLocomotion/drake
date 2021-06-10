@@ -28,7 +28,7 @@ class AccelerationKinematicsCache;
  It is an abstract base class providing an interface for MultibodyPlant to
  invoke, with the intent that a variety of concrete DiscreteUpdateManagers will
  be derived from this base class. As of today a new manager can be set with the
- experimental method MultibodyPlant::set_discrete_update_manager(). This allows
+ experimental method MultibodyPlant::SetDiscreteUpdateManager(). This allows
  Drake developers to experiment with a variety of discrete update methods.
 
  @tparam_default_scalar */
@@ -71,7 +71,7 @@ class DiscreteUpdateManager {
 
   /* (Internal) Sets the given `plant` as the MultibodyPlant owning this
    DiscreteUpdateManager. This method is meant to be called by
-   MultibodyPlant::set_discrete_update_manager() only. A non-const pointer to
+   MultibodyPlant::SetDiscreteUpdateManager() only. A non-const pointer to
    plant is passed in so that cache entries can be declared.
    @pre plant is Finalized. */
   void SetOwningMultibodyPlant(MultibodyPlant<T>* plant) {
@@ -120,22 +120,14 @@ class DiscreteUpdateManager {
    that it creates a copy of the object with double as the scalar type. It
    should copy all members except for those overwritten in
    `SetOwningMultibodyPlant()`. */
-  virtual std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const {
-    throw std::logic_error(
-        "Scalar conversion to double is not supported by this "
-        "DiscreteUpdateManager.");
-  }
+  virtual std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const;
 
   /* Derived classes that support AutoDiffXd as a scalar type must implement
    this so that it creates a copy of the object with AutodDiffXd as the scalar
    type. It should copy all members except for those overwritten in
    `SetOwningMultibodyPlant()`. */
   virtual std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
-      const {
-    throw std::logic_error(
-        "Scalar conversion to AutodiffXd is not supported by this "
-        "DiscreteUpdateManager.");
-  }
+      const;
 
   /* Derived DiscreteUpdateManager should override this method to extract
    information from the owning MultibodyPlant. */

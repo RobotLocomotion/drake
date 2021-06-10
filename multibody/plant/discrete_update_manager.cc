@@ -8,6 +8,22 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
+std::unique_ptr<DiscreteUpdateManager<double>>
+DiscreteUpdateManager<T>::CloneToDouble() const {
+  throw std::logic_error(
+      "Scalar conversion to double is not supported by this "
+      "DiscreteUpdateManager.");
+}
+
+template <typename T>
+std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>>
+DiscreteUpdateManager<T>::CloneToAutoDiffXd() const {
+  throw std::logic_error(
+      "Scalar conversion to AutodiffXd is not supported by this "
+      "DiscreteUpdateManager.");
+}
+
+template <typename T>
 const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::internal_tree(plant());
 }
@@ -67,16 +83,15 @@ void DiscreteUpdateManager<T>::CallTamsiSolver(
 
 template <typename T>
 void DiscreteUpdateManager<T>::CallContactSolver(
-    contact_solvers::internal::ContactSolver<T>* contact_solver,
-    const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-    const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
-    const VectorX<T>& stiffness, const VectorX<T>& damping,
-    const VectorX<T>& mu,
+    contact_solvers::internal::ContactSolver<T>* contact_solver, const T& time0,
+    const VectorX<T>& v0, const MatrixX<T>& M0, const VectorX<T>& minus_tau,
+    const VectorX<T>& phi0, const MatrixX<T>& Jc, const VectorX<T>& stiffness,
+    const VectorX<T>& damping, const VectorX<T>& mu,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
   MultibodyPlantDiscreteUpdateManagerAttorney<T>::CallContactSolver(
       plant(), contact_solver, time0, v0, M0, minus_tau, phi0, Jc, stiffness,
       damping, mu, results);
-    }
+}
 
 template <typename T>
 const std::vector<std::vector<geometry::GeometryId>>&

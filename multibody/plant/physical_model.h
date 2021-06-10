@@ -73,21 +73,13 @@ class PhysicalModel {
    that it creates a copy of the object with double as the scalar type. It
    should copy all members except for those overwritten in
    `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const {
-    throw std::logic_error(
-        "Scalar conversion to double is not supported by this "
-        "PhysicalModel.");
-  }
+  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const;
 
   /* Derived classes that support AutoDiffXd as a scalar type must implement
    this so that it creates a copy of the object with AutoDiffXd as the scalar
    type. It should copy all members except for those overwritten in
    `DeclareSystemResources()`. */
-  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const {
-    throw std::logic_error(
-        "Scalar conversion to AutodiffXd is not supported by this "
-        "PhysicalModel.");
-  }
+  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const;
 
   /* Derived class must override this to declare system resources for its
    specific model. */

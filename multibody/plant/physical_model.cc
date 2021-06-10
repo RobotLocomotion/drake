@@ -9,6 +9,21 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+std::unique_ptr<PhysicalModel<double>> PhysicalModel<T>::CloneToDouble() const {
+  throw std::logic_error(
+      "Scalar conversion to double is not supported by this "
+      "PhysicalModel.");
+}
+
+template <typename T>
+std::unique_ptr<PhysicalModel<AutoDiffXd>> PhysicalModel<T>::CloneToAutoDiffXd()
+    const {
+  throw std::logic_error(
+      "Scalar conversion to AutodiffXd is not supported by this "
+      "PhysicalModel.");
+}
+
+template <typename T>
 systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
     MultibodyPlant<T>* plant, const VectorX<T>& model_value) {
   return MultibodyPlantModelAttorney<T>::DeclareDiscreteState(plant,

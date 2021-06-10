@@ -178,7 +178,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
     // MultibodyPlant::num_velocities() only reports the number of rigid
     // generalized velocities for the rigid model.
     EXPECT_EQ(plant_.num_velocities(), kNumRigidDofs);
-    dummy_manager_ = &plant_.set_discrete_update_manager(
+    dummy_manager_ = &plant_.SetDiscreteUpdateManager(
         std::make_unique<DummyDiscreteUpdateManager<double>>());
   }
 
