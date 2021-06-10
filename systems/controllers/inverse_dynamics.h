@@ -109,8 +109,7 @@ class InverseDynamics : public LeafSystem<T> {
 
   // Methods for constructing and updating cache entries.
   std::unique_ptr<AbstractValue> MakeMultibodyContext() const;
-  void SetMultibodyContext(const Context<T>& context_base,
-                           AbstractValue* cache_value) const;
+  void SetMultibodyContext(const Context<T>&, Context<T>*) const;
   drake::multibody::MultibodyForces<T> MakeMultibodyForces() const;
   void CalcMultibodyForces(
       const Context<T>& context_base,

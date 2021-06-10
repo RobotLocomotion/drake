@@ -176,9 +176,7 @@ class TestSystem : public TestSystemBase<double> {
   LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with dummy alloc and calc.
     CacheEntry& cache_entry = this->DeclareCacheEntry(
-        "null output port",
-        [] { return Value<int>::Make(0); },
-        [](const ContextBase&, AbstractValue*) {});
+        "null output port", ValueCalcFunction::MakeAllocator<int>());
     // TODO(sherm1) Use implicit_cast when available (from abseil). Several
     // places in this test.
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
@@ -611,10 +609,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
             "absport",
-            []() { return AbstractValue::Make(std::string()); },
-            [this](const ContextBase& context, AbstractValue* output) {
-              this->CalcStringOutput(context, output);
-            })));
+            ValueCalcFunction(this, &ValueIOTestSystem::CalcStringOutput))));
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
@@ -629,10 +624,8 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         kVectorValued, 1 /* size */,
         &this->DeclareCacheEntry(
             "vecport",
-            []() { return std::make_unique<Value<BasicVector<T>>>(1); },
-            [this](const ContextBase& context, AbstractValue* output) {
-              this->CalcVectorOutput(context, output);
-            })));
+            ValueCalcFunction(this, BasicVector<T>(1),
+                &ValueIOTestSystem::CalcVectorOutput))));
 
     this->set_name("ValueIOTestSystem");
   }
@@ -661,21 +654,18 @@ class ValueIOTestSystem : public TestSystemBase<T> {
 
   // Appends "output" to input(0) for output(0).
   void CalcStringOutput(const ContextBase& context,
-                        AbstractValue* output) const {
+                        std::string* output) const {
     const std::string* str_in =
         this->template EvalInputValue<std::string>(context, 0);
-
-    std::string& str_out = output->template get_mutable_value<std::string>();
-    str_out = *str_in + "output";
+    *output = *str_in + "output";
   }
 
   // Sets output(1) = 2 * input(1).
   void CalcVectorOutput(const ContextBase& context_base,
-                        AbstractValue* output) const {
+                        BasicVector<T>* output) const {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
-    auto& vec_out = output->template get_mutable_value<BasicVector<T>>();
-    vec_out.get_mutable_value() = 2 * vec_in->get_value();
+    output->get_mutable_value() = 2 * vec_in->get_value();
   }
 };
 

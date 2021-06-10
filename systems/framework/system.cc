@@ -933,11 +933,11 @@ System<T>::System(SystemScalarConverter converter)
   // For the time derivative cache we need to use the general form for
   // cache creation because we're dealing with pre-defined allocator and
   // calculator method signatures.
-  CacheEntry::AllocCallback alloc_derivatives = [this]() {
+  auto alloc_derivatives = [this]() {
     return std::make_unique<Value<ContinuousState<T>>>(
         this->AllocateTimeDerivatives());
   };
-  CacheEntry::CalcCallback calc_derivatives = [this](
+  auto calc_derivatives = [this](
       const ContextBase& context_base, AbstractValue* result) {
     DRAKE_DEMAND(result != nullptr);
     ContinuousState<T>& state =
@@ -950,7 +950,10 @@ System<T>::System(SystemScalarConverter converter)
   time_derivatives_cache_index_ =
       this->DeclareCacheEntryWithKnownTicket(
               xcdot_ticket(), "time derivatives",
-              std::move(alloc_derivatives), std::move(calc_derivatives),
+              ValueCalcFunction{
+                std::move(alloc_derivatives),
+                std::move(calc_derivatives),
+              },
               {all_sources_ticket()})
           .cache_index();
 

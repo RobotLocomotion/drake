@@ -139,6 +139,7 @@ drake_cc_library(
     hdrs = [
         "deformable_rigid_manager.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":collision_objects",
         ":deformable_model",

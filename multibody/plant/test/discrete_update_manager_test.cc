@@ -70,6 +70,9 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
 
   /* Declares a cache entry that stores twice the additional state value. */
   void DeclareCacheEntries(MultibodyPlant<double>* plant) final {
+    // XXX Forward the protected method through the attorney.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cache_index_ =
         plant
             ->DeclareCacheEntry(
@@ -90,6 +93,7 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<double> {
                 },
                 {systems::System<double>::xd_ticket()})
             .cache_index();
+#pragma GCC diagnostic pop
   }
 
   /* Increments the number of times CalcContactSolverResults() is called for

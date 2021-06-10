@@ -68,6 +68,7 @@ using systems::Context;
 using systems::InputPort;
 using systems::InputPortIndex;
 using systems::OutputPortIndex;
+using systems::ValueCalcFunction;
 
 namespace internal {
 // This is a helper struct used to estimate the parameters used in the penalty
@@ -1099,22 +1100,23 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
 }
 
 template <typename T>
-std::vector<PenetrationAsPointPair<T>>
-MultibodyPlant<T>::CalcPointPairPenetrations(
-    const systems::Context<T>& context) const {
+void MultibodyPlant<T>::CalcPointPairPenetrations(
+    const systems::Context<T>& context,
+    std::vector<PenetrationAsPointPair<T>>* output) const {
   this->ValidateContext(context);
   if (num_collision_geometries() > 0) {
     const auto& query_object = EvalGeometryQueryInput(context);
-    return query_object.ComputePointPairPenetration();
+    *output = query_object.ComputePointPairPenetration();
+  } else {
+    *output = {};
   }
-  return std::vector<PenetrationAsPointPair<T>>();
 }
 
 // Specialize this function so that symbolic::Expression throws an error.
 template <>
-std::vector<PenetrationAsPointPair<symbolic::Expression>>
-MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
-    const systems::Context<symbolic::Expression>&) const {
+void MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
+    const systems::Context<symbolic::Expression>&,
+    std::vector<PenetrationAsPointPair<symbolic::Expression>>*) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
@@ -2767,63 +2769,44 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Cache entry for point contact queries.
   auto& point_pairs_cache_entry = this->DeclareCacheEntry(
       std::string("Point pair penetrations."),
-      []() {
-        return AbstractValue::Make(
-            std::vector<geometry::PenetrationAsPointPair<T>>());
-      },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& point_pairs_cache = cache_value->get_mutable_value<
-            std::vector<geometry::PenetrationAsPointPair<T>>>();
-        point_pairs_cache = this->CalcPointPairPenetrations(context);
-      },
+      ValueCalcFunction(this, &MultibodyPlant<T>::CalcPointPairPenetrations),
       {this->configuration_ticket()});
   cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
 
   // Cache entry for hydroelastic contact surfaces.
   auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
       std::string("Hydroelastic contact surfaces."),
-      []() {
-        return AbstractValue::Make(
-            std::vector<ContactSurface<T>>());
-      },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& contact_surfaces_cache = cache_value->get_mutable_value<
-            std::vector<ContactSurface<T>>>();
-        this->CalcContactSurfaces(context, &contact_surfaces_cache);
-      },
+      ValueCalcFunction(this, &MultibodyPlant<T>::CalcContactSurfaces),
       {this->configuration_ticket()});
   cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
       std::string("Contact Jacobians Jn(q) and Jt(q)."),
-      []() { return AbstractValue::Make(internal::ContactJacobians<T>()); },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& contact_jacobians_cache =
-            cache_value->get_mutable_value<internal::ContactJacobians<T>>();
-        // TODO(amcastro-tri): consider caching contact_pairs.
-        const std::vector<internal::DiscreteContactPair<T>> contact_pairs =
-            CalcDiscreteContactPairs(context);
-        this->CalcNormalAndTangentContactJacobians(
-            context, contact_pairs,
-            &contact_jacobians_cache.Jn, &contact_jacobians_cache.Jt,
-            &contact_jacobians_cache.R_WC_list);
-        auto& Jc = contact_jacobians_cache.Jc;
-        const auto& Jn = contact_jacobians_cache.Jn;
-        const auto& Jt = contact_jacobians_cache.Jt;
-        Jc.resize(3 * Jn.rows(), num_velocities());
-        for (int i = 0; i < Jn.rows(); ++i) {
-          Jc.row(3 * i) = Jt.row(2 * i);
-          Jc.row(3 * i + 1) = Jt.row(2 * i + 1);
-          Jc.row(3 * i + 2) = Jn.row(i);
-        }
-      },
+      ValueCalcFunction(
+        []() { return AbstractValue::Make(internal::ContactJacobians<T>()); },
+        [this](const systems::ContextBase& context_base,
+               AbstractValue* cache_value) {
+          auto& context = dynamic_cast<const Context<T>&>(context_base);
+          auto& contact_jacobians_cache =
+              cache_value->get_mutable_value<internal::ContactJacobians<T>>();
+          // TODO(amcastro-tri): consider caching contact_pairs.
+          const std::vector<internal::DiscreteContactPair<T>> contact_pairs =
+              CalcDiscreteContactPairs(context);
+          this->CalcNormalAndTangentContactJacobians(
+              context, contact_pairs,
+              &contact_jacobians_cache.Jn, &contact_jacobians_cache.Jt,
+              &contact_jacobians_cache.R_WC_list);
+          auto& Jc = contact_jacobians_cache.Jc;
+          const auto& Jn = contact_jacobians_cache.Jn;
+          const auto& Jt = contact_jacobians_cache.Jt;
+          Jc.resize(3 * Jn.rows(), num_velocities());
+          for (int i = 0; i < Jn.rows(); ++i) {
+            Jc.row(3 * i) = Jt.row(2 * i);
+            Jc.row(3 * i + 1) = Jt.row(2 * i + 1);
+            Jc.row(3 * i + 2) = Jn.row(i);
+          }
+        }),
       // We explicitly declare the configuration dependence even though the
       // Eval() above implicitly evaluates configuration dependent cache
       // entries.
@@ -2834,18 +2817,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Cache TamsiSolver computations.
   auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
       std::string("Implicit Stribeck solver computations."),
-      []() {
-        return AbstractValue::Make(
-            contact_solvers::internal::ContactSolverResults<T>());
-      },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& tamsi_solver_cache = cache_value->get_mutable_value<
-            contact_solvers::internal::ContactSolverResults<T>>();
-        this->CalcContactSolverResults(context,
-                                          &tamsi_solver_cache);
-      },
+      ValueCalcFunction(this, &MultibodyPlant<T>::CalcContactSolverResults),
       // The Correct Solution:
       // The Implicit Stribeck solver solution S is a function of state x,
       // actuation input u (and externally applied forces) and even time if any
@@ -2880,21 +2852,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
     auto& contact_info_and_body_spatial_forces_cache_entry =
         this->DeclareCacheEntry(
             std::string("Hydroelastic contact info and body spatial forces."),
-            [this]() {
-              return AbstractValue::Make(
-                  internal::HydroelasticContactInfoAndBodySpatialForces<T>(
-                      this->num_bodies()));
-            },
-            [this](const systems::ContextBase& context_base,
-                   AbstractValue* cache_value) {
-              auto& context = dynamic_cast<const Context<T>&>(context_base);
-              auto& contact_info_and_body_spatial_forces_cache =
-                  cache_value->get_mutable_value<
-                      internal::HydroelasticContactInfoAndBodySpatialForces<
-                          T>>();
-              this->CalcHydroelasticContactForces(
-                  context, &contact_info_and_body_spatial_forces_cache);
-            },
+            ValueCalcFunction(
+              [this]() {
+                return AbstractValue::Make(
+                    internal::HydroelasticContactInfoAndBodySpatialForces<T>(
+                        this->num_bodies()));
+              },
+              [this](const systems::ContextBase& context_base,
+                     AbstractValue* cache_value) {
+                auto& context = dynamic_cast<const Context<T>&>(context_base);
+                auto& contact_info_and_body_spatial_forces_cache =
+                    cache_value->get_mutable_value<
+                        internal::HydroelasticContactInfoAndBodySpatialForces<
+                            T>>();
+                this->CalcHydroelasticContactForces(
+                    context, &contact_info_and_body_spatial_forces_cache);
+              }),
             // Compliant contact forces due to hydroelastics with Hunt &
             // Crosseley are function of the kinematic variables q & v only.
             {this->kinematics_ticket(), this->all_parameters_ticket()});
@@ -2925,18 +2898,11 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   }();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
       std::string("Contact results."),
-      []() { return AbstractValue::Make(ContactResults<T>()); },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& contact_results_cache =
-            cache_value->get_mutable_value<ContactResults<T>>();
-        if (is_discrete()) {
-          this->CalcContactResultsDiscrete(context, &contact_results_cache);
-        } else {
-          this->CalcContactResultsContinuous(context, &contact_results_cache);
-        }
-      },
+      ValueCalcFunction(
+        this,
+        is_discrete() ?
+          &MultibodyPlant<T>::CalcContactResultsDiscrete :
+          &MultibodyPlant<T>::CalcContactResultsContinuous),
       {dependency_ticket});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 

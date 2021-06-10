@@ -1421,11 +1421,13 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   event_times_buffer_cache_index_ =
       this->DeclareCacheEntry(
           "event_times_buffer",
-          [this]() {
-            std::vector<T> vec(num_subsystems());
-            return AbstractValue::Make<std::vector<T>>(vec);
+          ValueCalcFunction{
+            [this]() {
+              std::vector<T> vec(num_subsystems());
+              return AbstractValue::Make<std::vector<T>>(vec);
+            },
+            [](const ContextBase&, AbstractValue*) { /* do nothing */ },
           },
-          [](const ContextBase&, AbstractValue*) { /* do nothing */ },
           {this->nothing_ticket()}).cache_index();
 
   // Generate a map from the System pointer to its index in the registered

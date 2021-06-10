@@ -16,6 +16,7 @@
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
 #include "drake/systems/framework/output_port_base.h"
+#include "drake/systems/framework/value_calc_function.h"
 
 namespace drake {
 namespace systems {
@@ -240,7 +241,7 @@ class SystemBase : public internal::SystemMessageInterface {
     return *cache_entries_[index];
   }
 
-  // TODO(sherm1) Consider whether to make DeclareCacheEntry methods protected.
+ protected:
   //============================================================================
   /** @name                    Declare cache entries
   @anchor DeclareCacheEntry_documentation
@@ -356,12 +357,16 @@ class SystemBase : public internal::SystemMessageInterface {
     the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
   @returns a reference to the newly-created %CacheEntry.
   @throws std::logic_error if given an explicitly empty prerequisite list. */
-  // Arguments to these methods are moved from internally. Taking them by value
-  // rather than reference avoids a copy when the original argument is
-  // an rvalue.
   CacheEntry& DeclareCacheEntry(
-      std::string description, CacheEntry::AllocCallback alloc_function,
-      CacheEntry::CalcCallback calc_function,
+      std::string description, ValueCalcFunction calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  DRAKE_DEPRECATED("2021-10-01", "Use the ValueCalcFunction overload instead.")
+  CacheEntry& DeclareCacheEntry(
+      std::string description,
+      std::function<std::unique_ptr<AbstractValue>()> alloc_function,
+      std::function<void(const ContextBase&, AbstractValue*)> calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
@@ -465,6 +470,7 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
+ public:
   //============================================================================
   /** @name                     Dependency tickets
   @anchor DependencyTicket_documentation
@@ -950,9 +956,8 @@ class SystemBase : public internal::SystemMessageInterface {
   for the most-general DeclareCacheEntry() signature for the meanings of the
   other parameters here. */
   CacheEntry& DeclareCacheEntryWithKnownTicket(
-      DependencyTicket known_ticket,
-      std::string description, CacheEntry::AllocCallback alloc_function,
-      CacheEntry::CalcCallback calc_function,
+      DependencyTicket known_ticket, std::string description,
+      ValueCalcFunction value_calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
@@ -1262,8 +1267,11 @@ CacheEntry& SystemBase::DeclareCacheEntry(
   };
   // Invoke the general signature above.
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description),
+      ValueCalcFunction(
+        std::move(alloc_callback),
+        std::move(calc_callback)),
+      std::move(prerequisites_of_calc));
   return entry;
 }
 
@@ -1278,28 +1286,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
-  auto this_ptr = dynamic_cast<const MySystem*>(this);
-  DRAKE_DEMAND(this_ptr != nullptr);
-  // The given model value may have *either* a copy constructor or a Clone()
-  // method, since it just has to be suitable for containing in an
-  // AbstractValue. We need to create a functor that is copy constructible,
-  // so need to wrap the model value to give it a copy constructor. Drake's
-  // copyable_unique_ptr does just that, so is suitable for capture by the
-  // allocator functor here.
-  copyable_unique_ptr<AbstractValue> owned_model(
-      std::make_unique<Value<ValueType>>(model_value));
-  auto alloc_callback = [model = std::move(owned_model)]() {
-    return model->Clone();
-  };
-  auto calc_callback = [this_ptr, calc](const ContextBase& context,
-                                        AbstractValue* result) {
-    const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->get_mutable_value<ValueType>();
-    (this_ptr->*calc)(typed_context, &typed_result);
-  };
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description), ValueCalcFunction(this, model_value, calc),
+      std::move(prerequisites_of_calc));
   return entry;
 }
 
@@ -1330,8 +1319,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     typed_result = (this_ptr->*calc)(typed_context);
   };
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description),
+      ValueCalcFunction{std::move(alloc_callback), std::move(calc_callback)},
+      std::move(prerequisites_of_calc));
   return entry;
 }
 

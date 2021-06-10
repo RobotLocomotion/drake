@@ -30,10 +30,10 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
   multibody_plant_context_cache_index_ =
       this->DeclareCacheEntry(
               "multibody_plant_context_cache",
-              [this]() { return this->MakeMultibodyContext(); },
-              [this](const ContextBase& context, AbstractValue* cache_value) {
-                this->SetMultibodyContext(
-                    dynamic_cast<const Context<T>&>(context), cache_value);
+              ValueCalcFunction{
+                this,
+                &InverseDynamics<T>::MakeMultibodyContext,
+                &InverseDynamics<T>::SetMultibodyContext,
               },
               {this->input_port_ticket(
                   get_input_port_estimated_state().get_index())})
@@ -72,10 +72,9 @@ std::unique_ptr<AbstractValue> InverseDynamics<T>::MakeMultibodyContext()
 }
 
 template <typename T>
-void InverseDynamics<T>::SetMultibodyContext(const Context<T>& context,
-                                             AbstractValue* cache_value) const {
-  auto& multibody_plant_context =
-      cache_value->template get_mutable_value<Context<T>>();
+void InverseDynamics<T>::SetMultibodyContext(
+    const Context<T>& context,
+    Context<T>* multibody_plant_context) const {
 
   Eigen::VectorBlock<const VectorX<T>> x =
       get_input_port_estimated_state().Eval(context);
@@ -83,11 +82,11 @@ void InverseDynamics<T>::SetMultibodyContext(const Context<T>& context,
   if (this->is_pure_gravity_compensation()) {
     // Velocities remain zero, as set in the cache allocation
     // function, for pure gravity compensation mode.
-    multibody_plant_->SetPositions(&multibody_plant_context,
+    multibody_plant_->SetPositions(multibody_plant_context,
                                    x.head(multibody_plant_->num_positions()));
   } else {
     // Set the plant positions and velocities.
-    multibody_plant_->SetPositionsAndVelocities(&multibody_plant_context, x);
+    multibody_plant_->SetPositionsAndVelocities(multibody_plant_context, x);
   }
 }
 

@@ -54,6 +54,7 @@ drake_cc_package_library(
         ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":system_visitor",
+        ":value_calc_function",
         ":value_checker",
         ":value_to_abstract_value",
         ":vector",
@@ -261,6 +262,7 @@ drake_cc_library(
     ],
     deps = [
         ":context_base",
+        ":value_calc_function",
     ],
 )
 
@@ -324,6 +326,7 @@ drake_cc_library(
         ":context_base",
         ":input_port_base",
         ":output_port_base",
+        ":value_calc_function",
     ],
 )
 
@@ -431,6 +434,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "value_calc_function",
+    srcs = ["value_calc_function.cc"],
+    hdrs = ["value_calc_function.h"],
+    deps = [
+        ":context_base",
+        ":framework_common",
+        "//common:copyable_unique_ptr",
+        "//common:value",
+    ],
+)
+
+drake_cc_library(
     name = "system",
     srcs = ["system.cc"],
     hdrs = ["system.h"],
@@ -517,6 +532,7 @@ drake_cc_library(
         ":system",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
+        ":value_calc_function",
         ":value_checker",
         "//common:default_scalars",
         "//common:essential",
@@ -699,6 +715,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cache_entry_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":cache_entry",
         ":system_base",
@@ -903,16 +920,6 @@ drake_cc_googletest(
         ":diagram_builder",
         ":system_visitor",
         "//systems/primitives:adder",
-    ],
-)
-
-drake_cc_googletest(
-    name = "system_html_test",
-    deps = [
-        ":diagram_builder",
-        ":system_html",
-        "//examples/manipulation_station",
-        "//systems/primitives",
     ],
 )
 
