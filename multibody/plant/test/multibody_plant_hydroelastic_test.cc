@@ -58,9 +58,9 @@ class HydroelasticModelTests : public ::testing::Test {
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, mbp_dt);
 
-    AddGround(kFrictionCoefficient_, plant_);
-    body_ = &AddObject(plant_, kSphereRadius_, kElasticModulus_, kDissipation_,
-                       kFrictionCoefficient_);
+    AddGround(kFrictionCoefficient, plant_);
+    body_ = &AddObject(plant_, kSphereRadius, kElasticModulus, kDissipation,
+                       kFrictionCoefficient);
 
     // The default contact model today is point contact.
     EXPECT_EQ(plant_->get_contact_model(), ContactModel::kPointContactOnly);
@@ -109,7 +109,7 @@ class HydroelasticModelTests : public ::testing::Test {
     // hydro forces are only a function of state.
     const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
     const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidSphere(radius);
-    const SpatialInertia<double> M_BBcm_B(kMass_, p_BoBcm_B, G_BBcm);
+    const SpatialInertia<double> M_BBcm_B(kMass, p_BoBcm_B, G_BBcm);
 
     // Create a rigid body B with the mass properties of a uniform sphere.
     const RigidBody<double>& body = plant->AddRigidBody("body", M_BBcm_B);
@@ -135,7 +135,7 @@ class HydroelasticModelTests : public ::testing::Test {
   }
 
   void SetPose(double penetration) {
-    RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius_ - penetration));
+    RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius - penetration));
     plant_->SetFreeBodyPose(plant_context_, *body_, X_WB);
   }
 
@@ -161,17 +161,17 @@ class HydroelasticModelTests : public ::testing::Test {
     DRAKE_DEMAND(0.0 <= d);
     // The patch radius predicted by the hydroelastic model.
     const double normal_force =
-        M_PI / 3.0 * kElasticModulus_ * d * d * (3 - 2 * d / kSphereRadius_);
+        M_PI / 3.0 * kElasticModulus * d * d * (3 - 2 * d / kSphereRadius);
     return normal_force;
   }
 
-  const double kFrictionCoefficient_{0.0};  // [-]
-  const double kSphereRadius_{0.05};        // [m]
-  const double kElasticModulus_{1.e5};      // [Pa]
+  const double kFrictionCoefficient{0.0};  // [-]
+  const double kSphereRadius{0.05};        // [m]
+  const double kElasticModulus{1.e5};      // [Pa]
   // A non-zero dissipation value is used to quickly dissipate energy in tests
   // running a simulation on this case.
-  const double kDissipation_{10.0};         // [s/m]
-  const double kMass_{1.2};                 // [kg]
+  const double kDissipation{10.0};         // [s/m]
+  const double kMass{1.2};                 // [kg]
 
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
@@ -212,12 +212,12 @@ TEST_F(HydroelasticModelTests, ContactForce) {
   // is less than 25% while it goes below 15% at d = 0.04. (Note: this is
   // sensitive to mesh refinement; a coarser mesh is likely to fail this test.)
   auto calc_observed_percentile_error =
-      [R = kSphereRadius_](double penetration) {
+      [R = kSphereRadius](double penetration) {
         return 27.5 - 10 / 0.6 * penetration / R;
       };
 
   for (const double extent : {0.2, 0.4, 0.6, 0.8}) {
-    const double penetration = extent * kSphereRadius_;
+    const double penetration = extent * kSphereRadius;
     const double analytical_force =
         CalcAnalyticalHydroelasticsForce(penetration);
     const double numerical_force = calc_force(penetration);
@@ -260,7 +260,7 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
 
   // Expected acceleration, including gravity.
   const Vector3<double> a_WBo_expected =
-      fhydro_BBo_W / kMass_ + plant_->gravity_field().gravity_vector();
+      fhydro_BBo_W / kMass + plant_->gravity_field().gravity_vector();
   EXPECT_TRUE(CompareMatrices(a_WBo_expected, a_WBo,
                               40 * std::numeric_limits<double>::epsilon()));
 }
@@ -276,7 +276,7 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
   auto& plant_context = plant_->GetMyMutableContextFromRoot(&diagram_context);
 
   // Set initial condition.
-  const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius_));
+  const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius));
   plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
   diagram_->Publish(diagram_context);
 
@@ -293,7 +293,7 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
 
   // The contact force should match the weight of the sphere.
   const Vector3<double> fz_BBo_W_expeted =
-      -plant_->gravity_field().gravity_vector() * kMass_;
+      -plant_->gravity_field().gravity_vector() * kMass;
 
   // We use a tolerance value based on previous runs of this test.
   const double tolerance = 2.0e-8;
@@ -328,15 +328,15 @@ class ContactModelTest : public ::testing::Test {
 
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(
-        kElasticModulus_, kDissipation_,
-        CoulombFriction<double>(kFrictionCoefficient_, kFrictionCoefficient_),
+        kElasticModulus, kDissipation,
+        CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient),
         &props);
     AddGround(props, plant_);
 
     // Although we're providing elastic modulus and dissipation for the rigid
     // spheres, those values will be ignored.
-    first_ball_ = &AddSphere("sphere1", kSphereRadius_, props, plant_);
-    second_ball_ = &AddSphere("sphere2", kSphereRadius_, props, plant_);
+    first_ball_ = &AddSphere("sphere1", kSphereRadius, props, plant_);
+    second_ball_ = &AddSphere("sphere2", kSphereRadius, props, plant_);
 
     // Tell the plant to use the given model.
     plant_->set_contact_model(model);
@@ -352,9 +352,9 @@ class ContactModelTest : public ::testing::Test {
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
     // Pose the ball.
-    RigidTransformd X_WS1{Vector3d{0.0, 0.0, kSphereRadius_ * 0.9}};
+    RigidTransformd X_WS1{Vector3d{0.0, 0.0, kSphereRadius * 0.9}};
     plant_->SetFreeBodyPose(plant_context_, *first_ball_, X_WS1);
-    RigidTransformd X_WS2{Vector3d{0.0, 0.0, 2 * kSphereRadius_}};
+    RigidTransformd X_WS2{Vector3d{0.0, 0.0, 2 * kSphereRadius}};
     plant_->SetFreeBodyPose(plant_context_, *second_ball_, X_WS2);
   }
 
@@ -377,7 +377,7 @@ class ContactModelTest : public ::testing::Test {
     // hydro forces are only a function of state.
     const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
     const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidSphere(radius);
-    const SpatialInertia<double> M_BBcm_B(kMass_, p_BoBcm_B, G_BBcm);
+    const SpatialInertia<double> M_BBcm_B(kMass, p_BoBcm_B, G_BBcm);
 
     // Create a rigid body B with the mass properties of a uniform sphere.
     const RigidBody<double>& body = plant->AddRigidBody(name, M_BBcm_B);
@@ -455,11 +455,11 @@ class ContactModelTest : public ::testing::Test {
         .Eval<ContactResults<double>>(*plant_context_);
   }
 
-  const double kFrictionCoefficient_{0.0};  // [-]
-  const double kSphereRadius_{0.05};        // [m]
-  const double kElasticModulus_{1.e5};      // [Pa]
-  const double kDissipation_{0.0};          // [s/m]
-  const double kMass_{1.2};                 // [kg]
+  const double kFrictionCoefficient{0.0};  // [-]
+  const double kSphereRadius{0.05};        // [m]
+  const double kElasticModulus{1.e5};      // [Pa]
+  const double kDissipation{0.0};          // [s/m]
+  const double kMass{1.2};                 // [kg]
 
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
