@@ -537,7 +537,9 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
-  prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc)
+  prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
+  DefClone(&prog_cls);
+  prog_cls  // BR
       .def("NewContinuousVariables",
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
               int, const std::string&)>(
@@ -640,6 +642,10 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::NewSosPolynomial),
           py::arg("indeterminates"), py::arg("degree"),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
+      .def("NewEvenDegreeNonnegativePolynomial",
+          &MathematicalProgram::NewEvenDegreeNonnegativePolynomial,
+          py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
+          doc.MathematicalProgram.NewEvenDegreeNonnegativePolynomial.doc)
       .def("NewEvenDegreeSosPolynomial",
           &MathematicalProgram::NewEvenDegreeSosPolynomial,
           py::arg("indeterminates"), py::arg("degree"),
@@ -697,7 +703,7 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("AddLinearCost",
           static_cast<Binding<LinearCost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddLinearCost),
-          doc.MathematicalProgram.AddLinearCost.doc_1args)
+          py::arg("e"), doc.MathematicalProgram.AddLinearCost.doc_1args)
       .def("AddLinearCost",
           static_cast<Binding<LinearCost> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&, double,
@@ -712,6 +718,12 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddLinearCost),
           py::arg("a"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearCost.doc_2args)
+      .def("AddQuadraticCost",
+          static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
+              const Expression&, std::optional<bool>)>(
+              &MathematicalProgram::AddQuadraticCost),
+          py::arg("e"), py::arg("is_convex") = py::none(),
+          doc.MathematicalProgram.AddQuadraticCost.doc_2args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -730,12 +742,6 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("vars"),
           py::arg("is_convex") = py::none(),
           doc.MathematicalProgram.AddQuadraticCost.doc_5args)
-      .def("AddQuadraticCost",
-          static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
-              const Expression&, std::optional<bool>)>(
-              &MathematicalProgram::AddQuadraticCost),
-          py::arg("e"), py::arg("is_convex") = py::none(),
-          doc.MathematicalProgram.AddQuadraticCost.doc_2args)
       .def("AddQuadraticErrorCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -1017,24 +1023,26 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
+          py::arg("p"), py::arg("monomial_basis"),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
           static_cast<
               std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
                   MathematicalProgram::*)(const Polynomial&)>(
               &MathematicalProgram::AddSosConstraint),
-          doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
+          py::arg("p"), doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
+          py::arg("e"), py::arg("monomial_basis"),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
           static_cast<
               std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
                   MathematicalProgram::*)(const Expression&)>(
               &MathematicalProgram::AddSosConstraint),
-          doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
+          py::arg("e"), doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
       .def("AddEqualityConstraintBetweenPolynomials",
           &MathematicalProgram::AddEqualityConstraintBetweenPolynomials,
           py::arg("p1"), py::arg("p2"),
@@ -1042,9 +1050,20 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def(
           "AddExponentialConeConstraint",
           [](MathematicalProgram* self,
+              const Eigen::Ref<const Eigen::Matrix3Xd>& A,
+              const Eigen::Ref<const Eigen::Vector3d>& b,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddExponentialConeConstraint(A.sparseView(), b, vars);
+          },
+          py::arg("A"), py::arg("b"), py::arg("vars"),
+          doc.MathematicalProgram.AddExponentialConeConstraint.doc_3args)
+      .def(
+          "AddExponentialConeConstraint",
+          [](MathematicalProgram* self,
               const Eigen::Ref<const Vector3<symbolic::Expression>>& z) {
             return self->AddExponentialConeConstraint(z);
           },
+          py::arg("z"),
           doc.MathematicalProgram.AddExponentialConeConstraint.doc_1args)
       .def(
           "GetInitialGuess",
@@ -1180,6 +1199,27 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.quadratic_costs.doc)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
+      .def("lorentz_cone_constraints",
+          &MathematicalProgram::lorentz_cone_constraints,
+          doc.MathematicalProgram.lorentz_cone_constraints.doc)
+      .def("rotated_lorentz_cone_constraints",
+          &MathematicalProgram::rotated_lorentz_cone_constraints,
+          doc.MathematicalProgram.rotated_lorentz_cone_constraints.doc)
+      .def("positive_semidefinite_constraints",
+          &MathematicalProgram::positive_semidefinite_constraints,
+          doc.MathematicalProgram.positive_semidefinite_constraints.doc)
+      .def("linear_matrix_inequality_constraints",
+          &MathematicalProgram::linear_matrix_inequality_constraints,
+          doc.MathematicalProgram.linear_matrix_inequality_constraints.doc)
+      .def("exponential_cone_constraints",
+          &MathematicalProgram::exponential_cone_constraints,
+          doc.MathematicalProgram.exponential_cone_constraints.doc)
+      .def("bounding_box_constraints",
+          &MathematicalProgram::bounding_box_constraints,
+          doc.MathematicalProgram.bounding_box_constraints.doc)
+      .def("linear_complementarity_constraints",
+          &MathematicalProgram::linear_complementarity_constraints,
+          doc.MathematicalProgram.linear_complementarity_constraints.doc)
       .def("GetAllCosts", &MathematicalProgram::GetAllCosts,
           doc.MathematicalProgram.GetAllCosts.doc)
       .def("GetLinearConstraints",
@@ -1187,11 +1227,10 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.GetAllLinearConstraints.doc)
       .def("GetAllConstraints", &MathematicalProgram::GetAllConstraints,
           doc.MathematicalProgram.GetAllConstraints.doc)
-      .def("bounding_box_constraints",
-          &MathematicalProgram::bounding_box_constraints,
-          doc.MathematicalProgram.bounding_box_constraints.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
           doc.MathematicalProgram.num_vars.doc)
+      .def("num_indeterminates", &MathematicalProgram::num_indeterminates,
+          doc.MathematicalProgram.num_indeterminates.doc)
       .def("initial_guess", &MathematicalProgram::initial_guess,
           doc.MathematicalProgram.initial_guess.doc)
       .def("FindDecisionVariableIndex",
@@ -1200,6 +1239,9 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("FindDecisionVariableIndices",
           &MathematicalProgram::FindDecisionVariableIndices, py::arg("vars"),
           doc.MathematicalProgram.FindDecisionVariableIndices.doc)
+      .def("FindIndeterminateIndex",
+          &MathematicalProgram::FindIndeterminateIndex, py::arg("var"),
+          doc.MathematicalProgram.FindIndeterminateIndex.doc)
       .def(
           "EvalBindingVectorized",
           [](const MathematicalProgram& prog,
@@ -1269,6 +1311,8 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.indeterminates_index.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
+      .def("decision_variable", &MathematicalProgram::decision_variable,
+          py::arg("i"), doc.MathematicalProgram.decision_variable.doc)
       .def("decision_variable_index",
           &MathematicalProgram::decision_variable_index,
           doc.MathematicalProgram.decision_variable_index.doc);
