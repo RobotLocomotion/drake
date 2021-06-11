@@ -2812,45 +2812,21 @@ class MathematicalProgram {
    * @returns Vector of all cost bindings.
    * @note The group ordering may change as more cost types are added.
    */
-  std::vector<Binding<Cost>> GetAllCosts() const {
-    auto costlist = generic_costs_;
-    costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
-    costlist.insert(costlist.end(), quadratic_costs_.begin(),
-                    quadratic_costs_.end());
-    return costlist;
-  }
+  std::vector<Binding<Cost>> GetAllCosts() const;
 
   /**
    * Getter returning all linear constraints (both linear equality and
    * inequality constraints).
    * @returns Vector of all linear constraint bindings.
    */
-  std::vector<Binding<LinearConstraint>> GetAllLinearConstraints() const {
-    std::vector<Binding<LinearConstraint>> conlist = linear_constraints_;
-    conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
-                   linear_equality_constraints_.end());
-    return conlist;
-  }
+  std::vector<Binding<LinearConstraint>> GetAllLinearConstraints() const;
 
   /**
    * Getter for returning all constraints.
    * @returns Vector of all constraint bindings.
    * @note The group ordering may change as more constraint types are added.
    */
-  std::vector<Binding<Constraint>> GetAllConstraints() const {
-    std::vector<Binding<Constraint>> conlist = generic_constraints_;
-    auto extend = [&conlist](auto container) {
-      conlist.insert(conlist.end(), container.begin(), container.end());
-    };
-    extend(linear_constraints_);
-    extend(linear_equality_constraints_);
-    extend(bbox_constraints_);
-    extend(lorentz_cone_constraint_);
-    extend(rotated_lorentz_cone_constraint_);
-    extend(linear_matrix_inequality_constraint_);
-    extend(linear_complementarity_constraints_);
-    return conlist;
-  }
+  std::vector<Binding<Constraint>> GetAllConstraints() const;
 
   /** Getter for number of variables in the optimization program */
   int num_vars() const { return decision_variables_.rows(); }
@@ -2989,30 +2965,7 @@ class MathematicalProgram {
    * @throws std::logic_error if the size does not match.
    */
   void EvalVisualizationCallbacks(
-      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
-    if (prog_var_vals.rows() != num_vars()) {
-      std::ostringstream oss;
-      oss << "The input binding variable is not in the right size. Expects "
-          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
-          << " rows.\n";
-      throw std::logic_error(oss.str());
-    }
-
-    Eigen::VectorXd this_x;
-
-    for (auto const& binding : visualization_callbacks_) {
-      auto const& obj = binding.evaluator();
-
-      const int num_v_variables = binding.GetNumElements();
-      this_x.resize(num_v_variables);
-      for (int j = 0; j < num_v_variables; ++j) {
-        this_x(j) =
-            prog_var_vals(FindDecisionVariableIndex(binding.variables()(j)));
-      }
-
-      obj->EvalCallback(this_x);
-    }
-  }
+      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const;
 
   /**
    * Evaluates the evaluator in @p binding at the initial guess.

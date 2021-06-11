@@ -2290,6 +2290,7 @@ GTEST_TEST(TestMathematicalProgram, TestExponentialConeConstraint) {
   EXPECT_GT(prog.required_capabilities().count(
                 ProgramAttribute::kExponentialConeConstraint),
             0);
+  EXPECT_EQ(prog.GetAllConstraints().size(), 1);
   const VectorX<symbolic::Expression> expr_reconstructed =
       binding.evaluator()->A() * binding.variables() + binding.evaluator()->b();
   EXPECT_EQ(expr_reconstructed.rows(), 3);

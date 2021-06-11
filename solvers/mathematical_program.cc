@@ -1146,6 +1146,39 @@ MathematicalProgram::AddExponentialConeConstraint(
   return AddExponentialConeConstraint(A.sparseView(), Eigen::Vector3d(b), vars);
 }
 
+std::vector<Binding<Cost>> MathematicalProgram::GetAllCosts() const {
+  auto costlist = generic_costs_;
+  costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
+  costlist.insert(costlist.end(), quadratic_costs_.begin(),
+                  quadratic_costs_.end());
+  return costlist;
+}
+
+std::vector<Binding<LinearConstraint>>
+MathematicalProgram::GetAllLinearConstraints() const {
+  std::vector<Binding<LinearConstraint>> conlist = linear_constraints_;
+  conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
+                 linear_equality_constraints_.end());
+  return conlist;
+}
+
+std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
+    const {
+  std::vector<Binding<Constraint>> conlist = generic_constraints_;
+  auto extend = [&conlist](auto container) {
+    conlist.insert(conlist.end(), container.begin(), container.end());
+  };
+  extend(linear_constraints_);
+  extend(linear_equality_constraints_);
+  extend(bbox_constraints_);
+  extend(lorentz_cone_constraint_);
+  extend(rotated_lorentz_cone_constraint_);
+  extend(linear_matrix_inequality_constraint_);
+  extend(linear_complementarity_constraints_);
+  extend(exponential_cone_constraints_);
+  return conlist;
+}
+
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
@@ -1302,6 +1335,32 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
 void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->conservativeResize(v->rows() + new_var_size);
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
+}
+
+void MathematicalProgram::EvalVisualizationCallbacks(
+    const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
+  if (prog_var_vals.rows() != num_vars()) {
+    std::ostringstream oss;
+    oss << "The input binding variable is not in the right size. Expects "
+        << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+        << " rows.\n";
+    throw std::logic_error(oss.str());
+  }
+
+  Eigen::VectorXd this_x;
+
+  for (auto const& binding : visualization_callbacks_) {
+    auto const& obj = binding.evaluator();
+
+    const int num_v_variables = binding.GetNumElements();
+    this_x.resize(num_v_variables);
+    for (int j = 0; j < num_v_variables; ++j) {
+      this_x(j) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(j)));
+    }
+
+    obj->EvalCallback(this_x);
+  }
 }
 
 void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
