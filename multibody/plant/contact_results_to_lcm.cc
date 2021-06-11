@@ -27,9 +27,11 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
   }
 
   this->set_name("ContactResultsToLcmSystem");
-  contact_result_input_port_index_ =
-      this->DeclareAbstractInputPort(Value<ContactResults<T>>()).get_index();
+  contact_result_input_port_index_ = this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      Value<ContactResults<T>>()).get_index();
   message_output_port_index_ = this->DeclareAbstractOutputPort(
+      systems::kUseDefaultName,
       &ContactResultsToLcmSystem::CalcLcmContactOutput).get_index();
 }
 

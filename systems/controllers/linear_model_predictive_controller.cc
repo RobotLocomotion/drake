@@ -21,16 +21,18 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
     const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R, double time_period,
     double time_horizon)
     : state_input_index_(
-          this->DeclareVectorInputPort(BasicVector<T>(Q.cols())).get_index()),
+          this->DeclareVectorInputPort(kUseDefaultName,
+                                       BasicVector<T>(Q.cols()))
+              .get_index()),
       control_output_index_(
           this->DeclareVectorOutputPort(
+                  kUseDefaultName,
                   BasicVector<T>(R.cols()),
                   &LinearModelPredictiveController<T>::CalcControl)
               .get_index()),
       model_(std::move(model)),
       base_context_(std::move(base_context)),
-      num_states_(
-          model_->CreateDefaultContext()->get_discrete_state(0).size()),
+      num_states_(model_->CreateDefaultContext()->get_discrete_state(0).size()),
       num_inputs_(model_->get_input_port(0).size()),
       Q_(Q),
       R_(R),

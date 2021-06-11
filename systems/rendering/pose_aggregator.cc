@@ -18,7 +18,8 @@ PoseAggregator<T>::PoseAggregator()
   // Declare the output port and provide an allocator for a PoseBundle of length
   // equal to the concatenation of all inputs. This can't be done with a model
   // value because we don't know at construction how big the output will be.
-  this->DeclareAbstractOutputPort(&PoseAggregator::MakePoseBundle,
+  this->DeclareAbstractOutputPort(kUseDefaultName,
+                                  &PoseAggregator::MakePoseBundle,
                                   &PoseAggregator::CalcPoseBundle);
 }
 
@@ -177,9 +178,9 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
   input_records_.push_back(record);
   switch (record.type) {
     case InputRecord::kSinglePose:
-      return this->DeclareVectorInputPort(PoseVector<T>());
+      return this->DeclareVectorInputPort(kUseDefaultName, PoseVector<T>());
     case InputRecord::kSingleVelocity:
-      return this->DeclareVectorInputPort(FrameVelocity<T>());
+      return this->DeclareVectorInputPort(kUseDefaultName, FrameVelocity<T>());
     case InputRecord::kBundle:
       return this->DeclareAbstractInputPort(
           kUseDefaultName, Value<PoseBundle<T>>());

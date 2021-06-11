@@ -18,11 +18,13 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   this->DeclareContinuousState(1, 1, 0);
 
   // First output, y₁ = q, for interesting estimation problems.
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                systems::BasicVector<T>(1),
                                 &VanDerPolOscillator::CopyPositionToOutput);
 
   // Second output, y₂ = [q,q̇]', for e.g. visualizing the full state.
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                systems::BasicVector<T>(2),
                                 &VanDerPolOscillator::CopyFullStateToOutput);
 
   // Single parameter, μ, with default μ=1.

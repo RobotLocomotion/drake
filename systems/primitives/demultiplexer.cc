@@ -17,7 +17,7 @@ Demultiplexer<T>::Demultiplexer(const std::vector<int>& output_ports_sizes)
   const int size =
       std::accumulate(output_ports_sizes.begin(), output_ports_sizes.end(), 0);
 
-  this->DeclareInputPort(kVectorValued, size);
+  this->DeclareInputPort(kUseDefaultName, kVectorValued, size);
 
   // TODO(david-german-tri): Provide a way to infer the type.
   const int num_output_ports = output_ports_sizes.size();
@@ -27,7 +27,7 @@ Demultiplexer<T>::Demultiplexer(const std::vector<int>& output_ports_sizes)
     // Require no zero size output port.
     DRAKE_THROW_UNLESS(output_port_size >= 1);
     this->DeclareVectorOutputPort(
-        BasicVector<T>(output_port_size),
+        systems::kUseDefaultName, BasicVector<T>(output_port_size),
         [this, i](const Context<T>& context, BasicVector<T>* vector) {
           this->CopyToOutput(context, OutputPortIndex(i), vector);
         });

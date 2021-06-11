@@ -35,6 +35,7 @@ OptitrackLcmFrameSender::OptitrackLcmFrameSender(
       kUseDefaultName,
       Value<geometry::FramePoseVector<double>>()).get_index();
   this->DeclareAbstractOutputPort(
+      kUseDefaultName,
       optitrack::optitrack_frame_t(),
       &OptitrackLcmFrameSender::PopulatePoseMessage);
 }

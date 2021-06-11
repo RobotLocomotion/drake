@@ -132,8 +132,8 @@ void PackImageToLcmImageT(const AbstractValue& untyped_image,
 
 ImageToLcmImageArrayT::ImageToLcmImageArrayT(bool do_compress)
     : do_compress_(do_compress) {
-  image_array_t_msg_output_port_index_ =
-      DeclareAbstractOutputPort(&ImageToLcmImageArrayT::CalcImageArray)
+  image_array_t_msg_output_port_index_ = DeclareAbstractOutputPort(
+      kUseDefaultName, &ImageToLcmImageArrayT::CalcImageArray)
           .get_index();
 }
 
@@ -149,8 +149,8 @@ ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
   label_image_input_port_index_ =
       DeclareImageInputPort<PixelType::kLabel16I>(label_frame_name).get_index();
 
-  image_array_t_msg_output_port_index_ =
-      DeclareAbstractOutputPort(&ImageToLcmImageArrayT::CalcImageArray)
+  image_array_t_msg_output_port_index_ = DeclareAbstractOutputPort(
+      kUseDefaultName, &ImageToLcmImageArrayT::CalcImageArray)
           .get_index();
 }
 

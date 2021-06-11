@@ -90,8 +90,8 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
   explicit CubicPolynomialSystem(double time_step)
       : LeafSystem<T>(SystemTypeTag<CubicPolynomialSystem>{}),
         time_step_(time_step) {
-    this->DeclareInputPort(systems::kVectorValued, 1);
-    this->DeclareVectorOutputPort(BasicVector<T>(2),
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
+    this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(2),
                                   &CubicPolynomialSystem::OutputState,
                                   {this->all_state_ticket()});
     this->DeclareDiscreteState(2);

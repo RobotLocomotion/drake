@@ -32,7 +32,8 @@ ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
     this->DeclareContinuousState(initial_state, 3 * num_particles_,
                                  3 * num_particles_, 0);
     // A 3*N dimensional output vector for positions.
-    this->DeclareVectorOutputPort(systems::BasicVector<T>(3 * num_particles_),
+    this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                  systems::BasicVector<T>(3 * num_particles_),
                                   &ClothSpringModel::CopyContinuousStateOut);
   }
   param_index_ = this->DeclareNumericParameter(ClothSpringModelParams<T>());

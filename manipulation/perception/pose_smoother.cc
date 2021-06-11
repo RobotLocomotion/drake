@@ -91,10 +91,14 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
                            double desired_max_angular_velocity,
                            double period_sec, int filter_window_size)
     : smoothed_pose_output_port_(
-          this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedPose)
+          this->DeclareAbstractOutputPort(
+                  systems::kUseDefaultName,
+                  &PoseSmoother::OutputSmoothedPose)
               .get_index()),
       smoothed_velocity_output_port_(
-          this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedVelocity)
+          this->DeclareAbstractOutputPort(
+                  systems::kUseDefaultName,
+                  &PoseSmoother::OutputSmoothedVelocity)
               .get_index()),
       max_linear_velocity_(desired_max_linear_velocity),
       max_angular_velocity_(desired_max_angular_velocity),

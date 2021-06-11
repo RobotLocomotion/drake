@@ -30,7 +30,7 @@ class LinearSystemPlusEmptyVectorPort final : public LinearSystem<double> {
         const Eigen::Ref<const Eigen::MatrixXd>& C,
         const Eigen::Ref<const Eigen::MatrixXd>& D)
       : LinearSystem(SystemScalarConverter{}, A, B, C, D, 0.0) {
-    this->DeclareInputPort(kVectorValued, 0);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 0);
   }
 };
 
@@ -393,7 +393,8 @@ class EmptyStateSystemWithMixedInputs final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptyStateSystemWithMixedInputs);
   EmptyStateSystemWithMixedInputs()
       : LeafSystem<T>(SystemTypeTag<EmptyStateSystemWithMixedInputs>{}) {
-    this->DeclareVectorInputPort(BasicVector<T>(1) /* scalar input */);
+    this->DeclareVectorInputPort(
+        kUseDefaultName, BasicVector<T>(1) /* scalar input */);
     this->DeclareAbstractInputPort(
         "dummy", Value<std::vector<double>>() /* Arbitrary data type */);
   }
@@ -715,8 +716,8 @@ class MimoSystem final : public LeafSystem<T> {
   explicit MimoSystem(bool is_discrete)
       : LeafSystem<T>(SystemTypeTag<MimoSystem>{}),
         is_discrete_(is_discrete) {
-    this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 3);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 3);
 
     if (is_discrete) {
       this->DeclareDiscreteState(2);
@@ -724,8 +725,10 @@ class MimoSystem final : public LeafSystem<T> {
     } else {
       this->DeclareContinuousState(2);
     }
-    this->DeclareVectorOutputPort(BasicVector<T>(1), &MimoSystem::CalcOutput0);
-    this->DeclareVectorOutputPort(BasicVector<T>(3), &MimoSystem::CalcOutput1);
+    this->DeclareVectorOutputPort(
+        kUseDefaultName, BasicVector<T>(1), &MimoSystem::CalcOutput0);
+    this->DeclareVectorOutputPort(
+        kUseDefaultName, BasicVector<T>(3), &MimoSystem::CalcOutput1);
 
     A_ << 1, 2, 3, 4;
     B0_ << 5, 6;

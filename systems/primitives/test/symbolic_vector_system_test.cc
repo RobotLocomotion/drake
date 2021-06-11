@@ -235,7 +235,7 @@ class CalcRecorder final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CalcRecorder);
 
   explicit CalcRecorder(int output_size = 1) {
-    this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+    this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(output_size),
         &CalcRecorder::CalcOutput);
   }
 

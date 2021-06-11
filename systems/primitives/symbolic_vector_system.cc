@@ -117,7 +117,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
   DRAKE_DEMAND(static_cast<int>(all_vars.size()) == vars_vec.size());
 
   if (input_vars_.size() > 0) {
-    this->DeclareInputPort(kVectorValued, input_vars_.size());
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, input_vars_.size());
   }
   for (int i = 0; i < state_vars_.size(); i++) {
     state_var_to_index_.emplace(state_vars_[i].get_id(), i);
@@ -140,7 +140,8 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
     for (int i = 0; i < output_.size(); i++) {
       DRAKE_ASSERT(output_[i].GetVariables().IsSubsetOf(all_vars));
     }
-    this->DeclareVectorOutputPort(BasicVector<T>(output_.size()),
+    this->DeclareVectorOutputPort(kUseDefaultName,
+                                  BasicVector<T>(output_.size()),
                                   &SymbolicVectorSystem<T>::CalcOutput);
   }
 

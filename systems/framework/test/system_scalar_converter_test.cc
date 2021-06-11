@@ -45,9 +45,9 @@ class NonSymbolicSystem : public LeafSystem<T> {
   explicit NonSymbolicSystem(int magic)
       : magic_(magic) {
     // Declare input-output relation of `y[0] = copysign(magic, u[0])`.
-    this->DeclareVectorInputPort(BasicVector<T>(1));
+    this->DeclareVectorInputPort(kUseDefaultName, BasicVector<T>(1));
     this->DeclareVectorOutputPort(
-        BasicVector<T>(1),
+        kUseDefaultName, BasicVector<T>(1),
         [this](const Context<T>& context, BasicVector<T>* output) {
           const auto& input = this->get_input_port(0).Eval(context);
           (*output)[0] = test::copysign_int_to_non_symbolic_scalar(

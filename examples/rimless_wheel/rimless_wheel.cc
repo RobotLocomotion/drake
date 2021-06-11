@@ -21,11 +21,13 @@ RimlessWheel<T>::RimlessWheel()
   this->DeclareAbstractState(Value<bool>(double_support));
 
   // The minimal state of the system.
-  this->DeclareVectorOutputPort(RimlessWheelContinuousState<T>(),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                RimlessWheelContinuousState<T>(),
                                 &RimlessWheel::MinimalStateOut);
 
   // The floating-base (RPY) state of the system (useful for visualization).
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(12),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                systems::BasicVector<T>(12),
                                 &RimlessWheel::FloatingBaseStateOut);
 
   this->DeclareNumericParameter(RimlessWheelParams<T>());

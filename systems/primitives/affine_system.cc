@@ -47,13 +47,13 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
   }
 
   if (num_inputs_ > 0)
-    this->DeclareInputPort(kVectorValued, num_inputs_);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, num_inputs_);
   if (num_outputs_ > 0) {
     // N.B. Subclasses that override CalcOutputY may want to fine-tune the
     // output port's prerequisites; see AffineSystem's ctor for an example.
     // By default, the output port will depend on everything (time, input,
     // state, accuracy, etc.).
-    this->DeclareVectorOutputPort(BasicVector<T>(num_outputs_),
+    this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(num_outputs_),
                                   &TimeVaryingAffineSystem::CalcOutputY);
   }
 }

@@ -32,7 +32,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
     this->DeclareContinuousState(1, 1, 0);
 
     // The state of the system is output.
-    this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+    this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                  systems::BasicVector<T>(2),
                                   &BouncingBall::CopyStateOut);
 
     // Declare the witness function.

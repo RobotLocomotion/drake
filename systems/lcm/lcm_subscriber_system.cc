@@ -42,6 +42,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   // Use the "advanced" method to construct explicit non-member functors to
   // deal with the unusual methods we have available.
   DeclareAbstractOutputPort(
+      kUseDefaultName,
       [this]() {
         return this->AllocateSerializerOutputValue();
       },

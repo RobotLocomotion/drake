@@ -6,7 +6,7 @@ import numpy as np
 
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
-    Context, DiagramBuilder, PortDataType, VectorSystem)
+    Context, DiagramBuilder, PortDataType, VectorSystem, kUseDefaultName)
 from pydrake.systems.primitives import SignalLogger
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 from pydrake.trajectories import PiecewisePolynomial
@@ -24,7 +24,8 @@ class TestVisualizer(PyPlotVisualizer):
 
     def __init__(self, size):
         PyPlotVisualizer.__init__(self)
-        self.DeclareInputPort(PortDataType.kVectorValued, size)
+        self.DeclareInputPort(kUseDefaultName, PortDataType.kVectorValued,
+                              size)
 
         self.ax.set_xlim(*self.XLIM)
         self.ax.set_ylim(*self.YLIM)

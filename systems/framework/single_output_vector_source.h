@@ -79,7 +79,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
       SystemScalarConverter converter, const BasicVector<T>& model_vector)
       : LeafSystem<T>(std::move(converter)) {
     this->DeclareVectorOutputPort(
-        model_vector,
+        kUseDefaultName, model_vector,
         &SingleOutputVectorSource<T>::CalcVectorOutput);
   }
 

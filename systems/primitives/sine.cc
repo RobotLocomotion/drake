@@ -37,19 +37,19 @@ Sine<T>::Sine(const Eigen::VectorXd& amplitudes,
   // is not system time based, create an input port that contains the signal to
   // be used as the time variable.
   if (!is_time_based) {
-    this->DeclareInputPort(kVectorValued, amplitudes.size());
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, amplitudes.size());
   }
   value_output_port_index_ =
       this->DeclareVectorOutputPort(
-          BasicVector<T>(amplitudes.size()),
+          kUseDefaultName, BasicVector<T>(amplitudes.size()),
           &Sine::CalcValueOutput).get_index();
   first_derivative_output_port_index_ =
       this->DeclareVectorOutputPort(
-          BasicVector<T>(amplitudes.size()),
+          kUseDefaultName, BasicVector<T>(amplitudes.size()),
           &Sine::CalcFirstDerivativeOutput).get_index();
   second_derivative_output_port_index_ =
       this->DeclareVectorOutputPort(
-          BasicVector<T>(amplitudes.size()),
+          kUseDefaultName, BasicVector<T>(amplitudes.size()),
           &Sine::CalcSecondDerivativeOutput).get_index();
 }
 
