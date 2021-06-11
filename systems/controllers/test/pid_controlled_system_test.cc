@@ -45,8 +45,8 @@ class TestPlant : public LeafSystem<double> {
 class TestPlantWithMinOutputs : public TestPlant {
  public:
   TestPlantWithMinOutputs() {
-    DeclareVectorInputPort(BasicVector<double>(1));
-    DeclareVectorOutputPort(BasicVector<double>(2),
+    DeclareVectorInputPort(kUseDefaultName, BasicVector<double>(1));
+    DeclareVectorOutputPort(kUseDefaultName, BasicVector<double>(2),
                             &TestPlantWithMinOutputs::CalcOutputVector,
                             {this->nothing_ticket()});
   }
@@ -80,8 +80,8 @@ class TestPlantWithMinOutputs : public TestPlant {
 class TestPlantWithMoreOutputs : public TestPlant {
  public:
   TestPlantWithMoreOutputs() {
-    DeclareVectorInputPort(BasicVector<double>(1));
-    DeclareVectorOutputPort(BasicVector<double>(6),
+    DeclareVectorInputPort(kUseDefaultName, BasicVector<double>(1));
+    DeclareVectorOutputPort(kUseDefaultName, BasicVector<double>(6),
                             &TestPlantWithMoreOutputs::CalcOutputVector,
                             {this->nothing_ticket()});
   }
@@ -102,15 +102,15 @@ class TestPlantWithMoreOutputPorts : public TestPlant {
  public:
   TestPlantWithMoreOutputPorts() {
     // Declare some empty plant input port.
-    DeclareVectorInputPort(BasicVector<double>(0));
-    DeclareVectorInputPort(BasicVector<double>(1));
+    DeclareVectorInputPort(kUseDefaultName, BasicVector<double>(0));
+    DeclareVectorInputPort(kUseDefaultName, BasicVector<double>(1));
     // Declare some non-state output port.
     DeclareVectorOutputPort(
-        BasicVector<double>(3),
+        kUseDefaultName, BasicVector<double>(3),
         &TestPlantWithMoreOutputPorts::CalcNonStateOutputVector,
         {this->nothing_ticket()});
     DeclareVectorOutputPort(
-        BasicVector<double>(2),
+        kUseDefaultName, BasicVector<double>(2),
         &TestPlantWithMoreOutputPorts::CalcStateOutputVector,
         {this->nothing_ticket()});
   }

@@ -24,8 +24,8 @@ template <typename T>
 class PendulumEnergyShapingController : public systems::LeafSystem<T> {
  public:
   explicit PendulumEnergyShapingController(const PendulumParams<T>& params) {
-    this->DeclareVectorInputPort(PendulumState<T>());
-    this->DeclareVectorOutputPort(PendulumInput<T>(),
+    this->DeclareVectorInputPort(systems::kUseDefaultName, PendulumState<T>());
+    this->DeclareVectorOutputPort(systems::kUseDefaultName, PendulumInput<T>(),
                                   &PendulumEnergyShapingController::CalcTau);
     this->DeclareNumericParameter(params);
   }

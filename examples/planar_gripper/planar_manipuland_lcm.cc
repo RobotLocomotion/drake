@@ -4,7 +4,8 @@ namespace drake {
 namespace examples {
 namespace planar_gripper {
 PlanarManipulandStatusDecoder::PlanarManipulandStatusDecoder() {
-  this->DeclareVectorOutputPort(systems::BasicVector<double>(6),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                systems::BasicVector<double>(6),
                                 &PlanarManipulandStatusDecoder::OutputStatus);
   this->DeclareAbstractInputPort("manipuland_state",
                                  Value<lcmt_planar_manipuland_status>{});
@@ -46,8 +47,9 @@ void PlanarManipulandStatusDecoder::OutputStatus(
 }
 
 PlanarManipulandStatusEncoder::PlanarManipulandStatusEncoder() {
-  this->DeclareInputPort(systems::kVectorValued, 6);
+  this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 6);
   this->DeclareAbstractOutputPort(
+      systems::kUseDefaultName,
       &PlanarManipulandStatusEncoder::MakeOutputStatus,
       &PlanarManipulandStatusEncoder::OutputStatus);
 }

@@ -13,13 +13,15 @@ template <typename T>
 BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
   if (type == BeadOnAWire<T>::kMinimalCoordinates) {
     this->DeclareContinuousState(1, 1, 0);
-    this->DeclareInputPort(systems::kVectorValued, 1);
-    this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+    this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 1);
+    this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                  systems::BasicVector<T>(2),
                                   &BeadOnAWire::CopyStateOut);
   } else {
     this->DeclareContinuousState(3, 3, 0);
-    this->DeclareInputPort(systems::kVectorValued, 3);
-    this->DeclareVectorOutputPort(systems::BasicVector<T>(6),
+    this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 3);
+    this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                  systems::BasicVector<T>(6),
                                   &BeadOnAWire::CopyStateOut);
   }
   coordinate_type_ = type;

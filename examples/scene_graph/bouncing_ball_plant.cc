@@ -44,7 +44,8 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
       systems::kUseDefaultName, Value<geometry::QueryObject<T>>{})
           .get_index();
   state_port_ =
-      this->DeclareVectorOutputPort(BouncingBallVector<T>(),
+      this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                    BouncingBallVector<T>(),
                                     &BouncingBallPlant::CopyStateToOutput,
                                     {this->all_state_ticket()})
           .get_index();
@@ -72,6 +73,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
 
   // Allocate the output port now that the frame has been registered.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
+          systems::kUseDefaultName,
           &BouncingBallPlant::CalcFramePoseOutput,
           {this->configuration_ticket()})
       .get_index();

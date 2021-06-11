@@ -7,11 +7,12 @@ namespace particles {
 template <typename T>
 Particle<T>::Particle() {
   // A 1D input vector for acceleration.
-  this->DeclareInputPort(systems::kVectorValued, 1);
+  this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 1);
   // Adding one generalized position and one generalized velocity.
   this->DeclareContinuousState(1, 1, 0);
   // A 2D output vector for position and velocity.
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                systems::BasicVector<T>(2),
                                 &Particle::CopyStateOut);
 }
 

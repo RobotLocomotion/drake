@@ -22,11 +22,13 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints,
       systems::kUseDefaultName,
       Value<lcmt_allegro_command>{});
   state_output_port_ = this->DeclareVectorOutputPort(
+      systems::kUseDefaultName,
       systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
       }).get_index();
   torque_output_port_ = this->DeclareVectorOutputPort(
+      systems::kUseDefaultName,
       systems::BasicVector<double>(num_joints_),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
@@ -91,15 +93,19 @@ AllegroStatusSender::AllegroStatusSender(int num_joints)
     : num_joints_(num_joints) {
   // Commanded state.
   command_input_port_ = this->DeclareInputPort(
-                        systems::kVectorValued, num_joints_ * 2).get_index();
+      systems::kUseDefaultName, systems::kVectorValued, num_joints_ * 2)
+          .get_index();
   // Measured state.
   state_input_port_ = this->DeclareInputPort(
-                      systems::kVectorValued, num_joints_ * 2).get_index();
+      systems::kUseDefaultName, systems::kVectorValued, num_joints_ * 2)
+          .get_index();
   // Commanded torque.
   command_torque_input_port_ = this->DeclareInputPort(
-                              systems::kVectorValued, num_joints_).get_index();
+      systems::kUseDefaultName, systems::kVectorValued, num_joints_)
+          .get_index();
 
-  this->DeclareAbstractOutputPort(&AllegroStatusSender::MakeOutputStatus,
+  this->DeclareAbstractOutputPort(systems::kUseDefaultName,
+                                  &AllegroStatusSender::MakeOutputStatus,
                                   &AllegroStatusSender::OutputStatus);
 }
 

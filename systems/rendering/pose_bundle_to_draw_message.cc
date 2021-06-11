@@ -13,7 +13,7 @@ PoseBundleToDrawMessage::PoseBundleToDrawMessage() {
   this->DeclareAbstractInputPort(
       kUseDefaultName, Value<PoseBundle<double>>());
   this->DeclareAbstractOutputPort(
-      &PoseBundleToDrawMessage::CalcViewerDrawMessage);
+      kUseDefaultName, &PoseBundleToDrawMessage::CalcViewerDrawMessage);
 }
 
 PoseBundleToDrawMessage::~PoseBundleToDrawMessage() {}

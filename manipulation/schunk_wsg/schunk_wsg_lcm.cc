@@ -123,11 +123,12 @@ void SchunkWsgStatusReceiver::CopyForceOut(
 }
 
 SchunkWsgStatusSender::SchunkWsgStatusSender() {
-  state_input_port_ =
-      this->DeclareInputPort(systems::kVectorValued, 2).get_index();
-  force_input_port_ =
-      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
-  this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
+  state_input_port_ = this->DeclareInputPort(
+      systems::kUseDefaultName, systems::kVectorValued, 2).get_index();
+  force_input_port_ = this->DeclareInputPort(
+      systems::kUseDefaultName, systems::kVectorValued, 1).get_index();
+  this->DeclareAbstractOutputPort(
+      systems::kUseDefaultName, &SchunkWsgStatusSender::OutputStatus);
 }
 
 void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,

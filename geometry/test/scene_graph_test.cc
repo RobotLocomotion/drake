@@ -473,6 +473,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
 
     // Set up output port now that the frame is registered.
     this->DeclareAbstractOutputPort(
+        systems::kUseDefaultName,
         &GeometrySourceSystem::CalcFramePoseOutput);
   }
   SourceId get_source_id() const { return source_id_; }

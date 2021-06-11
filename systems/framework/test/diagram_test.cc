@@ -1423,7 +1423,7 @@ class PublishingSystem : public LeafSystem<double> {
  public:
   explicit PublishingSystem(std::function<void(double)> callback)
       : callback_(callback) {
-    this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
   }
 
  protected:
@@ -1581,10 +1581,12 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
 class Reduce : public LeafSystem<double> {
  public:
   Reduce() {
-    const auto& input0 = this->DeclareInputPort(kVectorValued, 1);
+    const auto& input0 = this->DeclareInputPort(
+        kUseDefaultName, kVectorValued, 1);
     feedthrough_input_ = input0.get_index();
-    sink_input_ = this->DeclareInputPort(kVectorValued, 1).get_index();
-    this->DeclareVectorOutputPort(BasicVector<double>(1),
+    sink_input_ = this->DeclareInputPort(
+        kUseDefaultName, kVectorValued, 1).get_index();
+    this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<double>(1),
                                   &Reduce::CalcFeedthrough,
                                   {input0.ticket()});
   }
@@ -1713,7 +1715,7 @@ class SecondOrderStateVector : public BasicVector<double> {
 class SecondOrderStateSystem : public LeafSystem<double> {
  public:
   SecondOrderStateSystem() {
-    DeclareInputPort(kVectorValued, 1);
+    DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     DeclareContinuousState(SecondOrderStateVector{},
                            1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
   }

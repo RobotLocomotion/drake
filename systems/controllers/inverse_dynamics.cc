@@ -20,9 +20,10 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
   DRAKE_DEMAND(plant->is_finalized());
 
   input_port_index_state_ =
-      this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
+      this->DeclareInputPort(kUseDefaultName, kVectorValued, q_dim_ + v_dim_)
+          .get_index();
   output_port_index_force_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(v_dim_),
+      this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(v_dim_),
                                     &InverseDynamics<T>::CalcOutputForce)
           .get_index();
 
@@ -56,7 +57,8 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
             .cache_index();
 
     input_port_index_desired_acceleration_ =
-        this->DeclareInputPort(kVectorValued, v_dim_).get_index();
+        this->DeclareInputPort(kUseDefaultName, kVectorValued, v_dim_)
+            .get_index();
   }
 }
 

@@ -45,7 +45,7 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
   // TODO(edrumwri): When type is SystemType::kPiecewiseDAE, allocate the
   // abstract mode variables.
 
-  this->DeclareInputPort(systems::kVectorValued, 3);
+  this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 3);
   state_output_port_ = &this->DeclareVectorOutputPort(
       "state_output", systems::BasicVector<T>(6), &Rod2D::CopyStateOut);
 }

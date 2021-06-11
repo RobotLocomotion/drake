@@ -40,9 +40,9 @@ Multiplexer<T>::Multiplexer(SystemScalarConverter converter,
                                                       input_sizes_.end(), 0,
                                                       std::plus<int>{}));
   for (const int input_size : input_sizes_) {
-    this->DeclareInputPort(kVectorValued, input_size);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size);
   }
-  this->DeclareVectorOutputPort(model_vector,
+  this->DeclareVectorOutputPort(kUseDefaultName, model_vector,
                                 &Multiplexer::CombineInputsToOutput);
 }
 

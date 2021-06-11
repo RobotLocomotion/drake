@@ -72,10 +72,12 @@ SpringMassSystem<T>::SpringMassSystem(
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
   // Declares input port for forcing term.
-  if (system_is_forced_) this->DeclareInputPort(kVectorValued, 1);
+  if (system_is_forced_) {
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
+  }
 
   // Declares output port for q, qdot, Energy.
-  this->DeclareVectorOutputPort(SpringMassStateVector<T>(),
+  this->DeclareVectorOutputPort(kUseDefaultName, SpringMassStateVector<T>(),
                                 &SpringMassSystem::SetOutputValues);
 
   this->DeclareContinuousState(SpringMassStateVector<T>(),

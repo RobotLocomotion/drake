@@ -35,8 +35,9 @@ class StateDependentDamper : public LeafSystem<T> {
     DRAKE_DEMAND(stiffness.size() == num_v);
     DRAKE_DEMAND(damping_ratio.size() == num_v);
 
-    this->DeclareInputPort(kVectorValued, num_x);
-    this->DeclareVectorOutputPort(BasicVector<T>(num_v),
+    this->DeclareInputPort(systems::kUseDefaultName, kVectorValued, num_x);
+    this->DeclareVectorOutputPort(systems::kUseDefaultName,
+                                  BasicVector<T>(num_v),
                                   &StateDependentDamper<T>::CalcTorque);
     // Make context with default parameters.
     plant_context_ = plant_.CreateDefaultContext();

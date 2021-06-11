@@ -148,6 +148,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     TestVectorSystem dut;
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.DeclareAbstractOutputPort(
+        kUseDefaultName,
         []() { return AbstractValue::Make<int>(0); },  // Dummies.
         [](const ContextBase&, AbstractValue*) {});
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);

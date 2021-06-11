@@ -63,6 +63,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
     : object_id_(object_id),
       measured_pose_output_port_{
           this->DeclareAbstractOutputPort(
+                  systems::kUseDefaultName,
                   &OptitrackPoseExtractor::OutputMeasuredPose)
               .get_index()},
       X_WO_(X_WO) {

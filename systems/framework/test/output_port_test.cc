@@ -370,7 +370,8 @@ class SystemWithNStates : public LeafSystem<double> {
  public:
   explicit SystemWithNStates(int num_states) {
     DeclareContinuousState(num_states);
-    DeclareAbstractOutputPort(&SystemWithNStates::ReturnNumContinuous);
+    DeclareAbstractOutputPort(
+        kUseDefaultName, &SystemWithNStates::ReturnNumContinuous);
   }
   ~SystemWithNStates() override {}
  private:
