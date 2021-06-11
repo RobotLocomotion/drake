@@ -237,7 +237,6 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
   // This cache entry depends on *nothing*.
   dynamic_data_cache_index_ =
       this->DeclareCacheEntry("dynamic_frames",
-                              vector<internal::DynamicFrameData>(),
                               &DrakeVisualizer<T>::CalcDynamicFrameData,
                               {this->nothing_ticket()})
           .cache_index();
