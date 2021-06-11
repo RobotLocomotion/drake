@@ -107,16 +107,12 @@ class InverseDynamics : public LeafSystem<T> {
   void CalcOutputForce(const Context<T>& context,
                        BasicVector<T>* force) const;
 
-  // Methods for constructing and updating cache entries.
-  std::unique_ptr<AbstractValue> MakeMultibodyContext() const;
-  void SetMultibodyContext(const Context<T>& context_base,
-                           AbstractValue* cache_value) const;
-  drake::multibody::MultibodyForces<T> MakeMultibodyForces() const;
-  void CalcMultibodyForces(
-      const Context<T>& context_base,
-      drake::multibody::MultibodyForces<T>* cache_value) const;
+  // Methods for updating cache entries.
+  void SetMultibodyContext(const Context<T>&, Context<T>*) const;
+  void CalcMultibodyForces(const Context<T>&,
+                           multibody::MultibodyForces<T>*) const;
 
-  const multibody::MultibodyPlant<T>* multibody_plant_{nullptr};
+  const multibody::MultibodyPlant<T>* const multibody_plant_;
 
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
