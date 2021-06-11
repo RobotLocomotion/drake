@@ -28,7 +28,7 @@ class DummyModel : public PhysicalModel<T> {
 
   DummyModel() = default;
 
-  ~DummyModel() = default;
+  ~DummyModel() final = default;
 
   /* Appends additional entries to the single group of discrete state with the
    given `model_value`. */

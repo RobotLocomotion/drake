@@ -142,8 +142,8 @@ class SystemScalarConverter {
     Remove(typeid(T));
   }
 
-  /// Removes from this converter the ability to convert from System<T> to
-  /// System<U>.
+  /// Removes from this converter the ability to convert from System<U> to
+  /// System<T>.
   template <typename T, typename U>
   void Remove() {
     Remove(typeid(T), typeid(U));
@@ -192,10 +192,10 @@ class SystemScalarConverter {
       const ErasedConverterFunc&);
 
   // Given typeid(T), removes the converter from or to T.
-  void Remove(const std::type_info& T);
+  void Remove(const std::type_info&);
 
-  // Given typeid(T) and typeid(U) removes the converter from T to U.
-  void Remove(const std::type_info& T, const std::type_info& U);
+  // Given typeid(T) and typeid(U), removes the converter from U to T.
+  void Remove(const std::type_info& t_info, const std::type_info& u_info);
 
   // Maps from {T, U} to the function that converts from U into T.
   std::unordered_map<Key, ErasedConverterFunc, KeyHasher> funcs_;

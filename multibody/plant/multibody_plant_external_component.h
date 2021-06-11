@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -11,6 +13,10 @@ namespace internal {
 template <typename T>
 class MultibodyPlantExternalComponent {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlantExternalComponent);
+
+  MultibodyPlantExternalComponent() = default;
+
   virtual ~MultibodyPlantExternalComponent() = default;
 
   /* Returns true if `this` multibody plant external component can be scalar

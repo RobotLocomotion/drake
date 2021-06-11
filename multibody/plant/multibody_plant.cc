@@ -3349,13 +3349,13 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
   systems::SystemScalarConverter& scalar_converter =
       this->get_mutable_system_scalar_converter();
   if (!component.is_cloneable_to_double()) {
-    scalar_converter.Remove<double>();
+    scalar_converter.Remove<double, T>();
   }
   if (!component.is_cloneable_to_autodiff()) {
-    scalar_converter.Remove<AutoDiffXd>();
+    scalar_converter.Remove<AutoDiffXd, T>();
   }
   if (!component.is_cloneable_to_symbolic()) {
-    scalar_converter.Remove<symbolic::Expression>();
+    scalar_converter.Remove<symbolic::Expression, T>();
   }
 }
 

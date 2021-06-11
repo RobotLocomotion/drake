@@ -36,7 +36,7 @@ class PhysicalModel : public MultibodyPlantExternalComponent<T> {
 
   PhysicalModel() = default;
 
-  virtual ~PhysicalModel() = default;
+  ~PhysicalModel() override = default;
 
   /* (Internal) Creates a clone of the concrete PhysicalModel object
    with the scalar type `ScalarType`. The clone should be a deep copy of the
@@ -58,15 +58,15 @@ class PhysicalModel : public MultibodyPlantExternalComponent<T> {
 
   /* Defaults to false. Derived classes that support double as a scalar type
    must override this to return true. */
-  virtual bool is_cloneable_to_double() const;
+  bool is_cloneable_to_double() const override;
 
   /* Defaults to false. Derived classes that support AutoDiffXd as a scalar type
    must override this to return true. */
-  virtual bool is_cloneable_to_autodiff() const;
+  bool is_cloneable_to_autodiff() const override;
 
   /* Defaults to false. Derived classes that support symbolic::Expression as a
    scalar type must override this to return true. */
-  virtual bool is_cloneable_to_symbolic() const;
+  bool is_cloneable_to_symbolic() const override;
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
    additional system resources. This method is only meant to be called by

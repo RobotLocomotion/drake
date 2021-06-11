@@ -40,7 +40,7 @@ class DiscreteUpdateManager : public MultibodyPlantExternalComponent<T> {
 
   DiscreteUpdateManager() = default;
 
-  virtual ~DiscreteUpdateManager() = default;
+  ~DiscreteUpdateManager() override = default;
 
   /* (Internal) Creates a clone of the concrete DiscreteUpdateManager object
    with the scalar type `ScalarType`. This method is meant to be called only by
