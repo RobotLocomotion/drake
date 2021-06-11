@@ -73,11 +73,12 @@ class LeafOutputPort final : public OutputPort<T> {
   // object as the `system_interface` parameter.
   LeafOutputPort(const System<T>* system,
                  internal::SystemMessageInterface* system_interface,
+                 internal::SystemId system_id,
                  std::string name, OutputPortIndex index,
                  DependencyTicket ticket, PortDataType data_type, int size,
                  CacheEntry* cache_entry)
-      : OutputPort<T>(system, system_interface, std::move(name), index, ticket,
-                      data_type, size),
+      : OutputPort<T>(system, system_interface, system_id, std::move(name),
+                      index, ticket, data_type, size),
         cache_entry_(cache_entry) {
     DRAKE_DEMAND(cache_entry != nullptr);
   }

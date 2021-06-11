@@ -12,10 +12,11 @@ namespace systems {
 
 PortBase::PortBase(
     const char* kind_string, internal::SystemMessageInterface* owning_system,
-    std::string name, int index, DependencyTicket ticket,
-    PortDataType data_type, int size)
+    internal::SystemId owning_system_id, std::string name, int index,
+    DependencyTicket ticket, PortDataType data_type, int size)
     : kind_string_(kind_string),
       owning_system_(*owning_system),
+      owning_system_id_(owning_system_id),
       index_(index),
       ticket_(ticket),
       data_type_(data_type),
@@ -23,6 +24,7 @@ PortBase::PortBase(
       name_(std::move(name)) {
   DRAKE_DEMAND(kind_string != nullptr);
   DRAKE_DEMAND(owning_system != nullptr);
+  DRAKE_DEMAND(owning_system_id.is_valid());
   DRAKE_DEMAND(!name_.empty());
 }
 
@@ -33,6 +35,12 @@ std::string PortBase::GetFullDescription() const {
       "{}Port[{}] ({}) of System {} ({})",
       kind_string_, index_, name_, get_system_interface().GetSystemPathname(),
       NiceTypeName::RemoveNamespaces(get_system_interface().GetSystemType()));
+}
+
+void PortBase::ThrowValidateContextMismatch() const {
+  throw std::logic_error(fmt::format(
+      "{}Port: The Context given as an argument was not created for this {}",
+      kind_string_, GetFullDescription()));
 }
 
 void PortBase::ThrowBadCast(

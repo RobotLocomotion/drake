@@ -46,6 +46,8 @@ class OutputPortBase : public PortBase {
 
   @param owning_system
     The System that owns this output port.
+  @param owning_system_id
+    The ID of owning_system.
   @param name
     A name for the port. Must not be empty. Output port names should be unique
     within a single System.
@@ -59,7 +61,8 @@ class OutputPortBase : public PortBase {
     If the port described is vector-valued, the number of elements expected,
     otherwise ignored. */
   OutputPortBase(
-      internal::SystemMessageInterface* owning_system, std::string name,
+      internal::SystemMessageInterface* owning_system,
+      internal::SystemId owning_system_id, std::string name,
       OutputPortIndex index, DependencyTicket ticket, PortDataType data_type,
       int size);
 

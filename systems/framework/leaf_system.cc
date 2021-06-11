@@ -963,6 +963,7 @@ LeafOutputPort<T>& LeafSystem<T>::CreateCachedLeafOutputPort(
   auto port = internal::FrameworkFactory::Make<LeafOutputPort<T>>(
       this,  // implicit_cast<const System<T>*>(this)
       this,  // implicit_cast<const SystemBase*>(this)
+      this->get_system_id(),
       std::move(name),
       oport_index, this->assign_next_dependency_ticket(),
       fixed_size.has_value() ? kVectorValued : kAbstractValued,
