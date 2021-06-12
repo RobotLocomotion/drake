@@ -420,7 +420,8 @@ TEST_F(SystemTest, ExactlyOnePortConvenience) {
 }
 
 TEST_F(SystemTest, PortNameTest) {
-  const auto& unnamed_input = system_.DeclareInputPort(kVectorValued, 2);
+  const auto& unnamed_input =
+      system_.DeclareInputPort(kUseDefaultName, kVectorValued, 2);
   const auto& named_input =
       system_.DeclareInputPort("my_input", kVectorValued, 3);
   const auto& named_abstract_input =
@@ -615,7 +616,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
             [this](const ContextBase& context, AbstractValue* output) {
               this->CalcStringOutput(context, output);
             })));
-    this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
     this->DeclareInputPort("gaussian", kVectorValued, 1,

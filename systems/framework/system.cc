@@ -975,6 +975,7 @@ InputPort<T>& System<T>::DeclareInputPort(
   return *port_ptr;
 }
 
+// (This function is deprecated.)
 template <typename T>
 InputPort<T>& System<T>::DeclareInputPort(
     PortDataType type, int size,
