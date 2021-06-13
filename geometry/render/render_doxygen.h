@@ -37,7 +37,7 @@ namespace render {
 
  <h2>Performance</h2>
 
- The performance of both of the current implementations will strongly deend
+ The performance of both of the current implementations will strongly depend
  on the quality of a system's GPU and its driver. A more powerful graphics card
  with an up-to-date driver will likely produce images more quickly.
 
