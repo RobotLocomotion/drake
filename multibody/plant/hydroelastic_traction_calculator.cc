@@ -217,31 +217,81 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
   // Get the slip velocity at the point.
   traction_data.vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
 
-  // Determine the traction using a soft-norm.
-  using std::atan;
-  using std::sqrt;
-  const T squared_vt = traction_data.vt_BqAq_W.squaredNorm();
-  const T norm_vt = sqrt(squared_vt);
-  const T soft_norm_vt = sqrt(squared_vt +
-      vslip_regularizer_ * vslip_regularizer_);
-
-  // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BqAq_W = traction_data.vt_BqAq_W / soft_norm_vt;
+  // We write our regularized model of friction as:
+  //   fₜ = −μᵣ(‖vₜ‖) vₜ/‖vₜ‖ fₙ                                             (1)
+  // where the regularized friction coefficient is computed as:
+  //   μᵣ(‖vₜ‖) = μ 2/π atan(‖vₜ‖/vₛ)                                        (2)
+  // Even though the above expressions are continuous and differentiable at
+  // vₜ = 0 (that is the limits from the left and from the right exist and are
+  // unique), we cannot evaluate them "numerically" at vₜ = 0 since
+  // this leads to division by zero. We need to come up with a mathematically
+  // equivalent expression that can be evaluated numerically at vₜ = 0.
+  // We start with the substitution of (2) into (1) to get:
+  //   fₜ = −μ 2/π atan(‖vₜ‖/vₛ)vₜ/‖vₜ‖ fₙ                                   (3)
+  // We now divide the numerator and denominator of Eq. (3) by vₛ (that is, we
+  // effectively multiply by 1) to write:
+  //   fₜ = −μ 2/π atan(‖vₜ‖/vₛ)(vₜ/vₛ)/(‖vₜ‖/vₛ)fₙ                          (4)
+  // Finally we make make the substitution x = ‖vₜ‖/vₛ and group together the
+  // terms in x to get:
+  //   fₜ =−μ 2/π vₜ/vₛ fₙ (atan(x)/x)
+  // We then make the observation that the function atan(x)/x is continuosly
+  // differentiable (that is the limits from both sides are exist and are
+  // unique) and therefore we can write a custom implementation that avoids
+  // division by zero at x = 0. This custom implementation is provided by
+  // CalcAtanXOverXFromXSquared().
+  const Vector3<T>& vt_BqAq_W = traction_data.vt_BqAq_W;
+  const double vs_squared = vslip_regularizer_ * vslip_regularizer_;
+  const T x_squared = vt_BqAq_W.squaredNorm() / vs_squared;
+  const T regularized_friction = (2.0 / M_PI) * mu_coulomb * normal_traction *
+                                 CalcAtanXOverXFromXSquared(x_squared) /
+                                 vslip_regularizer_;  // [Ns/m].
+  const Vector3<T> ft_Aq_W = -regularized_friction * vt_BqAq_W;
 
   // Compute the traction.
-  const T frictional_scalar = mu_coulomb * normal_traction *
-      2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  traction_data.traction_Aq_W = nhat_W * normal_traction -
-      vt_hat_BqAq_W * frictional_scalar;
+  traction_data.traction_Aq_W = nhat_W * normal_traction + ft_Aq_W;
 
   return traction_data;
+}
+
+template <typename T>
+T HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(const T& x2) {
+  // We are protecting the computation near x = 0 specifically so that
+  // numerical values (say double and AutoDiffXd) do not lead to ill-formed
+  // expressions with divisions by zero.
+  constexpr double x_cuttoff = 0.12;
+  constexpr double x_cutoff_squared = x_cuttoff * x_cuttoff;
+  if (x2 <= x_cutoff_squared) {
+    // We use the Taylor expansion of f(x)=atan(x)/x below a given cutoff
+    // x_cutoff, since neither atan(x)/x nor its automatic derivatives with
+    // AutodiffXd can be evaluated at x = 0. However, f(x) is well defined
+    // mathematically given its limits from left and right exist. Choosing
+    // the value of x_cutoff and the number of terms is done to minimize the
+    // amount of round-off errors. We estimated these values by comparing
+    // against reference values computed with Variable Precision Arithmetic.
+    // For further details please refer to Drake issue #15029 documenting this
+    // process.
+
+    // clang-format off
+      return 1. -
+             x2 * (1. / 3. -
+             x2 * (1. / 5. -
+             x2 * (1. / 7. -
+             x2 * (1. / 9. -
+             x2 * (1. / 11. -
+             x2 * (1. / 13. -
+             x2 * (1. / 15. -
+             x2 / 17.)))))));
+    // clang-format on
+  }
+  using std::atan;
+  using std::sqrt;
+  const T x = sqrt(x2);
+  return atan(x) / x;
 }
 
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(edrumwri) instantiate on SymbolicExpression when it no longer
-// causes a linker error complaining about an unresolved symbol in SceneGraph.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::internal::HydroelasticTractionCalculator)
