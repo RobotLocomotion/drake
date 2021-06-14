@@ -4408,8 +4408,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper method to compute penetration point pairs for a given `context`.
   // Having this as a separate method allows us to control specializations for
   // different scalar types.
-  std::vector<geometry::PenetrationAsPointPair<T>>
-  CalcPointPairPenetrations(const systems::Context<T>& context) const;
+  void CalcPointPairPenetrations(
+      const systems::Context<T>& context,
+      std::vector<geometry::PenetrationAsPointPair<T>>*) const;
 
   // This helper method combines the friction properties for each pair of
   // contact points in `point_pairs` according to
@@ -4488,6 +4489,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
+
+  // Populates the ContactJacobians cache struct via CalcDiscreteContactPairs
+  // and CalcNormalAndTangentContactJacobians.
+  void CalcContactJacobiansCache(
+      const systems::Context<T>& context,
+      internal::ContactJacobians<T>* contact_jacobians) const;
 
   // Evaluates the contact Jacobians for the given state of the plant stored in
   // `context`.
@@ -4924,9 +4931,9 @@ template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
 template <>
-std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>
-MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
-    const systems::Context<symbolic::Expression>&) const;
+void MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
+    const systems::Context<symbolic::Expression>&,
+    std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>*) const;
 template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
