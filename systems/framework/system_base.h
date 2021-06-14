@@ -10,12 +10,14 @@
 #include <variant>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
 #include "drake/systems/framework/output_port_base.h"
+#include "drake/systems/framework/value_calc_function.h"
 
 namespace drake {
 namespace systems {
@@ -240,7 +242,6 @@ class SystemBase : public internal::SystemMessageInterface {
     return *cache_entries_[index];
   }
 
-  // TODO(sherm1) Consider whether to make DeclareCacheEntry methods protected.
   //============================================================================
   /** @name                    Declare cache entries
   @anchor DeclareCacheEntry_documentation
@@ -306,7 +307,7 @@ class SystemBase : public internal::SystemMessageInterface {
   <h4>Which signature to use?</h4>
 
   Although the allocator and calculator functions ultimately satisfy generic
-  function signatures defined in CacheEntry, we provide a variety
+  function signatures defined by a ValueCalcFunction, we provide a variety
   of `DeclareCacheEntry()` signatures here for convenient specification,
   with mapping to the generic form handled invisibly. In particular,
   allocators are most easily defined by providing a model value that can be
@@ -324,30 +325,25 @@ class SystemBase : public internal::SystemMessageInterface {
   @see drake::Value for more about abstract values. */
   //@{
 
+  // TODO(jwnimmer-tri) Move this function to the protected section after
+  // 2020-10-01 once the deprecated overloads are moved. We can't move it
+  // before that point because we need all of them to share a Doxygen section.
+ protected:
   /// @anchor DeclareCacheEntry_primary
-  /** Declares a new %CacheEntry in this System using the least-restrictive
-  definitions for the associated functions. Prefer one of the more-convenient
-  signatures below if you can. The new cache entry is assigned a unique
-  CacheIndex and DependencyTicket, which can be obtained from the returned
-  %CacheEntry. The function signatures here are:
-  @code
-    std::unique_ptr<AbstractValue> Alloc();
-    void Calc(const ContextBase&, AbstractValue*);
-  @endcode
-  where the AbstractValue objects must resolve to the same concrete type.
+  /** Declares a new %CacheEntry in this System using the most generic form
+  of the calculation function. Prefer one of the more convenient signatures
+  below if you can. The new cache entry is assigned a unique CacheIndex and
+  DependencyTicket, which can be obtained from the returned %CacheEntry.
 
   @param[in] description
     A human-readable description of this cache entry, most useful for debugging
     and documentation. Not interpreted in any way by Drake; it is retained
     by the cache entry and used to generate the description for the
     corresponding CacheEntryValue in the Context.
-  @param[in] alloc_function
-    Given a Context, returns a heap-allocated AbstractValue object suitable for
-    holding a value for this cache entry.
-  @param[in] calc_function
+  @param[in] value_calc_function
     Provides the computation that maps from a given Context to the current
-    value that this cache entry should have, and writes that value to a given
-    object of the type returned by `alloc_function`.
+    value that this cache entry should have, as well as a way to allocate
+    storage prior to the computation.
   @param[in] prerequisites_of_calc
     Provides the DependencyTicket list containing a ticket for _every_ Context
     value on which `calc_function` may depend when it computes its result.
@@ -356,28 +352,33 @@ class SystemBase : public internal::SystemMessageInterface {
     the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
   @returns a reference to the newly-created %CacheEntry.
   @throws std::logic_error if given an explicitly empty prerequisite list. */
-  // Arguments to these methods are moved from internally. Taking them by value
-  // rather than reference avoids a copy when the original argument is
-  // an rvalue.
   CacheEntry& DeclareCacheEntry(
-      std::string description, CacheEntry::AllocCallback alloc_function,
-      CacheEntry::CalcCallback calc_function,
+      std::string description, ValueCalcFunction calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+  // NOLINTNEXTLINE(whitespace/blank_line)
+ public:
+  // (Undo the momentary "protected:" from immediately above.)
+
+  // Declares a cache entry by specifying two callback functions.
+  DRAKE_DEPRECATED("2021-10-01", "Use the ValueCalcFunction overload instead.")
+  CacheEntry& DeclareCacheEntry(
+      std::string description,
+      std::function<std::unique_ptr<AbstractValue>()> alloc_function,
+      std::function<void(const ContextBase&, AbstractValue*)> calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
-  /** Declares a cache entry by specifying member functions to use both for the
-  allocator and calculator. The signatures are: @code
-    ValueType MySystem::MakeValueType() const;
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
-  @endcode
-  where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
-  derived from `ContextBase`, and `ValueType` is any concrete type such that
-  `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified. See the
-  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
-  for more information about the parameters and behavior.
-  @see drake::Value */
+  // Declares a cache entry by specifying two member function pointers.
   template <class MySystem, class MyContext, typename ValueType>
+  DRAKE_DEPRECATED("2021-10-01",
+      "This overload for DeclareCacheEntry is rarely the best choice; it is"
+      " unusual for allocation to actually require a boutique callback rather"
+      " than just a Clone of a model_value. We found that most uses of this"
+      " overload hindered readability, because other overloads would often do"
+      " the job more directly. If no over overload works, you may wrap a"
+      " ValueCalcFunction around your existing make method and call the primary"
+      " DeclareCacheEntry overload that takes a ValueCalcFunction, instead.")
   CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*make)() const,
@@ -397,6 +398,10 @@ class SystemBase : public internal::SystemMessageInterface {
   arguments will be deduced and do not need to be specified. See the
   @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
   above for more information about the parameters and behavior.
+
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01.
+
   @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
@@ -405,15 +410,17 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
-  /** Declares a cache entry by specifying a model value of concrete type
-  `ValueType` and a calculator function that is a class member function (method)
-  with signature: @code
-    ValueType MySystem::CalcCacheValue(const MyContext&) const;
-  @endcode
-  Other than the calculator signature, this is identical to the other
-  @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
-  please look there for more information. */
+  // Declares a cache entry by specifying a model value and a calculator member
+  // function pointer.
   template <class MySystem, class MyContext, typename ValueType>
+  DRAKE_DEPRECATED("2021-10-01",
+      "This overload for DeclareCacheEntry is dispreferred because it might"
+      " not reuse heap storage from one calculation to the next, and so is"
+      " typically less inefficient than the other overloads. A better option"
+      " is to change the ValueType returned by-value to be an output pointer"
+      " instead, and return void. If that is not possible, you may wrap a"
+      " ValueCalcFunction around your existing method and call the primary"
+      " DeclareCacheEntry overload that takes a ValueCalcFunction, instead.")
   CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
       ValueType (MySystem::*calc)(const MyContext&) const,
@@ -441,6 +448,10 @@ class SystemBase : public internal::SystemMessageInterface {
   each allocation (not common), use one of the other signatures to explicitly
   provide a method for the allocator to call; that method can then invoke
   the `ValueType` default constructor each time it is called.
+
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01.
+
   @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
@@ -449,15 +460,17 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
-  /** Declares a cache entry by specifying only a calculator function that is a
-  class member function (method) with signature:
-  @code
-    ValueType MySystem::CalcCacheValue(const MyContext&) const;
-  @endcode
-  Other than the calculator method's signature, this is identical to the other
-  @ref DeclareCacheEntry_calc_only "calculator-only signature";
-  please look there for more information. */
+  // Declares a cache entry by specifying only a calculator member function
+  // pointer.
   template <class MySystem, class MyContext, typename ValueType>
+  DRAKE_DEPRECATED("2021-10-01",
+      "This overload for DeclareCacheEntry is dispreferred because it might"
+      " not reuse heap storage from one calculation to the next, and so is"
+      " typically less inefficient than the other overloads. A better option"
+      " is to change the ValueType returned by-value to be an output pointer"
+      " instead, and return void. If that is not possible, you may wrap a"
+      " ValueCalcFunction around your existing method and call the primary"
+      " DeclareCacheEntry overload that takes a ValueCalcFunction, instead.")
   CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*calc)(const MyContext&) const,
@@ -465,6 +478,7 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
+ public:
   //============================================================================
   /** @name                     Dependency tickets
   @anchor DependencyTicket_documentation
@@ -950,9 +964,8 @@ class SystemBase : public internal::SystemMessageInterface {
   for the most-general DeclareCacheEntry() signature for the meanings of the
   other parameters here. */
   CacheEntry& DeclareCacheEntryWithKnownTicket(
-      DependencyTicket known_ticket,
-      std::string description, CacheEntry::AllocCallback alloc_function,
-      CacheEntry::CalcCallback calc_function,
+      DependencyTicket known_ticket, std::string description,
+      ValueCalcFunction value_calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
@@ -1238,6 +1251,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
 // Implementations of templatized DeclareCacheEntry() methods.
 
+// (This overload is deprecated.)
 // Takes make() and calc() member functions.
 template <class MySystem, class MyContext, typename ValueType>
 CacheEntry& SystemBase::DeclareCacheEntry(
@@ -1262,8 +1276,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
   };
   // Invoke the general signature above.
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description),
+      ValueCalcFunction(std::move(alloc_callback), std::move(calc_callback)),
+      std::move(prerequisites_of_calc));
   return entry;
 }
 
@@ -1278,35 +1293,15 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
-  auto this_ptr = dynamic_cast<const MySystem*>(this);
-  DRAKE_DEMAND(this_ptr != nullptr);
-  // The given model value may have *either* a copy constructor or a Clone()
-  // method, since it just has to be suitable for containing in an
-  // AbstractValue. We need to create a functor that is copy constructible,
-  // so need to wrap the model value to give it a copy constructor. Drake's
-  // copyable_unique_ptr does just that, so is suitable for capture by the
-  // allocator functor here.
-  copyable_unique_ptr<AbstractValue> owned_model(
-      std::make_unique<Value<ValueType>>(model_value));
-  auto alloc_callback = [model = std::move(owned_model)]() {
-    return model->Clone();
-  };
-  auto calc_callback = [this_ptr, calc](const ContextBase& context,
-                                        AbstractValue* result) {
-    const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->get_mutable_value<ValueType>();
-    (this_ptr->*calc)(typed_context, &typed_result);
-  };
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description), ValueCalcFunction(this, model_value, calc),
+      std::move(prerequisites_of_calc));
   return entry;
 }
 
+// (This overload is deprecated.)
 // Takes an initial value and value-returning calc() member function.
 // See the above output-argument signature for an explanation of the code.
-// TODO(sherm1) Consider whether common code in this and the previous method
-// can be factored out and shared rather than repeated.
 template <class MySystem, class MyContext, typename ValueType>
 CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
@@ -1330,8 +1325,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
     typed_result = (this_ptr->*calc)(typed_context);
   };
   auto& entry = DeclareCacheEntry(
-      std::move(description), std::move(alloc_callback),
-      std::move(calc_callback), std::move(prerequisites_of_calc));
+      std::move(description),
+      ValueCalcFunction(std::move(alloc_callback), std::move(calc_callback)),
+      std::move(prerequisites_of_calc));
   return entry;
 }
 
@@ -1352,6 +1348,7 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                            std::move(prerequisites_of_calc));
 }
 
+// (This overload is deprecated.)
 // Takes just a value-returning calc() member function, and
 // value-initializes the entry. See previous method for more information.
 template <class MySystem, class MyContext, typename ValueType>

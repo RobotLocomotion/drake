@@ -160,6 +160,8 @@ class MySystemBase final : public SystemBase {
     out->set_value(Vector3d(3., 2., 1.));
   }
 
+  using SystemBase::DeclareCacheEntry;
+
  private:
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
     auto context = std::make_unique<MyContextBase>();

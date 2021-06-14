@@ -905,19 +905,19 @@ System<T>::System(SystemScalarConverter converter)
   // Use configuration, kinematics, and mass tickets when #9171 is resolved.
   potential_energy_cache_index_ =
       DeclareCacheEntry("potential energy",
-          &System<T>::CalcPotentialEnergy,
+          ValueCalcFunction(this, &System<T>::CalcPotentialEnergy),
           {all_sources_ticket()})  // After #9171: configuration + mass.
           .cache_index();
 
   kinetic_energy_cache_index_ =
       DeclareCacheEntry("kinetic energy",
-          &System<T>::CalcKineticEnergy,
+          ValueCalcFunction(this, &System<T>::CalcKineticEnergy),
           {all_sources_ticket()})  // After #9171: kinematics + mass.
           .cache_index();
 
   conservative_power_cache_index_ =
       DeclareCacheEntry("conservative power",
-          &System<T>::CalcConservativePower,
+          ValueCalcFunction(this, &System<T>::CalcConservativePower),
           {all_sources_ticket()})  // After #9171: kinematics + mass.
           .cache_index();
 
@@ -926,18 +926,21 @@ System<T>::System(SystemScalarConverter converter)
   // EvalNonConservativePower() to see why.
   nonconservative_power_cache_index_ =
       DeclareCacheEntry("non-conservative power",
-                        &System<T>::CalcNonConservativePower,
-                        {all_sources_ticket()})  // This is correct.
+          ValueCalcFunction(this, &System<T>::CalcNonConservativePower),
+          {all_sources_ticket()})  // This is correct.
           .cache_index();
 
   // For the time derivative cache we need to use the general form for
   // cache creation because we're dealing with pre-defined allocator and
   // calculator method signatures.
-  CacheEntry::AllocCallback alloc_derivatives = [this]() {
+  // TODO(jwnimmer-tri) Add a ValueCalcFunc overload for this case.
+  // - mem_fn alloc returning unique_ptr<MyOutput>
+  // - mem_fn calc into MyOutput*
+  auto alloc_derivatives = [this]() {
     return std::make_unique<Value<ContinuousState<T>>>(
         this->AllocateTimeDerivatives());
   };
-  CacheEntry::CalcCallback calc_derivatives = [this](
+  auto calc_derivatives = [this](
       const ContextBase& context_base, AbstractValue* result) {
     DRAKE_DEMAND(result != nullptr);
     ContinuousState<T>& state =
@@ -950,7 +953,9 @@ System<T>::System(SystemScalarConverter converter)
   time_derivatives_cache_index_ =
       this->DeclareCacheEntryWithKnownTicket(
               xcdot_ticket(), "time derivatives",
-              std::move(alloc_derivatives), std::move(calc_derivatives),
+              ValueCalcFunction(
+                  std::move(alloc_derivatives),
+                  std::move(calc_derivatives)),
               {all_sources_ticket()})
           .cache_index();
 

@@ -13,6 +13,17 @@ const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
 }
 
 template <typename T>
+systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
+    MultibodyPlant<T>* plant, std::string description,
+    systems::ValueCalcFunction calc_function,
+    std::set<systems::DependencyTicket> prerequisites_of_calc) {
+  DRAKE_DEMAND(plant == plant_);
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::DeclareCacheEntry(
+      plant, std::move(description), std::move(calc_function),
+      std::move(prerequisites_of_calc));
+}
+
+template <typename T>
 const contact_solvers::internal::ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {

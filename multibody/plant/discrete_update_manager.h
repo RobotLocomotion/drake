@@ -112,10 +112,10 @@ class DiscreteUpdateManager {
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
   const MultibodyTree<T>& internal_tree() const;
-  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
-  //  geometries.
-  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
-      const;
+
+  systems::CacheEntry& DeclareCacheEntry(
+      MultibodyPlant<T>*, std::string description, systems::ValueCalcFunction,
+      std::set<systems::DependencyTicket>);
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
@@ -150,6 +150,11 @@ class DiscreteUpdateManager {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
+
+  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
+  //  geometries.
+  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
+      const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to
