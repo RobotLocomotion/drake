@@ -732,6 +732,12 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(copy.copy(e_x), e_x)
         numpy_compare.assert_equal(copy.deepcopy(e_x), e_x)
 
+    def test_taylor_expand(self):
+        e = sym.sin(x)
+        env = {x: 0}
+        numpy_compare.assert_equal(
+            sym.TaylorExpand(f=e, a=env, order=1), sym.Expression(x))
+
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
 

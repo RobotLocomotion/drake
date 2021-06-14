@@ -153,6 +153,15 @@ PYBIND11_MODULE(symbolic, m) {
   internal::BindSymbolicMathOverloads<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
 
+  // Bind the free function TaylorExpand.
+  m.def(
+      "TaylorExpand",
+      [](const symbolic::Expression& f, const symbolic::Environment::map& a,
+          int order) {
+        return symbolic::TaylorExpand(f, symbolic::Environment(a), order);
+      },
+      py::arg("f"), py::arg("a"), py::arg("order"), doc.TaylorExpand.doc);
+
   // Bind the free functions for MakeVectorXXXVariable
   m  // BR
       .def(
