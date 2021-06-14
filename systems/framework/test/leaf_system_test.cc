@@ -408,18 +408,76 @@ TEST_F(LeafSystemTest, ForcedEventCollectionsTest) {
 }
 
 TEST_F(LeafSystemTest, DefaultPortNameTest) {
-  EXPECT_EQ(system_.DeclareVectorInputPort(BasicVector<double>(2)).get_name(),
-            "u0");
-  EXPECT_EQ(system_.DeclareAbstractInputPort(Value<int>(1)).get_name(), "u1");
+  EXPECT_EQ(
+      system_.DeclareVectorInputPort(kUseDefaultName, BasicVector<double>(2))
+          .get_name(),
+      "u0");
+  EXPECT_EQ(
+      system_.DeclareAbstractInputPort(kUseDefaultName, Value<int>(1))
+          .get_name(),
+      "u1");
 
-  EXPECT_EQ(system_.DeclareVectorOutputPort(&TestSystem<double>::CalcOutput)
-                .get_name(), "y0");
+  EXPECT_EQ(
+      system_.DeclareVectorOutputPort(kUseDefaultName,
+                                      &TestSystem<double>::CalcOutput)
+          .get_name(),
+      "y0");
   EXPECT_EQ(
       system_
           .DeclareAbstractOutputPort(kUseDefaultName, BasicVector<double>(2),
                                      &TestSystem<double>::CalcOutput)
           .get_name(),
       "y1");
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+class AllThingsDeprecated final : public LeafSystem<double> {
+ public:
+  AllThingsDeprecated() {
+    // Call each deprecated "Declare...Port" method once.
+    DeclareInputPort(kVectorValued, 2);
+    DeclareVectorInputPort(BasicVector<double>(2));
+    DeclareAbstractInputPort(Value<int>(1));
+    DeclareVectorOutputPort(
+        &AllThingsDeprecated::CalcVectorSubtype);
+    DeclareVectorOutputPort(
+        MyVector2d{},
+        &AllThingsDeprecated::CalcVectorSubtype);
+    DeclareVectorOutputPort(
+        BasicVector<double>(2),
+        [](const Context<double>&, BasicVector<double>*) {});
+    DeclareAbstractOutputPort(
+        &AllThingsDeprecated::CalcInt);
+    DeclareAbstractOutputPort(
+        0,
+        &AllThingsDeprecated::CalcInt);
+    DeclareAbstractOutputPort(
+        &AllThingsDeprecated::MakeInt,
+        &AllThingsDeprecated::CalcInt);
+    DeclareAbstractOutputPort(
+        []() { return AbstractValue::Make<int>(0); },
+        [](const Context<double>&, AbstractValue*) {});
+  }
+
+  void CalcVectorSubtype(const Context<double>&, MyVector2d*) const {}
+  int MakeInt() const { return 0; }
+  void CalcInt(const Context<double>&, int*) const {}
+};
+#pragma GCC diagnostic pop
+
+TEST_F(LeafSystemTest, DeprecatedDefaultPortNameTest) {
+  const AllThingsDeprecated dut;
+  EXPECT_EQ(dut.get_input_port(0).get_name(), "u0");
+  EXPECT_EQ(dut.get_input_port(1).get_name(), "u1");
+  EXPECT_EQ(dut.get_input_port(2).get_name(), "u2");
+  EXPECT_EQ(dut.get_output_port(0).get_name(), "y0");
+  EXPECT_EQ(dut.get_output_port(1).get_name(), "y1");
+  EXPECT_EQ(dut.get_output_port(2).get_name(), "y2");
+  EXPECT_EQ(dut.get_output_port(3).get_name(), "y3");
+  EXPECT_EQ(dut.get_output_port(4).get_name(), "y4");
+  EXPECT_EQ(dut.get_output_port(5).get_name(), "y5");
+  EXPECT_EQ(dut.get_output_port(6).get_name(), "y6");
 }
 
 // Tests that witness functions can be declared. Tests that witness functions
@@ -1422,17 +1480,18 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
 
     // Output port 0 default-constructs a class derived from BasicVector as
     // its allocator.
-    port =
-        &DeclareVectorOutputPort(&DeclaredNonModelOutputSystem::CalcDummyVec2);
+    port = &DeclareVectorOutputPort(
+        kUseDefaultName, &DeclaredNonModelOutputSystem::CalcDummyVec2);
     unused(port);
     // Output port 1 default-constructs a string as its allocator.
-    port =
-        &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
+    port = &DeclareAbstractOutputPort(
+        kUseDefaultName, &DeclaredNonModelOutputSystem::CalcString);
     unused(port);
 
     // Output port 2 uses the "Advanced" method for abstract ports, providing
     // explicit non-member functors for allocator and calculator.
     port = &DeclareAbstractOutputPort(
+        kUseDefaultName,
         []() { return AbstractValue::Make<int>(-2); },
         [](const Context<double>&, AbstractValue* out) {
           ASSERT_NE(out, nullptr);
@@ -1444,14 +1503,15 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
 
     // Output port 3 is declared with a commonly-used signature taking
     // methods for both allocator and calculator for an abstract port.
-    port =
-        &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::MakeString,
-                                   &DeclaredNonModelOutputSystem::CalcString);
+    port = &DeclareAbstractOutputPort(
+        kUseDefaultName, &DeclaredNonModelOutputSystem::MakeString,
+        &DeclaredNonModelOutputSystem::CalcString);
     unused(port);
 
     // Output port 4 uses a default-constructed bare struct which should be
     // value-initialized.
-    port = &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
+    port = &DeclareAbstractOutputPort(
+        kUseDefaultName, &DeclaredNonModelOutputSystem::CalcPOD);
     unused(port);
   }
 
@@ -1928,24 +1988,26 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
         use_default_prereqs_(use_default_prereqs) {
     const int kSize = 1;
 
-    this->DeclareInputPort(kVectorValued, kSize);
-    this->DeclareInputPort(kVectorValued, kSize);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, kSize);
+    this->DeclareInputPort(kUseDefaultName, kVectorValued, kSize);
 
     if (is_using_default_prereqs()) {
       // Don't specify prerequisites; we'll have to perform symbolic analysis
       // to determine whether there is feedthrough.
-      this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+      this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(kSize),
                                     &SymbolicSparsitySystem::CalcY0);
-      this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+      this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(kSize),
                                     &SymbolicSparsitySystem::CalcY1);
     } else {
       // Explicitly specify the prerequisites for the code in CalcY0() and
       // CalcY1() below. No need for further analysis to determine feedthrough.
       this->DeclareVectorOutputPort(
-          BasicVector<T>(kSize), &SymbolicSparsitySystem::CalcY0,
+          kUseDefaultName, BasicVector<T>(kSize),
+          &SymbolicSparsitySystem::CalcY0,
           {this->input_port_ticket(InputPortIndex(1))});
       this->DeclareVectorOutputPort(
-          BasicVector<T>(kSize), &SymbolicSparsitySystem::CalcY1,
+          kUseDefaultName, BasicVector<T>(kSize),
+          &SymbolicSparsitySystem::CalcY1,
           {this->input_port_ticket(InputPortIndex(0))});
     }
   }
@@ -2537,7 +2599,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // Declaring a constrained model vector input should add constraints.
   // We want `vec[0] >= 33` on the input vector.
   using InputVector = ConstraintBasicVector<double, 33>;
-  dut.DeclareVectorInputPort(InputVector{});
+  dut.DeclareVectorInputPort(kUseDefaultName, InputVector{});
   EXPECT_EQ(dut.num_constraints(), 3);
   const SystemConstraint<double>& constraint2 = dut.get_constraint(Index{2});
   EXPECT_TRUE(CompareMatrices(constraint2.lower_bound(), Vector1d(33)));
@@ -2548,7 +2610,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
 
   // Declaring a constrained model vector output should add constraints.
   // We want `vec[0] >= 44` on the output vector.
-  dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
+  dut.DeclareVectorOutputPort(
+        kUseDefaultName, &ConstraintTestSystem::CalcOutput);
   EXPECT_EQ(dut.num_constraints(), 4);
   const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
   EXPECT_TRUE(CompareMatrices(constraint3.lower_bound(), Vector1d(44)));

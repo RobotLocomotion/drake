@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
@@ -274,7 +275,8 @@ class TestCustom(unittest.TestCase):
                 self.DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
                 # feedthrough.
-                self.DeclareInputPort(PortDataType.kVectorValued, 1)
+                self.DeclareInputPort(
+                    kUseDefaultName, PortDataType.kVectorValued, 1)
                 self.DeclareVectorInputPort(
                     name="test_input", model_vector=BasicVector(1),
                     random_type=None)
@@ -410,6 +412,36 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
         self.assertTrue(system.called_system_reset)
+
+    def test_deprecated_leaf_system_port_declarations(self):
+        """Checks that the bindings without a name= argument still work."""
+        dut = LeafSystem()
+
+        # Input port.
+        with catch_drake_warnings(expected_count=1):
+            input_port = dut.DeclareInputPort(
+                type=PortDataType.kVectorValued, size=1)
+
+        # Vector output port.
+        def _vector_calc(context, output):
+            output.get_mutable_value()[:] = context.get_time()
+        with catch_drake_warnings(expected_count=1):
+            vector_output_port = dut.DeclareVectorOutputPort(
+                BasicVector(1), _vector_calc)
+
+        # Abstract output port.
+        def _tuple_calc(context, output):
+            output.set_value(("time", context.get_time()))
+        with catch_drake_warnings(expected_count=1):
+            abstract_output_port = dut.DeclareAbstractOutputPort(
+                lambda: AbstractValue.Make(("string", 0.0)),
+                _tuple_calc)
+
+        # Check that the return values were sane.
+        context = dut.CreateDefaultContext()
+        input_port.get_index()
+        vector_output_port.Eval(context)
+        abstract_output_port.Eval(context)
 
     def test_vector_system_overrides(self):
         dt = 0.5
