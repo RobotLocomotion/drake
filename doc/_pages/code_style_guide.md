@@ -143,24 +143,3 @@ is typically the name of the directory holding the ``package.xml`` file.
 
 We follow the [Google Shell Style Guide](
 https://google.github.io/styleguide/shell.xml).
-
-# Version numbers
-
-We'll adopt the following convention for version numbers in Drake:
-The version number will have the format W.X.Y.Z where
-
-* W = major release number
-* X = minor release number
-* Y = development stage*
-* Z = build
-
-Development stage is one of four values:
-
-* 0 = alpha (buggy, not for use)
-* 1 = beta (mostly bug-free, needs more testing)
-* 2 = release candidate (rc) (stable)
-* 3 = release
-
-Z (build) is optional. This is probably not needed but could just refer to the
-revision of the repository at the time of snapshot. Numbered versions should be
-referenced via tags.
