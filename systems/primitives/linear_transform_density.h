@@ -21,6 +21,7 @@ namespace systems {
  * - b (vector, optional)
  * output_ports:
  * - w_out
+ * - w_out_density
  * @endsystem
  *
  * The `b` port can remain disconnected, in which case it defaults to zero.
@@ -76,6 +77,14 @@ class LinearTransformDensity final : public LeafSystem<T> {
     return this->get_input_port(b_port_id_);
   }
 
+  const OutputPort<T>& get_output_port_w_out() const {
+    return this->get_output_port(w_out_port_id_);
+  }
+
+  const OutputPort<T>& get_output_port_w_out_density() const {
+    return this->get_output_port(w_out_density_port_id_);
+  }
+
   /** Gets the random distribution type. */
   RandomDistribution get_distribution() const { return distribution_; }
 
@@ -114,6 +123,9 @@ class LinearTransformDensity final : public LeafSystem<T> {
  private:
   void CalcOutput(const Context<T>& context, BasicVector<T>* w_out) const;
 
+  void CalcOutputDensity(const Context<T>& context,
+                         BasicVector<T>* w_out_density) const;
+
   Eigen::Map<const MatrixX<T>> GetA(const Context<T>& context) const;
 
   const RandomDistribution distribution_;
@@ -122,6 +134,8 @@ class LinearTransformDensity final : public LeafSystem<T> {
   InputPortIndex w_in_port_id_;
   InputPortIndex A_port_id_;
   InputPortIndex b_port_id_;
+  OutputPortIndex w_out_port_id_;
+  OutputPortIndex w_out_density_port_id_;
 };
 
 // Exclude symbolic::Expression from the scalartype conversion of

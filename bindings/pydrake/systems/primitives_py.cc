@@ -356,6 +356,14 @@ PYBIND11_MODULE(primitives, m) {
         .def("get_input_port_b", &LinearTransformDensity<T>::get_input_port_b,
             py_rvp::reference_internal,
             doc.LinearTransformDensity.get_input_port_b.doc)
+        .def("get_output_port_w_out",
+            &LinearTransformDensity<T>::get_output_port_w_out,
+            py_rvp::reference_internal,
+            doc.LinearTransformDensity.get_output_port_w_out.doc)
+        .def("get_output_port_w_out_density",
+            &LinearTransformDensity<T>::get_output_port_w_out_density,
+            py_rvp::reference_internal,
+            doc.LinearTransformDensity.get_output_port_w_out_density.doc)
         .def("get_distribution", &LinearTransformDensity<T>::get_distribution,
             doc.LinearTransformDensity.get_distribution.doc)
         .def("FixConstantA", &LinearTransformDensity<T>::FixConstantA,
