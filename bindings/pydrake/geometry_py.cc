@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -1299,6 +1300,59 @@ void def_geometry(py::module m) {
       NonSymbolicScalarPack{});
 }
 
+void def_geometry_optimization(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry::optimization;
+  m.doc() = "Local bindings for `drake::geometry::optimization`";
+  constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
+
+  {
+    const auto& cls_doc = doc.ConvexSet;
+    py::class_<ConvexSet>(m, "ConvexSet", cls_doc.doc)
+        .def("ambient_dimension", &ConvexSet::ambient_dimension,
+            cls_doc.ambient_dimension.doc)
+        .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
+            py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
+        .def("AddPointInSetConstraint", &ConvexSet::AddPointInSetConstraint,
+            py::arg("prog"), py::arg("vars"),
+            cls_doc.AddPointInSetConstraint.doc)
+        .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
+            cls_doc.ToShapeWithPose.doc);
+  }
+
+  {
+    const auto& cls_doc = doc.HPolyhedron;
+    py::class_<HPolyhedron, ConvexSet>(m, "HPolyhedron", cls_doc.doc)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("b"), cls_doc.ctor.doc_2args)
+        .def(py::init<const QueryObject<double>&, GeometryId,
+                 std::optional<FrameId>>(),
+            py::arg("query_object"), py::arg("geometry_id"),
+            py::arg("expressed_in") = std::nullopt, cls_doc.ctor.doc_3args)
+        .def("A", &HPolyhedron::A, cls_doc.A.doc)
+        .def("b", &HPolyhedron::b, cls_doc.b.doc);
+  }
+
+  {
+    const auto& cls_doc = doc.HyperEllipsoid;
+    py::class_<HyperEllipsoid, ConvexSet>(m, "HyperEllipsoid", cls_doc.doc)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("A"), py::arg("center"), cls_doc.ctor.doc_2args)
+        .def(py::init<const QueryObject<double>&, GeometryId,
+                 std::optional<FrameId>>(),
+            py::arg("query_object"), py::arg("geometry_id"),
+            py::arg("expressed_in") = std::nullopt, cls_doc.ctor.doc_3args)
+        .def("A", &HyperEllipsoid::A, cls_doc.A.doc)
+        .def("center", &HyperEllipsoid::center, cls_doc.center.doc);
+  }
+}
+
 void def_geometry_testing(py::module m) {
   class FakeTag;
   using FakeId = Identifier<FakeTag>;
@@ -1314,7 +1368,8 @@ void def_geometry_all(py::module m) {
   py::dict vars = m.attr("__dict__");
   py::exec(
       "from pydrake.geometry import *\n"
-      "from pydrake.geometry.render import *\n",
+      "from pydrake.geometry.render import *\n"
+      "from pydrake.geometry.optimization import *\n",
       py::globals(), vars);
 }
 
@@ -1325,6 +1380,7 @@ PYBIND11_MODULE(geometry, m) {
 
   def_geometry(m);
   def_geometry_render(m.def_submodule("render"));
+  def_geometry_optimization(m.def_submodule("optimization"));
   def_geometry_testing(m.def_submodule("_testing"));
   def_geometry_all(m.def_submodule("all"));
 }
