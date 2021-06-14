@@ -14,6 +14,7 @@ from _drake_visualizer_builtin_scripts import (
     show_frame,
     show_hydroelastic_contact,
     show_image,
+    show_point_cloud,
     show_point_pair_contact,
     show_time,
 )
@@ -27,6 +28,7 @@ def init_visualizer():
         ("frame", show_frame.init_visualizer),
         ("hydroelastic_contact", show_hydroelastic_contact.init_visualizer),
         ("image", show_image.init_visualizer),
+        ("point_cloud", show_point_cloud.init_visualizer),
         ("point_pair_contact", show_point_pair_contact.init_visualizer),
         ("time", show_time.init_visualizer),
         ("grid_wireframe", grid_wireframe.activate),

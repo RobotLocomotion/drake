@@ -9,6 +9,7 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_point_cloud.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
@@ -17,6 +18,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/perception/point_cloud_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -48,6 +50,10 @@ DEFINE_string(setup, "manipulation_class",
               "Can be {manipulation_class, clutter_clearing}");
 DEFINE_bool(publish_cameras, false,
             "Whether to publish camera images to LCM");
+DEFINE_bool(publish_point_cloud, false,
+            "Whether to publish point clouds to LCM.  Note that per issue "
+            "https://github.com/RobotLocomotion/drake/issues/12125 the "
+            "simulated point cloud data will have registration errors.");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -170,6 +176,22 @@ int do_main(int argc, char* argv[]) {
             "DRAKE_RGBD_CAMERA_IMAGES", lcm, 1.0 / fps));
     builder.Connect(image_encoder->image_array_t_msg_output_port(),
                     image_publisher->get_input_port());
+  }
+
+  // Publish the point clouds.
+  if (FLAGS_publish_point_cloud) {
+    for (const auto& camera_name : station->get_camera_names()) {
+      const std::string cloud_name = "camera_" + camera_name + "_point_cloud";
+      auto cloud_encoder = builder.AddSystem<perception::PointCloudToLcm>();
+      const double fps = 5.0;
+      auto cloud_publisher = builder.AddSystem(
+          systems::lcm::LcmPublisherSystem::Make<drake::lcmt_point_cloud>(
+              "DRAKE_POINT_CLOUD_" + camera_name, lcm, 1.0 / fps));
+      builder.Connect(station->GetOutputPort(cloud_name),
+                      cloud_encoder->get_input_port());
+      builder.Connect(cloud_encoder->get_output_port(),
+                      cloud_publisher->get_input_port());
+    }
   }
 
   auto diagram = builder.Build();

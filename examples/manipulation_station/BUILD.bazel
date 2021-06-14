@@ -42,8 +42,10 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
+        "//perception:depth_image_to_point_cloud",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
+        "//systems/primitives",
         "//systems/sensors:rgbd_sensor",
     ],
 )
@@ -94,6 +96,7 @@ drake_cc_binary(
         "//manipulation/kuka_iiwa:iiwa_command_receiver",
         "//manipulation/kuka_iiwa:iiwa_status_sender",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//perception:point_cloud_to_lcm",
         "//systems/analysis:simulator",
         "//systems/lcm",
         "//systems/sensors:image_to_lcm_image_array_t",
