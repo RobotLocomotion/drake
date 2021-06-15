@@ -5,7 +5,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system.h"
@@ -89,17 +88,6 @@ GTEST_TEST(SystemHtmlTest, SystemWithFanout) {
   // Proof of life test for fanout.
   EXPECT_THAT(html, HasSubstr(R"(from: "terp_u0", to: "drake/systems/Multiplexer)"));
   EXPECT_THAT(html, HasSubstr(R"(from: "terp_u0", to: "drake/systems/DiscreteDerivative)"));
-}
-
-GTEST_TEST(SystemHtmlTest, ManipulationStation) {
-  examples::manipulation_station::ManipulationStation<double> station;
-  station.SetupClutterClearingStation();
-  station.Finalize();
-  const std::string html = GenerateHtml(station);
-
-  // Proof of life test for a more complex diagram.
-  EXPECT_THAT(html,
-              HasSubstr(R"(key: "plant", group: "manipulation_station")"));
 }
 
 }  // namespace systems
