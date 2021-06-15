@@ -50,15 +50,7 @@ PlanarManipulandStatusEncoder::PlanarManipulandStatusEncoder() {
   this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 6);
   this->DeclareAbstractOutputPort(
       systems::kUseDefaultName,
-      &PlanarManipulandStatusEncoder::MakeOutputStatus,
       &PlanarManipulandStatusEncoder::OutputStatus);
-}
-
-lcmt_planar_manipuland_status PlanarManipulandStatusEncoder::MakeOutputStatus()
-    const {
-  lcmt_planar_manipuland_status msg{};
-  msg.utime = 0;
-  return msg;
 }
 
 void PlanarManipulandStatusEncoder::OutputStatus(

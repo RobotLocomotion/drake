@@ -104,9 +104,6 @@ class AllegroStatusSender : public systems::LeafSystem<double> {
   }
 
  private:
-  // This is the method to use for the output port allocator.
-  lcmt_allegro_status MakeOutputStatus() const;
-
   // This is the calculator method for the output port.
   void OutputStatus(const systems::Context<double>& context,
                     lcmt_allegro_status* output) const;

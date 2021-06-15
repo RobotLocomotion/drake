@@ -105,18 +105,7 @@ AllegroStatusSender::AllegroStatusSender(int num_joints)
           .get_index();
 
   this->DeclareAbstractOutputPort(systems::kUseDefaultName,
-                                  &AllegroStatusSender::MakeOutputStatus,
                                   &AllegroStatusSender::OutputStatus);
-}
-
-lcmt_allegro_status AllegroStatusSender::MakeOutputStatus() const {
-  lcmt_allegro_status msg{};
-  msg.num_joints = num_joints_;
-  msg.joint_position_measured.resize(msg.num_joints, 0);
-  msg.joint_velocity_estimated.resize(msg.num_joints, 0);
-  msg.joint_position_commanded.resize(msg.num_joints, 0);
-  msg.joint_torque_commanded.resize(msg.num_joints, 0);
-  return msg;
 }
 
 void AllegroStatusSender::OutputStatus(const Context<double>& context,
@@ -130,6 +119,11 @@ void AllegroStatusSender::OutputStatus(const Context<double>& context,
   const systems::BasicVector<double>* commanded_torque =
       this->EvalVectorInput(context, 2);
 
+  status.num_joints = num_joints_;
+  status.joint_position_measured.resize(num_joints_, 0);
+  status.joint_velocity_estimated.resize(num_joints_, 0);
+  status.joint_position_commanded.resize(num_joints_, 0);
+  status.joint_torque_commanded.resize(num_joints_, 0);
   for (int i = 0; i < num_joints_; ++i) {
     status.joint_position_measured[i] = state->GetAtIndex(i);
     status.joint_velocity_estimated[i] = state->GetAtIndex(i + num_joints_);
