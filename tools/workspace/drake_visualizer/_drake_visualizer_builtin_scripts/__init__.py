@@ -22,6 +22,7 @@ AVAILABLE_SCRIPTS = [
     "frame",
     "hydroelastic_contact",
     "image",
+    "point_cloud",
     "point_pair_contact",
     "time",
     "grid_wireframe",

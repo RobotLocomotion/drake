@@ -68,10 +68,12 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - camera_[NAME]_rgb_image
 /// - camera_[NAME]_depth_image
 /// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - <b style="color:orange">camera_[NAME]_point_cloud</b>
 /// - ...
 /// - camera_[NAME]_rgb_image
 /// - camera_[NAME]_depth_image
 /// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - <b style="color:orange">camera_[NAME]_point_cloud</b>
 /// - <b style="color:orange">pose_bundle</b>
 /// - <b style="color:orange">query_object</b>
 /// - <b style="color:orange">contact_results</b>
@@ -87,6 +89,9 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// between q_measured and v_estimated is because the Kuka FRI reports
 /// positions directly, but we have estimated v in our code that wraps the
 /// FRI.
+///
+/// @warning The "camera_[NAME]_point_cloud" data currently has registration
+/// errors per issue https://github.com/RobotLocomotion/drake/issues/12125.
 ///
 /// Consider the robot dynamics
 ///   M(q)vdot + C(q,v)v = τ_g(q) + τ_commanded + τ_joint_friction + τ_external,
