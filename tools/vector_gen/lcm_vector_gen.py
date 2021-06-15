@@ -195,7 +195,7 @@ SET_TO_NAMED_VARIABLES_BEGIN = """
   /// Create a symbolic::Variable for each element with the known variable
   /// name.  This is only available for T == symbolic::Expression.
   template <typename U=T>
-  typename std::enable_if<std::is_same<U, symbolic::Expression>::value>::type
+  typename std::enable_if_t<std::is_same_v<U, symbolic::Expression>>
   SetToNamedVariables() {
 """
 SET_TO_NAMED_VARIABLES_BODY = """

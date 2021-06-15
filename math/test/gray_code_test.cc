@@ -33,10 +33,10 @@ void TestGrayCode(const Eigen::Ref<const Eigen::MatrixXi>& gray_codes) {
   auto gray_codes_dynamic = CalculateReflectedGrayCodes(NumDigits);
   auto gray_codes_static = CalculateReflectedGrayCodes<NumDigits>();
   static_assert(
-      std::is_same<decltype(gray_codes_dynamic), Eigen::MatrixXi>::value,
+      std::is_same_v<decltype(gray_codes_dynamic), Eigen::MatrixXi>,
       "Should be a dynamic sized matrix");
-  static_assert(std::is_same<decltype(gray_codes_static),
-                             Eigen::Matrix<int, NumCodes, NumDigits>>::value,
+  static_assert(std::is_same_v<decltype(gray_codes_static),
+                               Eigen::Matrix<int, NumCodes, NumDigits>>,
                 "Should be a static sized matrix");
   EXPECT_TRUE(CompareMatrices(gray_codes, gray_codes_dynamic, 1E-5,
                               MatrixCompareType::absolute));

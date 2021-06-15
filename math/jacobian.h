@@ -59,7 +59,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
   using Eigen::Index;
   using Eigen::Matrix;
 
-  using ArgNoRef = typename std::remove_reference<Arg>::type;
+  using ArgNoRef = typename std::remove_reference_t<Arg>;
 
   // Argument scalar type.
   using ArgScalar = typename ArgNoRef::Scalar;

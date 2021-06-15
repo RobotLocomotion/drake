@@ -88,7 +88,7 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
 // When inheritance is in use, we should only permit public copy & move
 // operations to exist on classes that are marked as final.
 static_assert(
-    std::is_final<Sample<double>>::value,
+    std::is_final_v<Sample<double>>,
     "Sample<T> should have been final");
 
 // Confirm that copy semantics work.
