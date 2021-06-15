@@ -49,7 +49,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
     deformable_model->RegisterDeformableBody(MakeBoxTetMesh(), "box",
                                              MakeDeformableBodyConfig(),
                                              MakeProximityProperties());
-    deformable_model_ = &plant_.AddPhysicalModel(std::move(deformable_model));
+    deformable_model_ = deformable_model.get();
+    plant_.AddPhysicalModel(std::move(deformable_model));
     /* Add a collision geometry. */
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
     plant_.RegisterCollisionGeometry(
@@ -58,8 +59,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
     plant_.Finalize();
     auto deformable_rigid_manager =
         std::make_unique<DeformableRigidManager<double>>();
-    deformable_rigid_manager_ = &plant_.SetDiscreteUpdateManager(
-        std::move(deformable_rigid_manager));
+    deformable_rigid_manager_ = deformable_rigid_manager.get();
+    plant_.SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
     deformable_rigid_manager_->RegisterCollisionObjects(scene_graph_);
   }
 
@@ -196,11 +197,10 @@ std::unique_ptr<MultibodyPlant<double>> MakePlant(
     auto deformable_rigid_manager =
         std::make_unique<DeformableRigidManager<double>>();
     DeformableRigidManager<double>* deformable_rigid_manager_ptr =
-        &plant->SetDiscreteUpdateManager(
-            std::move(deformable_rigid_manager));
+        deformable_rigid_manager.get();
+    plant->SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
     if (contact_solver != nullptr) {
-      deformable_rigid_manager_ptr->SetContactSolver(
-          std::move(contact_solver));
+      deformable_rigid_manager_ptr->SetContactSolver(std::move(contact_solver));
     }
   } else {
     if (contact_solver != nullptr) {

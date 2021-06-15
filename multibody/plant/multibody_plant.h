@@ -1596,34 +1596,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(xuchenhan-tri): Remove SetContactSolver() once
-  // SetDiscreteUpdateManager() stabilizes. (Experimental) SetContactSolver()
-  // should only be called by advanced developers wanting to try out their
-  // custom contact solvers. We choose not to show it in public documentations
-  // rather than making it private with friends.
+  //  SetDiscreteUpdateManager() stabilizes.
+  // (Experimental) SetContactSolver() should only be called by advanced
+  // developers wanting to try out their custom contact solvers. We choose not
+  // to show it in public documentations rather than making it private with
+  // friends.
   // @param solver The contact solver to be used for simulations of discrete
   // models with frictional contact. Discrete updates will use this solver after
   // this call.
-  // @pre solver must not be nullptr.
-  // @pre SolverType must be a subclass of
-  // multibody::contact_solvers::internal::ContactSolver.
-  // @returns a mutable reference to `solver`, now owned by `this`
-  // MultibodyPlant.
+  // @pre solver != nullptr.
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
-  template <class SolverType>
-  SolverType& SetContactSolver(std::unique_ptr<SolverType> solver) {
+  void SetContactSolver(
+      std::unique_ptr<contact_solvers::internal::ContactSolver<T>> solver) {
     DRAKE_DEMAND(solver != nullptr);
-    static_assert(std::is_base_of_v<contact_solvers::internal::ContactSolver<T>,
-                                    SolverType>,
-                  "SolverType must be a sub-class of ContactSolver.");
-    SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
-    return *solver_ptr;
   }
 
-  // TODO(xuchenhan-tri): Change the signature so that it's a void method taking
-  //  unique pointer to the base class. This gets rid of the template and
-  //  facilitates moving the definition to .cc file.
   // (Experimental) SetDiscreteUpdateManager() should only be called by advanced
   // developers wanting to try out their custom time stepping strategies,
   // including contact resolution. We choose not to show it in public
@@ -1636,35 +1625,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   //
   // @param manager
   //   After this call the new manager is used to advance discrete states.
-  // @pre manager must not be nullptr.
-  // @pre ManagerType is a subclass of
-  //   multibody::internal::DiscreteUpdateManager.
-  // @returns a mutable reference to `manager`, now owned by `this`
-  // MultibodyPlant.
+  // @pre manager != nullptr.
   // @throws std::exception if called pre-finalize. See Finalize().
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
-  template <class ManagerType>
-  ManagerType& SetDiscreteUpdateManager(
-      std::unique_ptr<ManagerType> manager) {
-    // N.B. This requirement is really more important on the side of the
-    // manager's constructor, since most likely it'll need MBP's topology at
-    // least to build the contact problem. However, here we play safe and demand
-    // finalization right here.
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_DEMAND(manager != nullptr);
-    static_assert(
-        std::is_base_of_v<internal::DiscreteUpdateManager<T>, ManagerType>,
-        "ManagerType must be a sub-class of DiscreteUpdateManager.");
-    manager->SetOwningMultibodyPlant(this);
-    discrete_update_manager_ = std::move(manager);
-    RemoveUnsupportedScalars(*discrete_update_manager_);
-    return *static_cast<ManagerType*>(discrete_update_manager_.get());
-  }
+  void SetDiscreteUpdateManager(
+      std::unique_ptr<internal::DiscreteUpdateManager<T>> manager);
 
-  // TODO(xuchenhan-tri): Change the signature so that it's a void method taking
-  //  unique pointer to the base class. This gets rid of the template and
-  //  facilitates moving the definition to .cc file.
   // (Experimental) AddPhysicalModel() should only be called by advanced
   // developers wanting to try out their new physical models. We choose not to
   // show it in public documentations rather than making it private with
@@ -1675,22 +1642,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   //
   // @param model After this call the model is owned by `this` MultibodyPlant.
   // @pre model != nullptr.
-  // @pre ModelType must be a subclass of multibody::internal::PhysicalModel.
-  // @returns a mutable reference to `model`, now owned by `this`
-  //          MultibodyPlant.
   // @throws std::exception if called post-finalize. See Finalize().
   // @note `this` MultibodyPlant will no longer support scalar conversion to or
   // from symbolic::Expression after a call to this method.
-  template <class ModelType>
-  ModelType& AddPhysicalModel(std::unique_ptr<ModelType> model) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_DEMAND(model != nullptr);
-    static_assert(std::is_base_of_v<internal::PhysicalModel<T>, ModelType>,
-                  "ModelType must be a sub-class of PhysicalModel.");
-    auto& added_model = physical_models_.emplace_back(std::move(model));
-    RemoveUnsupportedScalars(*added_model);
-    return *static_cast<ModelType*>(added_model.get());
-  }
+  void AddPhysicalModel(std::unique_ptr<internal::PhysicalModel<T>> model);
 
   const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
   physical_models() const {
