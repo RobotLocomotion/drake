@@ -163,14 +163,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
-  const MultibodyTree<T>& internal_tree() const;
 
-  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
-  //  geometries.
-  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
-      const;
-  double default_contact_stiffness() const;
-  double default_contact_dissipation() const;
+  // N.B. Keep the spelling and order of declarations here identical to the
+  // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
+
+  const MultibodyTree<T>& internal_tree() const;
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
@@ -205,6 +202,14 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
+
+  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
+  //  geometries.
+  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
+      const;
+
+  double default_contact_stiffness() const;
+  double default_contact_dissipation() const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to
