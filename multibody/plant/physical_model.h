@@ -1,8 +1,10 @@
 #pragma once
+#include <memory>
 #include <set>
 #include <string>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -28,13 +30,43 @@ namespace internal {
 
  @tparam_default_scalar */
 template <typename T>
-class PhysicalModel {
+class PhysicalModel : public ScalarConvertibleComponent<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModel);
 
   PhysicalModel() = default;
 
-  virtual ~PhysicalModel() = default;
+  ~PhysicalModel() override = default;
+
+  /* (Internal) Creates a clone of the concrete PhysicalModel object
+   with the scalar type `ScalarType`. The clone should be a deep copy of the
+   original PhysicalModel with the exception of members overwritten in
+   `DeclareSystemResources()`. This method is meant to be called by the
+   scalar-converting copy constructor of MultibodyPlant only.
+   @tparam_default_scalar */
+  template <typename ScalarType>
+  std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar() const {
+    if constexpr (std::is_same_v<ScalarType, double>) {
+      return CloneToDouble();
+    } else if constexpr (std::is_same_v<ScalarType, AutoDiffXd>) {
+      return CloneToAutoDiffXd();
+    } else if constexpr (std::is_same_v<ScalarType, symbolic::Expression>) {
+      return CloneToSymbolic();
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  /* Defaults to false. Derived classes that support making a clone that uses
+   double as a scalar type must override this to return true. */
+  bool is_cloneable_to_double() const override;
+
+  /* Defaults to false. Derived classes that support making a clone that uses
+   AutoDiffXd as a scalar type must override this to return true. */
+  bool is_cloneable_to_autodiff() const override;
+
+  /* Defaults to false. Derived classes that support making a clone that uses
+   symbolic::Expression as a scalar type must override this to return true. */
+  bool is_cloneable_to_symbolic() const override;
 
   /* (Internal) MultibodyPlant calls this from within Finalize() to declare
    additional system resources. This method is only meant to be called by
@@ -48,6 +80,25 @@ class PhysicalModel {
   }
 
  protected:
+  /* Derived classes that support making a clone that uses double as a scalar
+   type must implement this so that it creates a copy of the object with double
+   as the scalar type. It should copy all members except for those overwritten
+   in `DeclareSystemResources()`. */
+  virtual std::unique_ptr<PhysicalModel<double>> CloneToDouble() const;
+
+  /* Derived classes that support making a clone that uses AutoDiffXd as a
+   scalar type must implement this so that it creates a copy of the object with
+   AutoDiffXd as the scalar type. It should copy all members except for those
+   overwritten in `DeclareSystemResources()`. */
+  virtual std::unique_ptr<PhysicalModel<AutoDiffXd>> CloneToAutoDiffXd() const;
+
+  /* Derived classes that support making a clone that uses symbolic::Expression
+   as a scalar type must implement this so that it creates a copy of the object
+   with symbolic::Expression as the scalar type. It should copy all members
+   except for those overwritten in `DeclareSystemResources()`. */
+  virtual std::unique_ptr<PhysicalModel<symbolic::Expression>> CloneToSymbolic()
+      const;
+
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;
