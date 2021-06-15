@@ -164,10 +164,13 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
   const MultibodyTree<T>& internal_tree() const;
+
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
   const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
       const;
+  double default_contact_stiffness() const;
+  double default_contact_dissipation() const;
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;

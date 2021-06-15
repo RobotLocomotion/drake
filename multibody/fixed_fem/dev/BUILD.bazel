@@ -132,6 +132,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_rigid_contact_pair",
+    hdrs = ["deformable_rigid_contact_pair.h"],
+    deps = [
+        ":deformable_contact",
+        ":fem_indexes",
+        "//geometry:geometry_ids",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
     name = "deformable_rigid_manager",
     srcs = [
         "deformable_rigid_manager.cc",
@@ -142,6 +153,7 @@ drake_cc_library(
     deps = [
         ":collision_objects",
         ":deformable_model",
+        ":deformable_rigid_contact_pair",
         ":fem_solver",
         "//common:essential",
         "//multibody/plant",
