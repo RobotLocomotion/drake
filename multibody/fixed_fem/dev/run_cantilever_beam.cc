@@ -113,8 +113,8 @@ int DoMain() {
   auto* visualizer = builder.AddSystem<DeformableVisualizer>(
       1.0 / 60.0, deformable_model->names(),
       deformable_model->reference_configuration_meshes());
-  const DeformableModel<double>* deformable_model_ptr =
-      &plant->AddPhysicalModel(std::move(deformable_model));
+  const DeformableModel<double>* deformable_model_ptr = deformable_model.get();
+  plant->AddPhysicalModel(std::move(deformable_model));
   plant->Finalize();
   /* Creates a DeformableRigidManager with no contact solver assigned as there
    is no contact in this demo. */

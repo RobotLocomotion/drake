@@ -173,15 +173,17 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     plant_.AddRigidBody("rigid body", SpatialInertia<double>());
-    dummy_model_ =
-        &plant_.AddPhysicalModel(std::make_unique<DummyModel<double>>());
+    auto dummy_model = std::make_unique<DummyModel<double>>();
+    dummy_model_ = dummy_model.get();
+    plant_.AddPhysicalModel(std::move(dummy_model));
     dummy_model_->AppendDiscreteState(dummy_discrete_state());
     plant_.Finalize();
     // MultibodyPlant::num_velocities() only reports the number of rigid
     // generalized velocities for the rigid model.
     EXPECT_EQ(plant_.num_velocities(), kNumRigidDofs);
-    dummy_manager_ = &plant_.SetDiscreteUpdateManager(
-        std::make_unique<DummyDiscreteUpdateManager<double>>());
+    auto dummy_manager = std::make_unique<DummyDiscreteUpdateManager<double>>();
+    dummy_manager_ = dummy_manager.get();
+    plant_.SetDiscreteUpdateManager(std::move(dummy_manager));
   }
 
   static VectorXd dummy_discrete_state() {

@@ -106,13 +106,13 @@ TEST_F(DeformableModelTest, RegisterDeformableBodyUniqueNameRequirement) {
 
 TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
   AddDeformableBox(deformable_model_.get(), "box");
-  DeformableModel<double>* model_ptr =
-      &plant_.AddPhysicalModel(std::move(deformable_model_));
+  DeformableModel<double>* deformable_model = deformable_model_.get();
+  plant_.AddPhysicalModel(std::move(deformable_model_));
   plant_.Finalize();
   auto context = plant_.CreateDefaultContext();
   const std::vector<VectorXd> vertex_positions_vector =
-      model_ptr->get_vertex_positions_output_port().Eval<std::vector<VectorXd>>(
-          *context);
+      deformable_model->get_vertex_positions_output_port()
+          .Eval<std::vector<VectorXd>>(*context);
   EXPECT_EQ(vertex_positions_vector.size(), 1);
   const VectorXd& vertex_positions = vertex_positions_vector[0];
   EXPECT_EQ(vertex_positions.size(), 3 * kNumVertices);
