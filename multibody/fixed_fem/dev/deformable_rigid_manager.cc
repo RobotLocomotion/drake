@@ -407,6 +407,46 @@ DeformableRigidManager<T>::CalcDeformableRigidContactPair(
                                                  rigid_id, deformable_id, k, d,
                                                  mu.dynamic_friction());
 }
+
+template <typename T>
+internal::DeformableContactData<T>
+DeformableRigidManager<T>::CalcDeformableContactData(
+    SoftBodyIndex deformable_id) const {
+  /* Calculate all rigid-deformable contact pairs for this deformable body. */
+  const std::vector<geometry::GeometryId>& rigid_ids =
+      collision_objects_.geometry_ids();
+  const int num_rigid_bodies = rigid_ids.size();
+  std::vector<internal::DeformableRigidContactPair<T>>
+      deformable_rigid_contact_pairs;
+  deformable_rigid_contact_pairs.reserve(num_rigid_bodies);
+  for (int i = 0; i < num_rigid_bodies; ++i) {
+    internal::DeformableRigidContactPair<T> contact_pair =
+        CalcDeformableRigidContactPair(rigid_ids[i], deformable_id);
+    if (contact_pair.num_contact_points() != 0) {
+      deformable_rigid_contact_pairs.emplace_back(std::move(contact_pair));
+    }
+  }
+  return {std::move(deformable_rigid_contact_pairs),
+          deformable_meshes_[deformable_id]};
+}
+
+template <typename T>
+std::vector<internal::DeformableContactData<T>>
+DeformableRigidManager<T>::CalcDeformableRigidContact(
+    const systems::Context<T>& context) const {
+  UpdateCollisionObjectPoses(context);
+  UpdateDeformableVertexPositions(context);
+  std::vector<internal::DeformableContactData<T>> deformable_contact_data;
+  const int num_deformable_bodies = deformable_model_->num_bodies();
+  deformable_contact_data.reserve(num_deformable_bodies);
+  for (SoftBodyIndex deformable_body_id(0);
+       deformable_body_id < num_deformable_bodies; ++deformable_body_id) {
+    deformable_contact_data.emplace_back(
+        CalcDeformableContactData(deformable_body_id));
+  }
+  return deformable_contact_data;
+}
+
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

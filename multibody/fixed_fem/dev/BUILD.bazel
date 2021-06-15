@@ -108,6 +108,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_contact_data",
+    srcs = ["deformable_contact_data.cc"],
+    hdrs = ["deformable_contact_data.h"],
+    deps = [
+        ":deformable_rigid_contact_pair",
+    ],
+)
+
+drake_cc_library(
     name = "deformable_model",
     srcs = [
         "deformable_model.cc",
@@ -152,6 +161,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_objects",
+        ":deformable_contact_data",
         ":deformable_model",
         ":deformable_rigid_contact_pair",
         ":fem_solver",
@@ -576,6 +586,7 @@ drake_cc_googletest(
     name = "deformable_contact_test",
     deps = [
         ":deformable_contact",
+        ":deformable_contact_data",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",
