@@ -1022,6 +1022,29 @@ void MultibodyPlant<T>::CalcContactJacobiansCache(
 }
 
 template <typename T>
+void MultibodyPlant<T>::SetDiscreteUpdateManager(
+    std::unique_ptr<internal::DiscreteUpdateManager<T>> manager) {
+  // N.B. This requirement is really more important on the side of the
+  // manager's constructor, since most likely it'll need MBP's topology at
+  // least to build the contact problem. However, here we play safe and demand
+  // finalization right here.
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(manager != nullptr);
+  manager->SetOwningMultibodyPlant(this);
+  discrete_update_manager_ = std::move(manager);
+  RemoveUnsupportedScalars(*discrete_update_manager_);
+}
+
+template <typename T>
+void MultibodyPlant<T>::AddPhysicalModel(
+    std::unique_ptr<internal::PhysicalModel<T>> model) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_DEMAND(model != nullptr);
+  auto& added_model = physical_models_.emplace_back(std::move(model));
+  RemoveUnsupportedScalars(*added_model);
+}
+
+template <typename T>
 void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
   if (penetration_allowance <= 0) {

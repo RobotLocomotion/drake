@@ -46,10 +46,10 @@ class ParticleSolver final : public ContactSolver<T> {
   // on the data supplied by MultibodyPlant. We must perform these tests at this
   // scope to ensure data references are still "alive".
   ContactSolverStatus SolveWithGuess(const T& time_step,
-                                   const SystemDynamicsData<T>& dynamics_data,
-                                   const PointContactData<T>& contact_data,
-                                   const VectorX<T>& v_guess,
-                                   ContactSolverResults<T>* results) final {
+                                     const SystemDynamicsData<T>& dynamics_data,
+                                     const PointContactData<T>& contact_data,
+                                     const VectorX<T>& v_guess,
+                                     ContactSolverResults<T>* results) final {
     const int nv = dynamics_data.num_velocities();
     const int nc = contact_data.num_contacts();
 
@@ -72,8 +72,8 @@ class ParticleSolver final : public ContactSolver<T> {
     // Generalized velocities when contact forces are zero.
     VectorX<T> vc_star(3 * nc);
     Jc.Multiply(v_star, &vc_star);  // vc_star = Jc⋅v_star
-    const T vn_star = vc_star(2);         // Normal velocity.
-    const T Wnn = W(2, 2);                // Normal equation.
+    const T vn_star = vc_star(2);   // Normal velocity.
+    const T Wnn = W(2, 2);          // Normal equation.
     // We now need to solve the 1D  problem:
     //   0 ≤ Wnn π + vₙ* ⊥ π ≥ 0
     // Which, given Wnn > 0, has unique solution:
@@ -126,7 +126,7 @@ class ParticleSolver final : public ContactSolver<T> {
   VectorX<T> v_{6};      // Generalized velocity, in this cases equals vn.
   // Cache, i.e. state dependent quantities.
   VectorX<T> jc_{6};  // Generalized contact impulse.
-  VectorX<T> vc_{3};     // Contact velocity.
+  VectorX<T> vc_{3};  // Contact velocity.
 
   // Problem parameters, for unit testing, an actual solver won't know
   // these.
@@ -152,8 +152,9 @@ class ParticleTest : public ::testing::Test {
     // Assert plant sizes.
     ASSERT_EQ(nq, 7);  // 4 dofs for a quaternion, 3 dofs for translation.
     ASSERT_EQ(nv, 6);  // 6 dofs for angular and translational velocity.
-    solver_ = &driver_.mutable_plant().SetContactSolver(
-        std::make_unique<ParticleSolver<double>>(kParticleMass));
+    auto solver = std::make_unique<ParticleSolver<double>>(kParticleMass);
+    solver_ = solver.get();
+    driver_.mutable_plant().SetContactSolver(std::move(solver));
 
     // Verify that solvers/test/particle.sdf is in sync with this test.
     const double mass = particle.get_default_mass();
