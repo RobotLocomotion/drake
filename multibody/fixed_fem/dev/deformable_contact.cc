@@ -108,9 +108,9 @@ class Intersector {
           poly_double_area += double_area;
           const IntersectionVertex<T> tri_centroid =
               calc_scaled_centroid(0, i, i + 1, poly_vertices_D);
-          scaled_centroid.bary += poly_double_area * tri_centroid.bary;
+          scaled_centroid.bary += double_area * tri_centroid.bary;
           scaled_centroid.cartesian +=
-              poly_double_area * tri_centroid.cartesian;
+              double_area * tri_centroid.cartesian;
         }
         out_poly_data.push_back(
             {poly_double_area / 2, nhat_D,
