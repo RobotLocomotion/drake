@@ -240,7 +240,6 @@ class SystemBase : public internal::SystemMessageInterface {
     return *cache_entries_[index];
   }
 
-  // TODO(sherm1) Consider whether to make DeclareCacheEntry methods protected.
   //============================================================================
   /** @name                    Declare cache entries
   @anchor DeclareCacheEntry_documentation
@@ -255,6 +254,9 @@ class SystemBase : public internal::SystemMessageInterface {
   cache entry. `Calc()` uses the contents of a given Context to produce the
   cache entry's value, which is placed in an object of the type returned by
   `Alloc()`.
+
+  @warning These methods are currently specified as `public` access, but will
+  be demoted to `protected` access on or after 2021-10-01.
 
   <h4>Prerequisites</h4>
 
@@ -355,7 +357,9 @@ class SystemBase : public internal::SystemMessageInterface {
     is truly independent of the Context (rare!) say so explicitly by providing
     the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
   @returns a reference to the newly-created %CacheEntry.
-  @throws std::logic_error if given an explicitly empty prerequisite list. */
+  @throws std::logic_error if given an explicitly empty prerequisite list.
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01. */
   // Arguments to these methods are moved from internally. Taking them by value
   // rather than reference avoids a copy when the original argument is
   // an rvalue.
@@ -376,7 +380,9 @@ class SystemBase : public internal::SystemMessageInterface {
   arguments will be deduced and do not need to be specified. See the
   @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
   for more information about the parameters and behavior.
-  @see drake::Value */
+  @see drake::Value
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01. */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description,
@@ -397,7 +403,9 @@ class SystemBase : public internal::SystemMessageInterface {
   arguments will be deduced and do not need to be specified. See the
   @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
   above for more information about the parameters and behavior.
-  @see drake::Value */
+  @see drake::Value
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01. */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
@@ -412,7 +420,9 @@ class SystemBase : public internal::SystemMessageInterface {
   @endcode
   Other than the calculator signature, this is identical to the other
   @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
-  please look there for more information. */
+  please look there for more information.
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01. */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
@@ -441,7 +451,9 @@ class SystemBase : public internal::SystemMessageInterface {
   each allocation (not common), use one of the other signatures to explicitly
   provide a method for the allocator to call; that method can then invoke
   the `ValueType` default constructor each time it is called.
-  @see drake::Value */
+  @see drake::Value
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01. */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description,
@@ -456,7 +468,9 @@ class SystemBase : public internal::SystemMessageInterface {
   @endcode
   Other than the calculator method's signature, this is identical to the other
   @ref DeclareCacheEntry_calc_only "calculator-only signature";
-  please look there for more information. */
+  please look there for more information.
+  @warning This method is currently specified as `public` access, but will be
+  demoted to `protected` access on or after 2021-10-01. */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description,
