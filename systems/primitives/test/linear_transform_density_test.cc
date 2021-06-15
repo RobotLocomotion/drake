@@ -19,7 +19,7 @@ void TestConstructor() {
   LinearTransformDensity<T> dut(RandomDistribution::kUniform,
                                 2 /* input_size */, 3 /* output_size */);
   EXPECT_EQ(dut.num_input_ports(), 3);
-  EXPECT_EQ(dut.num_output_ports(), 1);
+  EXPECT_EQ(dut.num_output_ports(), 2);
   EXPECT_EQ(dut.get_distribution(), RandomDistribution::kUniform);
 
   EXPECT_EQ(dut.get_input_port_w_in().size(), 2);
@@ -27,7 +27,8 @@ void TestConstructor() {
             RandomDistribution::kUniform);
   EXPECT_EQ(dut.get_input_port_A().size(), 6);
   EXPECT_EQ(dut.get_input_port_b().size(), 3);
-  EXPECT_EQ(dut.get_output_port().size(), 3);
+  EXPECT_EQ(dut.get_output_port_w_out().size(), 3);
+  EXPECT_EQ(dut.get_output_port_w_out_density().size(), 1);
 }
 
 GTEST_TEST(LinearTransformDensityTest, Constructor) {
@@ -45,8 +46,10 @@ GTEST_TEST(LinearTransformDensityTest, ToAutoDiff) {
               dut->get_input_port_A().size());
     EXPECT_EQ(converted.get_input_port_b().size(),
               dut->get_input_port_b().size());
-    EXPECT_EQ(converted.get_output_port().size(),
-              dut->get_output_port().size());
+    EXPECT_EQ(converted.get_output_port_w_out().size(),
+              dut->get_output_port_w_out().size());
+    EXPECT_EQ(converted.get_output_port_w_out_density().size(),
+              dut->get_output_port_w_out_density().size());
   }));
 }
 
@@ -56,14 +59,16 @@ void TestCalcOutput() {
   auto context = dut.CreateDefaultContext();
 
   Eigen::Matrix<T, 3, 2> A;
-  // clang-format on
-  A << 1., 2., 3., 4., 5., 6.;
   // clang-format off
+  A << 1., 2.,
+       3., 4.,
+       5., 6.;
+  // clang-format on
   const FixedInputPortValue& port_A_val = dut.FixConstantA(context.get(), A);
   EXPECT_EQ(port_A_val.template get_vector_value<T>().size(), 6);
   // Confirm that A is stored in column-major order.
   const auto& port_A_vector =
-    port_A_val.template get_vector_value<T>().get_value();
+      port_A_val.template get_vector_value<T>().get_value();
   EXPECT_EQ(port_A_vector(0), 1.);
   EXPECT_EQ(port_A_vector(1), 3.);
   EXPECT_EQ(port_A_vector(2), 5.);
@@ -74,7 +79,7 @@ void TestCalcOutput() {
   dut.get_input_port_w_in().FixValue(context.get(), w_in);
 
   // Test when port b is not connected.
-  const auto w_out_no_b = dut.get_output_port().Eval(*context);
+  const auto w_out_no_b = dut.get_output_port_w_out().Eval(*context);
   const Vector3<T> w_out_no_b_expected = A * w_in;
   EXPECT_TRUE(CompareMatrices(w_out_no_b, w_out_no_b_expected));
 
@@ -83,7 +88,7 @@ void TestCalcOutput() {
   const auto& port_b_val = dut.FixConstantB(context.get(), b);
   EXPECT_EQ(port_b_val.template get_vector_value<T>().size(), 3);
 
-  const auto w_out = dut.get_output_port().Eval(*context);
+  const auto w_out = dut.get_output_port_w_out().Eval(*context);
   const Vector3<T> w_out_expected = A * w_in + b;
   EXPECT_TRUE(CompareMatrices(w_out, w_out_expected, 10 * kEps));
 }
@@ -91,6 +96,42 @@ void TestCalcOutput() {
 GTEST_TEST(LinearTransformDensityTest, CalcOutput) {
   TestCalcOutput<double>();
   TestCalcOutput<AutoDiffXd>();
+}
+
+template <typename T>
+void TestCalcOutputDensity() {
+  LinearTransformDensity<T> dut(RandomDistribution::kUniform, 2, 2);
+  auto context = dut.CreateDefaultContext();
+
+  Eigen::Matrix<T, 2, 2> A;
+  // clang-format off
+  A << 1., 2.,
+       3., 4.;
+  // clang-format on
+  dut.FixConstantA(context.get(), A);
+  Vector2<T> w_in(2, 3);
+  dut.get_input_port_w_in().FixValue(context.get(), w_in);
+
+  // Test when port b is not connected.
+  const auto w_out_density_no_b =
+      dut.get_output_port_w_out_density().Eval(*context);
+  const T w_out_density_no_b_expected = dut.CalcDensity(*context);
+  EXPECT_TRUE(CompareMatrices(w_out_density_no_b,
+                              Vector1<T>(w_out_density_no_b_expected)));
+
+  // Test with port b connected.
+  Vector2<T> b(-1, -2);
+  dut.FixConstantB(context.get(), b);
+
+  const auto w_out_density = dut.get_output_port_w_out_density().Eval(*context);
+  const T w_out_density_expected = dut.CalcDensity(*context);
+  EXPECT_TRUE(
+      CompareMatrices(w_out_density, Vector1<T>(w_out_density_expected)));
+}
+
+GTEST_TEST(LinearTransformDensityTest, TestCalcOutputDensity) {
+  TestCalcOutputDensity<double>();
+  TestCalcOutputDensity<AutoDiffXd>();
 }
 
 template <typename T>
@@ -163,7 +204,7 @@ void CheckGaussianDensity() {
   Vector2<T> b(2, 3);
   dut.FixConstantB(context.get(), b);
   T density = dut.CalcDensity(*context);
-  auto w_out = dut.get_output_port().Eval(*context);
+  auto w_out = dut.get_output_port_w_out().Eval(*context);
   Eigen::LDLT<Matrix2<T>> ldlt_solver;
   Matrix2<T> cov = A * A.transpose();
   ldlt_solver.compute(cov);
@@ -326,7 +367,7 @@ void CheckDensityGradient(RandomDistribution distribution,
     }
   }
   Eigen::Vector2d w_out_val =
-      math::autoDiffToValueMatrix(dut.get_output_port().Eval(*context));
+      math::autoDiffToValueMatrix(dut.get_output_port_w_out().Eval(*context));
   Eigen::Vector2d b_val = math::autoDiffToValueMatrix(b);
   const double A_det_abs = std::abs(A_val.determinant());
   for (int i = 0; i < 2; ++i) {

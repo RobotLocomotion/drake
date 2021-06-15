@@ -22,8 +22,15 @@ LinearTransformDensity<T>::LinearTransformDensity(
   b_port_id_ =
       this->DeclareInputPort("b", kVectorValued, output_size_).get_index();
 
-  this->DeclareVectorOutputPort("w_out", BasicVector<T>(output_size_),
-                                &LinearTransformDensity<T>::CalcOutput);
+  w_out_port_id_ =
+      this->DeclareVectorOutputPort("w_out", BasicVector<T>(output_size_),
+                                    &LinearTransformDensity<T>::CalcOutput)
+          .get_index();
+  w_out_density_port_id_ =
+      this->DeclareVectorOutputPort(
+              "w_out_density", BasicVector<T>(1),
+              &LinearTransformDensity<T>::CalcOutputDensity)
+          .get_index();
 }
 
 template <typename T>
@@ -47,6 +54,12 @@ void LinearTransformDensity<T>::CalcOutput(const Context<T>& context,
     const auto b = this->get_input_port_b().Eval(context);
     w_out->get_mutable_value() = A * w_in + b;
   }
+}
+
+template <typename T>
+void LinearTransformDensity<T>::CalcOutputDensity(
+    const Context<T>& context, BasicVector<T>* w_out_density) const {
+  w_out_density->get_mutable_value()(0) = CalcDensity(context);
 }
 
 template <typename T>

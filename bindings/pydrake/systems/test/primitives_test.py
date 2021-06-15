@@ -310,6 +310,9 @@ class TestGeneral(unittest.TestCase):
 
         dut.CalcDensity(context=context)
 
+        self.assertEqual(dut.get_output_port_w_out().size(), 3)
+        self.assertEqual(dut.get_output_port_w_out_density().size(), 1)
+
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
         system = PassThrough(vector_size=model_value.size())
