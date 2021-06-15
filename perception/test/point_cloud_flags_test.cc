@@ -21,7 +21,7 @@ GTEST_TEST(PointCloudFlagsTest, ConstExpr) {
   // `constexpr` is attempted with a non-literal-type class (as of C++14).
   // TODO(eric.cousineau): Replace with the successor of is_literal_type.
   // @ref https://stackoverflow.com/a/40352351/7829525
-  EXPECT_TRUE(std::is_literal_type<pcf::DescriptorType>::value);
+  EXPECT_TRUE(std::is_literal_type_v<pcf::DescriptorType>);
 }
 
 GTEST_TEST(PointCloudFlagsTest, Formatting) {

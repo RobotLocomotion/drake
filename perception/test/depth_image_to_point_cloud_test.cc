@@ -308,7 +308,7 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
 
   // This test only applies for 32F images; there is no NaN for 16U images.
   constexpr bool is_meaningful_nan =
-      !std::is_same<TestFixturePixel, uint16_t>::value;
+      !std::is_same_v<TestFixturePixel, uint16_t>;
   if (!is_meaningful_nan) {
     return;
   }

@@ -41,9 +41,9 @@ Vector3<typename v_Type::Scalar> ConvertTimeDerivativeToOtherFrame(
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<w_AB_Type>, 3);
   typedef typename v_Type::Scalar T;
   // All input vectors must be templated on the same scalar type.
-  static_assert(std::is_same<typename DtB_v_Type::Scalar, T>::value,
+  static_assert(std::is_same_v<typename DtB_v_Type::Scalar, T>,
                 "DtB_v_E must be templated on the same scalar type as v_E");
-  static_assert(std::is_same<typename w_AB_Type::Scalar, T>::value,
+  static_assert(std::is_same_v<typename w_AB_Type::Scalar, T>,
                 "w_AB_E must be templated on the same scalar type as v_E");
   return DtB_v_E + w_AB_E.cross(v_E);
 }

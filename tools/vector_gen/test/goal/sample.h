@@ -83,7 +83,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   /// Create a symbolic::Variable for each element with the known variable
   /// name.  This is only available for T == symbolic::Expression.
   template <typename U = T>
-  typename std::enable_if<std::is_same<U, symbolic::Expression>::value>::type
+  typename std::enable_if_t<std::is_same_v<U, symbolic::Expression>>
   SetToNamedVariables() {
     this->set_x(symbolic::Variable("x"));
     this->set_two_word(symbolic::Variable("two_word"));

@@ -89,8 +89,8 @@ void initializeAutoDiffGivenGradientMatrix(
   static_assert(static_cast<int>(ExpectedAutoDiffType::ColsAtCompileTime) ==
                     static_cast<int>(DerivedAutoDiff::ColsAtCompileTime),
                 "auto diff matrix has wrong number of columns at compile time");
-  static_assert(std::is_same<typename DerivedAutoDiff::Scalar,
-                             typename ExpectedAutoDiffType::Scalar>::value,
+  static_assert(std::is_same_v<typename DerivedAutoDiff::Scalar,
+                               typename ExpectedAutoDiffType::Scalar>,
                 "wrong auto diff scalar type");
 
   typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
@@ -157,11 +157,11 @@ void gradientMatrixToAutoDiff(
  * @see DiscardGradient
  */
 template <typename Derived>
-typename std::enable_if<
-    !std::is_same<typename Derived::Scalar, double>::value,
+typename std::enable_if_t<
+    !std::is_same_v<typename Derived::Scalar, double>,
     Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
-                  Derived::MaxColsAtCompileTime>>::type
+                  Derived::MaxColsAtCompileTime>>
 DiscardZeroGradient(
     const Eigen::MatrixBase<Derived>& auto_diff_matrix,
     const typename Eigen::NumTraits<
@@ -177,8 +177,8 @@ DiscardZeroGradient(
 
 /// @see DiscardZeroGradient().
 template <typename Derived>
-typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
-                        const Eigen::MatrixBase<Derived>&>::type
+typename std::enable_if_t<std::is_same_v<typename Derived::Scalar, double>,
+                          const Eigen::MatrixBase<Derived>&>
 DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
                    double precision = 0.) {
   unused(precision);
@@ -187,9 +187,9 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
 
 /// @see DiscardZeroGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
-typename std::enable_if<
-    !std::is_same<_Scalar, double>::value,
-    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>::type
+typename std::enable_if_t<
+    !std::is_same_v<_Scalar, double>,
+    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
 DiscardZeroGradient(
     const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& auto_diff_transform,
     const typename Eigen::NumTraits<typename _Scalar::Scalar>::Real& precision =
@@ -200,9 +200,9 @@ DiscardZeroGradient(
 
 /// @see DiscardZeroGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
-typename std::enable_if<
-    std::is_same<_Scalar, double>::value,
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>::type
+typename std::enable_if_t<
+    std::is_same_v<_Scalar, double>,
+    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>
 DiscardZeroGradient(
     const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform,
     double precision = 0.) {

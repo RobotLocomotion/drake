@@ -51,29 +51,29 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
  * @see DiscardZeroGradient
  */
 template <typename Derived>
-typename std::enable_if<
-    !std::is_same<typename Derived::Scalar, double>::value,
+typename std::enable_if_t<
+    !std::is_same_v<typename Derived::Scalar, double>,
     Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
-                  Derived::MaxColsAtCompileTime>>::type
+                  Derived::MaxColsAtCompileTime>>
 DiscardGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
   return autoDiffToValueMatrix(auto_diff_matrix);
 }
 
 /// @see DiscardGradient().
 template <typename Derived>
-typename std::enable_if<
-    std::is_same<typename Derived::Scalar, double>::value,
-    const Eigen::MatrixBase<Derived>&>::type
+typename std::enable_if_t<
+    std::is_same_v<typename Derived::Scalar, double>,
+    const Eigen::MatrixBase<Derived>&>
 DiscardGradient(const Eigen::MatrixBase<Derived>& matrix) {
   return matrix;
 }
 
 /// @see DiscardGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
-typename std::enable_if<
-    !std::is_same<_Scalar, double>::value,
-    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>::type
+typename std::enable_if_t<
+    !std::is_same_v<_Scalar, double>,
+    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
 DiscardGradient(const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&
                     auto_diff_transform) {
   return Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>(
@@ -82,9 +82,9 @@ DiscardGradient(const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&
 
 /// @see DiscardGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
-typename std::enable_if<std::is_same<_Scalar, double>::value,
-                        const Eigen::Transform<_Scalar, _Dim, _Mode,
-    _Options>&>::type
+typename std::enable_if_t<std::is_same_v<_Scalar, double>,
+                          const Eigen::Transform<_Scalar, _Dim, _Mode,
+    _Options>&>
 DiscardGradient(
     const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform) {
   return transform;

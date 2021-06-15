@@ -38,7 +38,7 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
 #pragma GCC diagnostic ignored "-Wshadow"
   auto quadratic_form = [&](const auto& x) {
 #pragma GCC diagnostic pop
-    using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
+    using Scalar = typename std::remove_reference_t<decltype(x)>::Scalar;
     return (x.transpose() * A.cast<Scalar>().eval() * x).eval();
   };
 
@@ -50,14 +50,14 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
   auto jac_chunk_size_6 = jacobian<6>(quadratic_form, x);
 
   // Ensure that chunk size has no effect on output type.
-  static_assert(std::is_same<decltype(jac_chunk_size_default),
-                             decltype(jac_chunk_size_1)>::value,
+  static_assert(std::is_same_v<decltype(jac_chunk_size_default),
+                               decltype(jac_chunk_size_1)>,
                 "jacobian output type mismatch");
-  static_assert(std::is_same<decltype(jac_chunk_size_default),
-                             decltype(jac_chunk_size_3)>::value,
+  static_assert(std::is_same_v<decltype(jac_chunk_size_default),
+                               decltype(jac_chunk_size_3)>,
                 "jacobian output type mismatch");
-  static_assert(std::is_same<decltype(jac_chunk_size_default),
-                             decltype(jac_chunk_size_6)>::value,
+  static_assert(std::is_same_v<decltype(jac_chunk_size_default),
+                               decltype(jac_chunk_size_6)>,
                 "jacobian output type mismatch");
 
   // Ensure that the results are the same.
@@ -109,7 +109,7 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
 #pragma GCC diagnostic ignored "-Wshadow"
   auto quadratic_function = [&](const auto& x) {
 #pragma GCC diagnostic pop
-    using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
+    using Scalar = typename std::remove_reference_t<decltype(x)>::Scalar;
     return ((A.cast<Scalar>() * x + b.cast<Scalar>()).transpose() *
             C.cast<Scalar>() * (D.cast<Scalar>() * x + e.cast<Scalar>()))
         .eval();
@@ -122,8 +122,8 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   auto hess_chunk_size_2_4 = hessian<2, 4>(quadratic_function, x);
 
   // Ensure that chunk size has no effect on output type.
-  static_assert(std::is_same<decltype(hess_chunk_size_default),
-                             decltype(hess_chunk_size_2_4)>::value,
+  static_assert(std::is_same_v<decltype(hess_chunk_size_default),
+                               decltype(hess_chunk_size_2_4)>,
                 "hessian output type mismatch");
 
   // Ensure that the results are the same.
