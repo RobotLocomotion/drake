@@ -176,9 +176,9 @@ class TestSystem : public TestSystemBase<double> {
   LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with dummy alloc and calc.
     CacheEntry& cache_entry = this->DeclareCacheEntry(
-        "null output port",
-        [] { return Value<int>::Make(0); },
-        [](const ContextBase&, AbstractValue*) {});
+        "null output port", ValueCalcFunction(
+             internal::AbstractValueCloner(0),
+             &ValueCalcFunction::NoopCalc));
     // TODO(sherm1) Use implicit_cast when available (from abseil). Several
     // places in this test.
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
@@ -612,10 +612,12 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
             "absport",
-            []() { return AbstractValue::Make(std::string()); },
-            [this](const ContextBase& context, AbstractValue* output) {
-              this->CalcStringOutput(context, output);
-            })));
+            // TODO(jwnimmer-tri) Improve ValueCalcFunction constructor sugar.
+            ValueCalcFunction(
+                internal::AbstractValueCloner(std::string()),
+                [this](const ContextBase& context, AbstractValue* output) {
+                  this->CalcStringOutput(context, output);
+                }))));
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
@@ -630,10 +632,12 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         kVectorValued, 1 /* size */,
         &this->DeclareCacheEntry(
             "vecport",
-            []() { return std::make_unique<Value<BasicVector<T>>>(1); },
-            [this](const ContextBase& context, AbstractValue* output) {
-              this->CalcVectorOutput(context, output);
-            })));
+            // TODO(jwnimmer-tri) Improve ValueCalcFunction constructor sugar.
+            ValueCalcFunction(
+                internal::AbstractValueCloner(BasicVector<T>(1)),
+                [this](const ContextBase& context, AbstractValue* output) {
+                  this->CalcVectorOutput(context, output);
+                }))));
 
     this->set_name("ValueIOTestSystem");
   }

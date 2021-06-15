@@ -98,27 +98,28 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
 
   /* Declares a cache entry that stores twice the additional state value. */
   void DeclareCacheEntries(MultibodyPlant<T>* plant) final {
+    // TODO(jwnimmer-tri) Improve ValueCalcFunction constructor sugar.
     cache_index_ =
-        plant
-            ->DeclareCacheEntry(
-                "Twice the additional_state value",
-                [=]() {
-                  const VectorX<T> model_value =
-                      VectorX<T>::Zero(kNumAdditionalDofs);
-                  return AbstractValue::Make(model_value);
-                },
-                [this](const ContextBase& context_base,
-                       AbstractValue* cache_value) {
-                  const auto& context =
-                      dynamic_cast<const Context<T>&>(context_base);
-                  VectorX<T>& data =
-                      cache_value->get_mutable_value<VectorX<T>>();
-                  data =
-                      2.0 * context.get_discrete_state(additional_state_index_)
-                                .get_value();
-                },
-                {systems::System<T>::xd_ticket()})
+        this->DeclareCacheEntry(
+                plant, "Twice the additional_state value",
+                systems::ValueCalcFunction(
+                    systems::internal::AbstractValueCloner(
+                        VectorXd(kNumAdditionalDofs)),
+                    [this](const ContextBase& context_base,
+                           AbstractValue* cache_value) {
+                      const auto& context =
+                          dynamic_cast<const Context<T>&>(context_base);
+                      VectorX<T>& data =
+                          cache_value->get_mutable_value<VectorX<T>>();
+                      this->CalcTwiceState(context, &data);
+                    }),
+                {systems::System<double>::xd_ticket()})
             .cache_index();
+  }
+
+  void CalcTwiceState(const Context<T>& context, VectorX<T>* data) const {
+    *data =
+        2.0 * context.get_discrete_state(additional_state_index_).get_value();
   }
 
   /* Increments the number of times CalcContactSolverResults() is called for
