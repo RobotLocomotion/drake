@@ -205,16 +205,7 @@ GripperStatusEncoder::GripperStatusEncoder(int num_fingers)
   force_input_port_ = &this->DeclareInputPort(
       "fingertip_force", systems::kVectorValued, num_tip_forces_);
   this->DeclareAbstractOutputPort("lcmt_gripper_status",
-                                  &GripperStatusEncoder::MakeOutputStatus,
                                   &GripperStatusEncoder::OutputStatus);
-}
-
-lcmt_planar_gripper_status GripperStatusEncoder::MakeOutputStatus() const {
-  lcmt_planar_gripper_status msg{};
-  msg.utime = 0;
-  msg.num_fingers = num_fingers_;
-  msg.finger_status.resize(num_fingers_);
-  return msg;
 }
 
 void GripperStatusEncoder::OutputStatus(

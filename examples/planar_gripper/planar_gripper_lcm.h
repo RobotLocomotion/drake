@@ -204,9 +204,6 @@ class GripperStatusEncoder : public systems::LeafSystem<double> {
   }
 
  private:
-  // This is the method to use for the output port allocator.
-  lcmt_planar_gripper_status MakeOutputStatus() const;
-
   // This is the calculator method for the output port.
   void OutputStatus(const systems::Context<double>& context,
                     lcmt_planar_gripper_status* output) const;
