@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -319,12 +320,16 @@ void DoScalarIndependentDefinitions(py::module m) {
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
   using T = double;
-  m.def(
-      "ComputeBasisFromAxis",
-      [](int axis_index, const Vector3<T>& axis) {
-        return ComputeBasisFromAxis(axis_index, axis);
-      },
-      py::arg("axis_index"), py::arg("axis_W"), doc.ComputeBasisFromAxis.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("ComputeBasisFromAxis",
+      WrapDeprecated(doc.ComputeBasisFromAxis.doc_deprecated,
+          [](int axis_index, const Vector3<T>& axis) {
+            return ComputeBasisFromAxis(axis_index, axis);
+          }),
+      py::arg("axis_index"), py::arg("axis_W"),
+      doc.ComputeBasisFromAxis.doc_deprecated);
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc)
