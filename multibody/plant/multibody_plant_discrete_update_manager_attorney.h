@@ -24,6 +24,9 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
 
   friend class DiscreteUpdateManager<T>;
 
+  // N.B. Keep the spelling and order of declarations here identical to the
+  // DiscreteUpdateManager protected section's spelling and order of same.
+
   static const MultibodyTree<T>& internal_tree(const MultibodyPlant<T>& plant) {
     return plant.internal_tree();
   }
