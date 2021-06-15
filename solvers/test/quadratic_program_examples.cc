@@ -309,7 +309,7 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
   Q.bottomRightCorner<4, 4>() += Q2;
   Eigen::Matrix<double, 6, 6> Q_symmetric = 0.5 * (Q + Q.transpose());
 
-  Eigen::Matrix<double, 6, 1> b;
+  Vector6d b;
   b.setZero();
   b.head<4>() = b1;
   b.tail<4>() += b2;

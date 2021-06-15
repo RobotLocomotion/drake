@@ -308,7 +308,7 @@ void NonConvexQPproblem2::AddQuadraticCost() {
   Eigen::Matrix<double, 6, 6> Q =
       -100.0 * Eigen::Matrix<double, 6, 6>::Identity();
   Q(5, 5) = 0.0;
-  Eigen::Matrix<double, 6, 1> c{};
+  Vector6d c{};
   c << -10.5, -7.5, -3.5, -2.5, -1.5, -10.0;
 
   prog_->AddQuadraticCost(Q, c, x_);
@@ -335,8 +335,8 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm constraint_form)
     : prog_(std::make_unique<MathematicalProgram>()), x_{}, x_expected_{} {
   x_ = prog_->NewContinuousVariables<6>("x");
 
-  Eigen::Matrix<double, 6, 1> lb{};
-  Eigen::Matrix<double, 6, 1> ub{};
+  Vector6d lb{};
+  Vector6d ub{};
   lb << 0, 0, 1, 0, 1, 0;
   ub << kInf, kInf, 5, 6, 5, 10;
   prog_->AddBoundingBoxConstraint(lb, ub, x_);
@@ -373,15 +373,15 @@ void LowerBoundedProblem::CheckSolution(
 
 Vector6<double> LowerBoundedProblem::initial_guess1() const {
   std::srand(0);
-  Eigen::Matrix<double, 6, 1> delta =
-      0.05 * Eigen::Matrix<double, 6, 1>::Random();
+  Vector6d delta =
+      0.05 * Vector6d::Random();
   return x_expected_ + delta;
 }
 
 Vector6<double> LowerBoundedProblem::initial_guess2() const {
   std::srand(0);
-  Eigen::Matrix<double, 6, 1> delta =
-      0.05 * Eigen::Matrix<double, 6, 1>::Random();
+  Vector6d delta =
+      0.05 * Vector6d::Random();
   return x_expected_ - delta;
 }
 

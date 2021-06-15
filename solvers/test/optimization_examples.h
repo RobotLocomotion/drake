@@ -280,7 +280,7 @@ class NonConvexQPproblem2 {
 
   std::unique_ptr<MathematicalProgram> prog_;
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
-  Eigen::Matrix<double, 6, 1> x_expected_;
+  Vector6d x_expected_;
 };
 
 /// This test comes from Section 3.4 of
@@ -377,7 +377,7 @@ class LowerBoundedProblem {
 
   std::unique_ptr<MathematicalProgram> prog_;
   Eigen::Matrix<symbolic::Variable, 6, 1> x_;
-  Eigen::Matrix<double, 6, 1> x_expected_;
+  Vector6d x_expected_;
 };
 
 /// gloptiPolyConstrainedMinimization

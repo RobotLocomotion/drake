@@ -27,8 +27,6 @@ using symbolic::Variables;
 using symbolic::test::ExprEqual;
 using symbolic::test::PolyEqual;
 
-using Vector6d = Vector6<double>;
-
 class SymbolicVectorSystemTest : public ::testing::Test {
  protected:
   const Variable t_{"t"};
