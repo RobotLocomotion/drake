@@ -716,8 +716,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
-                                       &hydroelastic_geometries_, &surfaces};
+    hydroelastic::CallbackData<T> data{
+        &collision_filter_, &X_WGs, &hydroelastic_geometries_,
+        ContactPolygonRepresentation::kCentroidSubdivision, &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
@@ -740,8 +741,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
-        hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
-                                      &hydroelastic_geometries_, surfaces},
+        hydroelastic::CallbackData<T>{
+            &collision_filter_, &X_WGs, &hydroelastic_geometries_,
+            ContactPolygonRepresentation::kCentroidSubdivision, surfaces},
         point_pairs};
 
     // Dynamic vs dynamic and dynamic vs anchored represent all the geometries

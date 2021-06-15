@@ -76,6 +76,7 @@ class TestScene {
         shape_A_type_(A_shape_type),
         shape_B_type_(B_shape_type),
         data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
+              ContactPolygonRepresentation::kCentroidSubdivision,
               &surfaces_} {
     X_WGs_[id_A_] = RigidTransform<T>();
     X_WGs_[id_B_] = RigidTransform<T>();
@@ -312,27 +313,34 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
   scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
 
-  {
-    // Case 1: Intersecting spheres.
-    scene.PoseGeometry(colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  for (const auto representation :
+      {ContactPolygonRepresentation::kCentroidSubdivision,
+       ContactPolygonRepresentation::kSingleTriangle}) {
+    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    {
+      // Case 1: Intersecting spheres.
+      scene.PoseGeometry(colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
-    EXPECT_NE(surface, nullptr);
-    EXPECT_TRUE(ValidateDerivatives(*surface));
-  }
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_A), X_WA, id_A,
+          geometries.rigid_geometry(id_B), X_WB, id_B,
+          representation);
+      EXPECT_NE(surface, nullptr);
+      EXPECT_TRUE(ValidateDerivatives(*surface));
+    }
 
-  {
-    // Case 2: Separated spheres.
-    scene.PoseGeometry(!colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+    {
+      // Case 2: Separated spheres.
+      scene.PoseGeometry(!colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
-    EXPECT_EQ(surface, nullptr);
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_A), X_WA, id_A,
+          geometries.rigid_geometry(id_B), X_WB, id_B,
+          representation);
+      EXPECT_EQ(surface, nullptr);
+    }
   }
 }
 
@@ -349,27 +357,34 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
   scene.AddGeometry(HydroelasticType::kSoft, HydroelasticType::kRigid);
 
-  {
-    // Case 1: Intersecting geometry.
-    scene.PoseGeometry(colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  for (const auto representation :
+      {ContactPolygonRepresentation::kCentroidSubdivision,
+       ContactPolygonRepresentation::kSingleTriangle}) {
+    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    {
+      // Case 1: Intersecting geometry.
+      scene.PoseGeometry(colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
-    EXPECT_NE(surface, nullptr);
-    EXPECT_TRUE(ValidateDerivatives(*surface));
-  }
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_A), X_WA, id_A,
+          geometries.rigid_geometry(id_B), X_WB, id_B,
+          representation);
+      EXPECT_NE(surface, nullptr);
+      EXPECT_TRUE(ValidateDerivatives(*surface));
+    }
 
-  {
-    // Case 2: Separated geometry.
-    scene.PoseGeometry(!colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+    {
+      // Case 2: Separated geometry.
+      scene.PoseGeometry(!colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
-    EXPECT_EQ(surface, nullptr);
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_A), X_WA, id_A,
+          geometries.rigid_geometry(id_B), X_WB, id_B,
+          representation);
+      EXPECT_EQ(surface, nullptr);
+    }
   }
 }
 
@@ -385,27 +400,34 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
   const RigidTransform<T>& X_WA = scene.pose_in_world(id_A);
   scene.AddGeometry(HydroelasticType::kRigid, HydroelasticType::kSoft);
 
-  {
-    // Case 1: Intersecting geometry.
-    scene.PoseGeometry(colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+  for (const auto representation :
+      {ContactPolygonRepresentation::kCentroidSubdivision,
+       ContactPolygonRepresentation::kSingleTriangle}) {
+    SCOPED_TRACE(fmt::format("representation = {}", representation));
+    {
+      // Case 1: Intersecting geometry.
+      scene.PoseGeometry(colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_B), X_WB, id_A,
-        geometries.rigid_geometry(id_A), X_WA, id_B);
-    EXPECT_NE(surface, nullptr);
-    EXPECT_TRUE(ValidateDerivatives(*surface));
-  }
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_B), X_WB, id_A,
+          geometries.rigid_geometry(id_A), X_WA, id_B,
+          representation);
+      EXPECT_NE(surface, nullptr);
+      EXPECT_TRUE(ValidateDerivatives(*surface));
+    }
 
-  {
-    // Case 2: Separated geometry.
-    scene.PoseGeometry(!colliding);
-    const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
+    {
+      // Case 2: Separated geometry.
+      scene.PoseGeometry(!colliding);
+      const RigidTransform<T>& X_WB = scene.pose_in_world(id_B);
 
-    unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
-        geometries.soft_geometry(id_B), X_WB, id_A,
-        geometries.rigid_geometry(id_A), X_WA, id_B);
-    EXPECT_EQ(surface, nullptr);
+      unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
+          geometries.soft_geometry(id_B), X_WB, id_A,
+          geometries.rigid_geometry(id_A), X_WA, id_B,
+          representation);
+      EXPECT_EQ(surface, nullptr);
+    }
   }
 }
 
