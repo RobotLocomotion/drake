@@ -818,9 +818,9 @@ int PiecewisePolynomial<T>::
 
   DRAKE_DEMAND(A != nullptr);
   DRAKE_DEMAND(b != nullptr);
-  DRAKE_DEMAND(A->rows() == 4 * (N - 1));
-  DRAKE_DEMAND(A->cols() == 4 * (N - 1));
-  DRAKE_DEMAND(b->rows() == 4 * (N - 1));
+  DRAKE_DEMAND(A->rows() == 3 * (N - 1));
+  DRAKE_DEMAND(A->cols() == 3 * (N - 1));
+  DRAKE_DEMAND(b->rows() == 3 * (N - 1));
 
   int row_idx = 0;
   MatrixX<T>& Aref = *A;
@@ -829,41 +829,32 @@ int PiecewisePolynomial<T>::
   for (int i = 0; i < N - 1; ++i) {
     const T dt = times[i + 1] - times[i];
 
-    // y_i(x_i) = a0i = Y[i]
-    Aref(row_idx, 4 * i) = 1;
-    bref(row_idx++) = Y[i](row, col);
-
     // y_i(x_{i+1}) = y_{i+1}(x_{i}) =>
-    // a0i + a1i*(x_{i+1} - x_i) + a2i(x_{i+1} - x_i)^2 + a3i(x_{i+1} -
-    // x_i)^3 = a0{i+1}
-    Aref(row_idx, 4 * i + 0) = 1;
-    Aref(row_idx, 4 * i + 1) = dt;
-    Aref(row_idx, 4 * i + 2) = dt * dt;
-    Aref(row_idx, 4 * i + 3) = dt * dt * dt;
-    if (i != N - 2) {
-      Aref(row_idx++, 4 * (i + 1)) = -1;
-    } else {
-      bref(row_idx++) = Y[N - 1](row, col);
-    }
+    // Y[i] + a1i*(x_{i+1} - x_i) + a2i(x_{i+1} - x_i)^2 + a3i(x_{i+1} -
+    // x_i)^3 = Y[i+1]
+    Aref(row_idx, 3 * i + 0) = dt;
+    Aref(row_idx, 3 * i + 1) = dt * dt;
+    Aref(row_idx, 3 * i + 2) = dt * dt * dt;
+    bref(row_idx++) = Y[i + 1](row, col)-Y[i](row, col);
 
     // y_i'(x_{i+1}) = y_{i+1}'(x_{i}) =>
     // a1i + 2*a2i(x_{i+1} - x_i) + 3*a3i(x_{i+1} - x_i)^2 = a1{i+1}
     if (i != N - 2) {
-      Aref(row_idx, 4 * i + 1) = 1;
-      Aref(row_idx, 4 * i + 2) = 2 * dt;
-      Aref(row_idx, 4 * i + 3) = 3 * dt * dt;
-      Aref(row_idx++, 4 * (i + 1) + 1) = -1;
+      Aref(row_idx, 3 * i + 0) = 1;
+      Aref(row_idx, 3 * i + 1) = 2 * dt;
+      Aref(row_idx, 3 * i + 2) = 3 * dt * dt;
+      Aref(row_idx++, 3 * (i + 1)) = -1;
     }
 
     if (i != N - 2) {
       // y_i''(x_{i+1}) = y_{i+1}''(x_{i}) =>
       // 2*a2i + 6*a3i(x_{i+1} - x_i) = 2*a2{i+1}
-      Aref(row_idx, 4 * i + 2) = 2;
-      Aref(row_idx, 4 * i + 3) = 6 * dt;
-      Aref(row_idx++, 4 * (i + 1) + 2) = -2;
+      Aref(row_idx, 3 * i + 1) = 2;
+      Aref(row_idx, 3 * i + 2) = 6 * dt;
+      Aref(row_idx++, 3 * (i + 1) + 1) = -2;
     }
   }
-  DRAKE_DEMAND(row_idx == 4 * (N - 1) - 2);
+  DRAKE_DEMAND(row_idx == 3 * (N - 1) - 2);
   return row_idx;
 }
 
@@ -902,9 +893,10 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
     polynomials[i].resize(rows, cols);
   }
 
-  MatrixX<T> A(4 * (N - 1), 4 * (N - 1));
-  VectorX<T> b(4 * (N - 1));
+  MatrixX<T> A(3 * (N - 1), 3 * (N - 1));
+  VectorX<T> b(3 * (N - 1));
   VectorX<T> solution;
+  VectorX<T> coeffs(4);
 
   A.setZero();
   b.setZero();
@@ -916,12 +908,12 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
           SetupCubicSplineInteriorCoeffsLinearSystem(times, Y, j, k, &A, &b);
 
       // Endpoints' velocity matches the given ones.
-      A(row_idx, 1) = 1;
+      A(row_idx, 0) = 1;
       b(row_idx++) = Ydot_start(j, k);
 
-      A(row_idx, 4 * (N - 2) + 1) = 1;
-      A(row_idx, 4 * (N - 2) + 2) = 2 * (times[N - 1] - times[N - 2]);
-      A(row_idx, 4 * (N - 2) + 3) =
+      A(row_idx, 3 * (N - 2) + 0) = 1;
+      A(row_idx, 3 * (N - 2) + 1) = 2 * (times[N - 1] - times[N - 2]);
+      A(row_idx, 3 * (N - 2) + 2) =
           3 * (times[N - 1] - times[N - 2]) * (times[N - 1] - times[N - 2]);
       b(row_idx++) = Ydot_end(j, k);
 
@@ -929,8 +921,9 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
       solution = A.colPivHouseholderQr().solve(b);
 
       for (int i = 0; i < N - 1; ++i) {
-        polynomials[i](j, k) =
-            Polynomial<T>(solution.template segment<4>(4 * i));
+        coeffs(0) = Y[i](j, k);
+        coeffs.tail(3) = solution.template segment<3>(3 * i);
+        polynomials[i](j, k) = Polynomial<T>(coeffs);
       }
     }
   }
@@ -964,9 +957,10 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
     polynomials[i].resize(rows, cols);
   }
 
-  MatrixX<T> A(4 * (N - 1), 4 * (N - 1));
-  VectorX<T> b(4 * (N - 1));
+  MatrixX<T> A(3 * (N - 1), 3 * (N - 1));
+  VectorX<T> b(3 * (N - 1));
   VectorX<T> solution;
+  VectorX<T> coeffs(4);
 
   A.setZero();
   b.setZero();
@@ -982,38 +976,38 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
         const T end_dt = times[times.size() - 1] - times[times.size() - 2];
         // Enforce velocity between end-of-last and beginning-of-first segments
         // is continuous.
-        A(row_idx, 1) = -1;  // Linear term of 1st segment.
-        A(row_idx, 4 * (N - 2) + 1) = 1;  // Linear term of last segment.
-        A(row_idx, 4 * (N - 2) + 2) = 2 * end_dt;  // Squared term of last
+        A(row_idx, 0) = -1;  // Linear term of 1st segment.
+        A(row_idx, 3 * (N - 2) + 0) = 1;  // Linear term of last segment.
+        A(row_idx, 3 * (N - 2) + 1) = 2 * end_dt;  // Squared term of last
                                                    // segment.
-        A(row_idx, 4 * (N - 2) + 3) = 3 * end_dt * end_dt;  // Cubic term of
+        A(row_idx, 3 * (N - 2) + 2) = 3 * end_dt * end_dt;  // Cubic term of
                                                             // last segment.
         b(row_idx++) = 0;
 
         // Enforce that acceleration between end-of-last and beginning-of-first
         // segments is continuous.
-        A(row_idx, 2) = -2;  // Quadratic term of 1st segment.
-        A(row_idx, 4 * (N - 2) + 2) = 2;  // Quadratic term of last segment.
-        A(row_idx, 4 * (N - 2) + 3) = 6 * end_dt;  // Cubic term of last
+        A(row_idx, 1) = -2;  // Quadratic term of 1st segment.
+        A(row_idx, 3 * (N - 2) + 1) = 2;  // Quadratic term of last segment.
+        A(row_idx, 3 * (N - 2) + 2) = 6 * end_dt;  // Cubic term of last
                                                    // segment.
         b(row_idx++) = 0;
       } else {
         if (N > 3) {
           // Ydddot(times[1]) is continuous.
-          A(row_idx, 3) = 1;  // Cubic term of 1st segment.
-          A(row_idx, 4 + 3) = -1;  // Cubic term of 2nd segment.
+          A(row_idx, 2) = 1;  // Cubic term of 1st segment.
+          A(row_idx, 3 + 2) = -1;  // Cubic term of 2nd segment.
           b(row_idx++) = 0;
 
           // Ydddot(times[N-2]) is continuous.
-          A(row_idx, 4 * (N - 3) + 3) = 1;
-          A(row_idx, 4 * (N - 2) + 3) = -1;
+          A(row_idx, 3 * (N - 3) + 2) = 1;
+          A(row_idx, 3 * (N - 2) + 2) = -1;
           b(row_idx++) = 0;
         } else {
           // Set Jerk to zero if only have 3 points, becomes a quadratic.
-          A(row_idx, 3) = 1;
+          A(row_idx, 2) = 1;
           b(row_idx++) = 0;
 
-          A(row_idx, 4 + 3) = 1;
+          A(row_idx, 3 + 2) = 1;
           b(row_idx++) = 0;
         }
       }
@@ -1022,8 +1016,9 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
       solution = A.colPivHouseholderQr().solve(b);
 
       for (int i = 0; i < N - 1; ++i) {
-        polynomials[i](j, k) =
-            Polynomial<T>(solution.template segment<4>(4 * i));
+        coeffs(0) = Y[i](j, k);
+        coeffs.tail(3) = solution.template segment<3>(3 * i);
+        polynomials[i](j, k) = Polynomial<T>(coeffs);
       }
     }
   }
