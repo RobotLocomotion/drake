@@ -100,17 +100,24 @@ class Intersector {
         // a triangle from a fan with N vertices is (0, i, i + 1), for
         // i ∈ [1, N - 2]. For each triangle, compute its doubled area and
         // scaled centroid.
-        T poly_double_area{0};
+        T poly_double_area{0};  // We accumulate into this variable to find 2x
+                                // the area of the contact polygon.
+        // We accumulate into this variable the sum of
+        // 6 x the area of the triangle x the centroid of the triangle
+        // over all triangle fans in the polygon.
         IntersectionVertex<T> scaled_centroid{Vector3<T>::Zero(),
                                               Vector4<T>::Zero()};
         for (int i = 1; i < poly_vertex_count - 1; ++i) {
+          // 2 x the area of the triangle.
           const T double_area = calc_double_area(0, i, i + 1, poly_vertices_D);
           poly_double_area += double_area;
+          // 3 x the centroid of the centroid.
           const IntersectionVertex<T> tri_centroid =
               calc_scaled_centroid(0, i, i + 1, poly_vertices_D);
-          scaled_centroid.bary += poly_double_area * tri_centroid.bary;
-          scaled_centroid.cartesian +=
-              poly_double_area * tri_centroid.cartesian;
+          // Accumulate
+          //   6 x the area of the triangle x the centroid of the triangle.
+          scaled_centroid.bary += double_area * tri_centroid.bary;
+          scaled_centroid.cartesian += double_area * tri_centroid.cartesian;
         }
         out_poly_data.push_back(
             {poly_double_area / 2, nhat_D,
