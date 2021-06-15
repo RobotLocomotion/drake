@@ -149,6 +149,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *      4. p and y are of the consistent size.
  *      5. lower_bound ≤ upper_bound.
  *      @throws std::runtime_error when the precondition is not satisfied.
+ * @ingroup solver_evaluators
  */
 std::tuple<Binding<LinearConstraint>,
            std::vector<Binding<RotatedLorentzConeConstraint>>,
