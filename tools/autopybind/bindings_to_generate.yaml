@@ -46,7 +46,7 @@ files:
           math:
             classes:
               RotationMatrix:
-                inst: ["double", "drake::AutoDiffXd"]
+                inst: ["double", "drake::AutoDiffXd", "drake::symbolic::Expression"]
               RollPitchYaw:
                 inst: ["double", "drake::AutoDiffXd"]
   "drake/math/barycentric.h":
@@ -100,7 +100,7 @@ files:
           systems:
             classes:
               LeafSystem:
-                inst: ["double", "drake::AutoDiffXd", "float"]
+                inst: ["double", "drake::AutoDiffXd"]
                 cust_name: ["LeafSystem"]
                 skiplist:
                   member_functions:
@@ -151,3 +151,40 @@ files:
                   DepthRange: {}
                   DepthRenderCamera: {}
                   RenderEngine: {}
+  # This stanza fails to build because generated headers for
+  # lcm structs are not found.
+  # "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h":
+  #   namespaces:
+  #     drake:
+  #       namespaces:
+  #         manipulation:
+  #           namespaces:
+  #             kuka_iiwa:
+  #               classes:
+  #                 IiwaCommandReceiver: {}
+  "drake/solvers/evaluator_base.h":
+    namespaces:
+      drake:
+        namespaces:
+          solvers:
+            classes:
+              EvaluatorBase: {}
+  "drake/solvers/constraint.h":
+    namespaces:
+      drake:
+        namespaces:
+          solvers:
+            classes:
+              Constraint: {}
+  "drake/multibody/optimization/centroidal_momentum_constraint.h":
+    namespaces:
+      drake:
+        namespaces:
+          multibody:
+            classes:
+              CentroidalMomentumConstraint:
+                customization:
+                  keep_alive:
+                    CentroidalMomentumConstraint:
+                      num_arguments: [4]
+                      pairings: [["1;2","1;4"]]
