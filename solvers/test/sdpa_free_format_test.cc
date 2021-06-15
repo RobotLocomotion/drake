@@ -113,7 +113,7 @@ TEST_F(SDPwithOverlappingVariables1, TestSdpaFreeFormatConstructor) {
        Eigen::Triplet<double>(5, 5, 1)},
       dut.num_X_rows(), dut.num_X_rows());
 
-  Eigen::Matrix<double, 6, 1> g_expected;
+  Vector6d g_expected;
   g_expected << 0, 0, 0, 0.5, 1, 2;
   EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
   EXPECT_EQ(dut.B_triplets().size(), 0);

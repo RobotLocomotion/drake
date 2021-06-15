@@ -24,7 +24,6 @@ using drake::systems::Context;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using Vector6d = Eigen::Matrix<double, 6, 1>;
 
 namespace drake {
 namespace examples {

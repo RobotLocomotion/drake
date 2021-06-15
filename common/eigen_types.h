@@ -46,6 +46,9 @@ using Vector4 = Eigen::Matrix<Scalar, 4, 1>;
 template <typename Scalar>
 using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
 
+/// A column vector of size 6 of doubles.
+using Vector6d = Eigen::Matrix<double, 6, 1>;
+
 /// A column vector templated on the number of rows.
 template <typename Scalar, int Rows>
 using Vector = Eigen::Matrix<Scalar, Rows, 1>;

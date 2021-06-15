@@ -122,7 +122,7 @@ class QuadraticProgram3 : public OptimizationProgram {
 
  private:
   VectorDecisionVariable<6> x_;
-  Eigen::Matrix<double, 6, 1> x_expected_;
+  Vector6d x_expected_;
 };
 
 // Test the simple QP

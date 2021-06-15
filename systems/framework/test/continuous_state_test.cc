@@ -24,7 +24,6 @@ namespace systems {
 namespace {
 
 typedef Eigen::Matrix<double, 5, 1> Vector5d;
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
 constexpr int kPositionLength = 2;
 constexpr int kVelocityLength = 1;
