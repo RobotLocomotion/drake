@@ -94,51 +94,6 @@ Here are some additional comments:
   specific to a particular robot, then it begins with `lcmt_robotname_`.
 * Variable names in LCM types follow the rules above.
 
-# package.xml Style
-
-[Robot Operating System (ROS)](http://www.ros.org/) organizes code and data
-into packages. Each package is located in its own directory, which contains a
-file called ``package.xml``. The official instructions on what this file should
-contain is given [here](http://wiki.ros.org/catkin/package.xml). Drake uses
-this same file for defining and finding packages. Specifically, it is searched
-for by
-[populatePackageMap()](https://github.com/RobotLocomotion/drake/blob/7bbcb0728a06c0abdd695fd8a5db1879bb5354bb/drake/systems/plants/xmlUtil.h#L160).
-Note that ``package.xml`` files are necessary even if you're *not* using Drake
-with ROS because the model files used by Drake (e.g., URDF and SDF), frequently
-refer to resources like mesh files via a ``package://`` syntax, whose full paths
-are resolved by the ``package.xml`` files.
-
-When adding a model to Drake
-(typically in [drake/examples/](https://github.com/RobotLocomotion/drake/tree/master/examples>)),
-you will need to add a ``package.xml`` file to the example's directory to enable
-modeling files like URDF and SDF to refer to resources like mesh files contained
-within the example's directory. Please ensure that your ``package.xml`` file
-contains every
-[required field](http://wiki.ros.org/catkin/package.xml#Required_Tags).
-The following minimal ``package.xml`` file can get you started:
-
-```
-    <!--
-    This XML file is used by:
-      drake/systems/plants/xmlUtil.cpp
-    Method:
-      searchDirectory()
-    -->
-
-    <package format="2">
-      <name>package_name</name>
-      <version>0.0.0</version>
-      <description>
-        A description of your package.
-      </description>
-      <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
-      <license>BSD</license>
-    </package>
-```
-
-In the above example, replace "package_name" with the name of your package. This
-is typically the name of the directory holding the ``package.xml`` file.
-
 # Shell Script Style
 
 We follow the [Google Shell Style Guide](
