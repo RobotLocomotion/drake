@@ -79,6 +79,12 @@ supported architecture and running Drake under Rosetta 2 emulation on arm64 is
 not supported. Plans for any future arm64 support on macOS and/or Ubuntu are
 discussed in [issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
 
+Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
+introduced with the Haswell architecture in 2013 with substantial performance
+improvements in the Broadwell architecture in 2014. Drake is compiled with
+`-march=broadwell` to exploit these instructions (that also works for Haswell
+machines). Drake can be used on older machines if necessary by building from
+source with that flag removed.
 
 ## Configuration Management Non-Determinism
 
