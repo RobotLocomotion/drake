@@ -1533,6 +1533,7 @@ void Diagram<T>::ExportOutput(const OutputPortLocator& port, std::string name) {
   auto diagram_port = internal::FrameworkFactory::Make<DiagramOutputPort<T>>(
       this,  // implicit_cast<const System<T>*>(this)
       this,  // implicit_cast<SystemBase*>(this)
+      this->get_system_id(),
       std::move(name), OutputPortIndex(this->num_output_ports()),
       this->assign_next_dependency_ticket(), &source_output_port,
       GetSystemIndexOrAbort(&source_output_port.get_system()));

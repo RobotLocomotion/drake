@@ -46,6 +46,7 @@ class DiagramOutputPort final : public OutputPort<T> {
   //
   // @param diagram The Diagram that will own this port.
   // @param system_interface The same Diagram cast to its base class.
+  // @param system_id The ID of the same Diagram.
   // @param name A name for the port.  Output ports names must be unique
   //     within the `diagram` System.
   // @param index The output port index to be assigned to the new port.
@@ -71,13 +72,14 @@ class DiagramOutputPort final : public OutputPort<T> {
   // the caller to do that cast for us so take a System<T> here.
   DiagramOutputPort(const System<T>* diagram,
                     internal::SystemMessageInterface* system_interface,
+                    internal::SystemId system_id,
                     std::string name,
                     OutputPortIndex index,
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
                     SubsystemIndex source_subsystem_index)
-      : OutputPort<T>(diagram, system_interface, std::move(name), index, ticket,
-                      source_output_port->get_data_type(),
+      : OutputPort<T>(diagram, system_interface, system_id, std::move(name),
+                      index, ticket, source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {

@@ -76,7 +76,7 @@ class InputPort final : public InputPortBase {
   template <typename ValueType, typename = std::enable_if_t<
       std::is_same_v<AbstractValue, ValueType>>>
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
+    ValidateSystemId(context.get_system_id());
     return DoEvalRequired(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
@@ -85,7 +85,7 @@ class InputPort final : public InputPortBase {
         !std::is_base_of_v<BasicVector<T>, ValueType> ||
         std::is_same_v<BasicVector<T>, ValueType>)>>
   const ValueType& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
+    ValidateSystemId(context.get_system_id());
     return PortEvalCast<ValueType>(DoEvalRequired(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
@@ -139,7 +139,7 @@ class InputPort final : public InputPortBase {
   FixedInputPortValue& FixValue(Context<T>* context,
                                 const ValueType& value) const {
     DRAKE_DEMAND(context != nullptr);
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(*context));
+    ValidateSystemId(context->get_system_id());
     const bool is_vector_port = (get_data_type() == kVectorValued);
     std::unique_ptr<AbstractValue> abstract_value =
         is_vector_port
@@ -153,7 +153,7 @@ class InputPort final : public InputPortBase {
   operation, because the value is brought up-to-date as part of this
   operation. */
   bool HasValue(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
+    ValidateSystemId(context.get_system_id());
     return DoEvalOptional(context);
   }
 
@@ -182,12 +182,12 @@ class InputPort final : public InputPortBase {
   InputPort(
       const System<T>* system,
       internal::SystemMessageInterface* system_interface,
-      std::string name, InputPortIndex index, DependencyTicket ticket,
-      PortDataType data_type, int size,
-      const std::optional<RandomDistribution>& random_type,
+      internal::SystemId system_id, std::string name,
+      InputPortIndex index, DependencyTicket ticket, PortDataType data_type,
+      int size, const std::optional<RandomDistribution>& random_type,
       EvalAbstractCallback eval)
-      : InputPortBase(system_interface, std::move(name), index, ticket,
-                       data_type, size, random_type, std::move(eval)),
+      : InputPortBase(system_interface, system_id, std::move(name), index,
+                      ticket, data_type, size, random_type, std::move(eval)),
         system_(*system) {
     DRAKE_DEMAND(system != nullptr);
     // Check the precondition on identical parameters; note that comparing as

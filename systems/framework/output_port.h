@@ -106,7 +106,7 @@ class OutputPort : public OutputPortBase {
   template <typename ValueType, typename = std::enable_if_t<
       std::is_same_v<AbstractValue, ValueType>>>
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
+    ValidateSystemId(context.get_system_id());
     return DoEval(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
@@ -115,7 +115,7 @@ class OutputPort : public OutputPortBase {
         !std::is_base_of_v<BasicVector<T>, ValueType> ||
         std::is_same_v<BasicVector<T>, ValueType>)>>
   const ValueType& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
+    ValidateSystemId(context.get_system_id());
     return PortEvalCast<ValueType>(DoEval(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
@@ -154,7 +154,7 @@ class OutputPort : public OutputPortBase {
   the Allocate() method. */
   void Calc(const Context<T>& context, AbstractValue* value) const {
     DRAKE_DEMAND(value != nullptr);
-    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
+    ValidateSystemId(context.get_system_id());
     DRAKE_ASSERT_VOID(ThrowIfInvalidPortValueType(context, *value));
     DoCalc(context, value);
   }
@@ -186,10 +186,11 @@ class OutputPort : public OutputPortBase {
   // access to System's declaration here so can't cast but the caller can.
   OutputPort(const System<T>* system,
              internal::SystemMessageInterface* system_interface,
-             std::string name, OutputPortIndex index, DependencyTicket ticket,
+             internal::SystemId system_id, std::string name,
+             OutputPortIndex index, DependencyTicket ticket,
              PortDataType data_type, int size)
-      : OutputPortBase(system_interface, std::move(name), index, ticket,
-                       data_type, size),
+      : OutputPortBase(system_interface, system_id, std::move(name), index,
+                       ticket, data_type, size),
         system_{*system} {
     // Check the precondition on identical parameters; note that comparing as
     // void* is only valid because we have single inheritance.

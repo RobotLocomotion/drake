@@ -968,8 +968,8 @@ InputPort<T>& System<T>::DeclareInputPort(
     return this->EvalAbstractInput(context_base, port_index);
   };
   auto port = internal::FrameworkFactory::Make<InputPort<T>>(
-      this, this, NextInputPortName(std::move(name)), port_index, port_ticket,
-      type, size, random_type, std::move(eval));
+      this, this, get_system_id(), NextInputPortName(std::move(name)),
+      port_index, port_ticket, type, size, random_type, std::move(eval));
   InputPort<T>* port_ptr = port.get();
   this->AddInputPort(std::move(port));
   return *port_ptr;

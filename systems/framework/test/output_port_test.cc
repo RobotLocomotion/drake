@@ -37,6 +37,7 @@ class DummySystem : public LeafSystem<double> {
   DummySystem() {}
   ~DummySystem() override {}
   using SystemBase::assign_next_dependency_ticket;
+  using SystemBase::get_system_id;
 };
 
 // The only concrete output ports we expect to encounter are LeafOutputPort
@@ -45,19 +46,17 @@ class DummySystem : public LeafSystem<double> {
 // introduce errors.
 class MyOutputPort : public OutputPort<double> {
  public:
-  MyOutputPort(const System<double>* diagram,
-               internal::SystemMessageInterface* system_interface,
-               OutputPortIndex index, DependencyTicket ticket)
-      : OutputPort<double>(diagram, system_interface, "my_output", index,
-                            ticket, kVectorValued, 2) {}
+  MyOutputPort(DummySystem* dummy, OutputPortIndex index,
+               DependencyTicket ticket)
+      : OutputPort<double>(dummy, dummy, dummy->get_system_id(),
+                           "my_output", index, ticket, kVectorValued, 2) {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(
         MyVector2d(Vector2d(1., 2.)));
   }
 
-  void DoCalc(const Context<double>& diagram_context,
-              AbstractValue* value) const override {
+  void DoCalc(const Context<double>&, AbstractValue* value) const override {
     EXPECT_NE(value, nullptr);
     DRAKE_EXPECT_NO_THROW(
         value->set_value<BasicVector<double>>(MyVector2d(Vector2d(3., 4.))));
@@ -76,7 +75,7 @@ class MyOutputPort : public OutputPort<double> {
   }
 
   void ThrowIfInvalidPortValueType(
-      const Context<double>& context,
+      const Context<double>&,
       const AbstractValue& proposed_value) const final {
     // Note: this is a very expensive way to check -- fine for this test
     // case (which has no alternative) but don't copy into real code!
@@ -126,12 +125,12 @@ class MyNullAllocatorPort : public MyOutputPort {
 // or (b) implementation changes to existing ports or error handling in caching.
 GTEST_TEST(TestBaseClass, BadAllocators) {
   DummySystem dummy;
-  MyStringAllocatorPort string_allocator{&dummy, &dummy, OutputPortIndex(0),
+  MyStringAllocatorPort string_allocator{&dummy, OutputPortIndex(0),
                                          dummy.assign_next_dependency_ticket()};
   MyBadSizeAllocatorPort bad_size_allocator{
-      &dummy, &dummy, OutputPortIndex(1),
+      &dummy, OutputPortIndex(1),
       dummy.assign_next_dependency_ticket()};
-  MyNullAllocatorPort null_allocator{&dummy, &dummy, OutputPortIndex(2),
+  MyNullAllocatorPort null_allocator{&dummy, OutputPortIndex(2),
                                      dummy.assign_next_dependency_ticket()};
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -152,7 +151,7 @@ GTEST_TEST(TestBaseClass, BadAllocators) {
 // This message can be caused by user action.
 GTEST_TEST(TestBaseClass, BadOutputType) {
   DummySystem dummy;
-  MyOutputPort port{&dummy, &dummy, OutputPortIndex(0),
+  MyOutputPort port{&dummy, OutputPortIndex(0),
                     dummy.assign_next_dependency_ticket()};
   auto context = dummy.AllocateContext();
   auto good_port_value = port.Allocate();
@@ -212,6 +211,7 @@ class LeafOutputPortTest : public ::testing::Test {
       internal::FrameworkFactory::Make<LeafOutputPort<double>>(
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+          dummy_.get_system_id(),
           "absport",
           OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
@@ -222,6 +222,7 @@ class LeafOutputPortTest : public ::testing::Test {
       internal::FrameworkFactory::Make<LeafOutputPort<double>>(
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+          dummy_.get_system_id(),
           "vecport",
           OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
@@ -324,6 +325,7 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   auto null_port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_),
+      dummy_.get_system_id(),
       "null_port",
       OutputPortIndex(dummy_.num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
@@ -428,6 +430,14 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   out1.Calc(*context, value1.get());
   EXPECT_EQ(*int0, 1);  // Make sure we got the right Context.
   EXPECT_EQ(*int1, 2);
+
+  // When given an inapproprate context, we fail-fast.
+  const auto& diagram_context = dynamic_cast<DiagramContext<double>&>(*context);
+  const auto& sys1_context = diagram_context.GetSubsystemContext(
+      SubsystemIndex{0});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      out0.Eval<int>(sys1_context), std::exception,
+      ".*Context.*was not created for this OutputPort.*");
 }
 
 GTEST_TEST(DiagramOutputPortTest, Nested) {

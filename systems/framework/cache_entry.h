@@ -260,6 +260,7 @@ class CacheEntry {
   all circumstances. */
   const CacheEntryValue& get_cache_entry_value(
       const ContextBase& context) const {
+    DRAKE_ASSERT_VOID(owning_system_->ValidateContext(context));
     return context.get_cache().get_cache_entry_value(cache_index_);
   }
 
@@ -270,6 +271,7 @@ class CacheEntry {
   all circumstances. */
   CacheEntryValue& get_mutable_cache_entry_value(
       const ContextBase& context) const {
+    DRAKE_ASSERT_VOID(owning_system_->ValidateContext(context));
     return context.get_mutable_cache().get_mutable_cache_entry_value(
         cache_index_);
   }

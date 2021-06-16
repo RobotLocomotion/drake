@@ -12,7 +12,10 @@ namespace drake {
 namespace systems {
 namespace {
 
-class DummySystem final : public LeafSystem<double> {};
+class DummySystem final : public LeafSystem<double> {
+ public:
+  using SystemBase::get_system_id;
+};
 
 // The mocked-up return value for our DoEval stub, below.
 const AbstractValue* g_do_eval_result = nullptr;
@@ -39,8 +42,8 @@ GTEST_TEST(InputPortTest, VectorTest) {
   const std::optional<RandomDistribution> random_type = std::nullopt;
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
-      system, system_interface, name, index, ticket, data_type, size,
-      random_type, &DoEval);
+      system, system_interface, dummy_system.get_system_id(), name, index,
+      ticket, data_type, size, random_type, &DoEval);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -99,8 +102,8 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   const std::optional<RandomDistribution> random_type = std::nullopt;
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
-      system, system_interface, name, index, ticket, data_type, size,
-      random_type, &DoEval);
+      system, system_interface, dummy_system.get_system_id(), name, index,
+      ticket, data_type, size, random_type, &DoEval);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -340,6 +343,15 @@ GTEST_TEST(InputPortTest, ContextForEmbeddedSystem) {
   EXPECT_EQ(kIntValue, system->int_port.Eval<int>(*context));
   EXPECT_EQ(kDoubleValue, system->double_port.Eval<double>(*context));
   EXPECT_EQ(kStringValue, system->string_port.Eval<std::string>(*context));
+
+  // When given an inapproprate context, we fail-fast.
+  auto diagram_context = diagram->CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system->int_port.HasValue(*diagram_context), std::exception,
+      ".*Context.*was not created for this InputPort.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system->int_port.Eval<int>(*diagram_context), std::exception,
+      ".*Context.*was not created for this InputPort.*");
 }
 
 }  // namespace

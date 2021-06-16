@@ -184,6 +184,7 @@ class TestSystem : public TestSystemBase<double> {
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        this->get_system_id(),
         "y" + std::to_string(num_output_ports()),
         OutputPortIndex(this->num_output_ports()),
         assign_next_dependency_ticket(),
@@ -606,6 +607,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
     this->AddOutputPort(internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        this->get_system_id(),
         "absport",
         OutputPortIndex(this->num_output_ports()),
         this->assign_next_dependency_ticket(),
@@ -624,6 +626,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
     this->AddOutputPort(internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
+        this->get_system_id(),
         "vecport",
         OutputPortIndex(this->num_output_ports()),
         this->assign_next_dependency_ticket(),

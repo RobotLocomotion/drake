@@ -53,6 +53,8 @@ class PortBase {
     Either "Input" or "Output", depending on the kind of subclass.
   @param owning_system
     The System that owns this port.
+  @param owning_system_id
+    The ID of owning_system.
   @param name
     A name for the port. Port names should be non-empty and unique within a
     single System.
@@ -70,8 +72,8 @@ class PortBase {
   */
   PortBase(
       const char* kind_string, internal::SystemMessageInterface* owning_system,
-      std::string name, int index, DependencyTicket ticket,
-      PortDataType data_type, int size);
+      internal::SystemId owning_system_id, std::string name, int index,
+      DependencyTicket ticket, PortDataType data_type, int size);
 
   /** Returns the index of this port within the owning System (i.e., an
   InputPortIndex or OutputPortIndex, but as a bare integer). For a Diagram,
@@ -83,6 +85,23 @@ class PortBase {
   internal::SystemMessageInterface& get_mutable_system_interface() {
     return owning_system_;
   }
+
+  /** (Internal use only) Checks whether the given id (nominally obtained from a
+  Context passed to this port) was created for the system that owns this port.
+
+  This is similar in spirit to SystemBase::ValidateContext, but ports cannot
+  use SystemBase.
+
+  @note This method is sufficiently fast for performance sensitive code. */
+  void ValidateSystemId(internal::SystemId id) const {
+    if (id != owning_system_id_) {
+      ThrowValidateContextMismatch();
+    }
+  }
+
+  /** (Internal use only) Throws std::exception with a message that the sanity
+  check(s) related to ValidateContext have failed. */
+  [[noreturn]] void ThrowValidateContextMismatch() const;
 
   /** Pull a value of a given type from an abstract value or issue a nice
   message if the type is not correct. */
@@ -121,6 +140,7 @@ class PortBase {
 
   // Associated System and System resources.
   internal::SystemMessageInterface& owning_system_;
+  const internal::SystemId owning_system_id_;
   const int index_;
   const DependencyTicket ticket_;
 

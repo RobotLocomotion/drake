@@ -56,6 +56,8 @@ class InputPortBase : public PortBase {
 
   @param owning_system
     The System that owns this input port.
+  @param owning_system_id
+    The ID of owning_system.
   @param name
     A name for the port. Input port names should be non-empty and unique
     within a single System.
@@ -72,7 +74,8 @@ class InputPortBase : public PortBase {
     Input ports may optionally be labeled as random, if the port is intended to
     model a random-source "noise" or "disturbance" input. */
   InputPortBase(
-      internal::SystemMessageInterface* owning_system, std::string name,
+      internal::SystemMessageInterface* owning_system,
+      internal::SystemId owning_system_id, std::string name,
       InputPortIndex index, DependencyTicket ticket, PortDataType data_type,
       int size, const std::optional<RandomDistribution>& random_type,
       EvalAbstractCallback eval);

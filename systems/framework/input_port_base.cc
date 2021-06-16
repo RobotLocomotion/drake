@@ -11,13 +11,14 @@ namespace drake {
 namespace systems {
 
 InputPortBase::InputPortBase(
-    internal::SystemMessageInterface* owning_system, std::string name,
+    internal::SystemMessageInterface* owning_system,
+    internal::SystemId owning_system_id, std::string name,
     InputPortIndex index, DependencyTicket ticket,
     PortDataType data_type, int size,
     const std::optional<RandomDistribution>& random_type,
     EvalAbstractCallback eval)
-    : PortBase("Input", owning_system, std::move(name), index, ticket,
-               data_type, size),
+    : PortBase("Input", owning_system, owning_system_id, std::move(name),
+               index, ticket, data_type, size),
       eval_(std::move(eval)),
       random_type_(random_type) {
   if (is_random() && data_type != kVectorValued) {
