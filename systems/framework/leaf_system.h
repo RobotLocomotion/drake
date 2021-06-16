@@ -1336,7 +1336,7 @@ class LeafSystem : public System<T> {
         // Calculator function downcasts to specific vector type and invokes
         // the given member function.
         [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
-          auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
+          auto* typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
           (this_ptr->*calc)(context, typed_result);
         },
@@ -1416,15 +1416,9 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-
     auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)), MakeAllocateCallback(model_value),
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->get_mutable_value<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        },
+        NextOutputPortName(std::move(name)),
+        ValueCalcFunction(this, model_value, calc),
         std::move(prerequisites_of_calc));
     return port;
   }
@@ -1464,6 +1458,8 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
+  // TODO(jwnimmer-tri) Deprecate me. Any class complicated enough for boutique
+  // pre-allocation can just as well go through ValueCalcFunc explicitly.
   /** Declares an abstract-valued output port by specifying member functions to
   use both for the allocator and calculator. The signatures are:
   @code
@@ -1484,14 +1480,12 @@ class LeafSystem : public System<T> {
           all_sources_ticket()}) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-
+    ValueCalcFunction::AllocateCallback allocate_function = [this_ptr, make]() {
+      return AbstractValue::Make<OutputType>((this_ptr->*make)());
+    };
     auto& port = CreateAbstractLeafOutputPort(
         NextOutputPortName(std::move(name)),
-        [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->get_mutable_value<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        },
+        ValueCalcFunction(this, std::move(allocate_function), calc),
         std::move(prerequisites_of_calc));
     return port;
   }
@@ -2011,8 +2005,7 @@ class LeafSystem : public System<T> {
   // returns a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
       std::string name,
-      typename LeafOutputPort<T>::AllocCallback allocator,
-      typename LeafOutputPort<T>::CalcCallback calculator,
+      ValueCalcFunction calculator,
       std::set<DependencyTicket> calc_prerequisites);
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a

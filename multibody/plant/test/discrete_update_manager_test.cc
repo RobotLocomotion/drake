@@ -99,26 +99,16 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
 
   /* Declares a cache entry that stores twice the additional state value. */
   void DeclareCacheEntries(MultibodyPlant<T>* plant) final {
-    // TODO(jwnimmer-tri) Improve ValueCalcFunction constructor sugar.
-    cache_index_ =
-        this->DeclareCacheEntry(
-                plant, "Twice the additional_state value",
-                systems::ValueCalcFunction(
-                    systems::internal::AbstractValueCloner(
-                        VectorXd(kNumAdditionalDofs)),
-                    [this](const ContextBase& context_base,
-                           AbstractValue* cache_value) {
-                      const auto& context =
-                          dynamic_cast<const Context<T>&>(context_base);
-                      VectorX<T>& data =
-                          cache_value->get_mutable_value<VectorX<T>>();
-                      this->CalcTwiceState(context, &data);
-                    }),
-                {systems::System<double>::xd_ticket()})
-            .cache_index();
+    cache_index_ = this->DeclareCacheEntry(
+                           plant, "Twice the additional_state value",
+                           systems::ValueCalcFunction(
+                               this, VectorXd(kNumAdditionalDofs),
+                               &DummyDiscreteUpdateManager::CalcTwiceState),
+                           {systems::System<double>::xd_ticket()})
+                       .cache_index();
   }
 
-  void CalcTwiceState(const Context<T>& context, VectorX<T>* data) const {
+  void CalcTwiceState(const Context<double>& context, VectorXd* data) const {
     *data =
         2.0 * context.get_discrete_state(additional_state_index_).get_value();
   }
