@@ -17,6 +17,7 @@ namespace multibody {
 namespace fixed_fem {
 namespace {
 
+using Eigen::Vector3d;
 using geometry::SurfaceMesh;
 using geometry::VolumeElement;
 using geometry::VolumeElementIndex;
@@ -237,6 +238,53 @@ GTEST_TEST(DeformableContactTest, ComputeTetMeshTriMeshContactDouble) {
 GTEST_TEST(DeformableContactTest, ComputeTetMeshTriMeshContactAutoDiff) {
   TestComputeTetMeshTriMeshContact<AutoDiffXd>();
 }
+
+/* Verifies that ComputeTetMeshTriMeshContact() gives sensible results when the
+ contact polygon is not a triangle. */
+GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
+  /* Creates a surface mesh with a single, large-enough, triangle in the
+   z-plane. */
+  int face[3] = {0, 1, 2};
+  vector<geometry::SurfaceFace> faces;
+  faces.emplace_back(face);
+  const Vector3<double> tri_vertex_data[3] = {
+      {10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
+  vector<geometry::SurfaceVertex<double>> tri_vertices;
+  for (auto& vertex : tri_vertex_data) {
+    tri_vertices.emplace_back(vertex);
+  }
+  const SurfaceMesh<double> surface_R(std::move(faces),
+                                      std::move(tri_vertices));
+
+  /* Creates a tetrahedral mesh with a single tet whose intersection with the
+   surface mesh is a axis-aligned unit square [-0.5, 0.5]x[-0.5, 0.5]x{0} in the
+   z-plane centered at the origin.  The tetrahedron is also centered at the
+   origin. One of its edge is on the z=-1 plane and parallel to the x axis.
+   Another edge is on the z=1 plane and parallel to the y axis. The remaining
+   four edges connect vertices of these two edges together. */
+  const int tet[4] = {0, 1, 2, 3};
+  vector<VolumeElement> tets;
+  tets.emplace_back(tet);
+  const Vector3<double> tet_vertex_data[4] = {
+      {1, 0, -1}, {-1, 0, -1}, {0, -1, 1}, {0, 1, 1}};
+  vector<VolumeVertex<double>> tet_vertices;
+  for (const auto& vertex : tet_vertex_data) {
+    tet_vertices.emplace_back(vertex);
+  }
+  const VolumeMesh<double> volume_D(std::move(tets), std::move(tet_vertices));
+
+  const DeformableContactSurface<double> contact_D =
+      ComputeTetMeshTriMeshContact<double>(volume_D, surface_R,
+                                           math::RigidTransformd());
+  ASSERT_EQ(contact_D.num_polygons(), 1);
+  const ContactPolygonData<double>& data = contact_D.polygon_data(0);
+  constexpr double kTol = 4.0 * std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(data.b_centroid.sum(), 1.0, kTol);
+  EXPECT_EQ(data.tet_index, 0);
+  EXPECT_TRUE(CompareMatrices(data.unit_normal, Vector3d(0, 0, 1), kTol));
+  EXPECT_TRUE(CompareMatrices(data.centroid, Vector3d(0, 0, 0), kTol));
+}
+
 }  // namespace
 }  // namespace fixed_fem
 }  // namespace multibody
