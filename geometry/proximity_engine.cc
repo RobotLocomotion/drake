@@ -732,6 +732,27 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return surfaces;
   }
 
+  vector<ContactSurface<T>> ComputePolygonalContactSurfaces(
+      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    vector<ContactSurface<T>> surfaces;
+    // All these quantities are aliased in the callback data.
+    // TODO(14579): Change kSingleTriangle to the future polygon representation.
+    hydroelastic::CallbackData<T> data{
+        &collision_filter_, &X_WGs, &hydroelastic_geometries_,
+        ContactPolygonRepresentation::kSingleTriangle, &surfaces};
+
+    // Perform a query of the dynamic objects against themselves.
+    dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
+
+    // Perform a query of the dynamic objects against the anchored. We don't do
+    // anchored against anchored because those pairs are implicitly filtered.
+    FclCollide(dynamic_tree_, anchored_tree_, &data, hydroelastic::Callback<T>);
+
+    std::sort(surfaces.begin(), surfaces.end(), OrderContactSurface<T>);
+
+    return surfaces;
+  }
+
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
@@ -744,6 +765,33 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         hydroelastic::CallbackData<T>{
             &collision_filter_, &X_WGs, &hydroelastic_geometries_,
             ContactPolygonRepresentation::kCentroidSubdivision, surfaces},
+        point_pairs};
+
+    // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
+    // that we can support with the point-pair fallback. Do those first.
+    dynamic_tree_.collide(&data, hydroelastic::CallbackWithFallback<T>);
+
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               hydroelastic::CallbackWithFallback<T>);
+
+    std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
+
+    std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
+  }
+
+  void ComputePolygonalContactSurfacesWithFallback(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+
+    // All these quantities are aliased in the callback data.
+    // TODO(14579): Change kSingleTriangle to the future polygon representation.
+    hydroelastic::CallbackWithFallbackData<T> data{
+        hydroelastic::CallbackData<T>{
+            &collision_filter_, &X_WGs, &hydroelastic_geometries_,
+            ContactPolygonRepresentation::kSingleTriangle, surfaces},
         point_pairs};
 
     // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
@@ -1174,12 +1222,28 @@ std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
 }
 
 template <typename T>
+std::vector<ContactSurface<T>>
+ProximityEngine<T>::ComputePolygonalContactSurfaces(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+  return impl_->ComputePolygonalContactSurfaces(X_WGs);
+}
+
+template <typename T>
 void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
                                                    point_pairs);
+}
+
+template <typename T>
+void ProximityEngine<T>::ComputePolygonalContactSurfacesWithFallback(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    std::vector<ContactSurface<T>>* surfaces,
+    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
+  return impl_->ComputePolygonalContactSurfacesWithFallback(X_WGs, surfaces,
+                                                            point_pairs);
 }
 
 template <typename T>

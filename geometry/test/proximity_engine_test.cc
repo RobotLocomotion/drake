@@ -1862,45 +1862,68 @@ GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
 // Confirms that the ComputeContactSurfaces() computation returns the
 // same results twice in a row. This test is explicitly required because it is
 // known that updating the pose in the FCL tree can lead to erratic ordering.
-GTEST_TEST(ProximityEngineTests, ComputeContactSurfacesResultOrdering) {
-  ProximityEngine<double> engine;
+// We also test ComputePolygonalContactSurfaces() similarly.
+class ProximityEngineHydro : public testing::Test {
+ protected:
+  void SetUp() override {
+    const double r = 0.5;
+    // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
+    // And, for contact surfaces, we need an even number to guarantee rigid-soft
+    // alternation.
+    poses_ = MakeCollidingRing(r, 4);
 
-  const double r = 0.5;
-  // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
-  // And, for contact surfaces, we need an even number to guarantee rigid-soft
-  // alternation.
-  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, 4);
+    ProximityProperties soft_properties;
+    AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
+    AddSoftHydroelasticProperties(r, &soft_properties);
+    ProximityProperties rigid_properties;
+    AddRigidHydroelasticProperties(r, &rigid_properties);
 
-  ProximityProperties soft_properties;
-  AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(r, &soft_properties);
-  ProximityProperties rigid_properties;
-  AddRigidHydroelasticProperties(r, &rigid_properties);
+    // Extract the ids from poses and sort them so that we know we're assigning
+    // appropriate alternativing compliance.
+    std::vector<GeometryId> ids;
+    for (const auto& pair : poses_) {
+      ids.push_back(pair.first);
+    }
+    std::sort(ids.begin(), ids.end());
 
-  // Extract the ids from poses and sort them so that we know we're assigning
-  // appropriate alternativing compliance.
-  std::vector<GeometryId> ids;
-  for (const auto& pair : poses) {
-    ids.push_back(pair.first);
+    int n = 0;
+    const Sphere sphere{r};
+    for (const auto& id : ids) {
+      engine_.AddDynamicGeometry(sphere, {}, id,
+                                 (n % 2) ? soft_properties : rigid_properties);
+      ++n;
+    }
   }
-  std::sort(ids.begin(), ids.end());
 
-  int n = 0;
-  const Sphere sphere{r};
-  for (const auto& id : ids) {
-    engine.AddDynamicGeometry(sphere, {}, id,
-                              (n % 2) ? soft_properties : rigid_properties);
-    ++n;
+  ProximityEngine<double> engine_;
+  unordered_map<GeometryId, RigidTransformd> poses_;
+};
+
+TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
+  engine_.UpdateWorldPoses(poses_);
+  const auto results1 = engine_.ComputeContactSurfaces(poses_);
+  ASSERT_EQ(results1.size(), poses_.size());
+
+  engine_.UpdateWorldPoses(poses_);
+  const auto results2 = engine_.ComputeContactSurfaces(poses_);
+  ASSERT_EQ(results2.size(), poses_.size());
+
+  for (size_t i = 0; i < poses_.size(); ++i) {
+    EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
+    EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
   }
-  engine.UpdateWorldPoses(poses);
-  const auto results1 = engine.ComputeContactSurfaces(poses);
-  ASSERT_EQ(results1.size(), poses.size());
+}
 
-  engine.UpdateWorldPoses(poses);
-  const auto results2 = engine.ComputeContactSurfaces(poses);
-  ASSERT_EQ(results1.size(), poses.size());
+TEST_F(ProximityEngineHydro, ComputePolygonalContactSurfacesResultOrdering) {
+  engine_.UpdateWorldPoses(poses_);
+  const auto results1 = engine_.ComputePolygonalContactSurfaces(poses_);
+  ASSERT_EQ(results1.size(), poses_.size());
 
-  for (size_t i = 0; i < poses.size(); ++i) {
+  engine_.UpdateWorldPoses(poses_);
+  const auto results2 = engine_.ComputePolygonalContactSurfaces(poses_);
+  ASSERT_EQ(results2.size(), poses_.size());
+
+  for (size_t i = 0; i < poses_.size(); ++i) {
     EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
     EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
   }
@@ -1909,54 +1932,89 @@ GTEST_TEST(ProximityEngineTests, ComputeContactSurfacesResultOrdering) {
 // Confirms that the ComputeContactSurfacesWithFallback() computation returns
 // the same results twice in a row. This test is explicitly required because it
 // is known that updating the pose in the FCL tree can lead to erratic ordering.
-GTEST_TEST(ProximityEngineTests,
-           ComputeContactSurfacesWithFallbackResultOrdering) {
-  ProximityEngine<double> engine;
+// We also test ComputePolygonalContactSurfacesWithFallback() similarly.
+class ProximityEngineHydroWithFallback : public testing::Test {
+ protected:
+  void SetUp() override {
+    const double r = 0.5;
+    // For this case we want at least four contacts *of each type*. So, we order
+    // geometries as: S S R R S S R R. This will give us four soft contacts and
+    // four rigid contacts.
+    N_ = 8;
+    poses_ = MakeCollidingRing(r, N_);
 
-  const double r = 0.5;
-  // For this case we want at least four contacts *of each type*. So, we order
-  // geometries as: S S R R S S R R. This will give us four soft contacts and
-  // four rigid contacts.
-  const int N = 8;
-  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, N);
+    ProximityProperties soft_properties;
+    AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
+    AddSoftHydroelasticProperties(r / 2, &soft_properties);
+    ProximityProperties rigid_properties;
+    AddRigidHydroelasticProperties(r, &rigid_properties);
 
-  ProximityProperties soft_properties;
-  AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(r / 2, &soft_properties);
-  ProximityProperties rigid_properties;
-  AddRigidHydroelasticProperties(r, &rigid_properties);
+    // Extract the ids from poses and sort them so that we know we're assigning
+    // appropriate alternativing compliance.
+    std::vector<GeometryId> ids;
+    for (const auto& pair : poses_) {
+      ids.push_back(pair.first);
+    }
+    std::sort(ids.begin(), ids.end());
 
-  // Extract the ids from poses and sort them so that we know we're assigning
-  // appropriate alternativing compliance.
-  std::vector<GeometryId> ids;
-  for (const auto& pair : poses) {
-    ids.push_back(pair.first);
+    int n = 0;
+    const Sphere sphere{r};
+    for (const auto& id : ids) {
+      bool is_soft = (n % 4) < 2;
+      engine_.AddDynamicGeometry(sphere, {}, id,
+                                 is_soft ? soft_properties : rigid_properties);
+      ++n;
+    }
   }
-  std::sort(ids.begin(), ids.end());
 
-  int n = 0;
-  const Sphere sphere{r};
-  for (const auto& id : ids) {
-    bool is_soft = (n % 4) < 2;
-    engine.AddDynamicGeometry(sphere, {}, id,
-                              is_soft ? soft_properties : rigid_properties);
-    ++n;
-  }
-  engine.UpdateWorldPoses(poses);
+  size_t N_;
+  ProximityEngine<double> engine_;
+  unordered_map<GeometryId, RigidTransformd> poses_;
+};
+
+TEST_F(ProximityEngineHydroWithFallback,
+       ComputeContactSurfacesWithFallbackResultOrdering) {
+  engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces1;
   vector<PenetrationAsPointPair<double>> points1;
-  engine.ComputeContactSurfacesWithFallback(poses, &surfaces1, &points1);
-  ASSERT_EQ(surfaces1.size(), N / 2);
-  ASSERT_EQ(points1.size(), N / 2);
+  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces1, &points1);
+  ASSERT_EQ(surfaces1.size(), N_ / 2);
+  ASSERT_EQ(points1.size(), N_ / 2);
 
-  engine.UpdateWorldPoses(poses);
+  engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
-  engine.ComputeContactSurfacesWithFallback(poses, &surfaces2, &points2);
-  ASSERT_EQ(surfaces2.size(), N / 2);
-  ASSERT_EQ(points2.size(), N / 2);
+  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces2, &points2);
+  ASSERT_EQ(surfaces2.size(), N_ / 2);
+  ASSERT_EQ(points2.size(), N_ / 2);
 
-  for (size_t i = 0; i < N / 2; ++i) {
+  for (size_t i = 0; i < N_ / 2; ++i) {
+    EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
+    EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+    EXPECT_EQ(points1[i].id_A, points2[i].id_A);
+    EXPECT_EQ(points1[i].id_B, points2[i].id_B);
+  }
+}
+
+TEST_F(ProximityEngineHydroWithFallback,
+       ComputePolygonalContactSurfacesWithFallbackResultOrdering) {
+  engine_.UpdateWorldPoses(poses_);
+  vector<ContactSurface<double>> surfaces1;
+  vector<PenetrationAsPointPair<double>> points1;
+  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces1,
+                                                      &points1);
+  ASSERT_EQ(surfaces1.size(), N_ / 2);
+  ASSERT_EQ(points1.size(), N_ / 2);
+
+  engine_.UpdateWorldPoses(poses_);
+  vector<ContactSurface<double>> surfaces2;
+  vector<PenetrationAsPointPair<double>> points2;
+  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces2,
+                                                      &points2);
+  ASSERT_EQ(surfaces2.size(), N_ / 2);
+  ASSERT_EQ(points2.size(), N_ / 2);
+
+  for (size_t i = 0; i < N_ / 2; ++i) {
     EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
     EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
