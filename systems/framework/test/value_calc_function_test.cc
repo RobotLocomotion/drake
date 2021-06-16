@@ -15,12 +15,52 @@ namespace {
 using AllocateCallback = ValueCalcFunction::AllocateCallback;
 using CalcCallback = ValueCalcFunction::CalcCallback;
 
-std::unique_ptr<AbstractValue> AllocateFoo() {
-  return AbstractValue::Make<std::string>("foo");
+// The permitted argument types to specify Calc are:
+// - (1) `calc` is a member function pointer with an output argument
+// - (2) `calc` is a member function pointer with a return value
+// - (3) `calc` is a std::function with an output argument
+// - (4) `calc` is a std::function with a return value
+// - (5) `calc` is a generic CalcCallback
+
+// The permitted argument types to specify Allocate are:
+// - (a) `allocate` is via the default constructor
+// - (b) `allocate` is via user-supplied model_value
+// - (c) `allocate` is a member function pointer
+// - (d) `allocate` is a generic AllocateCallback
+
+class MyClass {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyClass)
+
+  MyClass() = default;
+
+  void CalcOne(const Context<double>&, std::string* out) const {
+    *out = "one";
+  }
+
+  std::string CalcTwo(const Context<double>&) const {
+    return "two";
+  }
+
+  std::unique_ptr<std::string> AllocateCharlie() const {
+    return std::make_unique<std::string>("charlie");
+  }
+};
+
+void CalcThree(const Context<double>&, std::string* out) {
+  *out = "three";
 }
 
-void CalcBar(const ContextBase&, AbstractValue* out) {
-  out->set_value<std::string>("bar");
+std::string CalcFour(const Context<double>&) {
+  return "four";
+}
+
+void CalcFive(const ContextBase&, AbstractValue* out) {
+  out->set_value<std::string>("five");
+}
+
+std::unique_ptr<AbstractValue> AllocateDelta() {
+  return AbstractValue::Make<std::string>("delta");
 }
 
 class ValueCalcFunctionTest : public ::testing::Test {
@@ -36,6 +76,9 @@ class ValueCalcFunctionTest : public ::testing::Test {
     EXPECT_EQ(output->get_value<std::string>(), expected_calc_value);
   }
 
+  const std::string kBravo{"bravo"};
+
+  const MyClass my_class_;
   const LeafContext<double> context_;
 };
 
@@ -62,10 +105,102 @@ TEST_F(ValueCalcFunctionTest, InvalidCallbacks) {
   EXPECT_THROW(ValueCalcFunction(bad_allocate, bad_calc), std::exception);
 }
 
-// Test the constructor when given plain functions.
-TEST_F(ValueCalcFunctionTest, PlainFunction) {
-  const ValueCalcFunction dut(&AllocateFoo, &CalcBar);
-  CheckValues(dut, "foo", "bar");
+TEST_F(ValueCalcFunctionTest, AlphaOne) {
+  const ValueCalcFunction dut(&my_class_, &MyClass::CalcOne);
+  CheckValues(dut, "", "one");
+}
+
+TEST_F(ValueCalcFunctionTest, AlphaTwo) {
+  const ValueCalcFunction dut(&my_class_, &MyClass::CalcTwo);
+  CheckValues(dut, "", "two");
+}
+
+TEST_F(ValueCalcFunctionTest, AlphaThree) {
+  // N.B. We use {} not () to avoid the "most vexing parse".
+  const ValueCalcFunction dut{std::function(CalcThree)};
+  CheckValues(dut, "", "three");
+}
+
+TEST_F(ValueCalcFunctionTest, AlphaFour) {
+  // N.B. We use {} not () to avoid the "most vexing parse".
+  const ValueCalcFunction dut{std::function(CalcFour)};
+  CheckValues(dut, "", "four");
+}
+
+// N.B. There is no AlphaFive (per ValueCalcFunction API docs).
+
+TEST_F(ValueCalcFunctionTest, BravoTwo) {
+  const ValueCalcFunction dut(&my_class_, kBravo, &MyClass::CalcTwo);
+  CheckValues(dut, "bravo", "two");
+}
+
+TEST_F(ValueCalcFunctionTest, BravoThree) {
+  const ValueCalcFunction dut(kBravo, std::function(CalcThree));
+  CheckValues(dut, "bravo", "three");
+}
+
+TEST_F(ValueCalcFunctionTest, BravoFour) {
+  const ValueCalcFunction dut(kBravo, std::function(CalcFour));
+  CheckValues(dut, "bravo", "four");
+}
+
+TEST_F(ValueCalcFunctionTest, BravoFive) {
+  const ValueCalcFunction dut(kBravo, &CalcFive);
+  CheckValues(dut, "bravo", "five");
+}
+
+TEST_F(ValueCalcFunctionTest, CharlieOne) {
+  const ValueCalcFunction dut(
+      &my_class_, &MyClass::AllocateCharlie, &MyClass::CalcOne);
+  CheckValues(dut, "charlie", "one");
+}
+
+TEST_F(ValueCalcFunctionTest, CharlieTwo) {
+  const ValueCalcFunction dut(
+      &my_class_, &MyClass::AllocateCharlie, &MyClass::CalcTwo);
+  CheckValues(dut, "charlie", "two");
+}
+
+TEST_F(ValueCalcFunctionTest, CharlieThree) {
+  const ValueCalcFunction dut(
+      &my_class_, &MyClass::AllocateCharlie, std::function(CalcThree));
+  CheckValues(dut, "charlie", "three");
+}
+
+TEST_F(ValueCalcFunctionTest, CharlieFour) {
+  const ValueCalcFunction dut(
+      &my_class_, &MyClass::AllocateCharlie, std::function(CalcFour));
+  CheckValues(dut, "charlie", "four");
+}
+
+TEST_F(ValueCalcFunctionTest, CharlieFive) {
+  const ValueCalcFunction dut(&my_class_, &MyClass::AllocateCharlie, &CalcFive);
+  CheckValues(dut, "charlie", "five");
+}
+
+TEST_F(ValueCalcFunctionTest, DeltaOne) {
+  const ValueCalcFunction dut(&my_class_, AllocateDelta, &MyClass::CalcOne);
+  CheckValues(dut, "delta", "one");
+}
+
+TEST_F(ValueCalcFunctionTest, DeltaTwo) {
+  const ValueCalcFunction dut(&my_class_, AllocateDelta, &MyClass::CalcTwo);
+  CheckValues(dut, "delta", "two");
+}
+
+TEST_F(ValueCalcFunctionTest, DeltaThree) {
+  const ValueCalcFunction dut(AllocateDelta, std::function(CalcThree));
+  CheckValues(dut, "delta", "three");
+}
+
+TEST_F(ValueCalcFunctionTest, DeltaFour) {
+  const ValueCalcFunction dut(AllocateDelta, std::function(CalcFour));
+  CheckValues(dut, "delta", "four");
+}
+
+TEST_F(ValueCalcFunctionTest, DeltaFive) {
+  const ValueCalcFunction dut(AllocateDelta, &CalcFive);
+  CheckValues(dut, "delta", "five");
 }
 
 }  // namespace
