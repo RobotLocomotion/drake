@@ -6,11 +6,12 @@ Makes selected VTK headers and precompiled shared libraries available to be
 used as a C++ dependency. On Ubuntu, a VTK archive, built by the project
 maintainers from the Dockerfile and shell scripts in this directory, is
 downloaded and unpacked. On macOS, VTK must be installed from the
-robotlocomotion/director tap (https://git.io/vN6ft) using Homebrew.
+robotlocomotion/director tap
+(https://github.com/RobotLocomotion/homebrew-director) using Homebrew.
 
 Archive naming convention:
-    vtk-<version>-embree-<embree version>-ospray-<ospray version>
-        -python-<python version>-qt-<qt version>-<platform>-<arch>[-<rebuild>]
+    vtk-<version>[-<rebuild>]-python-<python version>-qt-<qt version>
+        -<platform>-<arch>
 
 Example:
     WORKSPACE:
@@ -52,7 +53,7 @@ def _vtk_cc_library(
             visibility = ["//visibility:public"]
 
         for hdr in hdrs:
-            hdr_paths += ["{}/{}".format(includes[0], hdr)]
+            hdr_paths.append("{}/{}".format(includes[0], hdr))
     else:
         includes = []
 
@@ -102,11 +103,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.2.0-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
-            sha256 = "3a4f477b5876777adc016da2147ea42568b7255f889e342d52aca7f441c98e0c"  # noqa
+            archive = "vtk-8.2.0-1-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"
+            sha256 = "d8d8bd13605f065839942d47eb9d556d8aa3f55e5759eb424773d05c46e805ee"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-8.2.0-python-3.8.5-qt-5.12.8-focal-x86_64.tar.gz"  # noqa
-            sha256 = "1ad84551ba119c02b802183a3d3a3aa7e54e55d217d5b7f84a97adfa7c53616f"  # noqa
+            archive = "vtk-8.2.0-1-python-3.8.5-qt-5.12.8-focal-x86_64.tar.gz"
+            sha256 = "927811bbecb1537c7d46c2eb73112ee7d46caf5ff765b5b8951b624ddf7d2928"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -684,7 +685,7 @@ filegroup(
 )
 """
 
-    if repository_ctx.os.name == "mac os x":
+    if os_result.is_macos:
         # Use Homebrew VTK.
         files_to_install = []
     else:

@@ -88,6 +88,7 @@ RUN mkdir -p /vtk-build /opt/vtk \
     /vtk \
   && ninja install/strip \
   && rm -rf /vtk /vtk-build \
+  && find /opt/vtk -name __pycache__ -type d -exec rm -rf {} + \
   && sed --in-place \
     's|VTK_RUNTIME_DIRS "/opt/vtk/bin"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/bin"|g' \
     /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
@@ -101,4 +102,4 @@ RUN mkdir -p /vtk-build /opt/vtk \
     's|VTK_PYTHONPATH "/opt/vtk/lib/python3"|VTK_PYTHONPATH "${VTK_INSTALL_PREFIX}/lib/python3"|g' \
     /opt/vtk/lib/cmake/vtk-*/Modules/vtkPython.cmake
 RUN cd /opt/vtk \
-  && tar --create --gzip --file vtk-8.2.0-python-$(python3 --version | sed --quiet --expression 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed --quiet --expression 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64.tar.gz -- *
+  && tar --create --gzip --file vtk-8.2.0-1-python-$(python3 --version | sed --quiet --expression 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed --quiet --expression 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64.tar.gz -- *
