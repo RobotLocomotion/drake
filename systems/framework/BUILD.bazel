@@ -911,7 +911,6 @@ drake_cc_googletest(
     deps = [
         ":diagram_builder",
         ":system_html",
-        "//examples/manipulation_station",
         "//systems/primitives",
     ],
 )
