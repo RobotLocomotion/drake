@@ -24,7 +24,7 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
   this->DeclareVectorInputPort(kUseDefaultName, Input{});
   this->DeclareAbstractOutputPort(
       kUseDefaultName,
-      []() { return Value<Output>{}.Clone(); },
+      []() { return AbstractValue::Make<Output>(); },
       [this, frame_id](const Context<T>& context, AbstractValue* calculated) {
         const Input& input =
             this->get_input_port().template Eval<Input>(context);

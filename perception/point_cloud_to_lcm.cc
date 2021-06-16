@@ -181,7 +181,7 @@ PointCloudToLcm::PointCloudToLcm(std::string frame_name)
   DeclareAbstractInputPort("point_cloud", Value<PointCloud>());
   DeclareAbstractOutputPort(
       "lcmt_point_cloud",
-      []() { return AbstractValue::Make<lcmt_point_cloud>({}); },
+      []() { return AbstractValue::Make<lcmt_point_cloud>(); },
       [this](const systems::Context<double>& context, AbstractValue* value) {
         auto& cloud = this->get_input_port().template Eval<PointCloud>(context);
         auto& message = value->get_mutable_value<lcmt_point_cloud>();

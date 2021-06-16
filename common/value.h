@@ -70,6 +70,10 @@ class AbstractValue {
 
   virtual ~AbstractValue();
 
+  /// Returns an AbstractValue containing a default-initialized T.
+  template <typename T>
+  static std::unique_ptr<AbstractValue> Make();
+
   /// Returns an AbstractValue containing the given @p value.
   template <typename T>
   static std::unique_ptr<AbstractValue> Make(const T& value);
@@ -640,6 +644,11 @@ struct ValueTraitsImpl<T, false> {
 };
 
 }  // namespace internal
+
+template <typename T>
+std::unique_ptr<AbstractValue> AbstractValue::Make() {
+  return std::unique_ptr<AbstractValue>(new Value<T>());
+}
 
 template <typename T>
 std::unique_ptr<AbstractValue> AbstractValue::Make(const T& value) {
