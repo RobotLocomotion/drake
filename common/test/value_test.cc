@@ -153,6 +153,11 @@ TYPED_TEST(TypedValueTest, Make) {
   EXPECT_EQ(42, abstract_value->template get_value<T>());
 }
 
+GTEST_TEST(TypedValueTest, MakeDefault) {
+  EXPECT_EQ(0, AbstractValue::Make<int>()->get_value<int>());
+  EXPECT_EQ("", AbstractValue::Make<std::string>()->get_value<std::string>());
+}
+
 GTEST_TEST(ValueTest, NiceTypeName) {
   auto double_value = AbstractValue::Make<double>(3.);
   auto string_value = AbstractValue::Make<std::string>("hello");

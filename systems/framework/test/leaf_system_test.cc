@@ -456,7 +456,7 @@ class AllThingsDeprecated final : public LeafSystem<double> {
         &AllThingsDeprecated::MakeInt,
         &AllThingsDeprecated::CalcInt);
     DeclareAbstractOutputPort(
-        []() { return AbstractValue::Make<int>(0); },
+        []() { return AbstractValue::Make<int>(); },
         [](const Context<double>&, AbstractValue*) {});
   }
 
@@ -1836,7 +1836,7 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   OutputPortIndex AddAbstractOutputPort(
       std::optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
     // Dummies.
-    auto alloc = []() { return AbstractValue::Make<int>(0); };
+    auto alloc = []() { return AbstractValue::Make<int>(); };
     auto calc = [](const ContextBase&, AbstractValue*) {};
     if (prerequisites_of_calc) {
       return this->DeclareAbstractOutputPort(
