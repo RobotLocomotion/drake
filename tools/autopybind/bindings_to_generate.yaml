@@ -18,13 +18,20 @@ files:
       drake:
         enums:
           ToleranceType: {}
-  "drake/math/autodiff.h":
+  "drake/common/autodiff.h":
     namespaces:
       drake:
         namespaces:
-          math:
+          common:
             classes:
               AutoDiffXd: {}
+  "drake/lcm/drake_lcm_interface.h":
+    namespaces:
+      drake:
+        namespaces:
+          lcm:
+            classes:
+              DrakeLcmInterface: {}
   "drake/lcm/drake_lcm.h":
     namespaces:
       drake:
@@ -48,7 +55,7 @@ files:
               RotationMatrix:
                 inst: ["double", "drake::AutoDiffXd", "drake::symbolic::Expression"]
               RollPitchYaw:
-                inst: ["double", "drake::AutoDiffXd"]
+                inst: ["double", "drake::AutoDiffXd", "drake::symbolic::Expression"]
   "drake/math/barycentric.h":
     namespaces:
       drake:
@@ -75,6 +82,25 @@ files:
           perception:
             classes:
               PointCloud: {}
+  "drake/systems/sensors/pixel_types.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            namespaces:
+              sensors:
+                enums:
+                  PixelType: {}
+  "drake/systems/sensors/image.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            namespaces:
+              sensors:
+                classes:
+                  Image:
+                    inst: ["drake::systems::sensors::PixelType::kDepth16U"]
   "drake/perception/depth_image_to_point_cloud.h":
     namespaces:
       drake:
@@ -88,7 +114,9 @@ files:
           namespaces:
             symbolic:
               classes:
-                Variable: {}
+                Variable:
+                  enums:
+                    Type: {}
                 Monomial: {}
                 Expression: {}
                 Environment: {}
@@ -100,7 +128,7 @@ files:
           systems:
             classes:
               LeafSystem:
-                inst: ["double", "drake::AutoDiffXd"]
+                inst: ["double", "drake::AutoDiffXd", "drake::symbolic::Expression"]
                 cust_name: ["LeafSystem"]
                 skiplist:
                   member_functions:
@@ -113,10 +141,18 @@ files:
           systems:
             classes:
               System:
-                inst: [double, "drake::AutoDiffXd"]
+                inst: [double, "drake::AutoDiffXd", "drake::symbolic::Expression"]
                 skiplist:
                   member_functions:
                     - AddConstraint
+  "drake/systems/framework/system_visitor.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              SystemVisitor:
+                inst: [double, "drake::AutoDiffXd", "drake::symbolic::Expression"]
   "drake/systems/framework/system_base.h":
     namespaces:
       drake:
@@ -128,6 +164,39 @@ files:
                   member_functions:
                     - AddInputPort
                     - AddOutputPort
+                classes:
+                  ContextSizes: {}
+  "drake/systems/framework/context_base.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              ContextBase: {}
+  "drake/systems/framework/context.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              Context:
+                inst: [double, "drake::AutoDiffXd", "drake::symbolic::Expression"]
+  "drake/systems/framework/diagram_context.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              DiagramContext:
+                inst: [double, "drake::AutoDiffXd", "drake::symbolic::Expression"]
+  "drake/systems/framework/leaf_context.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              LeafContext:
+                inst: [double, "drake::AutoDiffXd", "drake::symbolic::Expression"]
   "drake/systems/framework/framework_common.h":
     namespaces:
       drake:
@@ -136,7 +205,15 @@ files:
             namespaces:
               internal:
                 classes:
+                  ContextMessageInterface: {}
                   SystemMessageInterface: {}
+  "drake/geometry/shape_specification.h":
+    namespaces:
+      drake:
+        namespaces:
+          geometry:
+            classes:
+              ShapeReifier: {}
   "drake/geometry/render/render_engine.h":
     namespaces:
       drake:
@@ -151,17 +228,42 @@ files:
                   DepthRange: {}
                   DepthRenderCamera: {}
                   RenderEngine: {}
-  # This stanza fails to build because generated headers for
-  # lcm structs are not found.
-  # "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h":
-  #   namespaces:
-  #     drake:
-  #       namespaces:
-  #         manipulation:
-  #           namespaces:
-  #             kuka_iiwa:
-  #               classes:
-  #                 IiwaCommandReceiver: {}
+  "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h":
+    namespaces:
+      drake:
+        namespaces:
+          manipulation:
+            namespaces:
+              kuka_iiwa:
+                classes:
+                  IiwaCommandReceiver: {}
+  "drake/manipulation/kuka_iiwa/iiwa_command_sender.h":
+    namespaces:
+      drake:
+        namespaces:
+          manipulation:
+            namespaces:
+              kuka_iiwa:
+                classes:
+                  IiwaCommandSender: {}
+  "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h":
+    namespaces:
+      drake:
+        namespaces:
+          manipulation:
+            namespaces:
+              kuka_iiwa:
+                classes:
+                  IiwaStatusReceiver: {}
+  "drake/manipulation/kuka_iiwa/iiwa_status_sender.h":
+    namespaces:
+      drake:
+        namespaces:
+          manipulation:
+            namespaces:
+              kuka_iiwa:
+                classes:
+                  IiwaStatusSender: {}
   "drake/solvers/evaluator_base.h":
     namespaces:
       drake:

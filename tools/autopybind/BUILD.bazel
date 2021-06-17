@@ -17,7 +17,7 @@ generate_autopybind11_rsp_file(
     header_archive = "libdrake_headers.tar",
     rsp_file = "libdrake_compile_info.rsp",
     targets = [
-        "//lcmtypes::lcmtypes_drake_cc",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//tools/install/libdrake:drake_headers",
         "//examples/compass_gait:compass_gait",
         "//examples/manipulation_station:manipulation_station",

@@ -1,5 +1,5 @@
 ---
-private_members: true
+private_members_as_fields: false
 enable_doc_strings: false
 pass_eigen_by_ref: false
 use_eigen_return_policy: false
