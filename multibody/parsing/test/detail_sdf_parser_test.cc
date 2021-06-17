@@ -1486,16 +1486,8 @@ GTEST_TEST(SdfParser, ModelPlacementFrame) {
   ASSERT_TRUE(plant->HasModelInstanceNamed("table::mug"));
   ModelInstanceIndex model_m = plant->GetModelInstanceByName("table::mug");
 
-  ASSERT_TRUE(plant->HasFrameNamed("mug"));
-  const Frame<double>& frame_M = plant->GetFrameByName("mug");
   ASSERT_TRUE(plant->HasFrameNamed("__model__", model_m));
-  // frame M is equivalent to mug::__model__
-  EXPECT_TRUE(CompareMatrices(
-      plant->GetFrameByName("__model__", model_m)
-          .CalcPoseInWorld(*context)
-          .GetAsMatrix4(),
-      plant->GetFrameByName("mug").CalcPoseInWorld(*context).GetAsMatrix4(),
-      kEps));
+  const Frame<double>& frame_M = plant->GetFrameByName("__model__", model_m);
 
   ASSERT_TRUE(plant->HasFrameNamed("table_top"));
   const Frame<double>& frame_S = plant->GetFrameByName("table_top");
