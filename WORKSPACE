@@ -3,6 +3,8 @@
 # This file marks a workspace root for the Bazel build system. see
 # https://bazel.build/ .
 
+fail("Disable CI")
+
 workspace(name = "drake")
 
 load("//tools/workspace:default.bzl", "add_default_workspace")
