@@ -66,6 +66,7 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//lcmtypes:jaco",
+        "//manipulation/kinova_jaco:jaco_constants",
         "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
         "@lcm",

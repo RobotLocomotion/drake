@@ -11,6 +11,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/lcmt_jaco_status.hpp"
+#include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/manipulation/util/move_ik_demo_base.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -37,6 +38,7 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
+using manipulation::kinova_jaco::kFingerSdkToUrdf;
 using manipulation::util::MoveIkDemoBase;
 
 const char kUrdfPath[] =
@@ -63,7 +65,8 @@ int DoMain() {
         }
 
         for (int i = 0; i < status->num_fingers; i++) {
-          jaco_q[status->num_joints + i] = status->finger_position[i];
+          jaco_q[status->num_joints + i] =
+              status->finger_position[i] * kFingerSdkToUrdf;
         }
         demo.HandleStatus(jaco_q);
         if (demo.status_count() == 1) {
