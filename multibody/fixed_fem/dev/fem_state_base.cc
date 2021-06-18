@@ -36,12 +36,12 @@ void FemStateBase<T>::ApplyBoundaryCondition(
   bc.VerifyBcIndexes(this->num_generalized_positions());
   /* Write the BC to the mutable state. */
   for (const auto& [dof_index, boundary_state] : bcs) {
-    q_(dof_index) = boundary_state(0);
+    q_(int{dof_index}) = boundary_state(0);
     if (ode_order() >= 1) {
-      qdot_(dof_index) = boundary_state(1);
+      qdot_(int{dof_index}) = boundary_state(1);
     }
     if (ode_order() == 2) {
-      qddot_(dof_index) = boundary_state(2);
+      qddot_(int{dof_index}) = boundary_state(2);
     }
   }
 }

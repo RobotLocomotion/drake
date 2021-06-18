@@ -768,7 +768,7 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
     // This method assumes actuators on single dof joints. Assert this
     // condition.
     DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
-    B(actuator.joint().velocity_start(), actuator.index()) = 1;
+    B(actuator.joint().velocity_start(), int{actuator.index()}) = 1;
   }
   return B;
 }
