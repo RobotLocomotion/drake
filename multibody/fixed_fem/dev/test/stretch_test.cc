@@ -94,17 +94,18 @@ class StretchTest : public ::testing::Test {
       const DofIndex y_dof_index(kSolutionDimension * node + 1);
       const DofIndex z_dof_index(kSolutionDimension * node + 2);
       /* No translation in the xz-plane. */
-      if (std::abs(q(x_dof_index)) <= kTol) {
-        bc->AddBoundaryCondition(x_dof_index, Vector1<T>(q(x_dof_index)));
+      if (std::abs(q(int{x_dof_index})) <= kTol) {
+        bc->AddBoundaryCondition(x_dof_index, Vector1<T>(q(int{x_dof_index})));
       }
       /* Stretch the two ends of the bar in y-direction. */
-      if (std::abs(std::abs(q(y_dof_index)) - std::abs(kLy / 2)) <= kTol) {
+      if (std::abs(std::abs(q(int{y_dof_index})) - std::abs(kLy / 2)) <= kTol) {
         bc->AddBoundaryCondition(y_dof_index,
-                                 Vector1<T>(kStretchFactor * q(y_dof_index)));
+                                 Vector1<T>(
+                                     kStretchFactor * q(int{y_dof_index})));
       }
       /* No translation in the xz-plane. */
-      if (std::abs(q(z_dof_index)) <= kTol) {
-        bc->AddBoundaryCondition(z_dof_index, Vector1<T>(q(z_dof_index)));
+      if (std::abs(q(int{z_dof_index})) <= kTol) {
+        bc->AddBoundaryCondition(z_dof_index, Vector1<T>(q(int{z_dof_index})));
       }
     }
     return bc;
