@@ -170,7 +170,7 @@ boolean<T> BsplineTrajectory<T>::operator==(
       this->cols() == other.cols()) {
     boolean<T> result{true};
     for (int i = 0; i < this->num_control_points(); ++i) {
-      result = result && all(this->control_points()[i].array() ==
+      result = result && drake::all(this->control_points()[i].array() ==
                              other.control_points()[i].array());
       if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
         break;
