@@ -108,7 +108,7 @@ class DirichletBoundaryCondition {
      */
     for (const auto& it : bcs_) {
       const DofIndex dof_index = it.first;
-      (*residual)(dof_index) = 0;
+      (*residual)(int{dof_index}) = 0;
     }
   }
 

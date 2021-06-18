@@ -2936,7 +2936,7 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
       MatrixX<double>::Zero(num_actuated_dofs(), num_selected_actuators);
   int user_index = 0;
   for (JointActuatorIndex actuator_index : user_to_actuator_index_map) {
-    Su(actuator_index, user_index) = 1.0;
+    Su(int{actuator_index}, user_index) = 1.0;
     ++user_index;
   }
 

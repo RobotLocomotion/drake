@@ -110,8 +110,8 @@ void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
       (*prog_sol)(i) = std::get<double>(sdpa_free_format.prog_var_in_sdpa()[i]);
     } else if (std::holds_alternative<SdpaFreeFormat::FreeVariableIndex>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
-      (*prog_sol)(i) = s_val(std::get<SdpaFreeFormat::FreeVariableIndex>(
-          sdpa_free_format.prog_var_in_sdpa()[i]));
+      (*prog_sol)(i) = s_val(int{std::get<SdpaFreeFormat::FreeVariableIndex>(
+          sdpa_free_format.prog_var_in_sdpa()[i])});
     }
   }
 }
