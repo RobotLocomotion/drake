@@ -32,27 +32,33 @@ class ScrewMobilizerTest : public MobilizerTester {
   void SetUp() override {
     mobilizer_ =
         &AddMobilizerAndFinalize(std::make_unique<ScrewMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame(), kScrewPitch));
+            tree().world_body().body_frame(),
+            body_->body_frame(), kScrewPitch));
   }
 
  protected:
   const ScrewMobilizer<double>* mobilizer_{nullptr};
 };
 
-// Verifies method to mutate and access the context.
-TEST_F(ScrewMobilizerTest, StateAccess) {
-  const double translation_z_first{1.};
-  const double translation_z_second{2.};
-  const double angle_z_first{1. * 180. / M_PI};
-  const double angle_z_second{2. * 180. / M_PI};
+TEST_F(ScrewMobilizerTest, ScrewPitchAccess) {
+  EXPECT_EQ(mobilizer_->screw_pitch(), kScrewPitch);
+}
 
+TEST_F(ScrewMobilizerTest, StateAccess) {
   // Verify we can set a screw mobilizer configuration given the model's
   // context.
+  const double translation_z_first{1.};
+  const double translation_z_second{2.};
+  const double angle_z_second{translation_z_second  * 2 * M_PI / kScrewPitch};
+
   mobilizer_->set_translation(context_.get(), translation_z_first);
   EXPECT_EQ(mobilizer_->get_translation(*context_), translation_z_first);
 
   mobilizer_->set_translation(context_.get(), translation_z_second);
   EXPECT_EQ(mobilizer_->get_translation(*context_), translation_z_second);
+  EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_second);
+
+  const double angle_z_first{1. * 180. / M_PI};
 
   mobilizer_->set_angle(context_.get(), angle_z_first);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_first);
@@ -60,39 +66,46 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
   mobilizer_->set_angle(context_.get(), angle_z_second);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_second);
 
+  const double velocity_z_first{1.};
+  const double velocity_z_second{2.};
+  const double angular_velocity_z_second{
+    velocity_z_second * 2 * M_PI / kScrewPitch};
+
   // Verify we can set a screw mobilizer velocities given the model's context.
-  mobilizer_->set_translation_rate(context_.get(), translation_z_first);
-  EXPECT_EQ(mobilizer_->get_translation_rate(*context_), translation_z_first);
+  mobilizer_->set_translation_rate(context_.get(), velocity_z_first);
+  EXPECT_EQ(mobilizer_->get_translation_rate(*context_), velocity_z_first);
 
-  mobilizer_->set_translation_rate(context_.get(), translation_z_second);
-  EXPECT_EQ(mobilizer_->get_translation_rate(*context_), translation_z_second);
+  mobilizer_->set_translation_rate(context_.get(), velocity_z_second);
+  EXPECT_EQ(mobilizer_->get_translation_rate(*context_), velocity_z_second);
+  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z_second);
 
-  mobilizer_->set_angular_rate(context_.get(), angle_z_first);
-  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angle_z_first);
+  const double angular_velocity_z_first{1. * 180. / M_PI};
 
-  mobilizer_->set_angular_rate(context_.get(), angle_z_second);
-  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angle_z_second);
+  mobilizer_->set_angular_rate(context_.get(), angular_velocity_z_first);
+  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z_first);
+
+  mobilizer_->set_angular_rate(context_.get(), angular_velocity_z_second);
+  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z_second);
 }
 
 TEST_F(ScrewMobilizerTest, ZeroState) {
-  const double angle_z_first{1. * 180. / M_PI};
-  const double angle_z_second{2. * 180. / M_PI};
+  const double angle_z{1. * 180. / M_PI};
+  const double angular_velocity_z{2. * 180. / M_PI};
 
-  const double derived_translation_z_first{angle_z_first /
-                                           (2 * M_PI) * kScrewPitch};
-  const double derived_translation_z_second{angle_z_second /
-                                            (2 * M_PI) * kScrewPitch};
+  const double translation_z{angle_z * kScrewPitch / (2. * M_PI)};
+  const double velocity_z{angular_velocity_z * kScrewPitch / (2. * M_PI)};
 
   // Set the state to some arbitrary non-zero value.
-  mobilizer_->set_angle(context_.get(), angle_z_first);
-  mobilizer_->set_angular_rate(context_.get(), angle_z_second);
-  EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_first);
-  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angle_z_second);
-  EXPECT_EQ(mobilizer_->get_translation(*context_), derived_translation_z_first);
-  EXPECT_EQ(mobilizer_->get_translation_rate(*context_), derived_translation_z_second);
+  mobilizer_->set_angle(context_.get(), angle_z);
+  mobilizer_->set_angular_rate(context_.get(), angular_velocity_z);
+  EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z);
+  EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z);
+  EXPECT_LE(std::fabs(mobilizer_->get_translation(*context_) - translation_z),
+            kTolerance);
+  EXPECT_LE(std::fabs(mobilizer_->get_translation_rate(*context_) - velocity_z),
+            kTolerance);
 
-  // Set the "zero state" for this mobilizer, which does happen to be that of
-  // zero position and velocity.
+  // Set the mobilizer state to zero.
   mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
   EXPECT_EQ(mobilizer_->get_translation(*context_), 0.0);
   EXPECT_EQ(mobilizer_->get_translation_rate(*context_), 0.0);
@@ -124,7 +137,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
       &mutable_tree().get_mutable_variant(*mobilizer_);
 
   // Default behavior is to set to zero.
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
                                       &generator);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
@@ -132,7 +145,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   // Set position to be random, but not velocity (yet).
   mutable_mobilizer->set_random_position_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 1.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
       &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 1.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
@@ -140,7 +153,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   // Set the velocity distribution.  Now both should be random.
   mutable_mobilizer->set_random_velocity_distribution(
       Vector1<symbolic::Expression>(uniform(generator) - 1.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
       &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 1.0);
   EXPECT_GE(mobilizer_->get_angular_rate(*context_), -1.0);
@@ -151,7 +164,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
       *context_);
   const double last_angle = mobilizer_->get_angle(*context_);
   const double last_angular_rate = mobilizer_->get_angular_rate(*context_);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
                                       &generator);
   EXPECT_NE(mobilizer_->get_translation(*context_), last_translation);
   EXPECT_NE(mobilizer_->get_translation_rate(*context_),
@@ -223,7 +236,7 @@ TEST_F(ScrewMobilizerTest, ProjectSpatialForce) {
   Vector1d tau;
   mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
-  const Vector1d tau_expected(torque_Mo_F[2]);
+  const Vector1d tau_expected(torque_Mo_F[2] + kScrewPitch * force_Mo_F[2]);
   EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance,
                               MatrixCompareType::relative));
 }

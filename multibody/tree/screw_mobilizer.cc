@@ -14,13 +14,16 @@ const T ScrewMobilizer<T>::get_translation(
     const systems::Context<T>& context) const {
   auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  return get_screw_translation_from_rotation(q.coeffRef(0), screw_pitch_);
+  return get_screw_translation_from_rotation(q[0], screw_pitch_);
 }
 
 template <typename T>
 const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation(
     systems::Context<T>* context,
     const T& translation) const {
+  const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
+  DRAKE_THROW_UNLESS(std::fabs(screw_pitch_) > kEpsilon ||
+                     abs(translation) < kEpsilon);
   auto q = this->get_mutable_positions(&*context);
   DRAKE_ASSERT(q.size() == kNq);
   q[0] = get_screw_rotation_from_translation(translation, screw_pitch_);
@@ -28,11 +31,11 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation(
 }
 
 template <typename T>
-const T& ScrewMobilizer<T>::get_angle(
+T ScrewMobilizer<T>::get_angle(
     const systems::Context<T>& context) const {
   auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  return q.coeffRef(0);
+  return q[0];
 }
 
 template <typename T>
@@ -47,15 +50,19 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angle(
 template <typename T>
 const T ScrewMobilizer<T>::get_translation_rate(
     const systems::Context<T>& context) const {
-  const auto& v = this->get_velocities(context);
+  auto v = this->get_velocities(context);
   DRAKE_ASSERT(v.size() == kNv);
-  return get_screw_translation_from_rotation(v.coeffRef(0), screw_pitch_);
+  return get_screw_translation_from_rotation(v[0], screw_pitch_);
 }
 
 template <typename T>
 const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation_rate(
     systems::Context<T>* context,
     const T& v_FM_F) const {
+  const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
+  DRAKE_THROW_UNLESS(std::fabs(screw_pitch_) > kEpsilon ||
+                     abs(v_FM_F) < kEpsilon);
+
   auto v = this->get_mutable_velocities(&*context);
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = get_screw_rotation_from_translation(v_FM_F, screw_pitch_);
@@ -64,11 +71,11 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation_rate(
 }
 
 template <typename T>
-const T& ScrewMobilizer<T>::get_angular_rate(
+T ScrewMobilizer<T>::get_angular_rate(
     const systems::Context<T>& context) const {
-  const auto& v = this->get_velocities(context);
+  auto v = this->get_velocities(context);
   DRAKE_ASSERT(v.size() == kNv);
-  return v.coeffRef(0);
+  return v[0];
 }
 
 template <typename T>
@@ -85,8 +92,8 @@ math::RigidTransform<T> ScrewMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
-  Vector3<T> X_FM_translation;
-  X_FM_translation << 0.0, 0.0, get_screw_translation_from_rotation(q[0], screw_pitch_);
+  const Vector3<T> X_FM_translation(0.0, 0.0,
+      get_screw_translation_from_rotation(q[0], screw_pitch_));
   return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[0]),
                                  X_FM_translation);
 }
@@ -96,9 +103,9 @@ SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
   Vector6<T> V_FM_vector;
-  V_FM_vector << 0.0, 0.0,
-                 get_screw_rotation_from_translation(v[0], screw_pitch_),
-                 0.0, 0.0, v[0];
+  V_FM_vector <<
+    0.0, 0.0, get_screw_rotation_from_translation(v[0], screw_pitch_),
+    0.0, 0.0, v[0];
   return SpatialVelocity<T>(V_FM_vector);
 }
 
@@ -119,7 +126,7 @@ void ScrewMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
                                              const SpatialForce<T>& F_Mo_F,
                                              Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau[0] = F_Mo_F.rotational()[2];
+  tau[0] = F_Mo_F.rotational()[2] + screw_pitch() * F_Mo_F.translational()[2];
 }
 
 template <typename T>
