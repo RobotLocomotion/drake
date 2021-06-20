@@ -8,9 +8,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/solver_type_converter.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Vector4d;
@@ -122,12 +123,10 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
 
 void QuadraticProgram0::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const SolverType solver_type =
-      SolverTypeConverter::IdToType(result.get_solver_id()).value();
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  if (solver_type == SolverType::kGurobi) {
+  double tol = GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
+  if (result.get_solver_id() == GurobiSolver::id()) {
     tol = 1E-8;
-  } else if (solver_type == SolverType::kMosek) {
+  } else if (result.get_solver_id() == MosekSolver::id()) {
     // TODO(hongkai.dai): the default parameter in Mosek 8 generates low
     // accuracy solution. We should set the accuracy tolerance
     // MSK_DPARAM_INTPNT_QO_REL_TOL_GAP to 1E-10 to improve the accuracy.
@@ -213,12 +212,10 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
 
 void QuadraticProgram1::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const SolverType solver_type =
-      SolverTypeConverter::IdToType(result.get_solver_id()).value();
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  if (solver_type == SolverType::kGurobi) {
+  double tol = GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
+  if (result.get_solver_id() == GurobiSolver::id()) {
     tol = 1E-8;
-  } else if (solver_type == SolverType::kMosek) {
+  } else if (result.get_solver_id() == MosekSolver::id()) {
     tol = 1E-7;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
@@ -256,14 +253,12 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
 
 void QuadraticProgram2::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const SolverType solver_type =
-      SolverTypeConverter::IdToType(result.get_solver_id()).value();
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  if (solver_type == SolverType::kMosek) {
+  double tol = GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
+  if (result.get_solver_id() == MosekSolver::id()) {
     tol = 1E-8;
-  } else if (solver_type == SolverType::kSnopt) {
+  } else if (result.get_solver_id() == SnoptSolver::id()) {
     tol = 1E-6;
-  } else if (solver_type == SolverType::kClp) {
+  } else if (result.get_solver_id() == ClpSolver::id()) {
     tol = 2E-8;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
@@ -319,10 +314,8 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
 
 void QuadraticProgram3::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const SolverType solver_type =
-      SolverTypeConverter::IdToType(result.get_solver_id()).value();
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  if (solver_type == SolverType::kMosek) {
+  double tol = GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
+  if (result.get_solver_id() == MosekSolver::id()) {
     tol = 1E-8;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
@@ -374,10 +367,8 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
 
 void QuadraticProgram4::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const SolverType solver_type =
-      SolverTypeConverter::IdToType(result.get_solver_id()).value();
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  if (solver_type == SolverType::kMosek) {
+  double tol = GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
+  if (result.get_solver_id() == MosekSolver::id()) {
     tol = 1E-8;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
@@ -434,10 +425,8 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
         RunSolver(prog, solver, initial_guess);
     const auto& x_value = result.GetSolution(x);
 
-    const SolverType solver_type =
-        SolverTypeConverter::IdToType(result.get_solver_id()).value();
     double tol = 1E-4;
-    if (solver_type == SolverType::kMosek) {
+    if (result.get_solver_id() == MosekSolver::id()) {
       // Regression from MOSEK 8.1 to MOSEK 9.2.
       tol = 2E-4;
     }
