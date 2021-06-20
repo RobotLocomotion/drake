@@ -317,21 +317,15 @@ GTEST_TEST(SystemScalarConverterTest, Remove) {
   EXPECT_TRUE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // We remove symbolic support.  Only double <=> AutoDiff remains.
-  dut.Remove<symbolic::Expression>();
+  dut.Remove<double,     Expression>();
+  dut.Remove<AutoDiffXd, Expression>();
+  dut.Remove<Expression, double    >();
+  dut.Remove<Expression, AutoDiffXd>();
   EXPECT_TRUE((dut.IsConvertible< double,     AutoDiffXd>()));
-  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
   EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
-  EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
-
-  // We remove double => AutoDiff support.  Only double <= AutoDiff remains.
-  dut.Remove<double, AutoDiffXd>();
-  EXPECT_FALSE((dut.IsConvertible<double, AutoDiffXd>()));
-  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
-  EXPECT_FALSE((dut.IsConvertible<double, Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<Expression, double>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // The conversion still actually works.

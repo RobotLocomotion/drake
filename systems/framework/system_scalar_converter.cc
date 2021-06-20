@@ -31,31 +31,9 @@ void SystemScalarConverter::Insert(
   DRAKE_ASSERT(insert_result.second);
 }
 
-void SystemScalarConverter::Remove(const std::type_info& t_info) {
-  // Remove the items from `funcs_` whose key contains the type `T` that
-  // matches `t_info`. (This would use erase_if, if we had it.)
-  for (auto iter = funcs_.begin(); iter != funcs_.end();) {
-    const Key& key = iter->first;
-    if (key.first == t_info || key.second == t_info) {
-      iter = funcs_.erase(iter);
-    } else {
-      ++iter;
-    }
-  }
-}
-
 void SystemScalarConverter::Remove(const std::type_info& t_info,
                                    const std::type_info& u_info) {
-  // Remove the items from `funcs_` whose key contains the pair {T, U} that
-  // matches `t_info` and `u_info`. (This would use erase_if, if we had it.)
-  for (auto iter = funcs_.begin(); iter != funcs_.end();) {
-    const Key& key = iter->first;
-    if (key.first == t_info && key.second == u_info) {
-      iter = funcs_.erase(iter);
-    } else {
-      ++iter;
-    }
-  }
+  funcs_.erase(Key(t_info, u_info));
 }
 
 const SystemScalarConverter::ErasedConverterFunc* SystemScalarConverter::Find(
