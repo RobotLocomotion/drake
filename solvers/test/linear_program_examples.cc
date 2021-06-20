@@ -5,7 +5,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/solvers/solver_type_converter.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Vector4d;
@@ -135,7 +136,7 @@ LinearProgram0::LinearProgram0(CostForm cost_form,
 void LinearProgram0::CheckSolution(
     const MathematicalProgramResult& result) const {
   const double tol = GetSolverSolutionDefaultCompareTolerance(
-      SolverTypeConverter::IdToType(result.get_solver_id()).value());
+      result.get_solver_id());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
@@ -178,7 +179,7 @@ LinearProgram1::LinearProgram1(CostForm cost_form,
 void LinearProgram1::CheckSolution(
     const MathematicalProgramResult& result) const {
   const double tol = GetSolverSolutionDefaultCompareTolerance(
-      SolverTypeConverter::IdToType(result.get_solver_id()).value());
+      result.get_solver_id());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
@@ -268,7 +269,7 @@ LinearProgram2::LinearProgram2(CostForm cost_form,
 void LinearProgram2::CheckSolution(
     const MathematicalProgramResult& result) const {
   const double tol = GetSolverSolutionDefaultCompareTolerance(
-      SolverTypeConverter::IdToType(result.get_solver_id()).value());
+      result.get_solver_id());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
@@ -342,15 +343,13 @@ LinearProgram3::LinearProgram3(CostForm cost_form,
 void LinearProgram3::CheckSolution(
     const MathematicalProgramResult& result) const {
   // Mosek has a looser tolerance.
-  const SolverType solver_type =
-      SolverTypeConverter::IdToType(result.get_solver_id()).value();
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  if (solver_type == SolverType::kMosek) {
+  double tol = GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
+  if (result.get_solver_id() == MosekSolver::id()) {
     tol = 1E-6;
   }
   // Ipopt has a looser objective tolerance
   double cost_tol = tol;
-  if (solver_type == SolverType::kIpopt) {
+  if (result.get_solver_id() == IpoptSolver::id()) {
     cost_tol = 1E-5;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
