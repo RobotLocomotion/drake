@@ -136,12 +136,6 @@ class SystemScalarConverter {
   /// is false.  The subtype `S` need not be the same between this and `other`.
   void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);
 
-  /// Removes from this converter the ability to convert to or from System<T>.
-  template <typename T>
-  void Remove() {
-    Remove(typeid(T));
-  }
-
   /// Removes from this converter the ability to convert from System<U> to
   /// System<T>.
   template <typename T, typename U>
@@ -190,9 +184,6 @@ class SystemScalarConverter {
   void Insert(
       const std::type_info&, const std::type_info&,
       const ErasedConverterFunc&);
-
-  // Given typeid(T), removes the converter from or to T.
-  void Remove(const std::type_info&);
 
   // Given typeid(T) and typeid(U), removes the converter from U to T.
   void Remove(const std::type_info& t_info, const std::type_info& u_info);
