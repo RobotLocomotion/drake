@@ -14,13 +14,15 @@ namespace internal {
  Deforming a mesh can be a dangerous proposition if that mesh is accessed or
  referenced by some other class (e.g., MeshFieldLinear). Deforming the mesh can
  cause downstream dependencies to become invalid. Meshes should only be deformed
- by those who own all downstream dependencies and update them accordingly. */
+ by those who own all downstream dependencies and update them accordingly.
+
+ This class cannot be moved or copied. It is assumed upon creation that it will
+ be permanently associated with a *specific* MeshType instance and maintain that
+ association for its entire lifetime (see DeformableVolumeMesh as an example).
+ */
 template <typename MeshType>
 class MeshDeformer {
  public:
-  // Note: Because this contains a reference to some entity not owned by this
-  // class, copy and move semantics are problematic. We'll force users of this
-  // class to handle the semantics -- that is what the set_mesh() method is for.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshDeformer);
 
   /* The type of index used for referencing vertices in `MeshType`. */
@@ -38,12 +40,6 @@ class MeshDeformer {
    @pre `mesh_M != nullptr`. */
   explicit MeshDeformer(MeshType* mesh_M) : mesh_(*mesh_M) {
     DRAKE_DEMAND(mesh_M != nullptr);
-  }
-
-  /* Sets the mesh for this deformer. */
-  void set_mesh(MeshType* mesh_M) {
-    DRAKE_DEMAND(mesh_M != nullptr);
-    mesh_ = *mesh_M;
   }
 
   /* Getter for the *const* version of the mesh to be deformed. */
