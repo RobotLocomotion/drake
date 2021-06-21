@@ -17,7 +17,7 @@ struct PgsSolverParameters {
   // VerifyConvergenceCriteria().
   double rel_tolerance{1.0e-4};
   // Maximum number of PGS iterations.
-  int max_iterations{20};
+  int max_iterations{100};
 };
 
 struct PgsSolverStats {
@@ -92,6 +92,9 @@ class PgsSolver final : public ContactSolver<T> {
   struct PreProcessedData {
     // The Delassus operator.
     Eigen::SparseMatrix<T> W;
+    // The row major form of the Delassus operator used in the Gauss-Seidel
+    // iterations for better locality.
+    Eigen::SparseMatrix<T, Eigen::RowMajor> W_row_major;
     // The contact velocity solution to the problem when there is no contact.
     VectorX<T> vc_star;
     // The generalized velocities before the solve.
