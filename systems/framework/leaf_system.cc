@@ -331,7 +331,7 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
   scratch_cache_index_ =
       this->DeclareCacheEntry(
           "scratch",
-          []() { return AbstractValue::Make(Scratch<T>{}); },
+          []() { return AbstractValue::Make<Scratch<T>>(); },
           [](const ContextBase&, AbstractValue*) { /* do nothing */ },
           {this->nothing_ticket()}).cache_index();
 

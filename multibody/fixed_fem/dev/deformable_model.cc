@@ -130,7 +130,7 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   /* Declare output ports. */
   vertex_positions_port_ = &this->DeclareAbstractOutputPort(
       plant, "vertex_positions",
-      []() { return AbstractValue::Make(std::vector<VectorX<T>>{}); },
+      []() { return AbstractValue::Make<std::vector<VectorX<T>>>(); },
       [this](const systems::Context<T>& context, AbstractValue* output) {
         std::vector<VectorX<T>>& output_value =
             output->get_mutable_value<std::vector<VectorX<T>>>();

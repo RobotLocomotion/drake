@@ -54,7 +54,7 @@ PYBIND11_MODULE(value_test_util, m) {
   AddValueInstantiation<std::vector<CustomType>>(m);
 
   m.def("make_abstract_value_cc_type_unregistered",
-      []() { return AbstractValue::Make(UnregisteredType{}); });
+      []() { return AbstractValue::Make<UnregisteredType>(); });
 }
 
 }  // namespace pydrake

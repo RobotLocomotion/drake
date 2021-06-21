@@ -482,7 +482,7 @@ class CacheEntryValue {
   // Default constructor can only be used privately to construct an empty
   // CacheEntryValue with description "DUMMY" and a meaningless value.
   CacheEntryValue()
-      : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {}
+      : description_("DUMMY"), value_(AbstractValue::Make<int>()) {}
 
   // Creates a new cache value with the given human-readable description and
   // (optionally) an abstract value that defines the right concrete type for
