@@ -159,6 +159,39 @@ class TestSystemsLcm(unittest.TestCase):
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
 
+    class PythonMessageSource(LeafSystem):
+        """A source system whose output port contains a Python lcmt_header."""
+
+        def __init__(self):
+            LeafSystem.__init__(self)
+            self.DeclareAbstractOutputPort(
+                "output", self.AllocateOutput, self.CalcOutput)
+
+        def AllocateOutput(self):
+            return AbstractValue.Make(lcmt_header())
+
+        def CalcOutput(self, context, output):
+            message = output.get_mutable_value()
+            message.utime = int(context.get_time() * 1e6)
+            message.frame_name = "frame_name"
+
+    def test_diagram_publisher(self):
+        """Acceptance tests that a Python LeafSystem is able to output LCM
+        messages for LcmPublisherSystem to transmit.
+        """
+        lcm = DrakeLcm()
+        builder = DiagramBuilder()
+        source = builder.AddSystem(TestSystemsLcm.PythonMessageSource())
+        publisher = builder.AddSystem(
+            mut.LcmPublisherSystem.Make(
+                channel="LCMT_HEADER",
+                lcm_type=lcmt_header,
+                lcm=lcm,
+                publish_period=0.05))
+        builder.Connect(source.get_output_port(), publisher.get_input_port())
+        diagram = builder.Build()
+        diagram.Publish(diagram.CreateDefaultContext())
+
     def test_connect_lcm_scope(self):
         builder = DiagramBuilder()
         source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
