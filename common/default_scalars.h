@@ -104,4 +104,48 @@ extern template SomeType<::drake::symbolic::Expression>;
 extern template SomeType<double>; \
 extern template SomeType<::drake::AutoDiffXd>;
 
+/// Defines template instantiations for Drake's default scalars.
+/// This should only be used in .cc files, never in .h files.
+#define DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto MakeFunctionPointers() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto MakeFunctionPointersPack2() { \
+  return std::tuple_cat(MakeFunctionPointers<T, Us>()...); \
+} \
+template<typename... Ts> \
+constexpr auto MakeFunctionPointersPack1() { \
+  return std::tuple_cat(MakeFunctionPointersPack2<Ts, Ts...>()...); \
+} \
+static constexpr auto function_templates __attribute__((used)) = \
+    MakeFunctionPointersPack1< \
+        double, \
+        ::drake::AutoDiffXd, \
+        ::drake::symbolic::Expression>();
+
+/// Defines template instantiations for Drake's default nonsymbolic scalars.
+/// This should only be used in .cc files, never in .h files.
+#define \
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS( \
+    FunctionPointersTuple) \
+template<typename T, typename U> \
+constexpr auto MakeFunctionPointers() { \
+  return std::make_tuple FunctionPointersTuple ; \
+} \
+template<typename T, typename... Us> \
+constexpr auto MakeFunctionPointersPack2() { \
+  return std::tuple_cat(MakeFunctionPointers<T, Us>()...); \
+} \
+template<typename... Ts> \
+constexpr auto MakeFunctionPointersPack1() { \
+  return std::tuple_cat(MakeFunctionPointersPack2<Ts, Ts...>()...); \
+} \
+static constexpr auto function_templates __attribute__((used)) = \
+    MakeFunctionPointersPack1< \
+        double, \
+        ::drake::AutoDiffXd>();
+
 /// @}

@@ -3,6 +3,7 @@
 #include <array>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -226,43 +227,11 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
   return ComputeContactSurface(id_S, field_S, id_R, plane_S, tet_indices, X_WS);
 }
 
-template void SliceTetWithPlane<double>(
-    VolumeElementIndex, const VolumeMeshFieldLinear<double, double>&,
-    const Plane<double>&, const math::RigidTransform<double>&,
-    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<double>>*,
-    std::vector<double>*,
-    std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>*);
-
-template void SliceTetWithPlane<AutoDiffXd>(
-    VolumeElementIndex, const VolumeMeshFieldLinear<double, double>&,
-    const Plane<AutoDiffXd>&, const math::RigidTransform<AutoDiffXd>&,
-    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<AutoDiffXd>>*,
-    std::vector<AutoDiffXd>*,
-    std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>*);
-
-template std::unique_ptr<ContactSurface<double>> ComputeContactSurface(
-    GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    GeometryId plane_id, const Plane<double>&,
-    const std::vector<VolumeElementIndex>, const math::RigidTransform<double>&);
-
-template std::unique_ptr<ContactSurface<AutoDiffXd>> ComputeContactSurface(
-    GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    GeometryId plane_id, const Plane<AutoDiffXd>&,
-    const std::vector<VolumeElementIndex>,
-    const math::RigidTransform<AutoDiffXd>&);
-
-template std::unique_ptr<ContactSurface<double>>
-ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<Obb, VolumeMesh<double>>&, const math::RigidTransform<double>&,
-    const GeometryId, const math::RigidTransform<double>&);
-
-template std::unique_ptr<ContactSurface<AutoDiffXd>>
-ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<Obb, VolumeMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const math::RigidTransform<AutoDiffXd>&);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ComputeContactSurface<T>,
+    &ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>,
+    &SliceTetWithPlane<T>
+))
 
 }  // namespace internal
 }  // namespace geometry
