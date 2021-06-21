@@ -16,7 +16,7 @@ namespace {
 /* In testing the move/copy semantics:
 
 1. For copy semantics, we want to confirm that the deformation mechanism is
-   wired up correctly. So, after copyping, we'll confirm the meshes match, but
+   wired up correctly. So, after copying, we'll confirm the meshes match, but
    when we update vertex positions for *one* of the meshes, we'll confirm they
    no longer match.
 2. For move semantics, knowing something about move semantics on meshes we'll
@@ -56,15 +56,14 @@ class DeformableVolumeMeshTest : public ::testing::Test {
     return MakeBoxVolumeMeshWithMa<T>(box(scale));
   }
 
-  /* Given a mesh with N vertices, this returns a vector of 3N values which
-   represents a scaling of the vertex positions. */
-  static VectorX<T> ScaleVertexPositions(const VolumeMesh<T>& mesh,
-                                         double scale) {
+  /* Extracts the vertex positions of the given `mesh` into a vector of values
+   appropriate for calling UpdateVertexPositions(). */
+  static VectorX<T> ExtractVertexPositions(const VolumeMesh<T>& mesh) {
     const int num_vertices = mesh.num_vertices();
     const auto& vertices = mesh.vertices();
     VectorX<T> q(num_vertices * 3);
     for (int v = 0, i = 0; v < num_vertices; ++v, i += 3) {
-      q.segment(i, 3) << vertices[v].r_MV() * scale;
+      q.segment(i, 3) << vertices[v].r_MV();
     }
     return q;
   }
@@ -76,14 +75,26 @@ class DeformableVolumeMeshTest : public ::testing::Test {
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(DeformableVolumeMeshTest, ScalarTypes);
 
-/* Generically poke around the mesh to make sure things are wired up correctly.
-   - the mesh is a copy of the input mesh. */
+/* Generically poke around the mesh and bvh to make sure things are wired up
+ correctly.
+   - the mesh is a copy of the input mesh.
+   - the bvh bounds it as expected. */
 TYPED_TEST(DeformableVolumeMeshTest, Construction) {
+  using T = TypeParam;
+
   /* The test class constructs the deformable mesh; invocation is implicit in
    test fixture. We'll simply confirm the listed properties. */
 
   /* The contained mesh is a copy of the expected mesh. */
   EXPECT_TRUE(this->mesh_.mesh().Equal(this->MakeBox()));
+
+  /* An Aabb for the box should perfectly match. So, the Aabb's upper and lower
+   extents should simply be the extents of the box. */
+  const Box ref_box = this->box();
+  const Vector3<T> half_size = ref_box.size() / 2;
+  const auto& bvh = this->mesh_.bvh();
+  EXPECT_TRUE(CompareMatrices(bvh.root_node().bv().lower(), -half_size));
+  EXPECT_TRUE(CompareMatrices(bvh.root_node().bv().upper(), half_size));
 }
 
 TYPED_TEST(DeformableVolumeMeshTest, CopyConstructor) {
@@ -95,16 +106,20 @@ TYPED_TEST(DeformableVolumeMeshTest, CopyConstructor) {
    source. */
   EXPECT_NE(&copy.mesh(), &this->mesh_.mesh());
   EXPECT_TRUE(copy.mesh().Equal(this->mesh_.mesh()));
+  EXPECT_NE(&copy.bvh(), &this->mesh_.bvh());
+  EXPECT_TRUE(copy.bvh().Equal(this->mesh_.bvh()));
 
-  /* Moving copy's vertex positions leaves mesh_'s vertex positions in place. */
-  constexpr double kScale = 0.3333;
-  const VectorX<T> q = this->ScaleVertexPositions(copy.mesh(), kScale);
+  /* Moving copy's vertex positions leaves mesh_'s vertex positions in place.
+   We'll create a scaled version of the box and use its vertex positions. */
+  constexpr double kScale = 0.25;
+  const VolumeMesh<T> scaled = this->MakeBox(kScale);
+  const VectorX<T> q = this->ExtractVertexPositions(scaled);
   copy.UpdateVertexPositions(q);
   EXPECT_FALSE(copy.mesh().Equal(this->mesh_.mesh()));
-  /* However, if we construct a box with the same scaled factor, those meshes
-   will be equal. */
-  const VolumeMesh<T> ref = this->MakeBox(kScale);
-  EXPECT_TRUE(copy.mesh().Equal(ref, std::numeric_limits<double>::epsilon()));
+  /* However, the updated mesh matches the scaled mesh and its bvh. */
+  EXPECT_TRUE(copy.mesh().Equal(scaled));
+  const Bvh<Aabb, VolumeMesh<T>> scaled_bvh(scaled);
+  EXPECT_TRUE(copy.bvh().Equal(scaled_bvh));
 }
 
 TYPED_TEST(DeformableVolumeMeshTest, MoveConstructor) {
@@ -120,40 +135,51 @@ TYPED_TEST(DeformableVolumeMeshTest, MoveConstructor) {
    no longer equal to the source mesh. */
   EXPECT_FALSE(moved.mesh().Equal(this->mesh_.mesh()));
   EXPECT_TRUE(moved.mesh().Equal(ref.mesh()));
+  EXPECT_NE(&moved.bvh(), &this->mesh_.bvh());
+  EXPECT_TRUE(moved.bvh().Equal(ref.bvh()));
 
-  /* Now we confirm that such move-constructed mesh properly deforms (based on
-   comparing it with a reference mesh). */
-  constexpr double kScale = 0.3333;
-  const VectorX<T> q = this->ScaleVertexPositions(moved.mesh(), kScale);
+  /* Moving moved's vertex positions leaves mesh_'s vertex positions in place.
+   We'll create a scaled version of the box and use its vertex positions. */
+  constexpr double kScale = 0.25;
+  const VolumeMesh<T> scaled = this->MakeBox(kScale);
+  const VectorX<T> q = this->ExtractVertexPositions(scaled);
   moved.UpdateVertexPositions(q);
-  EXPECT_TRUE(moved.mesh().Equal(this->MakeBox(kScale),
-                                 std::numeric_limits<double>::epsilon()));
+  EXPECT_FALSE(moved.mesh().Equal(this->mesh_.mesh()));
+  /* However, the updated mesh matches the reference mesh and its bvh. */
+  EXPECT_TRUE(moved.mesh().Equal(scaled));
+  const Bvh<Aabb, VolumeMesh<T>> scaled_bvh(scaled);
+  EXPECT_TRUE(moved.bvh().Equal(scaled_bvh));
 }
 
 TYPED_TEST(DeformableVolumeMeshTest, CopyAssignment) {
   using T = TypeParam;
-  DeformableVolumeMesh<T> big(this->MakeBox(2.0));
+  DeformableVolumeMesh<T> dut(this->MakeBox(2.0));
   const DeformableVolumeMesh<T>& small = this->mesh_;
 
-  /* Confirm that the big mesh doesn't start equal to the small mesh. */
-  ASSERT_FALSE(big.mesh().Equal(small.mesh()));
+  /* Confirm that the dut mesh doesn't start equal to the small mesh. */
+  ASSERT_FALSE(dut.mesh().Equal(small.mesh()));
+  ASSERT_FALSE(dut.bvh().Equal(small.bvh()));
 
-  big = small;
+  dut = small;
 
   /* The copy's members are different *instances*, but equal values to the
    source. */
-  EXPECT_NE(&big.mesh(), &small.mesh());
-  EXPECT_TRUE(big.mesh().Equal(small.mesh()));
+  EXPECT_NE(&dut.mesh(), &small.mesh());
+  EXPECT_TRUE(dut.mesh().Equal(small.mesh()));
+  EXPECT_NE(&dut.bvh(), &small.bvh());
+  EXPECT_TRUE(dut.bvh().Equal(small.bvh()));
 
-  /* Moving copy's vertex positions leaves mesh_'s vertex positions in place. */
-  constexpr double kScale = 0.3333;
-  const VectorX<T> q = this->ScaleVertexPositions(big.mesh(), kScale);
-  big.UpdateVertexPositions(q);
-  EXPECT_FALSE(big.mesh().Equal(small.mesh()));
-  /* However, if we construct a box with the same scaled factor, those meshes
-   will be equal. */
-  const VolumeMesh<T> ref = this->MakeBox(kScale);
-  EXPECT_TRUE(big.mesh().Equal(ref, std::numeric_limits<double>::epsilon()));
+  /* Moving copy's vertex positions leaves mesh_'s vertex positions in place.
+   We'll create a scaled version of the box and use its vertex positions. */
+  constexpr double kScale = 0.25;
+  const VolumeMesh<T> scaled = this->MakeBox(kScale);
+  const VectorX<T> q = this->ExtractVertexPositions(scaled);
+  dut.UpdateVertexPositions(q);
+  EXPECT_FALSE(dut.mesh().Equal(small.mesh()));
+  /* However, the updated mesh matches the scaled mesh and its bvh. */
+  EXPECT_TRUE(dut.mesh().Equal(scaled));
+  const Bvh<Aabb, VolumeMesh<T>> scaled_bvh(scaled);
+  EXPECT_TRUE(dut.bvh().Equal(scaled_bvh));
 }
 
 TYPED_TEST(DeformableVolumeMeshTest, MoveAssignment) {
@@ -162,7 +188,7 @@ TYPED_TEST(DeformableVolumeMeshTest, MoveAssignment) {
    such that we can recognize successful reassignment. So, we create a mesh
    that is "big" (compared to the "small" source mesh) and then move the small
    mesh onto the big mesh. */
-  DeformableVolumeMesh<T> big(this->MakeBox(2.0));
+  DeformableVolumeMesh<T> dut(this->MakeBox(2.0));
 
   /* Construct a reference copy -- assumes the copy constructor works (see the
    CopyConstructor test). */
@@ -171,23 +197,30 @@ TYPED_TEST(DeformableVolumeMeshTest, MoveAssignment) {
   /* An alias for the "small" source deformable mesh. */
   DeformableVolumeMesh<T>& small = this->mesh_;
 
-  /* Confirm that the big mesh doesn't start equal to the small mesh. */
-  ASSERT_FALSE(big.mesh().Equal(small.mesh()));
+  /* Confirm that the dut mesh doesn't start equal to the small mesh. */
+  ASSERT_FALSE(dut.mesh().Equal(small.mesh()));
+  ASSERT_FALSE(dut.bvh().Equal(small.bvh()));
 
-  big = std::move(small);
+  dut = std::move(small);
 
   /* The targets's members are different *instances*, but equal values to the
    reference. */
-  EXPECT_FALSE(big.mesh().Equal(small.mesh()));
-  EXPECT_TRUE(big.mesh().Equal(small_ref.mesh()));
+  EXPECT_FALSE(dut.mesh().Equal(small.mesh()));
+  EXPECT_TRUE(dut.mesh().Equal(small_ref.mesh()));
+  EXPECT_NE(&dut.bvh(), &small.bvh());
+  EXPECT_TRUE(dut.bvh().Equal(small_ref.bvh()));
 
-  /* Now we confirm that such move-assigned mesh properly deforms (based on
-   comparing it with a reference mesh). */
-  constexpr double kScale = 0.3333;
-  const VectorX<T> q = this->ScaleVertexPositions(big.mesh(), kScale);
-  big.UpdateVertexPositions(q);
-  EXPECT_TRUE(big.mesh().Equal(this->MakeBox(kScale),
-                               std::numeric_limits<double>::epsilon()));
+  /* Moving dut's vertex positions leaves small_ref's vertex positions in place.
+   We'll create a scaled version of the box and use its vertex positions. */
+  constexpr double kScale = 0.25;
+  const VolumeMesh<T> scaled = this->MakeBox(kScale);
+  const VectorX<T> q = this->ExtractVertexPositions(scaled);
+  dut.UpdateVertexPositions(q);
+  EXPECT_FALSE(dut.mesh().Equal(small_ref.mesh()));
+  /* However, the updated mesh matches the reference mesh and its bvh. */
+  EXPECT_TRUE(dut.mesh().Equal(scaled));
+  const Bvh<Aabb, VolumeMesh<T>> scaled_bvh(scaled);
+  EXPECT_TRUE(dut.bvh().Equal(scaled_bvh));
 }
 
 }  // namespace

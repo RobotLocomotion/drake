@@ -22,6 +22,16 @@ using math::RotationMatrixd;
 using std::set;
 using std::vector;
 
+// Local implementation of BvhUpdater to exercise Aabb::set_bounds().
+template <typename T>
+class BvhUpdater {
+ public:
+  static void SetBounds(Aabb* aabb, const Vector3d& lower,
+                        const Vector3d& upper) {
+    aabb->set_bounds(lower, upper);
+  }
+};
+
 namespace {
 
 /* This tests the constructor and that the expected values get to the expected
@@ -42,6 +52,27 @@ GTEST_TEST(AabbTest, Construction) {
 
   EXPECT_TRUE(aabb.pose().rotation().IsExactlyIdentity());
   EXPECT_TRUE(CompareMatrices(aabb.pose().translation(), p_HB));
+}
+
+/* Confirms that the private set_bounds() appropriately changes the box. */
+GTEST_TEST(AabbTest, UpdateBounds) {
+  // Create a baseline Aabb.
+  const Vector3d p_HB{1, 2, 3};
+  const Vector3d half_size{0.75, 0.875, 1.25};
+  const double expected_volume =
+      2 * half_size.x() * 2 * half_size.y() * 2 * half_size.z();
+
+  Aabb aabb(p_HB, half_size);
+  EXPECT_TRUE(CompareMatrices(aabb.center(), p_HB));
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), half_size));
+  EXPECT_EQ(aabb.CalcVolume(), expected_volume);
+
+  const Vector3d p_HB2 = p_HB + Vector3d{-1, 0.25, 1};
+  const Vector3d half_size2 = 2 * half_size;
+  BvhUpdater<double>::SetBounds(&aabb, p_HB2 - half_size2, p_HB2 + half_size2);
+  EXPECT_TRUE(CompareMatrices(aabb.center(), p_HB2));
+  EXPECT_TRUE(CompareMatrices(aabb.half_width(), half_size2));
+  EXPECT_EQ(aabb.CalcVolume(), expected_volume * 8);
 }
 
 /* This tests the overlap query for aabb-aabb and aabb-obb. We rely on the
