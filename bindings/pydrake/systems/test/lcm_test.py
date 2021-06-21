@@ -165,7 +165,10 @@ class TestSystemsLcm(unittest.TestCase):
         def __init__(self):
             LeafSystem.__init__(self)
             self.DeclareAbstractOutputPort(
-                "output", lcmt_header, self.CalcOutput)
+                "output", self.AllocateOutput, self.CalcOutput)
+
+        def AllocateOutput(self):
+            return AbstractValue.Make(lcmt_header())
 
         def CalcOutput(self, context, output):
             output.utime = int(context.get_time() * 1e6)
