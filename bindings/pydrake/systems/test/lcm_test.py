@@ -159,6 +159,30 @@ class TestSystemsLcm(unittest.TestCase):
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
 
+    class PythonMessageSource(LeafSystem):
+        """A source system whose output port contains a Python lcmt_header."""
+
+        def __init__(self):
+            LeafSystem.__init__(self)
+            self.DeclareAbstractOutputPort(
+                "output", lcmt_header, self.CalcOutput)
+
+        def CalcOutput(self, context, output):
+            output.utime = int(context.get_time() * 1e6)
+            output.frame_name = "frame_name"
+
+    def test_diagram_publisher(self):
+        builder = DiagramBuilder()
+        source = builder.AddSystem(TestSystemsLcm.PythonMessageSource())
+        publisher = builder.AddSystem(
+            mut.LcmPublisherSystem.Make(
+                channel="LCMT_HEADER",
+                lcm_type=lcmt_header,
+                lcm=None,
+                publish_period=0.05))
+        builder.Connect(source.get_output_port(), publisher.get_input_port())
+        diagram = builder.Build()
+
     def test_connect_lcm_scope(self):
         builder = DiagramBuilder()
         source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
