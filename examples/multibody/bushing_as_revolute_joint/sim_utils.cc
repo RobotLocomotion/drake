@@ -1,5 +1,8 @@
 #include "drake/examples/multibody/bushing_as_revolute_joint/sim_utils.h"
 
+#include <string>
+#include <vector>
+
 #include "drake/geometry/scene_graph.h"
 
 namespace drake {
@@ -108,7 +111,7 @@ drake::systems::EventStatus FrameViz::PublishFramePose(
   return drake::systems::EventStatus::Succeeded();
 }
 
-}  // bushing_as_revolute_joint
+}  // namespace bushing_as_revolute_joint
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
