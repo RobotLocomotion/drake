@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/examples/multibody/bushing_as_revolute_joint/sim_utils.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -20,8 +21,6 @@
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/sine.h"
-
-#include "drake/examples/multibody/bushing_as_revolute_joint/sim_utils.h"
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
