@@ -502,10 +502,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override {
-    static const logging::Warn log_once(
-        "Ellipsoid is primarily for ComputeContactSurfaces in hydroelastic "
-        "contact model. The accuracy of other collision queries and signed "
-        "distance queries are not guaranteed.");
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_ellipsoid = make_shared<fcl::Ellipsoidd>(
         ellipsoid.a(), ellipsoid.b(), ellipsoid.c());

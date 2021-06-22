@@ -556,13 +556,19 @@ class QueryObject {
 
    | Scalar |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :----: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   | double |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |      ᵃ     |    5e-15   |    ᵃ    |  4e-15  |
+   | double |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
    | ADXd   |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
    __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
    between geometry approximately 20cm in size and a point.
 
    - ᵃ Unsupported geometry/scalar combinations are simply ignored; no results
        are reported for that geometry.
+   - ᵇ This uses an *iterative* algorithm which introduces a relatively large
+       and variable error. For example, as the eccentricity of the ellipsoid
+       increases, this error may get worse. It also depends on the location of
+       the projection of the query point on the ellipsoid; the closer that point
+       is to the high curvature area, the bigger the effect. It is not
+       immediately clear how much worse the answer will get.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
