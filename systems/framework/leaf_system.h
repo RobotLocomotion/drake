@@ -1392,6 +1392,7 @@ class LeafSystem : public System<T> {
   function in its most generic form; if you have a member function available
   use one of the other signatures.
   @see LeafOutputPort::CalcVectorCallback */
+  DRAKE_DEPRECATED("2021-10-01", "XXX")
   LeafOutputPort<T>& DeclareVectorOutputPort(
       std::variant<std::string, UseDefaultName> name,
       const BasicVector<T>& model_vector,
@@ -1458,7 +1459,6 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
-  // TODO(jwnimmer-tri) Deprecate me. Any class complicated enough for boutique
   // pre-allocation can just as well go through ValueCalcFunc explicitly.
   /** Declares an abstract-valued output port by specifying member functions to
   use both for the allocator and calculator. The signatures are:
@@ -1472,6 +1472,7 @@ class LeafSystem : public System<T> {
   Template arguments will be deduced and do not need to be specified.
   @see drake::Value */
   template <class MySystem, typename OutputType>
+  DRAKE_DEPRECATED("2021-10-01", "XXX")
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
       OutputType (MySystem::*make)() const,
@@ -1494,10 +1495,19 @@ class LeafSystem : public System<T> {
   allocator and calculator functions provided in their most generic forms.
   If you have a member function available use one of the other signatures.
   @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback */
+  DRAKE_DEPRECATED("2021-10-01", "XXX")
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
       typename LeafOutputPort<T>::AllocCallback alloc_function,
       typename LeafOutputPort<T>::CalcCallback calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  // XXX Implement me.
+  LeafOutputPort<T>& DeclareOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      PortDataType type,
+      ValueCalcFunction calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
   //@}
@@ -1566,8 +1576,11 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return DeclareAbstractOutputPort(kUseDefaultName, make, calc,
                                      std::move(prerequisites_of_calc));
+#pragma GCC diagnostic pop
   }
 
   DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")

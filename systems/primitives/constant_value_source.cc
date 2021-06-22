@@ -9,14 +9,15 @@ ConstantValueSource<T>::ConstantValueSource(const AbstractValue& value)
       source_value_(value.Clone()) {
   // Use the "advanced" method to provide explicit non-member functors here
   // since we already have AbstractValues.
-  this->DeclareAbstractOutputPort(
-      kUseDefaultName,
-      [this]() {
-        return source_value_->Clone();
-      },
-      [this](const Context<T>&, AbstractValue* output) {
-        output->SetFrom(*source_value_);
-      });
+  this->DeclareOutputPort(
+      kUseDefaultName, kAbstractValued,
+      ValueCalcFunction(
+        [this]() {
+          return source_value_->Clone();
+        },
+        [this](const Context<T>&, AbstractValue* output) {
+          output->SetFrom(*source_value_);
+        }));
 }
 
 template <typename T>
