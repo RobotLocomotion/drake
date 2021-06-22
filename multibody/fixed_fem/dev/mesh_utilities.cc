@@ -109,10 +109,10 @@ VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
 }
 
-template VolumeMesh<double> MakeDiamondCubicBoxVolumeMesh(
-    const geometry::Box&, double, const math::RigidTransform<double>&);
-template VolumeMesh<AutoDiffXd> MakeDiamondCubicBoxVolumeMesh(
-    const geometry::Box&, double, const math::RigidTransform<AutoDiffXd>&);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &MakeDiamondCubicBoxVolumeMesh<T>
+))
+
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

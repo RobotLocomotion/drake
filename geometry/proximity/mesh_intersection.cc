@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
@@ -462,24 +463,12 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
                                              std::move(grad_eS_W), nullptr);
 }
 
-template class SurfaceVolumeIntersector<double>;
-template class SurfaceVolumeIntersector<AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class SurfaceVolumeIntersector)
 
-template std::unique_ptr<ContactSurface<double>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<Obb, VolumeMesh<double>>&, const math::RigidTransform<double>&,
-    const GeometryId, const SurfaceMesh<double>&,
-    const Bvh<Obb, SurfaceMesh<double>>&, const math::RigidTransform<double>&,
-    ContactPolygonRepresentation);
-
-template std::unique_ptr<ContactSurface<AutoDiffXd>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const Bvh<Obb, VolumeMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const SurfaceMesh<double>&, const Bvh<Obb, SurfaceMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&, ContactPolygonRepresentation);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ComputeContactSurfaceFromSoftVolumeRigidSurface<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

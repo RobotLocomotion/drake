@@ -4,6 +4,7 @@
 #include <random>
 #include <variant>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -205,8 +206,9 @@ int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder) {
   return count;
 }
 
-template int AddRandomInputs<double>(double, DiagramBuilder<double>*);
-template int AddRandomInputs<AutoDiffXd>(double, DiagramBuilder<AutoDiffXd>*);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &AddRandomInputs<T>
+))
 
 }  // namespace systems
 }  // namespace drake

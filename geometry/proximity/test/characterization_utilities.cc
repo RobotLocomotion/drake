@@ -443,14 +443,6 @@ RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
   return RigidTransform<T>{R, p_QP_A};
 }
 
-template RigidTransform<double> AlignPlanes<double>(const Vector3<double>&,
-                                                    const Vector3<double>&,
-                                                    const Vector3<double>&,
-                                                    const Vector3<double>&);
-template RigidTransform<AutoDiffXd> AlignPlanes<AutoDiffXd>(
-    const Vector3<AutoDiffXd>&, const Vector3<AutoDiffXd>&,
-    const Vector3<AutoDiffXd>&, const Vector3<AutoDiffXd>&);
-
 template <typename T>
 void CharacterizeResultTest<T>::RunCallback(
     const QueryInstance& query, fcl::CollisionObjectd* obj_A,
@@ -724,6 +716,10 @@ template <typename T>
 Sphere CharacterizeResultTest<T>::sphere(bool) {
   return Sphere(kDistance * 100);
 }
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &AlignPlanes<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

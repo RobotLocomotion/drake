@@ -27,7 +27,7 @@ template <typename T> class SurfaceVolumeIntersectorTester;
  variable. It also interpolates the field variable onto the resulted
  surface.
 
- @tparam T Currently, only T = double is supported.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 class SurfaceVolumeIntersector {

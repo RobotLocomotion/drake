@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -539,10 +541,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;  // Returning false tells fcl to continue to other objects.
 }
 
-template bool Callback<double>(fcl::CollisionObjectd*, fcl::CollisionObjectd*,
-                               void*, double&);
-template bool Callback<AutoDiffXd>(fcl::CollisionObjectd*,
-                                   fcl::CollisionObjectd*, void*, double&);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &Callback<T>
+))
 
 }  // namespace point_distance
 }  // namespace internal

@@ -28,8 +28,8 @@ system associated with `simulator` according to the given arguments.
   GetIntegrationSchemes() for a the list of valid options.
 @param[in] max_step_size The IntegratorBase::set_maximum_step_size() value.
 @returns A reference to the newly created integrator owned by `simulator`.
+@tparam_nonsymbolic_scalar
 
-@tparam_default_nonsymbolic_scalar
 @ingroup simulator_configuration */
 template <typename T>
 IntegratorBase<T>& ResetIntegratorFromFlags(

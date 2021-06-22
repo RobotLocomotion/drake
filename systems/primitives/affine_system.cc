@@ -90,6 +90,20 @@ void TimeVaryingAffineSystem<T>::configure_random_state(
                         .operatorSqrt();
 }
 
+template <typename T>
+template <typename U>
+void TimeVaryingAffineSystem<T>::ConfigureDefaultAndRandomStateFrom(
+    const TimeVaryingAffineSystem<U>& other) {
+  // Convert default state from U -> double -> T.
+  VectorX<T> x0(other.num_states());
+  const VectorX<U>& other_x0 = other.get_default_state();
+  for (int i = 0; i < other.num_states(); i++) {
+    x0[i] = ExtractDoubleOrThrow(other_x0[i]);
+  }
+  this->configure_default_state(x0);
+  this->configure_random_state(other.get_random_state_covariance());
+}
+
 // This is the default implementation for this virtual method.
 template <typename T>
 void TimeVaryingAffineSystem<T>::CalcOutputY(
@@ -385,6 +399,9 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
   updates->get_mutable_vector().SetFromVector(xnext);
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &TimeVaryingAffineSystem<T>::template ConfigureDefaultAndRandomStateFrom<U>
+))
 
 }  // namespace systems
 }  // namespace drake

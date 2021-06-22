@@ -22,12 +22,10 @@ std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
   return out;
 }
 
-template std::ostream& operator<< <double>(std::ostream&,
-                                           const RigidTransform<double>&);
-template std::ostream& operator<< <AutoDiffXd>(
-    std::ostream&, const RigidTransform<AutoDiffXd>&);
-template std::ostream& operator<< <symbolic::Expression>(
-    std::ostream&, const RigidTransform<symbolic::Expression>&);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    static_cast<std::ostream&(*)(std::ostream&, const RigidTransform<T>&)>(
+        &operator<< )
+))
 
 }  // namespace math
 }  // namespace drake

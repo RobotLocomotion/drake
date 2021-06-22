@@ -4831,6 +4831,7 @@ struct AddMultibodyPlantSceneGraphResult;
 ///   used.
 /// @return Pair of the registered plant and scene graph.
 /// @pre `builder` must be non-null.
+/// @tparam_nonsymbolic_scalar
 /// @relates MultibodyPlant
 template <typename T>
 AddMultibodyPlantSceneGraphResult<T>
@@ -4853,6 +4854,7 @@ AddMultibodyPlantSceneGraph(
 ///   used.
 /// @return Pair of the registered plant and scene graph.
 /// @pre `builder` and `plant` must be non-null.
+/// @tparam_nonsymbolic_scalar
 /// @relates MultibodyPlant
 template <typename T>
 AddMultibodyPlantSceneGraphResult<T>
@@ -4865,6 +4867,7 @@ AddMultibodyPlantSceneGraph(
 /// constructed outside of this method.
 /// @warning Do NOT use this as a function argument or member variable. The
 /// lifetime of this object should be as short as possible.
+/// @tparam_default_scalar
 template <typename T>
 struct AddMultibodyPlantSceneGraphResult final {
   MultibodyPlant<T>& plant;
