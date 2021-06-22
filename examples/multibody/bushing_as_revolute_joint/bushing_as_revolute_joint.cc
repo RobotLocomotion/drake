@@ -22,27 +22,24 @@
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/sine.h"
 
-DEFINE_double(simulation_time, 10.0,
+DEFINE_double(simulation_time, 2.0,
               "Desired duration of the simulation in seconds.");
 DEFINE_double(simulator_target_realtime_rate, 1.0, "Sim realtime rate.");
 
 DEFINE_string(simulator_integration_scheme, "runge_kutta3", "integrator.");
 DEFINE_double(simulator_max_time_step, 1e-3,
-              "simulator max time step, for variable step integrators.");
+              "Simulator max time step, for variable step integrators.");
 DEFINE_double(simulator_accuracy, 1e-3,
-              "simulator accuracy, for error controlled intergrators.");
+              "Simulator accuracy, for error controlled intergrators.");
 DEFINE_bool(simulator_use_error_control, false, "Use error control?");
 DEFINE_bool(simulator_publish_every_time_step, false,
-            "publish every time step");
-DEFINE_bool(publish_initial_frames, false, "publishes initial brick frames");
-DEFINE_double(
-    mbp_dt, 2.0e-4,
-    "The fixed time step period (in seconds) of discrete updates for the "
-    "multibody plant modeled as a discrete system. Strictly positive. "
-    "Set to zero for a continuous plant model.");
-DEFINE_string(drakeviz_role, "illustration", "Role for drake viz.");
-DEFINE_double(initial_ySlider_joint_position, 0.0,
-              "Initial ySlider_joint position value.");
+            "Publish every time step.");
+DEFINE_bool(publish_initial_frames, false, "Publishes initial frames.");
+DEFINE_double(mbp_dt, 2.0e-4,
+              "Fixed time step period (in seconds) of discrete updates for the "
+              "multibody plant modeled as a discrete system. Strictly positive."
+              " Set to zero for a continuous plant model.");
+DEFINE_string(drakeviz_role, "Illustration", "Role for drake vizualizer.");
 DEFINE_bool(gravity_on, true, "Enable gravity?");
 
 namespace drake {
@@ -56,41 +53,30 @@ using drake::geometry::SceneGraph;
 using drake::math::RigidTransformd;
 using drake::multibody::MultibodyPlant;
 
-// This is the prismatic ySlider_joint's maximum value.
-const double kMaxYSliderJointPosition = 0.1;
-
 void SetInitialPoses(const MultibodyPlant<double>& plant,
-                     double initial_ySlider_joint_position,
                      drake::systems::Context<double>* plant_context) {
-  // Set the ySlider_body to its proper initial horizontal value.
+  // Set the ySlider_body to an initial horizontal value of 0.0.
+  const double initial_ySlider_joint_value = 0.0;
   const drake::multibody::PrismaticJoint<double>& ySlider_body =
       plant.GetJointByName<drake::multibody::PrismaticJoint>("ySlider_joint");
-  ySlider_body.set_translation(plant_context, -initial_ySlider_joint_position);
+  ySlider_body.set_translation(plant_context, initial_ySlider_joint_value);
 
-  const double ySlider_body_length = 0.3;
-  const double y_initial_horizontal_distance =
-      ySlider_body_length + initial_ySlider_joint_position;
-  const double y_max_horizontal_distance =
-      ySlider_body_length + kMaxYSliderJointPosition;
-  const double b = 0.05;
-  const double l2 =
-      sqrt(std::pow(y_max_horizontal_distance, 2) + std::pow(b, 2));
-  const double s = sqrt(std::pow(l2, 2) - std::pow(ySlider_body_length, 2));
-
-  // Set the zSlider_body to its proper initial vertical value.
+  // Set the zSlider_body to an initial vertical value that is consistent with
+  // system geometry, initial_ySlider_joint_value, and an assembled bushing.
+  const double initial_zSlider_joint_value = 0.0;
   const drake::multibody::PrismaticJoint<double>& zSlider_body =
       plant.GetJointByName<drake::multibody::PrismaticJoint>("zSlider_joint");
-  DRAKE_DEMAND(initial_ySlider_joint_position <= kMaxYSliderJointPosition);
-  const double slider_position =
-      s - sqrt(std::pow(l2, 2) - std::pow(y_initial_horizontal_distance, 2));
-  zSlider_body.set_translation(plant_context, slider_position);
+  zSlider_body.set_translation(plant_context, initial_zSlider_joint_value);
 
-  const drake::multibody::RevoluteJoint<double>& left_pushrod_pin =
+  // Set the rod_revolute_joint to its proper initial angle.
+  const double ySlider_body_length = 0.3;
+  const double rod_body_length = 0.5;
+  const double rod_revolute_joint_angle =
+      asin(ySlider_body_length / rod_body_length) + 0.2;
+  const drake::multibody::RevoluteJoint<double>& rod_revolute_joint =
       plant.GetJointByName<drake::multibody::RevoluteJoint>(
           "rod_revolute_joint");
-  const double rod_revolute_joint_angle =
-      asin(y_initial_horizontal_distance / l2);
-  left_pushrod_pin.set_angle(plant_context, rod_revolute_joint_angle);
+  rod_revolute_joint.set_angle(plant_context, rod_revolute_joint_angle);
 }
 
 int do_main() {
@@ -98,9 +84,6 @@ int do_main() {
 
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
-
-  // Plant's parameters.
-  const double g = FLAGS_gravity_on ? 9.81 : 0.0;  // m/s^2
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_dt);
@@ -120,9 +103,10 @@ int do_main() {
   RigidTransformd X_WG = RigidTransformd::Identity();
   plant.WeldFrames(plant.world_frame(), base_frame, X_WG);
 
-  // Gravity acting in the -z direction.
-  plant.mutable_gravity_field().set_gravity_vector(-g *
-                                                   Eigen::Vector3d::UnitZ());
+  // Gravity acts in the -z direction.
+  const double g = FLAGS_gravity_on ? 9.81 : 0.0;  // m/s^2
+  const Eigen::Vector3d gravity_vector = -g * Eigen::Vector3d::UnitZ();
+  plant.mutable_gravity_field().set_gravity_vector(gravity_vector);
 
   plant.Finalize();
 
@@ -159,16 +143,21 @@ int do_main() {
   builder.Connect(Sx_sys->get_output_port(),
                   pid_controller->get_input_port_estimated_state());
 
-  DRAKE_DEMAND(FLAGS_initial_ySlider_joint_position <=
-               kMaxYSliderJointPosition);
-  const double phase =  M_PI_2 -
-      M_PI * (FLAGS_initial_ySlider_joint_position / kMaxYSliderJointPosition);
+  // Set the prismatic ySlider_joint's amplitude, frequency, phase, etc.
+  // ySlider_joint_position = Amp * sin( omega * t + phase ).
+  // ySlider_joint_velocity = Amp * cos( omega * t + phase ) * omega.
+  // Since phase = pi/2, initially (t = 0), ySlider_joint_velocity = 0.
+  const double kMaxYSliderJointPosition = 0.1;
+  const double sine_amplitude = kMaxYSliderJointPosition / 2.0;
+  const double sine_frequency =  2 * M_PI;
+  const double phase =  M_PI_2;
+  const int number_elements_in_output_signal = 1;
   auto sine_sys = builder.AddSystem<drake::systems::Sine<double>>(
-      kMaxYSliderJointPosition / 2.0, 2 * M_PI, phase, 1);
+      sine_amplitude, sine_frequency, phase, number_elements_in_output_signal);
   auto adder_sys = builder.AddSystem<drake::systems::Adder<double>>(2, 1);
   auto const_src =
       builder.AddSystem<drake::systems::ConstantVectorSource<double>>(
-          drake::Vector1d(-kMaxYSliderJointPosition / 2.0));
+          drake::Vector1d(-sine_amplitude));
   builder.Connect(sine_sys->get_output_port(0), adder_sys->get_input_port(0));
   builder.Connect(const_src->get_output_port(), adder_sys->get_input_port(1));
   auto muxer = builder.AddSystem<drake::systems::Multiplexer<double>>(2);
@@ -176,11 +165,11 @@ int do_main() {
   builder.Connect(sine_sys->get_output_port(1), muxer->get_input_port(1));
   builder.Connect(muxer->get_output_port(),
                   pid_controller->get_input_port_desired_state());
-
   builder.Connect(pid_controller->get_output_port_control(),
                   plant.get_actuation_input_port());
 
-  auto frame_viz = builder.AddSystem<FrameViz>(plant, &lcm, 1 / 30.0);
+  const double visualizer_period = 1.0 / 30.0;  // In units of seconds.
+  auto frame_viz = builder.AddSystem<FrameViz>(plant, &lcm, visualizer_period);
   builder.Connect(plant.get_state_output_port(), frame_viz->get_input_port());
 
   auto diagram = builder.Build();
@@ -191,7 +180,7 @@ int do_main() {
   drake::systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  SetInitialPoses(plant, FLAGS_initial_ySlider_joint_position, &plant_context);
+  SetInitialPoses(plant, &plant_context);
 
   // PublishBodyFrames(plant_context, plant, &lcm);
 
