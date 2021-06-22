@@ -1458,6 +1458,8 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
+  // TODO(jwnimmer-tri) Deprecate me. Any class complicated enough for boutique
+  // pre-allocation can just as well go through ValueCalcFunc explicitly.
   /** Declares an abstract-valued output port by specifying member functions to
   use both for the allocator and calculator. The signatures are:
   @code

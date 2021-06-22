@@ -739,6 +739,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cache_entry_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":cache_entry",
         ":system_base",
