@@ -811,15 +811,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
             nested_model, sdf::JoinName(model_name, nested_model.Name()), X_WM,
             plant, package_map, root_dir);
 
-    DRAKE_DEMAND(!nested_model_instances.empty());
-    const ModelInstanceIndex nested_model_instance =
-        nested_model_instances.front();
-
-    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        nested_model.Name(),
-        plant->GetFrameByName("__model__", nested_model_instance),
-        RigidTransformd::Identity(), model_instance));
-
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
                                  nested_model_instances.end());
