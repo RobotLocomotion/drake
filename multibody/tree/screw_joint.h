@@ -20,7 +20,7 @@ namespace multibody {
 /// That is, given a frame F attached to the parent body P and a frame M
 /// attached to the child body B (see the Joint class's documentation), this
 /// joint allows frame M to translate (while rotating) along the z axis
-///   of frame F, with M's z-axis Mz and F's z-axis Fz coincident at
+/// of frame F, with M's z-axis Mz and F's z-axis Fz coincident at
 /// all times. The rotation about z-axis of F  and their rate
 /// specify the state of the joint.
 /// Zero (θ) corresponds to frames F and M being coincident and aligned.
@@ -46,18 +46,21 @@ class ScrewJoint final : public Joint<T> {
   /// translate and rotate as described in the class's documentation.
   /// This constructor signature creates a joint with no joint limits, i.e. the
   /// joint angular position, angular velocity and angular acceleration limits
-  ///   are the pair `(-∞, ∞)`.
+  /// are the pair `(-∞, ∞)`.
   /// These can be set using the Joint methods set_position_limits(),
   /// set_velocity_limits() and set_acceleration_limits() in radians,
-  ///   radians/sec, radians/sec^2 units.
+  /// radians/sec, radians/sec^2 units.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameters are:
   /// @param[in] screw_pitch
   ///   Amount of translation in meters occuring over a one full
-  ///   screw revolution.
+  ///   screw revolution. It's domain is (-∞, ∞). When the screw pitch is
+  ///   negative, positive rotation will result in translating towards the
+  ///   negative direction of z-axis. When the screw pitch is zero, this joint
+  ///   will behave like a revolute joint.
   /// @param[in] damping
-  ///   Viscous damping coefficient, N⋅s/rad for
+  ///   Viscous damping coefficient, N⋅m⋅s/rad for
   ///   rotation, used to model losses within the joint. See documentation of
   ///   damping() for details on modelling of the damping torque.
   /// @throws std::exception if damping is negative.
@@ -105,8 +108,8 @@ class ScrewJoint final : public Joint<T> {
   /// Gets the translation of `this` joint from `context`.
   ///
   /// @param[in] context The context of the model this joint belongs to.
-  /// @retval z        The translation of `this` joint stored in the `context`
-  ///                  as (z). See class documentation for details.
+  /// @retval z The translation of `this` joint stored in the `context` as (z).
+  ///           See class documentation for details.
   const T get_translation(const Context<T>& context) const {
     return get_mobilizer()->get_translation(context);
   }
@@ -114,9 +117,8 @@ class ScrewJoint final : public Joint<T> {
   /// Sets the `context` so that the translation of `this` joint equals to (z).
   ///
   /// @param[in] context The context of the model this joint belongs to.
-  /// @param[in] z        The desired translation in meters to be stored in
-  ///                     `context` as (z). See class documentation
-  ///                     for details.
+  /// @param[in] z The desired translation in meters to be stored in `context`
+  ///              as (z). See class documentation for details.
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translation(Context<T>* context,
                                        const T& z) const {
@@ -148,8 +150,8 @@ class ScrewJoint final : public Joint<T> {
   /// Gets the translational velocity vz, in meters per second, of `this`
   /// joint's Mo measured and expressed in frame F from `context`.
   /// @param[in] context The context of the model this joint belongs to.
-  /// @retval vz       The translational velocity of `this` joint as stored in
-  ///                  the `context`.
+  /// @retval vz The translational velocity of `this` joint as stored in the
+  ///            `context`.
 const T get_translational_velocity(
       const systems::Context<T>& context) const {
     return get_mobilizer()->get_translation_rate(context);
@@ -159,8 +161,8 @@ const T get_translational_velocity(
   /// joint's Mo along frame F's Z-axis to `vz`. The new
   /// translational velocity gets stored in `context`.
   /// @param[in] context The context of the model this joint belongs to.
-  /// @param[in] vz       The desired translational velocity of `this` joint in
-  ///                     meters per second along F frame's Z-axis.
+  /// @param[in] vz The desired translational velocity of `this` joint in meters
+  ///               per second along F frame's Z-axis.
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const T& vz) const {
@@ -196,15 +198,16 @@ const T get_translational_velocity(
   /// @}
 
   /// Gets the default position for `this` joint.
-  /// @retval z        The default position of `this` joint.
+  /// @retval z The default position of `this` joint.
   T get_default_translation() const {
     return internal::get_screw_translation_from_rotation(
         this->default_positions()[0], screw_pitch());
   }
 
-  /// Sets the default position of this joint. This will change
+  /// Sets the default translation of this joint. This will change
   /// the `default_rotation` too, which are not independent in this joint.
-  /// @param[in] z        The desired default position of the joint
+  /// @param[in] z The desired default position of the joint
+  ///   @throws std::exception if pitch is very near zero.
   void set_default_translation(const double& z) {
     Vector1<double> state(internal::get_screw_rotation_from_translation(
         z, screw_pitch()));
@@ -334,7 +337,7 @@ const T get_translational_velocity(
 
   // The amount of translation in meters occuring over a one full revolution.
   double screw_pitch_;
-  // This joint's damping constant in N⋅s/rad for rotation.
+  // This joint's damping constant in N⋅m⋅s/rad for rotation.
   double damping_;
 };
 

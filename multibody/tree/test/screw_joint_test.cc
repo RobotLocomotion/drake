@@ -225,20 +225,20 @@ TEST_F(ScrewJointTest, RandomState) {
   mutable_joint_->set_random_pose_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 1.0));
   tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
-  EXPECT_GE(mutable_joint_->get_rotation(*context_), 1.0);
-  EXPECT_LE(mutable_joint_->get_rotation(*context_), 2.0);
+  EXPECT_GE(joint_->get_rotation(*context_), 1.0);
+  EXPECT_LE(joint_->get_rotation(*context_), 2.0);
   
-  EXPECT_GE(mutable_joint_->get_translation(*context_),
+  EXPECT_GE(joint_->get_translation(*context_),
             1.0 / (2. * M_PI) * kScrewPitch);
-  EXPECT_LE(mutable_joint_->get_translation(*context_),
+  EXPECT_LE(joint_->get_translation(*context_),
             2.0 / (2. * M_PI) * kScrewPitch);
 
   // Check that they change on a second draw from the distribution.
-  const double last_translation = mutable_joint_->get_translation(*context_);
-  const double last_rotation = mutable_joint_->get_rotation(*context_);
+  const double last_translation = joint_->get_translation(*context_);
+  const double last_rotation = joint_->get_rotation(*context_);
   tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
-  EXPECT_NE(mutable_joint_->get_translation(*context_), last_translation);
-  EXPECT_NE(mutable_joint_->get_rotation(*context_), last_rotation);
+  EXPECT_NE(joint_->get_translation(*context_), last_translation);
+  EXPECT_NE(joint_->get_rotation(*context_), last_rotation);
 }
 
 }  // namespace
