@@ -316,6 +316,69 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
 
 template <typename T>
 SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
+    const fcl::Ellipsoidd& ellipsoid) {
+  if constexpr (std::is_same_v<T, double>) {
+    // TODO(SeanCurtis-TRI): Replace this short-term hack with something that
+    //  provides higher precision and derivatives.
+    //  See: https://www.geometrictools.com/Documentation/DistancePointEllipseEllipsoid.pdf
+
+    // For now, we'll simply use FCL's sphere-ellipsoid algorithm to compute
+    // the signed distance for a zero-radius sphere. (Note: this uses the
+    // generic GJK-EPA algorithm pair).
+    const fcl::Sphered sphere_Q(0.0);
+
+    fcl::DistanceRequestd request;
+    request.enable_nearest_points = true;
+    request.enable_signed_distance = true;
+    request.distance_tolerance = 1e-6;
+    request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+
+    // By passing in poses X_WG and X_WQ, the result will likewise be in the
+    // world frame.
+    fcl::DistanceResultd result_W;
+
+    fcl::distance(&ellipsoid, X_WG_.GetAsIsometry3(),
+                  &sphere_Q, math::RigidTransformd(p_WQ_).GetAsIsometry3(),
+                  request, result_W);
+
+    const Vector3d& p_WN = result_W.nearest_points[0];
+    const Vector3d p_GN = X_WG_.inverse() * p_WN;
+    const Vector3d& radii = ellipsoid.radii;
+    // The gradient is always perpendicular to the ellipsoid at the witness
+    // point on the ellipsoid surface. Therefore, for the implicit equation of
+    // the ellipsoid:
+    //    f(x, y, z) = x² / a² + y² / b² + z² / c² - 1 = 0
+    // Its gradient is normal to the surface.
+    //    ∇f = <2x / a², 2y / b², 2z / c²>
+    //    n = ∇f / |∇f|
+    // We are assured that all radii are strictly greater than zero (see the
+    // constructor for geometry::Ellipsoid), so we don't risk a divide by zero
+    // and it likewise guarantees that this gradient vector will always be
+    // normalizable and unique; the point on the surface of the ellipsoid can
+    // *never* be the zero vector. Because we're normalizing, we omit the scale
+    // factor of 2 -- we'll just be dividing it right back out.
+    // This gives us a good normal, regardless of how close to the surface the
+    // query point Q is.
+    const Vector3d grad_G = Vector3d(p_GN.x() / (radii.x() * radii.x()),
+                                     p_GN.y() / (radii.y() * radii.y()),
+                                     p_GN.z() / (radii.z() * radii.z()))
+                                .normalized();
+
+    const Vector3d grad_W = X_WG_.rotation() * grad_G;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return SignedDistanceToPoint<T>(geometry_id_, p_GN, result_W.min_distance,
+                                    grad_W, true /*is_grad_w_unique */);
+#pragma GCC diagnostic pop
+  } else {
+    // ScalarSupport<AutoDiffXd> should preclude ever calling this with
+    // T = AutoDiffXd.
+    DRAKE_UNREACHABLE();
+  }
+}
+
+template <typename T>
+SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
     const fcl::Halfspaced& halfspace) {
   T distance{};
   Vector3<T> p_GN_G, grad_W;
@@ -461,6 +524,7 @@ bool ScalarSupport<double>::is_supported(fcl::NODE_TYPE node_type) {
     case fcl::GEOM_BOX:
     case fcl::GEOM_CAPSULE:
     case fcl::GEOM_CYLINDER:
+    case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_HALFSPACE:
     case fcl::GEOM_SPHERE:
       return true;
@@ -518,6 +582,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       case fcl::GEOM_CYLINDER:
         distance = distance_to_point(
             *static_cast<const fcl::Cylinderd*>(collision_geometry));
+        break;
+      case fcl::GEOM_ELLIPSOID:
+        distance = distance_to_point(
+            *static_cast<const fcl::Ellipsoidd*>(collision_geometry));
         break;
       case fcl::GEOM_HALFSPACE:
         distance = distance_to_point(

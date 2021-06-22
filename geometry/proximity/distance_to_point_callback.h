@@ -164,6 +164,9 @@ class DistanceToPoint {
   /* Overload to compute distance to a cylinder.  */
   SignedDistanceToPoint<T> operator()(const fcl::Cylinderd& cylinder);
 
+  /* Overload to compute distance to an ellipsoid.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Ellipsoidd& ellipsoid);
+
   /* Overload to compute distance to a halfspace.  */
   SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace);
 
