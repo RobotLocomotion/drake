@@ -89,7 +89,8 @@ void SetInitialPoses(const MultibodyPlant<double>& plant,
   const drake::multibody::RevoluteJoint<double>& left_pushrod_pin =
       plant.GetJointByName<drake::multibody::RevoluteJoint>(
           "rod_revolute_joint");
-  const double rod_revolute_joint_angle = asin(y_initial_horizontal_distance / l2);
+  const double rod_revolute_joint_angle =
+      asin(y_initial_horizontal_distance / l2);
   left_pushrod_pin.set_angle(plant_context, rod_revolute_joint_angle);
 }
 
@@ -222,7 +223,7 @@ int do_main() {
 }
 
 }  // namespace
-}  // bushing_as_revolute_joint
+}  // namespace bushing_as_revolute_joint
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
