@@ -173,45 +173,6 @@ class PointShapeAutoDiffSignedDistanceTester {
   const double tolerance_{std::numeric_limits<double>::epsilon()};
 };
 
-// Simple smoke test for signed distance to Sphere. It does the following:
-//   Perform test of three different points w.r.t. a sphere: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Sphere) {
-  const double kEps = 4 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the sphere in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransform<double> X_WG(R_WG, p_WG);
-  const fcl::Sphered sphere(0.7);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Sphered> tester(&sphere, X_WG,
-                                                              kEps);
-
-  // An arbitrary direction away from the origin that *isn't* aligned with the
-  // frame basis.
-  const Vector3d vhat_NQ = Vector3d{2, -3, 6}.normalized();
-  const Vector3d p_NQ_G = 1.5 * vhat_NQ;
-  const Vector3d p_GN_G = sphere.radius * vhat_NQ;
-
-  // Case: point lies *outside* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-  // Case: point lies *on* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-  // Case: point lies *in* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
-
-  // Case: point lies at origin of the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
-                          true /* is inside */, false /* ill defined */));
-}
-
 // Simple smoke test for signed distance to Box. It does the following:
 //   Perform test of three different points w.r.t. a box: outside, on
 //     surface, and inside.
@@ -395,6 +356,45 @@ GTEST_TEST(DistanceToPoint, Halfspace) {
   EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * phat_NQ_G, true /* is inside */));
 }
 
+// Simple smoke test for signed distance to Sphere. It does the following:
+//   Perform test of three different points w.r.t. a sphere: outside, on
+//     surface, and inside.
+//   Do it with AutoDiff relative to the query point's position.
+//   Confirm the *values* of the reported quantity.
+//   Confirm that the derivative of distance (extracted from AutoDiff) matches
+//     the derivative computed by hand (grad_W).
+GTEST_TEST(DistanceToPoint, Sphere) {
+  const double kEps = 4 * std::numeric_limits<double>::epsilon();
+
+  // Provide some arbitrary pose of the sphere in the world.
+  const RotationMatrix<double> R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const Vector3d p_WG{0.5, 1.25, -2};
+  const RigidTransform<double> X_WG(R_WG, p_WG);
+  const fcl::Sphered sphere(0.7);
+  PointShapeAutoDiffSignedDistanceTester<fcl::Sphered> tester(&sphere, X_WG,
+                                                              kEps);
+
+  // An arbitrary direction away from the origin that *isn't* aligned with the
+  // frame basis.
+  const Vector3d vhat_NQ = Vector3d{2, -3, 6}.normalized();
+  const Vector3d p_NQ_G = 1.5 * vhat_NQ;
+  const Vector3d p_GN_G = sphere.radius * vhat_NQ;
+
+  // Case: point lies *outside* the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+
+  // Case: point lies *on* the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+
+  // Case: point lies *in* the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
+
+  // Case: point lies at origin of the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
+                          true /* is inside */, false /* ill defined */));
+}
+
 // TODO(SeanCurtis-TRI): Point-to-cylinder with AutoDiff has been "disabled".
 //  However, this has been done at the callback level and these tests are
 //  structured to exercise DistanceToPoint directly. This is a short-term
@@ -547,9 +547,15 @@ void TestScalarShapeSupport() {
     Callback<T>(&query_point, &object, &data, threshold);
   };
 
-  // Sphere
+  // Box
   {
-    run_callback(make_shared<fcl::Sphered>(1.0));
+    run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
+    EXPECT_EQ(distances.size(), 1);
+  }
+
+  // Capsule
+  {
+    run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
     EXPECT_EQ(distances.size(), 1);
   }
 
@@ -565,15 +571,9 @@ void TestScalarShapeSupport() {
     EXPECT_EQ(distances.size(), 1);
   }
 
-  // Box
+  // Sphere
   {
-    run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
-    EXPECT_EQ(distances.size(), 1);
-  }
-
-  // Capsule
-  {
-    run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
+    run_callback(make_shared<fcl::Sphered>(1.0));
     EXPECT_EQ(distances.size(), 1);
   }
 

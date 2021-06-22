@@ -172,30 +172,21 @@ template void ComputeDistanceToPrimitive<S>(                                \
 #undef INSTANTIATE_DISTANCE_TO_PRIMITIVE
 
 template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Sphered& sphere) {
-  T distance{};
-  Vector3<T> p_GN_G, grad_W;
-  bool is_grad_W_unique{};
-  ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance, &grad_W,
-                             &is_grad_W_unique);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
-                                  is_grad_W_unique};
-#pragma GCC diagnostic pop
-}
-
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
-    const fcl::Halfspaced& halfspace) {
-  T distance{};
-  Vector3<T> p_GN_G, grad_W;
-  bool is_grad_W_unique{};
-  ComputeDistanceToPrimitive(halfspace, X_WG_, p_WQ_, &p_GN_G, &distance,
-                             &grad_W, &is_grad_W_unique);
-
+SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(const fcl::Boxd& box) {
+  // Express the given query point Q in the frame of the box geometry G.
+  const Vector3<T> p_GQ_G = X_WG_.inverse() * p_WQ_;
+  // The box G is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
+  // centered at the origin, where h(i) is half the size of the box in the
+  // i-th coordinate.
+  const Eigen::Vector3d h = box.side / 2.0;
+  Vector3<T> p_GN_G, grad_G;
+  bool is_Q_on_edge_or_vertex{};
+  std::tie(p_GN_G, grad_G, is_Q_on_edge_or_vertex) =
+      ComputeDistanceToBox(h, p_GQ_G);
+  const bool is_grad_W_unique = !is_Q_on_edge_or_vertex;
+  const Vector3<T> grad_W = X_WG_.rotation() * grad_G;
+  const Vector3<T> p_WN = X_WG_ * p_GN_G;
+  T distance = grad_W.dot(p_WQ_ - p_WN);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
@@ -216,29 +207,6 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   ComputeDistanceToPrimitive(capsule, X_WG_, p_WQ_, &p_GN_G, &distance, &grad_W,
                              &is_grad_W_unique);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
-                                  is_grad_W_unique};
-#pragma GCC diagnostic pop
-}
-
-template <typename T>
-SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(const fcl::Boxd& box) {
-  // Express the given query point Q in the frame of the box geometry G.
-  const Vector3<T> p_GQ_G = X_WG_.inverse() * p_WQ_;
-  // The box G is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
-  // centered at the origin, where h(i) is half the size of the box in the
-  // i-th coordinate.
-  const Eigen::Vector3d h = box.side / 2.0;
-  Vector3<T> p_GN_G, grad_G;
-  bool is_Q_on_edge_or_vertex{};
-  std::tie(p_GN_G, grad_G, is_Q_on_edge_or_vertex) =
-      ComputeDistanceToBox(h, p_GQ_G);
-  const bool is_grad_W_unique = !is_Q_on_edge_or_vertex;
-  const Vector3<T> grad_W = X_WG_.rotation() * grad_G;
-  const Vector3<T> p_WN = X_WG_ * p_GN_G;
-  T distance = grad_W.dot(p_WQ_ - p_WN);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
@@ -345,6 +313,39 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
                                   true /* is_grad_W_unique */};
 #pragma GCC diagnostic pop
 }
+
+template <typename T>
+SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
+    const fcl::Halfspaced& halfspace) {
+  T distance{};
+  Vector3<T> p_GN_G, grad_W;
+  bool is_grad_W_unique{};
+  ComputeDistanceToPrimitive(halfspace, X_WG_, p_WQ_, &p_GN_G, &distance,
+                             &grad_W, &is_grad_W_unique);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                  is_grad_W_unique};
+#pragma GCC diagnostic pop
+}
+
+template <typename T>
+SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
+    const fcl::Sphered& sphere) {
+  T distance{};
+  Vector3<T> p_GN_G, grad_W;
+  bool is_grad_W_unique{};
+  ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance, &grad_W,
+                             &is_grad_W_unique);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                  is_grad_W_unique};
+#pragma GCC diagnostic pop
+}
+
 
 template <typename T>
 template <int dim, typename U>
@@ -457,11 +458,11 @@ DistanceToPoint<T>::ComputeDistanceToBox(const Vector<double, dim>& h,
 
 bool ScalarSupport<double>::is_supported(fcl::NODE_TYPE node_type) {
   switch (node_type) {
-    case fcl::GEOM_SPHERE:
     case fcl::GEOM_BOX:
+    case fcl::GEOM_CAPSULE:
     case fcl::GEOM_CYLINDER:
     case fcl::GEOM_HALFSPACE:
-    case fcl::GEOM_CAPSULE:
+    case fcl::GEOM_SPHERE:
       return true;
     default:
       return false;
@@ -506,13 +507,13 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
 
     SignedDistanceToPoint<T> distance;
     switch (collision_geometry->getNodeType()) {
-      case fcl::GEOM_SPHERE:
-        distance = distance_to_point(
-            *static_cast<const fcl::Sphered*>(collision_geometry));
-        break;
       case fcl::GEOM_BOX:
         distance = distance_to_point(
             *static_cast<const fcl::Boxd*>(collision_geometry));
+        break;
+      case fcl::GEOM_CAPSULE:
+        distance = distance_to_point(
+            *static_cast<const fcl::Capsuled*>(collision_geometry));
         break;
       case fcl::GEOM_CYLINDER:
         distance = distance_to_point(
@@ -522,9 +523,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         distance = distance_to_point(
             *static_cast<const fcl::Halfspaced*>(collision_geometry));
         break;
-      case fcl::GEOM_CAPSULE:
+      case fcl::GEOM_SPHERE:
         distance = distance_to_point(
-            *static_cast<const fcl::Capsuled*>(collision_geometry));
+            *static_cast<const fcl::Sphered*>(collision_geometry));
         break;
       default:
         // Returning false tells fcl to continue to other objects.
