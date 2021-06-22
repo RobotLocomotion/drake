@@ -169,6 +169,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const MultibodyTree<T>& internal_tree() const;
 
+  systems::CacheEntry& DeclareCacheEntry(MultibodyPlant<T>*,
+                                         std::string description,
+                                         systems::ValueCalcFunction,
+                                         std::set<systems::DependencyTicket>);
+
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
 
