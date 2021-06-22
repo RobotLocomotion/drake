@@ -74,11 +74,6 @@ class SceneGraphTester {
   }
 
   template <typename T>
-  static PoseBundle<T> MakePoseBundle(const SceneGraph<T>& scene_graph) {
-    return scene_graph.MakePoseBundle();
-  }
-
-  template <typename T>
   static void CalcPoseBundle(const SceneGraph<T>& scene_graph,
                              const systems::Context<T>& context,
                              PoseBundle<T>* bundle) {
@@ -598,11 +593,11 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
   // Case: No registered source, frames, or geometry --> empty pose vector.
   {
     SceneGraph<double> scene_graph;
-    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    EXPECT_EQ(0, poses.get_num_poses());
+    PoseBundle<double> poses;
     auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
+    EXPECT_EQ(0, poses.get_num_poses());
   }
 
   // Case: Calculating pose bundle with an input pose bundle the wrong size.
@@ -620,11 +615,11 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
   {
     SceneGraph<double> scene_graph;
     scene_graph.RegisterSource("dummy");
-    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    EXPECT_EQ(0, poses.get_num_poses());
+    PoseBundle<double> poses;
     auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
+    EXPECT_EQ(0, poses.get_num_poses());
   }
 
   // Case: Registered source with anchored geometry but no frames or dynamic
@@ -636,11 +631,11 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         s_id, scene_graph.world_frame_id(),
         make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
-    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    EXPECT_EQ(0, poses.get_num_poses());
+    PoseBundle<double> poses;
     auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
+    EXPECT_EQ(0, poses.get_num_poses());
   }
 
   // Case: Registered source with anchored geometry and frame but no dynamic
@@ -654,16 +649,16 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
-    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    // The frame has no illustration geometry, so it is not part of the pose
-    // bundle.
-    EXPECT_EQ(0, poses.get_num_poses());
+    PoseBundle<double> poses;
     auto context = scene_graph.CreateDefaultContext();
     const FramePoseVector<double> pose_vector{
         {f_id, RigidTransformd::Identity()}};
     scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
+    // The frame has no illustration geometry, so it is not part of the pose
+    // bundle.
+    EXPECT_EQ(0, poses.get_num_poses());
   }
 
   // Case: Registered source with anchored geometry and frame with dynamic
@@ -680,16 +675,16 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         s_id, f_id,
         make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
-    PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
-    // The dynamic geometry has no illustration role, so it doesn't lead the
-    // frame to be included in the bundle.
-    EXPECT_EQ(0, poses.get_num_poses());
+    PoseBundle<double> poses;
     auto context = scene_graph.CreateDefaultContext();
     const FramePoseVector<double> pose_vector{
         {f_id, RigidTransformd::Identity()}};
     scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
+    // The dynamic geometry has no illustration role, so it doesn't lead the
+    // frame to be included in the bundle.
+    EXPECT_EQ(0, poses.get_num_poses());
   }
 }
 

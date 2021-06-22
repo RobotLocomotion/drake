@@ -89,7 +89,7 @@ SceneGraph<T>::SceneGraph()
       this->DeclareAbstractParameter(GeometryStateValue<T>());
 
   bundle_port_index_ = this->DeclareAbstractOutputPort(
-                               "lcm_visualization", &SceneGraph::MakePoseBundle,
+                               "lcm_visualization",
                                &SceneGraph::CalcPoseBundle)
                            .get_index();
 
@@ -385,13 +385,6 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   //
   // See the todo in the header for an alternate formulation.
   output->set(&context, this);
-}
-
-template <typename T>
-PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
-  vector<FrameId> dynamic_frames =
-      GetDynamicFrames(model_, Role::kIllustration);
-  return PoseBundle<T>(static_cast<int>(dynamic_frames.size()));
 }
 
 template <typename T>

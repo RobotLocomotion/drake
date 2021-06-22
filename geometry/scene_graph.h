@@ -909,10 +909,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void CalcQueryObject(const systems::Context<T>& context,
                        QueryObject<T>* output) const;
 
-  // Constructs a PoseBundle of length equal to the concatenation of all inputs.
-  // This is the method used by the allocator for the output port.
-  systems::rendering::PoseBundle<T> MakePoseBundle() const;
-
   // Aggregates the input poses into the output PoseBundle, in the same order as
   // was used in allocation. Aborts if any inputs have a _different_ size than
   // expected.
