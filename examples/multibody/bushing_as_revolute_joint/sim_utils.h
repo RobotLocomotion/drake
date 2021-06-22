@@ -1,7 +1,13 @@
+#pragma once
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/lcm/drake_lcm.h"
 
 namespace drake {
 namespace examples {
@@ -36,7 +42,7 @@ class FrameViz final : public drake::systems::LeafSystem<double> {
   bool frames_input_{false};
 };
 
-}  // bushing_as_revolute_joint
+}  // namespace bushing_as_revolute_joint
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
