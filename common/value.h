@@ -70,6 +70,15 @@ class AbstractValue {
 
   virtual ~AbstractValue();
 
+  /// Constructs an AbstractValue using T's default constructor, if available.
+  /// This is only available for T's that support default construction.
+#if !defined(DRAKE_DOXYGEN_CXX)
+  template <typename T,
+            typename = typename std::enable_if_t<
+                std::is_default_constructible_v<T>>>
+#endif
+  static std::unique_ptr<AbstractValue> Make();
+
   /// Returns an AbstractValue containing the given @p value.
   template <typename T>
   static std::unique_ptr<AbstractValue> Make(const T& value);
@@ -185,7 +194,6 @@ class Value : public AbstractValue {
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
 #if !defined(DRAKE_DOXYGEN_CXX)
-  // T1 is template boilerplate; do not specify it at call sites.
   template <typename T1 = T,
             typename = typename std::enable_if_t<
                 std::is_default_constructible_v<T1>>>
@@ -640,6 +648,11 @@ struct ValueTraitsImpl<T, false> {
 };
 
 }  // namespace internal
+
+template <typename T, typename>
+std::unique_ptr<AbstractValue> AbstractValue::Make() {
+  return std::unique_ptr<AbstractValue>(new Value<T>());
+}
 
 template <typename T>
 std::unique_ptr<AbstractValue> AbstractValue::Make(const T& value) {

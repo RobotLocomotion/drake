@@ -1001,11 +1001,9 @@ TEST_F(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
   const RigidTransformd X_WS = RigidTransformd::Identity();
   const RigidTransformd X_WR = X_WS * X_SR_;
 
-  const std::vector<ContactPolygonRepresentation> AllRepresentations {
-      ContactPolygonRepresentation::kCentroidSubdivision,
-      ContactPolygonRepresentation::kSingleTriangle
-  };
-  for (const auto representation : AllRepresentations) {
+  for (const auto representation :
+       {ContactPolygonRepresentation::kCentroidSubdivision,
+        ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
     // Regardless of how we assign id_A and id_B to mesh_S_ and surface_R_, the
     // contact surfaces will always have id_M = id_A and id_N = id_B (because

@@ -451,6 +451,10 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
   }
 }
 
+// TODO(xuchenhan-tri): Add a unit test that covers
+//  DeformableRigidManager::CalcDeformableRigidContact() in the PR that
+//  introduces contact jacobian calculation.
+
 }  // namespace
 }  // namespace fixed_fem
 }  // namespace multibody

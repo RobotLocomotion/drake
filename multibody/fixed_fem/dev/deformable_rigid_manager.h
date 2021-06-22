@@ -9,6 +9,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/fixed_fem/dev/collision_objects.h"
+#include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
@@ -170,6 +171,18 @@ class DeformableRigidManager final
    `deformable_id`. */
   internal::DeformableRigidContactPair<T> CalcDeformableRigidContactPair(
       geometry::GeometryId rigid_id, SoftBodyIndex deformable_id) const;
+
+  /* Calculates and returns the DeformableContactData that contains information
+   about all deformable-rigid contacts associated with the deformable body
+   identified by `deformable_id`. */
+  internal::DeformableContactData<T> CalcDeformableContactData(
+      SoftBodyIndex deformable_id) const;
+
+  /* Calculates all deforamble-rigid contacts and returns a vector of
+   DeformableContactData in which the i-th entry contains contact information
+   about the i-th deformable body against all rigid bodies. */
+  std::vector<internal::DeformableContactData<T>> CalcDeformableRigidContact(
+      const systems::Context<T>& context) const;
 
   /* The deformable models being solved by `this` manager. */
   const DeformableModel<T>* deformable_model_{nullptr};

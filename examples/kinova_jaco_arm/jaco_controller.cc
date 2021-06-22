@@ -85,15 +85,9 @@ int DoMain() {
   Eigen::VectorXd jaco_ki = Eigen::VectorXd::Zero(num_joints + num_fingers);
   Eigen::VectorXd jaco_kd = Eigen::VectorXd::Zero(num_joints + num_fingers);
 
-  // I (sam.creasey) have no idea what would be good values here.
-  // This seems to work OK at the low speeds of the jaco.
-  jaco_kp.head(num_joints).fill(10);
-  jaco_kp.tail(num_fingers).fill(1);
-  jaco_kd.head(num_joints).fill(1);
-
-  // The finger velocities reported from the Jaco aren't meaningful,
-  // so we shouldn't try to control based on them.
-  jaco_kd.tail(num_fingers).fill(0);
+  // The Jaco shows some tracking error if we're just sending open-loop
+  // velocities, so use a small P term to correct for that.
+  jaco_kp.fill(1);
 
   auto pid_controller = builder.AddSystem<systems::controllers::PidController>(
       jaco_kp, jaco_ki, jaco_kd);
@@ -134,7 +128,7 @@ int DoMain() {
 
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_jaco_command>(
-          kLcmCommandChannel, &lcm));
+          kLcmCommandChannel, &lcm, {systems::TriggerType::kForced}));
   auto command_sender = builder.AddSystem<JacoCommandSender>(num_joints);
   builder.Connect(command_mux->get_output_port(0),
                   command_sender->get_input_port());
@@ -156,28 +150,21 @@ int DoMain() {
   DRAKE_DEMAND(first_status.num_fingers == 0 ||
                first_status.num_fingers == num_fingers);
 
-  VectorX<double> q0 = VectorX<double>::Zero(num_joints + num_fingers);
-  for (int i = 0; i < first_status.num_joints; ++i) {
-    q0(i) = first_status.joint_position[i];
-  }
-
-  for (int i = 0; i < first_status.num_fingers; ++i) {
-    q0(i + num_joints) = first_status.finger_position[i];
-  }
-
   systems::Context<double>& diagram_context = simulator.get_mutable_context();
   const double t0 = first_status.utime * 1e-6;
   diagram_context.SetTime(t0);
-
-  auto& plan_source_context =
-      diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
-  plan_source->Initialize(t0, q0,
-                          &plan_source_context.get_mutable_state());
 
   systems::Context<double>& status_context =
       diagram->GetMutableSubsystemContext(*status_receiver, &diagram_context);
   auto& status_value = status_receiver->get_input_port().FixValue(
       &status_context, first_status);
+
+  auto& plan_source_context =
+      diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
+  plan_source->Initialize(
+      t0, status_receiver->get_state_output_port().Eval(
+          status_context).head(num_joints + num_fingers),
+      &plan_source_context.get_mutable_state());
 
   // Run forever, using the lcmt_jaco_status message to dictate when simulation
   // time advances.  The lcmt_robot_plan message is handled whenever the next
