@@ -1,6 +1,8 @@
 #pragma once
+
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -102,6 +104,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
 
   static double default_contact_dissipation(const MultibodyPlant<T>& plant) {
     return plant.penalty_method_contact_parameters_.dissipation;
+  }
+
+  static const std::unordered_map<geometry::GeometryId, BodyIndex>&
+  geometry_id_to_body_index(const MultibodyPlant<T>& plant) {
+    return plant.geometry_id_to_body_index_;
   }
 };
 }  // namespace internal

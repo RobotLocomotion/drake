@@ -166,6 +166,7 @@ drake_cc_library(
         ":deformable_rigid_contact_pair",
         ":fem_solver",
         "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
         "//multibody/plant",
     ],
 )

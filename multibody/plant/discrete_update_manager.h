@@ -1,7 +1,9 @@
 #pragma once
+
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
@@ -213,6 +215,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
+
+  const std::unordered_map<geometry::GeometryId, BodyIndex>&
+  geometry_id_to_body_index() const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to

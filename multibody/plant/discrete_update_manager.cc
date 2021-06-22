@@ -142,6 +142,13 @@ double DiscreteUpdateManager<T>::default_contact_dissipation() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::default_contact_dissipation(plant());
 }
+
+template <typename T>
+const std::unordered_map<geometry::GeometryId, BodyIndex>&
+DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::geometry_id_to_body_index(*plant_);
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
