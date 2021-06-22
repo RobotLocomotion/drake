@@ -22,7 +22,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
-TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
+TEST_F(InfeasibleLinearProgramTest0, DISABLED_TestIpopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   IpoptSolver solver;
   if (solver.available()) {
@@ -109,7 +109,7 @@ class NoisyQuadraticCost {
   const int noise_counter_limit_{10};
 };
 
-GTEST_TEST(IpoptSolverTest, AcceptableResult) {
+GTEST_TEST(IpoptSolverTest, DISABLED_AcceptableResult) {
   IpoptSolver solver;
   SolverOptions options;
   options.SetOption(IpoptSolver::id(), "tol", 1e-6);
