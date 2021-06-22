@@ -132,8 +132,6 @@ class CartesianSetpoint {
   Vector6<Scalar>& mutable_Kp() { return Kp_; }
   Vector6<Scalar>& mutable_Kd() { return Kd_; }
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
  private:
   // Desired pose
   math::RigidTransform<Scalar> pose_d_;

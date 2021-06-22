@@ -276,8 +276,6 @@ class ZMPPlanner {
     return s2_.value(time);
   }
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
  private:
   // Check if the last point of zmp_d is stationary (first and higher
   // derivatives are zero).

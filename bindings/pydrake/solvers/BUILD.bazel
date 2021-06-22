@@ -129,6 +129,18 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "dreal_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["dreal_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+    ],
+)
+
+drake_pybind_library(
     name = "gurobi_py",
     cc_deps = [
         ":solvers_pybind",
@@ -244,6 +256,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":branch_and_bound_py",
     ":clp_py",
     ":csdp_py",
+    ":dreal_py",
     ":gurobi_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
@@ -300,6 +313,19 @@ drake_py_unittest(
     }),
     deps = [
         ":csdp_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "dreal_solver_test",
+    args = select({
+        "//tools:no_dreal": ["TestDrealSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":dreal_py",
+        "//bindings/pydrake/common:containers_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

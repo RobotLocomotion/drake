@@ -54,7 +54,7 @@ class OptimizationProgram {
 
   virtual void CheckSolution(const MathematicalProgramResult& result) const = 0;
 
-  double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
+  double GetSolverSolutionDefaultCompareTolerance(SolverId solver_id) const;
 
   void RunProblem(SolverInterface* solver);
 

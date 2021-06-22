@@ -3,7 +3,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/solvers/solver_type_converter.h"
+#include "drake/solvers/clp_solver.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/scs_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Matrix2d;
@@ -72,42 +79,37 @@ void OptimizationProgram::RunProblem(SolverInterface* solver) {
     EXPECT_EQ(solver->ExplainUnsatisfiedProgramAttributes(*prog_), "");
     const MathematicalProgramResult result =
         RunSolver(*prog_, *solver, initial_guess());
-    const std::optional<SolverType> solver_type =
-        SolverTypeConverter::IdToType(result.get_solver_id());
-    ASSERT_TRUE(solver_type != std::nullopt);
     CheckSolution(result);
   }
 }
 
 double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
-    SolverType solver_type) const {
-  switch (solver_type) {
-    case SolverType::kClp: {
-      return 1E-8;
-    }
-    case SolverType::kMosek: {
-      return 1E-10;
-    }
-    case SolverType::kGurobi: {
-      return 1E-10;
-    }
-    case SolverType::kSnopt: {
-      return 1E-8;
-    }
-    case SolverType::kIpopt: {
-      return 1E-6;
-    }
-    case SolverType::kNlopt: {
-      return 1E-6;
-    }
-    case SolverType::kOsqp: {
-      return 1E-10;
-    }
-    case SolverType::kScs: {
-      return 3E-5;  // Scs is not very accurate.
-    }
-    default: { throw std::runtime_error("Unsupported solver type."); }
+    SolverId solver_id) const {
+  if (solver_id == ClpSolver::id()) {
+    return 1E-8;
   }
+  if (solver_id == MosekSolver::id()) {
+    return 1E-10;
+  }
+  if (solver_id == GurobiSolver::id()) {
+    return 1E-10;
+  }
+  if (solver_id == SnoptSolver::id()) {
+    return 1E-8;
+  }
+  if (solver_id == IpoptSolver::id()) {
+    return 1E-6;
+  }
+  if (solver_id == NloptSolver::id()) {
+    return 1E-6;
+  }
+  if (solver_id == OsqpSolver::id()) {
+    return 1E-10;
+  }
+  if (solver_id == ScsSolver::id()) {
+    return 3E-5;  // Scs is not very accurate.
+  }
+  throw std::runtime_error("Unsupported solver type.");
 }
 
 LinearSystemExample1::LinearSystemExample1()

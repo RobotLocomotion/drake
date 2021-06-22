@@ -36,8 +36,6 @@ class ConstraintRelaxingIk {
     double rot_tol{0.05};
     /// Signals if orientation constraint is enabled.
     bool constrain_orientation{false};
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /**

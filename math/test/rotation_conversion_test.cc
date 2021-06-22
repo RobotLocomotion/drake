@@ -99,9 +99,6 @@ GTEST_TEST(EigenEulerAngleTest, BodyZYZ) {
 }
 
 class RotationConversionTest : public ::testing::Test {
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
  protected:
   void SetUp() override {
     SetupRPYTestCases();

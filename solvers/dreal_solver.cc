@@ -559,7 +559,7 @@ void DrealSolver::DoSolve(
   // 3. Call dReal to check the delta-satisfiability of the problem.
 
   // TODO(soonho): Support other dReal options. For now, we only support
-  // "--preicision" and "--local-optimization".
+  // "--precision" and "--local-optimization".
 
   const double precision{GetOptionWithDefaultValue(
       merged_options, "precision", 0.001 /* default */)};
