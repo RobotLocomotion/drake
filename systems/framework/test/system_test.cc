@@ -614,7 +614,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
             "absport",
-            []() { return AbstractValue::Make(std::string()); },
+            []() { return AbstractValue::Make<std::string>(); },
             [this](const ContextBase& context, AbstractValue* output) {
               this->CalcStringOutput(context, output);
             })));
@@ -646,7 +646,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const override {
     if (input_port.get_index() == 0) {
-      return AbstractValue::Make<std::string>("");
+      return AbstractValue::Make<std::string>();
     } else {
       return std::make_unique<Value<BasicVector<T>>>(TestTypedVector<T>{});
     }
