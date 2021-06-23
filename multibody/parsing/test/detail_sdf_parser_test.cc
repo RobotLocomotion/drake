@@ -655,7 +655,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
-  sdf::addURIPath("model://", filesystem::path(full_name).parent_path());
+
   MultibodyPlant<double> plant(0.0);
 
   // We start with the world and default model instances.
@@ -664,7 +664,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   ASSERT_EQ(plant.num_joints(), 0);
 
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
+  package_map.PopulateFromFolder(filesystem::path(full_name).parent_path());
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 

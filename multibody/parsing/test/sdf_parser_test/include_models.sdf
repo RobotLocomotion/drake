@@ -2,17 +2,17 @@
 <sdf version="1.8">
   <world name="SimWorld">
     <include>
-      <uri>model://simple_robot1</uri>
+      <uri>model://simple_robot1/</uri>
     </include>
     <include>
-      <uri>model://simple_robot2</uri>
+      <uri>model://simple_robot2/</uri>
     </include>
     <model name="weld_models">
       <include>
-        <uri>model://simple_robot1</uri>
+        <uri>model://simple_robot1/</uri>
       </include>
       <include>
-        <uri>model://simple_robot2</uri>
+        <uri>model://simple_robot2/</uri>
       </include>
       <joint name="weld_robots" type="revolute">
         <parent>robot1::base_link</parent>

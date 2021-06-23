@@ -491,7 +491,8 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    const DataSource& data_source) {
+    const DataSource& data_source,
+    const PackageMap& package_map) {
   data_source.DemandExactlyOne();
 
   std::string root_dir;
@@ -499,6 +500,10 @@ std::string LoadSdf(
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  parser_config.SetFindCallback(
+    [=](const std::string &_input) {
+      return ResolveUri(_input, package_map, ".");
+    });
   // TODO(#15018): This means that unrecognized elements won't be shown to a
   // user directly (via console or exception). We should change unrecognized
   // elements policy to print a warning, and later become an error.
@@ -930,7 +935,7 @@ ModelInstanceIndex AddModelFromSdf(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, data_source);
+  std::string root_dir = LoadSdf(&root, data_source, package_map);
 
   // TODO(jwnimmer-tri) When we upgrade to a version of libsdformat that no
   // longer offers ModelCount(), remove this entire paragraph of code.
@@ -974,7 +979,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, data_source);
+  std::string root_dir = LoadSdf(&root, data_source, package_map);
 
   // Throw an error if there are no models or worlds.
   if (root.Model() == nullptr && root.WorldCount() == 0) {
