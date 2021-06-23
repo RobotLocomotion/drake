@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/deformable_volume_mesh.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
