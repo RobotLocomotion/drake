@@ -1897,7 +1897,11 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 
   const auto& query_object = EvalGeometryQueryInput(context);
 
-  *contact_surfaces = query_object.ComputeContactSurfaces();
+  if (is_discrete()) {
+    *contact_surfaces = query_object.ComputePolygonalContactSurfaces();
+  } else {
+    *contact_surfaces = query_object.ComputeContactSurfaces();
+  }
 }
 
 template <>
@@ -1920,8 +1924,13 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
-    query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                    &data->point_pairs);
+    if (is_discrete()) {
+      query_object.ComputePolygonalContactSurfacesWithFallback(
+          &data->contact_surfaces, &data->point_pairs);
+    } else {
+      query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
+                                                      &data->point_pairs);
+    }
   }
 }
 
