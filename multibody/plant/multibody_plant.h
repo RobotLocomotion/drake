@@ -1596,6 +1596,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
 #ifndef DRAKE_DOXYGEN_CXX
+  // (Experimental) For a discrete system, setting `true` instructs MBP to use
+  // the low-resolution hydroelastic contact surfaces optimized for speed.
+  // This configuration defaults to `false`. When false, MBP will use the
+  // high-resolution hydroelastic contact surfaces for the discrete system.
+  //
+  // For a continuous system, this setting has no effect because MBP will always
+  // use the high-resolution contact surfaces.
+  //
+  // The low-resolution contact surfaces improves performance for discrete
+  // systems but produces undesirable artifacts in visualization.
+  //
+  // @warning Setting this to true may lead to changes in the simulation
+  // results.
+  //
+  // @throws std::exception iff called post-finalize.
+  void set_low_resolution_contact_surface(bool use_low_resolution);
+
   // TODO(xuchenhan-tri): Remove SetContactSolver() once
   //  SetDiscreteUpdateManager() stabilizes.
   // (Experimental) SetContactSolver() should only be called by advanced
@@ -4749,6 +4766,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // The model used by the plant to compute contact forces.
   ContactModel contact_model_{ContactModel::kPointContactOnly};
+
+  bool use_low_resolution_contact_surface_{false};
 
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;
