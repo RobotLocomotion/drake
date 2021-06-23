@@ -76,10 +76,12 @@ void DeformableRigidManager<T>::MakeFemSolvers() {
 template <typename T>
 void DeformableRigidManager<T>::RegisterDeformableGeometries() {
   DRAKE_DEMAND(deformable_model_ != nullptr);
-  const auto& ref_meshes = deformable_model_->reference_configuration_meshes();
-  deformable_meshes_.reserve(ref_meshes.size());
-  for (const auto& ref_mesh : ref_meshes) {
-    deformable_meshes_.emplace_back(ref_mesh);
+  const auto& ref_geometries =
+      deformable_model_->reference_configuration_geometries();
+  deformable_meshes_.reserve(ref_geometries.size());
+  for (const internal::ReferenceDeformableGeometry<T>& geometry :
+       ref_geometries) {
+    deformable_meshes_.emplace_back(geometry.mesh());
   }
 }
 
@@ -445,8 +447,9 @@ DeformableRigidManager<T>::CalcDeformableContactData(
       deformable_rigid_contact_pairs.emplace_back(std::move(contact_pair));
     }
   }
-  return {std::move(deformable_rigid_contact_pairs),
-          deformable_meshes_[deformable_id].mesh()};
+  return {
+      std::move(deformable_rigid_contact_pairs),
+      deformable_model_->reference_configuration_geometries()[deformable_id]};
 }
 
 template <typename T>
@@ -536,15 +539,15 @@ MatrixX<T> DeformableRigidManager<T>::CalcContactJacobianDeformableBlock(
   const std::vector<int>& permuted_vertex_indexes =
       contact_data.permuted_vertex_indexes();
   DRAKE_DEMAND(deformable_model_ != nullptr);
-  const std::vector<geometry::VolumeMesh<T>>& deformable_meshes =
-      deformable_model_->reference_configuration_meshes();
+  const std::vector<internal::ReferenceDeformableGeometry<T>>& ref_geometries =
+      deformable_model_->reference_configuration_geometries();
 
   int contact_point_offset = 0;
   for (const auto& contact_pair : contact_data.contact_pairs()) {
     const DeformableContactSurface<T>& contact_surface =
         contact_pair.contact_surface;
-    const geometry::VolumeMesh<T>& volume_mesh =
-        deformable_meshes[contact_pair.deformable_id];
+    const geometry::VolumeMesh<T>& reference_volume_mesh =
+        ref_geometries[contact_pair.deformable_id].mesh();
     for (int ic = 0; ic < contact_surface.num_polygons(); ++ic) {
       const ContactPolygonData<T>& polygon_data =
           contact_surface.polygon_data(ic);
@@ -562,7 +565,7 @@ MatrixX<T> DeformableRigidManager<T>::CalcContactJacobianDeformableBlock(
        be R_CW * bⱼ. */
       const Vector4<T>& barycentric_weights = polygon_data.b_centroid;
       const geometry::VolumeElement tet_element =
-          volume_mesh.element(polygon_data.tet_index);
+          reference_volume_mesh.element(polygon_data.tet_index);
       for (int j = 0; j < kNumVerticesInTetrahedron; ++j) {
         const int v = permuted_vertex_indexes[tet_element.vertex(j)];
         Jc.template block<3, 3>(3 * contact_point_offset, 3 * v) =
@@ -671,13 +674,15 @@ void DeformableRigidManager<T>::CalcContactPointData(
            per_deformable_body_contact_data : deformable_contact_data) {
     /* For each deformable body, loop over rigid object in contact with the
      deformable body. */
-    for (const internal::DeformableRigidContactPair<T>&
-             deformable_rigid_contact_pair :
-         per_deformable_body_contact_data.contact_pairs()) {
+    for (int i = 0; i < per_deformable_body_contact_data.num_contact_pairs();
+         ++i) {
+      const internal::DeformableRigidContactPair<T>&
+          deformable_rigid_contact_pair =
+              per_deformable_body_contact_data.contact_pairs()[i];
       const int nc_in_pair = deformable_rigid_contact_pair.num_contact_points();
-      // TODO(xuchenhan-tri): Set phi0 to actual values when they are
-      //  calculated.
-      phi0.segment(contact_offset, nc_in_pair) = VectorX<T>::Zero(nc_in_pair);
+      phi0.segment(contact_offset, nc_in_pair) = VectorX<T>::Map(
+          per_deformable_body_contact_data.signed_distances(i).data(),
+          nc_in_pair);
       mu.segment(contact_offset, nc_in_pair) =
           VectorX<T>::Ones(nc_in_pair) * deformable_rigid_contact_pair.friction;
       stiffness.segment(contact_offset, nc_in_pair) =

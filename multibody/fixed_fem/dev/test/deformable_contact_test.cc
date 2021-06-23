@@ -24,6 +24,7 @@ using geometry::SurfaceMesh;
 using geometry::VolumeElement;
 using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
+using geometry::VolumeMeshFieldLinear;
 using geometry::VolumeVertex;
 using geometry::internal::Bvh;
 using geometry::internal::DeformableVolumeMesh;
@@ -81,6 +82,19 @@ VolumeMesh<T> OctahedronVolume() {
     vertices.emplace_back(vertex);
   }
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
+}
+
+template <typename T>
+internal::ReferenceDeformableGeometry<T> OctahedronDeformableGeometry() {
+  auto mesh = std::make_unique<VolumeMesh<T>>(OctahedronVolume<T>());
+  /* The distance to surface of the octahedron is zero for all vertices except
+   for v0 that has signed distance to the surface of -1/√3. */
+  std::vector<T> signed_distances(7, 0.0);
+  signed_distances[0] = -1.0 / std::sqrt(3);
+  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
+      "Approximated signed distance", std::move(signed_distances), mesh.get(),
+      false);
+  return {std::move(mesh), std::move(mesh_field)};
 }
 
 /* Generates a simple surface mesh of a pyramid with vertices on the
@@ -307,7 +321,7 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
  `contact_surface`. Unused parameters are set to arbitrary values. */
 internal::DeformableContactData<double> MakeDeformableContactData(
     DeformableContactSurface<double> contact_surface,
-    VolumeMesh<double> volume_mesh) {
+    internal::ReferenceDeformableGeometry<double> deformable_geometry) {
   const geometry::GeometryId dummy_rigid_id;
   const SoftBodyIndex dummy_deformable_id;
   const double dummy_stiffness = 0;
@@ -316,7 +330,8 @@ internal::DeformableContactData<double> MakeDeformableContactData(
   const internal::DeformableRigidContactPair<double> contact_pair(
       std::move(contact_surface), dummy_rigid_id, dummy_deformable_id,
       dummy_stiffness, dummy_dissipation, dummy_friction);
-  return internal::DeformableContactData<double>({contact_pair}, volume_mesh);
+  return internal::DeformableContactData<double>({contact_pair},
+                                                 deformable_geometry);
 }
 
 GTEST_TEST(DeformableContactTest, DeformableContactData) {
@@ -328,7 +343,7 @@ GTEST_TEST(DeformableContactTest, DeformableContactData) {
       MakeDeformableContactSurface<double>(X_DR);
   const internal::DeformableContactData<double> contact_data =
       MakeDeformableContactData(std::move(contact_surface),
-                                OctahedronVolume<double>());
+                                OctahedronDeformableGeometry<double>());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
   /* v0, v1, v2, v3, v4, v6 are participating in contact so they get new indexes
@@ -353,7 +368,7 @@ GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {
       MakeDeformableContactSurface<double>(X_DR);
   const internal::DeformableContactData<double> contact_data =
       MakeDeformableContactData(std::move(contact_surface),
-                                OctahedronVolume<double>());
+                                OctahedronDeformableGeometry<double>());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
   EXPECT_EQ(contact_data.num_vertices_in_contact(), 0);

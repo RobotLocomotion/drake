@@ -116,6 +116,23 @@ drake_cc_library(
     hdrs = ["deformable_contact_data.h"],
     deps = [
         ":deformable_rigid_contact_pair",
+        ":reference_deformable_geometry",
+    ],
+)
+
+drake_cc_library(
+    name = "reference_deformable_geometry",
+    srcs = [
+        "reference_deformable_geometry.cc",
+    ],
+    hdrs = [
+        "reference_deformable_geometry.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:mesh_field",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -136,6 +153,7 @@ drake_cc_library(
         ":fem_model_base",
         ":linear_constitutive_model",
         ":linear_simplex_element",
+        ":mesh_utilities",
         "//common:essential",
         "//geometry/proximity:volume_mesh",
         "//multibody/fem:simplex_gaussian_quadrature",
@@ -179,6 +197,7 @@ drake_cc_library(
     srcs = ["deformable_visualizer.cc"],
     hdrs = ["deformable_visualizer.h"],
     deps = [
+        ":reference_deformable_geometry",
         "//common:essential",
         "//geometry/proximity:sorted_triplet",
         "//geometry/proximity:volume_mesh",
@@ -453,8 +472,10 @@ drake_cc_library(
         "mesh_utilities.h",
     ],
     deps = [
+        ":reference_deformable_geometry",
         "//common:default_scalars",
         "//common:essential",
+        "//geometry:scene_graph",
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
