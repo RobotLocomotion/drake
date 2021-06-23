@@ -111,8 +111,12 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
           .template Eval<geometry::QueryObject<double>>(*plant_context_);
 
   // Compute the contact surface using the hydroelastic engine.
-  std::vector<geometry::ContactSurface<double>> contact_surfaces =
-      query_object.ComputeContactSurfaces();
+  std::vector<geometry::ContactSurface<double>> contact_surfaces;
+  if (plant_->is_discrete()) {
+    contact_surfaces = query_object.ComputePolygonalContactSurfaces();
+  } else {
+    contact_surfaces = query_object.ComputeContactSurfaces();
+  }
 
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);
