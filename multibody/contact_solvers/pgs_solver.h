@@ -92,9 +92,6 @@ class PgsSolver final : public ContactSolver<T> {
   struct PreProcessedData {
     // The Delassus operator.
     Eigen::SparseMatrix<T> W;
-    // The row major form of the Delassus operator used in the Gauss-Seidel
-    // iterations for better locality.
-    Eigen::SparseMatrix<T, Eigen::RowMajor> W_row_major;
     // The contact velocity solution to the problem when there is no contact.
     VectorX<T> vc_star;
     // The generalized velocities before the solve.

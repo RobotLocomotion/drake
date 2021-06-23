@@ -26,9 +26,11 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
   const auto& v_star = pre_proc_data_.v_star;
   const auto& vc_star = pre_proc_data_.vc_star;
   const auto& Dinv = pre_proc_data_.Dinv;
-  // Use the Delassus operator in row major form for better locality in the
-  // Gauss-Seidel solve.
-  const auto& W = pre_proc_data_.W_row_major;
+  // Since the Delassus operator W is symmetric, we have W = Wᵀ.
+  // We need to access rows of the Delassus operator in the Gauss-Seidel solve
+  // and W is stored in column major order, so we use Wᵀ instead of W for better
+  // data locality.
+  const auto& W = pre_proc_data_.W.transpose();
 
   // Aliases to solver's (mutable) state.
   auto& v = state_.mutable_v();
@@ -120,7 +122,6 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
 template <typename T>
 void PgsSolver<T>::PreProcessedData::Resize(int nv, int nc) {
   W.resize(3 * nc, 3 * nc);
-  W_row_major.resize(3 * nc, 3 * nc);
   vc_star.resize(3 * nc);
   v_star.resize(nv);
   Wii_norm.resize(nc);
@@ -163,7 +164,6 @@ void PgsSolver<T>::PreProcessData(const SystemDynamicsData<T>& dynamics_data,
     this->FormDelassusOperatorMatrix(contact_data.get_Jc(),
                                      dynamics_data.get_Ainv(),
                                      contact_data.get_Jc(), &W);
-    pre_proc_data_.W_row_major = W;
 
     // Compute scaling factors, one per contact.
     auto& Wii_norm = pre_proc_data_.Wii_norm;
