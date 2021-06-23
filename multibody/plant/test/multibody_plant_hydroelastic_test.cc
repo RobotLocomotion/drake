@@ -315,13 +315,17 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
 // contact types (as appropriate).
 class ContactModelTest : public ::testing::Test {
  protected:
-  void Configure(ContactModel model, bool connect_scene_graph = true) {
+  void Configure(ContactModel model, bool connect_scene_graph = true,
+                 double time_step = 0.0,
+                 ContactSurfaceChoice choice = ContactSurfaceChoice::kTriangle,
+                 bool are_rigid_spheres_in_contact = true) {
     systems::DiagramBuilder<double> builder;
     if (connect_scene_graph) {
       std::tie(plant_, scene_graph_) =
-          AddMultibodyPlantSceneGraph(&builder, 0.0);
+          AddMultibodyPlantSceneGraph(&builder, time_step);
     } else {
-      plant_ = builder.AddSystem(std::make_unique<MultibodyPlant<double>>(0.0));
+      plant_ = builder.AddSystem(
+          std::make_unique<MultibodyPlant<double>>(time_step));
       scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
       plant_->RegisterAsSourceForSceneGraph(scene_graph_);
     }
@@ -342,6 +346,10 @@ class ContactModelTest : public ::testing::Test {
     plant_->set_contact_model(model);
     ASSERT_EQ(plant_->get_contact_model(), model);
 
+    // Tell the plant to use the specified choice of contact surfaces.
+    plant_->set_contact_surface_choice(choice);
+    ASSERT_EQ(plant_->get_contact_surface_choice(), choice);
+
     plant_->Finalize();
 
     diagram_ = builder.Build();
@@ -352,9 +360,15 @@ class ContactModelTest : public ::testing::Test {
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
     // Pose the ball.
-    RigidTransformd X_WS1{Vector3d{0.0, 0.0, kSphereRadius * 0.9}};
+    // Lift the first ball up by one radius with a small perturbation to move
+    // it into a general position.
+    RigidTransformd X_WS1{Vector3d{0.1 * kSphereRadius, 0.2 * kSphereRadius,
+                                   0.9 * kSphereRadius}};
     plant_->SetFreeBodyPose(plant_context_, *first_ball_, X_WS1);
     RigidTransformd X_WS2{Vector3d{0.0, 0.0, 2 * kSphereRadius}};
+    if (!are_rigid_spheres_in_contact) {
+      X_WS2 = RigidTransformd(100.0 * kSphereRadius * Vector3d::UnitZ());
+    }
     plant_->SetFreeBodyPose(plant_context_, *second_ball_, X_WS2);
   }
 
@@ -538,6 +552,148 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
       "geometry query output port of a SceneGraph object "
       "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
       "port in a Diagram.");
+}
+
+// TODO(DamrongGuoy): Create an independent test fixture instead of using
+//  inheritance and consider using parameter-value tests.
+
+// Tests MultibodyPlant::CalcContactSurfaces() which is used in
+// kHydroelasticsOnly contact model.
+class CalcContactSurfacesTest : public ContactModelTest {
+ protected:
+  void Configure(double time_step, ContactSurfaceChoice choice) {
+    const bool connect_scene_graph = true;
+    // No rigid-rigid contact. Only the rigid-compliant contact.
+    bool are_rigid_spheres_in_contact = false;
+    ContactModelTest::Configure(ContactModel::kHydroelasticsOnly,
+                                connect_scene_graph, time_step, choice,
+                                are_rigid_spheres_in_contact);
+  }
+};
+
+TEST_F(CalcContactSurfacesTest, ContinuousSystemContactTriangle) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step, ContactSurfaceChoice::kTriangle);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.hydroelastic_contact_info(0)
+                .contact_surface()
+                .mesh_W()
+                .num_faces(),
+            24);
+}
+
+TEST_F(CalcContactSurfacesTest, ContinuousSystemContactPolygon) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step, ContactSurfaceChoice::kPolygon);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetContactResults(), std::logic_error,
+      "MultibodyPlant::CalcContactSurfaces: Continuous system does "
+      "not support the polygonal contact surfaces.");
+}
+
+TEST_F(CalcContactSurfacesTest, DiscreteSystemContactTriangle) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step, ContactSurfaceChoice::kTriangle);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.hydroelastic_contact_info(0)
+                .contact_surface()
+                .mesh_W()
+                .num_faces(),
+            24);
+}
+
+TEST_F(CalcContactSurfacesTest, DiscreteSystemContactPolygon) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step, ContactSurfaceChoice::kPolygon);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.hydroelastic_contact_info(0)
+                .contact_surface()
+                .mesh_W()
+                .num_faces(),
+            7);
+}
+
+// TODO(DamrongGuoy): Create an independent test fixture instead of using
+//  inheritance and consider using parameter-value tests.
+class CalcHydroelasticWithFallbackTest : public ContactModelTest {
+ protected:
+  void Configure(double time_step, ContactSurfaceChoice choice) {
+    const bool connect_scene_graph = true;
+    // Get both the rigid-rigid-sphere contact and the rigid-compliant
+    // sphere-box contact.
+    bool are_rigid_spheres_in_contact = true;
+    ContactModelTest::Configure(ContactModel::kHydroelasticWithFallback,
+                                connect_scene_graph, time_step, choice,
+                                are_rigid_spheres_in_contact);
+  }
+};
+
+TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystemContactTriangle) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step, ContactSurfaceChoice::kTriangle);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.hydroelastic_contact_info(0)
+                .contact_surface()
+                .mesh_W()
+                .num_faces(),
+            24);
+}
+
+TEST_F(CalcHydroelasticWithFallbackTest, ContinuousSystemContactPolygon) {
+  const double time_step = 0.0;  // Zero to select continuous system.
+  this->Configure(time_step, ContactSurfaceChoice::kPolygon);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetContactResults(), std::logic_error,
+      "MultibodyPlant::CalcHydroelasticWithFallback: Continuous system does "
+      "not support the polygonal contact surfaces.");
+}
+
+TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystemContactTriangle) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step, ContactSurfaceChoice::kTriangle);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.hydroelastic_contact_info(0)
+                .contact_surface()
+                .mesh_W()
+                .num_faces(),
+            24);
+}
+
+TEST_F(CalcHydroelasticWithFallbackTest, DiscreteSystemContactPolygon) {
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(time_step, ContactSurfaceChoice::kPolygon);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.hydroelastic_contact_info(0)
+                .contact_surface()
+                .mesh_W()
+                .num_faces(),
+            7);
 }
 
 }  // namespace
