@@ -166,10 +166,14 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfaces());
+  EXPECT_DEFAULT_ERROR(default_object.ComputePolygonalContactSurfaces());
   std::vector<ContactSurface<double>> surfaces;
   std::vector<PenetrationAsPointPair<double>> point_pairs;
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
       &surfaces, &point_pairs));
+  EXPECT_DEFAULT_ERROR(
+      default_object.ComputePolygonalContactSurfacesWithFallback(&surfaces,
+                                                                 &point_pairs));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
