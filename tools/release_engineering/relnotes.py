@@ -35,6 +35,8 @@ document:
     --version=v0.26.0 --prior_version=v0.25.0
   bazel-bin/tools/release_engineering/relnotes --action=update \
     --version=v0.26.0
+  bazel-bin/tools/release_engineering/relnotes --action=update \
+    --version=v0.26.0 --target_commit=5b3377b9
 """
 
 import argparse
@@ -168,8 +170,13 @@ def _format_commit(gh, drake, commit):
     return packages, f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
 
 
-def _update(args, notes_filename, gh, drake):
+def _update(args, notes_filename, gh, drake, target_commit):
     """The --update action."""
+
+    if target_commit is not None:
+        if not re.match(r"^[0-9a-f]{40}$", target_commit):
+            raise RuntimeError(
+                f"--target_commit={target_commit} is not a 40-character SHA1")
 
     # Read in the existing content.
     with open(notes_filename, "r") as f:
@@ -191,13 +198,34 @@ def _update(args, notes_filename, gh, drake):
     logging.debug(f"Prior newest_commit {prior_newest_commit}")
 
     # Find new commits from newest to oldest.
-    commits = []
-    for commit in drake.commits(sha='master'):
-        if commit.sha == prior_newest_commit:
-            break
-        commits.append(commit)
-        if len(commits) == args.max_num_commits:
-            raise RuntimeError("Reached max_num_commits")
+    master_commits = drake.commits(sha='master')
+    if target_commit is None:
+        # Use commit subject to:
+        #   prior_newest_commit < commit <= master (according to GitHub).
+        commits = master_commits
+    else:
+        # Use commit subject to:
+        #   prior_newest_commit < commit <= target_commit.
+        commits = []
+        saw_target_commit = False
+        for commit in master_commits:
+            if commit.sha == target_commit:
+                saw_target_commit = True
+            if commit.sha == prior_newest_commit:
+                break
+            if saw_target_commit:
+                commits.append(commit)
+                if len(commits) == args.max_num_commits:
+                    raise RuntimeError("Reached max_num_commits")
+        # Assert that we see target_commit along the mainline branch.
+        # In bash, this would effectively look like:
+        #   $(git merge-base upstream/master {target_commit}) = {target_commit}
+        if not saw_target_commit:
+            raise RuntimeError(
+                f"--target_commit={target_commit} is not part of "
+                f"commits from prior commit ({prior_newest_commit}) to latest "
+                f"commit on master. It is either too old (before prior "
+                f"commit) or not on the master branch.")
 
     # Edit the newest_commit annotation.
     if commits:
@@ -311,6 +339,11 @@ def main():
         "--max_num_commits", type=int, default=400,
         help="Stop after chasing this many commits")
     parser.add_argument(
+        "--target_commit", type=str,
+        help="Use this as the target commit for --action=update. This *must* "
+        "be newer than the prior commit, and must be fully resolved "
+        "40-character SHA1.")
+    parser.add_argument(
         "--token_file", default="~/.config/readonly_github_api_token.txt",
         help="Uses an API token read from this filename (default: "
         "%(default)s)")
@@ -341,11 +374,14 @@ def main():
     # Perform the requested action.
     if args.action == "create":
         if not args.prior_version:
-            parser.error("--prior_version is required to --create")
+            parser.error("--prior_version is required to --action=create")
+        if args.target_commit is not None:
+            parser.error(
+                "--target_commit cannot be specified with --action=create")
         _create(args, notes_dir, notes_filename, gh, drake)
     else:
         assert args.action == "update"
-        _update(args, notes_filename, gh, drake)
+        _update(args, notes_filename, gh, drake, args.target_commit)
 
 
 if __name__ == '__main__':
