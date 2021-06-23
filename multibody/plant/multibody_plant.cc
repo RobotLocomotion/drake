@@ -324,6 +324,18 @@ ContactModel MultibodyPlant<T>::get_contact_model() const {
 }
 
 template <typename T>
+void MultibodyPlant<T>::set_contact_surface_choice(
+    ContactSurfaceChoice choice) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  contact_surface_choice_ = choice;
+}
+
+template <typename T>
+ContactSurfaceChoice MultibodyPlant<T>::get_contact_surface_choice() const {
+  return contact_surface_choice_;
+}
+
+template <typename T>
 void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
     const Body<T>& body) {
   RandomGenerator generator;
@@ -1897,7 +1909,27 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 
   const auto& query_object = EvalGeometryQueryInput(context);
 
-  *contact_surfaces = query_object.ComputeContactSurfaces();
+  if (is_discrete()) {
+    switch (get_contact_surface_choice()) {
+      case ContactSurfaceChoice::kContinuous:
+        *contact_surfaces = query_object.ComputeContactSurfaces();
+        break;
+      case ContactSurfaceChoice::kDiscrete:
+        *contact_surfaces = query_object.ComputePolygonalContactSurfaces();
+        break;
+    }
+  } else {
+    switch (get_contact_surface_choice()) {
+      case ContactSurfaceChoice::kContinuous:
+        *contact_surfaces = query_object.ComputeContactSurfaces();
+        break;
+      case ContactSurfaceChoice::kDiscrete:
+        throw std::logic_error(
+            "MultibodyPlant::CalcContactSurfaces: Continuous system does not "
+            "support the polygonal contact surfaces.");
+        break;
+    }
+  }
 }
 
 template <>
@@ -1920,8 +1952,30 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
-    query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                    &data->point_pairs);
+    if (is_discrete()) {
+      switch (get_contact_surface_choice()) {
+        case ContactSurfaceChoice::kContinuous:
+          query_object.ComputeContactSurfacesWithFallback(
+              &data->contact_surfaces, &data->point_pairs);
+          break;
+        case ContactSurfaceChoice::kDiscrete:
+          query_object.ComputePolygonalContactSurfacesWithFallback(
+              &data->contact_surfaces, &data->point_pairs);
+          break;
+      }
+    } else {
+      switch (get_contact_surface_choice()) {
+        case ContactSurfaceChoice::kContinuous:
+          query_object.ComputeContactSurfacesWithFallback(
+              &data->contact_surfaces, &data->point_pairs);
+          break;
+        case ContactSurfaceChoice::kDiscrete:
+          throw std::logic_error(
+              "MultibodyPlant::CalcHydroelasticWithFallback: Continuous "
+              "system does not support the polygonal contact surfaces.");
+          break;
+      }
+    }
   }
 }
 

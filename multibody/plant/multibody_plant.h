@@ -93,6 +93,11 @@ enum class ContactModel {
   kHydroelasticWithFallback
 };
 
+enum class ContactSurfaceChoice {
+  kContinuous,
+  kDiscrete
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -1594,6 +1599,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The default contact model is ContactModel::kPointContactOnly.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
+
+  void set_contact_surface_choice(ContactSurfaceChoice choice);
 
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(xuchenhan-tri): Remove SetContactSolver() once
@@ -3917,6 +3924,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the model used for contact. See documentation for ContactModel.
   ContactModel get_contact_model() const;
 
+  ContactSurfaceChoice get_contact_surface_choice() const;
+
   /// Returns the number of geometries registered for visualization.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
@@ -4749,6 +4758,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // The model used by the plant to compute contact forces.
   ContactModel contact_model_{ContactModel::kPointContactOnly};
+
+  ContactSurfaceChoice contact_surface_choice_{
+      ContactSurfaceChoice::kContinuous};
 
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;
