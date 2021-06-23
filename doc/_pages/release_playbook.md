@@ -93,14 +93,14 @@ the main body of the document:
 ## Cutting the release
 
 9. Find a plausible build to use
-   1. Make sure [https://drake-jenkins.csail.mit.edu/view/Production/](https://drake-jenkins.csail.mit.edu/view/Production/) is clean
-   2. Make sure [https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/)
+   1. Make sure <https://drake-jenkins.csail.mit.edu/view/Production/> is clean
+   2. Make sure <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>
       has nothing still running (modulo the ``*-coverage`` builds, which we can
       ignore)
    3. Open the latest builds from the following builds:
-      1. https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/
-      2. https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/
-      3. https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/
+      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/>
+      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
@@ -118,10 +118,10 @@ the main body of the document:
     ``newest_commit`` whose changes are enumerated in the notes.  Some dates
     are YYYYMMDD format, some are YYYY-MM-DD format; be sure to fix them all.
 11. Merge the release notes PR
-   1. After merge, go to [https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/](https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/) and push "Build now".
+   1. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
-12. Open [https://github.com/RobotLocomotion/drake/releases](https://github.com/RobotLocomotion/drake/releases) and choose "Draft a
-    new release".  Note that this page does has neither history nor undo.  Be
+12. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
+    a new release".  Note that this page does has neither history nor undo.  Be
     slow and careful!
     1. Tag version is: v0.N.0
     2. Target is: [the git sha from above]
@@ -140,7 +140,7 @@ the main body of the document:
     1. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
     2. Click "Publish release"
-    3. Notify @jamiesnape via a GitHub comment to manually tag docker images
+    3. Notify ``@jamiesnape`` via a GitHub comment to manually tag docker images
        and upload the releases to S3. Be sure to provide him with the binary
        date, commit SHA, and release tag in the same ping.
     4. Announce on Drake Slack, ``#general``.
