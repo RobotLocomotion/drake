@@ -164,8 +164,8 @@ void DeformableRigidManager<T>::DoCalcContactSolverResults(
   // TODO(xuchenhan-tri): Incorporate deformable-rigid contact pairs.
   /* Compute all rigid-rigid contact pairs, including both penetration pairs
    and quadrature pairs for discrete hydroelastic. */
-  const std::vector<multibody::internal::DiscreteContactPair<T>>
-      rigid_contact_pairs = this->CalcDiscreteContactPairs(context);
+  const std::vector<multibody::internal::DiscreteContactPair<T>>&
+      rigid_contact_pairs = this->EvalDiscreteContactPairs(context);
   const int num_rigid_contacts = rigid_contact_pairs.size();
 
   /* Extract all information needed by the contact/TAMSI solver. */

@@ -3955,6 +3955,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
+    systems::CacheIndex discrete_contact_pairs;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4219,6 +4220,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): consider adding a separate unit test for this method.
   std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
       const systems::Context<T>& context) const;
+
+  // Eval version of the method CalcDiscreteContactPairs().
+  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.discrete_contact_pairs)
+        .template Eval<std::vector<internal::DiscreteContactPair<T>>>(context);
+  }
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.

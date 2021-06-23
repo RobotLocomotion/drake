@@ -1009,9 +1009,8 @@ void MultibodyPlant<T>::CalcContactJacobiansCache(
   auto& Jc = contact_jacobians->Jc;
   auto& R_WC_list = contact_jacobians->R_WC_list;
 
-  // TODO(amcastro-tri): consider caching contact pairs.
   this->CalcNormalAndTangentContactJacobians(
-      context, CalcDiscreteContactPairs(context), &Jn, &Jt, &R_WC_list);
+      context, EvalDiscreteContactPairs(context), &Jn, &Jt, &R_WC_list);
 
   Jc.resize(3 * Jn.rows(), num_velocities());
   for (int i = 0; i < Jn.rows(); ++i) {
@@ -2161,8 +2160,8 @@ void MultibodyPlant<T>::CalcContactSolverResults(
 
   // Compute all contact pairs, including both penetration pairs and quadrature
   // pairs for discrete hydroelastic.
-  const std::vector<internal::DiscreteContactPair<T>> contact_pairs =
-      CalcDiscreteContactPairs(context0);
+  const std::vector<internal::DiscreteContactPair<T>>& contact_pairs =
+      EvalDiscreteContactPairs(context0);
   const int num_contacts = contact_pairs.size();
 
   // Compute normal and tangential velocity Jacobians at t0.
@@ -2913,6 +2912,15 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
            this->all_parameters_ticket()});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
+
+  // Cache discrete contact pairs.
+  const auto& discrete_contact_pairs_cache_entry = this->DeclareCacheEntry(
+      "Discrete contact pairs.",
+      std::vector<internal::DiscreteContactPair<T>>(),
+      &MultibodyPlant::CalcDiscreteContactPairs,
+      {this->xd_ticket(), this->all_parameters_ticket()});
+  cache_indexes_.discrete_contact_pairs =
+      discrete_contact_pairs_cache_entry.cache_index();
 }
 
 template <typename T>

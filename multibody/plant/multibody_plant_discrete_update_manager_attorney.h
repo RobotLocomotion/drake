@@ -42,6 +42,12 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactJacobians(context);
   }
 
+  static const std::vector<internal::DiscreteContactPair<T>>&
+  EvalDiscreteContactPairs(const MultibodyPlant<T>& plant,
+                           const systems::Context<T>& context) {
+    return plant.EvalDiscreteContactPairs(context);
+  }
+
   static std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context,
       const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) {
