@@ -168,7 +168,7 @@ def _format_commit(gh, drake, commit):
     return packages, f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
 
 
-def _update(args, notes_filename, gh, drake):
+def _update(args, notes_filename, gh, drake, target_commit):
     """The --update action."""
 
     # Read in the existing content.
@@ -198,6 +198,22 @@ def _update(args, notes_filename, gh, drake):
         commits.append(commit)
         if len(commits) == args.max_num_commits:
             raise RuntimeError("Reached max_num_commits")
+
+    if target_commit is not None:
+        if target_commit == prior_newest_commit:
+            commits = []
+        else:
+            commit_shas = [commit.sha for commit in commits]
+            # Assert that we see target_commit along the mainline branch.
+            if target_commit not in commit_shas:
+                raise RuntimeError(
+                    f"--target_commit={target_commit} is not part of "
+                    f"commits from prior commit ({prior_newest_commit}) to "
+                    f"latest commit on master. It is either too old (before "
+                    f"prior commit) or not on the master branch.")
+            # Trim commits down to target commit.
+            target_index = commit_shas.index(target_commit)
+            commits = commits[target_index:]
 
     # Edit the newest_commit annotation.
     if commits:
@@ -311,6 +327,11 @@ def main():
         "--max_num_commits", type=int, default=400,
         help="Stop after chasing this many commits")
     parser.add_argument(
+        "--target_commit", type=str,
+        help="Use this as the target commit for --action=update. This *must* "
+        "be newer than the prior commit, and must be fully a resolved "
+        "40-character SHA1.")
+    parser.add_argument(
         "--token_file", default="~/.config/readonly_github_api_token.txt",
         help="Uses an API token read from this filename (default: "
         "%(default)s)")
@@ -341,11 +362,20 @@ def main():
     # Perform the requested action.
     if args.action == "create":
         if not args.prior_version:
-            parser.error("--prior_version is required to --create")
+            parser.error("--prior_version is required to --action=create")
+        if args.target_commit is not None:
+            parser.error(
+                "--target_commit cannot be specified with --action=create")
         _create(args, notes_dir, notes_filename, gh, drake)
     else:
         assert args.action == "update"
-        _update(args, notes_filename, gh, drake)
+        if args.target_commit is not None:
+            if not re.match(r"^[0-9a-f]{40}$", args.target_commit):
+                parser.error(
+                    f"--target_commit={args.target_commit} is not a "
+                    f"40-character SHA1")
+
+        _update(args, notes_filename, gh, drake, args.target_commit)
 
 
 if __name__ == '__main__':
