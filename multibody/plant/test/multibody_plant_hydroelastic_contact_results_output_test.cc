@@ -112,7 +112,7 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
 
   // Compute the contact surface using the hydroelastic engine.
   std::vector<geometry::ContactSurface<double>> contact_surfaces =
-      query_object.ComputeContactSurfaces();
+      query_object.ComputePolygonalContactSurfaces();
 
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);
