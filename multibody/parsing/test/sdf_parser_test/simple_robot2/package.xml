@@ -2,6 +2,6 @@
 <package format="2">
   <name>simple_robot2</name>
   <version>0.0.1</version>
-  <description>Simpe robot</description>
+  <description>Simple robot</description>
   <license>Apache 2.0</license>
 </package>
