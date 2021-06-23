@@ -44,6 +44,13 @@ class MultibodyPlantTester {
                                      const systems::Context<double>& context) {
     return plant.EvalSpatialContactForcesContinuous(context);
   }
+
+  static void CalcContactResultsDiscrete(
+      const MultibodyPlant<double>& plant,
+      const systems::Context<double>& context,
+      ContactResults<double>* contact_results) {
+    plant.CalcContactResultsDiscrete(context, contact_results);
+  }
 };
 
 namespace {
@@ -315,13 +322,15 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
 // contact types (as appropriate).
 class ContactModelTest : public ::testing::Test {
  protected:
-  void Configure(ContactModel model, bool connect_scene_graph = true) {
+  void Configure(ContactModel model, bool connect_scene_graph,
+                 double time_step) {
     systems::DiagramBuilder<double> builder;
     if (connect_scene_graph) {
       std::tie(plant_, scene_graph_) =
-          AddMultibodyPlantSceneGraph(&builder, 0.0);
+          AddMultibodyPlantSceneGraph(&builder, time_step);
     } else {
-      plant_ = builder.AddSystem(std::make_unique<MultibodyPlant<double>>(0.0));
+      plant_ = builder.AddSystem(
+          std::make_unique<MultibodyPlant<double>>(time_step));
       scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
       plant_->RegisterAsSourceForSceneGraph(scene_graph_);
     }
@@ -471,7 +480,11 @@ class ContactModelTest : public ::testing::Test {
 };
 
 TEST_F(ContactModelTest, PointPairContact) {
-  this->Configure(ContactModel::kPointContactOnly);
+  const bool connect_scene_graph = true;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kPointContactOnly, connect_scene_graph,
+                  time_step);
+
   const ContactResults<double>& contact_results = GetContactResults();
   ASSERT_EQ(contact_results.num_point_pair_contacts(), 2);
   ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 0);
@@ -495,14 +508,22 @@ TEST_F(ContactModelTest, PointPairContact) {
 }
 
 TEST_F(ContactModelTest, HydroelasticOnly) {
-  this->Configure(ContactModel::kHydroelasticsOnly);
+  const bool connect_scene_graph = true;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kHydroelasticsOnly, connect_scene_graph,
+                  time_step);
+
   // Rigid-rigid contact precludes successful evaluation.
   DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(), std::logic_error,
                               "Requested contact between two rigid objects .+");
 }
 
-TEST_F(ContactModelTest, HydroelasitcWithFallback) {
-  this->Configure(ContactModel::kHydroelasticWithFallback);
+TEST_F(ContactModelTest, HydroelasitcWithFallbackContinuous) {
+  const bool connect_scene_graph = true;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kHydroelasticWithFallback, connect_scene_graph,
+                  time_step);
+
   const ContactResults<double>& contact_results = GetContactResults();
   EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
   EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
@@ -525,8 +546,33 @@ TEST_F(ContactModelTest, HydroelasitcWithFallback) {
   }
 }
 
+TEST_F(ContactModelTest, HydroelasitcWithFallbackDiscrete) {
+  const bool connect_scene_graph = true;
+  const double time_step = 5.0e-3;  // Non-zero to select discrete system.
+  this->Configure(ContactModel::kHydroelasticWithFallback, connect_scene_graph,
+                  time_step);
+
+  const ContactResults<double>& contact_results = GetContactResults();
+
+  // Unlike the previous TEST_F HydroelasitcWithFallbackContinuous, we do not
+  // have a discrete version of EvalSpatialContactForcesContinuous() for
+  // testing the contact results in terms of spatial forces. Therefore, we
+  // only smoke test to confirm that we get one result from point-pair
+  // contact and one result from hydroelastic contact.
+  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+
+  // TODO(DamrongGuoy): Find a way to test CalcHydroelasticWithFallback()
+  //  directly for both continuous system and discrete system. It is called
+  //  by the cache system, so it's not straightforward to test it. It requires
+  //  HydroelasticFallbackCacheData.
+}
+
 TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
-  this->Configure(ContactModel::kHydroelasticWithFallback, false);
+  const bool disconnect_scene_graph_by_setting_to_false = false;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kHydroelasticWithFallback,
+                  disconnect_scene_graph_by_setting_to_false, time_step);
 
   // Plant was not connected to the SceneGraph in a diagram, so its input port
   // should be invalid.
