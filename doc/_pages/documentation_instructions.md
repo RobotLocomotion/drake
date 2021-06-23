@@ -96,7 +96,7 @@ There are in fact five available commands:
 
 ```sh
 $ bazel run //doc:build               # Entire website (i.e., all of the below).
-$ bazel run //doc:pages_build         # Main site only.
+$ bazel run //doc:pages               # Main site only.
 $ bazel run //doc/doxygen_cxx:build   # C++ API reference subdir only.
 $ bazel run //doc/pydrake:build       # Python API reference subdir only.
 $ bazel run //doc/styleguide:build    # Style Guide subdir only.
