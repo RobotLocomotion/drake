@@ -314,6 +314,11 @@ class QueryObject {
             the same.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
+  /**
+   Performs the same task as ComputeContactSurfaces() but approximates the
+   contact surfaces economically. */
+  std::vector<ContactSurface<T>> ComputePolygonalContactSurfaces() const;
+
   /** Reports pair-wise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
    PenetrationAsPointPair where not.
@@ -343,6 +348,13 @@ class QueryObject {
    @throws std::exception for the reasons described in ComputeContactSurfaces()
                           and ComputePointPairPenetration(). */
   void ComputeContactSurfacesWithFallback(
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
+
+  /**
+   Performs the same task as ComputeContactSurfacesWithFallback() but
+   approximates the contact surfaces economically. */
+  void ComputePolygonalContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
