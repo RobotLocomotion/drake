@@ -12,15 +12,32 @@ namespace internal {
 template <typename T>
 DeformableContactData<T>::DeformableContactData(
     std::vector<DeformableRigidContactPair<T>> contact_pairs,
-    const geometry::VolumeMesh<T>& deformable_mesh)
+    const ReferenceDeformableGeometry<T>& deformable_geometry)
     : contact_pairs_(std::move(contact_pairs)),
-      permuted_vertex_indexes_(deformable_mesh.num_vertices(), -1),
-      permuted_to_original_indexes_(deformable_mesh.num_vertices()) {
+      signed_distances_(contact_pairs_.size()),
+      permuted_vertex_indexes_(deformable_geometry.mesh().num_vertices(), -1),
+      permuted_to_original_indexes_(deformable_geometry.mesh().num_vertices()) {
   num_contact_points_ = 0;
   if (!contact_pairs_.empty()) {
-    CalcParticipatingVertices(deformable_mesh);
+    CalcParticipatingVertices(deformable_geometry.mesh());
     for (const auto& contact_pair : contact_pairs_) {
       num_contact_points_ += contact_pair.num_contact_points();
+    }
+
+    /* Build signed_distances_. */
+    for (int i = 0; i < static_cast<int>(contact_pairs_.size()); ++i) {
+      const DeformableContactSurface<T>& contact_surface =
+          contact_pairs_[i].contact_surface;
+      auto& phi = signed_distances_[i];
+      phi.resize(contact_surface.num_polygons(), 0);
+      for (int j = 0; j < contact_surface.num_polygons(); ++j) {
+        const ContactPolygonData<T>& polygon_data =
+            contact_surface.polygon_data(j);
+        const Vector4<T>& barycentric_coord = polygon_data.b_centroid;
+        const auto& tet_index = polygon_data.tet_index;
+        phi[j] = deformable_geometry.signed_distance().Evaluate(
+            tet_index, barycentric_coord);
+      }
     }
   } else {
     std::iota(std::begin(permuted_vertex_indexes_),

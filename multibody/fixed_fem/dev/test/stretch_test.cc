@@ -51,10 +51,11 @@ class StretchTest : public ::testing::Test {
    into a tetrahedral mesh. */
   static VolumeMesh<T> MakeBoxTetMesh() {
     geometry::Box box(kLx / 2.0, kLy, kLz / 2.0);
-    const VolumeMesh<T> mesh = MakeDiamondCubicBoxVolumeMesh(
-        box, kDx,
-        math::RigidTransform(Vector3<double>(kLx / 4.0, 0, kLz / 4.0)));
-    return mesh;
+    const internal::ReferenceDeformableGeometry<T> geometry =
+        MakeDiamondCubicBoxDeformableGeometry(
+            box, kDx,
+            math::RigidTransform(Vector3<double>(kLx / 4.0, 0, kLz / 4.0)));
+    return geometry.mesh();
   }
 
   /* The rest positions of the vertices of the bar. */
