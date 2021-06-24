@@ -110,7 +110,7 @@ unprovisioned experimental builds, e.g.:
 
 After this has passed, go through normal review. Once normal review is done,
 add `@BetsyMcPhail` for review and request that the provisioned instances be
-updated. He will then respond on when it is appropriate to merge the PR.
+updated. She will then respond on when it is appropriate to merge the PR.
 
 ## Building Binary Packages on Demand
 
