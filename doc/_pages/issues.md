@@ -32,7 +32,7 @@ their responsibilities are:
   systems framework
 
 * ``kitware``
-  * lead: jamiesnape
+  * lead: BetsyMcPhail
   * responsibilities: build, continuous integration
 
 * ``manipulation``

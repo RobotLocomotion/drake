@@ -140,8 +140,8 @@ the main body of the document:
     1. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
     2. Click "Publish release"
-    3. Notify ``@jamiesnape`` via a GitHub comment to manually tag docker images
-       and upload the releases to S3. Be sure to provide him with the binary
+    3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
+       and upload the releases to S3. Be sure to provide her with the binary
        date, commit SHA, and release tag in the same ping.
     4. Announce on Drake Slack, ``#general``.
     5. Party on, Wayne.

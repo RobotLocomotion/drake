@@ -230,8 +230,7 @@ Infrastructure flakes will be red in Jenkins. If you believe you are looking at
 an infrastructure flake, run the build manually at HEAD. If it passes, you are
 definitely looking at an infrastructure flake, and no further action is
 required. If you believe the rate of a particular infrastructure flake has
-increased, alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
-@jamiesnape.
+increased, alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`.
 
 Note that "slow read" warnings during Bazel builds are due to the relative
 slowness of the remote storage used by the CI infrastructure when compared to
@@ -249,13 +248,12 @@ could crash or become wedged.  During infrastructure collapses, lots of builds
 will turn red and stay red.
 
 Attempt to figure out what infrastructure collapsed. If it's under our control,
-alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
-@jamiesnape. If it's under a vendor's control, spread the news and simply wait
-it out.
+alert Kitware by assigning a GitHub issue to `@BetsyMcPhail`. If it's under a
+vendor's control, spread the news and simply wait it out.
 
 ## Drake External Examples
 
 Details of failures in the [drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples/)
 repository, which may be denoted by red "build failing" icons at the top of the build
 dashboard on Jenkins, should be posted to the [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
-channel on Slack, ensuring that @jamiesnape is mentioned in the message.
+channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.

@@ -109,8 +109,8 @@ unprovisioned experimental builds, e.g.:
 * ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-release please``
 
 After this has passed, go through normal review. Once normal review is done,
-add ``@jamiesnape`` for review and request that the provisioned instances be
-updated. He will then respond on when it is appropriate to merge the PR.
+add `@BetsyMcPhail` for review and request that the provisioned instances be
+updated. She will then respond on when it is appropriate to merge the PR.
 
 ## Building Binary Packages on Demand
 

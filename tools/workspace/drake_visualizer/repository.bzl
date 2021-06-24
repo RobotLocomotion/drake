@@ -31,8 +31,6 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-# TODO(jamiesnape): Publish scripts used to create binaries. There will be a CI
-# job for developers to build new binaries on demand.
 def _impl(repository_ctx):
     os_result = determine_os(repository_ctx)
     if os_result.error != None:
