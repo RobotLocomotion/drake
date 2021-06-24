@@ -106,6 +106,14 @@ const char* const logging::kSetLogLevelHelpMessage =
     "'critical', "
     "'off'";
 
+void logging::set_log_pattern(const std::string& pattern) {
+  drake::log()->set_pattern(pattern);
+}
+
+const char* const logging::kSetLogPatternHelpMessage =
+    "sets the spdlog pattern for formatting; for more information, see "
+    "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting";
+
 #else  // HAVE_SPDLOG
 
 logging::logger::logger() {}
@@ -129,6 +137,11 @@ std::string logging::set_log_level(const std::string&) {
 }
 
 const char* const logging::kSetLogLevelHelpMessage =
+    "(Text logging is unavailable.)";
+
+void logging::set_log_pattern(const std::string&) {}
+
+const char* const logging::kSetLogPatternHelpMessage =
     "(Text logging is unavailable.)";
 
 #endif  // HAVE_SPDLOG
