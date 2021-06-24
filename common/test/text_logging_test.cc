@@ -160,6 +160,17 @@ GTEST_TEST(TextLoggingTest, SetLogLevel) {
   #endif
 }
 
+GTEST_TEST(TextLoggingTest, SetLogPattern) {
+  using drake::logging::set_log_pattern;
+
+  #if TEXT_LOGGING_TEST_SPDLOG
+    set_log_pattern("%v");
+    set_log_pattern("%+");
+  #else
+    set_log_pattern("anything really");
+  #endif
+}
+
 // We must run this test last because it changes the default configuration.
 GTEST_TEST(TextLoggingTest, ZZZ_ChangeDefaultSink) {
   // The getter should never return nullptr, even with spdlog disabled.
