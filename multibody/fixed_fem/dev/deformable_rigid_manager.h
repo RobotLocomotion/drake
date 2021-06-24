@@ -170,6 +170,8 @@ class DeformableRigidManager final
   void UpdateDeformableVertexPositions(
       const systems::Context<T>& context) const;
 
+  // TODO(xuchenhan-tri): Make proper distinction between id and index in
+  //  variable names.
   /* Calculates the contact information for the contact pair consisting of the
    rigid body identified by `rigid_id` and the deformable body identified by
    `deformable_id`. */
@@ -199,8 +201,23 @@ class DeformableRigidManager final
 
   // TODO(xuchenhan-tri): Modify the description of the contact jacobian when
   //  sparsity for rigid dofs are exploited.
-  /* Calculates and returns the contact jacobian as a block sparse matrix. The
-   contact jacobian is ordered in the following way:
+  /* Calculates and returns the contact jacobian as a block sparse matrix.
+
+   As an illustrating example, consider a scene with n rigid bodies and four
+   deformable bodies: there exist rigid-rigid contacts, and each deformable body
+   is in contact with at least one rigid object. Then the sparsity pattern of
+   the contact jacobian looks like:
+                                | RR               |
+                                | RD0  D0          |
+                                | RD1     D1       |
+                                | RD2        D2    |
+                                | RD3           D3 |
+   where "RR" represents the rigid-rigid block, "RDi" represents the the
+   rigid-deformable block with respect to the rigid dofs for the i-th deformable
+   body, and "Di" represents the rigid-deformable block with respect to the
+   deformable dofs for the i-th deformable body.
+
+   More specifically, the contact jacobian is ordered in the following way:
     1. The contact jacobian has 3 * (ncr + ncd) rows, where ncr is the number of
        contact points among rigid objects, and ncd is the number of contact
        points between deformable bodies and rigid bodies.
@@ -217,38 +234,36 @@ class DeformableRigidManager final
        contains a contact point.
     4. The first nvr columns of the contact jacobian correspond to the rigid
        velocity degrees of freedom. The last 3 * nvd columns correspond to the
-       participating deformable degrees of freedom. The participating deformable
-       dofs come in blocks. The i-th block corresponds to i-th deformable body
-       and has number of dofs equal to 3 * number of participating vertices for
-       deformable body i (see DeformableContactData::num_vertices_in_contact()).
-       Within the i-th block, the 3*j, 3*j+1, and 3*j+2 dofs belong to the j-th
-       permuted vertex. (see DeformableContactData::permuted_vertex_indexes()).
-  */
+       participating deformable velocity degrees of freedom. The participating
+       deformable velocity dofs come in blocks. The i-th block corresponds to
+       i-th deformable body and has number of dofs equal to 3 * number of
+       participating vertices for deformable body i (see
+       DeformableContactData::num_vertices_in_contact()). Within the i-th block,
+       the 3*j, 3*j+1, and 3*j+2 velocity dofs belong to the j-th permuted
+       vertex. (see DeformableContactData::permuted_vertex_indexes()). */
   multibody::contact_solvers::internal::BlockSparseMatrix<T>
   CalcContactJacobian(const systems::Context<T>& context) const;
 
   /* Given the contact data for a deformable body, calculates the contact
-   jacobian for the contact points associated that deformable body with respect
-   to the deformable degrees of freedoms participating in the contact. */
+   jacobian for the contact points associated with that deformable body with
+   respect to the deformable degrees of freedom participating in the contact. */
   MatrixX<T> CalcContactJacobianDeformableBlock(
       const internal::DeformableContactData<T>& contact_data) const;
 
   /* Given the contact data for a deformable body, calculates the contact
-   jacobian for the contact points associated that deformable body with respect
-   to all rigid degrees of freedoms. */
+   jacobian for the contact points associated with that deformable body with
+   respect to all rigid degrees of freedom. */
   MatrixX<T> CalcContactJacobianRigidBlock(
       const systems::Context<T>& context,
       const internal::DeformableContactData<T>& contact_data) const;
 
   /* Given the GeometryId of a rigid collision geometry, returns the body frame
    of the collision geometry.
-   @pre The collision geometry with the given `id` is already registered at
+   @pre The collision geometry with the given `id` is already registered with
    `this` DeformableRigidManager. */
   const Frame<T>& GetBodyFrameFromCollisionGeometry(
       geometry::GeometryId id) const {
-    const std::unordered_map<geometry::GeometryId, BodyIndex>&
-        geometry_id_to_body_index = this->geometry_id_to_body_index();
-    BodyIndex body_index = geometry_id_to_body_index.at(id);
+    BodyIndex body_index = this->geometry_id_to_body_index().at(id);
     const Body<T>& body = this->plant().get_body(body_index);
     return body.body_frame();
   }

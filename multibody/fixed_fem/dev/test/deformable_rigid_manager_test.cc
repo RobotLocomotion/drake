@@ -56,8 +56,8 @@ geometry::VolumeMesh<double> MakeUnitCubeTetMesh() {
   return mesh;
 }
 
-/* Returns a proximity property with default elastic modulus and dissipation
- and an arbitrary friction. */
+/* Returns a proximity property with arbitrary elastic modulus, dissipation, and
+ friction. */
 ProximityProperties MakeProximityProperties() {
   ProximityProperties proximity_properties;
   geometry::AddContactMaterial({}, kContactDissipation, kContactStiffness,
@@ -316,7 +316,7 @@ TEST_F(DeformableRigidManagerTest, RegisterCollisionGeometry) {
   get_collision_geometry(&id);
   /* Verify the surface mesh is as expected. */
   const SurfaceMesh<double> expected_surface_mesh =
-      geometry::internal::MakeBoxSurfaceMesh<double>(MakeUnitCube(), 1.0);
+      geometry::internal::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects.mesh(id)));
   /* Verify proximity property is as expected. */
   const CoulombFriction<double> mu = collision_objects.proximity_properties(id)
@@ -639,7 +639,7 @@ TEST_F(DeformableRigidContactJacobianTest, ContactJacobian) {
       zero_block, MatrixXd::Zero(nc_rigid_rigid * 3, nv_deformable)));
 
   /* We verify the correctness of the deformable rigid blocks of the contact
-   jacobian by calculating the contact velocites by multiplying the contact
+   jacobian by calculating the contact velocities by multiplying the contact
    jacobian with arbitrary generalized velocities and verify the contact
    velocities against pen-and-paper calculation. */
   const auto& Jc_rigid_deformable = Jc.bottomRows(3 * nc_rigid_deformable);
@@ -694,7 +694,7 @@ TEST_F(DeformableRigidContactJacobianTest, ContactJacobian) {
                  const math::RigidTransformd& X_WR,
                  const ContactPolygonData<double>& polygon_data,
                  int contact_index) {
-        /* The position of the contact point on the rigid body Rq measured in
+        /* The position of the contact point Rq on the rigid body measured in
          and expressed in the world frame. */
         const Vector3d& p_WRq = polygon_data.centroid;
         /* The contact_point measured in R frame and expressed in world frame.
