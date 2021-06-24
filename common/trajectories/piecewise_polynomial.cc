@@ -918,7 +918,7 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
       b(row_idx++) = Ydot_end(j, k);
 
       // TODO(siyuan.feng): Should switch to a sparse solver.
-      solution = A.colPivHouseholderQr().solve(b);
+      solution = A.partialPivLu().solve(b);
 
       for (int i = 0; i < N - 1; ++i) {
         coeffs(0) = Y[i](j, k);
@@ -1013,7 +1013,7 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
       }
 
       // TODO(siyuan.feng): Should switch to a sparse solver.
-      solution = A.colPivHouseholderQr().solve(b);
+      solution = A.partialPivLu().solve(b);
 
       for (int i = 0; i < N - 1; ++i) {
         coeffs(0) = Y[i](j, k);
