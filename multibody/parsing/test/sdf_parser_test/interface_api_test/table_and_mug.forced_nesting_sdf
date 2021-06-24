@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="table_and_mug">
+    <include>
+      <uri>package://interface_api_test/table.sdf</uri>
+      <name>table</name>
+    </include>
+    <include>
+      <uri>package://interface_api_test/mug.sdf</uri>
+      <name>mug</name>
+      <placement_frame>top</placement_frame>
+      <pose relative_to="table::top">0 0 0 1.570796 0 0</pose>
+    </include>
+  </model>
+</sdf>
+

@@ -39,13 +39,18 @@ namespace internal {
 // @param scene_graph
 //   A pointer to a mutable SceneGraph object used for geometry registration
 //   (either to model visual or contact geometry).  May be nullptr.
+// @param test_sdf_forced_nesting
+//   If true, a custom parser for SDFormat files (but using a different file
+//   extention) will be registered when using libsdformat's Interface API. This
+//   should only be used for testing.
 // @returns The model instance index for the newly added model.
 ModelInstanceIndex AddModelFromSdf(
     const DataSource& data_source,
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    bool test_sdf_forced_nesting = false);
 
 // Parses all `<model>` elements from the SDF file specified by `file_name`
 // and adds them to `plant`. The SDF file can contain multiple `<model>`
@@ -69,12 +74,17 @@ ModelInstanceIndex AddModelFromSdf(
 // @param scene_graph
 //   A pointer to a mutable SceneGraph object used for geometry registration
 //   (either to model visual or contact geometry).  May be nullptr.
+// @param test_sdf_forced_nesting
+//   If true, a custom parser for SDFormat files (but using a different file
+//   extention) will be registered when using libsdformat's Interface API. This
+//   should only be used for testing.
 // @returns The set of model instance indices for the newly added models.
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    bool test_sdf_forced_nesting = false);
 
 }  // namespace internal
 }  // namespace multibody

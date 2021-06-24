@@ -49,7 +49,7 @@ std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(
         data_source, package_map_, plant_, scene_graph_);
   } else {
     return {AddModelFromUrdf(
-        data_source, {}, package_map_, plant_, scene_graph_)};
+        data_source, {}, {}, package_map_, plant_, scene_graph_)};
   }
 }
 
@@ -67,7 +67,7 @@ ModelInstanceIndex Parser::AddModelFromFile(
         data_source, model_name, package_map_, plant_, scene_graph_);
   } else {
     return AddModelFromUrdf(
-        data_source, model_name, package_map_, plant_, scene_graph_);
+        data_source, model_name, {}, package_map_, plant_, scene_graph_);
   }
 }
 
@@ -83,7 +83,7 @@ ModelInstanceIndex Parser::AddModelFromString(
         data_source, model_name, package_map_, plant_, scene_graph_);
   } else {
     return AddModelFromUrdf(
-        data_source, model_name, package_map_, plant_, scene_graph_);
+        data_source, model_name, {}, package_map_, plant_, scene_graph_);
   }
 }
 
