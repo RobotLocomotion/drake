@@ -14,6 +14,7 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
+from pydrake.solvers.mathematicalprogram import MathematicalProgram
 from pydrake.systems.analysis import (
     Simulator_,
 )
@@ -895,6 +896,64 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(current_engine.label_count, 1)
 
         # TODO(eric, duy): Test more properties.
+
+    def test_optimization(self):
+        """Tests geometry::optimization bindings"""
+        A = np.eye(3)
+        b = [1.0, 1.0, 1.0]
+        prog = MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+
+        # Test HPolyhedron.
+        hpoly = mut.optimization.HPolyhedron(A=A, b=b)
+        self.assertEqual(hpoly.ambient_dimension(), 3)
+        np.testing.assert_array_equal(hpoly.A(), A)
+        np.testing.assert_array_equal(hpoly.b(), b)
+        self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
+        hpoly.AddPointInSetConstraint(prog, x)
+        with self.assertRaisesRegex(
+                RuntimeError, ".*not implemented yet for HPolyhedron.*"):
+            hpoly.ToShapeWithPose()
+
+        # Test HyperEllipsoid.
+        ellipsoid = mut.optimization.HyperEllipsoid(A=A, center=b)
+        self.assertEqual(ellipsoid.ambient_dimension(), 3)
+        np.testing.assert_array_equal(ellipsoid.A(), A)
+        np.testing.assert_array_equal(ellipsoid.center(), b)
+        self.assertTrue(ellipsoid.PointInSet(x=b, tol=0.0))
+        ellipsoid.AddPointInSetConstraint(prog, x)
+        shape, pose = ellipsoid.ToShapeWithPose()
+        self.assertIsInstance(shape, mut.Ellipsoid)
+        self.assertIsInstance(pose, RigidTransform)
+
+        # Test MakeFromSceneGraph methods.
+        scene_graph = mut.SceneGraph()
+        source_id = scene_graph.RegisterSource("source")
+        frame_id = scene_graph.RegisterFrame(
+            source_id=source_id, frame=mut.GeometryFrame("frame"))
+        box_geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id, frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform(),
+                                          shape=mut.Box(1., 1., 1.),
+                                          name="sphere"))
+        sphere_geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id, frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform(),
+                                          shape=mut.Sphere(1.), name="sphere"))
+        context = scene_graph.CreateDefaultContext()
+        pose_vector = mut.FramePoseVector()
+        pose_vector.set_value(frame_id, RigidTransform())
+        scene_graph.get_source_pose_port(source_id).FixValue(
+            context, pose_vector)
+        query_object = scene_graph.get_query_output_port().Eval(context)
+        H = mut.optimization.HPolyhedron(
+            query_object=query_object, geometry_id=box_geometry_id,
+            expressed_in=scene_graph.world_frame_id())
+        self.assertEqual(H.ambient_dimension(), 3)
+        E = mut.optimization.HyperEllipsoid(
+            query_object=query_object, geometry_id=sphere_geometry_id,
+            expressed_in=scene_graph.world_frame_id())
+        self.assertEqual(E.ambient_dimension(), 3)
 
     def test_deprecated_struct_member(self):
         """Tests successful deprecation of struct member"""
