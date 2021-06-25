@@ -822,7 +822,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   static int SetupCubicSplineInteriorCoeffsLinearSystem(
       const std::vector<T>& breaks,
       const std::vector<MatrixX<T>>& samples, int row, int col,
-      MatrixX<T>* A, VectorX<T>* b);
+      std::vector<Eigen::Triplet<T>>* triplet_list, VectorX<T>* b);
 
   // Throws std::runtime_error if
   // `breaks` and `samples` have different length,
