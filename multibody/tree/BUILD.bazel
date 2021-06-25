@@ -121,6 +121,7 @@ drake_cc_library(
         "revolute_mobilizer.cc",
         "revolute_spring.cc",
         "rigid_body.cc",
+        "screw_joint.cc",
         "screw_mobilizer.cc",
         "space_xyz_floating_mobilizer.cc",
         "space_xyz_mobilizer.cc",
@@ -162,6 +163,7 @@ drake_cc_library(
         "revolute_mobilizer.h",
         "revolute_spring.h",
         "rigid_body.h",
+        "screw_joint.h",
         "screw_mobilizer.h",
         "space_xyz_floating_mobilizer.h",
         "space_xyz_mobilizer.h",
@@ -565,6 +567,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "prismatic_joint_test",
+    deps = [
+        ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "screw_joint_test",
     deps = [
         ":tree",
     ],
