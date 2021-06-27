@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/solve.h"
@@ -60,6 +61,12 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_EQ(H.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(A, H.A()));
   EXPECT_TRUE(CompareMatrices(b, H.b()));
+
+  // Test MakeUnitBox method.
+  HPolyhedron Hbox = HPolyhedron::MakeUnitBox(3);
+  EXPECT_EQ(Hbox.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(A, Hbox.A()));
+  EXPECT_TRUE(CompareMatrices(b, Hbox.b()));
 
   // Test PointInSet.
   EXPECT_TRUE(H.PointInSet(Vector3d(.8, .3, -.9)));
@@ -152,13 +159,7 @@ GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBox6DTest) {
-  Eigen::Matrix<double, 12, 6> A;
-  A << Eigen::Matrix<double, 6, 6>::Identity(),
-      -Eigen::Matrix<double, 6, 6>::Identity();
-  Eigen::Matrix<double, 12, 1> b = Eigen::Matrix<double, 12, 1>::Ones();
-
-  // Test constructor.
-  HPolyhedron H(A, b);
+  HPolyhedron H = HPolyhedron::MakeUnitBox(6);
   EXPECT_EQ(H.ambient_dimension(), 6);
 
   Vector6d in1{Vector6d::Constant(-.99)}, in2{Vector6d::Constant(.99)},
@@ -168,6 +169,50 @@ GTEST_TEST(HPolyhedronTest, UnitBox6DTest) {
   EXPECT_TRUE(H.PointInSet(in2));
   EXPECT_FALSE(H.PointInSet(out1));
   EXPECT_FALSE(H.PointInSet(out2));
+}
+
+GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
+  // Test a unit box.
+  HPolyhedron H = HPolyhedron::MakeUnitBox(3);
+  HyperEllipsoid E = H.MaximumVolumeInscribedEllipsoid();
+  // The exact tolerance will be solver dependent; this is (hopefully)
+  // conservative enough.
+  const double kTol = 1e-6;
+  EXPECT_TRUE(CompareMatrices(E.center(), Vector3d::Zero(), kTol));
+  EXPECT_TRUE(CompareMatrices(E.A().transpose() * E.A(),
+                              Eigen::Matrix3d::Identity(3, 3), kTol));
+
+  // A non-trivial example, taken some real problem data.  The addition of the
+  // extra half-plane constraints cause the optimal ellipsoid to be far from
+  // axis-aligned.
+  Eigen::Matrix<double, 8, 3> A;
+  Eigen::Matrix<double, 8, 1> b;
+  // clang-format off
+  A << Eigen::Matrix3d::Identity(),
+       -Eigen::Matrix3d::Identity(),
+       .9, -.3, .1,
+       .9, -.3, .1;
+  b << 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 1.3, 0.8;
+  // clang-format on
+  HPolyhedron H2(A, b);
+  HyperEllipsoid E2 = H2.MaximumVolumeInscribedEllipsoid();
+  // Check that points just inside the boundary of the ellipsoid are inside the
+  // polytope.
+  Eigen::Matrix3d C = E2.A().inverse();
+  RandomGenerator generator;
+  for (int i = 0; i < 10; ++i) {
+    const RotationMatrixd R = math::UniformlyRandomRotationMatrix(&generator);
+    SCOPED_TRACE(fmt::format("With random rotation matrix\n{}", R.matrix()));
+    Vector3d x = C * R.matrix() * Vector3d(0.99, 0.0, 0.0) + E2.center();
+    EXPECT_TRUE(E2.PointInSet(x));
+    EXPECT_TRUE(H2.PointInSet(x));
+  }
+
+  // Make sure the ellipsoid touches the polytope, by checking that the minimum
+  // residual, bᵢ − aᵢd − |aᵢC|₂, is zero.
+  const Eigen::VectorXd polytope_halfspace_residue =
+      b - A * E2.center() - ((A * C).rowwise().lpNorm<2>());
+  EXPECT_NEAR(polytope_halfspace_residue.minCoeff(), 0, kTol);
 }
 
 GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {

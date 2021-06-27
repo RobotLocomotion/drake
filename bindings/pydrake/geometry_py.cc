@@ -1335,7 +1335,14 @@ void def_geometry_optimization(py::module m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("expressed_in") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
-        .def("b", &HPolyhedron::b, cls_doc.b.doc);
+        .def("b", &HPolyhedron::b, cls_doc.b.doc)
+        .def("MaximumVolumeInscribedEllipsoid",
+            &HPolyhedron::MaximumVolumeInscribedEllipsoid,
+            cls_doc.MaximumVolumeInscribedEllipsoid.doc)
+        .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
+            py::arg("ub"), cls_doc.MakeBox.doc)
+        .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
+            cls_doc.MakeUnitBox.doc);
   }
 
   {
