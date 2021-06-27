@@ -915,6 +915,15 @@ class TestGeometry(unittest.TestCase):
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
             hpoly.ToShapeWithPose()
 
+        h_box = mut.optimization.HPolyhedron.MakeBox(
+            lb=[-1, -1, -1], ub=[1, 1, 1])
+        h_unit_box = mut.optimization.HPolyhedron.MakeUnitBox(dim=3)
+        np.testing.assert_array_equal(h_box.A(), h_unit_box.A())
+        np.testing.assert_array_equal(h_box.b(), h_unit_box.b())
+        self.assertIsInstance(
+            h_box.MaximumVolumeInscribedEllipsoid(),
+            mut.optimization.HyperEllipsoid)
+
         # Test HyperEllipsoid.
         ellipsoid = mut.optimization.HyperEllipsoid(A=A, center=b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
