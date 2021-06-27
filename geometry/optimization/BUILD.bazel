@@ -26,6 +26,8 @@ drake_cc_library(
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//multibody/plant",
         "//solvers:constraint",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 
@@ -34,7 +36,6 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         "//common/test_utilities:eigen_matrix_compare",
-        "//solvers:solve",
     ],
 )
 
