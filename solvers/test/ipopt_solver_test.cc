@@ -7,6 +7,26 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
+#ifdef DRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT
+
+#include <IpAlgTypes.hpp>
+
+namespace {
+constexpr int kIpoptMaxiterExceeded = Ipopt::MAXITER_EXCEEDED;
+constexpr int kIpoptStopAtAcceptablePoint = Ipopt::STOP_AT_ACCEPTABLE_POINT;
+constexpr int kIpoptLocalInfeasibility = Ipopt::LOCAL_INFEASIBILITY;
+}  // namespace
+
+#else
+
+namespace {
+constexpr int kIpoptMaxiterExceeded = -1;
+constexpr int kIpoptStopAtAcceptablePoint = -1;
+constexpr int kIpoptLocalInfeasibility = -1;
+}  // namespace
+
+#endif
+
 namespace drake {
 namespace solvers {
 namespace test {
@@ -22,8 +42,7 @@ INSTANTIATE_TEST_SUITE_P(
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
-// TODO(#15229) Disabled due to upstream changes not yet accommodated.
-TEST_F(InfeasibleLinearProgramTest0, DISABLED_TestIpopt) {
+TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   IpoptSolver solver;
   if (solver.available()) {
@@ -31,17 +50,11 @@ TEST_F(InfeasibleLinearProgramTest0, DISABLED_TestIpopt) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasibleConstraints);
-    // LOCAL_INFEASIBILITY is defined in IpAlgTypes.hpp from Ipopt source file.
-    const int LOCAL_INFEASIBILITY = 5;
     EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
-              LOCAL_INFEASIBILITY);
+              kIpoptLocalInfeasibility);
     const Eigen::Vector2d x_val =
         result.GetSolution(prog_->decision_variables());
     EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
-    // local infeasibility is defined in Ipopt::SolverReturn in IpAlgTypes.hpp
-    const int kIpoptLocalInfeasibility = 5;
-    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
-              kIpoptLocalInfeasibility);
   }
 }
 
@@ -110,8 +123,7 @@ class NoisyQuadraticCost {
   const int noise_counter_limit_{10};
 };
 
-// TODO(#15229) Disabled due to upstream changes not yet accommodated.
-GTEST_TEST(IpoptSolverTest, DISABLED_AcceptableResult) {
+GTEST_TEST(IpoptSolverTest, AcceptableResult) {
   IpoptSolver solver;
   SolverOptions options;
   options.SetOption(IpoptSolver::id(), "tol", 1e-6);
@@ -130,10 +142,8 @@ GTEST_TEST(IpoptSolverTest, DISABLED_AcceptableResult) {
       // Expect to hit iteration limit
       EXPECT_FALSE(result.is_success());
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
-      // MAXITER_EXCEEDED is defined in IpAlgTypes.hpp from Ipopt source code.
-      const int MAXITER_EXCEEDED = 1;
       EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
-                MAXITER_EXCEEDED);
+                kIpoptMaxiterExceeded);
     }
     options.SetOption(IpoptSolver::id(), "acceptable_tol", 1e-3);
     options.SetOption(IpoptSolver::id(), "acceptable_dual_inf_tol", 1e-3);
@@ -145,8 +155,6 @@ GTEST_TEST(IpoptSolverTest, DISABLED_AcceptableResult) {
       auto x = prog.NewContinuousVariables(1);
       prog.AddCost(NoisyQuadraticCost(max_noise), x);
       auto result = solver.Solve(prog, x_initial_guess, options);
-      // Expect Ipopt status to be "STOP_AT_ACCEPTABLE_POINT."
-      const int kIpoptStopAtAcceptablePoint{4};  // Defined in IpAlgTypes.hpp.
       EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
                 kIpoptStopAtAcceptablePoint);
       // Expect Ipopt's "STOP_AT_ACCEPTABLE_POINT" to be translated to success.
