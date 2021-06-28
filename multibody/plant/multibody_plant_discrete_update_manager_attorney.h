@@ -33,6 +33,15 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.internal_tree();
   }
 
+  static systems::CacheEntry& DeclareCacheEntry(
+      MultibodyPlant<T>* plant, std::string description,
+      systems::ValueCalcFunction calc_function,
+      std::set<systems::DependencyTicket> prerequisites_of_calc) {
+    return plant->DeclareCacheEntry(std::move(description),
+                                    std::move(calc_function),
+                                    std::move(prerequisites_of_calc));
+  }
+
   static const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const MultibodyPlant<T>& plant,
                            const systems::Context<T>& context) {
