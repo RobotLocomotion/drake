@@ -4,9 +4,11 @@
 #include <memory>
 
 #include <Eigen/Eigenvalues>
+#include <fmt/format.h>
 
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
@@ -15,6 +17,7 @@ namespace optimization {
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using solvers::MathematicalProgram;
+using solvers::MatrixXDecisionVariable;
 using solvers::VectorXDecisionVariable;
 using std::pair;
 using std::sqrt;
@@ -39,6 +42,53 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   // A_G*(p_GE + R_GE*p_EE_var) ≤ b_G
   A_ = Ab_G.first * X_GE.rotation().matrix();
   b_ = Ab_G.second - Ab_G.first * X_GE.translation();
+}
+
+HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
+  MathematicalProgram prog;
+  const int N = this->ambient_dimension();
+  MatrixXDecisionVariable C = prog.NewSymmetricContinuousVariables(N, "C");
+  VectorXDecisionVariable d = prog.NewContinuousVariables(N, "d");
+
+  // max log det (C).  This method also imposes C ≽ 0.
+  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
+      C.cast<symbolic::Expression>());
+  // |aᵢC|₂ ≤ bᵢ - aᵢd, ∀i
+  // TODO(russt): We could potentially avoid Expression parsing here by using
+  // AddLorentzConeConstraint(A,b,vars), but it's nontrivial because of the
+  // duplicate entries in the symmetric matrix C.  E.g. the Lorentz cone A would
+  // not be simply block_diagonal(-A_.row(i), A_.row(i), ..., A_.row(i)).
+  VectorX<symbolic::Expression> z(N+1);
+  for (int i = 0; i < b_.size(); ++i) {
+    z[0] = b_(i) - A_.row(i).dot(d);
+    z.tail(N) = C * A_.row(i).transpose();
+    prog.AddLorentzConeConstraint(z);
+  }
+  auto result = solvers::Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(fmt::format(
+        "Solver {} failed to solve the maximum inscribed ellipse problem; it "
+        "terminated with SolutionResult {}). Make sure that your polyhedron is "
+        "bounded.",
+        result.get_solver_id().name(), result.get_solution_result()));
+  }
+  return HyperEllipsoid(result.GetSolution(C).inverse(), result.GetSolution(d));
+}
+
+HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                                 const Eigen::Ref<const Eigen::VectorXd>& ub) {
+  DRAKE_DEMAND(lb.size() == ub.size());
+  const int N = lb.size();
+  Eigen::MatrixXd A(2*N, N);
+  A << Eigen::MatrixXd::Identity(N, N), -Eigen::MatrixXd::Identity(N, N);
+  Eigen::VectorXd b(2*N);
+  b << ub, -lb;
+  return HPolyhedron(A, b);
+}
+
+HPolyhedron HPolyhedron::MakeUnitBox(int dim) {
+  return MakeBox(Eigen::VectorXd::Constant(dim, -1.0),
+                 Eigen::VectorXd::Constant(dim, 1.0));
 }
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

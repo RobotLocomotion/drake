@@ -21,7 +21,7 @@ namespace optimization {
 @brief Provides an abstraction for reasoning about geometry in optimization
 problems, and using optimization problems to solve geometry problems.
 
-(Experimental).  Note that the features/design in this class hierarchy is
+(Experimental).  Note that the features/designs in this class hierarchy are
 considered experimental, and may change without deprecation.
 
 ### Relationship to other components in Drake.
@@ -117,6 +117,9 @@ class ConvexSet : public ShapeReifier {
   int ambient_dimension_{0};
 };
 
+// Forward declaration.
+class HyperEllipsoid;
+
 /** Implements a polyhedral convex set using the half-space representation:
 `{x| A x ≤ b}`.  Note: This set may be unbounded.
 @ingroup geometry_optimization
@@ -149,6 +152,31 @@ class HPolyhedron final : public ConvexSet {
 
   /** Returns the half-space representation vector b. */
   const Eigen::VectorXd& b() const { return b_; }
+
+  // TODO(russt): Add bool IsBounded() so users can test the precondition.
+  /** Solves a semi-definite program to compute the inscribed ellipsoid.
+  From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
+  @verbatim
+  max_{C,d} log det (C)
+        s.t. |aᵢC|₂ ≤ bᵢ - aᵢd, ∀i
+            C ≽ 0
+  @endverbatim
+  where aᵢ and bᵢ denote the ith row.  This defines the ellipsoid
+  E = { Cx + d | |x|₂ ≤ 1}.
+
+  @pre the HPolyhedron is bounded.
+  @throws std::exception if the solver fails to solve the problem.
+  */
+  HyperEllipsoid MaximumVolumeInscribedEllipsoid() const;
+
+  /** Constructs a polyhedron as an axis-aligned box from the lower and upper
+   * corners. */
+  static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                             const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /** Constructs the L∞-norm unit box in @p dim dimensions, {x | |x|∞ <= 1 }.
+  This is an axis-aligned box, centered at the origin, with edge length 2. */
+  static HPolyhedron MakeUnitBox(int dim);
 
  private:
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
