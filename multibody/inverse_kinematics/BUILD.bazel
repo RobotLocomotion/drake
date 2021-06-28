@@ -54,6 +54,7 @@ drake_cc_library(
         "unit_quaternion_constraint.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/plant",
@@ -106,6 +107,7 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:compute_numerical_gradient",

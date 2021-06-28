@@ -254,7 +254,9 @@ In other words, we transform the second plane (Q, n⃗) so Q and P are coinciden
 and m⃗ and n⃗ are anti-parallel. The notation is frameless, because we're
 not really relating two frames so much as creating a transform operator
 (although we *do* assume that all quantities are measured and expressed in a
-common frame). */
+common frame).
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 math::RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
                                     const Vector3<T>& Q, const Vector3<T>& n);

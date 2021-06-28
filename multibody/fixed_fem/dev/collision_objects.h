@@ -23,7 +23,7 @@ namespace internal {
  object has been added, its proximity properties and surface mesh can be queried
  with its unique GeometryId. Its pose can be queried and updated with the unique
  GeometryId.
- @tparam_default_scalar T. */
+ @tparam_default_scalar */
 template <typename T>
 class CollisionObjects : public geometry::ShapeReifier {
  public:

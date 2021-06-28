@@ -31,6 +31,8 @@ T CalcProbabilityDensity(RandomDistribution distribution,
   DRAKE_UNREACHABLE();
 }
 
+// TODO(jwnimmer-tri) Use DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_...
+// here, once we can break the dependency cycle.
 template double CalcProbabilityDensity<double>(
     RandomDistribution, const Eigen::Ref<const VectorX<double>>&);
 template AutoDiffXd CalcProbabilityDensity<AutoDiffXd>(

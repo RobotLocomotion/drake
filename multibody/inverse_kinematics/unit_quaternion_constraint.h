@@ -47,6 +47,7 @@ class UnitQuaternionConstraint : public solvers::Constraint {
  * @param q_vars The decision variables for the generalized position of the
  * plant.
  * @param prog The unit quaternion constraints are added to this prog.
+ * @tparam_default_scalar
  */
 template <typename T>
 void AddUnitQuaternionConstraintOnPlant(

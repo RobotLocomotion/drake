@@ -36,7 +36,7 @@ namespace internal {
  @pre `n_F` is  perpendicular to the defined `polygon`'s plane.
  @pre `n_F` has non-trivial length.
  @pre `polygon` is planar.
- @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 Vector3<T> CalcPolygonCentroid(
@@ -51,7 +51,7 @@ Vector3<T> CalcPolygonCentroid(
 
 /* Overload that takes a polygon represented as an ordered list of positional
  vectors `p_FVs` of its vertices, each measured and expressed in frame F.
- */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 Vector3<T> CalcPolygonCentroid(
     const std::vector<Vector3<T>>& p_FVs,
@@ -71,7 +71,7 @@ Vector3<T> CalcPolygonCentroid(
  @param[in] nhat_F  Unit normal vector of the polygon.
  @pre `p_FVs.size()` >= 3.
  @pre nhat_F is consistent with the winding of the polygon.
- */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
                   const Vector3<T>& nhat_F);
@@ -107,8 +107,7 @@ T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
  @pre `polygon` is planar.
  @pre `n_F` is perpendicular to the defined `polygon`.
  @pre `n_F` has non-trivial length.
- @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
- */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddPolygonToMeshData(
     const std::vector<SurfaceVertexIndex>& polygon,
@@ -161,8 +160,7 @@ constexpr double kMinimumPolygonArea = 1e-13;
        2. For the scalar type AutoDiffXd, such a polygon may cause unstable
           calculation of derivatives of the representative triangle.
 
- @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
- */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 void AddPolygonToMeshDataAsOneTriangle(
     const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& nhat_F,
@@ -193,8 +191,7 @@ enum class ContactPolygonRepresentation {
  @pre `normal_F` is unit length.
  @return `true` if the angle between `normal_F` and the triangle normal lies
           within the hard-coded tolerance.
- @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
- */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
                                    const SurfaceMesh<T>& surface_M,

@@ -174,13 +174,6 @@ const vector<string>& GetIntegrationSchemes() {
   return result.access();
 }
 
-// Explicit instantiations.
-// We can't support T=symbolic::Expression because Simulator doesn't support it.
-template IntegratorBase<double>& ResetIntegratorFromFlags(
-    Simulator<double>*, const string&, const double&);
-template IntegratorBase<AutoDiffXd>& ResetIntegratorFromFlags(
-    Simulator<AutoDiffXd>*, const string&, const AutoDiffXd&);
-
 void ApplySimulatorConfig(
     Simulator<double>* simulator,
     const SimulatorConfig& config) {
@@ -219,6 +212,11 @@ SimulatorConfig ExtractSimulatorConfig(
   result.publish_every_time_step = simulator.get_publish_every_time_step();
   return result;
 }
+
+// We can't support T=symbolic::Expression because Simulator doesn't support it.
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ResetIntegratorFromFlags<T>
+))
 
 }  // namespace systems
 }  // namespace drake

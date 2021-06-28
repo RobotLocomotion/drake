@@ -5,6 +5,7 @@
 #include <limits>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 
 namespace drake {
@@ -414,53 +415,11 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
                                              std::move(grad_eS_W), nullptr);
 }
 
-template void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
-    const PosedHalfSpace<double>& half_space_F,
-    const math::RigidTransform<double>& X_WF,
-    std::vector<SurfaceVertex<double>>* new_vertices_W,
-    std::vector<SurfaceFace>* new_faces,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-        vertices_to_newly_created_vertices,
-    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-        edges_to_newly_created_vertices);
-
-template void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
-    const PosedHalfSpace<AutoDiffXd>& half_space_F,
-    const math::RigidTransform<AutoDiffXd>& X_WF,
-    std::vector<SurfaceVertex<AutoDiffXd>>* new_vertices_W,
-    std::vector<SurfaceFace>* new_faces,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-        vertices_to_newly_created_vertices,
-    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-        edges_to_newly_created_vertices);
-
-template std::unique_ptr<SurfaceMesh<double>>
-ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<double>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
-    const math::RigidTransform<double>& X_WF);
-
-template std::unique_ptr<SurfaceMesh<AutoDiffXd>>
-ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<AutoDiffXd>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
-    const math::RigidTransform<AutoDiffXd>& X_WF);
-
-template std::unique_ptr<ContactSurface<double>>
-ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-    GeometryId, const math::RigidTransform<double>&, double, GeometryId,
-    const SurfaceMesh<double>&, const Bvh<Obb, SurfaceMesh<double>>&,
-    const math::RigidTransform<double>&);
-
-template std::unique_ptr<ContactSurface<AutoDiffXd>>
-ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-    GeometryId, const math::RigidTransform<AutoDiffXd>&, double, GeometryId,
-    const SurfaceMesh<double>&, const Bvh<Obb, SurfaceMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ConstructTriangleHalfspaceIntersectionPolygon<T>,
+    &ConstructSurfaceMeshFromMeshHalfspaceIntersection<T>,
+    &ComputeContactSurfaceFromSoftHalfSpaceRigidMesh<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

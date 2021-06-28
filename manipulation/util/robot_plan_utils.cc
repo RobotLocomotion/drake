@@ -108,14 +108,10 @@ lcmt_robot_plan EncodeKeyFrames(
   return plan;
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &GetJointNames<T>
+))
 
 }  // namespace util
 }  // namespace manipulation
 }  // namespace drake
-
-template std::vector<std::string> drake::manipulation::util::GetJointNames(
-    const drake::multibody::MultibodyPlant<double>&);
-template std::vector<std::string> drake::manipulation::util::GetJointNames(
-    const drake::multibody::MultibodyPlant<::drake::AutoDiffXd>&);
-template std::vector<std::string> drake::manipulation::util::GetJointNames(
-    const drake::multibody::MultibodyPlant<::drake::symbolic::Expression>&);
