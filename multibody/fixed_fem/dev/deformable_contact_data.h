@@ -74,7 +74,9 @@ class DeformableContactData {
   int num_vertices_in_contact() const { return num_vertices_in_contact_; }
 
   /* Returns the total number of contact points that have the deformable body as
-   one of the bodies in contact. */
+   one of the bodies in contact. In the illustrating example above, suppose each
+   face of the rigid box R consists of exactly one surface mesh element, then
+   the total number of contact points is 2. */
   int num_contact_points() const { return num_contact_points_; }
 
   /* Returns the number of deformable rigid contact pairs that involve this

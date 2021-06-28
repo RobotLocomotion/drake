@@ -6,12 +6,16 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 
+using multibody::contact_solvers::internal::BlockSparseMatrix;
+using multibody::contact_solvers::internal::BlockSparseMatrixBuilder;
+using multibody::internal::DiscreteContactPair;
+
 template <typename T>
 void DeformableRigidManager<T>::RegisterCollisionObjects(
-    const geometry::SceneGraph<T>& scene_graph) {
+    const geometry::SceneGraph<T>& scene_graph) const {
   const geometry::SceneGraphInspector<T>& inspector =
       scene_graph.model_inspector();
-  /* Make sure that the owning plant is registered at the given scene graph.
+  /* Make sure that the owning plant is registered with the given scene graph.
    */
   DRAKE_THROW_UNLESS(
       inspector.SourceIsRegistered(this->plant().get_source_id().value()));
@@ -77,6 +81,8 @@ void DeformableRigidManager<T>::RegisterDeformableGeometries() {
 
 template <typename T>
 void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
+  // TODO(xuchenhan-tri): Use the sugar that takes member methods as arguments
+  //  to declare cache entries when they are available (PR#15161).
   DRAKE_DEMAND(deformable_model_ != nullptr);
   for (SoftBodyIndex deformable_body_id(0);
        deformable_body_id < deformable_model_->num_bodies();
@@ -145,6 +151,36 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
                                 {fem_state_cache_entry.ticket()})
             .cache_index());
   }
+
+  /* Lambda to allocate for a std::vector<internal::DeformableContactData<T>>.
+   */
+  auto allocate_contact_data = []() {
+    return AbstractValue::Make(
+        std::vector<internal::DeformableContactData<T>>());
+  };
+  /* Lambda to calculate the contact data for all deformable bodies. */
+  auto calc_contact_data = [this](const systems::ContextBase& context_base,
+                                  AbstractValue* cache_value) {
+    const auto& context =
+        dynamic_cast<const systems::Context<T>&>(context_base);
+    auto& deformable_contact_data = cache_value->template get_mutable_value<
+        std::vector<internal::DeformableContactData<T>>>();
+    this->UpdateCollisionObjectPoses(context);
+    this->UpdateDeformableVertexPositions(context);
+    const int num_bodies = deformable_model_->num_bodies();
+    deformable_contact_data.clear();
+    for (SoftBodyIndex deformable_body_index(0);
+         deformable_body_index < num_bodies; ++deformable_body_index) {
+      deformable_contact_data.emplace_back(
+          this->CalcDeformableContactData(deformable_body_index));
+    }
+  };
+  /* Declares the deformable contact data cache entry. */
+  const auto& deformable_contact_data_cache_entry = plant->DeclareCacheEntry(
+      "Deformable contact data", std::move(allocate_contact_data),
+      std::move(calc_contact_data), {systems::System<T>::xd_ticket()});
+  deformable_contact_data_cache_index_ =
+      deformable_contact_data_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -164,8 +200,8 @@ void DeformableRigidManager<T>::DoCalcContactSolverResults(
   // TODO(xuchenhan-tri): Incorporate deformable-rigid contact pairs.
   /* Compute all rigid-rigid contact pairs, including both penetration pairs
    and quadrature pairs for discrete hydroelastic. */
-  const std::vector<multibody::internal::DiscreteContactPair<T>>&
-      rigid_contact_pairs = this->EvalDiscreteContactPairs(context);
+  const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs =
+      this->EvalDiscreteContactPairs(context);
   const int num_rigid_contacts = rigid_contact_pairs.size();
 
   /* Extract all information needed by the contact/TAMSI solver. */
@@ -198,8 +234,7 @@ void DeformableRigidManager<T>::DoCalcContactSolverResults(
 template <typename T>
 void DeformableRigidManager<T>::CalcContactQuantities(
     const systems::Context<T>& context,
-    const std::vector<multibody::internal::DiscreteContactPair<T>>&
-        rigid_contact_pairs,
+    const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs,
     multibody::internal::ContactJacobians<T>* rigid_contact_jacobians,
     EigenPtr<VectorX<T>> v, EigenPtr<MatrixX<T>> M,
     EigenPtr<VectorX<T>> minus_tau, EigenPtr<VectorX<T>> mu,
@@ -445,6 +480,183 @@ DeformableRigidManager<T>::CalcDeformableRigidContact(
         CalcDeformableContactData(deformable_body_id));
   }
   return deformable_contact_data;
+}
+
+template <typename T>
+BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactJacobian(
+    const systems::Context<T>& context) const {
+  /* Get the rigid-rigid contact info. */
+  const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs =
+      this->EvalDiscreteContactPairs(context);
+  /* Get the deformable-rigid contact info. */
+  const std::vector<internal::DeformableContactData<T>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+
+  /* Each deformable body in contact forms a block column in the contact
+   jacobian. */
+  const int num_deformable_block_cols = std::count_if(
+      deformable_contact_data.begin(), deformable_contact_data.end(),
+      [](const internal::DeformableContactData<T>& contact_data) {
+        return contact_data.num_contact_points() != 0;
+      });
+
+  /* Return an empty matrix if no contact exists. */
+  if (num_deformable_block_cols == 0 && rigid_contact_pairs.empty()) {
+    return BlockSparseMatrix<T>();
+  }
+
+  // TODO(xuchenhan-tri): Further exploit the sparsity in contact jacobian
+  //  using contact graph for rigid dofs.
+  /* For now, all rigid dofs are viewed as a single column block in the contact
+   jacobian. */
+  const int num_rigid_block_cols = 1;
+  /* For now, all rigid-rigid contacts (if they exist) are viewed as a single
+   row block in the contact jacobian. */
+  const int num_rigid_block_rows = rigid_contact_pairs.empty() ? 0 : 1;
+  /* Each deformable body in contact forms one row block. */
+  const int num_deformable_block_rows = num_deformable_block_cols;
+  /* The number of total row/col blocks is the sum of deformable and rigid
+   row/col blocks. */
+  const int num_block_rows = num_deformable_block_rows + num_rigid_block_rows;
+  const int num_block_cols = num_rigid_block_cols + num_deformable_block_cols;
+
+  /* Rigid-rigid contact accounts for one block in the matrix. Each
+   rigid-deformable contact produces two blocks (one in the rigid column block
+   and one in the deformable column for the deformable body). If we strictly
+   declare 2X the total number of rows, we'll have a safe and tight upper
+   bound. */
+  BlockSparseMatrixBuilder<T> builder(num_block_rows, num_block_cols,
+                                      2 * num_block_rows);
+
+  if (num_rigid_block_rows != 0) {
+    /* The rigid-rigid block. */
+    builder.PushBlock(0, 0, this->EvalContactJacobians(context).Jc);
+  }
+
+  /* The row blocks corresponding to deformable-rigid contacts start after
+    rigid-rigid contacts. */
+  int row_block = num_rigid_block_rows;
+  /* The block columns corresponding to deformable dofs start after the
+   rigid dofs. */
+  int col_block_deformable = num_rigid_block_cols;
+  const int col_block_rigid = 0;
+
+  for (const internal::DeformableContactData<T>& contact_data :
+       deformable_contact_data) {
+    /* Skip deformable bodies that are not in contact. */
+    if (contact_data.num_contact_points() == 0) {
+      continue;
+    }
+    builder.PushBlock(row_block, col_block_rigid,
+                      CalcContactJacobianRigidBlock(context, contact_data));
+    builder.PushBlock(row_block, col_block_deformable,
+                      CalcContactJacobianDeformableBlock(contact_data));
+    ++row_block;
+    ++col_block_deformable;
+  }
+  return builder.Build();
+}
+
+template <typename T>
+MatrixX<T> DeformableRigidManager<T>::CalcContactJacobianDeformableBlock(
+    const internal::DeformableContactData<T>& contact_data) const {
+  MatrixX<T> Jc = MatrixX<T>::Zero(3 * contact_data.num_contact_points(),
+                                   3 * contact_data.num_vertices_in_contact());
+  constexpr int kNumVerticesInTetrahedron = 4;
+  /* The mapping from vertex indexes of the deformable mesh to the permuted
+   vertex indexes used in determining the column index in the contact jacobian.
+  */
+  const std::vector<int>& permuted_vertex_indexes =
+      contact_data.permuted_vertex_indexes();
+  DRAKE_DEMAND(deformable_model_ != nullptr);
+  const std::vector<geometry::VolumeMesh<T>>& deformable_meshes =
+      deformable_model_->reference_configuration_meshes();
+
+  int contact_point_offset = 0;
+  for (const auto& contact_pair : contact_data.contact_pairs()) {
+    const DeformableContactSurface<T>& contact_surface =
+        contact_pair.contact_surface;
+    const geometry::VolumeMesh<T>& volume_mesh =
+        deformable_meshes[contact_pair.deformable_id];
+    for (int ic = 0; ic < contact_surface.num_polygons(); ++ic) {
+      const ContactPolygonData<T>& polygon_data =
+          contact_surface.polygon_data(ic);
+      /* The contribution to the contact velocity at contact point q from the
+       deformable object A is R_CW * v_WAq, where
+           v_WAq = ∑ⱼ bⱼ * v_WVᵢⱼ       (1).
+       Here, bⱼ is the barycentric weight corresponding to the vertex iⱼ and
+       v_WVᵢⱼ is the world frame velocity of the vertex iⱼ.
+
+       Now, we want the deformable block of the contact jacobian Jc to be such
+       that when multiplied with the deformable velocities on the right, it
+       produces R_CW * v_WAq for the rows corresponding to the contact point
+       q. From inspecting equation (1), the 3x3 block in the rows corresponding
+       to the contact point q and the columns corresponding to vertex iⱼ has to
+       be R_CW * bⱼ. */
+      const Vector4<T>& barycentric_weights = polygon_data.b_centroid;
+      const geometry::VolumeElement tet_element =
+          volume_mesh.element(polygon_data.tet_index);
+      for (int j = 0; j < kNumVerticesInTetrahedron; ++j) {
+        const int v = permuted_vertex_indexes[tet_element.vertex(j)];
+        Jc.template block<3, 3>(3 * contact_point_offset, 3 * v) =
+            contact_pair.R_CWs[ic].matrix() * barycentric_weights(j);
+      }
+      ++contact_point_offset;
+    }
+  }
+  return Jc;
+}
+
+template <typename T>
+MatrixX<T> DeformableRigidManager<T>::CalcContactJacobianRigidBlock(
+    const systems::Context<T>& context,
+    const internal::DeformableContactData<T>& contact_data) const {
+  MatrixX<T> Jc = MatrixX<T>::Zero(3 * contact_data.num_contact_points(),
+                                   this->plant().num_velocities());
+  int contact_point_offset = 0;
+  for (const auto& contact_pair : contact_data.contact_pairs()) {
+    const DeformableContactSurface<T>& contact_surface =
+        contact_pair.contact_surface;
+    const int num_contact_points = contact_surface.num_polygons();
+    if (num_contact_points == 0) {
+      continue;
+    }
+    /* The contact points in world frame. */
+    Matrix3X<T> p_WCs(3, num_contact_points);
+    for (int i = 0; i < contact_surface.num_polygons(); ++i) {
+      p_WCs.col(i) = contact_surface.polygon_data(i).centroid;
+    }
+    // TODO(xuchenhan-tri): The memory access pattern here is unfriendly for
+    //  column major matrices. Consider switching to row major storage.
+    /* Extract the contact jacobian block associated with the rigid geometry
+     with `rigid_id`. */
+    auto Jc_block =
+        Jc.middleRows(3 * contact_point_offset, 3 * num_contact_points);
+    const geometry::GeometryId rigid_id = contact_pair.rigid_id;
+    const Frame<T>& body_frame =
+        this->GetBodyFrameFromCollisionGeometry(rigid_id);
+    this->internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_frame,
+        this->plant().world_frame(), p_WCs, this->plant().world_frame(),
+        this->plant().world_frame(), &Jc_block);
+    /* Rotates to the contact frame at each contact point. */
+    for (int i = 0; i < contact_pair.num_contact_points(); ++i) {
+      /* The contact velocity at the contact point q between a deformable
+       body A and a rigid body B is given by
+          vc = v_CAq - v_CBq
+              = R_CW * (v_WAq - v_WBq)
+              = R_CW * (v_WAq - Jv_v_WBq * v)  Here v is rigid velocity dofs.
+       From inspection, we see that the rigid block of the contact jacobian is
+       -R_CW * Jv_v_WBq. */
+      Jc_block.middleRows(3 * i, 3) =
+          -contact_pair.R_CWs[i].matrix() * Jc_block.middleRows(3 * i, 3);
+    }
+    contact_point_offset += num_contact_points;
+  }
+
+  /* Sanity check that all rows of the contact jacobian has been written to. */
+  DRAKE_DEMAND(3 * contact_point_offset == Jc.rows());
+  return Jc;
 }
 
 }  // namespace fixed_fem

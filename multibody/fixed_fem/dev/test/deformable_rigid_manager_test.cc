@@ -30,19 +30,52 @@ constexpr double kDt = 0.0123;
 constexpr double kGravity = -9.81;
 /* Number of vertices in the box mesh (see below). */
 constexpr int kNumVertices = 8;
-constexpr double kBoxLength = 1;
 /* Contact parameters. */
 constexpr double kContactStiffness = 5e4;
 constexpr double kContactDissipation = 5;
 const CoulombFriction kFriction{0.3, 0.2};
 
+using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::GeometryId;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
 using geometry::SurfaceMesh;
+using multibody::contact_solvers::internal::BlockSparseMatrix;
 using systems::Context;
+
+geometry::Box MakeUnitCube() { return geometry::Box(1.0, 1.0, 1.0); }
+
+/* Makes a unit cube and subdivide it into 6 tetrahedra. */
+geometry::VolumeMesh<double> MakeUnitCubeTetMesh() {
+  geometry::VolumeMesh<double> mesh =
+      geometry::internal::MakeBoxVolumeMesh<double>(MakeUnitCube(), 1.0);
+  DRAKE_DEMAND(mesh.num_elements() == 6);
+  DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
+  return mesh;
+}
+
+/* Returns a proximity property with arbitrary elastic modulus, dissipation, and
+ friction. */
+ProximityProperties MakeProximityProperties() {
+  ProximityProperties proximity_properties;
+  geometry::AddContactMaterial({}, kContactDissipation, kContactStiffness,
+                               kFriction, &proximity_properties);
+  return proximity_properties;
+}
+
+/* Create a dummy DeformableBodyConfig. */
+DeformableBodyConfig<double> MakeDeformableBodyConfig() {
+  DeformableBodyConfig<double> config;
+  config.set_youngs_modulus(kYoungsModulus);
+  config.set_poisson_ratio(kPoissonRatio);
+  config.set_mass_damping_coefficient(kMassDamping);
+  config.set_stiffness_damping_coefficient(kStiffnessDamping);
+  config.set_mass_density(kDensity);
+  config.set_material_model(MaterialModel::kLinear);
+  return config;
+}
 
 class DeformableRigidManagerTest : public ::testing::Test {
  protected:
@@ -51,7 +84,7 @@ class DeformableRigidManagerTest : public ::testing::Test {
    manager for the MultibodyPlant. */
   void SetUp() override {
     auto deformable_model = std::make_unique<DeformableModel<double>>(&plant_);
-    deformable_model->RegisterDeformableBody(MakeBoxTetMesh(), "box",
+    deformable_model->RegisterDeformableBody(MakeUnitCubeTetMesh(), "box",
                                              MakeDeformableBodyConfig(),
                                              MakeProximityProperties());
     deformable_model_ = deformable_model.get();
@@ -59,7 +92,7 @@ class DeformableRigidManagerTest : public ::testing::Test {
     /* Add a collision geometry. */
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
     plant_.RegisterCollisionGeometry(
-        plant_.world_body(), math::RigidTransform<double>(), MakeBoxShape(),
+        plant_.world_body(), math::RigidTransform<double>(), MakeUnitCube(),
         "collision", MakeProximityProperties());
     plant_.Finalize();
     auto deformable_rigid_manager =
@@ -67,41 +100,6 @@ class DeformableRigidManagerTest : public ::testing::Test {
     deformable_rigid_manager_ = deformable_rigid_manager.get();
     plant_.SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
     deformable_rigid_manager_->RegisterCollisionObjects(scene_graph_);
-  }
-
-  static geometry::Box MakeBoxShape() {
-    return geometry::Box(kBoxLength, kBoxLength, kBoxLength);
-  }
-
-  /* Makes a box and subdivide it into 6 tetrahedra. */
-  static geometry::VolumeMesh<double> MakeBoxTetMesh() {
-    geometry::VolumeMesh<double> mesh =
-        geometry::internal::MakeBoxVolumeMesh<double>(MakeBoxShape(),
-                                                      kBoxLength);
-    DRAKE_DEMAND(mesh.num_elements() == 6);
-    DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
-    return mesh;
-  }
-
-  /* Returns a proximity property with default elastic modulus and dissipation
-   and an arbitrary friction. */
-  static ProximityProperties MakeProximityProperties() {
-    ProximityProperties proximity_properties;
-    geometry::AddContactMaterial({}, kContactDissipation, kContactStiffness,
-                                 kFriction, &proximity_properties);
-    return proximity_properties;
-  }
-
-  /* Create a dummy DeformableBodyConfig. */
-  static DeformableBodyConfig<double> MakeDeformableBodyConfig() {
-    DeformableBodyConfig<double> config;
-    config.set_youngs_modulus(kYoungsModulus);
-    config.set_poisson_ratio(kPoissonRatio);
-    config.set_mass_damping_coefficient(kMassDamping);
-    config.set_stiffness_damping_coefficient(kStiffnessDamping);
-    config.set_mass_density(kDensity);
-    config.set_material_model(MaterialModel::kLinear);
-    return config;
   }
 
   /* Verifies that there exists one and only one collision object registered
@@ -318,8 +316,7 @@ TEST_F(DeformableRigidManagerTest, RegisterCollisionGeometry) {
   get_collision_geometry(&id);
   /* Verify the surface mesh is as expected. */
   const SurfaceMesh<double> expected_surface_mesh =
-      geometry::internal::MakeBoxSurfaceMesh<double>(MakeBoxShape(),
-                                                     kBoxLength);
+      geometry::internal::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects.mesh(id)));
   /* Verify proximity property is as expected. */
   const CoulombFriction<double> mu = collision_objects.proximity_properties(id)
@@ -394,7 +391,7 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
                                      |
                                     -Z
    where the "●"s denote representative contact points. */
-  const auto X_DR = math::RigidTransformd(Vector3d(0, -0.75 * kBoxLength, 0));
+  const auto X_DR = math::RigidTransformd(Vector3d(0, -0.75, 0));
   SetCollisionObjectPoseInWorld(rigid_ids[0], X_DR);
   /* Calculates the contact pair between the only rigid geometry and the only
    deformable geometry. */
@@ -450,10 +447,331 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
         Vector3d(0, 0, 1), kTol));
   }
 }
+}  // namespace
 
-// TODO(xuchenhan-tri): Add a unit test that covers
-//  DeformableRigidManager::CalcDeformableRigidContact() in the PR that
-//  introduces contact jacobian calculation.
+class DeformableRigidContactJacobianTest : public ::testing::Test {
+ protected:
+  /* Set up a scene with three rigid boxes and one deforamble cube.
+   In particular, unit cube A is deformable and boxes B, C, and D are rigid and
+   have size (2, 0.5, 2). */
+  void SetUp() override {
+    systems::DiagramBuilder<double> builder;
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
+    auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
+    A_ = deformable_model->RegisterDeformableBody(
+        MakeUnitCubeTetMesh(), "box_A", MakeDeformableBodyConfig(),
+        MakeProximityProperties());
+    plant_->AddPhysicalModel(std::move(deformable_model));
+    /* Add the rigid bodies. */
+    const UnitInertia<double> G_Rcm =
+        UnitInertia<double>::SolidBox(2.0, 0.5, 2.0);
+    const SpatialInertia<double> M_Rcm(1.0, Vector3<double>::Zero(), G_Rcm);
+    B_ = plant_->AddRigidBody("box_B", M_Rcm).index();
+    C_ = plant_->AddRigidBody("box_C", M_Rcm).index();
+    D_ = plant_->AddRigidBody("box_D", M_Rcm).index();
+    collision_geometry_B_ = plant_->RegisterCollisionGeometry(
+        plant_->get_body(B_), math::RigidTransform<double>(),
+        geometry::Box(2, 0.5, 2), "B", MakeProximityProperties());
+    collision_geometry_C_ = plant_->RegisterCollisionGeometry(
+        plant_->get_body(C_), math::RigidTransform<double>(),
+        geometry::Box(2, 0.5, 2), "C", MakeProximityProperties());
+    // The geometry and the inertia is seemingly incompatible for box D, but we
+    // are not using the inertia information anyway.
+    collision_geometry_D_ = plant_->RegisterCollisionGeometry(
+        plant_->get_body(D_), math::RigidTransform<double>(),
+        geometry::Box(2, 2, 0.5), "D", MakeProximityProperties());
+    plant_->Finalize();
+
+    auto deformable_rigid_manager =
+        std::make_unique<DeformableRigidManager<double>>();
+    deformable_rigid_manager_ = deformable_rigid_manager.get();
+    plant_->SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
+    deformable_rigid_manager_->RegisterCollisionObjects(*scene_graph_);
+
+    diagram_ = builder.Build();
+    diagram_context_ = diagram_->CreateDefaultContext();
+  }
+
+  /* Calls DeformableRigidManager::CalcContactJacobian() and returns the contact
+   jacobian as a dense matrix. */
+  MatrixXd CalcContactJacobian(const Context<double>& context) const {
+    const BlockSparseMatrix<double> Jc =
+        deformable_rigid_manager_->CalcContactJacobian(context);
+    return Jc.MakeDenseMatrix();
+  }
+
+  /* Calculates the rigid-rigid contact jacobian. */
+  MatrixXd CalcRigidRigidContactJacobian(const Context<double>& context) const {
+    return deformable_rigid_manager_->EvalContactJacobians(context).Jc;
+  }
+
+  int CalcNumRigidRigidContactPoints(const Context<double>& context) const {
+    const std::vector<multibody::internal::DiscreteContactPair<double>>&
+        rigid_contact_pairs =
+            deformable_rigid_manager_->EvalDiscreteContactPairs(context);
+    return rigid_contact_pairs.size();
+  }
+
+  /* Returns the CollisionObjects owned by the DeformableRigidManager under
+   test. */
+  const internal::CollisionObjects<double>& get_collision_objects() const {
+    return deformable_rigid_manager_->collision_objects_;
+  }
+
+  const std::vector<geometry::VolumeMesh<double>>& get_deformable_meshes()
+      const {
+    return deformable_rigid_manager_->deformable_meshes_;
+  }
+
+  SceneGraph<double>* scene_graph_{nullptr};
+  MultibodyPlant<double>* plant_{nullptr};
+  const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
+  SoftBodyIndex A_;
+  BodyIndex B_;
+  BodyIndex C_;
+  BodyIndex D_;
+  GeometryId collision_geometry_B_;
+  GeometryId collision_geometry_C_;
+  GeometryId collision_geometry_D_;
+  std::unique_ptr<systems::Diagram<double>> diagram_{nullptr};
+  std::unique_ptr<Context<double>> diagram_context_{nullptr};
+};
+
+namespace {
+
+/* Set up the scene so that the bodies A, B, C, and D look like:
+
+                            +Z
+                  B          |          C
+                    -------  |   -------
+                    |     |  |   |     |
+                    |  ---+--+---+---  |
+                    |  |  ●  |   ●  |  |
+                    |  |  |  |A  |  |  |
+              -Y----+--+--+--+---+--+--+----+Y
+                    |  |  |  |   |  |  |
+                    |  |  ●  |   ●  |  |
+                    |  ---+--+---+---  |
+                    |     |  |   |     |
+               -----+-----+--+---+-----+-----
+               |    -------  |   -------  D |
+               --------------+---+-----+-----
+                             |
+                             |
+                            -Z
+ A is axis-aligned and centered at origin. B and C are axis-aligned with size
+ (2, 0.5, 2). They are centered at (0, -0.5, 0) and (0, 0.5, 0) respectively. D
+ is axis-aligned with size (2, 2, 0.5) and is centered at (0, 0, -1). There
+ exist rigid-deformable contacts between A and B and between A and C. The "●"
+ represents a characteristic rigid-deformable contact point. There exist
+ rigid-rigid contacts between B and D and between C and D. */
+TEST_F(DeformableRigidContactJacobianTest, ContactJacobian) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Set poses of the rigid bodies. */
+  const Vector3d p_WB(0, -0.5, 0);
+  const Vector3d p_WC(0, 0.5, 0);
+  const Vector3d p_WD(0, 0, -1);
+  const math::RigidTransformd X_WB(p_WB);
+  const math::RigidTransformd X_WC(p_WC);
+  const math::RigidTransformd X_WD(p_WD);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(B_), X_WB);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(D_), X_WD);
+
+  /* Calculates the contact jacobian. */
+  const MatrixXd Jc = CalcContactJacobian(plant_context);
+
+  const std::vector<geometry::VolumeMesh<double>>& deformable_meshes =
+      get_deformable_meshes();
+  ASSERT_EQ(deformable_meshes.size(), 1);
+  const auto& mesh_A = deformable_meshes[0];
+  const internal::CollisionObjects<double>& collision_objects =
+      get_collision_objects();
+  /* The expected contact surfaces. */
+  const DeformableContactSurface<double> contact_surface_AB =
+      ComputeTetMeshTriMeshContact(
+          mesh_A, collision_objects.mesh(collision_geometry_B_),
+          collision_objects.pose_in_world(collision_geometry_B_));
+  const DeformableContactSurface<double> contact_surface_AC =
+      ComputeTetMeshTriMeshContact(
+          mesh_A, collision_objects.mesh(collision_geometry_C_),
+          collision_objects.pose_in_world(collision_geometry_C_));
+  /* Number of contact points between A and B. */
+  const int nc_AB = contact_surface_AB.num_polygons();
+  /* Number of contact points between A and C. */
+  const int nc_AC = contact_surface_AC.num_polygons();
+  const int nc_rigid_deformable = nc_AB + nc_AC;
+  /* Number of rigid-rigid contact points between B and D and between C and D.
+   */
+  const int nc_rigid_rigid = CalcNumRigidRigidContactPoints(plant_context);
+  const int nc = nc_rigid_deformable + nc_rigid_rigid;
+  /* The number of rows of the contact jacobian should be 3 times the number of
+   contact points. */
+  EXPECT_EQ(Jc.rows(), 3 * nc);
+
+  const int nv_rigid = plant_->num_velocities();
+  /* The contact participating deformable dofs should be a multiple of 3 and
+   non-negative. */
+  const int nv_deformable = Jc.cols() - nv_rigid;
+  EXPECT_EQ(nv_deformable % 3, 0);
+  EXPECT_GE(nv_deformable, 0);
+
+  /* The contact jacobian should exhibit the following sparsity pattern:
+                    rigid dofs                  participating deformable dofs
+           ____________________________________________________________________
+  rigid   |                               |                                    |
+  rigid   |       Jc_rigid_rigid          |                  0                 |
+  contact |                               |                                    |
+          | ------------------------------------------------------------------ |
+  rigid   |                               |                                    |
+  deform  | Jc_rigid_deformable_wrt_rigid | Jc_rigid_deforamble_wrt_deformable |
+  -able   | ______________________________|____________________________________|
+  contact                                                                     */
+
+  const auto& Jc_rigid_rigid = Jc.topLeftCorner(nc_rigid_rigid * 3, nv_rigid);
+  /* The rigid-rigid block should be the same as the contact jacobian calculated
+   by MultibodyPlant. */
+  EXPECT_TRUE(CompareMatrices(Jc_rigid_rigid,
+                              CalcRigidRigidContactJacobian(plant_context)));
+
+  const auto& zero_block = Jc.topRightCorner(nc_rigid_rigid * 3, nv_deformable);
+  EXPECT_TRUE(CompareMatrices(
+      zero_block, MatrixXd::Zero(nc_rigid_rigid * 3, nv_deformable)));
+
+  /* We verify the correctness of the deformable rigid blocks of the contact
+   jacobian by calculating the contact velocities by multiplying the contact
+   jacobian with arbitrary generalized velocities and verify the contact
+   velocities against pen-and-paper calculation. */
+  const auto& Jc_rigid_deformable = Jc.bottomRows(3 * nc_rigid_deformable);
+
+  /* Set arbitrary spatial velocities for the rigid bodies. */
+  const SpatialVelocity<double> V_WB(Vector3d(0.12, 0.23, 0.34),
+                                     Vector3d(0.21, 0.32, 0.43));
+  const SpatialVelocity<double> V_WC(Vector3d(0.1, 0.2, 0.3),
+                                     Vector3d(0.4, 0.5, 0.6));
+  const SpatialVelocity<double> V_WD(Vector3d(1.1, 1.2, 1.3),
+                                     Vector3d(1.4, 1.5, 1.6));
+  plant_->SetFreeBodySpatialVelocity(&plant_context, plant_->get_body(B_),
+                                     V_WB);
+  plant_->SetFreeBodySpatialVelocity(&plant_context, plant_->get_body(C_),
+                                     V_WC);
+  plant_->SetFreeBodySpatialVelocity(&plant_context, plant_->get_body(D_),
+                                     V_WD);
+  /* Set arbitrary (but uniform for simplicity) deformable velocities. */
+  VectorXd deformable_velocities(nv_deformable);
+  const Vector3d v_WA(1.11, 2.22, 3.33);
+  for (int i = 0; i < nv_deformable / 3; ++i) {
+    deformable_velocities.template segment<3>(3 * i) = v_WA;
+  }
+  /* Collect all velocities. */
+  const int nv = nv_rigid + nv_deformable;
+  VectorXd generalized_velocities(nv);
+  generalized_velocities << plant_->GetVelocities(plant_context),
+      deformable_velocities;
+
+  const VectorXd contact_velocities =
+      Jc_rigid_deformable * generalized_velocities;
+  EXPECT_EQ(contact_velocities.size(), 3 * nc_rigid_deformable);
+
+  /* The normal and tangential components of the contact velocities. */
+  VectorXd vn(nc_rigid_deformable);
+  VectorXd vt(2 * nc_rigid_deformable);
+  using contact_solvers::internal::ExtractNormal;
+  using contact_solvers::internal::ExtractTangent;
+  ExtractNormal(contact_velocities, &vn);
+  ExtractTangent(contact_velocities, &vt);
+
+  /* Verifies the normal and tangential components of the contact velocities
+   are as expected.
+   @param v_WD  the velocity at the deformable contact point in world frame.
+   @param V_WR  the spatial velocity at the rigid contact point in world frame.
+   @param X_WR  pose of the rigid body in world frame.
+   @param polygon_data  the contact polygon data.
+   @param contact_index the index of the contact point among all deformable
+                        rigid contacts. */
+  auto verify_contact_velocity =
+      [&vn, &vt](const Vector3d& v_WD, const SpatialVelocity<double>& V_WR,
+                 const math::RigidTransformd& X_WR,
+                 const ContactPolygonData<double>& polygon_data,
+                 int contact_index) {
+        /* The position of the contact point Rq on the rigid body R measured in
+         and expressed in the world frame. */
+        const Vector3d& p_WRq = polygon_data.centroid;
+        /* The contact_point measured in R frame and expressed in world frame.
+         */
+        const Vector3d p_RoRq_W = p_WRq - X_WR.translation();
+        /* Translation velocity of the contact point in the world frame. */
+        const Vector3d v_WRq = V_WR.Shift(p_RoRq_W).translational();
+        /* Translation velocity of the contact point in the deformable frame.
+         */
+        const Vector3d v_DRq = v_WD - v_WRq;
+        /* Normal componenet of the contact velocity. */
+        const double vn_DRq = v_DRq.dot(polygon_data.unit_normal);
+        EXPECT_DOUBLE_EQ(vn(contact_index), vn_DRq);
+        /* Tangent component of the contact velocity. */
+        const Vector3d vt_DRq = v_DRq - vn_DRq * polygon_data.unit_normal;
+        EXPECT_DOUBLE_EQ(vt.template segment<2>(2 * contact_index).norm(),
+                         vt_DRq.norm());
+      };
+  for (int i = 0; i < nc_AB; ++i) {
+    const int contact_index = i;
+    const ContactPolygonData<double>& data = contact_surface_AB.polygon_data(i);
+    verify_contact_velocity(v_WA, V_WB, X_WB, data, contact_index);
+  }
+  for (int i = 0; i < nc_AC; ++i) {
+    const int contact_index = nc_AB + i;
+    const ContactPolygonData<double>& data = contact_surface_AC.polygon_data(i);
+    verify_contact_velocity(v_WA, V_WC, X_WC, data, contact_index);
+  }
+}
+
+/* Verify that the calculated contact jacobian is the same as that from
+ MultibodyPlant when no deformable body is in contact. */
+TEST_F(DeformableRigidContactJacobianTest, RigidOnlyContactJacobian) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Set poses of the rigid bodies similar to the test above, but shift all
+   rigid bodies in the -z direction so that the deformable body is not in
+   contact. */
+  const Vector3d p_WB(0, -0.5, 5);
+  const Vector3d p_WC(0, 0.5, 5);
+  const Vector3d p_WD(0, 0, 4);
+  const math::RigidTransformd X_WB(p_WB);
+  const math::RigidTransformd X_WC(p_WC);
+  const math::RigidTransformd X_WD(p_WD);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(B_), X_WB);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(D_), X_WD);
+
+  const MatrixXd Jc = CalcContactJacobian(plant_context);
+  /* Two contact points, one between B and D, one between C and D. */
+  const int nc = 2;
+  EXPECT_EQ(Jc.rows(), 3 * nc);
+  EXPECT_EQ(Jc.cols(), plant_->num_velocities());
+  EXPECT_TRUE(
+      CompareMatrices(Jc, CalcRigidRigidContactJacobian(plant_context)));
+}
+
+/* Verify that the contact jacobian is empty when there is no contact. */
+TEST_F(DeformableRigidContactJacobianTest, EmptyContactJacobian) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Move the bodies far away from each other so that there is no contact at
+   all. */
+  const Vector3d p_WB(0, -5, 0);
+  const Vector3d p_WC(0, 5, 0);
+  const Vector3d p_WD(0, 0, -6);
+  const math::RigidTransformd X_WB(p_WB);
+  const math::RigidTransformd X_WC(p_WC);
+  const math::RigidTransformd X_WD(p_WD);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(B_), X_WB);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(D_), X_WD);
+  const MatrixXd Jc = CalcContactJacobian(plant_context);
+  EXPECT_EQ(Jc.rows(), 0);
+  EXPECT_EQ(Jc.cols(), 0);
+}
 
 }  // namespace
 }  // namespace fixed_fem
