@@ -184,6 +184,21 @@ GTEST_TEST(ClpSolverTest, TestNonconvexQP) {
     TestNonconvexQP(solver, true);
   }
 }
+
+GTEST_TEST(ClpSolverTest, TestVerbosity) {
+  LinearProgram0 example(CostForm::kSymbolic, ConstraintForm::kSymbolic);
+  const MathematicalProgram& prog = *example.prog();
+
+  SolverOptions options;
+  options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+
+  ClpSolver solver;
+  if (solver.available()) {
+    // This will print stuff to the console, but we don't have any
+    // easy way to check that.
+    solver.Solve(prog, {}, options);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
