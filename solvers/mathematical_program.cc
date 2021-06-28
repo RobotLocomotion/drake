@@ -136,6 +136,7 @@ void MathematicalProgram::AddDecisionVariables(
       throw std::runtime_error(fmt::format("{} is already an indeterminate.",
                                            decision_variables(i)));
     }
+    CheckVariableType(decision_variables(i).get_type());
     decision_variable_index_.insert(std::make_pair(
         decision_variables(i).get_id(), num_existing_decision_vars + i));
   }
@@ -1373,6 +1374,32 @@ void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
   } else {
     // Add a new scaling factor
     var_scaling_map_.insert(std::pair<int, double>(idx, s));
+  }
+}
+
+void MathematicalProgram::CheckVariableType(VarType var_type) {
+  switch (var_type) {
+    case VarType::CONTINUOUS:
+      break;
+    case VarType::BINARY:
+      required_capabilities_.insert(ProgramAttribute::kBinaryVariable);
+      break;
+    case VarType::INTEGER:
+      throw std::runtime_error(
+          "MathematicalProgram does not support integer variables yet.");
+    case VarType::BOOLEAN:
+      throw std::runtime_error(
+          "MathematicalProgram does not support Boolean variables.");
+    case VarType::RANDOM_UNIFORM:
+      throw std::runtime_error(
+          "MathematicalProgram does not support random uniform variables.");
+    case VarType::RANDOM_GAUSSIAN:
+      throw std::runtime_error(
+          "MathematicalProgram does not support random Gaussian variables.");
+    case VarType::RANDOM_EXPONENTIAL:
+      throw std::runtime_error(
+          "MathematicalProgram does not support random exponential "
+          "variables.");
   }
 }
 

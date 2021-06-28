@@ -395,6 +395,8 @@ GTEST_TEST(TestAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
+  EXPECT_GT(
+      prog.required_capabilities().count(ProgramAttribute::kBinaryVariable), 0);
 
   const auto decision_variable_index = prog.decision_variable_index();
   {
@@ -456,6 +458,19 @@ GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
   // variables intersects with the indeterminates.
   EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<2>(x0, z(0))),
                std::runtime_error);
+
+  // Call AddDecisionVariables with unsupported variable type.
+  for (symbolic::Variable::Type unsupported_type :
+       {symbolic::Variable::Type::BOOLEAN,
+        symbolic::Variable::Type::RANDOM_UNIFORM,
+        symbolic::Variable::Type::RANDOM_GAUSSIAN,
+        symbolic::Variable::Type::RANDOM_EXPONENTIAL}) {
+    const symbolic::Variable unsupported_var("b", unsupported_type);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        prog.AddDecisionVariables(VectorDecisionVariable<1>(unsupported_var)),
+        std::runtime_error,
+        "MathematicalProgram does not support .* variables.");
+  }
 }
 
 GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates1) {
