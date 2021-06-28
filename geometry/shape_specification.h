@@ -58,7 +58,7 @@ class Shape {
    Provides optional user-data (cast as a void*) for the reifier to consume. */
   void Reify(ShapeReifier* reifier, void* user_data = nullptr) const;
 
-  /** Creates a unique copy of this shape. Invokes the protected DoClone(). */
+  /** Creates a unique copy of this shape. */
   std::unique_ptr<Shape> Clone() const;
 
  protected:
