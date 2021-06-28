@@ -7,11 +7,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/solve.h"
-#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace geometry {
@@ -21,23 +20,17 @@ using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
-std::tuple<std::unique_ptr<systems::Diagram<double>>, SceneGraph<double>&,
-           GeometryId>
+std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
 MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG) {
-  systems::DiagramBuilder<double> builder;
-  auto [plant, scene_graph] =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-  const auto& instance = plant.AddModelInstance("test");
-  const auto& body =
-      plant.AddRigidBody("test", instance, multibody::SpatialInertia<double>());
-  const GeometryId geom_id = plant.RegisterCollisionGeometry(
-      body, RigidTransformd::Identity(), shape, "test",
-      multibody::CoulombFriction<double>());
-  plant.WeldFrames(plant.world_frame(), body.body_frame(), X_WG);
-  plant.Finalize();
-  return std::tuple<std::unique_ptr<systems::Diagram<double>>,
-                    SceneGraph<double>&, GeometryId>(
-      builder.Build(), scene_graph, geom_id);
+  auto scene_graph = std::make_unique<SceneGraph<double>>();
+  SourceId source = scene_graph->RegisterSource("test");
+  auto instance =
+      std::make_unique<GeometryInstance>(X_WG, shape.Clone(), "test");
+  instance->set_proximity_properties(ProximityProperties());
+  GeometryId geom_id =
+      scene_graph->RegisterAnchoredGeometry(source, std::move(instance));
+  return std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>(
+      std::move(scene_graph), geom_id);
 }
 
 // Returns true iff the convex optimization can make the `point` be in the set.
@@ -79,12 +72,11 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_FALSE(CheckAddPointInSetConstraint(H, Vector3d(1.1, 1.2, 0.4)));
 
   // Test SceneGraph constructor.
-  auto [diagram, scene_graph, geom_id] =
+  auto [scene_graph, geom_id] =
       MakeSceneGraphWithShape(Box(2.0, 2.0, 2.0), RigidTransformd::Identity());
-  auto context = diagram->CreateDefaultContext();
-
-  auto query = scene_graph.get_query_output_port().Eval<QueryObject<double>>(
-      scene_graph.GetMyContextFromRoot(*context));
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   HPolyhedron H_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
@@ -94,12 +86,11 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
 GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   RigidTransformd X_WG(RotationMatrixd::MakeZRotation(M_PI / 2.0),
                        Vector3d(-4.0, -5.0, -6.0));
-  auto [diagram, scene_graph, geom_id] =
+  auto [scene_graph, geom_id] =
       MakeSceneGraphWithShape(Box(1.0, 2.0, 3.0), X_WG);
-  auto context = diagram->CreateDefaultContext();
-
-  auto query = scene_graph.get_query_output_port().Eval<QueryObject<double>>(
-      scene_graph.GetMyContextFromRoot(*context));
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
   HPolyhedron H(query, geom_id);
 
   EXPECT_EQ(H.ambient_dimension(), 3);
@@ -123,7 +114,17 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   EXPECT_FALSE(CheckAddPointInSetConstraint(H, out2));
 
   // Test expressed_in frame.
-  HPolyhedron H_P(query, geom_id, query.inspector().GetFrameId(geom_id));
+  SourceId source_id = scene_graph->RegisterSource("new_frame");
+  FrameId frame_id =
+      scene_graph->RegisterFrame(source_id, GeometryFrame("new_frame"));
+  auto context2 = scene_graph->CreateDefaultContext();
+  // Set X_WF to X_WG to simplify PointInSet checks.
+  const FramePoseVector<double> pose_vector{{frame_id, X_WG}};
+  scene_graph->get_source_pose_port(source_id).FixValue(context2.get(),
+                                                        pose_vector);
+  auto query2 =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
+  HPolyhedron H_P(query2, geom_id, frame_id);
 
   EXPECT_TRUE(H_P.PointInSet(Vector3d::Zero()));
   EXPECT_FALSE(H_P.PointInSet(in1));
@@ -133,12 +134,10 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
 GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
   RigidTransformd X_WG(RotationMatrixd::MakeYRotation(M_PI / 2.0),
                        Vector3d(-1.2, -2.1, -6.4));
-  auto [diagram, scene_graph, geom_id] =
-      MakeSceneGraphWithShape(HalfSpace(), X_WG);
-  auto context = diagram->CreateDefaultContext();
-
-  auto query = scene_graph.get_query_output_port().Eval<QueryObject<double>>(
-      scene_graph.GetMyContextFromRoot(*context));
+  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(HalfSpace(), X_WG);
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
   HPolyhedron H(query, geom_id);
 
   EXPECT_EQ(H.ambient_dimension(), 3);
@@ -225,12 +224,11 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   EXPECT_TRUE(CompareMatrices(center, E.center()));
 
   // Test SceneGraph constructor.
-  auto [diagram, scene_graph, geom_id] =
+  auto [scene_graph, geom_id] =
       MakeSceneGraphWithShape(Sphere(1.0), RigidTransformd::Identity());
-  auto context = diagram->CreateDefaultContext();
-
-  auto query = scene_graph.get_query_output_port().Eval<QueryObject<double>>(
-      scene_graph.GetMyContextFromRoot(*context));
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   HyperEllipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
@@ -257,8 +255,7 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = E.ToShapeWithPose();
-  Ellipsoid* ellipsoid =
-      dynamic_cast<Ellipsoid*>(shape.get());
+  Ellipsoid* ellipsoid = dynamic_cast<Ellipsoid*>(shape.get());
   EXPECT_TRUE(ellipsoid != NULL);
   EXPECT_NEAR(ellipsoid->a(), 1.0, 1e-16);
   EXPECT_NEAR(ellipsoid->b(), 1.0, 1e-16);
@@ -270,12 +267,11 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
 
 GTEST_TEST(HyperEllipsoidTest, ScaledSphereTest) {
   const double radius = 0.1;
-  auto [diagram, scene_graph, geom_id] =
+  auto [scene_graph, geom_id] =
       MakeSceneGraphWithShape(Sphere(radius), RigidTransformd::Identity());
-  auto context = diagram->CreateDefaultContext();
-
-  auto query = scene_graph.get_query_output_port().Eval<QueryObject<double>>(
-      scene_graph.GetMyContextFromRoot(*context));
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   HyperEllipsoid E(query, geom_id);
   EXPECT_TRUE(
@@ -305,13 +301,12 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   EXPECT_TRUE(CompareMatrices(center, E.center()));
 
   // Test SceneGraph constructor.
-  auto [diagram, scene_graph, geom_id] = MakeSceneGraphWithShape(
+  auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
       Ellipsoid(1.0 / D(0, 0), 1.0 / D(1, 1), 1.0 / D(2, 2)),
       RigidTransformd{R.inverse(), center});
-  auto context = diagram->CreateDefaultContext();
-
-  auto query = scene_graph.get_query_output_port().Eval<QueryObject<double>>(
-      scene_graph.GetMyContextFromRoot(*context));
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
   HyperEllipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
@@ -340,7 +335,17 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2));
 
   // Test expressed_in frame.
-  HyperEllipsoid E_P(query, geom_id, query.inspector().GetFrameId(geom_id));
+  SourceId source_id = scene_graph->RegisterSource("new_frame");
+  FrameId frame_id =
+      scene_graph->RegisterFrame(source_id, GeometryFrame("new_frame"));
+  auto context2 = scene_graph->CreateDefaultContext();
+  const FramePoseVector<double> pose_vector{
+      {frame_id, RigidTransformd(center)}};
+  scene_graph->get_source_pose_port(source_id).FixValue(context2.get(),
+                                                        pose_vector);
+  auto query2 =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
+  HyperEllipsoid E_P(query2, geom_id, frame_id);
 
   EXPECT_TRUE(E_P.PointInSet(Vector3d::Zero()));
   EXPECT_FALSE(E_P.PointInSet(in1));
@@ -348,8 +353,7 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = E.ToShapeWithPose();
-  Ellipsoid* ellipsoid =
-      dynamic_cast<Ellipsoid*>(shape.get());
+  Ellipsoid* ellipsoid = dynamic_cast<Ellipsoid*>(shape.get());
   EXPECT_TRUE(ellipsoid != NULL);
   // Confirm that the axes are ordered by magnitude as documented.
   EXPECT_GE(ellipsoid->a(), ellipsoid->b());
