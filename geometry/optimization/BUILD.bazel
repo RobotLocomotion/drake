@@ -23,8 +23,7 @@ drake_cc_library(
     srcs = ["convex_set.cc"],
     hdrs = ["convex_set.h"],
     deps = [
-        "//multibody/inverse_kinematics:kinematic_constraint",
-        "//multibody/plant",
+        "//geometry:scene_graph",
         "//solvers:constraint",
         "//solvers:mathematical_program",
         "//solvers:solve",
