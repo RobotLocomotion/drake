@@ -1263,6 +1263,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "ipopt_solver_test",
+    copts = select({
+        "//conditions:default": [
+            "-DDRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT=1",
+        ],
+        "//tools:no_ipopt": [
+        ],
+    }),
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
@@ -1270,7 +1277,13 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
+    ] + select({
+        "//conditions:default": [
+            "@ipopt",
+        ],
+        "//tools:no_ipopt": [
+        ],
+    }),
 )
 
 drake_cc_googletest(
