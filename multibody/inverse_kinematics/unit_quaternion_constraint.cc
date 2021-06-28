@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 namespace multibody {
 UnitQuaternionConstraint::UnitQuaternionConstraint()
@@ -38,18 +40,9 @@ void AddUnitQuaternionConstraintOnPlant(
   }
 }
 
-// Explicit instantiation
-template void AddUnitQuaternionConstraintOnPlant<double>(
-    const MultibodyPlant<double>& plant,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-    solvers::MathematicalProgram* prog);
-template void AddUnitQuaternionConstraintOnPlant<AutoDiffXd>(
-    const MultibodyPlant<AutoDiffXd>& plant,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-    solvers::MathematicalProgram* prog);
-template void AddUnitQuaternionConstraintOnPlant<symbolic::Expression>(
-    const MultibodyPlant<symbolic::Expression>& plant,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-    solvers::MathematicalProgram* prog);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &AddUnitQuaternionConstraintOnPlant<T>
+))
+
 }  // namespace multibody
 }  // namespace drake

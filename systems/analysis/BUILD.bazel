@@ -89,6 +89,7 @@ drake_cc_library(
         ":simulator",
         ":simulator_config",
         ":velocity_implicit_euler_integrator",
+        "//common:default_scalars",
         "//common:essential",
         "//common:nice_type_name",
         "//systems/framework:leaf_system",

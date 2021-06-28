@@ -39,7 +39,7 @@ distributed with the source code.
      dimension.
  @param[in] X_WB
      The pose of the rectanglur volume mesh in the world frame.
- @tparam_nonsymbolic_scalar T. */
+ @tparam_nonsymbolic_scalar */
 template <typename T>
 geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
     const geometry::Box& box, double resolution_hint,

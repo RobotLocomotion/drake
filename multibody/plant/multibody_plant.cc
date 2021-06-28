@@ -3381,40 +3381,19 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
                                      std::move(scene_graph));
 }
 
-template <typename T>
-AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<T>* builder) {
-  return AddMultibodyPlantSceneGraph(builder, 0.0);
-}
-
-// Add explicit instantiations for `AddMultibodyPlantSceneGraph`.
-// This does *not* support symbolic::Expression.
-template AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<double>* builder,
-    std::unique_ptr<MultibodyPlant<double>> plant,
-    std::unique_ptr<geometry::SceneGraph<double>> scene_graph);
-
-template AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<double>* builder, double time_step,
-    std::unique_ptr<geometry::SceneGraph<double>> scene_graph);
-
-template AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<double>* builder);
-
-template
-AddMultibodyPlantSceneGraphResult<AutoDiffXd>
-AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<AutoDiffXd>* builder,
-    std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant,
-    std::unique_ptr<geometry::SceneGraph<AutoDiffXd>> scene_graph);
-
-template AddMultibodyPlantSceneGraphResult<AutoDiffXd>
-AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<AutoDiffXd>* builder, double time_step,
-    std::unique_ptr<geometry::SceneGraph<AutoDiffXd>> scene_graph);
-
-template AddMultibodyPlantSceneGraphResult<AutoDiffXd>
-AddMultibodyPlantSceneGraph(systems::DiagramBuilder<AutoDiffXd>* builder);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    /* Use static_cast to disambiguate the two different overloads. */
+    static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
+        systems::DiagramBuilder<T>*, double,
+        std::unique_ptr<geometry::SceneGraph<T>>)>(
+            &AddMultibodyPlantSceneGraph),
+    /* Use static_cast to disambiguate the two different overloads. */
+    static_cast<AddMultibodyPlantSceneGraphResult<T>(*)(
+        systems::DiagramBuilder<T>*,
+        std::unique_ptr<MultibodyPlant<T>>,
+        std::unique_ptr<geometry::SceneGraph<T>>)>(
+            &AddMultibodyPlantSceneGraph)
+))
 
 }  // namespace multibody
 }  // namespace drake

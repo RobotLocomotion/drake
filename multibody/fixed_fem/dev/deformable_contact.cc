@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 
 namespace drake {
@@ -476,14 +477,10 @@ DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
   return Intersector<T>().Intersect(tet_mesh_D, tri_mesh_R, X_DR);
 }
 
-template DeformableContactSurface<double> ComputeTetMeshTriMeshContact(
-    const geometry::VolumeMesh<double>&, const geometry::SurfaceMesh<double>&,
-    const math::RigidTransform<double>&);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ComputeTetMeshTriMeshContact<T>
+))
 
-template DeformableContactSurface<AutoDiffXd> ComputeTetMeshTriMeshContact(
-    const geometry::VolumeMesh<AutoDiffXd>&,
-    const geometry::SurfaceMesh<double>&,
-    const math::RigidTransform<AutoDiffXd>&);
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

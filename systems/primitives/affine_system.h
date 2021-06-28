@@ -105,19 +105,10 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
                           double time_period);
 
   /// Helper method.  Derived classes should call this from the
-  // scalar-converting copy constructor.
+  /// scalar-converting copy constructor.
   template <typename U>
   void ConfigureDefaultAndRandomStateFrom(
-      const TimeVaryingAffineSystem<U>& other) {
-    // Convert default state from U -> double -> T.
-    VectorX<T> x0(other.num_states());
-    const VectorX<U>& other_x0 = other.get_default_state();
-    for (int i = 0; i < other.num_states(); i++) {
-      x0[i] = ExtractDoubleOrThrow(other_x0[i]);
-    }
-    this->configure_default_state(x0);
-    this->configure_random_state(other.get_random_state_covariance());
-  }
+      const TimeVaryingAffineSystem<U>& other);
 
   /// Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
   /// `C(t)`, `D(t)`, and `y0(t)` with runtime size checks.  Derived classes
@@ -148,6 +139,11 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
       RandomGenerator* generator) const override;
 
  private:
+  // For use by DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS... because the
+  // function it needs to instantiate is protected.
+  template<typename, typename>
+  friend constexpr auto Make_Function_Pointers();
+
   const int num_states_{0};
   const int num_inputs_{0};
   const int num_outputs_{0};

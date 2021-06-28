@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/meshing_utilities.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
@@ -430,10 +431,9 @@ VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
   return {std::move(mesh_elements), std::move(mesh_vertices)};
 }
 
-template VolumeMesh<double> MakeCylinderVolumeMeshWithMa(
-    const Cylinder&, double resolution_hint);
-template VolumeMesh<AutoDiffXd> MakeCylinderVolumeMeshWithMa(
-    const Cylinder&, double resolution_hint);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &MakeCylinderVolumeMeshWithMa<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

@@ -127,6 +127,7 @@ drake_cc_library(
     hdrs = ["contact_surface_utility.h"],
     deps = [
         ":surface_mesh",
+        "//common:default_scalars",
     ],
 )
 
@@ -151,6 +152,7 @@ drake_cc_library(
     ],
     deps = [
         ":proximity_utilities",
+        "//common:default_scalars",
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point",
@@ -172,6 +174,7 @@ drake_cc_library(
         ":collision_filter_legacy",
         ":distance_to_point_callback",
         ":proximity_utilities",
+        "//common:default_scalars",
         "//geometry/query_results:signed_distance_pair",
     ],
 )
@@ -261,6 +264,7 @@ drake_cc_library(
     deps = [
         ":distance_to_point_callback",
         ":mesh_field",
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
         "//geometry:shape_specification",
@@ -276,6 +280,7 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        "//common:default_scalars",
         "//geometry:shape_specification",
     ],
 )
@@ -288,6 +293,7 @@ drake_cc_library(
         ":distance_to_point_callback",
         ":mesh_field",
         ":volume_to_surface_mesh",
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
         "//geometry:shape_specification",
@@ -315,6 +321,7 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        "//common:default_scalars",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -330,6 +337,7 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
+        "//common:default_scalars",
         "//common:essential",
         "//geometry:shape_specification",
     ],
@@ -411,6 +419,7 @@ drake_cc_library(
         ":contact_surface_utility",
         ":posed_half_space",
         ":surface_mesh",
+        "//common:default_scalars",
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:utilities",
@@ -429,6 +438,7 @@ drake_cc_library(
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
+        "//common:default_scalars",
         "//common:essential",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
@@ -445,6 +455,7 @@ drake_cc_library(
         ":mesh_field",
         ":plane",
         ":volume_mesh",
+        "//common:default_scalars",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],
@@ -502,6 +513,7 @@ drake_cc_library(
     deps = [
         ":collision_filter_legacy",
         ":distance_to_point_callback",
+        "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_to_point",
         "@fcl",

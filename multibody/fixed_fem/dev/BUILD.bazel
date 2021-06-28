@@ -101,6 +101,7 @@ drake_cc_library(
     srcs = ["deformable_contact.cc"],
     hdrs = ["deformable_contact.h"],
     deps = [
+        "//common:default_scalars",
         "//geometry/proximity:posed_half_space",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",

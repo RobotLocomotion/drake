@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -225,19 +226,10 @@ T BoxSphereSignedDistance(const Eigen::Ref<const Eigen::Vector3d>& box_size,
   }
 }
 
-template std::unique_ptr<MultibodyPlant<double>>
-ConstructTwoFreeBodiesPlant<double>();
-template std::unique_ptr<MultibodyPlant<AutoDiffXd>>
-ConstructTwoFreeBodiesPlant<AutoDiffXd>();
-
-template double BoxSphereSignedDistance<double>(
-    const Eigen::Ref<const Eigen::Vector3d>& box_size, double radius,
-    const math::RigidTransform<double>& X_WB,
-    const math::RigidTransform<double>& X_WS);
-template AutoDiffXd BoxSphereSignedDistance<AutoDiffXd>(
-    const Eigen::Ref<const Eigen::Vector3d>& box_size, double radius,
-    const math::RigidTransform<AutoDiffXd>& X_WB,
-    const math::RigidTransform<AutoDiffXd>& X_WS);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &ConstructTwoFreeBodiesPlant<T>,
+    &BoxSphereSignedDistance<T>
+))
 
 }  // namespace multibody
 }  // namespace drake
