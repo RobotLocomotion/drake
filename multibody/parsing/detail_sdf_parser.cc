@@ -512,13 +512,29 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    const DataSource& data_source) {
+    const DataSource& data_source,
+    const PackageMap& package_map) {
   data_source.DemandExactlyOne();
 
   std::string root_dir;
+  // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
+  sdf::ParserConfig parser_config;
+  parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
+  parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  parser_config.SetFindCallback(
+    [=](const std::string &_input) {
+      return ResolveUri(_input, package_map, ".");
+    });
+  // TODO(#15018): This means that unrecognized elements won't be shown to a
+  // user directly (via console or exception). We should change unrecognized
+  // elements policy to print a warning, and later become an error.
+  DRAKE_DEMAND(
+      parser_config.UnrecognizedElementsPolicy()
+      == sdf::EnforcementPolicy::LOG);
+
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
-    ThrowAnyErrors(root->Load(full_path));
+    ThrowAnyErrors(root->Load(full_path, parser_config));
     // Uses the directory holding the SDF to be the root directory
     // in which to search for files referenced within the SDF file.
     size_t found = full_path.find_last_of("/\\");
@@ -531,7 +547,8 @@ std::string LoadSdf(
     }
   } else {
     DRAKE_DEMAND(data_source.file_contents);
-    ThrowAnyErrors(root->LoadSdfString(*data_source.file_contents));
+    ThrowAnyErrors(root->LoadSdfString(*data_source.file_contents,
+                                       parser_config));
   }
 
   return root_dir;
@@ -930,7 +947,7 @@ ModelInstanceIndex AddModelFromSdf(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, data_source);
+  std::string root_dir = LoadSdf(&root, data_source, package_map);
 
   // TODO(jwnimmer-tri) When we upgrade to a version of libsdformat that no
   // longer offers ModelCount(), remove this entire paragraph of code.
@@ -974,7 +991,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, data_source);
+  std::string root_dir = LoadSdf(&root, data_source, package_map);
 
   // Throw an error if there are no models or worlds.
   if (root.Model() == nullptr && root.WorldCount() == 0) {

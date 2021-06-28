@@ -655,7 +655,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
       "include_models.sdf");
-  sdf::addURIPath("model://", filesystem::path(full_name).parent_path());
+
   MultibodyPlant<double> plant(0.0);
 
   // We start with the world and default model instances.
@@ -664,7 +664,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   ASSERT_EQ(plant.num_joints(), 0);
 
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_name);
+  package_map.PopulateFromFolder(filesystem::path(full_name).parent_path());
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
@@ -1021,6 +1021,15 @@ void FailWithUnsupportedRelativeTo(const std::string& inner) {
       R"(in <inertial/> or top-level <model/> tags in model files.)");
 }
 
+void FailWithRelativeToNotDefined(const std::string& inner) {
+  SCOPED_TRACE(inner);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*XML Attribute\[relative_to\] in element\[pose\] not )"
+      R"(defined in SDF.\n)");
+}
+
 void FailWithInvalidWorld(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1071,15 +1080,46 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
-  // TODO(eric.cousineau): Change this to `FailWithUnsupportedRelativeTo`
-  // once sdformat#543 merges and is released.
-  ParseTestString(R"(
+  FailWithRelativeToNotDefined(R"(
 <model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
     <inertial><pose relative_to='my_frame'/></inertial>
   </link>
 </model>)");
+}
+
+// Tests Drake's usage of sdf::EnforcementPolicy.
+GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
+<model name='model_with_bad_attribute' bad_attribute="junk">
+  <link name='a'/>
+</model>
+)"""),
+      std::runtime_error,
+      R"([\s\S]*XML Attribute\[bad_attribute\] in element\[model\] not )"
+      R"(defined in SDF.[\s\S]*)");
+
+  // TODO(#15018): This currently only emits a Drake-log deprecation warning.
+  // We should handle this more directly in the future, ideally via
+  // libsdformat's policies.
+  ParseTestString(R"""(
+<model name='model_with_too_many_top_level_elements'>
+  <link name='a'/>
+</model>
+<model name='two_models_too_many'>
+  <link name='b'/>
+</model>
+)""");
+
+  // TODO(#15018): Have this be a printed warning, and then make this an error.
+  ParseTestString(R"""(
+<model name='model_with_bad_element'>
+  <link name='a'/>
+  <bad_element/>
+</model>
+)""");
 }
 
 // Reports if the frame with the given id has a geometry with the given role

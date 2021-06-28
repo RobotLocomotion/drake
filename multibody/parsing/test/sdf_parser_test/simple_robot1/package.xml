@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>simple_robot1</name>
+  <version>0.0.1</version>
+  <description>Simple robot</description>
+  <license>Apache 2.0</license>
+</package>
