@@ -184,6 +184,8 @@ class Constraint : public EvaluatorBase {
  * xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
  * transpose of a scalar is the scalar itself. Hence we can always convert
  * a non-symmetric matrix Q₀ to a symmetric matrix Q.
+ *
+ * @ingroup solver_evaluators
  */
 class QuadraticConstraint : public Constraint {
  public:
@@ -289,6 +291,8 @@ class QuadraticConstraint : public Constraint {
  non-convex. The default is to use the first formulation. For more information
  and visualization, please refer to
  https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
+ *
+ * @ingroup solver_evaluators
  */
 class LorentzConeConstraint : public Constraint {
  public:
@@ -359,6 +363,8 @@ class LorentzConeConstraint : public Constraint {
  * <-->
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
+ *
+ * @ingroup solver_evaluators
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
@@ -412,6 +418,8 @@ class RotatedLorentzConeConstraint : public Constraint {
  * A constraint that may be specified using another (potentially nonlinear)
  * evaluator.
  * @tparam EvaluatorType The nested evaluator.
+ *
+ * @ingroup solver_evaluators
  */
 template <typename EvaluatorType = EvaluatorBase>
 class EvaluatorConstraint : public Constraint {
@@ -467,6 +475,8 @@ class EvaluatorConstraint : public Constraint {
  * caller must provide a list of Polynomial::VarType variables that correspond
  * to the members of the MathematicalProgram::Binding (the individual scalar
  * elements of the given VariableList).
+ *
+ * @ingroup solver_evaluators
  */
 class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
  public:
@@ -501,6 +511,8 @@ class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
 
 /**
  * Implements a constraint of the form @f$ lb <= Ax <= ub @f$
+ *
+ * @ingroup solver_evaluators
  */
 class LinearConstraint : public Constraint {
  public:
@@ -581,6 +593,8 @@ class LinearConstraint : public Constraint {
 
 /**
  * Implements a constraint of the form @f$ Ax = b @f$
+ *
+ * @ingroup solver_evaluators
  */
 class LinearEqualityConstraint : public LinearConstraint {
  public:
@@ -636,6 +650,8 @@ class LinearEqualityConstraint : public LinearConstraint {
  * box constraint, and not something more general.  Some solvers use
  * this information to handle bounding box constraints differently than
  * general constraints, so use of this form is encouraged.
+ *
+ * @ingroup solver_evaluators
  */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
@@ -678,6 +694,8 @@ class BoundingBoxConstraint : public LinearConstraint {
  *
  * An implied slack variable complements any 0 component of x.  To get
  * the slack values at a given solution x, use Eval(x).
+ *
+ * @ingroup solver_evaluators
  */
 class LinearComplementarityConstraint : public Constraint {
  public:
@@ -730,6 +748,8 @@ class LinearComplementarityConstraint : public Constraint {
  *     S is p.s.d
  * }@f]
  * namely, all eigen values of S are non-negative.
+ *
+ * @ingroup solver_evaluators
  */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
@@ -836,6 +856,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
  * @f]
  * where p.s.d stands for positive semidefinite.
  * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size.
+ *
+ * @ingroup solver_evaluators
  */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
@@ -891,6 +913,8 @@ class LinearMatrixInequalityConstraint : public Constraint {
  * constraint evaluation.
  *
  * Uses symbolic::Jacobian to provide the gradients to the AutoDiff method.
+ *
+ * @ingroup solver_evaluators
  */
 class ExpressionConstraint : public Constraint {
  public:
@@ -953,6 +977,8 @@ class ExpressionConstraint : public Constraint {
  * can accidentally set z₁ = 0, where the constraint is not well defined.
  * Instead, the user should consider to solve the program through conic solvers
  * that can exploit exponential cone, such as Mosek and SCS.
+ *
+ * @ingroup solver_evaluators
  */
 class ExponentialConeConstraint : public Constraint {
  public:

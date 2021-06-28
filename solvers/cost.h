@@ -37,6 +37,8 @@ class Cost : public EvaluatorBase {
 
 /**
  * Implements a cost of the form @f[ a'x + b @f].
+ *
+ * @ingroup solver_evaluators
  */
 class LinearCost : public Cost {
  public:
@@ -103,6 +105,8 @@ class LinearCost : public Cost {
 
 /**
  * Implements a cost of the form @f[ .5 x'Qx + b'x + c @f].
+ *
+ * @ingroup solver_evaluators
  */
 class QuadraticCost : public Cost {
  public:
@@ -212,6 +216,8 @@ class QuadraticCost : public Cost {
 
 /**
  * Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired).
+ *
+ * @ingroup solver_evaluators
  */
 std::shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -227,6 +233,8 @@ std::shared_ptr<QuadraticCost> MakeL2NormCost(
 
 /**
  * Creates a quadratic cost of the form |Ax-b|²=(Ax-b)ᵀ(Ax-b)
+ *
+ * @ingroup solver_evaluators
  */
 std::shared_ptr<QuadraticCost> Make2NormSquaredCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -236,6 +244,8 @@ std::shared_ptr<QuadraticCost> Make2NormSquaredCost(
  * A cost that may be specified using another (potentially nonlinear)
  * evaluator.
  * @tparam EvaluatorType The nested evaluator.
+ *
+ * @ingroup solver_evaluators
  */
 template <typename EvaluatorType = EvaluatorBase>
 class EvaluatorCost : public Cost {
@@ -275,6 +285,8 @@ class EvaluatorCost : public Cost {
  * caller must provide a list of Polynomial::VarType variables that correspond
  * to the members of the Binding<> (the individual scalar elements of the
  * given VariableList).
+ *
+ * @ingroup solver_evaluators
  */
 class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  public:
@@ -302,6 +314,8 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  * @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
  * The class `F` should have functions numInputs(), numOutputs(), and
  * eval(x, y).
+ *
+ * @ingroup solver_evaluators
  */
 template <typename FF>
 std::shared_ptr<Cost> MakeFunctionCost(FF&& f) {
