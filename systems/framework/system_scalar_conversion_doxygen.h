@@ -222,7 +222,7 @@ class Foo {
 };
 @endcode
 
-Here, `U` is the donor scalar type (to convert from), and `T` the resulting
+Here, `U` is the source scalar type (to convert from), and `T` the resulting
 scalar type (to convert into).  For example, in the second line of
 @code
 Foo<double> foo;

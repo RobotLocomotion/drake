@@ -853,13 +853,24 @@ void DoScalarIndependentDefinitions(py::module m) {
             });
     // Bind templated instantiations.
     auto converter_methods = [converter](auto pack) {
+      constexpr auto& cls_doc = pydrake_doc.drake.systems.SystemScalarConverter;
       using Pack = decltype(pack);
       using T = typename Pack::template type_at<0>;
       using U = typename Pack::template type_at<1>;
-      AddTemplateMethod(converter, "Add",
-          WrapCallbacks(&SystemScalarConverter::Add<T, U>), GetPyParam<T, U>());
       AddTemplateMethod(converter, "IsConvertible",
           &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      AddTemplateMethod(converter, "Add",
+          WrapDeprecated(cls_doc.Add.doc_deprecated,
+              WrapCallbacks(&SystemScalarConverter::Add<T, U>)),
+          GetPyParam<T, U>());
+      // N.B. When the deprecation date happens, the C++ member function Add()
+      // should become internal or private, to be used only by pydrake here
+      // via this method with a leading underscore.
+      AddTemplateMethod(converter, "_Add",
+          WrapCallbacks(&SystemScalarConverter::Add<T, U>), GetPyParam<T, U>());
+#pragma GCC diagnostic pop
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of
