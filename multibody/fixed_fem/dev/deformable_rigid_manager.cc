@@ -80,7 +80,7 @@ void DeformableRigidManager<T>::RegisterDeformableGeometries() {
 }
 
 template <typename T>
-void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
+void DeformableRigidManager<T>::DeclareCacheEntries() {
   // TODO(xuchenhan-tri): Use the sugar that takes member methods as arguments
   //  to declare cache entries when they are available (PR#15161).
   DRAKE_DEMAND(deformable_model_ != nullptr);
@@ -89,7 +89,7 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
        ++deformable_body_id) {
     const FemModelBase<T>& fem_model =
         deformable_model_->fem_model(deformable_body_id);
-    auto allocate_fem_state_base = [&]() {
+    auto allocate_fem_state_base = [&fem_model]() {
       return AbstractValue::Make(*fem_model.MakeFemStateBase());
     };
     /* Lambda function to extract the q, qdot, and qddot from context and copy
@@ -117,8 +117,13 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
       fem_state.SetQdot(qdot);
       fem_state.SetQddot(qddot);
     };
-    const auto& fem_state_cache_entry = plant->DeclareCacheEntry(
-        "FEM state", allocate_fem_state_base, std::move(copy_to_fem_state),
+    const auto& fem_state_cache_entry = this->DeclareCacheEntry(
+        "FEM state",
+        // TODO(jwnimmer-tri) The use of lambdas for calculation functions is
+        // strongly discouraged. We should use class member functions instead.
+        // Do not cargo-cult this ValueProducer pattern elsewhere.
+        systems::ValueProducer(allocate_fem_state_base,
+                               std::move(copy_to_fem_state)),
         {systems::System<T>::xd_ticket()});
     fem_state_cache_indexes_.emplace_back(fem_state_cache_entry.cache_index());
 
@@ -144,11 +149,14 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
     /* Declares the free-motion cache entry which only depends on the fem state.
      */
     free_motion_cache_indexes_.emplace_back(
-        plant
-            ->DeclareCacheEntry("Free motion FEM state",
-                                std::move(allocate_fem_state_base),
-                                std::move(calc_fem_state_star),
-                                {fem_state_cache_entry.ticket()})
+        // TODO(jwnimmer-tri) The use of lambdas for calculation functions is
+        // strongly discouraged. We should use class member functions instead.
+        // Do not cargo-cult this ValueProducer pattern elsewhere.
+        this->DeclareCacheEntry(
+                "Free motion FEM state",
+                systems::ValueProducer(std::move(allocate_fem_state_base),
+                                       std::move(calc_fem_state_star)),
+                {fem_state_cache_entry.ticket()})
             .cache_index());
   }
 
@@ -176,9 +184,14 @@ void DeformableRigidManager<T>::DeclareCacheEntries(MultibodyPlant<T>* plant) {
     }
   };
   /* Declares the deformable contact data cache entry. */
-  const auto& deformable_contact_data_cache_entry = plant->DeclareCacheEntry(
-      "Deformable contact data", std::move(allocate_contact_data),
-      std::move(calc_contact_data), {systems::System<T>::xd_ticket()});
+  const auto& deformable_contact_data_cache_entry = this->DeclareCacheEntry(
+      "Deformable contact data",
+      // TODO(jwnimmer-tri) The use of lambdas for calculation functions is
+      // strongly discouraged. We should use class member functions instead.
+      // Do not cargo-cult this ValueProducer pattern elsewhere.
+      systems::ValueProducer(std::move(allocate_contact_data),
+                             std::move(calc_contact_data)),
+      {systems::System<T>::xd_ticket()});
   deformable_contact_data_cache_index_ =
       deformable_contact_data_cache_entry.cache_index();
 }

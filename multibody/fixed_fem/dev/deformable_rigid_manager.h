@@ -102,7 +102,7 @@ class DeformableRigidManager final
    MultibodyPlant at `this` DeformableRigidManager. */
   void RegisterDeformableGeometries();
 
-  void DeclareCacheEntries(MultibodyPlant<T>* plant) final;
+  void DeclareCacheEntries() final;
 
   void DoCalcContactSolverResults(
       const systems::Context<T>& context,

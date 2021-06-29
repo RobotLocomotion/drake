@@ -18,6 +18,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
+#include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -29,6 +30,7 @@
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/value_producer.h"
 
 namespace drake {
 namespace systems {
@@ -1330,7 +1332,7 @@ class LeafSystem : public System<T> {
     auto& port = CreateVectorLeafOutputPort(
         NextOutputPortName(std::move(name)), model_vector.size(),
         // Allocator function just clones the given model vector.
-        MakeAllocCallback<BasicVector<T>>(model_vector),
+        MakeAllocateCallback<BasicVector<T>>(model_vector),
         // Calculator function downcasts to specific vector type and invokes
         // the given member function.
         [this_ptr, calc](const Context<T>& context, BasicVector<T>* result) {
@@ -1418,7 +1420,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(this_ptr != nullptr);
 
     auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)), MakeAllocCallback(model_value),
+        NextOutputPortName(std::move(name)), MakeAllocateCallback(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
           OutputType& typed_result = result->get_mutable_value<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
@@ -2018,26 +2020,15 @@ class LeafSystem : public System<T> {
   // port size for vector ports. Prerequisites list must not be empty.
   LeafOutputPort<T>& CreateCachedLeafOutputPort(
       std::string name, const std::optional<int>& fixed_size,
-      typename CacheEntry::AllocCallback allocator,
-      typename CacheEntry::CalcCallback calculator,
+      ValueProducer value_producer,
       std::set<DependencyTicket> calc_prerequisites);
 
   // Creates an abstract output port allocator function from an arbitrary type
   // model value.
   template <typename OutputType>
-  static typename LeafOutputPort<T>::AllocCallback MakeAllocCallback(
+  static ValueProducer::AllocateCallback MakeAllocateCallback(
       const OutputType& model_value) {
-    // The given model value may have *either* a copy constructor or a Clone()
-    // method, since it just has to be suitable for containing in an
-    // AbstractValue. We need to create a functor that is copy constructible,
-    // so need to wrap the model value to give it a copy constructor. Drake's
-    // copyable_unique_ptr does just that, so is suitable for capture by the
-    // allocator functor here.
-    copyable_unique_ptr<AbstractValue> owned_model(
-        new Value<OutputType>(model_value));
-    return [model = std::move(owned_model)]() {
-      return model->Clone();
-    };
+    return internal::AbstractValueCloner(model_value);
   }
 
   // If @p model_vector's GetElementBounds provides any constraints,

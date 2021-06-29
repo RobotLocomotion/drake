@@ -216,7 +216,7 @@ class LeafOutputPortTest : public ::testing::Test {
           OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
           &dummy_.DeclareCacheEntry(
-              "absport", alloc_string, calc_string));
+              "absport", ValueProducer(alloc_string, calc_string)));
   LeafOutputPort<double>& absport_general_ = *absport_general_ptr_;
   std::unique_ptr<LeafOutputPort<double>> vecport_general_ptr_ =
       internal::FrameworkFactory::Make<LeafOutputPort<double>>(
@@ -227,7 +227,7 @@ class LeafOutputPortTest : public ::testing::Test {
           OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
           &dummy_.DeclareCacheEntry(
-              "vecport", alloc_myvector3, calc_vector3));
+              "vecport", ValueProducer(alloc_myvector3, calc_vector3)));
   LeafOutputPort<double>& vecport_general_ = *vecport_general_ptr_;
   unique_ptr<Context<double>> context_{dummy_.CreateDefaultContext()};
 };
@@ -330,7 +330,8 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
       OutputPortIndex(dummy_.num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
       kAbstractValued, 0 /* size */,
-      &dummy_.DeclareCacheEntry("null", alloc_null, calc_string));
+      &dummy_.DeclareCacheEntry(
+          "null", ValueProducer(alloc_null, calc_string)));
 
   // Creating a context for this system should fail when it tries to allocate
   // a cache entry for null_port.
