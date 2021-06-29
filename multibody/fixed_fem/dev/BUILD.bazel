@@ -23,6 +23,7 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:proximity_properties",
         "//geometry:shape_specification",
+        "//geometry/proximity:bvh",
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:make_capsule_mesh",
         "//geometry/proximity:make_cylinder_mesh",
@@ -102,9 +103,10 @@ drake_cc_library(
     hdrs = ["deformable_contact.h"],
     deps = [
         "//common:default_scalars",
+        "//geometry/proximity:bvh",
+        "//geometry/proximity:deformable_volume_mesh",
         "//geometry/proximity:posed_half_space",
         "//geometry/proximity:surface_mesh",
-        "//geometry/proximity:volume_mesh",
     ],
 )
 

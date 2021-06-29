@@ -76,7 +76,11 @@ void DeformableRigidManager<T>::MakeFemSolvers() {
 template <typename T>
 void DeformableRigidManager<T>::RegisterDeformableGeometries() {
   DRAKE_DEMAND(deformable_model_ != nullptr);
-  deformable_meshes_ = deformable_model_->reference_configuration_meshes();
+  const auto& ref_meshes = deformable_model_->reference_configuration_meshes();
+  deformable_meshes_.reserve(ref_meshes.size());
+  for (const auto& ref_mesh : ref_meshes) {
+    deformable_meshes_.emplace_back(ref_mesh);
+  }
 }
 
 template <typename T>
@@ -390,17 +394,7 @@ void DeformableRigidManager<T>::UpdateDeformableVertexPositions(
   DRAKE_DEMAND(vertex_positions.size() == deformable_meshes_.size());
   for (int i = 0; i < static_cast<int>(vertex_positions.size()); ++i) {
     const VectorX<T>& q = vertex_positions[i];
-    const auto p_WVs = Eigen::Map<const Matrix3X<T>>(q.data(), 3, q.size() / 3);
-    std::vector<geometry::VolumeElement> tets =
-        deformable_meshes_[i].tetrahedra();
-    // TODO(xuchenhan-tri): We assume the deformable body frame is always the
-    //  same as the world frame for now. It probably makes sense to have the
-    //  frame move with the body in the future.
-    std::vector<geometry::VolumeVertex<T>> vertices_D;
-    for (int j = 0; j < p_WVs.cols(); ++j) {
-      vertices_D.push_back(geometry::VolumeVertex<T>(p_WVs.col(j)));
-    }
-    deformable_meshes_[i] = {std::move(tets), std::move(vertices_D)};
+    deformable_meshes_[i].UpdateVertexPositions(q);
   }
 }
 
@@ -410,6 +404,7 @@ DeformableRigidManager<T>::CalcDeformableRigidContactPair(
     geometry::GeometryId rigid_id, SoftBodyIndex deformable_id) const {
   DeformableContactSurface<T> contact_surface = ComputeTetMeshTriMeshContact(
       deformable_meshes_[deformable_id], collision_objects_.mesh(rigid_id),
+      collision_objects_.bvh(rigid_id),
       collision_objects_.pose_in_world(rigid_id));
 
   const auto get_point_contact_parameters =
@@ -475,7 +470,7 @@ DeformableRigidManager<T>::CalcDeformableContactData(
     }
   }
   return {std::move(deformable_rigid_contact_pairs),
-          deformable_meshes_[deformable_id]};
+          deformable_meshes_[deformable_id].mesh()};
 }
 
 template <typename T>
