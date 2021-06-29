@@ -123,9 +123,16 @@ template <typename T>
 template <typename ShapeType>
 void CollisionObjects<T>::MakeRigidRepresentation(const ShapeType& shape,
                                                   const ReifyData& data) {
+  // This ("fem/dev", "resolution_hint") property is a stopgap. We don't want
+  // to use hydro's resolution hint as that would needlessly entangle this
+  // functionality with that. This property name isn't the *final* name, but,
+  // while in dev, it gives us some power to articulate resolution.
+  // TODO(SeanCurtis-TRI) Define a final name for this property and document it
+  // appropriately.
   rigid_representations_[data.id] = {
-      std::make_unique<SurfaceMesh<double>>(
-          MakeRigidSurfaceMesh(shape, kDefaultResolutionHint)),
+      std::make_unique<SurfaceMesh<double>>(MakeRigidSurfaceMesh(
+          shape, data.properties.GetPropertyOrDefault(
+                     "fem/dev", "resolution_hint", kDefaultResolutionHint))),
       data.properties};
   geometry_ids_.emplace_back(data.id);
 }

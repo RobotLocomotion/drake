@@ -310,7 +310,8 @@ class DeformableRigidManager final
 
   /* Geometries temporarily managed by DeformableRigidManager. In the future,
    SceneGraph will manage all the geometries. */
-  mutable std::vector<geometry::VolumeMesh<T>> deformable_meshes_{};
+  mutable std::vector<geometry::internal::DeformableVolumeMesh<T>>
+      deformable_meshes_;
   mutable internal::CollisionObjects<T> collision_objects_;
 };
 }  // namespace fixed_fem
