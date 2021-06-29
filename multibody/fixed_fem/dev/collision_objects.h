@@ -7,6 +7,8 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
@@ -50,6 +52,18 @@ class CollisionObjects : public geometry::ShapeReifier {
     const auto it = rigid_representations_.find(id);
     DRAKE_DEMAND(it != rigid_representations_.end());
     return *(it->second.surface_mesh);
+  }
+
+  /* Returns the bounding volume hierarchy associated with the geometry with the
+   given `id`.
+   @pre The geometry with `id` has been registered in `this` %CollisionObjects
+   with AddCollisionObject(). */
+  const geometry::internal::Bvh<geometry::internal::Obb,
+                                geometry::SurfaceMesh<double>>&
+  bvh(geometry::GeometryId id) const {
+    const auto it = rigid_representations_.find(id);
+    DRAKE_DEMAND(it != rigid_representations_.end());
+    return *(it->second.bvh);
   }
 
   /* Returns the proximity properties of the geometry with GeometryId `id`.
@@ -113,10 +127,17 @@ class CollisionObjects : public geometry::ShapeReifier {
      properties and identity pose in world. */
     RigidRepresentation(std::unique_ptr<geometry::SurfaceMesh<double>> mesh,
                         const geometry::ProximityProperties& props)
-        : surface_mesh(std::move(mesh)), properties(props) {}
+        : surface_mesh(std::move(mesh)),
+          bvh(std::make_unique<geometry::internal::Bvh<
+                  geometry::internal::Obb, geometry::SurfaceMesh<double>>>(
+              *surface_mesh)),
+          properties(props) {}
     /* We use copyable_unique_ptr here so that the data can be default
      constructed and copy assigned. */
     copyable_unique_ptr<geometry::SurfaceMesh<double>> surface_mesh;
+    copyable_unique_ptr<geometry::internal::Bvh<geometry::internal::Obb,
+                                                geometry::SurfaceMesh<double>>>
+        bvh;
     geometry::ProximityProperties properties;
     math::RigidTransform<T> pose_in_world;
   };

@@ -38,6 +38,12 @@ using geometry::internal::MakeSphereSurfaceMesh;
 const char* const dummy_group_name = "group";
 const char* const dummy_property_name = "property";
 const double dummy_property_value = 3.14;
+// We use a large resolution hint for this test to keep the meshes coarse and
+// the test cheap.
+constexpr double kTestResolutionHint = 0.75;
+
+using DutBvh = geometry::internal::Bvh<geometry::internal::Obb,
+                                       geometry::SurfaceMesh<double>>;
 
 class CollisionObjectsTest : public ::testing::Test {
  protected:
@@ -45,6 +51,9 @@ class CollisionObjectsTest : public ::testing::Test {
     // Make some dummy proximity properties.
     proximity_properties_.AddProperty(dummy_group_name, dummy_property_name,
                                       dummy_property_value);
+
+    proximity_properties_.AddProperty("fem/dev", "resolution_hint",
+                                      kTestResolutionHint);
   }
 
   void VerifyProximityProperties(GeometryId id) const {
@@ -68,9 +77,11 @@ TEST_F(CollisionObjectsTest, AddSphere) {
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeSphereSurfaceMesh<double>(
-          sphere, CollisionObjects<double>::kDefaultResolutionHint);
+      MakeSphereSurfaceMesh<double>(sphere, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddBox) {
@@ -84,6 +95,9 @@ TEST_F(CollisionObjectsTest, AddBox) {
   const SurfaceMesh<double> expected_surface_mesh =
       MakeBoxSurfaceMesh<double>(box, 1e10);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddCylinder) {
@@ -94,9 +108,11 @@ TEST_F(CollisionObjectsTest, AddCylinder) {
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeCylinderSurfaceMesh<double>(
-          cylinder, CollisionObjects<double>::kDefaultResolutionHint);
+      MakeCylinderSurfaceMesh<double>(cylinder, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddCapsule) {
@@ -107,22 +123,25 @@ TEST_F(CollisionObjectsTest, AddCapsule) {
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeCapsuleSurfaceMesh<double>(
-          capsule, CollisionObjects<double>::kDefaultResolutionHint);
+      MakeCapsuleSurfaceMesh<double>(capsule, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddEllipsoid) {
   const GeometryId id = GeometryId::get_new_id();
   const Ellipsoid ellipsoid(0.123, 0.456, 0.789);
   collision_objects_.AddCollisionObject(id, ellipsoid, proximity_properties_);
-
   VerifyProximityProperties(id);
 
   const SurfaceMesh<double> expected_surface_mesh =
-      MakeEllipsoidSurfaceMesh<double>(
-          ellipsoid, CollisionObjects<double>::kDefaultResolutionHint);
+      MakeEllipsoidSurfaceMesh<double>(ellipsoid, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddConvex) {
@@ -136,6 +155,9 @@ TEST_F(CollisionObjectsTest, AddConvex) {
   const SurfaceMesh<double> expected_surface_mesh =
       ReadObjToSurfaceMesh(convex.filename(), convex.scale());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddMesh) {
@@ -149,6 +171,9 @@ TEST_F(CollisionObjectsTest, AddMesh) {
   const SurfaceMesh<double> expected_surface_mesh =
       ReadObjToSurfaceMesh(mesh.filename(), mesh.scale());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
+
+  const DutBvh expected_bvh(expected_surface_mesh);
+  EXPECT_TRUE(expected_bvh.Equal(collision_objects_.bvh(id)));
 }
 
 TEST_F(CollisionObjectsTest, AddHalfSpace) {

@@ -122,8 +122,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
     *geometry_id = collision_geometries[0][0];
   }
 
-  const std::vector<geometry::VolumeMesh<double>>& EvalDeformableMeshes(
-      const systems::Context<double>& context) const {
+  const std::vector<geometry::internal::DeformableVolumeMesh<double>>&
+  EvalDeformableMeshes(const systems::Context<double>& context) const {
     deformable_rigid_manager_->UpdateDeformableVertexPositions(context);
     return deformable_rigid_manager_->deformable_meshes_;
   }
@@ -348,18 +348,18 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
       reference_configuration_meshes =
           deformable_model_->reference_configuration_meshes();
   DRAKE_DEMAND(reference_configuration_meshes.size() == 1);
-  const std::vector<geometry::VolumeMesh<double>>& deformed_meshes =
-      EvalDeformableMeshes(simulator.get_context());
+  const std::vector<geometry::internal::DeformableVolumeMesh<double>>&
+      deformed_meshes = EvalDeformableMeshes(simulator.get_context());
   DRAKE_DEMAND(deformed_meshes.size() == 1);
-  DRAKE_DEMAND(deformed_meshes[0].num_vertices() ==
+  DRAKE_DEMAND(deformed_meshes[0].mesh().num_vertices() ==
                reference_configuration_meshes[0].num_vertices());
-  DRAKE_DEMAND(deformed_meshes[0].num_elements() ==
+  DRAKE_DEMAND(deformed_meshes[0].mesh().num_elements() ==
                reference_configuration_meshes[0].num_elements());
   /* Verify that the elements of the deformed mesh is the same as the elements
    of the initial mesh. */
-  for (geometry::VolumeElementIndex i(0); i < deformed_meshes[0].num_elements();
-       ++i) {
-    EXPECT_EQ(deformed_meshes[0].element(i),
+  for (geometry::VolumeElementIndex i(0);
+       i < deformed_meshes[0].mesh().num_elements(); ++i) {
+    EXPECT_EQ(deformed_meshes[0].mesh().element(i),
               reference_configuration_meshes[0].element(i));
   }
 
@@ -368,11 +368,13 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
       deformable_model_->get_vertex_positions_output_port()
           .Eval<std::vector<VectorXd>>(simulator.get_context());
   EXPECT_EQ(current_positions.size(), 1);
-  EXPECT_EQ(current_positions[0].size(), deformed_meshes[0].num_vertices() * 3);
-  for (geometry::VolumeVertexIndex i(0); i < deformed_meshes[0].num_vertices();
-       ++i) {
+  EXPECT_EQ(current_positions[0].size(),
+            deformed_meshes[0].mesh().num_vertices() * 3);
+  for (geometry::VolumeVertexIndex i(0);
+       i < deformed_meshes[0].mesh().num_vertices(); ++i) {
     const Vector3<double> p_WV = current_positions[0].segment<3>(3 * i);
-    EXPECT_TRUE(CompareMatrices(p_WV, deformed_meshes[0].vertex(i).r_MV()));
+    EXPECT_TRUE(
+        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i).r_MV()));
   }
 }
 
@@ -425,8 +427,10 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
   /* Verifies that the contact surface is as expected. */
   const DeformableContactSurface<double> expected_contact_surface =
       ComputeTetMeshTriMeshContact<double>(
-          deformable_model_->reference_configuration_meshes()[0],
-          collision_objects.mesh(rigid_ids[0]), X_DR);
+          geometry::internal::DeformableVolumeMesh<double>(
+              deformable_model_->reference_configuration_meshes()[0]),
+          collision_objects.mesh(rigid_ids[0]),
+          collision_objects.bvh(rigid_ids[0]), X_DR);
   EXPECT_EQ(contact_pair.num_contact_points(),
             expected_contact_surface.num_polygons());
   const int num_contacts = expected_contact_surface.num_polygons();
@@ -569,14 +573,15 @@ class DeformableRigidContactDataTest : public ::testing::Test {
       const Context<double>& context, GeometryId rigid_id) const {
     deformable_rigid_manager_->UpdateDeformableVertexPositions(context);
     deformable_rigid_manager_->UpdateCollisionObjectPoses(context);
-    const std::vector<geometry::VolumeMesh<double>>& deformable_meshes =
-        deformable_rigid_manager_->deformable_meshes_;
+    const std::vector<geometry::internal::DeformableVolumeMesh<double>>&
+        deformable_meshes = deformable_rigid_manager_->deformable_meshes_;
     EXPECT_EQ(deformable_meshes.size(), 1);
     const auto& mesh_A = deformable_meshes[0];
     const internal::CollisionObjects<double>& collision_objects =
         deformable_rigid_manager_->collision_objects_;
     return ComputeTetMeshTriMeshContact(
         mesh_A, collision_objects.mesh(rigid_id),
+        collision_objects.bvh(rigid_id),
         collision_objects.pose_in_world(rigid_id));
   }
 
