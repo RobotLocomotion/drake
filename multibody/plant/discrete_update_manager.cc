@@ -93,14 +93,6 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
 }
 
 template <typename T>
-std::vector<internal::DiscreteContactPair<T>>
-DiscreteUpdateManager<T>::CalcDiscreteContactPairs(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::CalcDiscreteContactPairs(plant(), context);
-}
-
-template <typename T>
 void DiscreteUpdateManager<T>::CallTamsiSolver(
     const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
     const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,

@@ -62,11 +62,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     plant.CalcNonContactForces(context, discrete, forces);
   }
 
-  static std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.CalcDiscreteContactPairs(context);
-  }
-
   static void CallTamsiSolver(
       const MultibodyPlant<T>& plant, const T& time0, const VectorX<T>& v0,
       const MatrixX<T>& M0, const VectorX<T>& minus_tau, const VectorX<T>& fn0,
