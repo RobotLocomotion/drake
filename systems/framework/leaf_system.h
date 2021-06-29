@@ -1504,6 +1504,28 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
+
+  /** Declares a vector-valued output port whose value is the continuous state
+  of this system.
+  @param state_index must be ContinuousStateIndex{0}
+  @pydrake_mkdoc_identifier{continuous} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      ContinuousStateIndex state_index);
+
+  /** Declares a vector-valued output port whose value is the given discrete
+  state group of this system.
+  @pydrake_mkdoc_identifier{discrete} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      DiscreteStateIndex state_index);
+
+  /** Declares an abstract-valued output port whose value is the given abstract
+  state of this system.
+  @pydrake_mkdoc_identifier{abstract} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      AbstractStateIndex state_index);
   //@}
 
   // =========================================================================

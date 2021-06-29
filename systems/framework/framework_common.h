@@ -49,6 +49,9 @@ using InputPortIndex = TypeSafeIndex<class InputPortTag>;
 indexes used by a subsystem and its corresponding subcontext are the same. */
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
+/** Placeholder for future use. Currently, the only valid value is zero. */
+using ContinuousStateIndex = TypeSafeIndex<class ContinuousStateTag>;
+
 /** Serves as the local index for discrete state groups within a given System
 and its corresponding Context. */
 using DiscreteStateIndex = TypeSafeIndex<class DiscreteStateTag>;

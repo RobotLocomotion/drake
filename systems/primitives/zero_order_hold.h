@@ -93,22 +93,10 @@ class ZeroOrderHold final : public LeafSystem<T> {
   ZeroOrderHold(double period_sec, int vector_size,
                 std::unique_ptr<const AbstractValue> model_value);
 
-  // Sets the output port value to the vector value that is currently
-  // latched in the zero-order hold.
-  void CopyLatchedVector(
-      const Context<T>& context,
-      BasicVector<T>* output) const;
-
   // Latches the input port into the discrete vector-valued state.
   void LatchInputVectorToState(
       const Context<T>& context,
       DiscreteValues<T>* discrete_state) const;
-
-  // Sets the output port value to the abstract value that is currently
-  // latched in the zero-order hold.
-  void CopyLatchedAbstractValue(
-      const Context<T>& context,
-      AbstractValue* output) const;
 
   // Latches the abstract input port into the abstract-valued state.
   void LatchInputAbstractValueToState(
