@@ -43,6 +43,7 @@ using geometry::ProximityProperties;
 using geometry::SceneGraph;
 using geometry::SurfaceMesh;
 using multibody::contact_solvers::internal::BlockSparseMatrix;
+using multibody::internal::DiscreteContactPair;
 using systems::Context;
 
 geometry::Box MakeUnitCube() { return geometry::Box(1.0, 1.0, 1.0); }
@@ -56,13 +57,22 @@ geometry::VolumeMesh<double> MakeUnitCubeTetMesh() {
   return mesh;
 }
 
-/* Returns a proximity property with arbitrary elastic modulus, dissipation, and
- friction. */
-ProximityProperties MakeProximityProperties() {
+/* Returns a proximity property with the given point contact stiffness,
+ dissipation, and friction. */
+ProximityProperties MakeProximityProperties(double stiffness,
+                                            double dissipation,
+                                            const CoulombFriction<double>& mu) {
   ProximityProperties proximity_properties;
-  geometry::AddContactMaterial({}, kContactDissipation, kContactStiffness,
-                               kFriction, &proximity_properties);
+  geometry::AddContactMaterial({}, dissipation, stiffness, mu,
+                               &proximity_properties);
   return proximity_properties;
+}
+
+/* Returns a proximity property with an arbitrary set of default point contact
+ stiffness, dissipation, and friction. */
+ProximityProperties MakeDefaultProximityProperties() {
+  return MakeProximityProperties(kContactStiffness, kContactDissipation,
+                                 kFriction);
 }
 
 /* Create a dummy DeformableBodyConfig. */
@@ -86,14 +96,14 @@ class DeformableRigidManagerTest : public ::testing::Test {
     auto deformable_model = std::make_unique<DeformableModel<double>>(&plant_);
     deformable_model->RegisterDeformableBody(MakeUnitCubeTetMesh(), "box",
                                              MakeDeformableBodyConfig(),
-                                             MakeProximityProperties());
+                                             MakeDefaultProximityProperties());
     deformable_model_ = deformable_model.get();
     plant_.AddPhysicalModel(std::move(deformable_model));
     /* Add a collision geometry. */
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
     plant_.RegisterCollisionGeometry(
         plant_.world_body(), math::RigidTransform<double>(), MakeUnitCube(),
-        "collision", MakeProximityProperties());
+        "collision", MakeDefaultProximityProperties());
     plant_.Finalize();
     auto deformable_rigid_manager =
         std::make_unique<DeformableRigidManager<double>>();
@@ -449,7 +459,22 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
 }
 }  // namespace
 
-class DeformableRigidContactJacobianTest : public ::testing::Test {
+constexpr double kStiffnessA = 1e4;
+constexpr double kStiffnessB = 2e4;
+constexpr double kStiffnessC = 3e4;
+constexpr double kStiffnessD = 4e4;
+
+constexpr double kDampingA = 1.4;
+constexpr double kDampingB = 2.4;
+constexpr double kDampingC = 3.4;
+constexpr double kDampingD = 4.4;
+
+const CoulombFriction kFrictionA = {0.14, 0.13};
+const CoulombFriction kFrictionB = {0.24, 0.23};
+const CoulombFriction kFrictionC = {0.34, 0.33};
+const CoulombFriction kFrictionD = {0.44, 0.43};
+
+class DeformableRigidContactDataTest : public ::testing::Test {
  protected:
   /* Set up a scene with three rigid boxes and one deforamble cube.
    In particular, unit cube A is deformable and boxes B, C, and D are rigid and
@@ -460,7 +485,7 @@ class DeformableRigidContactJacobianTest : public ::testing::Test {
     auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
     A_ = deformable_model->RegisterDeformableBody(
         MakeUnitCubeTetMesh(), "box_A", MakeDeformableBodyConfig(),
-        MakeProximityProperties());
+        MakeProximityProperties(kStiffnessA, kDampingA, kFrictionA));
     plant_->AddPhysicalModel(std::move(deformable_model));
     /* Add the rigid bodies. */
     const UnitInertia<double> G_Rcm =
@@ -471,15 +496,18 @@ class DeformableRigidContactJacobianTest : public ::testing::Test {
     D_ = plant_->AddRigidBody("box_D", M_Rcm).index();
     collision_geometry_B_ = plant_->RegisterCollisionGeometry(
         plant_->get_body(B_), math::RigidTransform<double>(),
-        geometry::Box(2, 0.5, 2), "B", MakeProximityProperties());
+        geometry::Box(2, 0.5, 2), "B",
+        MakeProximityProperties(kStiffnessB, kDampingB, kFrictionB));
     collision_geometry_C_ = plant_->RegisterCollisionGeometry(
         plant_->get_body(C_), math::RigidTransform<double>(),
-        geometry::Box(2, 0.5, 2), "C", MakeProximityProperties());
+        geometry::Box(2, 0.5, 2), "C",
+        MakeProximityProperties(kStiffnessC, kDampingC, kFrictionC));
     // The geometry and the inertia is seemingly incompatible for box D, but we
     // are not using the inertia information anyway.
     collision_geometry_D_ = plant_->RegisterCollisionGeometry(
         plant_->get_body(D_), math::RigidTransform<double>(),
-        geometry::Box(2, 2, 0.5), "D", MakeProximityProperties());
+        geometry::Box(2, 2, 0.5), "D",
+        MakeProximityProperties(kStiffnessD, kDampingD, kFrictionD));
     plant_->Finalize();
 
     auto deformable_rigid_manager =
@@ -505,22 +533,51 @@ class DeformableRigidContactJacobianTest : public ::testing::Test {
     return deformable_rigid_manager_->EvalContactJacobians(context).Jc;
   }
 
+  /* Forwards the call to DeformableRigidManager::CalcContactPointData() and
+   returns the result as a return value. */
+  DeformableRigidManager<double>::ContactPointData CalcContactPointData(
+      const Context<double>& context) const {
+    DeformableRigidManager<double>::ContactPointData data;
+    deformable_rigid_manager_->CalcContactPointData(context, &data);
+    return data;
+  }
+
+  /* Forwards the call to DeformableRigidManager::EvalDiscreteContactPairs(). */
+  const std::vector<DiscreteContactPair<double>>& EvalDiscreteContactPairs(
+      const Context<double>& context) const {
+    return deformable_rigid_manager_->EvalDiscreteContactPairs(context);
+  }
+
   int CalcNumRigidRigidContactPoints(const Context<double>& context) const {
     const std::vector<multibody::internal::DiscreteContactPair<double>>&
-        rigid_contact_pairs =
-            deformable_rigid_manager_->EvalDiscreteContactPairs(context);
+        rigid_contact_pairs = EvalDiscreteContactPairs(context);
     return rigid_contact_pairs.size();
   }
 
-  /* Returns the CollisionObjects owned by the DeformableRigidManager under
-   test. */
-  const internal::CollisionObjects<double>& get_collision_objects() const {
-    return deformable_rigid_manager_->collision_objects_;
+  /* Forwards the call to MultibodyPlant::CalcCombinedFrictionCoefficients()
+   through DeformableRigidManager. */
+  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
+      const Context<double>& context,
+      const std::vector<DiscreteContactPair<double>>& contact_pairs) const {
+    return deformable_rigid_manager_->CalcCombinedFrictionCoefficients(
+        context, contact_pairs);
   }
 
-  const std::vector<geometry::VolumeMesh<double>>& get_deformable_meshes()
-      const {
-    return deformable_rigid_manager_->deformable_meshes_;
+  /* Given the `context`, calculate the contact surface between deformable body
+   A and the rigid geometry with the given GeometryId. */
+  DeformableContactSurface<double> CalcDeformableRigidContactSurface(
+      const Context<double>& context, GeometryId rigid_id) const {
+    deformable_rigid_manager_->UpdateDeformableVertexPositions(context);
+    deformable_rigid_manager_->UpdateCollisionObjectPoses(context);
+    const std::vector<geometry::VolumeMesh<double>>& deformable_meshes =
+        deformable_rigid_manager_->deformable_meshes_;
+    EXPECT_EQ(deformable_meshes.size(), 1);
+    const auto& mesh_A = deformable_meshes[0];
+    const internal::CollisionObjects<double>& collision_objects =
+        deformable_rigid_manager_->collision_objects_;
+    return ComputeTetMeshTriMeshContact(
+        mesh_A, collision_objects.mesh(rigid_id),
+        collision_objects.pose_in_world(rigid_id));
   }
 
   SceneGraph<double>* scene_graph_{nullptr};
@@ -565,7 +622,7 @@ namespace {
  exist rigid-deformable contacts between A and B and between A and C. The "●"
  represents a characteristic rigid-deformable contact point. There exist
  rigid-rigid contacts between B and D and between C and D. */
-TEST_F(DeformableRigidContactJacobianTest, ContactJacobian) {
+TEST_F(DeformableRigidContactDataTest, ContactJacobian) {
   Context<double>& plant_context =
       plant_->GetMyMutableContextFromRoot(diagram_context_.get());
   /* Set poses of the rigid bodies. */
@@ -582,29 +639,19 @@ TEST_F(DeformableRigidContactJacobianTest, ContactJacobian) {
   /* Calculates the contact jacobian. */
   const MatrixXd Jc = CalcContactJacobian(plant_context);
 
-  const std::vector<geometry::VolumeMesh<double>>& deformable_meshes =
-      get_deformable_meshes();
-  ASSERT_EQ(deformable_meshes.size(), 1);
-  const auto& mesh_A = deformable_meshes[0];
-  const internal::CollisionObjects<double>& collision_objects =
-      get_collision_objects();
-  /* The expected contact surfaces. */
   const DeformableContactSurface<double> contact_surface_AB =
-      ComputeTetMeshTriMeshContact(
-          mesh_A, collision_objects.mesh(collision_geometry_B_),
-          collision_objects.pose_in_world(collision_geometry_B_));
+      CalcDeformableRigidContactSurface(plant_context, collision_geometry_B_);
   const DeformableContactSurface<double> contact_surface_AC =
-      ComputeTetMeshTriMeshContact(
-          mesh_A, collision_objects.mesh(collision_geometry_C_),
-          collision_objects.pose_in_world(collision_geometry_C_));
-  /* Number of contact points between A and B. */
+      CalcDeformableRigidContactSurface(plant_context, collision_geometry_C_);
+  /* Number of contact points between A and B and between A and C. */
   const int nc_AB = contact_surface_AB.num_polygons();
-  /* Number of contact points between A and C. */
   const int nc_AC = contact_surface_AC.num_polygons();
   const int nc_rigid_deformable = nc_AB + nc_AC;
   /* Number of rigid-rigid contact points between B and D and between C and D.
    */
   const int nc_rigid_rigid = CalcNumRigidRigidContactPoints(plant_context);
+  ASSERT_GT(nc_rigid_rigid, 0);
+  ASSERT_GT(nc_rigid_deformable, 0);
   const int nc = nc_rigid_deformable + nc_rigid_rigid;
   /* The number of rows of the contact jacobian should be 3 times the number of
    contact points. */
@@ -726,9 +773,132 @@ TEST_F(DeformableRigidContactJacobianTest, ContactJacobian) {
   }
 }
 
+/* Uses the same set up as the ContactJacobian test and verifies that
+ CalcContactPointData correctly assembles the data from both rigid-rigid
+ contacts and deformable-rigid contacts. Note that in this test, we exploit our
+ glass box knowledge that the computation is handled by some other, previously
+ tested code, and we only test that the data is correctly assembled. */
+TEST_F(DeformableRigidContactDataTest, ContactData) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Set poses of the rigid bodies. */
+  const Vector3d p_WB(0, -0.5, 0);
+  const Vector3d p_WC(0, 0.5, 0);
+  const Vector3d p_WD(0, 0, -1);
+  const math::RigidTransformd X_WB(p_WB);
+  const math::RigidTransformd X_WC(p_WC);
+  const math::RigidTransformd X_WD(p_WD);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(B_), X_WB);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(D_), X_WD);
+
+  const DeformableContactSurface<double> contact_surface_AB =
+      CalcDeformableRigidContactSurface(plant_context, collision_geometry_B_);
+  const DeformableContactSurface<double> contact_surface_AC =
+      CalcDeformableRigidContactSurface(plant_context, collision_geometry_C_);
+  /* Number of contact points between A and B and between A and C. */
+  const int nc_AB = contact_surface_AB.num_polygons();
+  const int nc_AC = contact_surface_AC.num_polygons();
+  const int nc_rigid_deformable = nc_AB + nc_AC;
+  /* Number of rigid-rigid contact points between B and D and between C and D.
+   */
+  const int nc_rigid_rigid = CalcNumRigidRigidContactPoints(plant_context);
+  ASSERT_GT(nc_rigid_rigid, 0);
+  ASSERT_GT(nc_rigid_deformable, 0);
+
+  /* Verifies that the contact point data is as expected. */
+  const auto contact_point_data = CalcContactPointData(plant_context);
+  const VectorXd& mu = contact_point_data.mu;
+  const VectorXd& phi0 = contact_point_data.phi0;
+  const VectorXd& stiffness = contact_point_data.stiffness;
+  const VectorXd& damping = contact_point_data.damping;
+
+  /* Verifies that the friction data is as expected. */
+  /* rigid vs. rigid friction. */
+  const auto& mu_rigid_rigid = mu.head(nc_rigid_rigid);
+  const std::vector<DiscreteContactPair<double>>& rigid_contact_pairs =
+      EvalDiscreteContactPairs(plant_context);
+  const std::vector<CoulombFriction<double>> rigid_frictions =
+      CalcCombinedFrictionCoefficients(plant_context, rigid_contact_pairs);
+  ASSERT_EQ(rigid_frictions.size(), nc_rigid_rigid);
+  VectorXd mu_rigid_rigid_expected(nc_rigid_rigid);
+  for (int i = 0; i < nc_rigid_rigid; ++i) {
+    mu_rigid_rigid_expected(i) = rigid_frictions[i].dynamic_friction();
+  }
+  EXPECT_TRUE(CompareMatrices(mu_rigid_rigid, mu_rigid_rigid_expected));
+
+  std::cout << mu.transpose() << std::endl;
+  /* A vs. B friction. */
+  const auto& mu_AB = mu.segment(nc_rigid_rigid, nc_AB);
+  const VectorXd mu_AB_expected =
+      CalcContactFrictionFromSurfaceProperties(kFrictionA, kFrictionB)
+          .dynamic_friction() *
+      VectorXd::Ones(nc_AB);
+  EXPECT_TRUE(CompareMatrices(mu_AB, mu_AB_expected));
+
+  /* A vs. C friction. */
+  const auto& mu_AC = mu.tail(nc_AC);
+  const VectorXd mu_AC_expected =
+      CalcContactFrictionFromSurfaceProperties(kFrictionA, kFrictionC)
+          .dynamic_friction() *
+      VectorXd::Ones(nc_AC);
+  EXPECT_TRUE(CompareMatrices(mu_AC, mu_AC_expected));
+
+  /* Verifies that the phi0 data is as expected. */
+  /* rigid vs. rigid phi0. */
+  const auto& phi0_rigid_rigid = phi0.head(nc_rigid_rigid);
+  ASSERT_EQ(rigid_contact_pairs.size(), nc_rigid_rigid);
+  VectorXd phi0_rigid_rigid_expected(nc_rigid_rigid);
+  for (int i = 0; i < nc_rigid_rigid; ++i) {
+    phi0_rigid_rigid_expected(i) = rigid_contact_pairs[i].phi0;
+  }
+  EXPECT_TRUE(CompareMatrices(phi0_rigid_rigid, phi0_rigid_rigid_expected));
+
+  // TODO(xuchenhan-tri): Update this test when rigid vs. deformable
+  // penetration
+  //  distance is properly implemented.
+  /* rigid vs. deformable penetration distance. */
+  EXPECT_TRUE(CompareMatrices(phi0.tail(nc_rigid_deformable),
+                              VectorXd::Zero(nc_rigid_deformable)));
+
+  /* Verifies that the stiffness and damping data is as expected. */
+  const auto [k_AB, d_AB] = multibody::internal::CombinePointContactParameters(
+      kStiffnessA, kStiffnessB, kDampingA, kDampingB);
+  const auto [k_AC, d_AC] = multibody::internal::CombinePointContactParameters(
+      kStiffnessA, kStiffnessC, kDampingA, kDampingC);
+
+  /* rigid vs. rigid stiffness and damping. */
+  const auto& stiffness_rigid_rigid = stiffness.head(nc_rigid_rigid);
+  VectorXd stiffness_rigid_rigid_expected(nc_rigid_rigid);
+  for (int i = 0; i < nc_rigid_rigid; ++i) {
+    stiffness_rigid_rigid_expected(i) = rigid_contact_pairs[i].stiffness;
+  }
+  EXPECT_TRUE(
+      CompareMatrices(stiffness_rigid_rigid, stiffness_rigid_rigid_expected));
+  const auto& damping_rigid_rigid = damping.head(nc_rigid_rigid);
+  VectorXd damping_rigid_rigid_expected(nc_rigid_rigid);
+  for (int i = 0; i < nc_rigid_rigid; ++i) {
+    damping_rigid_rigid_expected(i) = rigid_contact_pairs[i].damping;
+  }
+  EXPECT_TRUE(
+      CompareMatrices(damping_rigid_rigid, damping_rigid_rigid_expected));
+
+  /* A vs. B stiffness and damping. */
+  const auto& stiffness_AB = stiffness.segment(nc_rigid_rigid, nc_AB);
+  const auto& damping_AB = damping.segment(nc_rigid_rigid, nc_AB);
+  EXPECT_TRUE(CompareMatrices(stiffness_AB, k_AB * VectorXd::Ones(nc_AB)));
+  EXPECT_TRUE(CompareMatrices(damping_AB, d_AB * VectorXd::Ones(nc_AB)));
+
+  /* A vs. C stiffness and damping. */
+  const auto& stiffness_AC = stiffness.tail(nc_AC);
+  const auto& damping_AC = damping.tail(nc_AC);
+  EXPECT_TRUE(CompareMatrices(stiffness_AC, k_AC * VectorXd::Ones(nc_AC)));
+  EXPECT_TRUE(CompareMatrices(damping_AC, d_AC * VectorXd::Ones(nc_AC)));
+}
+
 /* Verify that the calculated contact jacobian is the same as that from
  MultibodyPlant when no deformable body is in contact. */
-TEST_F(DeformableRigidContactJacobianTest, RigidOnlyContactJacobian) {
+TEST_F(DeformableRigidContactDataTest, RigidContactOnly) {
   Context<double>& plant_context =
       plant_->GetMyMutableContextFromRoot(diagram_context_.get());
   /* Set poses of the rigid bodies similar to the test above, but shift all
@@ -753,8 +923,9 @@ TEST_F(DeformableRigidContactJacobianTest, RigidOnlyContactJacobian) {
       CompareMatrices(Jc, CalcRigidRigidContactJacobian(plant_context)));
 }
 
-/* Verify that the contact jacobian is empty when there is no contact. */
-TEST_F(DeformableRigidContactJacobianTest, EmptyContactJacobian) {
+/* Verify that the contact jacobian and the contact data are empty when there
+ is no contact. */
+TEST_F(DeformableRigidContactDataTest, NoContact) {
   Context<double>& plant_context =
       plant_->GetMyMutableContextFromRoot(diagram_context_.get());
   /* Move the bodies far away from each other so that there is no contact at
@@ -771,6 +942,13 @@ TEST_F(DeformableRigidContactJacobianTest, EmptyContactJacobian) {
   const MatrixXd Jc = CalcContactJacobian(plant_context);
   EXPECT_EQ(Jc.rows(), 0);
   EXPECT_EQ(Jc.cols(), 0);
+
+  /* Verify that the contact point data is empty. */
+  const auto contact_point_data = CalcContactPointData(plant_context);
+  EXPECT_EQ(contact_point_data.mu.size(), 0);
+  EXPECT_EQ(contact_point_data.phi0.size(), 0);
+  EXPECT_EQ(contact_point_data.stiffness.size(), 0);
+  EXPECT_EQ(contact_point_data.damping.size(), 0);
 }
 
 }  // namespace

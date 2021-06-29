@@ -82,8 +82,23 @@ class DeformableRigidManager final
       const geometry::SceneGraph<T>& scene_graph) const;
 
  private:
+  /* Struct to hold data (friction, signed distance-like value, stiffness, and
+   damping) at each contact point. */
+  struct ContactPointData {
+    VectorX<T> mu;
+    VectorX<T> phi0;
+    VectorX<T> stiffness;
+    VectorX<T> damping;
+    void Resize(int size) {
+      mu.resize(size);
+      phi0.resize(size);
+      stiffness.resize(size);
+      damping.resize(size);
+    }
+  };
+
   friend class DeformableRigidManagerTest;
-  friend class DeformableRigidContactJacobianTest;
+  friend class DeformableRigidContactDataTest;
 
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd() and
   //  the corresponding is_cloneable methods.
@@ -260,6 +275,15 @@ class DeformableRigidManager final
   MatrixX<T> CalcContactJacobianRigidBlock(
       const systems::Context<T>& context,
       const internal::DeformableContactData<T>& contact_data) const;
+
+  /* Calculates the combined friction, stiffness, damping, and penetration
+   distance at all contact points. The way that the contact points are ordered
+   in `contact_point_data` is directly correlated with the entries in the result
+   of CalcContactJacobian(). In particular, the i-th entry in the
+   `contact_point_data` corresponds to the contact point associated with the
+   3*i, 3*i+1, and 3*i+2-th rows in the result of CalcContactJacobian(). */
+  void CalcContactPointData(const systems::Context<T>& context,
+                            ContactPointData* contact_point_data) const;
 
   /* Given the GeometryId of a rigid collision geometry, returns the body frame
    of the collision geometry.
