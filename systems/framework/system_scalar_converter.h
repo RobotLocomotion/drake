@@ -10,6 +10,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
@@ -29,39 +30,40 @@ template <typename T> class System;
 /// LeafSystem without any direct knowledge of the subtypes being converted.
 /// In other words, it enables a runtime flavor of the CRTP.
 ///
-/// Throughout this class, the template type `S` must be the most-derived
-/// concrete System subclass.  This object may only be used to convert
-/// System<U> objects of runtime type S<U>, not subclasses of S<U>.
+/// Throughout this class, the following template naming convention applies:
+///
+/// @tparam S is the System subclass that this object will convert from and to.
+/// @tparam U the source scalar type (to convert from), which must be one of
+///         the @ref default_scalars "default scalars".
+/// @tparam T the resulting scalar type (to convert into), which must be one of
+///         the @ref default_scalars "default scalars".
+///
+/// @note Conversions where `T` and `U` type are the same are not supported.
+/// Template functions such as IsConvertible<T, U>() are still callable, but
+/// will always return false, null, etc.
 class SystemScalarConverter {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemScalarConverter);
 
-  /// Creates an object that returns nullptr for all Convert() requests.  The
-  /// single-argument constructor below is the typical way to create a useful
-  /// instance of this type.
+  /// (Advanced) Creates a converter that supports no conversions.  The single-
+  /// argument constructor below is the overload intended for users.
   SystemScalarConverter();
 
-  /// Creates an object that uses S's scalar-type converting copy constructor.
-  /// That constructor takes the form of, e.g.:
+  /// Creates a converter that uses S's scalar-converting copy constructor to
+  /// perform system scalar conversion. That constructor takes the form of:
   ///
   /// @code
   /// template <typename T>
-  /// class Foo {
+  /// class FooSystem final : public LeafSystem<T> {
   ///   template <typename U>
-  ///   explicit Foo(const Foo<U>& other);
+  ///   explicit FooSystem(const FooSystem<U>& other);
   /// };
   /// @endcode
   ///
-  /// This constructor only creates a converter between a limited set of types,
-  /// specifically the @ref default_scalars "default scalars".
-  ///
-  /// By default, all non-identity pairs (pairs where T and U differ) drawn
-  /// from the above list can be used for T and U.  Systems may specialize
+  /// By default, the converter supports conversions to and from all of the
+  /// @ref default_scalars "default scalars", but systems may specialize the
   /// scalar_conversion::Traits to disable support for some or all of these
-  /// conversions, or after construction may call Add<T, U>() on the returned
-  /// object to enable support for additional custom types.
-  ///
-  /// @tparam S is the System type to convert
+  /// conversions.
   ///
   /// This an implicit conversion constructor (not marked `explicit`), in order
   /// to make calling code substantially more readable, with relatively little
@@ -114,20 +116,23 @@ class SystemScalarConverter {
   /// this is a default-constructed object.)
   bool empty() const { return funcs_.empty(); }
 
-  /// A std::function used to convert a System<U> into a System<T>.
   template <typename T, typename U>
-  using ConverterFunction =
-      std::function<std::unique_ptr<System<T>>(const System<U>&)>;
+  using ConverterFunction
+      DRAKE_DEPRECATED("2021-10-01",
+      "Only scalar-converting copy constructors are supported.")
+      = std::function<std::unique_ptr<System<T>>(const System<U>&)>;
 
-  /// Registers the std::function to be used to convert a System<U> into a
-  /// System<T>.  A pair of types can be registered (added) at most once.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   template <typename T, typename U>
+  DRAKE_DEPRECATED("2021-10-01",
+      "Only scalar-converting copy constructors are supported.")
   void Add(const ConverterFunction<T, U>&);
+#pragma GCC diagnostic pop
 
-  /// Adds converter for an S<U> into an S<T>, iff scalar_conversion::Traits
-  /// says its supported.  The converter uses S's scalar-type converting copy
-  /// constructor.
   template <template <typename> class S, typename T, typename U>
+  DRAKE_DEPRECATED("2021-10-01",
+      "User-defined scalar types cannot be added.")
   void AddIfSupported() {
     AddIfSupported<S, T, U>(GuaranteedSubtypePreservation::kEnabled);
   }
@@ -143,17 +148,11 @@ class SystemScalarConverter {
 
   /// Returns true iff this object can convert a System<U> into a System<T>,
   /// i.e., whether Convert() will return non-null.
-  ///
-  /// @tparam U the donor scalar type (to convert from)
-  /// @tparam T the resulting scalar type (to convert into)
   template <typename T, typename U>
   bool IsConvertible() const;
 
   /// Converts a System<U> into a System<T>.  This is the API that LeafSystem
   /// uses to provide a default implementation of DoToAutoDiffXd, etc.
-  ///
-  /// @tparam U the donor scalar type (to convert from)
-  /// @tparam T the resulting scalar type (to convert into)
   template <typename T, typename U>
   std::unique_ptr<System<T>> Convert(const System<U>& other) const;
 
@@ -189,19 +188,23 @@ class SystemScalarConverter {
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// (This function is deprecated.)
 template <typename T, typename U>
 void SystemScalarConverter::Add(const ConverterFunction<T, U>& func) {
   // Make sure func contains a target (i.e., is not null-ish).
   DRAKE_ASSERT(static_cast<bool>(func));
   // Copy `func` into a lambda that ends up stored into `funcs_`.  The lambda
   // is typed as `void* => void*` in order to have a non-templated signature
-  // and thus fit into a homogeneously-typed std::map.
+  // and thus fit into a homogeneously-typed std::unordered_map.
   Insert(typeid(T), typeid(U), [func](const void* const bare_u) {
     DRAKE_ASSERT(bare_u);
     const System<U>& other = *static_cast<const System<U>*>(bare_u);
     return func(other).release();
   });
 }
+#pragma GCC diagnostic pop
 
 template <typename T, typename U>
 bool SystemScalarConverter::IsConvertible() const {
@@ -263,16 +266,22 @@ void SystemScalarConverter::AddIfSupported(
   using supported =
       typename scalar_conversion::Traits<S>::template supported<T, U>;
   if (supported::value) {
-    const ConverterFunction<T, U> func = [subtype_preservation](
-        const System<U>& other) {
+    // The lambda is typed as `void* => void*` in order to have a non-templated
+    // signature and thus fit into a homogeneously-typed std::unordered_map.
+    auto func = [subtype_preservation](const void* const other_system_u)
+        -> void* {
+      DRAKE_ASSERT(other_system_u != nullptr);
+      const System<U>& other = *static_cast<const System<U>*>(other_system_u);
       // Dispatch to an overload based on whether S<U> ==> S<T> is supported.
       // (At runtime, this block is only executed for supported conversions,
       // but at compile time, Make will be instantiated unconditionally.)
-      return system_scalar_converter_internal::Make<S, T, U>(
-          (subtype_preservation == GuaranteedSubtypePreservation::kEnabled),
-          other, supported{});
+      std::unique_ptr<System<T>> result =
+          system_scalar_converter_internal::Make<S, T, U>(
+              (subtype_preservation == GuaranteedSubtypePreservation::kEnabled),
+              other, supported{});
+      return result.release();
     };
-    Add(func);
+    Insert(typeid(T), typeid(U), func);
   }
 }
 

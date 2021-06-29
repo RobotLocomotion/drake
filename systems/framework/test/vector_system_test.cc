@@ -482,7 +482,8 @@ class DirectScalarTypeConversionSystem : public VectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectScalarTypeConversionSystem);
 
   DirectScalarTypeConversionSystem()
-      : VectorSystem<T>(MakeConverter(), 0, 0) {
+      : VectorSystem<T>(
+            SystemTypeTag<DirectScalarTypeConversionSystem>(), 0, 0) {
     // This will fail at compile-time if T is ever symbolic::Expression.
     const T neg_one = test::copysign_int_to_non_symbolic_scalar(-1, T{1.0});
     DRAKE_DEMAND(neg_one == T{-1.0});
@@ -491,16 +492,20 @@ class DirectScalarTypeConversionSystem : public VectorSystem<T> {
   explicit DirectScalarTypeConversionSystem(
       const DirectScalarTypeConversionSystem<double>&, int dummy = 0)
       : DirectScalarTypeConversionSystem<T>() {}
-
- private:
-  static SystemScalarConverter MakeConverter() {
-    // Only support double => AutoDiffXd.
-    SystemScalarConverter result;
-    result.AddIfSupported<
-      systems::DirectScalarTypeConversionSystem, AutoDiffXd, double>();
-    return result;
-  }
 };
+
+}  // namespace
+
+// Only support double => AutoDiffXd.
+namespace scalar_conversion {
+template <> struct Traits<DirectScalarTypeConversionSystem> {
+  template <typename T, typename U>
+  using supported = typename std::bool_constant<
+    std::is_same_v<U, double> && !std::is_same_v<T, symbolic::Expression>>;
+};
+}  // namespace scalar_conversion
+
+namespace {
 
 TEST_F(VectorSystemTest, DirectToAutoDiffXdTest) {
   DirectScalarTypeConversionSystem<double> dut;
