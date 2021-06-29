@@ -219,5 +219,5 @@ class TemplateSystem(TemplateClass):
         # to when the conversion is called.
         for (T, U) in self._T_pairs:
             conversion = partial(self._make, T, U)
-            converter.Add[T, U](conversion)
+            converter._Add[T, U](conversion)
         return converter
