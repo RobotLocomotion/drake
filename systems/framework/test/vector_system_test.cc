@@ -494,13 +494,22 @@ class DirectScalarTypeConversionSystem : public VectorSystem<T> {
 
  private:
   static SystemScalarConverter MakeConverter() {
-    // Only support double => AutoDiffXd.
-    SystemScalarConverter result;
-    result.AddIfSupported<
-      systems::DirectScalarTypeConversionSystem, AutoDiffXd, double>();
-    return result;
+    return SystemTypeTag<DirectScalarTypeConversionSystem>();
   }
 };
+
+}  // namespace
+
+// Only support double => AutoDiffXd.
+namespace scalar_conversion {
+template <> struct Traits<DirectScalarTypeConversionSystem> {
+  template <typename T, typename U>
+  using supported = typename std::bool_constant<
+    std::is_same_v<U, double> && !std::is_same_v<T, symbolic::Expression>>;
+};
+}  // namespace scalar_conversion
+
+namespace {
 
 TEST_F(VectorSystemTest, DirectToAutoDiffXdTest) {
   DirectScalarTypeConversionSystem<double> dut;
