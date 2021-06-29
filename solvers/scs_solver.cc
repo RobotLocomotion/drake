@@ -542,8 +542,14 @@ void SetScsProblemData(int A_row_count, int num_vars,
 bool ScsSolver::is_available() { return true; }
 
 namespace {
-void SetScsSettings(std::unordered_map<std::string, int>* solver_options_int,
-                    SCS_SETTINGS* scs_settings) {
+// This should be invoked only once on each unique instance of SCS_SETTINGS.
+// Namely, only call this function for once in DoSolve.
+void SetScsSettings(
+    std::unordered_map<std::string, int>* solver_options_int,
+    const std::unordered_map<CommonSolverOption,
+                             std::variant<double, int, std::string>>&
+        common_options,
+    SCS_SETTINGS* scs_settings) {
   auto it = solver_options_int->find("max_iters");
   if (it != solver_options_int->end()) {
     scs_settings->max_iters = it->second;
@@ -556,8 +562,20 @@ void SetScsSettings(std::unordered_map<std::string, int>* solver_options_int,
   }
   it = solver_options_int->find("verbose");
   if (it != solver_options_int->end()) {
+    // The solver specific option has the highest priority.
     scs_settings->verbose = it->second;
     solver_options_int->erase(it);
+  } else {
+    // The common option has the second highest priority.
+    auto it_common = common_options.find(CommonSolverOption::kPrintToConsole);
+    if (it_common != common_options.end()) {
+      const int print_to_console_val = std::get<int>(it_common->second);
+      DRAKE_DEMAND(print_to_console_val == 0 || print_to_console_val == 1);
+      scs_settings->verbose = print_to_console_val;
+    } else {
+      // Default to no print.
+      scs_settings->verbose = 0;
+    }
   }
   it = solver_options_int->find("warm_start");
   if (it != solver_options_int->end()) {
@@ -574,6 +592,8 @@ void SetScsSettings(std::unordered_map<std::string, int>* solver_options_int,
   }
 }
 
+// This should be invoked only once on each unique instance of SCS_SETTINGS.
+// Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, double>* solver_options_double,
     SCS_SETTINGS* scs_settings) {
@@ -606,6 +626,7 @@ void SetScsSettings(
     throw std::invalid_argument("Unsupported SCS solver options.");
   }
 }
+
 }  // namespace
 
 void ScsSolver::DoSolve(
@@ -726,7 +747,9 @@ void ScsSolver::DoSolve(
       merged_options.GetOptionsInt(id());
   std::unordered_map<std::string, double> input_solver_options_double =
       merged_options.GetOptionsDouble(id());
-  SetScsSettings(&input_solver_options_int, scs_problem_data->stgs);
+  SetScsSettings(&input_solver_options_int,
+                 merged_options.common_solver_options(),
+                 scs_problem_data->stgs);
   SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
 
   ScsInfo scs_info{0};

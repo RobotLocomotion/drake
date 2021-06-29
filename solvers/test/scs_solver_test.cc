@@ -237,7 +237,6 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
 TEST_P(QuadraticProgramTest, TestQP) {
   ScsSolver solver;
   if (solver.available()) {
-    prob()->prog()->SetSolverOption(ScsSolver::id(), "verbose", 0);
     prob()->RunProblem(&solver);
   }
 }
@@ -398,6 +397,29 @@ GTEST_TEST(TestScs, TestNonconvexQP) {
   ScsSolver solver;
   if (solver.is_available()) {
     TestNonconvexQP(solver, true);
+  }
+}
+
+GTEST_TEST(TestScs, TestVerbose) {
+  // This is a code coverage test, not a functional test. If the code that
+  // handles verbosity options has a segfault or always throws an exception,
+  // then this would catch it.
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  prog.AddLinearCost(x[0]);
+  ScsSolver solver;
+  if (solver.is_available()) {
+    SolverOptions options;
+    options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, options, &result);
+    // Set the common option to no print, but SCS option to print. The more
+    // specific SCS option should dominate over the common option, and SCS
+    // should print to the console.
+    options.SetOption(CommonSolverOption::kPrintToConsole, 0);
+    options.SetOption(solver.id(), "verbose", 1);
+    solver.Solve(prog, std::nullopt, options, &result);
   }
 }
 }  // namespace test
