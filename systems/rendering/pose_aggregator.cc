@@ -19,7 +19,6 @@ PoseAggregator<T>::PoseAggregator()
   // equal to the concatenation of all inputs. This can't be done with a model
   // value because we don't know at construction how big the output will be.
   this->DeclareAbstractOutputPort(kUseDefaultName,
-                                  &PoseAggregator::MakePoseBundle,
                                   &PoseAggregator::CalcPoseBundle);
 }
 
@@ -64,8 +63,13 @@ template <typename T>
 void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
                                        PoseBundle<T>* output) const {
   PoseBundle<T>& bundle = *output;
-  int pose_index = 0;
 
+  const int total_num_poses = this->CountNumPoses();
+  if (bundle.get_num_poses() != total_num_poses) {
+    bundle = PoseBundle<T>(total_num_poses);
+  }
+
+  int pose_index = 0;
   const int num_ports = this->num_input_ports();
   for (int port_index = 0; port_index < num_ports; ++port_index) {
     const auto& port = this->get_input_port(port_index);
@@ -121,11 +125,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
     }
     DRAKE_UNREACHABLE();
   }
-}
-
-template <typename T>
-PoseBundle<T> PoseAggregator<T>::MakePoseBundle() const {
-  return PoseBundle<T>(this->CountNumPoses());
+  DRAKE_DEMAND(pose_index == total_num_poses);
 }
 
 template <typename T>

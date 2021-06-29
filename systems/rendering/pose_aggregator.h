@@ -114,10 +114,6 @@ class PoseAggregator : public LeafSystem<T> {
   void CalcPoseBundle(const Context<T>& context,
                       PoseBundle<T>* output) const;
 
-  // Constructs a PoseBundle of length equal to the concatenation of all inputs.
-  // This is the method used by the allocator for the output port.
-  PoseBundle<T> MakePoseBundle() const;
-
   using InputRecord = internal::PoseAggregatorInputRecord;
 
   // Returns an InputRecord for a generic single pose input.
