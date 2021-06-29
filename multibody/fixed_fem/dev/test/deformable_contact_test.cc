@@ -313,7 +313,7 @@ internal::DeformableContactData<double> MakeDeformableContactData(
   return internal::DeformableContactData<double>({contact_pair}, volume_mesh);
 }
 
-GTEST_TEST(DeformbableContactTest, DeformableContactData) {
+GTEST_TEST(DeformableContactTest, DeformableContactData) {
   /* Move the rigid pyramid down, so only its square base intersects the top
    pyramidal region of the deformable octahedron. As a result, all vertices
    except v5 are participating in contact. */
@@ -340,7 +340,7 @@ GTEST_TEST(DeformbableContactTest, DeformableContactData) {
   }
 }
 
-GTEST_TEST(DeformbableContactTest, EmptyDeformableContactData) {
+GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {
   /* Move the rigid pyramid way down, so there is no contact. */
   const auto X_DR = math::RigidTransformd(Vector3<double>(0, 0, -15));
   DeformableContactSurface<double> contact_surface =
