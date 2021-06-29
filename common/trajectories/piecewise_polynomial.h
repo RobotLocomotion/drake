@@ -815,14 +815,23 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // N - 2 acceleration constraints for the interior points:
   // Pi''(duration_i) = Pi+1''(0), for i in [0, N - 3]
   //
-  // These sum up to 4 * (N - 1) - 2. This function sets up the above
-  // constraints. There are still 2 constraints missing, which can be resolved
-  // by various end point conditions (velocity at the end points /
-  // "not-a-sample" / etc). These will be specified by the callers.
+  // The first N - 1 position constraints can be used to directly eliminate the
+  // constant term of each segment as Pi(0) = a0_i.  This reduces the number of
+  // unknowns to 3 * (N-1) and leaves 3 * (N-1) - 2 constraints. This function
+  // sets up the remaining constraints. There are still 2 constraints missing,
+  // which can be resolved by various end point conditions (velocity at the end
+  // points / "not-a-sample" / etc). These will be specified by the callers.
+  //
+  // This function performs the constraint setup for the row and column of the
+  // sample matrix specified by `row` & `col`.  The coefficients for the
+  // left-hand-side of the constraint equations are prepared for loading into a
+  // sparse matrix by creating a vector of Triplets, `triplet_list` with each
+  // representing the row, column and value to add to the sparse matrix. The
+  // right-hand side of the constraint equations is loaded into `b`.
   static int SetupCubicSplineInteriorCoeffsLinearSystem(
       const std::vector<T>& breaks,
       const std::vector<MatrixX<T>>& samples, int row, int col,
-      MatrixX<T>* A, VectorX<T>* b);
+      std::vector<Eigen::Triplet<T>>* triplet_list, VectorX<T>* b);
 
   // Throws std::runtime_error if
   // `breaks` and `samples` have different length,
