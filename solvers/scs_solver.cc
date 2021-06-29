@@ -558,6 +558,9 @@ void SetScsSettings(std::unordered_map<std::string, int>* solver_options_int,
   if (it != solver_options_int->end()) {
     scs_settings->verbose = it->second;
     solver_options_int->erase(it);
+  } else {
+    // Default to no print.
+    scs_settings->verbose = 0;
   }
   it = solver_options_int->find("warm_start");
   if (it != solver_options_int->end()) {
@@ -604,6 +607,27 @@ void SetScsSettings(
   }
   if (!solver_options_double->empty()) {
     throw std::invalid_argument("Unsupported SCS solver options.");
+  }
+}
+
+// Update the scs solver specific option from `common_options`.
+void UpdateSolverOptionsFromCommonOption(
+    const std::unordered_map<CommonSolverOption,
+                             std::variant<double, int, std::string>>&
+        common_options,
+    std::unordered_map<std::string, int>* input_solver_options_int,
+    std::unordered_map<std::string, double>* input_solver_options_double) {
+  unused(input_solver_options_double);
+  auto it = common_options.find(CommonSolverOption::kPrintToConsole);
+  if (it != common_options.end()) {
+    const int option_value = std::get<int>(it->second);
+    DRAKE_DEMAND(option_value == 0 || option_value == 1);
+    auto it_verbose = input_solver_options_int->find("verbose");
+    if (it_verbose == input_solver_options_int->end()) {
+      // Only overwrite the option if this solver-specific option is not set.
+      input_solver_options_int->emplace_hint(it_verbose, "verbose",
+                                             option_value);
+    }
   }
 }
 }  // namespace
@@ -726,6 +750,9 @@ void ScsSolver::DoSolve(
       merged_options.GetOptionsInt(id());
   std::unordered_map<std::string, double> input_solver_options_double =
       merged_options.GetOptionsDouble(id());
+  UpdateSolverOptionsFromCommonOption(merged_options.common_solver_options(),
+                                      &input_solver_options_int,
+                                      &input_solver_options_double);
   SetScsSettings(&input_solver_options_int, scs_problem_data->stgs);
   SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
 
