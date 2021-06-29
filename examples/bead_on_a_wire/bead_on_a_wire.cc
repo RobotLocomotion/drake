@@ -14,16 +14,12 @@ BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
   if (type == BeadOnAWire<T>::kMinimalCoordinates) {
     this->DeclareContinuousState(1, 1, 0);
     this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 1);
-    this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                  systems::BasicVector<T>(2),
-                                  &BeadOnAWire::CopyStateOut);
   } else {
     this->DeclareContinuousState(3, 3, 0);
     this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 3);
-    this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                  systems::BasicVector<T>(6),
-                                  &BeadOnAWire::CopyStateOut);
   }
+  this->DeclareStateOutputPort(
+      systems::kUseDefaultName, systems::ContinuousStateIndex{0});
   coordinate_type_ = type;
 }
 
@@ -128,13 +124,6 @@ Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationsDot(
   Eigen::VectorXd result = get_pfunction_first_derivative(fprime)*dinvf_dt - v;
 
   return result;
-}
-
-template <typename T>
-void BeadOnAWire<T>::CopyStateOut(const systems::Context<T>& context,
-                                  systems::BasicVector<T>* output) const {
-  output->get_mutable_value() =
-      context.get_continuous_state().CopyToVector();
 }
 
 template <class T>

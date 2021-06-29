@@ -23,9 +23,8 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
                                 &VanDerPolOscillator::CopyPositionToOutput);
 
   // Second output, y₂ = [q,q̇]', for e.g. visualizing the full state.
-  this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                systems::BasicVector<T>(2),
-                                &VanDerPolOscillator::CopyFullStateToOutput);
+  this->DeclareStateOutputPort(systems::kUseDefaultName,
+                               systems::ContinuousStateIndex{0});
 
   // Single parameter, μ, with default μ=1.
   this->DeclareNumericParameter(systems::BasicVector<T>(Vector1<T>(1.0)));
@@ -86,12 +85,6 @@ void VanDerPolOscillator<T>::CopyPositionToOutput(
   output->SetAtIndex(
       0,
       context.get_continuous_state().get_generalized_position().GetAtIndex(0));
-}
-
-template <typename T>
-void VanDerPolOscillator<T>::CopyFullStateToOutput(
-    const systems::Context<T>& context, systems::BasicVector<T>* output) const {
-  output->SetFromVector(context.get_continuous_state_vector().CopyToVector());
 }
 
 }  // namespace van_der_pol

@@ -690,6 +690,49 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
   return port;
 }
 
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    ContinuousStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  DRAKE_THROW_UNLESS(state_index == 0);
+  return DeclareVectorOutputPort(
+      std::move(name), *model_continuous_state_vector_,
+      [](const Context<T>& context, BasicVector<T>* output) {
+        output->SetFrom(context.get_continuous_state_vector());
+      },
+      {this->xc_ticket()});
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    DiscreteStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  return DeclareVectorOutputPort(
+      std::move(name), this->model_discrete_state_.get_vector(state_index),
+      [state_index](const Context<T>& context, BasicVector<T>* output) {
+        output->SetFrom(context.get_discrete_state(state_index));
+      },
+      {this->discrete_state_ticket(state_index)});
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    AbstractStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  return DeclareAbstractOutputPort(
+      std::move(name),
+      [this, state_index]() {
+        return this->model_abstract_states_.CloneModel(state_index);
+      },
+      [state_index](const Context<T>& context, AbstractValue* output) {
+        output->SetFrom(context.get_abstract_state().get_value(state_index));
+      },
+      {this->abstract_state_ticket(state_index)});
+}
+
 // (This function is deprecated.)
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(

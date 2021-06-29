@@ -18,6 +18,7 @@ from pydrake.systems.framework import (
     BasicVector, BasicVector_,
     CacheIndex,
     Context,
+    ContinuousStateIndex,
     DependencyTicket,
     Diagram,
     DiagramBuilder,
@@ -442,6 +443,23 @@ class TestCustom(unittest.TestCase):
         input_port.get_index()
         vector_output_port.Eval(context)
         abstract_output_port.Eval(context)
+
+    def test_state_output_port_declarations(self):
+        """Checks that DeclareStateOutputPort is bound."""
+        dut = LeafSystem()
+
+        dut.DeclareContinuousState(2)
+        xc_index = ContinuousStateIndex(0)
+        xc_port = dut.DeclareStateOutputPort("xc", state_index=xc_index)
+        self.assertEqual(xc_port.size(), 2)
+
+        xd_index = dut.DeclareDiscreteState(3)
+        xd_port = dut.DeclareStateOutputPort("xd", state_index=xd_index)
+        self.assertEqual(xd_port.size(), 3)
+
+        xa_index = dut.DeclareAbstractState(AbstractValue.Make(1))
+        xa_port = dut.DeclareStateOutputPort("xa", state_index=xa_index)
+        self.assertEqual(xa_port.get_name(), "xa")
 
     def test_vector_system_overrides(self):
         dt = 0.5
