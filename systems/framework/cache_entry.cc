@@ -13,18 +13,17 @@ namespace systems {
 CacheEntry::CacheEntry(
     const internal::SystemMessageInterface* owning_system, CacheIndex index,
     DependencyTicket ticket, std::string description,
-    AllocCallback alloc_function, CalcCallback calc_function,
+    ValueProducer value_producer,
     std::set<DependencyTicket> prerequisites_of_calc)
     : owning_system_(owning_system),
       cache_index_(index),
       ticket_(ticket),
       description_(std::move(description)),
-      alloc_function_(std::move(alloc_function)),
-      calc_function_(std::move(calc_function)),
-      prerequisites_of_calc_(
-          std::move(prerequisites_of_calc)) {
+      value_producer_(std::move(value_producer)),
+      prerequisites_of_calc_(std::move(prerequisites_of_calc)) {
+  DRAKE_DEMAND(owning_system);
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
-  DRAKE_DEMAND(owning_system && alloc_function_ && calc_function_);
+  DRAKE_DEMAND(value_producer_.is_valid());
 
   if (prerequisites_of_calc_.empty()) {
     throw std::logic_error(FormatName("CacheEntry") +
@@ -34,8 +33,21 @@ CacheEntry::CacheEntry(
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+CacheEntry::CacheEntry(
+    const internal::SystemMessageInterface* owning_system, CacheIndex index,
+    DependencyTicket ticket, std::string description,
+    AllocCallback alloc_function, CalcCallback calc_function,
+    std::set<DependencyTicket> prerequisites_of_calc)
+    : CacheEntry(owning_system, index, ticket, std::move(description),
+                 ValueProducer(std::move(alloc_function),
+                               std::move(calc_function)),
+                 std::move(prerequisites_of_calc)) {}
+#pragma GCC diagnostic pop
+
 std::unique_ptr<AbstractValue> CacheEntry::Allocate() const {
-  std::unique_ptr<AbstractValue> value = alloc_function_();
+  std::unique_ptr<AbstractValue> value = value_producer_.Allocate();
   if (value == nullptr) {
     throw std::logic_error(FormatName("Allocate") +
                            "allocator returned a nullptr.");
@@ -49,7 +61,7 @@ void CacheEntry::Calc(const ContextBase& context,
   DRAKE_ASSERT_VOID(owning_system_->ValidateContext(context));
   DRAKE_ASSERT_VOID(CheckValidAbstractValue(context, *value));
 
-  calc_function_(context, value);
+  value_producer_.Calc(context, value);
 }
 
 void CacheEntry::CheckValidAbstractValue(const ContextBase& context,

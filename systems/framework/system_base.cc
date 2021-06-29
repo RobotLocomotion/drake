@@ -33,27 +33,37 @@ std::string SystemBase::GetSystemPathname() const {
 }
 
 CacheEntry& SystemBase::DeclareCacheEntry(
-    std::string description, CacheEntry::AllocCallback alloc_function,
-    CacheEntry::CalcCallback calc_function,
+    std::string description, ValueProducer value_producer,
     std::set<DependencyTicket> prerequisites_of_calc) {
   return DeclareCacheEntryWithKnownTicket(
       assign_next_dependency_ticket(), std::move(description),
-      std::move(alloc_function), std::move(calc_function),
+      std::move(value_producer), std::move(prerequisites_of_calc));
+}
+
+// (This overload is deprecated.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+CacheEntry& SystemBase::DeclareCacheEntry(
+    std::string description, CacheEntry::AllocCallback alloc_function,
+    CacheEntry::CalcCallback calc_function,
+    std::set<DependencyTicket> prerequisites_of_calc) {
+  return DeclareCacheEntry(
+      std::move(description),
+      ValueProducer(std::move(alloc_function), std::move(calc_function)),
       std::move(prerequisites_of_calc));
 }
+#pragma GCC diagnostic pop
 
 CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
     DependencyTicket known_ticket, std::string description,
-    CacheEntry::AllocCallback alloc_function,
-    CacheEntry::CalcCallback calc_function,
+    ValueProducer value_producer,
     std::set<DependencyTicket> prerequisites_of_calc) {
   // If the prerequisite list is empty the CacheEntry constructor will throw
   // a logic error.
   const CacheIndex index(num_cache_entries());
   cache_entries_.emplace_back(std::make_unique<CacheEntry>(
       this, index, known_ticket, std::move(description),
-      std::move(alloc_function), std::move(calc_function),
-      std::move(prerequisites_of_calc)));
+      std::move(value_producer), std::move(prerequisites_of_calc)));
   CacheEntry& new_entry = *cache_entries_.back();
   return new_entry;
 }

@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_visitor.h"
@@ -1420,12 +1421,10 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   // used.
   event_times_buffer_cache_index_ =
       this->DeclareCacheEntry(
-          "event_times_buffer",
-          [this]() {
-            std::vector<T> vec(num_subsystems());
-            return AbstractValue::Make<std::vector<T>>(vec);
-          },
-          [](const ContextBase&, AbstractValue*) { /* do nothing */ },
+          "event_times_buffer", ValueProducer(
+              // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
+              internal::AbstractValueCloner(std::vector<T>(num_subsystems())),
+              &ValueProducer::NoopCalc),
           {this->nothing_ticket()}).cache_index();
 
   // Generate a map from the System pointer to its index in the registered
