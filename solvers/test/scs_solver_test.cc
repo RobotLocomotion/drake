@@ -400,6 +400,26 @@ GTEST_TEST(TestScs, TestNonconvexQP) {
     TestNonconvexQP(solver, true);
   }
 }
+
+GTEST_TEST(TestScs, TestVerbose) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  prog.AddLinearCost(x[0]);
+  ScsSolver solver;
+  if (solver.is_available()) {
+    SolverOptions options;
+    options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, options, &result);
+    // Set the common option to no print, but SCS option to print. The more
+    // specific SCS option should dominate over the common option, and SCS
+    // should print to the console.
+    options.SetOption(CommonSolverOption::kPrintToConsole, 0);
+    options.SetOption(solver.id(), "verbose", 1);
+    solver.Solve(prog, std::nullopt, options, &result);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
