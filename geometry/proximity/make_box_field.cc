@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
@@ -55,10 +56,9 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
                                      mesh_B);
 }
 
-template VolumeMeshFieldLinear<double, double> MakeBoxPressureField(
-    const Box&, const VolumeMesh<double>*, const double);
-template VolumeMeshFieldLinear<AutoDiffXd, AutoDiffXd> MakeBoxPressureField(
-    const Box&, const VolumeMesh<AutoDiffXd>*, const AutoDiffXd);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &MakeBoxPressureField<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

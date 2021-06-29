@@ -139,7 +139,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. The normals of the contact surface mesh
           will all be parallel with the plane normal.
- @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>

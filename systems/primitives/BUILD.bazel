@@ -225,6 +225,7 @@ drake_cc_library(
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
         "//systems/framework:diagram_builder",

@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
@@ -72,12 +73,9 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
                                      std::move(pressure_values), mesh_C);
 }
 
-template VolumeMeshFieldLinear<double, double> MakeCylinderPressureField(
-    const Cylinder&, const VolumeMesh<double>*, const double);
-
-template VolumeMeshFieldLinear<AutoDiffXd, AutoDiffXd>
-MakeCylinderPressureField(const Cylinder&, const VolumeMesh<AutoDiffXd>*,
-                          const AutoDiffXd);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &MakeCylinderPressureField<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

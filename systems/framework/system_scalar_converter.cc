@@ -1,5 +1,6 @@
 #include "drake/systems/framework/system_scalar_converter.h"
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/hash.h"
 
 using std::pair;
@@ -31,9 +32,9 @@ void SystemScalarConverter::Insert(
   DRAKE_ASSERT(insert_result.second);
 }
 
-void SystemScalarConverter::Remove(const std::type_info& t_info,
-                                   const std::type_info& u_info) {
-  funcs_.erase(Key(t_info, u_info));
+template <typename T, typename U>
+void SystemScalarConverter::Remove() {
+  funcs_.erase(Key(typeid(T), typeid(U)));
 }
 
 const SystemScalarConverter::ErasedConverterFunc* SystemScalarConverter::Find(
@@ -60,6 +61,10 @@ void SystemScalarConverter::RemoveUnlessAlsoSupportedBy(
     }
   }
 }
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &SystemScalarConverter::Remove<T, U>
+))
 
 }  // namespace systems
 }  // namespace drake

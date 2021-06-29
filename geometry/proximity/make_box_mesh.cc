@@ -4,6 +4,7 @@
 #include <array>
 #include <unordered_set>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
@@ -453,15 +454,10 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
 }
 
-template VolumeMesh<double> MakeBoxVolumeMeshWithMa(const Box&);
-template VolumeMesh<AutoDiffXd> MakeBoxVolumeMeshWithMa(const Box&);
-
-// Explicit instantiations for double and AutoDiffXd to support the
-// documentation.
-template VolumeMesh<double> MakeBoxVolumeMesh(const Box& box,
-                                              double resolution_hint);
-template VolumeMesh<AutoDiffXd> MakeBoxVolumeMesh(const Box& box,
-                                                  double resolution_hint);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &MakeBoxVolumeMesh<T>,
+    &MakeBoxVolumeMeshWithMa<T>
+))
 
 }  // namespace internal
 }  // namespace geometry

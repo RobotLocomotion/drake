@@ -26,6 +26,7 @@ namespace internal {
                          by the mesh should be exactly the same space as the
                          box specification). `mesh_B` has enough resolution
                          to approximate the pressure field.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeBoxPressureField(const Box& box,

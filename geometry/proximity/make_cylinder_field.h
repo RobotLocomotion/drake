@@ -44,8 +44,7 @@ namespace internal {
  @pre                    `elastic_modulus` is strictly positive.
                          `mesh_C` represents the cylinder and has enough
                          resolution to represent the pressure field.
- @tparam T               The scalar type for representing the mesh vertex
-                         positions and the pressure value.
+ @tparam_nonsymbolic_scalar
  */
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(

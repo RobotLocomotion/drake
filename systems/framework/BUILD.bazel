@@ -498,11 +498,10 @@ drake_cc_library(
         "system_type_tag.h",
     ],
     deps = [
-        "//common:autodiff",
+        "//common:default_scalars",
         "//common:essential",
         "//common:hash",
         "//common:nice_type_name",
-        "//common:symbolic",
     ],
 )
 

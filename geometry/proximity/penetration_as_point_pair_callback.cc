@@ -3,6 +3,7 @@
 #include <limits>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -422,10 +423,9 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-template bool Callback<double>(fcl::CollisionObjectd*, fcl::CollisionObjectd*,
-                               void*);
-template bool Callback<AutoDiffXd>(fcl::CollisionObjectd*,
-                                   fcl::CollisionObjectd*, void*);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &Callback<T>
+))
 
 }  // namespace penetration_as_point_pair
 }  // namespace internal

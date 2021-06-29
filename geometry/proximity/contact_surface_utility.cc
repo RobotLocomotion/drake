@@ -5,6 +5,8 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 
 namespace geometry {
@@ -351,58 +353,21 @@ bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
 }
 
 // Instantiation to facilitate unit testing of this support function.
-template
-Vector3<double> CalcPolygonCentroid(
-    const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<double>& n_F,
-    const std::vector<SurfaceVertex<double>>& vertices_F);
-
-template
-Vector3<AutoDiffXd> CalcPolygonCentroid(
-    const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<AutoDiffXd>& n_F,
-    const std::vector<SurfaceVertex<AutoDiffXd>>& vertices_F);
-
-template Vector3<double> CalcPolygonCentroid(
-    const std::vector<Vector3<double>>&, const Vector3<double>&);
-
-template Vector3<AutoDiffXd> CalcPolygonCentroid(
-    const std::vector<Vector3<AutoDiffXd>>&, const Vector3<AutoDiffXd>&);
-
-template double CalcPolygonArea(const std::vector<Vector3<double>>&,
-                                const Vector3<double>&);
-
-template AutoDiffXd CalcPolygonArea(const std::vector<Vector3<AutoDiffXd>>&,
-                                    const Vector3<AutoDiffXd>&);
-
-template void AddPolygonToMeshData(
-    const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<double>& n_F,
-    std::vector<SurfaceFace>* faces,
-    std::vector<SurfaceVertex<double>>* vertices_F);
-
-template void AddPolygonToMeshData(
-    const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<AutoDiffXd>& n_F,
-    std::vector<SurfaceFace>* faces,
-    std::vector<SurfaceVertex<AutoDiffXd>>* vertices_F);
-
-template void AddPolygonToMeshDataAsOneTriangle(
-    const std::vector<Vector3<double>>&, const Vector3<double>&,
-    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<double>>*);
-
-template void AddPolygonToMeshDataAsOneTriangle(
-    const std::vector<Vector3<AutoDiffXd>>&, const Vector3<AutoDiffXd>&,
-    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<AutoDiffXd>>*);
-
-template bool IsFaceNormalInNormalDirection(
-    const Vector3<double>& normal_F, const SurfaceMesh<double>& surface_M,
-    SurfaceFaceIndex tri_index, const math::RotationMatrix<double>& R_FM);
-
-template bool IsFaceNormalInNormalDirection(
-    const Vector3<AutoDiffXd>& normal_F,
-    const SurfaceMesh<AutoDiffXd>& surface_M, SurfaceFaceIndex tri_index,
-    const math::RotationMatrix<AutoDiffXd>& R_FM);
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+    &AddPolygonToMeshData<T>,
+    &AddPolygonToMeshDataAsOneTriangle<T>,
+    &CalcPolygonArea<T>,
+    &IsFaceNormalInNormalDirection<T>,
+    /* Use static_cast to disambiguate the two different overloads. */
+    static_cast<Vector3<T>(*)(
+       const std::vector<SurfaceVertexIndex>&,
+       const Vector3<T>&,
+       const std::vector<SurfaceVertex<T>>&)>(&CalcPolygonCentroid),
+    /* Use static_cast to disambiguate the two different overloads. */
+    static_cast<Vector3<T>(*)(
+       const std::vector<Vector3<T>>&,
+       const Vector3<T>&)>(&CalcPolygonCentroid)
+))
 
 }  // namespace internal
 }  // namespace geometry

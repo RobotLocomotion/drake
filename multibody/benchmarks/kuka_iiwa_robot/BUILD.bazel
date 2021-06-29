@@ -31,6 +31,7 @@ drake_cc_library(
     ],
     deps = [
         ":make_kuka_iiwa_model",
+        "//common:default_scalars",
         "//math:geometric_transform",
         "//multibody/plant",
         "//multibody/test_utilities:spatial_kinematics",

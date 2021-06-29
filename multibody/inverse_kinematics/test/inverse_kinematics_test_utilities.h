@@ -26,6 +26,7 @@ void AddTwoFreeBodiesToPlant(MultibodyPlant<T>* model);
 
 /**
  * Constructs a MultibodyPlant consisting of two free bodies.
+ * @tparam_nonsymbolic_scalar
  */
 template <typename T>
 std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant();
@@ -141,6 +142,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
  * @param radius The radius of the sphere.
  * @param X_WB the pose of the box (B) in the world frame (W).
  * @param X_WS the pose of the sphere (S) in the world frame (W).
+ * @tparam_nonsymbolic_scalar
  */
 template <typename T>
 T BoxSphereSignedDistance(const Eigen::Ref<const Eigen::Vector3d>& box_size,
