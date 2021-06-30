@@ -3,7 +3,9 @@
 // library implements separate compilation.  So, we have to NOLINT it below.
 
 // Keep this sequence in sync with drake/common/filesystem.h.
-#if __has_include(<filesystem>) && !defined(__APPLE__)
+#if __has_include(<filesystem>) && !( \
+  defined(__APPLE__) || \
+  (!defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 9)))
 
 // No compilation required for std::filesystem.
 
