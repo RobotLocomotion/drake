@@ -13,6 +13,7 @@
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
+#include "drake/systems/framework/value_producer.h"
 
 namespace drake {
 namespace systems {
@@ -33,13 +34,10 @@ class LeafOutputPort final : public OutputPort<T> {
 
   ~LeafOutputPort() final = default;
 
-  // TODO(sherm1) These callbacks should not be specific to this class. Move
-  // elsewhere, e.g. framework_common.h so they can be shared with cache entry.
-
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular output port. The result is returned as an
   AbstractValue even if this is a vector-valued port. */
-  using AllocCallback = std::function<std::unique_ptr<AbstractValue>()>;
+  using AllocCallback = ValueProducer::AllocateCallback;
 
   /** Signature of a function suitable for calculating a value of a particular
   output port, given a place to put the value. */

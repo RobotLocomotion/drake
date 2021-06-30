@@ -6,6 +6,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/dummy_model.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/abstract_value_cloner.h"
 
 namespace drake {
 namespace multibody {
@@ -97,28 +98,29 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
   }
 
   /* Declares a cache entry that stores twice the additional state value. */
-  void DeclareCacheEntries(MultibodyPlant<T>* plant) final {
+  void DeclareCacheEntries() final {
+    // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
     cache_index_ =
-        plant
-            ->DeclareCacheEntry(
+        this->DeclareCacheEntry(
                 "Twice the additional_state value",
-                [=]() {
-                  const VectorX<T> model_value =
-                      VectorX<T>::Zero(kNumAdditionalDofs);
-                  return AbstractValue::Make(model_value);
-                },
-                [this](const ContextBase& context_base,
-                       AbstractValue* cache_value) {
-                  const auto& context =
-                      dynamic_cast<const Context<T>&>(context_base);
-                  VectorX<T>& data =
-                      cache_value->get_mutable_value<VectorX<T>>();
-                  data =
-                      2.0 * context.get_discrete_state(additional_state_index_)
-                                .get_value();
-                },
-                {systems::System<T>::xd_ticket()})
+                systems::ValueProducer(
+                    systems::internal::AbstractValueCloner(
+                        VectorXd(kNumAdditionalDofs)),
+                    [this](const ContextBase& context_base,
+                           AbstractValue* cache_value) {
+                      const auto& context =
+                          dynamic_cast<const Context<T>&>(context_base);
+                      VectorX<T>& data =
+                          cache_value->get_mutable_value<VectorX<T>>();
+                      this->CalcTwiceState(context, &data);
+                    }),
+                {systems::System<double>::xd_ticket()})
             .cache_index();
+  }
+
+  void CalcTwiceState(const Context<T>& context, VectorX<T>* data) const {
+    *data =
+        2.0 * context.get_discrete_state(additional_state_index_).get_value();
   }
 
   /* Increments the number of times CalcContactSolverResults() is called for

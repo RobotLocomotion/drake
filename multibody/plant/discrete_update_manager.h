@@ -91,9 +91,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DRAKE_DEMAND(plant != nullptr);
     DRAKE_DEMAND(plant->is_finalized());
     plant_ = plant;
+    mutable_plant_ = plant;
     multibody_state_index_ = plant_->GetDiscreteStateIndexOrThrow();
     ExtractModelInfo();
-    DeclareCacheEntries(plant);
+    DeclareCacheEntries();
   }
 
   /* Given the state of the model stored in `context`, this method performs the
@@ -154,8 +155,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   virtual void ExtractModelInfo() {}
 
   /* Derived DiscreteUpdateManager should override this method to declare
-   cache entries in the owning MultibodyPlant `plant`. */
-  virtual void DeclareCacheEntries(MultibodyPlant<T>*) {}
+   cache entries in the owning MultibodyPlant. */
+  virtual void DeclareCacheEntries() {}
 
   /* Returns the discrete state index of the rigid position and velocity states
    declared by MultibodyPlant. */
@@ -170,6 +171,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
   const MultibodyTree<T>& internal_tree() const;
+
+  systems::CacheEntry& DeclareCacheEntry(std::string description,
+                                         systems::ValueProducer,
+                                         std::set<systems::DependencyTicket>);
 
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
@@ -234,6 +239,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
  private:
   const MultibodyPlant<T>* plant_{nullptr};
+  MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
 };
 }  // namespace internal

@@ -52,6 +52,17 @@ const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
 }
 
 template <typename T>
+systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
+    std::string description, systems::ValueProducer value_producer,
+    std::set<systems::DependencyTicket> prerequisites_of_calc) {
+  DRAKE_DEMAND(mutable_plant_ != nullptr);
+  DRAKE_DEMAND(mutable_plant_ == plant_);
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::DeclareCacheEntry(
+      mutable_plant_, std::move(description), std::move(value_producer),
+      std::move(prerequisites_of_calc));
+}
+
+template <typename T>
 const contact_solvers::internal::ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
