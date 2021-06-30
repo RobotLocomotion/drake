@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <typeinfo>
 #include <unordered_map>
 
 #include "fmt/ostream.h"
@@ -334,7 +335,7 @@ class GeometryProperties {
     if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
       const Rgba color =
           GetValueOrThrow<Rgba>("GetProperty", group_name, name, abstract,
-                                NiceTypeName::Get<Eigen::Vector4d>());
+                                typeid(Eigen::Vector4d));
       return ToVector4d(color);
     } else {
       return GetValueOrThrow<ValueType>("GetProperty", group_name, name,
@@ -388,7 +389,7 @@ class GeometryProperties {
       if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
         const Rgba color = GetValueOrThrow<Rgba>(
             "GetPropertyOrDefault", group_name, name, *abstract,
-            NiceTypeName::Get<Eigen::Vector4d>());
+            typeid(Eigen::Vector4d));
         return ToVector4d(color);
       } else {
         // This incurs the cost of copying a stored value.
@@ -470,13 +471,13 @@ class GeometryProperties {
   static const ValueType& GetValueOrThrow(
       const std::string& method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract,
-      const std::string& nice_type_name = NiceTypeName::Get<ValueType>()) {
+      const std::type_info& requested_type = typeid(ValueType)) {
     const ValueType* value = abstract.maybe_get_value<ValueType>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property ('{}', '{}') exists, but is of a different type. "
           "Requested '{}', but found '{}'",
-          method, group_name, name, nice_type_name,
+          method, group_name, name, NiceTypeName::Get(requested_type),
           abstract.GetNiceTypeName()));
     }
     return *value;

@@ -2,6 +2,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/never_destroyed.h"
+
 namespace drake {
 namespace solvers {
 namespace {

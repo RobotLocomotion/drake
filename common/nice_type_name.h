@@ -43,17 +43,23 @@ This class exists only to group type name-related static methods; don't try
 to construct an object of this type. */
 class NiceTypeName {
  public:
-  /** Attempts to return a nicely demangled and canonicalized type name that is
-  the same on all platforms, using Canonicalize(). This is an expensive
-  operation but is only done once per instantiation of NiceTypeName::Get<T>()
-  for a given type `T`. The returned reference will not be deleted even at
-  program termination, so feel free to use it in error messages even in
-  destructors that may be invoked during program tear-down. */
+  /** Returns a nicely demangled and canonicalized type name that is the same
+  on all platforms, using Canonicalize(). This is calculated on the fly so is
+  expensive whenever called, though very reasonable for use in error messages.
+  For repeated or performance-sensitive uses, see GetFromStorage(). */
   template <typename T>
-  static const std::string& Get() {
-    static const never_destroyed<std::string> canonical(
-        NiceTypeName::Get(typeid(T)));
-    return canonical.access();
+  static std::string Get() {
+    return NiceTypeName::Get(typeid(T));
+  }
+
+  /** Like Get<T>() but only computed once per process for a given type `T`.
+  The returned reference will not be deleted even at program termination, so
+  feel free to use it in error messages even in destructors that may be
+  invoked during program tear-down. */
+  template <typename T>
+  static const std::string& GetFromStorage() {
+    static const never_destroyed<std::string> result(NiceTypeName::Get<T>());
+    return result.access();
   }
 
   /** Returns the type name of the most-derived type of an object of type T,

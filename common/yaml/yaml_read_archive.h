@@ -344,7 +344,7 @@ class YamlReadArchive final {
   void VariantHelperImpl(
       const std::string& tag, const char* name, Variant* storage) {
     if (((I == 0) && (tag.empty() || (tag == "?"))) ||
-        IsTagMatch(drake::NiceTypeName::Get<T>(), tag)) {
+        IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
       T typed_storage{};
       this->Visit(drake::MakeNameValue(name, &typed_storage));
       storage->template emplace<I>(std::move(typed_storage));

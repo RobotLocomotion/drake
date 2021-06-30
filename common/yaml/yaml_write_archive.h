@@ -306,7 +306,7 @@ class YamlWriteArchive final {
 
   template <typename T>
   static std::string GetVariantTag() {
-    const std::string full_name = NiceTypeName::Get<T>();
+    const std::string full_name = NiceTypeName::GetFromStorage<T>();
     if ((full_name == "std::string")
         || (full_name == "double")
         || (full_name == "int")) {
