@@ -4,6 +4,7 @@
 #include <optional>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -61,6 +62,9 @@ class ConvexSet : public ShapeReifier {
  public:
   virtual ~ConvexSet() {}
 
+  /** Creates a unique deep copy of this set. */
+  std::unique_ptr<ConvexSet> Clone() const;
+
   /** Returns the dimension of the vector space in which the elements of this
   set are evaluated.  Contrast this with the `affine dimension`: the
   dimension of the smallest affine subset of the ambient space that contains
@@ -100,8 +104,21 @@ class ConvexSet : public ShapeReifier {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
-  explicit ConvexSet(int ambient_dimension)
-      : ambient_dimension_{ambient_dimension} {}
+  /** For use by derived classes to construct a %ConvexSet.
+
+  @param cloner Function pointer to implement Clone(), typically of the form
+  `&ConvexSetCloner<Derived>`.
+
+  Here is a typical example:
+  @code
+   class MyConvexSet final : public ConvexSet {
+    public:
+     MyConvexSet() : ConvexSet(&ConvexSetCloner<MyConvexSet>, 3) {}
+     ...
+   };
+  @endcode */
+  ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
+            int ambient_dimension);
 
   // Non-virtual interface implementations.
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -114,8 +131,20 @@ class ConvexSet : public ShapeReifier {
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
+  std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner_;
   int ambient_dimension_{0};
 };
+
+/** (Advanced) Implementation helper for ConvexSet::Clone. Refer to the
+ConvexSet::ConvexSet() constructor documentation for an example. */
+template <typename Derived>
+std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
+  static_assert(std::is_base_of_v<ConvexSet, Derived>,
+                "Concrete sets *must* be derived from the ConvexSet class");
+  DRAKE_DEMAND(typeid(other) == typeid(Derived));
+  const auto& typed_other = static_cast<const Derived&>(other);
+  return std::make_unique<Derived>(typed_other);
+}
 
 // Forward declaration.
 class HyperEllipsoid;
