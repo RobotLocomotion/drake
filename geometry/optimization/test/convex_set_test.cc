@@ -214,6 +214,16 @@ GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
   EXPECT_NEAR(polytope_halfspace_residue.minCoeff(), 0, kTol);
 }
 
+GTEST_TEST(HPolyhedronTest, CloneTest) {
+  HPolyhedron H = HPolyhedron::MakeBox(Vector3d{-3, -4, -5}, Vector3d{6, 7, 8});
+  std::unique_ptr<ConvexSet> clone = H.Clone();
+  EXPECT_EQ(clone->ambient_dimension(), H.ambient_dimension());
+  HPolyhedron* pointer = dynamic_cast<HPolyhedron*>(clone.get());
+  ASSERT_NE(pointer, nullptr);
+  EXPECT_TRUE(CompareMatrices(H.A(), pointer->A()));
+  EXPECT_TRUE(CompareMatrices(H.b(), pointer->b()));
+}
+
 GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   // Test constructor.
   const Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
@@ -386,6 +396,16 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphere6DTest) {
   EXPECT_TRUE(E.PointInSet(in2));
   EXPECT_FALSE(E.PointInSet(out1));
   EXPECT_FALSE(E.PointInSet(out2));
+}
+
+GTEST_TEST(HyperEllipsoidTest, CloneTest) {
+  HyperEllipsoid E(Eigen::Matrix<double, 6, 6>::Identity(), Vector6d::Zero());
+  std::unique_ptr<ConvexSet> clone = E.Clone();
+  EXPECT_EQ(clone->ambient_dimension(), E.ambient_dimension());
+  HyperEllipsoid* pointer = dynamic_cast<HyperEllipsoid*>(clone.get());
+  ASSERT_NE(pointer, nullptr);
+  EXPECT_TRUE(CompareMatrices(E.A(), pointer->A()));
+  EXPECT_TRUE(CompareMatrices(E.center(), pointer->center()));
 }
 
 }  // namespace optimization
