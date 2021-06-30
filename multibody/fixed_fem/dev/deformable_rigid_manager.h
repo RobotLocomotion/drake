@@ -82,8 +82,8 @@ class DeformableRigidManager final
       const geometry::SceneGraph<T>& scene_graph) const;
 
  private:
-  /* Struct to hold data (friction, penetration distance, stiffness, and
-   damping) at each contact point. */
+  /* Struct to hold data (friction, signed distance (or an approximation
+   thereof), stiffness, and damping) at each contact point. */
   struct ContactPointData {
     VectorX<T> mu;
     VectorX<T> phi0;
@@ -278,10 +278,10 @@ class DeformableRigidManager final
 
   /* Calculates the combined friction, stiffness, damping, and penetration
    distance at all contact points. The way that the contact points are ordered
-   in `contact_point_data` is similar to that in CalcContactJacobian(). In
-   particular, the i-th entry in the `contact_point_data` corresponds to the
-   contact point associated with the 3*i, 3*i+1, and 3*i+2-th rows in the result
-   of CalcContactJacobian(). */
+   in `contact_point_data` is directly correlated with the entries in the result
+   of CalcContactJacobian(). In particular, the i-th entry in the
+   `contact_point_data` corresponds to the contact point associated with the
+   3*i, 3*i+1, and 3*i+2-th rows in the result of CalcContactJacobian(). */
   void CalcContactPointData(const systems::Context<T>& context,
                             ContactPointData* contact_point_data) const;
 

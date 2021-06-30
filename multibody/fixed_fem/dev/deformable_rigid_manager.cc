@@ -665,10 +665,9 @@ void DeformableRigidManager<T>::CalcContactPointData(
     ContactPointData* contact_point_data) const {
   DRAKE_DEMAND(contact_point_data != nullptr);
 
-  /* Get the rigid-rigid contact info. */
+  /* Get the rigid-rigid and deformable-rigid contact info. */
   const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs =
       this->EvalDiscreteContactPairs(context);
-  /* Get the deformable-rigid contact info. */
   const std::vector<internal::DeformableContactData<T>>&
       deformable_contact_data = EvalDeformableRigidContact(context);
 
@@ -681,41 +680,43 @@ void DeformableRigidManager<T>::CalcContactPointData(
   contact_point_data->Resize(nc);
 
   /* Alias for convenience. */
-  auto& mu = contact_point_data->mu;
-  auto& phi0 = contact_point_data->phi0;
-  auto& stiffness = contact_point_data->stiffness;
-  auto& damping = contact_point_data->damping;
+  VectorX<T>& mu = contact_point_data->mu;
+  VectorX<T>& phi0 = contact_point_data->phi0;
+  VectorX<T>& stiffness = contact_point_data->stiffness;
+  VectorX<T>& damping = contact_point_data->damping;
 
   /* First write the rigid contact data. */
   std::vector<CoulombFriction<double>> combined_friction_pairs =
       this->CalcCombinedFrictionCoefficients(context, rigid_contact_pairs);
-  std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
-                 mu.data(),
-                 [](const CoulombFriction<double>& coulomb_friction) {
-                   return coulomb_friction.dynamic_friction();
-                 });
   for (int i = 0; i < num_rigid_contacts; ++i) {
-    (phi0)[i] = rigid_contact_pairs[i].phi0;
-    (stiffness)[i] = rigid_contact_pairs[i].stiffness;
-    (damping)[i] = rigid_contact_pairs[i].damping;
+    mu[i] = combined_friction_pairs[i].dynamic_friction();
+    phi0[i] = rigid_contact_pairs[i].phi0;
+    stiffness[i] = rigid_contact_pairs[i].stiffness;
+    damping[i] = rigid_contact_pairs[i].damping;
   }
 
   /* Then write the deformable contact data. */
   int contact_offset = num_rigid_contacts;
-  for (const internal::DeformableContactData<T>& data :
-       deformable_contact_data) {
-    for (const internal::DeformableRigidContactPair<T>& contact_pair :
-         data.contact_pairs()) {
-      const int nc_in_pair = contact_pair.num_contact_points();
+  /* Loop over deformable bodies. */
+  for (const internal::DeformableContactData<T>&
+           per_deformable_body_contact_data : deformable_contact_data) {
+    /* For each deformable body, loop over rigid object in contact with the
+     deformable body. */
+    for (const internal::DeformableRigidContactPair<T>&
+             deformable_rigid_contact_pair :
+         per_deformable_body_contact_data.contact_pairs()) {
+      const int nc_in_pair = deformable_rigid_contact_pair.num_contact_points();
       // TODO(xuchenhan-tri): Set phi0 to actual values when they are
       //  calculated.
       phi0.segment(contact_offset, nc_in_pair) = VectorX<T>::Zero(nc_in_pair);
       mu.segment(contact_offset, nc_in_pair) =
-          VectorX<T>::Ones(nc_in_pair) * contact_pair.friction;
+          VectorX<T>::Ones(nc_in_pair) * deformable_rigid_contact_pair.friction;
       stiffness.segment(contact_offset, nc_in_pair) =
-          VectorX<T>::Ones(nc_in_pair) * contact_pair.stiffness;
+          VectorX<T>::Ones(nc_in_pair) *
+          deformable_rigid_contact_pair.stiffness;
       damping.segment(contact_offset, nc_in_pair) =
-          VectorX<T>::Ones(nc_in_pair) * contact_pair.dissipation;
+          VectorX<T>::Ones(nc_in_pair) *
+          deformable_rigid_contact_pair.dissipation;
       contact_offset += nc_in_pair;
     }
   }
