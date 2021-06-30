@@ -1897,12 +1897,15 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }
 
 template <typename T>
-std::vector<internal::DiscreteContactPair<T>>
-MultibodyPlant<T>::CalcDiscreteContactPairs(
-    const systems::Context<T>& context) const {
+void MultibodyPlant<T>::CalcDiscreteContactPairs(
+    const systems::Context<T>& context,
+    std::vector<internal::DiscreteContactPair<T>>* result) const {
   this->ValidateContext(context);
+  DRAKE_DEMAND(result != nullptr);
+  std::vector<internal::DiscreteContactPair<T>>& contact_pairs = *result;
+  contact_pairs.clear();
 
-  if (num_collision_geometries() == 0) return {};
+  if (num_collision_geometries() == 0) return;
 
   // N.B. For discrete hydro we use a first order quadrature rule.
   // Higher order quadratures are possible, however using a lower order
@@ -1942,9 +1945,8 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
         num_quadrature_pairs += num_quad_points * mesh.num_faces();
       }
     }
-    const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
 
-    std::vector<internal::DiscreteContactPair<T>> contact_pairs;
+    const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
     contact_pairs.reserve(num_contact_pairs);
 
     const auto& query_object = EvalGeometryQueryInput(context);
@@ -2093,8 +2095,6 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
         }
       }
     }
-
-    return contact_pairs;
   } else {
     drake::unused(context);
     throw std::domain_error(fmt::format("This method doesn't support T = {}.",
@@ -2916,7 +2916,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Cache discrete contact pairs.
   const auto& discrete_contact_pairs_cache_entry = this->DeclareCacheEntry(
       "Discrete contact pairs.",
-      std::vector<internal::DiscreteContactPair<T>>(),
       &MultibodyPlant::CalcDiscreteContactPairs,
       {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
