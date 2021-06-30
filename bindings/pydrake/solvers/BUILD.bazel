@@ -402,6 +402,8 @@ drake_py_unittest(
     deps = [
         ":gurobi_py",
         ":mathematicalprogram_py",
+        ":osqp_py",
+        ":scs_py",
         ":snopt_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
