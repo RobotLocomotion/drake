@@ -4218,8 +4218,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // hydroelastic queries and prepares the results in the form of a list of
   // DiscreteContactPair to be consummed by our discrete solvers.
   // TODO(amcastro-tri): consider adding a separate unit test for this method.
-  std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
-      const systems::Context<T>& context) const;
+  void CalcDiscreteContactPairs(
+      const systems::Context<T>&,
+      std::vector<internal::DiscreteContactPair<T>>*) const;
 
   // Eval version of the method CalcDiscreteContactPairs().
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
@@ -4486,7 +4487,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
 
-  // Populates the ContactJacobians cache struct via CalcDiscreteContactPairs
+  // Populates the ContactJacobians cache struct via EvalDiscreteContactPairs
   // and CalcNormalAndTangentContactJacobians.
   void CalcContactJacobiansCache(
       const systems::Context<T>& context,
