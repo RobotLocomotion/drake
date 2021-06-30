@@ -10,6 +10,7 @@
 #include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/framework_common.h"
+#include "drake/systems/framework/value_producer.h"
 
 namespace drake {
 namespace systems {
@@ -43,18 +44,20 @@ class CacheEntry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CacheEntry)
 
-  // TODO(sherm1) These callbacks should not be specific to this class. Move
-  // elsewhere, e.g. framework_common.h so they can be shared with output port.
-
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular cache entry. The result is always returned as an
   AbstractValue but must contain the correct concrete type. */
-  using AllocCallback =
-      std::function<std::unique_ptr<AbstractValue>()>;
+  using AllocCallback
+      DRAKE_DEPRECATED("2021-10-01",
+          "Use ValueProducer::AllocateCallback instead.")
+      = ValueProducer::AllocateCallback;
 
   /** Signature of a function suitable for calculating a value of a particular
   cache entry, given a place to put the value. */
-  using CalcCallback = std::function<void(const ContextBase&, AbstractValue*)>;
+  using CalcCallback
+      DRAKE_DEPRECATED("2021-10-01",
+          "Use ValueProducer::CalcCallback instead.")
+      = ValueProducer::CalcCallback;
 
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.
@@ -66,6 +69,7 @@ class CacheEntry {
   @ref DeclareCacheEntry_documentation "DeclareCacheEntry" for the
   user-facing API documentation.
 
+  The ValueProducer embeds both an allocator and calculator function.
   The supplied allocator must return a suitable AbstractValue in which to
   hold the result. The supplied calculator function must write to an
   AbstractValue of the same underlying concrete type as is returned by the
@@ -87,8 +91,16 @@ class CacheEntry {
   @see drake::systems::SystemBase::DeclareCacheEntry() */
   CacheEntry(const internal::SystemMessageInterface* owning_system,
              CacheIndex index, DependencyTicket ticket, std::string description,
-             AllocCallback alloc_function, CalcCallback calc_function,
+             ValueProducer value_producer,
              std::set<DependencyTicket> prerequisites_of_calc);
+
+  DRAKE_DEPRECATED("2021-10-01", "Use the ValueProducer overload instead.")
+  CacheEntry(
+      const internal::SystemMessageInterface* owning_system,
+      CacheIndex index, DependencyTicket ticket, std::string description,
+      std::function<std::unique_ptr<AbstractValue>()> alloc_function,
+      std::function<void(const ContextBase&, AbstractValue*)> calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc);
 
   /** Returns a reference to the set of prerequisites needed by this cache
   entry's Calc() function. These are all within the same subsystem that
@@ -360,8 +372,7 @@ class CacheEntry {
   // but useful for error messages.
   const std::string description_;
 
-  const AllocCallback alloc_function_;
-  const CalcCallback calc_function_;
+  const ValueProducer value_producer_;
 
   // The list of prerequisites for the calc_function. Whenever one of these
   // changes, the cache value must be recalculated. Note that all possible

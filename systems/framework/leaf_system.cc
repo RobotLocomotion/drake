@@ -330,9 +330,10 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
   // this storage is responsible for ensuring that no stale data is used.
   scratch_cache_index_ =
       this->DeclareCacheEntry(
-          "scratch",
-          []() { return AbstractValue::Make<Scratch<T>>(); },
-          [](const ContextBase&, AbstractValue*) { /* do nothing */ },
+          // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
+          "scratch", ValueProducer(
+              MakeAllocateCallback(Scratch<T>{}),
+              &ValueProducer::NoopCalc),
           {this->nothing_ticket()}).cache_index();
 
   per_step_events_.set_system_id(this->get_system_id());
@@ -673,7 +674,7 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
     std::set<DependencyTicket> prerequisites_of_calc) {
   auto& port = CreateVectorLeafOutputPort(NextOutputPortName(std::move(name)),
-      model_vector.size(), MakeAllocCallback(model_vector),
+      model_vector.size(), MakeAllocateCallback(model_vector),
       std::move(vector_calc_function), std::move(prerequisites_of_calc));
   return port;
 }
@@ -923,8 +924,10 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
 
   // The allocator function is identical between output port and cache.
   return CreateCachedLeafOutputPort(
-      std::move(name), fixed_size, std::move(vector_allocator),
-      std::move(cache_calc_function), std::move(calc_prerequisites));
+      std::move(name), fixed_size,
+      ValueProducer(
+          std::move(vector_allocator), std::move(cache_calc_function)),
+      std::move(calc_prerequisites));
 }
 
 template <typename T>
@@ -942,23 +945,22 @@ LeafOutputPort<T>& LeafSystem<T>::CreateAbstractLeafOutputPort(
   };
 
   return CreateCachedLeafOutputPort(
-      std::move(name), std::nullopt /* size */, std::move(allocator),
-      std::move(cache_calc_function), std::move(calc_prerequisites));
+      std::move(name), std::nullopt /* size */,
+      ValueProducer(std::move(allocator), std::move(cache_calc_function)),
+      std::move(calc_prerequisites));
 }
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateCachedLeafOutputPort(
     std::string name, const std::optional<int>& fixed_size,
-    typename CacheEntry::AllocCallback allocator,
-    typename CacheEntry::CalcCallback calculator,
+    ValueProducer value_producer,
     std::set<DependencyTicket> calc_prerequisites) {
   DRAKE_DEMAND(!calc_prerequisites.empty());
   // Create a cache entry for this output port.
   const OutputPortIndex oport_index(this->num_output_ports());
   CacheEntry& cache_entry = this->DeclareCacheEntry(
       "output port " + std::to_string(oport_index) + "(" + name + ") cache",
-      std::move(allocator), std::move(calculator),
-      std::move(calc_prerequisites));
+      std::move(value_producer), std::move(calc_prerequisites));
 
   // Create and install the port. Note that it has a separate ticket from
   // the cache entry; the port's tracker will be subscribed to the cache

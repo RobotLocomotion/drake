@@ -91,7 +91,7 @@ class MySystemBase final : public SystemBase {
   MySystemBase()
         // 1. Use the most general method, taking free functions. Unspecified
         //    prerequisites should default to all_sources_ticket().
-      : entry0_(DeclareCacheEntry("entry0", Alloc3, Calc99)),
+      : entry0_(DeclareCacheEntry("entry0", ValueProducer(Alloc3, Calc99))),
         // 2. Use the method that takes two member functions.
         entry1_(DeclareCacheEntry("entry1", &MySystemBase::MakeInt1,
                                   &MySystemBase::CalcInt98,
@@ -160,6 +160,8 @@ class MySystemBase final : public SystemBase {
     out->set_value(Vector3d(3., 2., 1.));
   }
 
+  using SystemBase::DeclareCacheEntry;
+
  private:
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
     auto context = std::make_unique<MyContextBase>();
@@ -190,7 +192,8 @@ class MySystemBase final : public SystemBase {
 // we allocate a Context.
 GTEST_TEST(CacheEntryAllocTest, BadAllocGetsCaught) {
   MySystemBase system;
-  system.DeclareCacheEntry("bad alloc entry", AllocNull, Calc99,
+  system.DeclareCacheEntry("bad alloc entry",
+                           ValueProducer(AllocNull, Calc99),
                            {system.nothing_ticket()});
   // Error messages should include the System name and type, cache entry
   // description, and the specific message. The first three are boilerplate so
@@ -209,21 +212,23 @@ GTEST_TEST(CacheEntryAllocTest, BadAllocGetsCaught) {
 // dependencies is `{nothing_ticket()}`.
 GTEST_TEST(CacheEntryAllocTest, EmptyPrerequisiteListForbidden) {
   MySystemBase system;
+  const ValueProducer alloc3_calc99(Alloc3, Calc99);
   DRAKE_EXPECT_NO_THROW(
-      system.DeclareCacheEntry("default prerequisites", Alloc3, Calc99));
+      system.DeclareCacheEntry("default prerequisites", alloc3_calc99));
   DRAKE_EXPECT_NO_THROW(
       system.DeclareCacheEntry(
-          "no prerequisites", Alloc3, Calc99, {system.nothing_ticket()}));
+          "no prerequisites", alloc3_calc99, {system.nothing_ticket()}));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      system.DeclareCacheEntry("empty prerequisites", Alloc3, Calc99, {}),
+      system.DeclareCacheEntry("empty prerequisites", alloc3_calc99, {}),
       std::logic_error,
       ".*[Cc]annot create.*empty prerequisites.*nothing_ticket.*");
 }
 
 GTEST_TEST(CacheEntryAllocTest, DetectsDefaultPrerequisites) {
   MySystemBase system;
+  const ValueProducer alloc3_calc99(Alloc3, Calc99);
   const CacheEntry& default_prereqs =
-      system.DeclareCacheEntry("default prerequisites", Alloc3, Calc99);
+      system.DeclareCacheEntry("default prerequisites", alloc3_calc99);
   EXPECT_TRUE(default_prereqs.has_default_prerequisites());
 
   // TODO(sherm1) Currently we treat default prerequisites and explicit
@@ -231,7 +236,7 @@ GTEST_TEST(CacheEntryAllocTest, DetectsDefaultPrerequisites) {
   // limitation. Ideally explicit specification of anything should be considered
   // non-default. Replace this test when that's fixed.
   const CacheEntry& explicit_default_prereqs =
-      system.DeclareCacheEntry("explicit default prerequisites", Alloc3, Calc99,
+      system.DeclareCacheEntry("explicit default prerequisites", alloc3_calc99,
                                {system.all_sources_ticket()});
   EXPECT_TRUE(
       explicit_default_prereqs.has_default_prerequisites());  // Not good.
@@ -239,20 +244,30 @@ GTEST_TEST(CacheEntryAllocTest, DetectsDefaultPrerequisites) {
   // This specifies exactly the same dependencies as all_sources_ticket() but
   // in a way that is clearly non-default.
   const CacheEntry& long_form_all_sources_prereqs = system.DeclareCacheEntry(
-      "long form all sources prerequisites", Alloc3, Calc99,
+      "long form all sources prerequisites", alloc3_calc99,
       {system.all_sources_except_input_ports_ticket(),
        system.all_input_ports_ticket()});
   EXPECT_FALSE(
       long_form_all_sources_prereqs.has_default_prerequisites());  // Good!
 
   const CacheEntry& no_prereqs = system.DeclareCacheEntry(
-      "no prerequisites", Alloc3, Calc99, {system.nothing_ticket()});
+      "no prerequisites", alloc3_calc99, {system.nothing_ticket()});
   EXPECT_FALSE(no_prereqs.has_default_prerequisites());
 
   const CacheEntry& time_only_prereq = system.DeclareCacheEntry(
-      "time only prerequisite", Alloc3, Calc99, {system.time_ticket()});
+      "time only prerequisite", alloc3_calc99, {system.time_ticket()});
   EXPECT_FALSE(time_only_prereq.has_default_prerequisites());
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Sanity check deprecated method.
+GTEST_TEST(CacheEntryDeprecationTest, Constructor) {
+  MySystemBase system;
+  const CacheEntry& dut = system.DeclareCacheEntry("dut", Alloc3, Calc99);
+  EXPECT_TRUE(dut.has_default_prerequisites());
+}
+#pragma GCC diagnostic pop
 
 // Allocate a System and Context and provide some convenience methods.
 class CacheEntryTest : public ::testing::Test {
