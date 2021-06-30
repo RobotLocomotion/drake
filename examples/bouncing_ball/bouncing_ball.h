@@ -32,9 +32,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
     this->DeclareContinuousState(1, 1, 0);
 
     // The state of the system is output.
-    this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                  systems::BasicVector<T>(2),
-                                  &BouncingBall::CopyStateOut);
+    this->DeclareStateOutputPort(systems::kUseDefaultName,
+                                 systems::ContinuousStateIndex{0});
 
     // Declare the witness function.
     signed_distance_witness_ = this->MakeWitnessFunction(
@@ -65,12 +64,6 @@ class BouncingBall final : public systems::LeafSystem<T> {
   T CalcSignedDistance(const systems::Context<T>& context) const {
     const systems::VectorBase<T>& xc = context.get_continuous_state_vector();
     return xc.GetAtIndex(0);
-  }
-
-  void CopyStateOut(const systems::Context<T>& context,
-                    systems::BasicVector<T>* output) const {
-    output->get_mutable_value() =
-        context.get_continuous_state().CopyToVector();
   }
 
   void DoCalcTimeDerivatives(

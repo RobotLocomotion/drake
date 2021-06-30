@@ -66,10 +66,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   double g() const { return g_; }
 
  private:
-  // Callback for writing the state vector to an output.
-  void CopyStateToOutput(const systems::Context<T>& context,
-                         BouncingBallVector<T>* state_output_vector) const;
-
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;

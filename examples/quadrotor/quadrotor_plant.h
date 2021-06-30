@@ -46,9 +46,6 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  void CopyStateOut(const systems::Context<T>& context,
-                    systems::BasicVector<T>* output) const;
-
   // Allow different specializations to access each other's private data.
   template <typename> friend class QuadrotorPlant;
 

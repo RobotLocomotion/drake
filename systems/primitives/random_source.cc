@@ -82,16 +82,11 @@ RandomSourceT<T>::RandomSourceT(RandomDistribution distribution,
       distribution_(distribution),
       sampling_interval_sec_{sampling_interval_sec},
       instance_seed_{get_next_seed()} {
-  this->DeclareDiscreteState(num_outputs);
+  auto discrete_state_index = this->DeclareDiscreteState(num_outputs);
   this->DeclareAbstractState(Value<SampleGenerator>());
   this->DeclarePeriodicUnrestrictedUpdateEvent(
       sampling_interval_sec, 0., &RandomSourceT<T>::UpdateSamples);
-  this->DeclareVectorOutputPort(
-      "output", BasicVector<T>(num_outputs),
-      [](const Context<T>& context, BasicVector<T>* output) {
-        const auto& values = context.get_discrete_state(0);
-        output->SetFrom(values);
-      });
+  this->DeclareStateOutputPort("output", discrete_state_index);
 }
 
 template <typename T>
