@@ -1,6 +1,8 @@
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
+from pydrake.solvers.scs import ScsSolver
+from pydrake.solvers.osqp import OsqpSolver
 from pydrake.solvers.mathematicalprogram import (
     LinearConstraint,
     MathematicalProgramResult,
@@ -1027,6 +1029,15 @@ class TestMathematicalProgram(unittest.TestCase):
         np.testing.assert_array_equal(cnstr.evaluator().F()[0], F[0])
         np.testing.assert_array_equal(cnstr.evaluator().F()[1], F[1])
         self.assertEqual(len(prog.linear_matrix_inequality_constraints()), 1)
+
+    def test_solver_id(self):
+        self.assertEqual(ScsSolver().solver_id(), ScsSolver().solver_id())
+        self.assertNotEqual(ScsSolver().solver_id(), OsqpSolver().solver_id())
+        # Test the hash function, by checking the set size.
+        self.assertEqual(
+            len({ScsSolver().solver_id(), ScsSolver().solver_id()}), 1)
+        self.assertEqual(
+            len({ScsSolver().solver_id(), OsqpSolver().solver_id()}), 2)
 
     def test_solver_options(self):
         prog = mp.MathematicalProgram()
