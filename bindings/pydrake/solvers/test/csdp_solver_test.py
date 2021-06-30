@@ -5,6 +5,7 @@ import numpy as np
 
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.csdp import CsdpSolver
+import pydrake.solvers.sdpa_free_format as sdpa_free_format
 
 
 class TestCsdpSolver(unittest.TestCase):
@@ -49,6 +50,12 @@ class TestCsdpSolver(unittest.TestCase):
         z_expected[3:, 3:] = np.diag([2., 2., 0.75, 1.])
         np.testing.assert_allclose(
             result.get_solver_details().Z_val.toarray(), z_expected, atol=1e-8)
+
+        # Test removing free variables with a non-default method.
+        solver = CsdpSolver(
+            method=sdpa_free_format.RemoveFreeVariableMethod.kLorentzConeSlack)
+        result = solver.Solve(prog, None, None)
+        self.assertTrue(result.is_success())
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when CSDP is disabled."""

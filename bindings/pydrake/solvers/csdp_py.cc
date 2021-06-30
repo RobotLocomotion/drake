@@ -18,9 +18,12 @@ PYBIND11_MODULE(csdp, m) {
 
   py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
+  py::module::import("pydrake.solvers.sdpa_free_format");
 
   py::class_<CsdpSolver, SolverInterface>(m, "CsdpSolver", doc.CsdpSolver.doc)
-      .def(py::init<>(), doc.CsdpSolver.ctor.doc);
+      .def(py::init<RemoveFreeVariableMethod>(),
+          py::arg("method") = RemoveFreeVariableMethod::kNullspace,
+          doc.CsdpSolver.ctor.doc);
 
   py::class_<CsdpSolverDetails>(
       m, "CsdpSolverDetails", doc.CsdpSolverDetails.doc)
