@@ -1,7 +1,6 @@
 #include "drake/systems/framework/value_producer.h"
 
 #include <stdexcept>
-#include <utility>
 
 namespace drake {
 namespace systems {
