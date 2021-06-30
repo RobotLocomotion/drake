@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="parent_model">
+    <!-- Testing frames attached to links in the same model -->
+    <link name="L1"/>
+    <link name="L2"/>
+
+    <frame name="L1_offset" attached_to="L1">
+      <pose>1 2 3   0 0 0</pose>
+    </frame>
+    <frame name="L2_offset" attached_to="L2">
+      <pose>4 5 6   0 0 0</pose>
+    </frame>
+
+    <joint name="J1" type="fixed">
+      <parent>L1_offset</parent>
+      <child>L2_offset</child>
+    </joint>
+
+    <!-- Testing frames attached to links in the other (nested) models -->
+    <model name="M1">
+      <link name="base_link"/>
+    </model>
+    <model name="M2">
+      <link name="base_link"/>
+    </model>
+
+    <frame name="M1_base_link_offset" attached_to="M1::base_link">
+      <pose>1 2 3   0 0 0</pose>
+    </frame>
+    <frame name="M2_base_link_offset" attached_to="M2::base_link">
+      <pose>4 5 6   0 0 0</pose>
+    </frame>
+
+    <joint name="J2" type="fixed">
+      <parent>M1_base_link_offset</parent>
+      <child>M2_base_link_offset</child>
+    </joint>
+  </model>
+</sdf>
