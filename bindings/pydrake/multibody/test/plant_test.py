@@ -1305,19 +1305,6 @@ class TestPlant(unittest.TestCase):
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa))
 
     @numpy_compare.check_all_types
-    def test_deprecated_weld_frames_variant(self, T):
-        # Tests deprecated parameter names variant of WeldFrames(); remove
-        # after 2021-07-01.
-        plant = MultibodyPlant_[T](time_step=0.0002)
-        body = plant.AddRigidBody("body", SpatialInertia_[float]())
-        X_WB = RigidTransform_[float]()
-        with catch_drake_warnings(expected_count=1):
-            plant.WeldFrames(
-                A=plant.world_frame(),
-                B=body.body_frame(),
-                X_AB=X_WB)
-
-    @numpy_compare.check_all_types
     def test_model_instance_state_access_by_array(self, T):
         # N.B. Please check warning above in `check_multibody_state_access`.
         MultibodyPlant = MultibodyPlant_[T]
@@ -1545,26 +1532,6 @@ class TestPlant(unittest.TestCase):
                 X_PC=X_PC,
             )
 
-        def make_deprecated_weld_joint(plant, P, C):
-            # Tests deprecated parameter name variant; remove after 2021-07-01.
-            with catch_drake_warnings(expected_count=1):
-                return WeldJoint_[T](
-                    name="weld",
-                    parent_frame_P=P,
-                    child_frame_C=C,
-                    X_PC=X_PC,
-                )
-
-        def make_noparams_weld_joint(plant, P, C):
-            # Tests deprecated parameter name variant does not interfere;
-            # remove after 2021-07-01.
-            return WeldJoint_[T](
-                "weld",
-                P,
-                C,
-                X_PC,
-            )
-
         make_joint_list = [
             make_ball_rpy_joint,
             make_planar_joint,
@@ -1572,8 +1539,6 @@ class TestPlant(unittest.TestCase):
             make_revolute_joint,
             make_universal_joint,
             make_weld_joint,
-            make_deprecated_weld_joint,
-            make_noparams_weld_joint,
         ]
 
         def loop_body(make_joint):
