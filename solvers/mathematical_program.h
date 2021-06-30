@@ -2976,6 +2976,43 @@ class MathematicalProgram {
     return EvalBinding(binding, x_initial_guess_);
   }
 
+  /**
+   * Evaluates CheckSatisfied for the constraint in @p binding using the value
+   * of ALL of the decision variables in this program.
+   * @throws std::exception if the size of `prog_var_vals` is invalid.
+   */
+  bool CheckSatisfied(const Binding<Constraint>& binding,
+                      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals,
+                      double tol = 1e-6) const;
+
+  /**
+   * Evaluates CheckSatisfied for the all of the constraints in @p binding using
+   * the value of ALL of the decision variables in this program.
+   * @returns true iff all of the constraints are satisfied.
+   * @throws std::exception if the size of `prog_var_vals` is invalid.
+   * @pydrake_mkdoc_identifier{vector}
+   */
+  bool CheckSatisfied(const std::vector<Binding<Constraint>>& bindings,
+                      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals,
+                      double tol = 1e-6) const;
+
+  /**
+   * Evaluates CheckSatisfied for the constraint in @p binding at the initial
+   * guess.
+   */
+  bool CheckSatisfiedAtInitialGuess(const Binding<Constraint>& binding,
+                                    double tol = 1e-6) const;
+
+  /**
+   * Evaluates CheckSatisfied for the all of the constraints in @p bindings at
+   * the initial guess.
+   * @returns true iff all of the constraints are satisfied.
+   * @pydrake_mkdoc_identifier{vector}
+   */
+  bool CheckSatisfiedAtInitialGuess(
+      const std::vector<Binding<Constraint>>& bindings,
+      double tol = 1e-6) const;
+
   /** Getter for all decision variables in the program. */
   const VectorXDecisionVariable& decision_variables() const {
     return decision_variables_;

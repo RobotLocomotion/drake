@@ -2823,6 +2823,51 @@ GTEST_TEST(TestMathematicalProgram, TestGetBindingVariableValues) {
                               Vector2d(-2, 2)));
 }
 
+GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  const auto y = prog.NewContinuousVariables<2>();
+  std::vector<Binding<Constraint>> bindings;
+  bindings.emplace_back(prog.AddBoundingBoxConstraint(-.3, .4, x));
+  bindings.emplace_back(prog.AddBoundingBoxConstraint(-2, 5, y));
+  bindings.emplace_back(
+      prog.AddLinearEqualityConstraint(y[0] == 3 * x[0] + 2 * x[1]));
+
+  Vector3d x_guess = Vector3d::Constant(.39);
+  Vector2d y_guess = Vector2d::Constant(4.99);
+  y_guess[0] = 3*x_guess[0] + 2*x_guess[1];
+  prog.SetInitialGuess(x, x_guess);
+  prog.SetInitialGuess(y, y_guess);
+  EXPECT_TRUE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
+  EXPECT_TRUE(prog.CheckSatisfied(bindings[1], prog.initial_guess(), 0));
+  EXPECT_TRUE(prog.CheckSatisfied(bindings[2], prog.initial_guess(), 1e-16));
+
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[2], 1e-16));
+
+  EXPECT_TRUE(prog.CheckSatisfied(bindings, prog.initial_guess(), 1e-16));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings, 1e-16));
+
+  x_guess[2] = .41;
+  prog.SetInitialGuess(x, x_guess);
+  EXPECT_FALSE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
+  EXPECT_FALSE(prog.CheckSatisfied(bindings, prog.initial_guess(), 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings, 1e-16));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
+
+  x_guess[2] = .39;
+  y_guess[0] = 3*x_guess[0] + 2*x_guess[1] + 0.2;
+  prog.SetInitialGuess(x, x_guess);
+  prog.SetInitialGuess(y, y_guess);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
+  EXPECT_FALSE(prog.CheckSatisfied(bindings[2], prog.initial_guess(), 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings[2], 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfied(bindings, prog.initial_guess(), 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings, 1e-16));
+}
+
 GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();

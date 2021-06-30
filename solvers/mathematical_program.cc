@@ -393,7 +393,7 @@ Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
 }
 
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
-  // See AddCost(const Binding<Constraint>&) for explanation
+  // See AddConstraint(const Binding<Constraint>&) for explanation
   Cost* cost = binding.evaluator().get();
   if (dynamic_cast<QuadraticCost*>(cost)) {
     return AddCost(internal::BindingDynamicCast<QuadraticCost>(binding));
@@ -1210,6 +1210,34 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
     throw runtime_error(oss.str());
   }
   return it->second;
+}
+
+bool MathematicalProgram::CheckSatisfied(
+    const Binding<Constraint>& binding,
+    const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals, double tol) const {
+  const Eigen::VectorXd vals = GetBindingVariableValues(binding, prog_var_vals);
+  return binding.evaluator()->CheckSatisfied(vals, tol);
+}
+
+bool MathematicalProgram::CheckSatisfied(
+    const std::vector<Binding<Constraint>>& bindings,
+    const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals, double tol) const {
+  for (const auto& b : bindings) {
+    if (!CheckSatisfied(b, prog_var_vals, tol)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MathematicalProgram::CheckSatisfiedAtInitialGuess(
+    const Binding<Constraint>& binding, double tol) const {
+  return CheckSatisfied(binding, x_initial_guess_, tol);
+}
+
+bool MathematicalProgram::CheckSatisfiedAtInitialGuess(
+    const std::vector<Binding<Constraint>>& bindings, double tol) const {
+  return CheckSatisfied(bindings, x_initial_guess_, tol);
 }
 
 namespace {
