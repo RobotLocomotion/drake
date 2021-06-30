@@ -186,9 +186,9 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
     const double accel =
         output->get_vector_data(dut.get_acceleration_output_port().get_index())
             ->GetAtIndex(0);
-    EXPECT_FLOAT_EQ(velocity, 0)
+    EXPECT_NEAR(velocity, 0, 1e-15)
               << "Failed at interpolator type: " << interp_str;
-    EXPECT_FLOAT_EQ(accel, 0)
+    EXPECT_NEAR(accel, 0, 1e-15)
               << "Failed at interpolator type: " << interp_str;
   }
 
