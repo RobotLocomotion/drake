@@ -77,8 +77,8 @@ namespace internal {
 template <typename T>
 RandomSourceT<T>::RandomSourceT(RandomDistribution distribution,
                                 int num_outputs, double sampling_interval_sec)
-    : LeafSystem<T>(SystemScalarConverter(SystemTypeTag<RandomSourceT>{},
-          SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)),
+    : LeafSystem<T>(
+          SystemScalarConverter::MakeWithoutSubtypeChecking<RandomSourceT>()),
       distribution_(distribution),
       sampling_interval_sec_{sampling_interval_sec},
       instance_seed_{get_next_seed()} {
