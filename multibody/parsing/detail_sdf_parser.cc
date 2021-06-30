@@ -83,6 +83,44 @@ std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
   return {resolved_model_instance, unscoped_local_name};
 }
 
+// Calculates the relative name of a body relative to the model instance @p
+// relative_to_model_instance. If the body is a direct child of the model,
+// this simply returns the local name of the body. However, if the body is
+// a child of a nested model, the local name of the body is prefixed with the
+// relative name of the nested model.
+std::string GetRelativeBodyName(
+    const Body<double>& body,
+    ModelInstanceIndex relative_to_model_instance,
+    const MultibodyPlant<double>& plant) {
+  const std::string& relative_to_model_absolute_name =
+      plant.GetModelInstanceName(relative_to_model_instance);
+  // If the body is inside a nested model, we need to prefix the
+  // name with the relative name of the nested model.
+  if (body.model_instance() != relative_to_model_instance) {
+    const std::string& nested_model_absolute_name =
+        plant.GetModelInstanceName(body.model_instance());
+    // The relative_to_model_absolute_name must be a prefix of the
+    // nested_model_absolute_name. Otherwise the nested model is not a
+    // descendent of the model relative to which we are computing the name.
+    DRAKE_DEMAND(0 == nested_model_absolute_name.compare(
+                          0, relative_to_model_absolute_name.size(),
+                          relative_to_model_absolute_name));
+
+    DRAKE_DEMAND(nested_model_absolute_name.size() >
+                 relative_to_model_absolute_name.size() +
+                     sdf::kSdfScopeDelimiter.size());
+
+    const std::string nested_model_relative_name =
+        nested_model_absolute_name.substr(
+            relative_to_model_absolute_name.size() +
+            sdf::kSdfScopeDelimiter.size());
+
+    return sdf::JoinName(nested_model_relative_name, body.name());
+  } else {
+    return body.name();
+  }
+}
+
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -415,8 +453,9 @@ void AddJointFromSpecification(
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
   // joint will be the child link.
-  const RigidTransformd X_CJ =
-      ResolveRigidTransform(joint_spec.SemanticPose());
+  const RigidTransformd X_CJ = ResolveRigidTransform(
+      joint_spec.SemanticPose(),
+      GetRelativeBodyName(child_body, model_instance, *plant));
 
   // Pose of the frame J in the parent body frame P.
   std::optional<RigidTransformd> X_PJ;
@@ -429,7 +468,8 @@ void AddJointFromSpecification(
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     X_PJ = ResolveRigidTransform(
-        joint_spec.SemanticPose(), joint_spec.ParentLinkName());
+        joint_spec.SemanticPose(),
+        GetRelativeBodyName(parent_body, model_instance, *plant));
   }
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
