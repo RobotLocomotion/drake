@@ -187,9 +187,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcNonContactForces(const systems::Context<T>& context, bool discrete,
                             MultibodyForces<T>* forces) const;
 
-  std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
-      const systems::Context<T>& context) const;
-
   // TODO(xuchenhan-tri): Remove the following calls to MbP solvers (which only
   //  solves for rigid-rigid contact) when the deformable-rigid two-way coupled
   //  contact solver is implemented.
