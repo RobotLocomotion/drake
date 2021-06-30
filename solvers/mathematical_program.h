@@ -3149,29 +3149,7 @@ class MathematicalProgram {
   void NewVariables_impl(
       VarType type, const T& names, bool is_symmetric,
       Eigen::Ref<MatrixXDecisionVariable> decision_variable_matrix) {
-    switch (type) {
-      case VarType::CONTINUOUS:
-        break;
-      case VarType::BINARY:
-        required_capabilities_.insert(ProgramAttribute::kBinaryVariable);
-        break;
-      case VarType::INTEGER:
-        throw std::runtime_error(
-            "MathematicalProgram does not support integer variables yet.");
-      case VarType::BOOLEAN:
-        throw std::runtime_error(
-            "MathematicalProgram does not support Boolean variables.");
-      case VarType::RANDOM_UNIFORM:
-        throw std::runtime_error(
-            "MathematicalProgram does not support random uniform variables.");
-      case VarType::RANDOM_GAUSSIAN:
-        throw std::runtime_error(
-            "MathematicalProgram does not support random Gaussian variables.");
-      case VarType::RANDOM_EXPONENTIAL:
-        throw std::runtime_error(
-            "MathematicalProgram does not support random exponential "
-            "variables.");
-    }
+    CheckVariableType(type);
     int rows = decision_variable_matrix.rows();
     int cols = decision_variable_matrix.cols();
     DRAKE_ASSERT(!is_symmetric || rows == cols);
@@ -3351,6 +3329,8 @@ class MathematicalProgram {
       symbolic::internal::DegreeType degree_type);
 
   std::unordered_map<int, double> var_scaling_map_{};
+
+  void CheckVariableType(VarType var_type);
 };
 
 }  // namespace solvers
