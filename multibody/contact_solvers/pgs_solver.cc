@@ -26,7 +26,11 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
   const auto& v_star = pre_proc_data_.v_star;
   const auto& vc_star = pre_proc_data_.vc_star;
   const auto& Dinv = pre_proc_data_.Dinv;
-  const auto& W = pre_proc_data_.W;
+  // Since the Delassus operator W is symmetric, we have W = Wᵀ.
+  // We need to access rows of the Delassus operator in the Gauss-Seidel solve
+  // and W is stored in column major order, so we use Wᵀ instead of W for better
+  // data locality.
+  const auto& W = pre_proc_data_.W.transpose();
 
   // Aliases to solver's (mutable) state.
   auto& v = state_.mutable_v();
@@ -78,7 +82,7 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
       auto vci_kp = vc_kp.template segment<3>(i3);
       // Contribution from contact impulses 0, 1, ..., i-1.
       vci_kp += W.block(i3, 0, 3, i3) * gamma_kp.head(i3);
-      // Contribution from contact impulses i+1, i+2, ..., nc.
+      // Contribution from contact impulses i, i+1, i+2, ..., nc.
       vci_kp += W.block(i3, i3, 3, 3 * (nc - i)) * gamma.tail(3 * (nc - i));
       const auto& gammai = gamma.template segment<3>(i3);
       auto gammai_kp = gamma_kp.template segment<3>(i3);
