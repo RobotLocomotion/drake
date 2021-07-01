@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
@@ -77,6 +78,7 @@ class ConvexSet : public ShapeReifier {
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
+    DRAKE_DEMAND(x.size() == ambient_dimension());
     return DoPointInSet(x, tol);
   }
 
@@ -87,8 +89,28 @@ class ConvexSet : public ShapeReifier {
   void AddPointInSetConstraint(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
+    DRAKE_DEMAND(vars.size() == ambient_dimension());
     return DoAddPointInSetConstraint(prog, vars);
   }
+
+  /** Let S be this convex set.  When S is bounded, this method adds the convex
+  constraints to imply
+  @verbatim
+  x ∈ t S,
+  t ≥ 0,
+  @endverbatim
+  where x is a point in ℜⁿ (with n the ambient_dimension) and t is a scalar.
+
+  When S is unbounded, then the behavior is almost identical, except when t=0.
+  In this case, the constraints imply t ≥ 0, x ∈ t S ⊕ rec(S), where rec(S) is
+  the recession cone of S (the asymptotic directions in which S is not bounded)
+  and ⊕ is the Minkowski sum.  For t > 0, this is equivalent to x ∈ t S, but for
+  t = 0, we have only x ∈ rec(S). */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const;
 
   /** Constructs a Shape and a pose of the set in the world frame for use in
   the SceneGraph geometry ecosystem.
@@ -100,6 +122,9 @@ class ConvexSet : public ShapeReifier {
     DRAKE_DEMAND(ambient_dimension_ == 3);
     return DoToShapeWithPose();
   }
+
+  // TODO(russt): Consider adding a set_solver() method here, which determines
+  // the solver that any derived class uses if it solves an optimization.
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
@@ -127,6 +152,12 @@ class ConvexSet : public ShapeReifier {
   virtual void DoAddPointInSetConstraint(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
+
+  virtual std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const = 0;
 
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;

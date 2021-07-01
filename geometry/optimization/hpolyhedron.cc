@@ -14,13 +14,19 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using math::RigidTransformd;
+using solvers::Binding;
+using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::MatrixXDecisionVariable;
 using solvers::VectorXDecisionVariable;
+using symbolic::Expression;
+using symbolic::Variable;
 
-HPolyhedron::HPolyhedron(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                         const Eigen::Ref<const Eigen::VectorXd>& b)
+HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
+                         const Eigen::Ref<const VectorXd>& b)
     : ConvexSet(&ConvexSetCloner<HPolyhedron>, A.cols()), A_{A}, b_{b} {
   DRAKE_DEMAND(A.rows() == b.size());
 }
@@ -29,7 +35,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          GeometryId geometry_id,
                          std::optional<FrameId> expressed_in)
     : ConvexSet(&ConvexSetCloner<HPolyhedron>, 3) {
-  std::pair<Eigen::MatrixXd, Eigen::VectorXd> Ab_G;
+  std::pair<MatrixXd, VectorXd> Ab_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
 
   const RigidTransformd X_WE = expressed_in
@@ -49,14 +55,13 @@ HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   VectorXDecisionVariable d = prog.NewContinuousVariables(N, "d");
 
   // max log det (C).  This method also imposes C ≽ 0.
-  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
-      C.cast<symbolic::Expression>());
+  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(C.cast<Expression>());
   // |aᵢC|₂ ≤ bᵢ - aᵢd, ∀i
   // TODO(russt): We could potentially avoid Expression parsing here by using
   // AddLorentzConeConstraint(A,b,vars), but it's nontrivial because of the
   // duplicate entries in the symmetric matrix C.  E.g. the Lorentz cone A would
   // not be simply block_diagonal(-A_.row(i), A_.row(i), ..., A_.row(i)).
-  VectorX<symbolic::Expression> z(N + 1);
+  VectorX<Expression> z(N + 1);
   for (int i = 0; i < b_.size(); ++i) {
     z[0] = b_(i) - A_.row(i).dot(d);
     z.tail(N) = C * A_.row(i).transpose();
@@ -73,23 +78,22 @@ HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   return HyperEllipsoid(result.GetSolution(C).inverse(), result.GetSolution(d));
 }
 
-HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
-                                 const Eigen::Ref<const Eigen::VectorXd>& ub) {
+HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
+                                 const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == ub.size());
   const int N = lb.size();
-  Eigen::MatrixXd A(2 * N, N);
-  A << Eigen::MatrixXd::Identity(N, N), -Eigen::MatrixXd::Identity(N, N);
-  Eigen::VectorXd b(2 * N);
+  MatrixXd A(2 * N, N);
+  A << MatrixXd::Identity(N, N), -MatrixXd::Identity(N, N);
+  VectorXd b(2 * N);
   b << ub, -lb;
   return HPolyhedron(A, b);
 }
 
 HPolyhedron HPolyhedron::MakeUnitBox(int dim) {
-  return MakeBox(Eigen::VectorXd::Constant(dim, -1.0),
-                 Eigen::VectorXd::Constant(dim, 1.0));
+  return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
-bool HPolyhedron::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
   return ((A_ * x).array() <= b_.array() + tol).all();
@@ -100,14 +104,30 @@ void HPolyhedron::DoAddPointInSetConstraint(
     const Eigen::Ref<const VectorXDecisionVariable>& vars) const {
   prog->AddLinearConstraint(
       A_,
-      Eigen::VectorXd::Constant(b_.size(),
-                                -std::numeric_limits<double>::infinity()),
+      VectorXd::Constant(b_.size(), -std::numeric_limits<double>::infinity()),
       b_, vars);
 }
 
+std::vector<Binding<Constraint>>
+HPolyhedron::DoAddPointInNonnegativeScalingConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Variable& t) const {
+  std::vector<Binding<Constraint>> constraints;
+  // A x ≤ t b, written as [A,-b][x;t] ≤ 0
+  const int m = A_.rows();
+  const int n = ambient_dimension();
+  MatrixXd Abar(m, n + 1);
+  Abar.leftCols(n) = A_;
+  Abar.col(n) = -b_;
+  constraints.emplace_back(prog->AddLinearConstraint(
+      Abar, VectorXd::Constant(m, -std::numeric_limits<double>::infinity()),
+      VectorXd::Zero(m), {x, Vector1<Variable>(t)}));
+  return constraints;
+}
+
 void HPolyhedron::ImplementGeometry(const HalfSpace&, void* data) {
-  auto* Ab =
-      reinterpret_cast<std::pair<Eigen::MatrixXd, Eigen::VectorXd>*>(data);
+  auto* Ab = reinterpret_cast<std::pair<MatrixXd, VectorXd>*>(data);
   // z <= 0.0.
   Ab->first = Eigen::RowVector3d{0.0, 0.0, 1.0};
   Ab->second = Vector1d{0.0};
@@ -121,8 +141,7 @@ void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
   b << box.width()/2.0, box.depth()/2.0, box.height()/2.0,
         box.width()/2.0, box.depth()/2.0, box.height()/2.0;
   // clang-format on
-  auto* Ab =
-      reinterpret_cast<std::pair<Eigen::MatrixXd, Eigen::VectorXd>*>(data);
+  auto* Ab = reinterpret_cast<std::pair<MatrixXd, VectorXd>*>(data);
   Ab->first = A;
   Ab->second = b;
 }

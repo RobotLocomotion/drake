@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "drake/geometry/optimization/convex_set.h"
 
@@ -64,6 +65,10 @@ class HyperEllipsoid final : public ConvexSet {
   but how does that translate into a numerical precision? */
   using ConvexSet::ToShapeWithPose;
 
+  /** Constructs the L₂-norm unit ball in @p dim dimensions, {x | |x|₂ <= 1 }.
+   */
+  static HyperEllipsoid MakeUnitBall(int dim);
+
  private:
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
@@ -72,6 +77,12 @@ class HyperEllipsoid final : public ConvexSet {
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
       const final;
+
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const final;
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
