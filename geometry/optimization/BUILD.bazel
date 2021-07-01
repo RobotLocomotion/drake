@@ -24,11 +24,13 @@ drake_cc_library(
         "convex_set.cc",
         "hpolyhedron.cc",
         "hyperellipsoid.cc",
+        "point.cc",
     ],
     hdrs = [
         "convex_set.h",
         "hpolyhedron.h",
         "hyperellipsoid.h",
+        "point.h",
     ],
     deps = [
         "//geometry:scene_graph",
@@ -60,6 +62,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "hyperellipsoid_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "point_test",
     deps = [
         ":convex_set",
         ":test_utilities",
