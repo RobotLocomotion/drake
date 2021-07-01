@@ -1,0 +1,110 @@
+Respell the imported lcmtypes to match Drake's build system.
+
+--- drakevisualizer.py	2020-07-15 08:51:01.000000000 -0700
++++ drakevisualizer.py	2021-06-30 21:52:04.169503858 -0700
+@@ -15,22 +15,8 @@
+ from director import packagepath
+ from director.fieldcontainer import FieldContainer
+ 
+-import bot_core as lcmbot
+-
+-# Currently, viewer lcm message types are in bot_core_lcmtypes and
+-# robotlocomotion-lcmtypes, but drake only builds bot_core_lcmtypes.
+-# When drake starts using robotlocomotion-lcmtypes, then the following
+-# import can be used instead of getting viewer messages from bot_core_lcmtypes.
+-#import robotlocomotion as lcmrl
+-lcmrl = lcmbot
+-
+-# pydrake is only used to provide an additional source of mesh package lookup
+-# paths, so failing to find it should not be fatal
+-try:
+-    import pydrake
+-    HAVE_PYDRAKE = True
+-except ImportError:
+-    HAVE_PYDRAKE = False
++import drake
++import pydrake
+ 
+ from PythonQt import QtGui
+ 
+@@ -44,22 +30,22 @@
+     @staticmethod
+     def createPolyDataFromPrimitive(geom):
+ 
+-        if geom.type == lcmrl.viewer_geometry_data_t.BOX:
++        if geom.type == drake.lcmt_viewer_geometry_data.BOX:
+             d = DebugData()
+             d.addCube(dimensions=geom.float_data[0:3], center=[0,0,0])
+             return d.getPolyData()
+ 
+-        elif geom.type == lcmrl.viewer_geometry_data_t.SPHERE:
++        elif geom.type == drake.lcmt_viewer_geometry_data.SPHERE:
+             d = DebugData()
+             d.addSphere(center=(0,0,0), radius=geom.float_data[0])
+             return d.getPolyData()
+ 
+-        elif geom.type == lcmrl.viewer_geometry_data_t.CYLINDER:
++        elif geom.type == drake.lcmt_viewer_geometry_data.CYLINDER:
+             d = DebugData()
+             d.addCylinder(center=(0,0,0), axis=(0,0,1), radius=geom.float_data[0], length=geom.float_data[1])
+             return d.getPolyData()
+ 
+-        elif geom.type == lcmrl.viewer_geometry_data_t.CAPSULE:
++        elif geom.type == drake.lcmt_viewer_geometry_data.CAPSULE:
+             d = DebugData()
+             radius = geom.float_data[0]
+             length = geom.float_data[1]
+@@ -68,7 +54,7 @@
+             d.addSphere(center=(0,0,-length/2.0), radius=radius)
+             return d.getPolyData()
+ 
+-        elif hasattr(lcmrl.viewer_geometry_data_t, "ELLIPSOID") and geom.type == lcmrl.viewer_geometry_data_t.ELLIPSOID:
++        elif hasattr(drake.lcmt_viewer_geometry_data, "ELLIPSOID") and geom.type == drake.lcmt_viewer_geometry_data.ELLIPSOID:
+             d = DebugData()
+             radii = geom.float_data[0:3]
+             d.addEllipsoid(center=(0,0,0), radii=radii)
+@@ -191,8 +177,7 @@
+ 
+         if Geometry.PackageMap is None:
+             m = packagepath.PackageMap()
+-            if HAVE_PYDRAKE:
+-                m.populateFromSearchPaths([pydrake.getDrakePath()])
++            m.populateFromSearchPaths([pydrake.getDrakePath()])
+             m.populateFromEnvironment(['DRAKE_PACKAGE_PATH', 'ROS_PACKAGE_PATH'])
+             Geometry.PackageMap = m
+ 
+@@ -264,7 +249,7 @@
+ 
+         visInfo = None
+ 
+-        if geom.type != lcmrl.viewer_geometry_data_t.MESH:
++        if geom.type != drake.lcmt_viewer_geometry_data.MESH:
+             polyDataList = [Geometry.createPolyDataFromPrimitive(geom)]
+         elif not geom.string_data:
+             polyDataList = [Geometry.createPolyDataFromMeshMessage(geom)]
+@@ -321,11 +306,9 @@
+         self.sendStatusMessage('loaded')
+ 
+     def _addSubscribers(self):
+-        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_LOAD_ROBOT', lcmrl.viewer_load_robot_t, self.onViewerLoadRobot))
+-        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_ADD_ROBOT', lcmrl.viewer_load_robot_t, self.onViewerAddRobot))
+-        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_DRAW', lcmrl.viewer_draw_t, self.onViewerDraw))
+-        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_PLANAR_LIDAR_.*', lcmbot.planar_lidar_t, self.onPlanarLidar, callbackNeedsChannel=True))
+-        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_POINTCLOUD_.*', lcmbot.pointcloud_t, self.onPointCloud, callbackNeedsChannel=True))
++        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_LOAD_ROBOT', drake.lcmt_viewer_load_robot, self.onViewerLoadRobot))
++        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_ADD_ROBOT', drake.lcmt_viewer_load_robot, self.onViewerAddRobot))
++        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_DRAW', drake.lcmt_viewer_draw, self.onViewerDraw))
+ 
+     def _removeSubscribers(self):
+         for sub in self.subscribers:
+@@ -408,8 +391,8 @@
+             del self.robots[robotNum]
+ 
+     def sendStatusMessage(self, message):
+-        msg = lcmrl.viewer_command_t()
+-        msg.command_type = lcmrl.viewer_command_t.STATUS
++        msg = drake.lcmt_viewer_command()
++        msg.command_type = drake.lcmt_viewer_command.STATUS
+         msg.command_data = message
+         lcmUtils.publish('DRAKE_VIEWER_STATUS', msg)
+ 
