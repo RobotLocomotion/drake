@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
@@ -77,6 +78,7 @@ class ConvexSet : public ShapeReifier {
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
+    DRAKE_DEMAND(x.size() == ambient_dimension());
     return DoPointInSet(x, tol);
   }
 
@@ -87,8 +89,25 @@ class ConvexSet : public ShapeReifier {
   void AddPointInSetConstraint(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
+    DRAKE_DEMAND(vars.size() == ambient_dimension());
     return DoAddPointInSetConstraint(prog, vars);
   }
+
+  /** Adds the convex constraints to imply
+  @verbatim
+  x ∈ t S,
+  t ≥ 0,
+  @endverbatim
+  where x is a point in ℜⁿ (with n the ambient_dimension), S is this convex set,
+  and t is a scalar.  Note that many applications of this method also require
+  the S is bounded (in addition to being convex); e.g. in order to ensure that
+  t=0 ⇒ x=0.
+  */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const;
 
   /** Constructs a Shape and a pose of the set in the world frame for use in
   the SceneGraph geometry ecosystem.
@@ -100,6 +119,9 @@ class ConvexSet : public ShapeReifier {
     DRAKE_DEMAND(ambient_dimension_ == 3);
     return DoToShapeWithPose();
   }
+
+  // TODO(russt): Consider adding a set_solver() method here, which determines
+  // the solver that any derived class uses if it solves an optimization.
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
@@ -127,6 +149,12 @@ class ConvexSet : public ShapeReifier {
   virtual void DoAddPointInSetConstraint(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
+
+  virtual std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const = 0;
 
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
