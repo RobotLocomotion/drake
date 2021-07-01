@@ -13,6 +13,8 @@ ConvexSet::ConvexSet(
   DRAKE_DEMAND(ambient_dimension >= 0);
 }
 
+ConvexSet::~ConvexSet() = default;
+
 std::unique_ptr<ConvexSet> ConvexSet::Clone() const { return cloner_(*this); }
 
 }  // namespace optimization

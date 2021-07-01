@@ -43,7 +43,7 @@ class HyperEllipsoid final : public ConvexSet {
                  GeometryId geometry_id,
                  std::optional<FrameId> expressed_in = std::nullopt);
 
-  virtual ~HyperEllipsoid() {}
+  ~HyperEllipsoid() final;
 
   /** Returns the quadratic form matrix A. */
   const Eigen::MatrixXd& A() const { return A_; }
