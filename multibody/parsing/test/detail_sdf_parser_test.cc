@@ -1,6 +1,5 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
-#include <fstream>
 #include <memory>
 #include <stdexcept>
 
@@ -9,7 +8,6 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -57,18 +55,27 @@ ModelInstanceIndex AddModelFromSdfFile(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
+  const DataSource data_source{&file_name, {}};
   return AddModelFromSdf(
-      { .file_name = &file_name },
-      model_name, package_map, plant, scene_graph);
+      data_source, model_name, package_map, plant, scene_graph);
 }
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
+  const DataSource data_source{&file_name, {}};
   return AddModelsFromSdf(
-      { .file_name = &file_name },
-      package_map, plant, scene_graph);
+      data_source, package_map, plant, scene_graph);
+}
+std::vector<ModelInstanceIndex> AddModelsFromSdfString(
+    const std::string& file_contents,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  const DataSource data_source{{}, &file_contents};
+  return AddModelsFromSdf(
+      data_source, package_map, plant, scene_graph);
 }
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -267,17 +274,15 @@ struct PlantAndSceneGraph {
 
 PlantAndSceneGraph ParseTestString(const std::string& inner,
                                    const std::string& sdf_version = "1.6") {
-  const std::string filename = temp_directory() + "/test_string.sdf";
-  std::ofstream file(filename);
-  file << "<sdf version='" << sdf_version << "'>" << inner << "\n</sdf>\n";
-  file.close();
+  const std::string file_contents =
+      "<sdf version='" + sdf_version + "'>" + inner + "\n</sdf>\n";
   PlantAndSceneGraph pair;
   pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
   pair.scene_graph = std::make_unique<SceneGraph<double>>();
   PackageMap package_map;
   pair.plant->RegisterAsSourceForSceneGraph(pair.scene_graph.get());
   drake::log()->debug("inner: {}", inner);
-  AddModelsFromSdfFile(filename, package_map, pair.plant.get());
+  AddModelsFromSdfString(file_contents, package_map, pair.plant.get());
   return pair;
 }
 
