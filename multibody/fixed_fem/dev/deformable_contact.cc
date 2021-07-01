@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/posed_half_space.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace multibody {
@@ -17,6 +18,12 @@ using geometry::SurfaceVertexIndex;
 using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
 using geometry::VolumeVertexIndex;
+using geometry::internal::Aabb;
+using geometry::internal::Bvh;
+using geometry::internal::BvttCallbackResult;
+using geometry::internal::convert_to_double;
+using geometry::internal::DeformableVolumeMesh;
+using geometry::internal::Obb;
 using geometry::internal::PosedHalfSpace;
 using std::array;
 using std::move;
@@ -42,89 +49,95 @@ class Intersector {
   /* Intersects a volume mesh (union of tetrahedra) with a surface mesh (union
    of triangles).
 
-   @param[in] tet_mesh_D   The tet mesh with vertices measured and expressed in
-                           the deformable frame D.
+   @param[in] tet_mesh_D   The deformable tet mesh with vertices measured and
+                           expressed in the deformable frame D.
    @param[in] surface_R    The surface mesh, whose vertices are measured and
                            expressed in the rigid frame R.
+   @param[in] bvh_R        The bounding volume hierarchy for the surface mesh,
+                           measured and expressed in frame R.
    @param[in] X_DR  The pose of frame R relative to the world frame D.
    @returns The (possibly empty) contact surface representing the intersection
             between the two meshes.  */
-  DeformableContactSurface<T> Intersect(const VolumeMesh<T>& tet_mesh_D,
-                                        const SurfaceMesh<double>& surface_R,
-                                        const math::RigidTransform<T>& X_DR) {
+  DeformableContactSurface<T> Intersect(
+      const DeformableVolumeMesh<T>& tet_mesh_D,
+      const SurfaceMesh<double>& surface_R,
+      const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+      const math::RigidTransform<T>& X_DR) {
     // The collection of contact data. We will aggregate into this.
     vector<ContactPolygonData<T>> out_poly_data;
 
-    for (VolumeElementIndex tet_index(0); tet_index < tet_mesh_D.num_elements();
-         ++tet_index) {
-      for (SurfaceFaceIndex tri_index(0); tri_index < surface_R.num_faces();
-           ++tri_index) {
-        const vector<IntersectionVertex<T>>& poly_vertices_D =
-            ClipTriangleByTetrahedron(tet_index, tet_mesh_D, tri_index,
-                                      surface_R, X_DR);
-        const int poly_vertex_count = static_cast<int>(poly_vertices_D.size());
-        if (poly_vertex_count < 3) continue;
+    const math::RigidTransformd& X_DR_d = convert_to_double(X_DR);
+    for (const auto [tet_index, tri_index] :
+         tet_mesh_D.bvh().GetCollisionCandidates(bvh_R, X_DR_d)) {
+      const vector<IntersectionVertex<T>>& poly_vertices_D =
+          ClipTriangleByTetrahedron(tet_index, tet_mesh_D.mesh(), tri_index,
+                                    surface_R, X_DR);
+      const int poly_vertex_count = static_cast<int>(poly_vertices_D.size());
+      if (poly_vertex_count < 3) continue;
 
-        const Vector3<T>& nhat_D =
-            X_DR.rotation() * surface_R.face_normal(tri_index).cast<T>();
+      const Vector3<T>& nhat_D =
+          X_DR.rotation() * surface_R.face_normal(tri_index).template cast<T>();
 
-        // Computes the double area of the triangle spanned by the three
-        // vertices. This could be more robust by smart selection of the two
-        // triangle edges.
-        auto calc_double_area =
-            [&nhat_D](int v0, int v1, int v2,
-                      const vector<IntersectionVertex<T>>& vertices_D) {
-              const Vector3<T> p_01_D =
-                  vertices_D[v1].cartesian - vertices_D[v0].cartesian;
-              const Vector3<T> p_02_D =
-                  vertices_D[v2].cartesian - vertices_D[v0].cartesian;
-              return p_01_D.cross(p_02_D).dot(nhat_D);
-            };
+      // TODO(SeanCurtis-TRI): The cost of re-creating these lambdas per element
+      //  pair is ridiculous. Move it *outside* the for loop and simply pass
+      //  in the polygon normal.
 
-        // Computes the *scaled* centroid of the triangle spanned by the three
-        // vertices in both Cartesian and Barycentric coordinates. The *true*
-        // centroid would be found by dividing each quantity by three.
-        auto calc_scaled_centroid =
-            [](int v0, int v1, int v2,
-               const vector<IntersectionVertex<T>>& vertices_D)
-            -> IntersectionVertex<T> {
-          Vector3<T> centroid_D =
-              (vertices_D[v0].cartesian + vertices_D[v1].cartesian +
-               vertices_D[v2].cartesian);
-          Vector4<T> b_centroid =
-              (vertices_D[v0].bary + vertices_D[v1].bary + vertices_D[v2].bary);
-          return {centroid_D, b_centroid};
-        };
+      // Computes the double area of the triangle spanned by the three
+      // vertices. This could be more robust by smart selection of the two
+      // triangle edges.
+      auto calc_double_area =
+          [&nhat_D](int v0, int v1, int v2,
+                    const vector<IntersectionVertex<T>>& vertices_D) {
+            const Vector3<T> p_01_D =
+                vertices_D[v1].cartesian - vertices_D[v0].cartesian;
+            const Vector3<T> p_02_D =
+                vertices_D[v2].cartesian - vertices_D[v0].cartesian;
+            return p_01_D.cross(p_02_D).dot(nhat_D);
+          };
 
-        // We construct a triangle fan from the polygon with vertex 0 as the
-        // common vertex: e.g., triangles (0, 1, 2), (0, 2, 3), ... Generally,
-        // a triangle from a fan with N vertices is (0, i, i + 1), for
-        // i ∈ [1, N - 2]. For each triangle, compute its doubled area and
-        // scaled centroid.
-        T poly_double_area{0};  // We accumulate into this variable to find 2x
-                                // the area of the contact polygon.
-        // We accumulate into this variable the sum of
-        // 6 x the area of the triangle x the centroid of the triangle
-        // over all triangle fans in the polygon.
-        IntersectionVertex<T> scaled_centroid{Vector3<T>::Zero(),
-                                              Vector4<T>::Zero()};
-        for (int i = 1; i < poly_vertex_count - 1; ++i) {
-          // 2 x the area of the triangle.
-          const T double_area = calc_double_area(0, i, i + 1, poly_vertices_D);
-          poly_double_area += double_area;
-          // 3 x the centroid of the centroid.
-          const IntersectionVertex<T> tri_centroid =
-              calc_scaled_centroid(0, i, i + 1, poly_vertices_D);
-          // Accumulate
-          //   6 x the area of the triangle x the centroid of the triangle.
-          scaled_centroid.bary += double_area * tri_centroid.bary;
-          scaled_centroid.cartesian += double_area * tri_centroid.cartesian;
-        }
-        out_poly_data.push_back(
-            {poly_double_area / 2, nhat_D,
-             scaled_centroid.cartesian / (poly_double_area * 3),
-             scaled_centroid.bary / (poly_double_area * 3), tet_index});
+      // Computes the *scaled* centroid of the triangle spanned by the three
+      // vertices in both Cartesian and Barycentric coordinates. The *true*
+      // centroid would be found by dividing each quantity by three.
+      auto calc_scaled_centroid =
+          [](int v0, int v1, int v2,
+             const vector<IntersectionVertex<T>>& vertices_D)
+          -> IntersectionVertex<T> {
+        Vector3<T> centroid_D =
+            (vertices_D[v0].cartesian + vertices_D[v1].cartesian +
+             vertices_D[v2].cartesian);
+        Vector4<T> b_centroid =
+            (vertices_D[v0].bary + vertices_D[v1].bary + vertices_D[v2].bary);
+        return {centroid_D, b_centroid};
+      };
+
+      // We construct a triangle fan from the polygon with vertex 0 as the
+      // common vertex: e.g., triangles (0, 1, 2), (0, 2, 3), ... Generally,
+      // a triangle from a fan with N vertices is (0, i, i + 1), for
+      // i ∈ [1, N - 2]. For each triangle, compute its doubled area and
+      // scaled centroid.
+      T poly_double_area{0};  // We accumulate into this variable to find 2x
+                              // the area of the contact polygon.
+      // We accumulate into this variable the sum of
+      // 6 x the area of the triangle x the centroid of the triangle
+      // over all triangle fans in the polygon.
+      IntersectionVertex<T> scaled_centroid{Vector3<T>::Zero(),
+                                            Vector4<T>::Zero()};
+      for (int i = 1; i < poly_vertex_count - 1; ++i) {
+        // 2 x the area of the triangle.
+        const T double_area = calc_double_area(0, i, i + 1, poly_vertices_D);
+        poly_double_area += double_area;
+        // 3 x the centroid of the centroid.
+        const IntersectionVertex<T> tri_centroid =
+            calc_scaled_centroid(0, i, i + 1, poly_vertices_D);
+        // Accumulate
+        //   6 x the area of the triangle x the centroid of the triangle.
+        scaled_centroid.bary += double_area * tri_centroid.bary;
+        scaled_centroid.cartesian += double_area * tri_centroid.cartesian;
       }
+      out_poly_data.push_back(
+          {poly_double_area / 2, nhat_D,
+           scaled_centroid.cartesian / (poly_double_area * 3),
+           scaled_centroid.bary / (poly_double_area * 3), tet_index});
     }
     return DeformableContactSurface<T>(move(out_poly_data));
   }
@@ -471,10 +484,11 @@ class Intersector {
 
 template <typename T>
 DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
-    const geometry::VolumeMesh<T>& tet_mesh_D,
-    const geometry::SurfaceMesh<double>& tri_mesh_R,
+    const DeformableVolumeMesh<T>& tet_mesh_D,
+    const SurfaceMesh<double>& tri_mesh_R,
+    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_DR) {
-  return Intersector<T>().Intersect(tet_mesh_D, tri_mesh_R, X_DR);
+  return Intersector<T>().Intersect(tet_mesh_D, tri_mesh_R, bvh_R, X_DR);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
