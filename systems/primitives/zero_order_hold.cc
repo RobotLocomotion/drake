@@ -18,34 +18,19 @@ ZeroOrderHold<T>::ZeroOrderHold(
     // once #3109 supporting automatic sizes is resolved.
     BasicVector<T> model_value(vector_size);
     this->DeclareVectorInputPort("u", model_value);
-    this->DeclareVectorOutputPort("y",
-        model_value, &ZeroOrderHold::CopyLatchedVector,
-        {this->xd_ticket()});
-    this->DeclareDiscreteState(vector_size);
+    auto state_index = this->DeclareDiscreteState(vector_size);
     this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputVectorToState);
+    this->DeclareStateOutputPort("y", state_index);
   } else {
     DRAKE_DEMAND(vector_size == -1);
     // TODO(eric.cousineau): Remove value parameter from the constructor once
     // the equivalent of #3109 for abstract values is also resolved.
     this->DeclareAbstractInputPort("u", *abstract_model_value_);
-
-    // Because we're working with type-erased AbstractValue objects directly
-    // (not typical), there isn't a nice sugar method available that takes
-    // class methods. We have to use the generic port declaration method that
-    // uses free functions.
-    this->DeclareAbstractOutputPort("y",
-        // Allocator function.
-        [this]() { return abstract_model_value_->Clone(); },
-        // Calculator function.
-        [this](const Context<T>& context, AbstractValue* output) {
-          this->CopyLatchedAbstractValue(context, &*output);
-        },
-        {this->xa_ticket()});
-
-    this->DeclareAbstractState(*abstract_model_value_);
+    auto state_index = this->DeclareAbstractState(*abstract_model_value_);
     this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputAbstractValueToState);
+    this->DeclareStateOutputPort("y", state_index);
   }
 }
 
@@ -58,15 +43,6 @@ ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
                                         : nullptr) {}
 
 template <typename T>
-void ZeroOrderHold<T>::CopyLatchedVector(
-      const Context<T>& context,
-      BasicVector<T>* output) const {
-  DRAKE_ASSERT(!is_abstract());
-  const BasicVector<T>& state_value = context.get_discrete_state(0);
-  output->SetFrom(state_value);
-}
-
-template <typename T>
 void ZeroOrderHold<T>::LatchInputVectorToState(
     const Context<T>& context,
     DiscreteValues<T>* discrete_state) const {
@@ -74,14 +50,6 @@ void ZeroOrderHold<T>::LatchInputVectorToState(
   const auto& input = this->get_input_port().Eval(context);
   BasicVector<T>& state_value = discrete_state->get_mutable_vector(0);
   state_value.SetFromVector(input);
-}
-
-template <typename T>
-void ZeroOrderHold<T>::CopyLatchedAbstractValue(const Context<T>& context,
-                                                AbstractValue* output) const {
-  DRAKE_ASSERT(is_abstract());
-  const AbstractValue& state_value = context.get_abstract_state().get_value(0);
-  output->SetFrom(state_value);
 }
 
 template <typename T>
