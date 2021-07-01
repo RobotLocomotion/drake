@@ -1,0 +1,7 @@
+# -*- python -*-
+
+sh_binary(
+    name = "castxml_bin",
+    srcs = ["castxml/bin/castxml"],
+    visibility = ["//visibility:public"],
+)
