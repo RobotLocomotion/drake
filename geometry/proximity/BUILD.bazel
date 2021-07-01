@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":bv",
         ":bvh",
+        ":bvh_updater",
         ":collision_filter",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
@@ -97,6 +98,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "bvh_updater",
+    hdrs = ["bvh_updater.h"],
+    deps = [
+        ":bv",
+        ":bvh",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "collision_filter",
     srcs = ["collision_filter.cc"],
     hdrs = ["collision_filter.h"],
@@ -149,6 +160,8 @@ drake_cc_library(
     srcs = ["deformable_volume_mesh.cc"],
     hdrs = ["deformable_volume_mesh.h"],
     deps = [
+        ":bvh",
+        ":bvh_updater",
         ":mesh_deformer",
         ":volume_mesh",
     ],
@@ -682,6 +695,17 @@ drake_cc_library(
 drake_cc_googletest(
     name = "characterization_utilities_test",
     deps = [":characterization_utilities"],
+)
+
+drake_cc_googletest(
+    name = "bvh_updater_test",
+    deps = [
+        ":bvh",
+        ":bvh_updater",
+        ":make_sphere_mesh",
+        ":mesh_deformer",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
 )
 
 drake_cc_googletest(

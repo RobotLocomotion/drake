@@ -21,6 +21,9 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Forward declaration to enable Bvh for deformable meshes. */
+template <typename> class BvhUpdater;
+
 template <class MeshType>
 struct MeshTraits;
 
@@ -114,9 +117,8 @@ class BvNode {
    @pre both nodes are leaves.  */
   template <typename OtherBvNode>
   bool EqualLeaf(const OtherBvNode& other_leaf) const {
-    if (static_cast<const void*>(this) ==
-        static_cast<const void*>(&other_leaf)) {
-      return true;
+    if constexpr (std::is_same_v<OtherBvNode, BvNode<BvType, MeshType>>) {
+      if (this == &other_leaf) return true;
     }
     if (this->num_element_indices() != other_leaf.num_element_indices()) {
       return false;
@@ -130,6 +132,21 @@ class BvNode {
   }
 
  private:
+  template <typename> friend class BvhUpdater;
+
+  /* Provide disciplined access to BvhUpdater to a mutable child node. */
+  BvNode<BvType, MeshType>& left() {
+    return *(std::get<NodeChildren>(child_).left);
+  }
+
+  /* Provide disciplined access to BvhUpdater to a mutable child node. */
+  BvNode<BvType, MeshType>& right() {
+    return *(std::get<NodeChildren>(child_).right);
+  }
+
+  /* Provide disciplined access to BvhUpdater to a mutable bounding volume. */
+  BvType& bv() { return bv_; }
+
   struct NodeChildren {
     std::unique_ptr<BvNode<BvType, MeshType>> left;
     std::unique_ptr<BvNode<BvType, MeshType>> right;
@@ -335,8 +352,8 @@ class Bvh {
    Assumes that the quantities are measured and expressed in the same frame. */
   template <typename OtherBvhType>
   bool Equal(const OtherBvhType& other) const {
-    if (static_cast<const void*>(this) == static_cast<const void*>(&other)) {
-      return true;
+    if constexpr (std::is_same_v<OtherBvhType, Bvh<BvType, SourceMeshType>>) {
+      if (this == &other) return true;
     }
     return EqualTrees(this->root_node(), other.root_node());
   }
@@ -366,15 +383,15 @@ class Bvh {
   static Vector3<double> ComputeCentroid(const MeshType& mesh,
                                          IndexType i);
 
-  // Tests that two trees, rooted at nodes a and b, respectively, are
-  // *topologically* equal in the sense that they have identical node structure
-  // and equal bounding volumes (see BvType::Equal()).
-  // The two hierarchies must be built from the same bounding volume type, and
-  // the same mesh type, but the mesh scalar can differ.
+  // Tests that two trees, rooted at nodes a and b, respectively, are equal
+  // in the sense that they have identical node structure and equal bounding
+  // volumes (see BvType::Equal()). The two hierarchies must be built from the
+  // same bounding volume type, and the same mesh type, but the mesh scalar can
+  // differ.
   template <typename OtherNodeType>
   static bool EqualTrees(const NodeType& a, const OtherNodeType& b) {
-    if (static_cast<const void*>(&a) == static_cast<const void*>(&b)) {
-       return true;
+    if constexpr (std::is_same_v<NodeType, OtherNodeType>) {
+      if (&a == &b) return true;
     }
 
     if (!a.bv().Equal(b.bv())) return false;
