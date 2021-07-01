@@ -8,6 +8,7 @@ template <typename T>
 void DeformableVolumeMesh<T>::UpdateVertexPositions(
     const Eigen::Ref<const VectorX<T>>& q) {
   deformer_.SetAllPositions(q);
+  bvh_updater_.Update();
 }
 
 }  // namespace internal

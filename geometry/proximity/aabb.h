@@ -14,6 +14,7 @@ namespace internal {
 
 // Forward declarations.
 template <typename> class AabbMaker;
+template <typename> class BvhUpdater;
 class Obb;
 
 /* Axis-aligned bounding box. The box is defined in a canonical frame B such
@@ -130,6 +131,18 @@ class Aabb {
   }
 
  private:
+  // Allow the BvhUpdater access to set_bounds().
+  template <typename> friend class BvhUpdater;
+
+  // Provides access to the BvhUpdater to refit the Aabb. Sets the extents of
+  // the bounding box based on a box spanned by the given `lower` and `upper`
+  // corners.
+  // @pre lower(i) ≤ upper(i), ∀ i ∈ {0, 1, 2}.
+  void set_bounds(const Vector3<double>& lower, const Vector3<double>& upper) {
+    center_ = (lower + upper) / 2;
+    half_width_ = (upper - lower) / 2;
+  }
+
   // Center point of the box.
   Vector3<double> center_;
   // Half width extents along each axes.
