@@ -3,6 +3,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -18,6 +19,7 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -682,6 +684,7 @@ void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
 
 ModelInstanceIndex ParseUrdf(
     const std::string& model_name_in,
+    const std::optional<std::string>& parent_model_name,
     const multibody::PackageMap& package_map,
     const std::string& root_dir,
     XMLDocument* xml_doc,
@@ -698,6 +701,8 @@ ModelInstanceIndex ParseUrdf(
           "ERROR: Your robot must have a name attribute or a model name "
           "must be specified.");
   }
+
+  model_name = parsing::PrefixName(parent_model_name.value_or(""), model_name);
 
   // Parses the model's material elements. Throws an exception if there's a
   // material name clash regardless of whether the associated RGBA values are
@@ -780,6 +785,7 @@ ModelInstanceIndex ParseUrdf(
 ModelInstanceIndex AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name_in,
+    const std::optional<std::string>& parent_model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
@@ -825,7 +831,7 @@ ModelInstanceIndex AddModelFromUrdf(
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
-  return ParseUrdf(model_name_in, package_map, root_dir,
+  return ParseUrdf(model_name_in, parent_model_name, package_map, root_dir,
                    &xml_doc, plant);
 }
 

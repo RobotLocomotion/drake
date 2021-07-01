@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <set>
@@ -9,6 +10,7 @@
 #include <vector>
 
 #include <sdf/sdf.hh>
+#include <tinyxml2.h>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
@@ -16,6 +18,7 @@
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
@@ -81,6 +84,44 @@ std::pair<ModelInstanceIndex, std::string> GetResolvedModelInstanceAndLocalName(
   }
 
   return {resolved_model_instance, unscoped_local_name};
+}
+
+// Calculates the relative name of a body relative to the model instance @p
+// relative_to_model_instance. If the body is a direct child of the model,
+// this simply returns the local name of the body. However, if the body is
+// a child of a nested model, the local name of the body is prefixed with the
+// relative name of the nested model.
+std::string GetRelativeBodyName(
+    const Body<double>& body,
+    ModelInstanceIndex relative_to_model_instance,
+    const MultibodyPlant<double>& plant) {
+  const std::string& relative_to_model_absolute_name =
+      plant.GetModelInstanceName(relative_to_model_instance);
+  // If the body is inside a nested model, we need to prefix the
+  // name with the relative name of the nested model.
+  if (body.model_instance() != relative_to_model_instance) {
+    const std::string& nested_model_absolute_name =
+        plant.GetModelInstanceName(body.model_instance());
+    // The relative_to_model_absolute_name must be a prefix of the
+    // nested_model_absolute_name. Otherwise the nested model is not a
+    // descendent of the model relative to which we are computing the name.
+    DRAKE_DEMAND(0 == nested_model_absolute_name.compare(
+                          0, relative_to_model_absolute_name.size(),
+                          relative_to_model_absolute_name));
+
+    DRAKE_DEMAND(nested_model_absolute_name.size() >
+                 relative_to_model_absolute_name.size() +
+                     sdf::kSdfScopeDelimiter.size());
+
+    const std::string nested_model_relative_name =
+        nested_model_absolute_name.substr(
+            relative_to_model_absolute_name.size() +
+            sdf::kSdfScopeDelimiter.size());
+
+    return sdf::JoinName(nested_model_relative_name, body.name());
+  } else {
+    return body.name();
+  }
 }
 
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
@@ -415,8 +456,9 @@ void AddJointFromSpecification(
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
   // joint will be the child link.
-  const RigidTransformd X_CJ =
-      ResolveRigidTransform(joint_spec.SemanticPose());
+  const RigidTransformd X_CJ = ResolveRigidTransform(
+      joint_spec.SemanticPose(),
+      GetRelativeBodyName(child_body, model_instance, *plant));
 
   // Pose of the frame J in the parent body frame P.
   std::optional<RigidTransformd> X_PJ;
@@ -429,7 +471,8 @@ void AddJointFromSpecification(
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     X_PJ = ResolveRigidTransform(
-        joint_spec.SemanticPose(), joint_spec.ParentLinkName());
+        joint_spec.SemanticPose(),
+        GetRelativeBodyName(parent_body, model_instance, *plant));
   }
 
   // If P and J are coincident, we won't create a new frame for J, but use frame
@@ -508,29 +551,21 @@ void AddJointFromSpecification(
   joint_types->insert(joint_spec.Type());
 }
 
+sdf::InterfaceModelPtr ParseNestedInterfaceModel(
+    MultibodyPlant<double>* plant, const PackageMap& package_map,
+    const sdf::NestedInclude& include, sdf::Errors* errors,
+    const sdf::ParserConfig& parser_config,
+    bool test_sdf_forced_nesting = false);
+
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 std::string LoadSdf(
     sdf::Root* root,
     const DataSource& data_source,
-    const PackageMap& package_map) {
+    const sdf::ParserConfig& parser_config) {
   data_source.DemandExactlyOne();
 
   std::string root_dir;
-  // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
-  sdf::ParserConfig parser_config;
-  parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
-  parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
-  parser_config.SetFindCallback(
-    [=](const std::string &_input) {
-      return ResolveUri(_input, package_map, ".");
-    });
-  // TODO(#15018): This means that unrecognized elements won't be shown to a
-  // user directly (via console or exception). We should change unrecognized
-  // elements policy to print a warning, and later become an error.
-  DRAKE_DEMAND(
-      parser_config.UnrecognizedElementsPolicy()
-      == sdf::EnforcementPolicy::LOG);
 
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
@@ -686,7 +721,31 @@ const Frame<double>& AddFrameFromSpecification(
       const auto [parent_model_instance, local_name] =
           GetResolvedModelInstanceAndLocalName(frame_spec.AttachedTo(),
                                                model_instance, *plant);
-      parent_frame = &plant->GetFrameByName(local_name, parent_model_instance);
+      if (plant->HasFrameNamed(local_name, parent_model_instance)) {
+        parent_frame =
+            &plant->GetFrameByName(local_name, parent_model_instance);
+      } else {
+        // If there is no frame named `local_name`, the `attached_to` attribute
+        // must be pointing to something we don't create implicit frames for in
+        // Drake. Currently these are models and joints. Models are handled in
+        // the first `if` block, so we're dealing with joints here. Since joints
+        // may end up in a model instance different from the model in which they
+        // were defined, we don't bother to find the joint and use its child
+        // frame. Instead we ask libsdformat to resolve the body associated with
+        // whaterver is referenced by the `attached_to` attribute. Since this is
+        // a body, we're assured that its implicit frame exists in the plant.
+        std::string resolved_attached_to_body_name;
+        ThrowAnyErrors(
+            frame_spec.ResolveAttachedToBody(resolved_attached_to_body_name));
+
+        const std::string resolved_attached_to_body_absolute_name =
+            parsing::PrefixName(
+                parsing::GetInstanceScopeName(*plant, model_instance),
+                resolved_attached_to_body_name);
+        parent_frame = parsing::GetScopedFrameByNameMaybe(
+            *plant, resolved_attached_to_body_absolute_name);
+        DRAKE_DEMAND(nullptr != parent_frame);
+      }
     }
   }
   const Frame<double>& frame =
@@ -934,6 +993,249 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   return added_model_instances;
 }
 
+bool EndsWith(const std::string& input, const std::string & ext) {
+  if (ext.size() > input.size()) {
+    return false;
+  }
+  return input.compare(input.size() - ext.size(), ext.size(), ext) == 0;
+}
+
+// Helper function that computes the default pose of a Frame
+RigidTransformd GetDefaultFramePose(
+    const MultibodyPlant<double>& plant,
+    const Frame<double>& frame) {
+  const RigidTransformd X_WB =
+      plant.GetDefaultFreeBodyPose(frame.body());
+  const RigidTransformd X_WF =
+      X_WB * frame.GetFixedPoseInBodyFrame();
+  return X_WF;
+}
+
+// For the libsdformat API, see:
+// http://sdformat.org/tutorials?tut=composition_proposal
+constexpr char kExtUrdf[] = ".urdf";
+
+// To test re-parsing an SDFormat document, but in complete isolation. Tests
+// out separate model formats.
+constexpr char kExtForcedNesting[] = ".forced_nesting_sdf";
+
+void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
+                               ModelInstanceIndex model_instance,
+                               const sdf::InterfaceModelPtr& interface_model) {
+  const auto& model_frame = plant.GetFrameByName("__model__", model_instance);
+  const RigidTransformd X_MW =
+      GetDefaultFramePose(plant, model_frame).inverse();
+  for (auto index : plant.GetBodyIndices(model_instance)) {
+    const auto& link = plant.get_body(index);
+    RigidTransformd X_ML = X_MW * plant.GetDefaultFreeBodyPose(link);
+    interface_model->AddLink({link.name(), ToIgnPose3d(X_ML)});
+  }
+}
+
+void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
+                               ModelInstanceIndex model_instance,
+                               const sdf::InterfaceModelPtr& interface_model) {
+  for (FrameIndex index(0); index < plant.num_frames(); ++index) {
+    const auto& frame = plant.get_frame(index);
+    if (frame.model_instance() != model_instance) {
+      continue;
+    }
+    if (frame.name().empty() || frame.name() == "__model__" ||
+        plant.HasBodyNamed(frame.name(), model_instance)) {
+      // Skip unnamed frames, and __model__ since it's already added.  Also
+      // skip frames with the same name as a link since those are frames added
+      // by Drake and are considered implicit by SDFormat. Sending such frames
+      // to SDFormat would imply that these frames are explicit (i.e frames
+      // created using the <frame> tag).
+      continue;
+    }
+    interface_model->AddFrame(
+        {frame.name(), GetRelativeBodyName(frame.body(), model_instance, plant),
+         ToIgnPose3d(frame.GetFixedPoseInBodyFrame())});
+  }
+}
+
+void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
+                               ModelInstanceIndex model_instance,
+                               const sdf::InterfaceModelPtr& interface_model) {
+  for (auto index : plant.GetJointIndices(model_instance)) {
+    const auto& joint = plant.get_joint(index);
+    const std::string& child_name = joint.child_body().name();
+    const RigidTransformd X_CJ =
+        joint.frame_on_child().GetFixedPoseInBodyFrame();
+    interface_model->AddJoint({joint.name(), child_name, ToIgnPose3d(X_CJ)});
+  }
+}
+
+// This assumes that parent models will have their parsing start before child
+// models! This is a safe assumption because we only encounter nested models
+// when force testing SDFormat files and libsdformat parses models in a top-down
+// order. If we add support for other file formats, we should ensure that the
+// parsers comply with this assumption.
+sdf::InterfaceModelPtr ParseNestedInterfaceModel(
+    MultibodyPlant<double>* plant, const PackageMap& package_map,
+    const sdf::NestedInclude& include, sdf::Errors* errors,
+    const sdf::ParserConfig& parser_config, bool test_sdf_forced_nesting) {
+  // Do not attempt to parse anything other than URDF or forced nesting files.
+  const bool is_urdf = EndsWith(include.resolvedFileName, kExtUrdf);
+  const bool is_forced_nesting =
+      test_sdf_forced_nesting &&
+      EndsWith(include.resolvedFileName, kExtForcedNesting);
+  if (!is_urdf && !is_forced_nesting) {
+    return nullptr;
+  }
+
+  if (include.isStatic) {
+    errors->emplace_back(
+        sdf::ErrorCode::ELEMENT_INVALID,
+        "Drake does not yet support //include/static for custom nesting.");
+    return nullptr;
+  }
+
+  DataSource data_source;
+  data_source.file_name = &include.resolvedFileName;
+
+  ModelInstanceIndex main_model_instance;
+  // New instances will have indices starting from cur_num_models
+  int cur_num_models = plant->num_model_instances();
+  if (is_urdf) {
+    main_model_instance =
+        AddModelFromUrdf(data_source, include.localModelName.value_or(""),
+                         include.absoluteParentName, package_map, plant);
+    // Add explicit model frame to first link.
+    auto body_indices = plant->GetBodyIndices(main_model_instance);
+    if (body_indices.empty()) {
+      errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
+                           "URDF must have at least one link.");
+      return nullptr;
+    }
+    const auto& canonical_link = plant->get_body(body_indices[0]);
+
+    const Frame<double>& canonical_link_frame =
+        plant->GetFrameByName(canonical_link.name(), main_model_instance);
+    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+        "__model__", canonical_link_frame, RigidTransformd::Identity(),
+        main_model_instance));
+  } else {
+    // N.B. Errors will just happen via thrown exceptions.
+    DRAKE_DEMAND(is_forced_nesting);
+    // Since this is just for testing, we'll assume that there wouldn't be
+    // another included model that requires a custom parser.
+    sdf::Root root;
+
+    std::string root_dir = LoadSdf(&root, data_source, parser_config);
+    DRAKE_DEMAND(nullptr != root.Model());
+    const sdf::Model &model = *root.Model();
+
+    const std::string model_name =
+        include.localModelName.value_or(model.Name());
+    main_model_instance = AddModelsFromSpecification(
+        model, sdf::JoinName(include.absoluteParentName, model_name), {}, plant,
+        package_map, root_dir).front();
+  }
+
+  // Now that the model is parsed, we create interface elements to send to
+  // libsdformat.
+
+  // This will be populated for the first model instance.
+  sdf::InterfaceModelPtr main_interface_model;
+  // Record by name to remember model hierarchy since model instances do not
+  // encode hierarchical information.  Related to this comment:
+  // https://github.com/RobotLocomotion/drake/issues/12270#issuecomment-606757766
+  std::map<std::string, sdf::InterfaceModelPtr> interface_model_hierarchy;
+
+  // N.B. For hierarchy, this assumes that "parent" models are defined before
+  // their "child" models.
+  for (ModelInstanceIndex model_instance(cur_num_models);
+       model_instance < plant->num_model_instances(); ++model_instance) {
+    sdf::RepostureFunction reposture_model = [plant, model_instance](
+        const sdf::InterfaceModelPoseGraph &graph) {
+      // N.B. This should also posture the model appropriately.
+      for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
+        const auto& interface_link = plant->get_body(interface_link_ind);
+
+        ignition::math::Pose3d X_WL;
+        ThrowAnyErrors(
+            graph.ResolveNestedFramePose(X_WL, interface_link.name()));
+        plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
+      }
+    };
+
+    const std::string absolute_name =
+        plant->GetModelInstanceName(model_instance);
+    const auto [absolute_parent_name, local_name] =
+        sdf::SplitName(absolute_name);
+
+    const auto& model_frame =
+        plant->GetFrameByName("__model__", model_instance);
+    std::string canonical_link_name =
+        GetRelativeBodyName(model_frame.body(), model_instance, *plant);
+    RigidTransformd X_PM = RigidTransformd::Identity();
+    // The pose of the main (non-nested) model will be updated by the reposture
+    // callback, so we can use identity as the pose. For the nested model,
+    // however, we use the pose of the model relative to the parent frame, which
+    // is the parent model's frame.
+    if (model_instance != main_model_instance) {
+      auto parent_model_instance =
+          plant->GetModelInstanceByName(absolute_parent_name);
+      const auto& parent_model_frame =
+          plant->GetFrameByName("__model__", parent_model_instance);
+      RigidTransformd X_WP = GetDefaultFramePose(*plant, parent_model_frame);
+      RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
+      X_PM = X_WP.inverse() * X_WM;
+    }
+
+    auto interface_model = std::make_shared<sdf::InterfaceModel>(
+        local_name, reposture_model, false, canonical_link_name,
+        ToIgnPose3d(X_PM));
+
+    AddBodiesToInterfaceModel(*plant, model_instance, interface_model);
+    AddFramesToInterfaceModel(*plant, model_instance, interface_model);
+    AddJointsToInterfaceModel(*plant, model_instance, interface_model);
+
+    if (!main_interface_model) {
+      main_interface_model = interface_model;
+      interface_model_hierarchy[absolute_name] = main_interface_model;
+    } else {
+      // Register with its parent model.
+      sdf::InterfaceModelPtr parent_interface_model =
+          interface_model_hierarchy.at(absolute_parent_name);
+      parent_interface_model->AddNestedModel(interface_model);
+    }
+  }
+
+  return main_interface_model;
+}
+
+sdf::ParserConfig CreateNewSdfParserConfig(
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    bool test_sdf_forced_nesting) {
+  // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
+  sdf::ParserConfig parser_config;
+  parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
+  parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  parser_config.SetFindCallback(
+    [=](const std::string &_input) {
+      return ResolveUri(_input, package_map, ".");
+    });
+  // TODO(#15018): This means that unrecognized elements won't be shown to a
+  // user directly (via console or exception). We should change unrecognized
+  // elements policy to print a warning, and later become an error.
+  DRAKE_DEMAND(
+      parser_config.UnrecognizedElementsPolicy()
+      == sdf::EnforcementPolicy::LOG);
+
+  parser_config.RegisterCustomModelParser(
+      [plant, &package_map, &parser_config, test_sdf_forced_nesting](
+          const sdf::NestedInclude& include, sdf::Errors& errors) {
+        return ParseNestedInterfaceModel(plant, package_map, include, &errors,
+                                         parser_config,
+                                         test_sdf_forced_nesting);
+      });
+
+  return parser_config;
+}
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdf(
@@ -941,13 +1243,17 @@ ModelInstanceIndex AddModelFromSdf(
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
+    geometry::SceneGraph<double>* scene_graph,
+    bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
+  sdf::ParserConfig parser_config =
+      CreateNewSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
+
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, data_source, package_map);
+  std::string root_dir = LoadSdf(&root, data_source, parser_config);
 
   // TODO(jwnimmer-tri) When we upgrade to a version of libsdformat that no
   // longer offers ModelCount(), remove this entire paragraph of code.
@@ -985,13 +1291,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
+    geometry::SceneGraph<double>* scene_graph,
+    bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
+  sdf::ParserConfig parser_config =
+      CreateNewSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
+
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, data_source, package_map);
+  std::string root_dir = LoadSdf(&root, data_source, parser_config);
 
   // Throw an error if there are no models or worlds.
   if (root.Model() == nullptr && root.WorldCount() == 0) {

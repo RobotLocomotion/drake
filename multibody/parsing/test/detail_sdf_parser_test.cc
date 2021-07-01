@@ -56,19 +56,23 @@ ModelInstanceIndex AddModelFromSdfFile(
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr) {
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    bool test_sdf_forced_nesting = false
+) {
   return AddModelFromSdf(
       { .file_name = &file_name },
-      model_name, package_map, plant, scene_graph);
+      model_name, package_map, plant, scene_graph, test_sdf_forced_nesting);
 }
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr) {
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    bool test_sdf_forced_nesting = false
+) {
   return AddModelsFromSdf(
       { .file_name = &file_name },
-      package_map, plant, scene_graph);
+      package_map, plant, scene_graph, test_sdf_forced_nesting);
 }
 
 const Frame<double>& GetModelFrameByName(const MultibodyPlant<double>& plant,
@@ -508,7 +512,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
     const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(
           X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
-    EXPECT_EQ(frame_A.body().node_index(), plant->world_body().node_index());
+    EXPECT_EQ(frame_A.body().index(), plant->world_body().index());
   }
 
   {
@@ -532,7 +536,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
     const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(
           X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
-    EXPECT_EQ(frame_A.body().node_index(), plant->world_body().node_index());
+    EXPECT_EQ(frame_A.body().index(), plant->world_body().index());
 
     const RigidTransformd X_WB_expected(
         RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
@@ -541,7 +545,7 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
     const RigidTransformd X_WB = frame_B.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(
           X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
-    EXPECT_EQ(frame_B.body().node_index(), plant->world_body().node_index());
+    EXPECT_EQ(frame_B.body().index(), plant->world_body().index());
   }
 }
 
@@ -570,7 +574,7 @@ GTEST_TEST(SdfParser, StaticFrameOnlyModelsSupported) {
     const RigidTransformd X_WF = frame.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
                                 X_WF.GetAsMatrix4(), kEps));
-    EXPECT_EQ(frame.body().node_index(), plant->world_body().node_index());
+    EXPECT_EQ(frame.body().index(), plant->world_body().index());
   };
 
   test_frame("__model__", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 0, 0)});
@@ -1705,11 +1709,11 @@ GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
   // Also check that the frame is attached to the right body
   ModelInstanceIndex model_c_instance =
       plant->GetModelInstanceByName("a::b::c");
-  EXPECT_EQ(frame_E.body().node_index(),
-            plant->GetBodyByName("d", model_c_instance).node_index());
+  EXPECT_EQ(frame_E.body().index(),
+            plant->GetBodyByName("d", model_c_instance).index());
 
-  EXPECT_EQ(frame_F.body().node_index(),
-            plant->GetBodyByName("d", model_c_instance).node_index());
+  EXPECT_EQ(frame_F.body().index(),
+            plant->GetBodyByName("d", model_c_instance).index());
 }
 
 // Verify frames and links can have the same local name without violating name
@@ -1771,11 +1775,63 @@ GTEST_TEST(SdfParser, FrameAttachedToModelFrameInWorld) {
       X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
 
   // Also check that the frame is attached to the right body
-  EXPECT_EQ(frame_E.body().node_index(),
-            plant->GetBodyByName("d").node_index());
+  EXPECT_EQ(frame_E.body().index(),
+            plant->GetBodyByName("d").index());
 
-  EXPECT_EQ(frame_F.body().node_index(),
-            plant->GetBodyByName("d").node_index());
+  EXPECT_EQ(frame_F.body().index(),
+            plant->GetBodyByName("d").index());
+}
+
+// Verify frames can be attached to joint frames
+GTEST_TEST(SdfParser, FrameAttachedToJointFrame) {
+  const std::string model_string = R"""(
+<world name='default'>
+  <model name='parent_model'>
+    <pose>0.1 0.2 0.0  0 0 0</pose>
+    <link name='L1'/>
+    <link name='L2'/>
+    <model name='M1'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <link name='L3'/>
+    </model>
+    <joint name='J1' type='fixed'>
+      <parent>L1</parent>
+      <child>L2</child>
+    </joint>
+    <joint name='J2' type='fixed'>
+      <parent>L1</parent>
+      <child>M1::L3</child>
+    </joint>
+    <frame name='F1' attached_to='J1'/>
+    <frame name='F2' attached_to='J2'/>
+  </model>
+</world>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.8");
+
+  ASSERT_NE(nullptr, plant);
+  plant->Finalize();
+  auto context = plant->CreateDefaultContext();
+
+  const RigidTransformd X_WF1_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 0.2, 0.0));
+
+  const RigidTransformd X_WF2_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const auto& frame_F1 = plant->GetFrameByName("F1");
+  const auto& frame_F2 = plant->GetFrameByName("F2");
+  const RigidTransformd X_WF1 = frame_F1.CalcPoseInWorld(*context);
+  const RigidTransformd X_WF2 = frame_F2.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WF1_expected.GetAsMatrix4(), X_WF1.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WF2_expected.GetAsMatrix4(), X_WF2.GetAsMatrix4(), kEps));
+
+  // Also check that the frame is attached to the right body
+  EXPECT_EQ(frame_F1.body().index(),
+            plant->GetBodyByName("L2").index());
+  EXPECT_EQ(frame_F2.body().index(),
+            plant->GetBodyByName("L3").index());
 }
 
 GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
@@ -1802,6 +1858,166 @@ GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
 
   EXPECT_EQ(GetModelFrameByName(*plant, "a::c").body().index(),
             plant->GetBodyByName("f").index());
+}
+
+// Verify that frames can be used for //joint/parent and //joint/child
+GTEST_TEST(SdfParser, FramesAsJointParentOrChild) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "frames_as_joint_parent_or_child.sdf");
+  MultibodyPlant<double> plant(0.0);
+
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model"));
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  // Frames attached to links in the same model
+  {
+    const auto& joint_J1 = plant.GetJointByName("J1");
+
+    // J1p and J1c are the frames of J1 on its parent and child links
+    // respectively. The absolute poses of both frames should be identical.
+    const RigidTransformd X_WJ1_expected(RollPitchYawd(0, 0, 0),
+                                          Vector3d(4, 5, 6));
+
+    const RigidTransformd X_WJ1p =
+        joint_J1.frame_on_parent().CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WJ1_expected.GetAsMatrix4(),
+                                X_WJ1p.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WJ1c =
+        joint_J1.frame_on_child().CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WJ1_expected.GetAsMatrix4(),
+                                X_WJ1c.GetAsMatrix4(), kEps));
+  }
+  // Frames attached to links in the other (nested) models
+  {
+    const auto& joint_J2 = plant.GetJointByName("J2");
+
+    // J2p and J2c are the frames of J2 on its parent and child links
+    // respectively. The absolute poses of both frames should be identical.
+    const RigidTransformd X_WJ2_expected(RollPitchYawd(0, 0, 0),
+                                          Vector3d(4, 5, 6));
+    const RigidTransformd X_WJ2p =
+        joint_J2.frame_on_parent().CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WJ2_expected.GetAsMatrix4(),
+                                X_WJ2p.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WJ2c =
+        joint_J2.frame_on_child().CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WJ2_expected.GetAsMatrix4(),
+                                X_WJ2c.GetAsMatrix4(), kEps));
+  }
+}
+
+// Verifies that URDF files can be loaded into Drake via libsdformat's Interface
+// API which bypasses the URDF->SDFormat conversion. This also verifies that
+// SDFormat files can be forced to be loaded via the Interface API by changing
+// their file extension and registering the appropriate custom parser.
+GTEST_TEST(SdfParser, InterfaceAPI) {
+  const std::string sdf_file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "top.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(sdf_file_path);
+  MultibodyPlant<double> plant(0.0);
+
+  DRAKE_ASSERT_NO_THROW(AddModelFromSdfFile(sdf_file_path, "", package_map,
+                                            &plant, nullptr, true));
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  {
+    // Frame A represents the model frame of model top::arm
+    const RigidTransformd X_WA_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                        Vector3d(1, 0, 0));
+    const auto arm_model_instance = plant.GetModelInstanceByName("top::arm");
+    const auto& arm_model_frame =
+        plant.GetFrameByName("__model__", arm_model_instance);
+    const RigidTransformd X_WA = arm_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WA_expected.GetAsMatrix4(),
+                                X_WA.GetAsMatrix4(), kEps));
+    const auto& arm_L1 = plant.GetFrameByName("L1", arm_model_instance);
+    const RigidTransformd X_WL1 = arm_L1.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WA_expected.GetAsMatrix4(),
+                                X_WL1.GetAsMatrix4(), kEps));
+  }
+
+  {
+    // Frame E represents the model frame of model top::extra_arm
+    const RigidTransformd X_WE_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                        Vector3d(1, 2, 0));
+    const auto extra_arm_model_instance =
+        plant.GetModelInstanceByName("top::extra_arm");
+    const auto& extra_arm_model_frame =
+        plant.GetFrameByName("__model__", extra_arm_model_instance);
+    const RigidTransformd X_WE =
+        extra_arm_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WE_expected.GetAsMatrix4(),
+                                X_WE.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(2, 4, 3));
+    const auto& arm_L2 = plant.GetFrameByName("L2", extra_arm_model_instance);
+    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
+                                X_WL2.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame F represents the model frame of model top::arm::flange
+    const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                        Vector3d(1, 2, 1));
+    const auto flange_model_instance =
+        plant.GetModelInstanceByName("top::arm::flange");
+    const auto& flange_model_frame =
+        plant.GetFrameByName("__model__", flange_model_instance);
+    const RigidTransformd X_WF =
+        flange_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
+                                X_WF.GetAsMatrix4(), kEps));
+
+    // Frame M represents the frame of model top::arm::flange::gripper_mount
+    const RigidTransformd X_WM_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(1, 2, 3));
+    const auto& gripper_mount_frame =
+        plant.GetFrameByName("gripper_mount", flange_model_instance);
+    const RigidTransformd X_WM = gripper_mount_frame .CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WM_expected.GetAsMatrix4(),
+                                X_WM.GetAsMatrix4(), kEps));
+
+    // Frame G represents the frame of model top::arm::flange::gripper
+    const RigidTransformd X_WG_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(1, 2, 3));
+    const auto gripper_model_instance =
+        plant.GetModelInstanceByName("top::arm::gripper");
+    const auto& gripper_model_frame =
+        plant.GetFrameByName("__model__", gripper_model_instance);
+    const RigidTransformd X_WG = gripper_model_frame.CalcPoseInWorld(*context);
+    // TODO(azeey) There is a precision loss that occurs in libsdformat when
+    // resolving poses. Use just kEps when the following ign-math issue is
+    // resolved: https://github.com/ignitionrobotics/ign-math/issues/212.
+    EXPECT_TRUE(CompareMatrices(X_WG_expected.GetAsMatrix4(),
+                                X_WG.GetAsMatrix4(), 10 * kEps));
+  }
+  // Test placement_frame using a table and a mug flipped upside down
+  {
+    // Frame T represents the frame top::table_and_mug::mug::top
+    const RigidTransformd X_WT_expected(RollPitchYawd(1.570796, 0.0, 0.0),
+                                        Vector3d(3, 0, 0.5));
+    const auto mug_model_instance =
+        plant.GetModelInstanceByName("top::table_and_mug::mug");
+    const auto& mug_top_frame =
+        plant.GetFrameByName("top", mug_model_instance);
+    const RigidTransformd X_WT =
+        mug_top_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WT_expected.GetAsMatrix4(),
+                                X_WT.GetAsMatrix4(), kEps));
+  }
 }
 }  // namespace
 }  // namespace internal
