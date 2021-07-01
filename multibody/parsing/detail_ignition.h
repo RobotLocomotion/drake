@@ -17,6 +17,10 @@ Eigen::Vector3d ToVector3(const ignition::math::Vector3d& vector);
 // a RigidTransform instance.
 math::RigidTransformd ToRigidTransform(const ignition::math::Pose3d& pose);
 
+// Helper function to express a RigidTransform instance as an
+// ignition::math::Pose3d instance.
+ignition::math::Pose3d ToIgnPose3d(const math::RigidTransformd& pose);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

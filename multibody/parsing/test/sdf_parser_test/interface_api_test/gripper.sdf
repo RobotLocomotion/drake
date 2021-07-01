@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="gripper">
+    <link name="gripper_link"/>
+    <frame name="grasp_frame" attached_to="gripper_link"/>
+  </model>
+</sdf>
+

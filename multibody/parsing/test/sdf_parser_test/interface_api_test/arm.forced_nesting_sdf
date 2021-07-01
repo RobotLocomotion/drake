@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="arm">
+    <link name="L1"/>
+    <joint name="J1" type="revolute">
+      <pose relative_to="L1">0 0 1 0 0 0</pose>
+      <parent>L1</parent>
+      <child>L2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <frame name="mount" attached_to="L1"/>
+
+    <link name="L2"/>
+    <model name="flange">
+      <pose relative_to="L2">0 2 1 0 0 0</pose>
+      <link name="L3"/>
+      <frame name="gripper_mount" attached_to="L3">
+        <pose>0 0 2 0.1 0.2 0.3</pose>
+      </frame>
+    </model>
+    <joint name="J2" type="fixed">
+      <parent>L2</parent>
+      <child>flange</child>
+    </joint>
+    <include>
+      <pose relative_to="flange::gripper_mount"/>
+      <uri>package://interface_api_test/gripper.sdf</uri>
+      <name>gripper</name>
+    </include>
+
+  </model>
+</sdf>
