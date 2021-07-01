@@ -1,7 +1,10 @@
 #include "drake/systems/framework/value_producer.h"
 
 #include <stdexcept>
-#include <utility>
+
+#include <fmt/format.h>
+
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace systems {
@@ -48,6 +51,17 @@ void ValueProducer::Calc(const ContextBase& context,
         "ValueProducer cannot invoke a null CalcCallback");
   }
   return calc_(context, output);
+}
+
+void ValueProducer::ThrowBadNull() {
+  throw std::logic_error("ValueProducer was given a null callback pointer");
+}
+
+void ValueProducer::ThrowBadCast(const std::type_info& actual_type,
+                                 const std::type_info& desired_type) {
+  throw std::logic_error(fmt::format(
+      "ValueProducer cannot cast a {} to a {}",
+      NiceTypeName::Get(actual_type), NiceTypeName::Get(desired_type)));
 }
 
 }  // namespace systems
