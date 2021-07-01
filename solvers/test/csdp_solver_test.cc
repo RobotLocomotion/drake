@@ -350,6 +350,18 @@ GTEST_TEST(TestSOS, UnivariateNonnegative1) {
     }
   }
 }
+
+// This is a code coverage test, not a functional test. If the code that
+// handles verbosity options has a segfault or always throws an exception,
+// then this would catch it.
+TEST_F(TrivialSDP1, SolveVerbose) {
+  SolverOptions options;
+  options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  CsdpSolver solver;
+  if (solver.available()) {
+    solver.Solve(*prog_, {}, options);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
