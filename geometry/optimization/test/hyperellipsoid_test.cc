@@ -22,6 +22,9 @@ using internal::CheckAddPointInSetConstraint;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
 
 GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   // Test constructor.
@@ -181,8 +184,8 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   }
 }
 
-GTEST_TEST(HyperEllipsoidTest, UnitSphere6DTest) {
-  HyperEllipsoid E(Eigen::Matrix<double, 6, 6>::Identity(), Vector6d::Zero());
+GTEST_TEST(HyperEllipsoidTest, UnitBall6DTest) {
+  HyperEllipsoid E = HyperEllipsoid::MakeUnitBall(6);
   EXPECT_EQ(E.ambient_dimension(), 6);
 
   const double kScale = sqrt(1.0 / 6.0);
@@ -205,6 +208,49 @@ GTEST_TEST(HyperEllipsoidTest, CloneTest) {
   ASSERT_NE(pointer, nullptr);
   EXPECT_TRUE(CompareMatrices(E.A(), pointer->A()));
   EXPECT_TRUE(CompareMatrices(E.center(), pointer->center()));
+}
+
+GTEST_TEST(HyperEllipsoidTest, NonnegativeScalingTest) {
+  HyperEllipsoid E = HyperEllipsoid::MakeUnitBall(3);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto t = prog.NewContinuousVariables(1, "t")[0];
+
+  std::vector<Binding<Constraint>> constraints =
+      E.AddPointInNonnegativeScalingConstraints(&prog, x, t);
+
+  EXPECT_EQ(constraints.size(), 2);
+
+  const double kScale = sqrt(1.0 / 3.0);
+
+  prog.SetInitialGuess(x, .99 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, 1.0);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 1.01 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, 1.0);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .99 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, -0.01);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .49 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, 0.5);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .51 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, 0.5);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 1.99 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, 2.0);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 2.01 * kScale * Vector3d::Ones());
+  prog.SetInitialGuess(t, 2.0);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
 }
 
 }  // namespace optimization

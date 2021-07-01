@@ -1,5 +1,6 @@
 #include "drake/geometry/optimization/convex_set.h"
 
+#include <limits>
 #include <memory>
 
 namespace drake {
@@ -14,6 +15,19 @@ ConvexSet::ConvexSet(
 }
 
 std::unique_ptr<ConvexSet> ConvexSet::Clone() const { return cloner_(*this); }
+
+std::vector<solvers::Binding<solvers::Constraint>>
+ConvexSet::AddPointInNonnegativeScalingConstraints(
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+    const symbolic::Variable& t) const {
+  DRAKE_DEMAND(x.size() == ambient_dimension());
+  std::vector<solvers::Binding<solvers::Constraint>> constraints =
+      DoAddPointInNonnegativeScalingConstraints(prog, x, t);
+  constraints.emplace_back(prog->AddBoundingBoxConstraint(
+      0, std::numeric_limits<double>::infinity(), t));
+  return constraints;
+}
 
 }  // namespace optimization
 }  // namespace geometry
