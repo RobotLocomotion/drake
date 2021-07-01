@@ -44,7 +44,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
     geometry::SceneGraph<double>* scene_graph = nullptr) {
   return AddModelFromUrdf(
       { .file_name = &file_name },
-      model_name, package_map, plant, scene_graph);
+      model_name, {}, package_map, plant, scene_graph);
 }
 
 // Verifies that the URDF loader can leverage a specified package map.

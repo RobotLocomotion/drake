@@ -15,6 +15,7 @@ filegroup(
         "test/**/*.config",
         "test/**/*.obj",
         "test/**/*.sdf",
+        "test/**/*.forced_nesting_sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
         "test/**/*.png",
@@ -129,6 +130,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":detail_scene_graph",
+        ":detail_urdf_parser",
         ":scoped_names",
         "//multibody/plant",
         "@sdformat",
@@ -151,6 +153,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
+        ":scoped_names",
         "//multibody/plant",
         "@fmt",
         "@tinyxml2",

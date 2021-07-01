@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot name="arm">
+  <link name="L1"/>
+  <joint name="J1" type="revolute">
+    <origin xyz="1 2 3" rpy="0.1 0.2 0.3"/>
+    <parent link="L1"/>
+    <child link="L2"/>
+  </joint>
+  <link name="L2"/>
+</robot>
