@@ -3,6 +3,7 @@
 
 #include "pybind11/eigen.h"
 #include "pybind11/functional.h"
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -363,7 +364,21 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
       .def(py::init<std::string>(), py::arg("name"), doc.SolverId.ctor.doc)
-      .def("name", &SolverId::name, doc.SolverId.name.doc);
+      .def("name", &SolverId::name, doc.SolverId.name.doc)
+      .def("__hash__",
+          [](const SolverId& self) { return std::hash<SolverId>{}(self); })
+      .def(
+          "__eq__",
+          [](const SolverId& self, const SolverId& other) {
+            return self == other;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const SolverId& self, const SolverId& other) {
+            return self != other;
+          },
+          py::is_operator());
 
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
       .value("kClp", SolverType::kClp, doc.SolverType.kClp.doc)
