@@ -1218,6 +1218,28 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   typedef drake::symbolic::Expression ReturnType;
 };
 
+namespace internal {
+template<> EIGEN_DEVICE_FUNC inline ::drake::symbolic::Expression
+ptrue(const ::drake::symbolic::Expression&) { return 1; }
+template<> EIGEN_DEVICE_FUNC inline ::drake::symbolic::Expression
+pzero(const ::drake::symbolic::Expression&) { return 0; }
+template<> EIGEN_DEVICE_FUNC inline ::drake::symbolic::Expression
+pand(const ::drake::symbolic::Expression& a,
+     const ::drake::symbolic::Expression& b) {
+  return static_cast<int>(a.Evaluate()) & static_cast<int>(b.Evaluate());
+}
+template<> EIGEN_DEVICE_FUNC inline ::drake::symbolic::Expression
+por(const ::drake::symbolic::Expression& a,
+    const ::drake::symbolic::Expression& b) {
+  return static_cast<int>(a.Evaluate()) | static_cast<int>(b.Evaluate());
+}
+template<> EIGEN_DEVICE_FUNC inline ::drake::symbolic::Expression
+pxor(const ::drake::symbolic::Expression& a,
+     const ::drake::symbolic::Expression& b) {
+  return static_cast<int>(a.Evaluate()) ^ static_cast<int>(b.Evaluate());
+}
+}  // namespace internal
+
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
