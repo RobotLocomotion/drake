@@ -24,6 +24,7 @@ Plugging (3) in (1), we get
    (A - BD⁻¹Bᵀ)x = a.
 After a solution for x is obtained, we can use (3) to recover the solution for
 y. The matrix A - BD⁻¹Bᵀ is the Schur complement of the block D of the matrix M.
+Since M is positive definite, so is the Schur complement A - BD⁻¹Bᵀ.
 
 @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -37,9 +38,6 @@ class SchurComplement {
       : neg_Dinv_B_transpose_(MatrixX<T>::Zero(0, 0)),
         D_complement_(MatrixX<T>::Zero(0, 0)) {}
 
-  // TODO(xuchenhan-tri): Consider supporting a constructor taking sparse
-  //  matrices. To effectively utilize the sparsity, we need a sparse linear
-  //  solver.
   /* Calculates the Schur complement of the positive matrix M = [A B; Bᵀ D]
   given its block components.
   @pre A, D, and M are symmetric positive definite. Note that this prerequisite
@@ -47,11 +45,11 @@ class SchurComplement {
        constructor should take care to pass in valid arguments. One way of
        making sure that this prerequisite is satisfied is by passing in
        components of a matrix M that is known to be symmetric positive-definite.
-  @pre A.rows() == B.rows().
-  @pre B.cols() == D.cols(). */
-  SchurComplement(const Eigen::Ref<const MatrixX<T>>& A,
-                  const Eigen::Ref<const MatrixX<T>>& B,
-                  const Eigen::Ref<const MatrixX<T>>& D);
+  @pre A.rows() == B_transpose.cols().
+  @pre B_transpose.rows() == D.cols(). */
+  SchurComplement(const Eigen::Ref<const Eigen::SparseMatrix<T>>& A,
+                  const Eigen::Ref<const Eigen::SparseMatrix<T>>& B_transpose,
+                  const Eigen::Ref<const Eigen::SparseMatrix<T>>& D);
 
   /* Returns the Schur complement for the block D of the matrix M, A - BD⁻¹Bᵀ.
    */

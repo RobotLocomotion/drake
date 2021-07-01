@@ -6,23 +6,24 @@ namespace fixed_fem {
 namespace internal {
 
 template <typename T>
-SchurComplement<T>::SchurComplement(const Eigen::Ref<const MatrixX<T>>& A,
-                                    const Eigen::Ref<const MatrixX<T>>& B,
-                                    const Eigen::Ref<const MatrixX<T>>& D)
+SchurComplement<T>::SchurComplement(
+    const Eigen::Ref<const Eigen::SparseMatrix<T>>& A,
+    const Eigen::Ref<const Eigen::SparseMatrix<T>>& B_transpose,
+    const Eigen::Ref<const Eigen::SparseMatrix<T>>& D)
     : p_(A.rows()), q_(D.rows()) {
   DRAKE_DEMAND(A.cols() == p_);
   DRAKE_DEMAND(D.cols() == q_);
-  DRAKE_DEMAND(B.rows() == p_);
-  DRAKE_DEMAND(B.cols() == q_);
+  DRAKE_DEMAND(B_transpose.rows() == q_);
+  DRAKE_DEMAND(B_transpose.cols() == p_);
   /* Special treatment for M = A is needed because Eigen::LLT::solve() throws
    exception if the matrix under decomposition is empty. */
   if (q_ == 0) {
     neg_Dinv_B_transpose_ = MatrixX<T>::Zero(0, p_);
     D_complement_ = A;
   } else {
-    const Eigen::LLT<MatrixX<T>> D_factorization(D);
-    neg_Dinv_B_transpose_ = D_factorization.solve(-B.transpose());
-    D_complement_ = A + B * neg_Dinv_B_transpose_;
+    const Eigen::SparseLU<Eigen::SparseMatrix<T>> D_factorization(D);
+    neg_Dinv_B_transpose_ = D_factorization.solve(-B_transpose);
+    D_complement_ = A + B_transpose.transpose() * neg_Dinv_B_transpose_;
   }
 }
 
