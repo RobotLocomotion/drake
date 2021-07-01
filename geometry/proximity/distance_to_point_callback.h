@@ -155,20 +155,23 @@ class DistanceToPoint {
   // TODO(DamrongGuoy): Revisit computation over operator() overloads as per
   //  issue: https://github.com/RobotLocomotion/drake/issues/11227
 
-  /* Overload to compute distance to a sphere.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere);
-
-  /* Overload to compute distance to a halfspace.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace);
+  /* Overload to compute distance to a box.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Boxd& box);
 
   /* Overload to compute distance to a capsule.  */
   SignedDistanceToPoint<T> operator()(const fcl::Capsuled& capsule);
 
-  /* Overload to compute distance to a box.  */
-  SignedDistanceToPoint<T> operator()(const fcl::Boxd& box);
-
   /* Overload to compute distance to a cylinder.  */
   SignedDistanceToPoint<T> operator()(const fcl::Cylinderd& cylinder);
+
+  /* Overload to compute distance to an ellipsoid.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Ellipsoidd& ellipsoid);
+
+  /* Overload to compute distance to a halfspace.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace);
+
+  /* Overload to compute distance to a sphere.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere);
 
   /* Reports the "sign" of x with a small modification; Sign(0) --> 1.
    @tparam U  Templated to allow DistanceToPoint<AutoDiffXd> to still compute

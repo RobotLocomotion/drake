@@ -173,45 +173,6 @@ class PointShapeAutoDiffSignedDistanceTester {
   const double tolerance_{std::numeric_limits<double>::epsilon()};
 };
 
-// Simple smoke test for signed distance to Sphere. It does the following:
-//   Perform test of three different points w.r.t. a sphere: outside, on
-//     surface, and inside.
-//   Do it with AutoDiff relative to the query point's position.
-//   Confirm the *values* of the reported quantity.
-//   Confirm that the derivative of distance (extracted from AutoDiff) matches
-//     the derivative computed by hand (grad_W).
-GTEST_TEST(DistanceToPoint, Sphere) {
-  const double kEps = 4 * std::numeric_limits<double>::epsilon();
-
-  // Provide some arbitrary pose of the sphere in the world.
-  const RotationMatrix<double> R_WG(
-      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
-  const Vector3d p_WG{0.5, 1.25, -2};
-  const RigidTransform<double> X_WG(R_WG, p_WG);
-  const fcl::Sphered sphere(0.7);
-  PointShapeAutoDiffSignedDistanceTester<fcl::Sphered> tester(&sphere, X_WG,
-                                                              kEps);
-
-  // An arbitrary direction away from the origin that *isn't* aligned with the
-  // frame basis.
-  const Vector3d vhat_NQ = Vector3d{2, -3, 6}.normalized();
-  const Vector3d p_NQ_G = 1.5 * vhat_NQ;
-  const Vector3d p_GN_G = sphere.radius * vhat_NQ;
-
-  // Case: point lies *outside* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
-
-  // Case: point lies *on* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
-
-  // Case: point lies *in* the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
-
-  // Case: point lies at origin of the sphere.
-  EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
-                          true /* is inside */, false /* ill defined */));
-}
-
 // Simple smoke test for signed distance to Box. It does the following:
 //   Perform test of three different points w.r.t. a box: outside, on
 //     surface, and inside.
@@ -360,6 +321,113 @@ GTEST_TEST(DistanceToPoint, Capsule) {
   }
 }
 
+// Test the evaluation of signed distance to Ellipsoid. This explicitly spells
+// out a double-valued test because AutoDiffXd is not yet supported. We hand
+// construct a few points (and corresponding normals) on the surface of the
+// ellipsoid and construct query points relative to those surface points.
+// The surface points should report as the witness point, the normal is the
+// gradient, etc.
+//
+// For each sample, we try a different distance and confirm all the fields of
+// the returned type.
+GTEST_TEST(DistanceToPoint, Ellipsoid) {
+  // Provide some arbitrary pose of the ellipsoid G in the world.
+  const RotationMatrix<double> R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const Vector3d p_WG{0.5, 1.25, -2};
+  const RigidTransform<double> X_WG(R_WG, p_WG);
+
+  // Note: the more eccentric the ellipsoid becomes (with higher curvature), the
+  // more error there will be near the regions with high curvature. This is
+  // because we're using GJK/EPA to compute distance. So, to avoid highly
+  // variable error across the point samples, we'll keep the ellipsoid "close"
+  // to a sphere. If we stretch it out, we need either a) a larger tolerance
+  // value for the vectors or b) a per-sample tolerance values.
+  const fcl::Ellipsoidd ellipsoid(1.5, 0.75, 1.25);
+
+  // TODO(SeanCurtis-TRI): When point-to-ellipsoid supports AutoDiffXd, modify
+  //  this to exercise PointShapeAutoDiffSignedDistanceTester.
+
+  auto get_sample = [&ellipsoid](double theta, double phi) {
+    // Compute a point on the surface of the ellipsoid and the normal at
+    // that point. For the point, we use the parametric equation of the
+    // ellipsoid (on two periodic parameters):
+    //    E = [a⋅cos(θ)⋅sin(ϕ), b⋅sin(θ)⋅sin(ϕ), c⋅cos(ϕ)].
+    // For the normal, we normalize the gradient of
+    //    f = x² / a² + y² / b² + z² / c²
+    //    ∇f = <2x / a², 2y / b², 2z / c²>
+    //    n = ∇f / |∇f|
+    const double a = ellipsoid.radii.x();
+    const double b = ellipsoid.radii.y();
+    const double c = ellipsoid.radii.z();
+    const double x = a * std::cos(theta) * std::sin(phi);
+    const double y = b * std::sin(theta) * std::sin(phi);
+    const double z = c * std::cos(phi);
+    // Because we're normalizing the gradient, we simply omit the redundant
+    // scale factor of 2.
+    return std::make_pair(
+        Vector3d{x, y, z},
+        Vector3d{x / a / a, y / b / b, z / c / c}.normalized());
+  };
+
+  struct EllipseCoord {
+    double theta{};
+    double phi{};
+  };
+
+  std::vector<EllipseCoord> coords{
+      EllipseCoord{0, 0},                       // Bottom pole.
+      EllipseCoord{7 * M_PI / 5, M_PI / 6},     // Lower half.
+      EllipseCoord{3 * M_PI / 7, 4 * M_PI / 5}  // Upper half.
+  };
+
+  constexpr double kDistTolerance = 5e-5;
+  constexpr double kVectorTolerance = 5e-4;
+  const GeometryId id = GeometryId::get_new_id();
+
+  for (const auto& coord : coords) {
+    const auto& [p_GN, n_G] = get_sample(coord.theta, coord.phi);
+    for (const double distance : {-0.125, 0.0, 0.2}) {
+      const Vector3d p_GQ = p_GN + n_G * distance;
+      const Vector3d p_WQ = X_WG * p_GQ;
+      DistanceToPoint<double> distance_to_point(id, X_WG, p_WQ);
+      const SignedDistanceToPoint<double> result = distance_to_point(ellipsoid);
+
+      SCOPED_TRACE(fmt::format(
+          "theta = {}, phi = {}, distance = {}\n  p_GQ: {} {} {}", coord.theta,
+          coord.phi, distance, p_GQ.x(), p_GQ.y(), p_GQ.z()));
+      EXPECT_EQ(result.id_G, id);
+      EXPECT_NEAR(result.distance, distance, kDistTolerance);
+      EXPECT_TRUE(CompareMatrices(result.p_GN, p_GN, kVectorTolerance));
+      EXPECT_TRUE(CompareMatrices(result.grad_W, X_WG.rotation() * n_G,
+                                  kVectorTolerance));
+    }
+  }
+
+  // Special case where the query point lies on the medial axis of
+  // the ellipsoid. We don't know what FCL will produce as the nearest point.
+  // However, we can confirm:
+  //   - distance from query to nearest point.
+  //   - gradient is perpendicular to a known circle.
+  //   - id is correct.
+  // To facilitate this, we'll pick the query point (0, 0, 0). Then the nearest
+  // point must be a distance equal to the shortest radii (0.75), it must lie
+  // either on the +y or -y axis (the axis with the shortest radii) and have
+  // a normal that points in one of those two directions.
+  const double min_radius = ellipsoid.radii.y();
+  const Vector3d min_axis_G(0, 1, 0);
+  const Vector3d p_WQ = X_WG * Vector3d::Zero();
+  DistanceToPoint<double> distance_to_point(id, X_WG, p_WQ);
+  const SignedDistanceToPoint<double> result = distance_to_point(ellipsoid);
+  EXPECT_EQ(result.id_G, id);
+  EXPECT_NEAR(result.distance, -min_radius, kDistTolerance);
+  EXPECT_TRUE(CompareMatrices(result.p_GN.cwiseAbs(), min_axis_G * min_radius,
+                              kVectorTolerance));
+  EXPECT_TRUE(
+      CompareMatrices((X_WG.rotation().inverse() * result.grad_W).cwiseAbs(),
+                      min_axis_G, kVectorTolerance));
+}
+
 // Simple smoke test for signed distance to Halfspace. It does the following:
 //   Perform test of three different points w.r.t. a halfspace: outside, on
 //     surface, and inside.
@@ -393,6 +461,45 @@ GTEST_TEST(DistanceToPoint, Halfspace) {
 
   // Case: point lies *in* the halfspace.
   EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * phat_NQ_G, true /* is inside */));
+}
+
+// Simple smoke test for signed distance to Sphere. It does the following:
+//   Perform test of three different points w.r.t. a sphere: outside, on
+//     surface, and inside.
+//   Do it with AutoDiff relative to the query point's position.
+//   Confirm the *values* of the reported quantity.
+//   Confirm that the derivative of distance (extracted from AutoDiff) matches
+//     the derivative computed by hand (grad_W).
+GTEST_TEST(DistanceToPoint, Sphere) {
+  const double kEps = 4 * std::numeric_limits<double>::epsilon();
+
+  // Provide some arbitrary pose of the sphere in the world.
+  const RotationMatrix<double> R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const Vector3d p_WG{0.5, 1.25, -2};
+  const RigidTransform<double> X_WG(R_WG, p_WG);
+  const fcl::Sphered sphere(0.7);
+  PointShapeAutoDiffSignedDistanceTester<fcl::Sphered> tester(&sphere, X_WG,
+                                                              kEps);
+
+  // An arbitrary direction away from the origin that *isn't* aligned with the
+  // frame basis.
+  const Vector3d vhat_NQ = Vector3d{2, -3, 6}.normalized();
+  const Vector3d p_NQ_G = 1.5 * vhat_NQ;
+  const Vector3d p_GN_G = sphere.radius * vhat_NQ;
+
+  // Case: point lies *outside* the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+
+  // Case: point lies *on* the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+
+  // Case: point lies *in* the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
+
+  // Case: point lies at origin of the sphere.
+  EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
+                          true /* is inside */, false /* ill defined */));
 }
 
 // TODO(SeanCurtis-TRI): Point-to-cylinder with AutoDiff has been "disabled".
@@ -514,6 +621,18 @@ int ExpectedCylinderResult<AutoDiffXd>() {
   return 0;
 }
 
+// Helper functions to indicate expectation on whether I get a distance result
+// with a ellipsoid based on scalar type.
+template <typename T>
+int ExpectedEllipsoidResult() {
+  return 1;
+}
+
+template <>
+int ExpectedEllipsoidResult<AutoDiffXd>() {
+  return 0;
+}
+
 template <typename T>
 void TestScalarShapeSupport() {
   // Configure the basic query.
@@ -547,24 +666,6 @@ void TestScalarShapeSupport() {
     Callback<T>(&query_point, &object, &data, threshold);
   };
 
-  // Sphere
-  {
-    run_callback(make_shared<fcl::Sphered>(1.0));
-    EXPECT_EQ(distances.size(), 1);
-  }
-
-  // Cylinder
-  {
-    run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), ExpectedCylinderResult<T>());
-  }
-
-  // HalfSpace
-  {
-    run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
-    EXPECT_EQ(distances.size(), 1);
-  }
-
   // Box
   {
     run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
@@ -574,6 +675,29 @@ void TestScalarShapeSupport() {
   // Capsule
   {
     run_callback(make_shared<fcl::Capsuled>(1.0, 2.0));
+    EXPECT_EQ(distances.size(), 1);
+  }
+
+  // Cylinder
+  {
+    run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
+    EXPECT_EQ(distances.size(), ExpectedCylinderResult<T>());
+  }
+
+  // Ellipsoid
+  { run_callback(make_shared<fcl::Ellipsoidd>(1.5, 0.7, 3));
+    EXPECT_EQ(distances.size(), ExpectedEllipsoidResult<T>());
+  }
+
+  // HalfSpace
+  {
+    run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
+    EXPECT_EQ(distances.size(), 1);
+  }
+
+  // Sphere
+  {
+    run_callback(make_shared<fcl::Sphered>(1.0));
     EXPECT_EQ(distances.size(), 1);
   }
 
