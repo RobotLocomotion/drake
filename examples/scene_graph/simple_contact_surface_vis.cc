@@ -252,13 +252,20 @@ class ContactResultMaker final : public LeafSystem<double> {
         tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
         tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
 
-        // Face contact *traction* and *slip velocity* data.
-        write_double3(Vector3<double>(0, 0.2, 0), quad_msg.vt_BqAq_W);
-        write_double3(Vector3<double>(0, -0.2, 0), quad_msg.traction_Aq_W);
+        // Fake contact *traction* and *slip velocity* data, with some
+        // variations across different data instances to facilitate visualizer
+        // testing.
+        write_double3(Vector3<double>(0, 0.2 + (j * 0.005), 0),
+                      quad_msg.vt_BqAq_W);
+        write_double3(Vector3<double>(0, -0.2 - (j * 0.005), 0),
+                      quad_msg.traction_Aq_W);
       }
-      // Fake contact *force* and *moment* data.
-      write_double3(Vector3<double>(1, 0, 0), surface_msg.force_C_W);
-      write_double3(Vector3<double>(0, 0, 1), surface_msg.moment_C_W);
+      // Fake contact *force* and *moment* data, with some variations across
+      // different data instances to facilitate visualizer testing.
+      write_double3(Vector3<double>(1.2 * (i + 1), 0, 0),
+                    surface_msg.force_C_W);
+      write_double3(Vector3<double>(0, 0, 0.5 * (i + 1)),
+                    surface_msg.moment_C_W);
     }
 
     // Point pairs.
