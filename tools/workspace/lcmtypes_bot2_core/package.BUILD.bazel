@@ -70,10 +70,7 @@ lcm_py_library(
 py_library(
     name = "lcmtypes_bot2_core_py_nondeprecated",
     deps = ["lcmtypes_bot2_core_py"],
-    visibility = [
-        "@drake_visualizer//:__pkg__",
-        "@lcmtypes_robotlocomotion//:__pkg__",
-    ],
+    visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
 )
 
 CMAKE_PACKAGE = "bot2-core-lcmtypes"
