@@ -18,12 +18,11 @@ using math::RigidTransformd;
 std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
 MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG) {
   auto scene_graph = std::make_unique<SceneGraph<double>>();
-  SourceId source = scene_graph->RegisterSource("test");
-  auto instance =
-      std::make_unique<GeometryInstance>(X_WG, shape.Clone(), "test");
+  SourceId source_id = scene_graph->RegisterSource("test");
+  auto instance = std::make_unique<GeometryInstance>(X_WG, shape.Clone(), "G");
   instance->set_proximity_properties(ProximityProperties());
   GeometryId geom_id =
-      scene_graph->RegisterAnchoredGeometry(source, std::move(instance));
+      scene_graph->RegisterAnchoredGeometry(source_id, std::move(instance));
   return std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>(
       std::move(scene_graph), geom_id);
 }

@@ -45,7 +45,7 @@ HyperEllipsoid::HyperEllipsoid(const QueryObject<double>& query_object,
                                    ? query_object.GetPoseInWorld(*expressed_in)
                                    : RigidTransformd::Identity();
   const RigidTransformd X_WG = query_object.GetPoseInWorld(geometry_id);
-  const RigidTransformd X_GE = X_WG.inverse() * X_WE;
+  const RigidTransformd X_GE = X_WG.InvertAndCompose(X_WE);
 
   // (p_EE_var - p_EG)ᵀ * Aᵀ * A * (p_EE_var - p_EG) ≤ 1
   // A = A_G * R_GE, center = p_EG

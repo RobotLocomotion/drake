@@ -48,23 +48,23 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   EXPECT_TRUE(CompareMatrices(center, E_scene_graph.center()));
 
   // Test PointInSet.
-  const Vector3d in1{.99, 0, 0}, in2{.5, .5, .5}, out1{1.01, 0, 0},
-      out2{1.0, 1.0, 1.0};
+  const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
+      out2_W{1.0, 1.0, 1.0};
 
-  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1)[0].distance, 0.0);
-  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2)[0].distance, 0.0);
-  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1)[0].distance, 0.0);
-  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1_W)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2_W)[0].distance, 0.0);
 
-  EXPECT_TRUE(E.PointInSet(in1));
-  EXPECT_TRUE(E.PointInSet(in2));
-  EXPECT_FALSE(E.PointInSet(out1));
-  EXPECT_FALSE(E.PointInSet(out2));
+  EXPECT_TRUE(E.PointInSet(in1_W));
+  EXPECT_TRUE(E.PointInSet(in2_W));
+  EXPECT_FALSE(E.PointInSet(out1_W));
+  EXPECT_FALSE(E.PointInSet(out2_W));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in1));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in2));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out1));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2));
+  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out1_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2_W));
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = E.ToShapeWithPose();
@@ -126,43 +126,45 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   EXPECT_TRUE(CompareMatrices(center, E_scene_graph.center(), 1e-15));
 
   // Test PointInSet.
-  Vector3d in1{.99, 0, 0}, in2{.5, .5, .5}, out1{1.01, 0, 0},
-      out2{1.0, 1.0, 1.0};
+  Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
+      out2_W{1.0, 1.0, 1.0};
   const Eigen::Matrix3d B = R.inverse() * D.inverse();
-  in1 = B * in1 + center;
-  in2 = B * in2 + center;
-  out1 = B * out1 + center;
-  out2 = B * out2 + center;
+  in1_W = B * in1_W + center;
+  in2_W = B * in2_W + center;
+  out1_W = B * out1_W + center;
+  out2_W = B * out2_W + center;
 
   // TODO(russt): Add ComputeSignedDistanceToPoint queries once HyperEllipsoids
   // are supported.
 
-  EXPECT_TRUE(E.PointInSet(in1));
-  EXPECT_TRUE(E.PointInSet(in2));
-  EXPECT_FALSE(E.PointInSet(out1));
-  EXPECT_FALSE(E.PointInSet(out2));
+  EXPECT_TRUE(E.PointInSet(in1_W));
+  EXPECT_TRUE(E.PointInSet(in2_W));
+  EXPECT_FALSE(E.PointInSet(out1_W));
+  EXPECT_FALSE(E.PointInSet(out2_W));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in1));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in2));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out1));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2));
+  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out1_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2_W));
 
   // Test expressed_in frame.
-  SourceId source_id = scene_graph->RegisterSource("new_frame");
-  FrameId frame_id =
-      scene_graph->RegisterFrame(source_id, GeometryFrame("new_frame"));
+  SourceId source_id = scene_graph->RegisterSource("F");
+  FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();
-  const FramePoseVector<double> pose_vector{
-      {frame_id, RigidTransformd(center)}};
+  const RigidTransformd X_WF{math::RollPitchYawd(.1, .2, 3),
+                             Vector3d{.5, .87, .1}};
+  const FramePoseVector<double> pose_vector{{frame_id, X_WF}};
   scene_graph->get_source_pose_port(source_id).FixValue(context2.get(),
                                                         pose_vector);
   auto query2 =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
-  HyperEllipsoid E_P(query2, geom_id, frame_id);
+  HyperEllipsoid E_F(query2, geom_id, frame_id);
 
-  EXPECT_TRUE(E_P.PointInSet(Vector3d::Zero()));
-  EXPECT_FALSE(E_P.PointInSet(in1));
-  EXPECT_FALSE(E_P.PointInSet(in2));
+  const RigidTransformd X_FW = X_WF.inverse();
+  EXPECT_TRUE(E_F.PointInSet(X_FW * in1_W));
+  EXPECT_TRUE(E_F.PointInSet(X_FW * in2_W));
+  EXPECT_FALSE(E_F.PointInSet(X_FW * out1_W));
+  EXPECT_FALSE(E_F.PointInSet(X_FW * out2_W));
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = E.ToShapeWithPose();
@@ -190,15 +192,15 @@ GTEST_TEST(HyperEllipsoidTest, UnitBall6DTest) {
   EXPECT_EQ(E.ambient_dimension(), 6);
 
   const double kScale = sqrt(1.0 / 6.0);
-  Vector6d in1{Vector6d::Constant(-.99 * kScale)},
-      in2{Vector6d::Constant(.99 * kScale)},
-      out1{Vector6d::Constant(-1.01 * kScale)},
-      out2{Vector6d::Constant(1.01 * kScale)};
+  Vector6d in1_W{Vector6d::Constant(-.99 * kScale)},
+      in2_W{Vector6d::Constant(.99 * kScale)},
+      out1_W{Vector6d::Constant(-1.01 * kScale)},
+      out2_W{Vector6d::Constant(1.01 * kScale)};
 
-  EXPECT_TRUE(E.PointInSet(in1));
-  EXPECT_TRUE(E.PointInSet(in2));
-  EXPECT_FALSE(E.PointInSet(out1));
-  EXPECT_FALSE(E.PointInSet(out2));
+  EXPECT_TRUE(E.PointInSet(in1_W));
+  EXPECT_TRUE(E.PointInSet(in2_W));
+  EXPECT_FALSE(E.PointInSet(out1_W));
+  EXPECT_FALSE(E.PointInSet(out2_W));
 }
 
 GTEST_TEST(HyperEllipsoidTest, CloneTest) {

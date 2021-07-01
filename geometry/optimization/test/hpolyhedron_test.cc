@@ -11,6 +11,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -77,40 +78,42 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
 
   EXPECT_EQ(H.ambient_dimension(), 3);
   // Rotated box should end up with lb=[-5,-5.5,-7.5], ub=[-3,-4.5,-4.5].
-  Vector3d in1{-4.9, -5.4, -7.4}, in2{-3.1, -4.6, -4.6}, out1{-5.1, -5.6, -7.6},
-      out2{-2.9, -4.4, -4.4};
+  Vector3d in1_W{-4.9, -5.4, -7.4}, in2_W{-3.1, -4.6, -4.6},
+      out1_W{-5.1, -5.6, -7.6}, out2_W{-2.9, -4.4, -4.4};
 
-  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1)[0].distance, 0.0);
-  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2)[0].distance, 0.0);
-  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1)[0].distance, 0.0);
-  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1_W)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2_W)[0].distance, 0.0);
 
-  EXPECT_TRUE(H.PointInSet(in1));
-  EXPECT_TRUE(H.PointInSet(in2));
-  EXPECT_FALSE(H.PointInSet(out1));
-  EXPECT_FALSE(H.PointInSet(out2));
+  EXPECT_TRUE(H.PointInSet(in1_W));
+  EXPECT_TRUE(H.PointInSet(in2_W));
+  EXPECT_FALSE(H.PointInSet(out1_W));
+  EXPECT_FALSE(H.PointInSet(out2_W));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(H, in1));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(H, in2));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(H, out1));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(H, out2));
+  EXPECT_TRUE(CheckAddPointInSetConstraint(H, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraint(H, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraint(H, out1_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraint(H, out2_W));
 
   // Test expressed_in frame.
-  SourceId source_id = scene_graph->RegisterSource("new_frame");
-  FrameId frame_id =
-      scene_graph->RegisterFrame(source_id, GeometryFrame("new_frame"));
+  SourceId source_id = scene_graph->RegisterSource("F");
+  FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();
-  // Set X_WF to X_WG to simplify PointInSet checks.
-  const FramePoseVector<double> pose_vector{{frame_id, X_WG}};
+  const RigidTransformd X_WF{math::RollPitchYawd(.1, .2, 3),
+                             Vector3d{.5, .87, .1}};
+  const FramePoseVector<double> pose_vector{{frame_id, X_WF}};
   scene_graph->get_source_pose_port(source_id).FixValue(context2.get(),
                                                         pose_vector);
   auto query2 =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
-  HPolyhedron H_P(query2, geom_id, frame_id);
+  HPolyhedron H_F(query2, geom_id, frame_id);
 
-  EXPECT_TRUE(H_P.PointInSet(Vector3d::Zero()));
-  EXPECT_FALSE(H_P.PointInSet(in1));
-  EXPECT_FALSE(H_P.PointInSet(in2));
+  const RigidTransformd X_FW = X_WF.inverse();
+  EXPECT_TRUE(H_F.PointInSet(X_FW * in1_W));
+  EXPECT_TRUE(H_F.PointInSet(X_FW * in2_W));
+  EXPECT_FALSE(H_F.PointInSet(X_FW * out1_W));
+  EXPECT_FALSE(H_F.PointInSet(X_FW * out2_W));
 }
 
 GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
@@ -125,31 +128,31 @@ GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
   EXPECT_EQ(H.ambient_dimension(), 3);
 
   // Rotated HalfSpace should be x <= -1.2.
-  Vector3d in1{-1.21, 0.0, 0.0}, in2{-1.21, 2., 3.}, out1{-1.19, 0, 0},
-      out2{-1.19, 2., 3.};
+  Vector3d in1_W{-1.21, 0.0, 0.0}, in2_W{-1.21, 2., 3.}, out1_W{-1.19, 0, 0},
+      out2_W{-1.19, 2., 3.};
 
-  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1)[0].distance, 0.0);
-  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2)[0].distance, 0.0);
-  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1)[0].distance, 0.0);
-  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1_W)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2_W)[0].distance, 0.0);
 
-  EXPECT_TRUE(H.PointInSet(in1));
-  EXPECT_TRUE(H.PointInSet(in2));
-  EXPECT_FALSE(H.PointInSet(out1));
-  EXPECT_FALSE(H.PointInSet(out2));
+  EXPECT_TRUE(H.PointInSet(in1_W));
+  EXPECT_TRUE(H.PointInSet(in2_W));
+  EXPECT_FALSE(H.PointInSet(out1_W));
+  EXPECT_FALSE(H.PointInSet(out2_W));
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBox6DTest) {
   HPolyhedron H = HPolyhedron::MakeUnitBox(6);
   EXPECT_EQ(H.ambient_dimension(), 6);
 
-  Vector6d in1{Vector6d::Constant(-.99)}, in2{Vector6d::Constant(.99)},
-      out1{Vector6d::Constant(-1.01)}, out2{Vector6d::Constant(1.01)};
+  Vector6d in1_W{Vector6d::Constant(-.99)}, in2_W{Vector6d::Constant(.99)},
+      out1_W{Vector6d::Constant(-1.01)}, out2_W{Vector6d::Constant(1.01)};
 
-  EXPECT_TRUE(H.PointInSet(in1));
-  EXPECT_TRUE(H.PointInSet(in2));
-  EXPECT_FALSE(H.PointInSet(out1));
-  EXPECT_FALSE(H.PointInSet(out2));
+  EXPECT_TRUE(H.PointInSet(in1_W));
+  EXPECT_TRUE(H.PointInSet(in2_W));
+  EXPECT_FALSE(H.PointInSet(out1_W));
+  EXPECT_FALSE(H.PointInSet(out2_W));
 }
 
 GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
