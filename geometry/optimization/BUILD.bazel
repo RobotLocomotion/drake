@@ -20,20 +20,49 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "convex_set",
-    srcs = ["convex_set.cc"],
-    hdrs = ["convex_set.h"],
+    srcs = [
+        "convex_set.cc",
+        "hpolyhedron.cc",
+        "hyperellipsoid.cc",
+    ],
+    hdrs = [
+        "convex_set.h",
+        "hpolyhedron.h",
+        "hyperellipsoid.h",
+    ],
     deps = [
         "//geometry:scene_graph",
-        "//solvers:constraint",
         "//solvers:mathematical_program",
         "//solvers:solve",
     ],
 )
 
-drake_cc_googletest(
-    name = "convex_set_test",
+drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    srcs = ["test_utilities.cc"],
+    hdrs = ["test_utilities.h"],
     deps = [
         ":convex_set",
+        "//geometry:scene_graph",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hpolyhedron_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hyperellipsoid_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
