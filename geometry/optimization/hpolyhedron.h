@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
@@ -77,6 +78,12 @@ class HPolyhedron final : public ConvexSet {
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
       const final;
+
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const final;
 
   // TODO(russt): Implement DoToShapeWithPose.  Currently we don't have a Shape
   // that can consume this output.  The obvious candidate is Convex, that class
