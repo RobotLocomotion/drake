@@ -36,7 +36,8 @@ GTEST_TEST(SchurComplementTest, AnalyticTest) {
   The Schur complement for the bottom right block is given by
   A - BD⁻¹Bᵀ, which is equal to [13/5, 1/5; 1/5, 26/15] after simple
   calculation. */
-  const SchurComplement<double> s(A, B, D);
+  const SchurComplement<double> s(A.sparseView(), B.transpose().sparseView(),
+                                  D.sparseView());
   Matrix2d expected_D_complement;
   // clang-format off
   expected_D_complement << 13./5., 1./5.,
@@ -62,7 +63,8 @@ GTEST_TEST(SchurComplementTest, MisD) {
   D << 4, 1,
        1, 4;
   // clang-format on
-  const SchurComplement<double> s(A, B, D);
+  const SchurComplement<double> s(A.sparseView(), B.transpose().sparseView(),
+                                  D.sparseView());
   EXPECT_EQ(s.get_D_complement().rows(), 0);
   EXPECT_EQ(s.get_D_complement().cols(), 0);
   /* Verify that Dy = 0. */
@@ -79,7 +81,8 @@ GTEST_TEST(SchurComplementTest, MisA) {
   // clang-format on
   const MatrixXd B(2, 0);
   const MatrixXd D(0, 0);
-  const SchurComplement<double> s(A, B, D);
+  const SchurComplement<double> s(A.sparseView(), B.transpose().sparseView(),
+                                  D.sparseView());
   EXPECT_TRUE(CompareMatrices(s.get_D_complement(), A));
   /* Verify that the y variable is empty. */
   const VectorXd expected_y(0);
