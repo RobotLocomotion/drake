@@ -42,7 +42,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   const RigidTransformd X_WE = expressed_in
                                    ? query_object.GetPoseInWorld(*expressed_in)
                                    : RigidTransformd::Identity();
-  const RigidTransformd X_WG = query_object.GetPoseInWorld(geometry_id);
+  const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_GE = X_WG.InvertAndCompose(X_WE);
   // A_G*(p_GE + R_GE*p_EE_var) ≤ b_G
   A_ = Ab_G.first * X_GE.rotation().matrix();
@@ -138,7 +138,7 @@ HPolyhedron::DoToShapeWithPose() const {
 }
 
 void HPolyhedron::ImplementGeometry(const HalfSpace&, void* data) {
-  auto* Ab = reinterpret_cast<std::pair<MatrixXd, VectorXd>*>(data);
+  auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
   // z <= 0.0.
   Ab->first = Eigen::RowVector3d{0.0, 0.0, 1.0};
   Ab->second = Vector1d{0.0};
@@ -152,7 +152,7 @@ void HPolyhedron::ImplementGeometry(const Box& box, void* data) {
   b << box.width()/2.0, box.depth()/2.0, box.height()/2.0,
         box.width()/2.0, box.depth()/2.0, box.height()/2.0;
   // clang-format on
-  auto* Ab = reinterpret_cast<std::pair<MatrixXd, VectorXd>*>(data);
+  auto* Ab = static_cast<std::pair<MatrixXd, VectorXd>*>(data);
   Ab->first = A;
   Ab->second = b;
 }
