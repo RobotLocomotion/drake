@@ -930,29 +930,14 @@ System<T>::System(SystemScalarConverter converter)
                         {all_sources_ticket()})  // This is correct.
           .cache_index();
 
-  // For the time derivative cache we need to use the general form for
-  // cache creation because we're dealing with pre-defined allocator and
-  // calculator method signatures.
-  // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
-  ValueProducer::AllocateCallback alloc_derivatives = [this]() {
-    return std::make_unique<Value<ContinuousState<T>>>(
-        this->AllocateTimeDerivatives());
-  };
-  ValueProducer::CalcCallback calc_derivatives = [this](
-      const ContextBase& context_base, AbstractValue* result) {
-    DRAKE_DEMAND(result != nullptr);
-    ContinuousState<T>& state =
-        result->get_mutable_value<ContinuousState<T>>();
-    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
-    CalcTimeDerivatives(context, &state);
-  };
-
   // We must assume that time derivatives can depend on *any* context source.
   time_derivatives_cache_index_ =
       this->DeclareCacheEntryWithKnownTicket(
               xcdot_ticket(), "time derivatives",
               ValueProducer(
-                  std::move(alloc_derivatives), std::move(calc_derivatives)),
+                  this,
+                  &System<T>::AllocateTimeDerivatives,
+                  &System<T>::CalcTimeDerivatives),
               {all_sources_ticket()})
           .cache_index();
 
