@@ -61,7 +61,7 @@ The geometry::optimization tools support:
 */
 class ConvexSet : public ShapeReifier {
  public:
-  virtual ~ConvexSet() {}
+  virtual ~ConvexSet();
 
   /** Creates a unique deep copy of this set. */
   std::unique_ptr<ConvexSet> Clone() const;

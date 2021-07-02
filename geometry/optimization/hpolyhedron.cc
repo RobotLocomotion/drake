@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <stdexcept>
 
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
@@ -47,6 +48,8 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   A_ = Ab_G.first * X_GE.rotation().matrix();
   b_ = Ab_G.second - Ab_G.first * X_GE.translation();
 }
+
+HPolyhedron::~HPolyhedron() = default;
 
 HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   MathematicalProgram prog;
@@ -124,6 +127,14 @@ HPolyhedron::DoAddPointInNonnegativeScalingConstraints(
       Abar, VectorXd::Constant(m, -std::numeric_limits<double>::infinity()),
       VectorXd::Zero(m), {x, Vector1<Variable>(t)}));
   return constraints;
+}
+
+std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
+HPolyhedron::DoToShapeWithPose() const {
+  throw std::runtime_error(
+      "ToShapeWithPose is not implemented yet for HPolyhedron.  Implementing "
+      "this will likely require additional support from the Convex shape "
+      "class (to support in-memory mesh data, or file I/O).");
 }
 
 void HPolyhedron::ImplementGeometry(const HalfSpace&, void* data) {

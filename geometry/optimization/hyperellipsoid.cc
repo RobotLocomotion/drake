@@ -1,14 +1,11 @@
 #include "drake/geometry/optimization/hyperellipsoid.h"
 
-#include <limits>
 #include <memory>
 
 #include <Eigen/Eigenvalues>
-#include <fmt/format.h>
 
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
@@ -52,6 +49,8 @@ HyperEllipsoid::HyperEllipsoid(const QueryObject<double>& query_object,
   A_ = A_G * X_GE.rotation().matrix();
   center_ = X_GE.inverse().translation();
 }
+
+HyperEllipsoid::~HyperEllipsoid() = default;
 
 bool HyperEllipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                   double tol) const {
