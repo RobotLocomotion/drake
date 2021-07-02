@@ -600,11 +600,17 @@ class LinearEqualityConstraint : public LinearConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearEqualityConstraint)
 
+  /**
+   * Constructs the linear equality constraint Aeq * x = beq
+   */
   template <typename DerivedA, typename DerivedB>
   LinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
 
+  /**
+   * Constructs the linear equality constraint a.dot(x) = beq
+   */
   LinearEqualityConstraint(const Eigen::Ref<const Eigen::RowVectorXd>& a,
                            double beq)
       : LinearEqualityConstraint(a, Vector1d(beq)) {}
