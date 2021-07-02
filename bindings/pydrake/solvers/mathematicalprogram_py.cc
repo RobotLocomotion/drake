@@ -1475,8 +1475,7 @@ for every column of ``prog_var_vals``. )""")
       m, "LinearConstraint", doc.LinearConstraint.doc)
       .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& lb,
                         const Eigen::VectorXd& ub) {
-        return std::unique_ptr<LinearConstraint>(
-            new LinearConstraint(A, lb, ub));
+        return std::make_unique<LinearConstraint>(A, lb, ub);
       }),
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc)
@@ -1510,20 +1509,56 @@ for every column of ``prog_var_vals``. )""")
           py::arg("new_lb"), py::arg("new_ub"), doc.Constraint.set_bounds.doc);
 
   py::class_<LorentzConeConstraint, Constraint,
-      std::shared_ptr<LorentzConeConstraint>>(
-      m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc)
+      std::shared_ptr<LorentzConeConstraint>>
+      lorentz_cone_cls(
+          m, "LorentzConeConstraint", doc.LorentzConeConstraint.doc);
+
+  py::enum_<LorentzConeConstraint::EvalType>(
+      lorentz_cone_cls, "EvalType", doc.LorentzConeConstraint.EvalType.doc)
+      .value("kConvex", LorentzConeConstraint::EvalType::kConvex,
+          doc.LorentzConeConstraint.EvalType.kConvex.doc)
+      .value("kConvexSmooth", LorentzConeConstraint::EvalType::kConvexSmooth,
+          doc.LorentzConeConstraint.EvalType.kConvexSmooth.doc)
+      .value("kNonconvex", LorentzConeConstraint::EvalType::kNonconvex,
+          doc.LorentzConeConstraint.EvalType.kNonconvex.doc);
+
+  lorentz_cone_cls
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b,
+                        LorentzConeConstraint::EvalType eval_type) {
+        return std::make_unique<LorentzConeConstraint>(A, b, eval_type);
+      }),
+          py::arg("A"), py::arg("b"),
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvex,
+          doc.LorentzConeConstraint.ctor.doc)
       .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc)
       .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc);
+
   py::class_<RotatedLorentzConeConstraint, Constraint,
       std::shared_ptr<RotatedLorentzConeConstraint>>(
       m, "RotatedLorentzConeConstraint", doc.RotatedLorentzConeConstraint.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+        return std::make_unique<RotatedLorentzConeConstraint>(A, b);
+      }),
+          py::arg("A"), py::arg("b"), doc.RotatedLorentzConeConstraint.ctor.doc)
       .def("A", &RotatedLorentzConeConstraint::A,
           doc.RotatedLorentzConeConstraint.A.doc)
       .def("b", &RotatedLorentzConeConstraint::b,
           doc.RotatedLorentzConeConstraint.b.doc);
+
   py::class_<LinearEqualityConstraint, LinearConstraint,
       std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
+      .def(py::init([](const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq) {
+        return std::make_unique<LinearEqualityConstraint>(Aeq, beq);
+      }),
+          py::arg("Aeq"), py::arg("beq"),
+          doc.LinearEqualityConstraint.ctor
+              .doc_2args_constEigenMatrixBase_constEigenMatrixBase)
+      .def(py::init([](const Eigen::RowVectorXd& a, double beq) {
+        return std::make_unique<LinearEqualityConstraint>(a, beq);
+      }),
+          py::arg("a"), py::arg("beq"),
+          doc.LinearEqualityConstraint.ctor.doc_2args_a_beq)
       .def(
           "UpdateCoefficients",
           [](LinearEqualityConstraint& self,  // BR
@@ -1535,16 +1570,33 @@ for every column of ``prog_var_vals``. )""")
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
       std::shared_ptr<BoundingBoxConstraint>>(
-      m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc);
+      m, "BoundingBoxConstraint", doc.BoundingBoxConstraint.doc)
+      .def(py::init([](const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
+        return std::make_unique<BoundingBoxConstraint>(lb, ub);
+      }),
+          py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
 
   py::class_<PositiveSemidefiniteConstraint, Constraint,
       std::shared_ptr<PositiveSemidefiniteConstraint>>(m,
-      "PositiveSemidefiniteConstraint", doc.PositiveSemidefiniteConstraint.doc);
+      "PositiveSemidefiniteConstraint", doc.PositiveSemidefiniteConstraint.doc)
+      .def(py::init([](int rows) {
+        return std::make_unique<PositiveSemidefiniteConstraint>(rows);
+      }),
+          py::arg("rows"), doc.PositiveSemidefiniteConstraint.ctor.doc)
+      .def("matrix_rows", &PositiveSemidefiniteConstraint::matrix_rows,
+          doc.PositiveSemidefiniteConstraint.matrix_rows.doc);
 
   py::class_<LinearMatrixInequalityConstraint, Constraint,
       std::shared_ptr<LinearMatrixInequalityConstraint>>(m,
       "LinearMatrixInequalityConstraint",
       doc.LinearMatrixInequalityConstraint.doc)
+      .def(py::init([](const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
+                        double symmetry_tolerance) {
+        return std::make_unique<LinearMatrixInequalityConstraint>(
+            F, symmetry_tolerance);
+      }),
+          py::arg("F"), py::arg("symmetry_tolerance") = 1E-10,
+          doc.LinearMatrixInequalityConstraint.ctor.doc)
       .def("F", &LinearMatrixInequalityConstraint::F,
           doc.LinearMatrixInequalityConstraint.F.doc)
       .def("matrix_rows", &LinearMatrixInequalityConstraint::matrix_rows,
@@ -1557,7 +1609,20 @@ for every column of ``prog_var_vals``. )""")
 
   py::class_<ExponentialConeConstraint, Constraint,
       std::shared_ptr<ExponentialConeConstraint>>(
-      m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc);
+      m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::Vector3d& b) {
+        Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+        return std::make_unique<ExponentialConeConstraint>(A_sparse, b);
+      }),
+          py::arg("A"), py::arg("b"), doc.ExponentialConeConstraint.ctor.doc)
+      .def(
+          "A",
+          [](const ExponentialConeConstraint& self) {
+            return Eigen::MatrixXd(self.A());
+          },
+          doc.ExponentialConeConstraint.A.doc)
+      .def("b", &ExponentialConeConstraint::b,
+          doc.ExponentialConeConstraint.b.doc);
 
   RegisterBinding<Constraint>(&m, "Constraint");
   RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
@@ -1581,7 +1646,7 @@ for every column of ``prog_var_vals``. )""")
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
       m, "LinearCost", doc.LinearCost.doc)
       .def(py::init([](const Eigen::VectorXd& a, double b) {
-        return std::unique_ptr<LinearCost>(new LinearCost(a, b));
+        return std::make_unique<LinearCost>(a, b);
       }),
           py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
@@ -1598,8 +1663,7 @@ for every column of ``prog_var_vals``. )""")
       m, "QuadraticCost", doc.QuadraticCost.doc)
       .def(py::init([](const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
                         double c, std::optional<bool> is_convex) {
-        return std::unique_ptr<QuadraticCost>(
-            new QuadraticCost(Q, b, c, is_convex));
+        return std::make_unique<QuadraticCost>(Q, b, c, is_convex);
       }),
           py::arg("Q"), py::arg("b"), py::arg("c"),
           py::arg("is_convex") = py::none(), doc.QuadraticCost.ctor.doc)
