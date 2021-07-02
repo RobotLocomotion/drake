@@ -17,11 +17,15 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using internal::CheckAddPointInSetConstraint;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
 
 GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   // Test constructor.
@@ -181,8 +185,8 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   }
 }
 
-GTEST_TEST(HyperEllipsoidTest, UnitSphere6DTest) {
-  HyperEllipsoid E(Eigen::Matrix<double, 6, 6>::Identity(), Vector6d::Zero());
+GTEST_TEST(HyperEllipsoidTest, UnitBall6DTest) {
+  HyperEllipsoid E = HyperEllipsoid::MakeUnitBall(6);
   EXPECT_EQ(E.ambient_dimension(), 6);
 
   const double kScale = sqrt(1.0 / 6.0);
@@ -205,6 +209,52 @@ GTEST_TEST(HyperEllipsoidTest, CloneTest) {
   ASSERT_NE(pointer, nullptr);
   EXPECT_TRUE(CompareMatrices(E.A(), pointer->A()));
   EXPECT_TRUE(CompareMatrices(E.center(), pointer->center()));
+}
+
+GTEST_TEST(HyperEllipsoidTest, NonnegativeScalingTest) {
+  const Vector3d center{2, 2, 2};
+  HyperEllipsoid E(Matrix3d(Vector3d{1, 2, 3}.asDiagonal()), center);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto t = prog.NewContinuousVariables(1, "t")[0];
+
+  std::vector<Binding<Constraint>> constraints =
+      E.AddPointInNonnegativeScalingConstraints(&prog, x, t);
+
+  EXPECT_EQ(constraints.size(), 2);
+
+  // The point farthest from the origin on the set boundary on the line x=y=z.
+  // x^2 + 4x^2 + 9x^2 = 1 => x = sqrt(1 / 14).
+  const Vector3d ub = center + sqrt(1.0 / 14.0) * Vector3d::Ones();
+
+  prog.SetInitialGuess(x, .99 * ub);
+  prog.SetInitialGuess(t, 1.0);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 1.01 * ub);
+  prog.SetInitialGuess(t, 1.0);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .99 * ub);
+  prog.SetInitialGuess(t, -0.01);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .49 * ub);
+  prog.SetInitialGuess(t, 0.5);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .51 * ub);
+  prog.SetInitialGuess(t, 0.5);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 1.99 * ub);
+  prog.SetInitialGuess(t, 2.0);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 2.01 * ub);
+  prog.SetInitialGuess(t, 2.0);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
 }
 
 }  // namespace optimization

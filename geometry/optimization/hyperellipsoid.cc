@@ -14,14 +14,19 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using solvers::Binding;
+using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using std::sqrt;
+using symbolic::Variable;
 
-HyperEllipsoid::HyperEllipsoid(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                               const Eigen::Ref<const Eigen::VectorXd>& center)
+HyperEllipsoid::HyperEllipsoid(const Eigen::Ref<const MatrixXd>& A,
+                               const Eigen::Ref<const VectorXd>& center)
     : ConvexSet(&ConvexSetCloner<HyperEllipsoid>, center.size()),
       A_{A},
       center_{center} {
@@ -48,23 +53,45 @@ HyperEllipsoid::HyperEllipsoid(const QueryObject<double>& query_object,
   center_ = X_GE.inverse().translation();
 }
 
-bool HyperEllipsoid::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool HyperEllipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                   double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
-  const Eigen::VectorXd v = A_ * (x - center_);
+  const VectorXd v = A_ * (x - center_);
   return v.dot(v) <= 1.0 + tol;
 }
 
 void HyperEllipsoid::DoAddPointInSetConstraint(
-    solvers::MathematicalProgram* prog,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) const {
-  Eigen::MatrixXd A_cone(A_.rows() + 1, A_.cols());
-  A_cone << Eigen::RowVectorXd::Zero(A_.cols()), A_;
-  Eigen::VectorXd b_cone(center_.size() + 1);
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x) const {
+  // 1.0 ≥ |A * (x - center)|_2, written as
+  // z₀ ≥ |z₁...ₘ|₂ with z = A_cone* x + b_cone.
+  const int m = A_.rows();
+  const int n = A_.cols();
+  MatrixXd A_cone(m + 1, n);
+  A_cone << Eigen::RowVectorXd::Zero(n), A_;
+  VectorXd b_cone(m + 1);
   b_cone << 1.0, -A_ * center_;
+  prog->AddLorentzConeConstraint(A_cone, b_cone, x);
+}
 
-  // 1.0 >= |A * (vars - center)|_2
-  prog->AddLorentzConeConstraint(A_cone, b_cone, vars);
+std::vector<Binding<Constraint>>
+HyperEllipsoid::DoAddPointInNonnegativeScalingConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Variable& t) const {
+  std::vector<Binding<Constraint>> constraints;
+  // t ≥ |A * (x - t*center)|_2, written as
+  // z₀ ≥ |z₁...ₘ|₂ with z = A_cone* [x;t].
+  const int m = A_.rows();
+  const int n = A_.cols();
+  MatrixXd A_cone = MatrixXd::Zero(m + 1, n + 1);
+  A_cone(0, n) = 1.0;  // z₀ = t.
+  // z₁...ₘ = [A, -A*center]
+  A_cone.block(1, 0, m, n) = A_;
+  A_cone.block(1, n, m, 1) = -A_ * center_;
+  constraints.emplace_back(prog->AddLorentzConeConstraint(
+      A_cone, VectorXd::Zero(m + 1), {x, Vector1<Variable>(t)}));
+  return constraints;
 }
 
 std::pair<std::unique_ptr<Shape>, RigidTransformd>
@@ -93,6 +120,10 @@ HyperEllipsoid::DoToShapeWithPose() const {
                                            1.0 / sqrt(solver.eigenvalues()[1]),
                                            1.0 / sqrt(solver.eigenvalues()[2]));
   return std::make_pair(std::move(shape), X_WG);
+}
+
+HyperEllipsoid HyperEllipsoid::MakeUnitBall(int dim) {
+  return HyperEllipsoid(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
 }
 
 void HyperEllipsoid::ImplementGeometry(const Sphere& sphere, void* data) {

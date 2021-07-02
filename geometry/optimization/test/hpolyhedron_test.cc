@@ -22,6 +22,9 @@ using internal::CheckAddPointInSetConstraint;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::MathematicalProgram;
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   Eigen::Matrix<double, 6, 3> A;
@@ -201,6 +204,48 @@ GTEST_TEST(HPolyhedronTest, CloneTest) {
   ASSERT_NE(pointer, nullptr);
   EXPECT_TRUE(CompareMatrices(H.A(), pointer->A()));
   EXPECT_TRUE(CompareMatrices(H.b(), pointer->b()));
+}
+
+GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest) {
+  const Vector3d lb{1, 1, 1}, ub{2, 3, 4};
+  HPolyhedron H = HPolyhedron::MakeBox(lb, ub);
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(3, "x");
+  auto t = prog.NewContinuousVariables(1, "t")[0];
+
+  std::vector<Binding<Constraint>> constraints =
+      H.AddPointInNonnegativeScalingConstraints(&prog, x, t);
+
+  EXPECT_EQ(constraints.size(), 2);
+
+  prog.SetInitialGuess(x, .99 * ub);
+  prog.SetInitialGuess(t, 1.0);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 1.01 * ub);
+  prog.SetInitialGuess(t, 1.0);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .99 * ub);
+  prog.SetInitialGuess(t, -0.01);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .49 * ub);
+  prog.SetInitialGuess(t, 0.5);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, .51 * ub);
+  prog.SetInitialGuess(t, 0.5);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 1.99 * ub);
+  prog.SetInitialGuess(t, 2.0);
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
+
+  prog.SetInitialGuess(x, 2.01 * ub);
+  prog.SetInitialGuess(t, 2.0);
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
 }
 
 }  // namespace optimization
