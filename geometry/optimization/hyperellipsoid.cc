@@ -41,8 +41,8 @@ HyperEllipsoid::HyperEllipsoid(const QueryObject<double>& query_object,
   const RigidTransformd X_WE = expressed_in
                                    ? query_object.GetPoseInWorld(*expressed_in)
                                    : RigidTransformd::Identity();
-  const RigidTransformd X_WG = query_object.GetPoseInWorld(geometry_id);
-  const RigidTransformd X_GE = X_WG.inverse() * X_WE;
+  const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
+  const RigidTransformd X_GE = X_WG.InvertAndCompose(X_WE);
 
   // (p_EE_var - p_EG)ᵀ * Aᵀ * A * (p_EE_var - p_EG) ≤ 1
   // A = A_G * R_GE, center = p_EG
@@ -126,14 +126,14 @@ HyperEllipsoid HyperEllipsoid::MakeUnitBall(int dim) {
 }
 
 void HyperEllipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
-  auto* A = reinterpret_cast<Eigen::Matrix3d*>(data);
+  auto* A = static_cast<Eigen::Matrix3d*>(data);
   *A = Eigen::Matrix3d::Identity() / sphere.radius();
 }
 
 void HyperEllipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {
   // x²/a² + y²/b² + z²/c² = 1 in quadratic form is
   // xᵀ * diag(1/a^2, 1/b^2, 1/c^2) * x = 1 and A is the square root.
-  auto* A = reinterpret_cast<Eigen::Matrix3d*>(data);
+  auto* A = static_cast<Eigen::Matrix3d*>(data);
   *A = Eigen::DiagonalMatrix<double, 3>(
       1.0 / ellipsoid.a(), 1.0 / ellipsoid.b(), 1.0 / ellipsoid.c());
 }

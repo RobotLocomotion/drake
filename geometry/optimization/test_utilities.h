@@ -14,8 +14,8 @@ namespace optimization {
 
 namespace internal {
 
-// Constructs a SceneGraph containing only the requested shape anchored to the
-// world frame at X_WG.
+// Constructs a SceneGraph containing only the requested shape as geometry G,
+// anchored to the world frame at X_WG.
 std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
 MakeSceneGraphWithShape(const Shape& shape, const math::RigidTransformd& X_WG);
 
