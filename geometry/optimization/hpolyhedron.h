@@ -37,7 +37,7 @@ class HPolyhedron final : public ConvexSet {
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
   // #15121.
 
-  virtual ~HPolyhedron() {}
+  ~HPolyhedron() final;
 
   /** Returns the half-space representation matrix A. */
   const Eigen::MatrixXd& A() const { return A_; }
@@ -95,12 +95,7 @@ class HPolyhedron final : public ConvexSet {
   // add recommendation here that: "If ambient_dimension() != 3, then consider
   // using the AH polytope representation to project it to 3D."
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
-      const final {
-    throw std::runtime_error(
-        "ToShapeWithPose is not implemented yet for HPolyhedron.  Implementing "
-        "this will likely require additional support from the Convex shape "
-        "class (to support in-memory mesh data, or file I/O).");
-  }
+      const final;
 
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
