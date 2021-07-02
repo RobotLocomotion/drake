@@ -243,8 +243,7 @@ TEST_F(SDPwithOverlappingVariables1, Solve) {
                  &Z);
   double pobj, dobj;
   const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      csdp::easy_sdp(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
                      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
   const double tol = 1E-7;
@@ -273,8 +272,7 @@ TEST_F(SDPwithOverlappingVariables2, Solve) {
                  &Z);
   double pobj, dobj;
   const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      csdp::easy_sdp(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
                      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
   const double tol = 1E-7;
@@ -302,8 +300,7 @@ TEST_F(CsdpDocExample, Solve) {
                  &Z);
   double pobj, dobj;
   const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      csdp::easy_sdp(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
                      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
 
@@ -343,8 +340,7 @@ TEST_F(TrivialSDP1, Solve) {
                  &Z);
   double pobj, dobj;
   const int ret =
-      csdp::easy_sdp(nullptr,
-                     dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+      csdp::easy_sdp(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
                      -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
 

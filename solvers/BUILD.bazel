@@ -989,8 +989,6 @@ drake_cc_library(
         ":mathematical_program",
         ":solver_base",
         ":sdpa_free_format",
-        "//common:filesystem",
-        "//common:scope_exit",
     ] + select({
         "//conditions:default": [
             "@csdp",
