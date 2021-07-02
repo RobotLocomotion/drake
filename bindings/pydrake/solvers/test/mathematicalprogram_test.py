@@ -465,12 +465,40 @@ class TestMathematicalProgram(unittest.TestCase):
         # Just check spelling.
         y = prog.NewIndeterminates(2, 2, "y")
 
+    def test_LinearEqualityConstraint(self):
+        Aeq = np.array([[2, 3.], [1., 2.], [3, 4]])
+        beq = np.array([1., 2., 3.])
+        cnstr = mp.LinearEqualityConstraint(Aeq=Aeq, beq=beq)
+        self.assertIsInstance(cnstr, mp.LinearEqualityConstraint)
+
+        cnstr = mp.LinearEqualityConstraint(a=np.array([1., 2., 3.]), beq=1)
+        self.assertIsInstance(cnstr, mp.LinearEqualityConstraint)
+
+    def test_BoundingBoxConstraint(self):
+        cnstr = mp.BoundingBoxConstraint(
+            lb=np.array([1., 2.]), ub=np.array([2., 3.]))
+        self.assertIsInstance(cnstr, mp.BoundingBoxConstraint)
+
+    def test_PositiveSemidefiniteConstraint(self):
+        cnstr = mp.PositiveSemidefiniteConstraint(rows=3)
+        self.assertIsInstance(cnstr, mp.PositiveSemidefiniteConstraint)
+        self.assertEqual(cnstr.matrix_rows(), 3)
+
+    def test_LinearMatrixInequalityConstraint(self):
+        cnstr = mp.LinearMatrixInequalityConstraint(
+            F=[np.eye(3), 2 * np.eye(3), np.ones(3)], symmetry_tolerance=1E-12)
+        self.assertIsInstance(cnstr, mp.LinearMatrixInequalityConstraint)
+        self.assertEqual(cnstr.matrix_rows(), 3)
+
     def test_sdp(self):
         prog = mp.MathematicalProgram()
         S = prog.NewSymmetricContinuousVariables(3, "S")
         prog.AddLinearConstraint(S[0, 1] >= 1)
         prog.AddPositiveSemidefiniteConstraint(S)
         self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
+        self.assertEqual(
+            prog.positive_semidefinite_constraints()[0].evaluator().
+            matrix_rows(), 3)
         prog.AddPositiveSemidefiniteConstraint(S+S)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S)
@@ -655,17 +683,22 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_add_exponential_cone_constraint(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2)
-        cnstr1 = prog.AddExponentialConeConstraint(
-            A=np.array([[1., 2.], [2., 3.], [0., 1.]]),
-            b=np.array([1., 2., 3.]),
-            vars=x)
+        A = np.array([[1., 2.], [2., 3.], [0., 1.]])
+        b = np.array([1., 2., 3.])
+        cnstr1 = prog.AddExponentialConeConstraint(A=A, b=b, vars=x)
         self.assertIsInstance(cnstr1.evaluator(), mp.ExponentialConeConstraint)
+        np.testing.assert_array_equal(cnstr1.evaluator().A(), A)
+        np.testing.assert_array_equal(cnstr1.evaluator().b(), b)
 
         cnstr2 = prog.AddExponentialConeConstraint(
             z=np.array([x[0] + 1, x[0] * 2, x[1] + 2]))
         self.assertIsInstance(cnstr2.evaluator(), mp.ExponentialConeConstraint)
 
         self.assertEqual(len(prog.exponential_cone_constraints()), 2)
+
+        cnstr3 = mp.ExponentialConeConstraint(A=A, b=b)
+        np.testing.assert_array_equal(cnstr3.A(), A)
+        np.testing.assert_array_equal(cnstr3.b(), b)
 
     def test_linear_constraints(self):
         # TODO(eric.cousineau): Add more general tests
@@ -981,6 +1014,14 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1-2**(-0.5), 1-2**(-0.5)])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
+    def test_lorentz_cone_constraint(self):
+        A = np.array([[1, 2], [-1, -3], [2, 3.]])
+        b = np.array([2., 3., 4.])
+        cnstr = mp.LorentzConeConstraint(
+            A=A, b=b,
+            eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+        self.assertIsInstance(cnstr, mp.LorentzConeConstraint)
+
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
         prog = mp.MathematicalProgram()
@@ -998,6 +1039,13 @@ class TestMathematicalProgram(unittest.TestCase):
         np.testing.assert_allclose(
             constraint.evaluator().A().todense(), A)
         np.testing.assert_allclose(constraint.evaluator().b(), b)
+
+    def test_rotated_lorentz_cone_constraint(self):
+        A = np.array(
+            [[1., 2., 3.], [4., 5., 6.], [7., 8., 9.], [10., 11., 12.]])
+        b = np.array([1., 2., 3, 4])
+        cnstr = mp.RotatedLorentzConeConstraint(A=A, b=b)
+        self.assertIsInstance(cnstr, mp.RotatedLorentzConeConstraint)
 
     def test_add_rotated_lorentz_cone_constraint(self):
         prog = mp.MathematicalProgram()
