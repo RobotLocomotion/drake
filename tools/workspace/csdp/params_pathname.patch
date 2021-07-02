@@ -32,12 +32,15 @@ Add option to specify a filename to parse for CSDP parameters.
       struct paramstruc *params;
       int *pprintlevel;
  {
-@@ -42,7 +43,7 @@
+@@ -42,7 +43,10 @@
     * the default values.
     */
  
 -  paramfile=fopen("param.csdp","r");
-+  paramfile=fopen(pathname,"r");
++  if (pathname)
++    paramfile=fopen(pathname,"r");
++  else
++    paramfile=NULL;
  
    if (paramfile != NULL)
      {
