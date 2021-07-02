@@ -84,6 +84,7 @@ HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
                                  const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == ub.size());
+  DRAKE_DEMAND((lb.array() <= ub.array()).all());
   const int N = lb.size();
   MatrixXd A(2 * N, N);
   A << MatrixXd::Identity(N, N), -MatrixXd::Identity(N, N);
