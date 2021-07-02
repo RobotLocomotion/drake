@@ -3,7 +3,6 @@
 #include <memory>
 #include <tuple>
 
-#include "drake/common/drake_assert.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
