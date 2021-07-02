@@ -10,21 +10,12 @@ namespace examples {
 namespace bead_on_a_wire {
 
 template <typename T>
-BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type) {
-  if (type == BeadOnAWire<T>::kMinimalCoordinates) {
-    this->DeclareContinuousState(1, 1, 0);
-    this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 1);
-    this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                  systems::BasicVector<T>(2),
-                                  &BeadOnAWire::CopyStateOut);
-  } else {
-    this->DeclareContinuousState(3, 3, 0);
-    this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, 3);
-    this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                  systems::BasicVector<T>(6),
-                                  &BeadOnAWire::CopyStateOut);
-  }
-  coordinate_type_ = type;
+BeadOnAWire<T>::BeadOnAWire(BeadOnAWire<T>::CoordinateType type)
+    : coordinate_type_(type) {
+  const int n = (type == BeadOnAWire<T>::kMinimalCoordinates) ? 1 : 3;
+  auto state_index = this->DeclareContinuousState(n, n, 0);
+  this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued, n);
+  this->DeclareStateOutputPort(systems::kUseDefaultName, state_index);
 }
 
 template <class T>
@@ -128,13 +119,6 @@ Eigen::VectorXd BeadOnAWire<T>::EvalConstraintEquationsDot(
   Eigen::VectorXd result = get_pfunction_first_derivative(fprime)*dinvf_dt - v;
 
   return result;
-}
-
-template <typename T>
-void BeadOnAWire<T>::CopyStateOut(const systems::Context<T>& context,
-                                  systems::BasicVector<T>* output) const {
-  output->get_mutable_value() =
-      context.get_continuous_state().CopyToVector();
 }
 
 template <class T>

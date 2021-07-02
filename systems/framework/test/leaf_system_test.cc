@@ -134,6 +134,7 @@ class TestSystem : public LeafSystem<T> {
 
   using LeafSystem<T>::DeclareContinuousState;
   using LeafSystem<T>::DeclareDiscreteState;
+  using LeafSystem<T>::DeclareStateOutputPort;
   using LeafSystem<T>::DeclareNumericParameter;
   using LeafSystem<T>::DeclareVectorInputPort;
   using LeafSystem<T>::DeclareAbstractInputPort;
@@ -883,7 +884,7 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
 // second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<double, 4 + 3 + 2>;
-  system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
+  auto state_index = system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
   // Tests num_continuous_states without a context.
   EXPECT_EQ(4 + 3 + 2, system_.num_continuous_states());
@@ -898,6 +899,14 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(4, xc.get_generalized_position().size());
   EXPECT_EQ(3, xc.get_generalized_velocity().size());
   EXPECT_EQ(2, xc.get_misc_continuous_state().size());
+
+  // Check that the state retains its type when placed on an output port.
+  const auto& state_output_port = system_.DeclareStateOutputPort(
+      "state", state_index);
+  context = system_.CreateDefaultContext();
+  const Eigen::VectorXd ones = VectorXd::Ones(9);
+  context->SetContinuousState(ones);
+  EXPECT_EQ(state_output_port.Eval<MyVector9d>(*context).get_value(), ones);
 }
 
 TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
@@ -1356,6 +1365,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
       // Takes a BasicVector.
       indexes_.push_back(
           DeclareDiscreteState(MyVector2d(Vector2d(1., 2.))));
+      DeclareStateOutputPort("state", indexes_.back());
       // Takes an Eigen vector.
       indexes_.push_back(DeclareDiscreteState(Vector3d(3., 4., 5.)));
       // Four state variables, initialized to zero.
@@ -1377,6 +1387,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
   BasicVector<double>& xd0 = xd.get_mutable_vector(0);
   EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
   EXPECT_EQ(xd0.get_value(), Vector2d(1., 2.));
+  EXPECT_EQ(dut.get_output_port().Eval<MyVector2d>(*context).get_value(),
+            Vector2d(1., 2.));
 
   // Eigen vector should have been stored in a BasicVector-type object.
   BasicVector<double>& xd1 = xd.get_mutable_vector(1);
@@ -1393,11 +1405,15 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
   xd0.SetFromVector(Vector2d(9., 10.));
   xd1.SetFromVector(Vector3d(11., 12., 13.));
   xd2.SetFromVector(Vector4d(1., 2., 3., 4.));
+  // Ensure that the cache knows that the values have changed.
+  context->get_mutable_discrete_state();
 
   // Of course that had to work, but let's just prove it ...
   EXPECT_EQ(xd0.get_value(), Vector2d(9., 10.));
   EXPECT_EQ(xd1.get_value(), Vector3d(11., 12., 13.));
   EXPECT_EQ(xd2.get_value(), Vector4d(1., 2., 3., 4.));
+  EXPECT_EQ(dut.get_output_port().Eval<MyVector2d>(*context).get_value(),
+            Vector2d(9., 10.));
 
   dut.SetDefaultContext(&*context);
   EXPECT_EQ(xd0.get_value(), Vector2d(1., 2.));
@@ -1412,6 +1428,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
     DeclaredModelAbstractStateSystem() {
       DeclareAbstractState(Value<int>(1));
       DeclareAbstractState(Value<std::string>("wow"));
+      DeclareStateOutputPort("state", AbstractStateIndex{1});
     }
   };
 
@@ -1423,12 +1440,14 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   // Check that the allocations were made and with the correct type
   DRAKE_EXPECT_NO_THROW(context->get_abstract_state<int>(0));
   DRAKE_EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
+  EXPECT_EQ(dut.get_output_port().Eval<std::string>(*context), "wow");
 
   // Mess with the abstract values on the context.
   AbstractValues& values = context->get_mutable_abstract_state();
   AbstractValue& value = values.get_mutable_value(1);
   DRAKE_EXPECT_NO_THROW(value.set_value<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
+  EXPECT_EQ(dut.get_output_port().Eval<std::string>(*context), "whoops");
 
   // Ask it to reset to the defaults specified on system construction.
   dut.SetDefaultContext(context.get());

@@ -60,9 +60,6 @@ class VanDerPolOscillator final : public systems::LeafSystem<T> {
 
   void CopyPositionToOutput(const systems::Context<T>& context,
                             systems::BasicVector<T>* output) const;
-
-  void CopyFullStateToOutput(const systems::Context<T>& context,
-                             systems::BasicVector<T>* output) const;
 };
 
 }  // namespace van_der_pol

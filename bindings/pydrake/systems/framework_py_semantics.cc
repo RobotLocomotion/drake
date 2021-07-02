@@ -76,6 +76,7 @@ void DefineFrameworkPySemantics(py::module m) {
   BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
   BindTypeSafeIndex<InputPortIndex>(m, "InputPortIndex");
   BindTypeSafeIndex<OutputPortIndex>(m, "OutputPortIndex");
+  BindTypeSafeIndex<ContinuousStateIndex>(m, "ContinuousStateIndex");
   BindTypeSafeIndex<DiscreteStateIndex>(m, "DiscreteStateIndex");
   BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
   BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
