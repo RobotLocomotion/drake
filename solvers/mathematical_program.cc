@@ -1405,6 +1405,52 @@ void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
   }
 }
 
+template <typename C>
+void MathematicalProgram::RemoveCostOrConstraintImpl(
+    const Binding<C>& removal, ProgramAttribute affected_capability,
+    std::vector<Binding<C>>* existings) {
+  for (auto it = existings->begin(); it != existings->end();) {
+    bool same_cost = true;
+    if (it->evaluator().get() == removal.evaluator().get()) {
+      // Now iterate over the variables to check if removal and *it are
+      // associated with the same variables.
+      for (int i = 0; i < it->variables().rows(); ++i) {
+        if (!it->variables()(i).equal_to(removal.variables()(i))) {
+          same_cost = false;
+          break;
+        }
+      }
+    } else {
+      same_cost = false;
+    }
+    if (same_cost) {
+      it = existings->erase(it);
+    } else {
+      ++it;
+    }
+  }
+  auto it_capability = required_capabilities_.find(affected_capability);
+  if (existings->size() == 0 && it_capability != required_capabilities_.end()) {
+    required_capabilities_.erase(it_capability);
+  }
+}
+
+void MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
+  Cost* cost_evaluator = cost.evaluator().get();
+  if (dynamic_cast<QuadraticCost*>(cost_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<QuadraticCost>(cost),
+        ProgramAttribute::kQuadraticCost, &(this->quadratic_costs_));
+  } else if (dynamic_cast<LinearCost*>(cost_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LinearCost>(cost),
+        ProgramAttribute::kLinearCost, &(this->linear_costs_));
+  } else {
+    return RemoveCostOrConstraintImpl(cost, ProgramAttribute::kGenericCost,
+                                      &(this->generic_costs_));
+  }
+}
+
 void MathematicalProgram::CheckVariableType(VarType var_type) {
   switch (var_type) {
     case VarType::CONTINUOUS:
