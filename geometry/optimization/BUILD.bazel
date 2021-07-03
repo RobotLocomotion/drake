@@ -54,6 +54,14 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "convex_set_test",
+    deps = [
+        ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "hpolyhedron_test",
     deps = [
         ":convex_set",
