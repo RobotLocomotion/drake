@@ -19,7 +19,7 @@ namespace geometry {
 namespace optimization {
 
 using Eigen::Vector3d;
-using internal::CheckAddPointInSetConstraint;
+using internal::CheckAddPointInSetConstraints;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
@@ -38,6 +38,9 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   EXPECT_EQ(V.ambient_dimension(), 2);
   EXPECT_TRUE(CompareMatrices(V.vertices(), triangle));
 
+  // Check IsBounded (which is trivially true for V Polytopes).
+  EXPECT_TRUE(V.IsBounded());
+
   const Eigen::Vector2d center = triangle.rowwise().mean();
   // Mosek worked with 1e-15.
   // Gurobi worked with 1e-15 (see the note about alpha_sol in the method).
@@ -48,8 +51,8 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
     const Eigen::Vector2d v = triangle.col(i);
     const Eigen::Vector2d at_tol =
         v + kTol * (v - center) / ((v - center).lpNorm<Eigen::Infinity>());
-    EXPECT_TRUE(CompareMatrices(v, at_tol, 2.0*kTol));
-    EXPECT_FALSE(CompareMatrices(v, at_tol, .5*kTol));
+    EXPECT_TRUE(CompareMatrices(v, at_tol, 2.0 * kTol));
+    EXPECT_FALSE(CompareMatrices(v, at_tol, .5 * kTol));
 
     EXPECT_TRUE(V.PointInSet(v, kTol));
     EXPECT_TRUE(V.PointInSet(at_tol, 2.0 * kTol));
@@ -71,10 +74,10 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   EXPECT_TRUE(V.PointInSet(in2_W, kTol));
   EXPECT_FALSE(V.PointInSet(out_W, kTol));
 
-  // Test AddPointInSetConstraint.
-  EXPECT_TRUE(CheckAddPointInSetConstraint(V, in1_W));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(V, in2_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(V, out_W));
+  // Test AddPointInSetConstraints.
+  EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(V, out_W));
 
   // Test SceneGraph constructor.
   auto [scene_graph, geom_id] =
@@ -115,11 +118,11 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   EXPECT_TRUE(V.PointInSet(in2_W, kTol));
   EXPECT_FALSE(V.PointInSet(out_W, kTol));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(V, in1_W));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(V, in2_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(V, out_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(V, out_W));
 
-  // Test expressed_in frame.
+  // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();

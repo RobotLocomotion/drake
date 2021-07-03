@@ -18,8 +18,14 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
-using internal::CheckAddPointInSetConstraint;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using internal::CheckAddPointInSetConstraints;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
@@ -28,8 +34,8 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
-  Eigen::Matrix<double, 6, 3> A;
-  A << Eigen::Matrix3d::Identity(), -Eigen::Matrix3d::Identity();
+  Matrix<double, 6, 3> A;
+  A << Matrix3d::Identity(), -Matrix3d::Identity();
   Vector6d b = Vector6d::Ones();
 
   // Test constructor.
@@ -49,10 +55,10 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_TRUE(H.PointInSet(Vector3d(-1.0, 1.0, 1.0)));
   EXPECT_FALSE(H.PointInSet(Vector3d(1.1, 1.2, 0.4)));
 
-  // Test AddPointInSetConstraint.
-  EXPECT_TRUE(CheckAddPointInSetConstraint(H, Vector3d(.8, .3, -.9)));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(H, Vector3d(-1.0, 1.0, 1.0)));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(H, Vector3d(1.1, 1.2, 0.4)));
+  // Test AddPointInSetConstraints.
+  EXPECT_TRUE(CheckAddPointInSetConstraints(H, Vector3d(.8, .3, -.9)));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(H, Vector3d(-1.0, 1.0, 1.0)));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(H, Vector3d(1.1, 1.2, 0.4)));
 
   // Test SceneGraph constructor.
   auto [scene_graph, geom_id] =
@@ -91,12 +97,12 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   EXPECT_FALSE(H.PointInSet(out1_W));
   EXPECT_FALSE(H.PointInSet(out2_W));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(H, in1_W));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(H, in2_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(H, out1_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(H, out2_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(H, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(H, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(H, out1_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(H, out2_W));
 
-  // Test expressed_in frame.
+  // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();
@@ -158,31 +164,31 @@ GTEST_TEST(HPolyhedronTest, UnitBox6DTest) {
 GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
   // Test a unit box.
   HPolyhedron H = HPolyhedron::MakeUnitBox(3);
-  HyperEllipsoid E = H.MaximumVolumeInscribedEllipsoid();
+  Hyperellipsoid E = H.MaximumVolumeInscribedEllipsoid();
   // The exact tolerance will be solver dependent; this is (hopefully)
   // conservative enough.
   const double kTol = 1e-6;
   EXPECT_TRUE(CompareMatrices(E.center(), Vector3d::Zero(), kTol));
   EXPECT_TRUE(CompareMatrices(E.A().transpose() * E.A(),
-                              Eigen::Matrix3d::Identity(3, 3), kTol));
+                              Matrix3d::Identity(3, 3), kTol));
 
   // A non-trivial example, taken some real problem data.  The addition of the
   // extra half-plane constraints cause the optimal ellipsoid to be far from
   // axis-aligned.
-  Eigen::Matrix<double, 8, 3> A;
-  Eigen::Matrix<double, 8, 1> b;
+  Matrix<double, 8, 3> A;
+  Matrix<double, 8, 1> b;
   // clang-format off
-  A << Eigen::Matrix3d::Identity(),
-       -Eigen::Matrix3d::Identity(),
+  A << Matrix3d::Identity(),
+       -Matrix3d::Identity(),
        .9, -.3, .1,
        .9, -.3, .1;
   b << 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 1.3, 0.8;
   // clang-format on
   HPolyhedron H2(A, b);
-  HyperEllipsoid E2 = H2.MaximumVolumeInscribedEllipsoid();
+  Hyperellipsoid E2 = H2.MaximumVolumeInscribedEllipsoid();
   // Check that points just inside the boundary of the ellipsoid are inside the
   // polytope.
-  Eigen::Matrix3d C = E2.A().inverse();
+  Matrix3d C = E2.A().inverse();
   RandomGenerator generator;
   for (int i = 0; i < 10; ++i) {
     const RotationMatrixd R = math::UniformlyRandomRotationMatrix(&generator);
@@ -194,7 +200,7 @@ GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
 
   // Make sure the ellipsoid touches the polytope, by checking that the minimum
   // residual, bᵢ − aᵢd − |aᵢC|₂, is zero.
-  const Eigen::VectorXd polytope_halfspace_residue =
+  const VectorXd polytope_halfspace_residue =
       b - A * E2.center() - ((A * C).rowwise().lpNorm<2>());
   EXPECT_NEAR(polytope_halfspace_residue.minCoeff(), 0, kTol);
 }
@@ -250,6 +256,40 @@ GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest) {
   prog.SetInitialGuess(t, 2.0);
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
 }
+
+GTEST_TEST(HPolyhedronTest, IsBounded) {
+  Vector4d lb, ub;
+  lb << -1, -3, -5, -2;
+  ub << 2, 4, 5.4, 3;
+  HPolyhedron H = HPolyhedron::MakeBox(lb, ub);
+  EXPECT_TRUE(H.IsBounded());
+}
+
+GTEST_TEST(HPolyhedronTest, IsBounded2) {
+  // Box with zero volume.
+  const Vector2d lb{1, -3}, ub{1, 3};
+  HPolyhedron H = HPolyhedron::MakeBox(lb, ub);
+  EXPECT_TRUE(H.IsBounded());
+}
+
+GTEST_TEST(HPolyhedronTest, IsBounded3) {
+  // Unbounded (2 inequalities in 3 dimensions).
+  HPolyhedron H(MatrixXd::Identity(2, 3), Vector2d::Ones());
+  EXPECT_FALSE(H.IsBounded());
+}
+
+GTEST_TEST(HPolyhedronTest, IsBounded4) {
+  // Unbounded (A is low rank).
+  Matrix3d A;
+  // clang-format off
+  A << 1, 2, 3,
+       1, 2, 3,
+       0, 0, 1;
+  // clang-format on
+  HPolyhedron H(A, Vector3d::Ones());
+  EXPECT_FALSE(H.IsBounded());
+}
+
 
 }  // namespace optimization
 }  // namespace geometry

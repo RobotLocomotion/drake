@@ -54,6 +54,13 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "convex_set_test",
+    deps = [
+        ":convex_set",
+    ],
+)
+
+drake_cc_googletest(
     name = "hpolyhedron_test",
     deps = [
         ":convex_set",
