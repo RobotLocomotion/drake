@@ -89,7 +89,9 @@ class Binding {
     if (this->evaluator().get() != other.evaluator().get()) {
       return false;
     }
-    DRAKE_DEMAND(vars_.rows() == other.vars_.rows());
+    if (vars_.rows() != other.vars_.rows()) {
+      return false;
+    }
     for (int i = 0; i < vars_.rows(); ++i) {
       if (!vars_(i).equal_to(other.vars_(i))) {
         return false;

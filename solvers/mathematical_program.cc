@@ -1405,6 +1405,38 @@ void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
   }
 }
 
+template <typename C>
+int MathematicalProgram::RemoveCostOrConstraintImpl(
+    const Binding<C>& removal, ProgramAttribute affected_capability,
+    std::vector<Binding<C>>* existings) {
+  const int num_existing = static_cast<int>(existings->size());
+  existings->erase(std::remove(existings->begin(), existings->end(), removal),
+                   existings->end());
+  if (existings->empty()) {
+    // erasing a non-existing unordered_set element is not an error.
+    required_capabilities_.erase(affected_capability);
+  }
+  const int num_removed = num_existing - static_cast<int>(existings->size());
+  return num_removed;
+}
+
+int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
+  Cost* cost_evaluator = cost.evaluator().get();
+  // TODO(hongkai.dai): Remove the dynamic cast as part of #8349.
+  if (dynamic_cast<QuadraticCost*>(cost_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<QuadraticCost>(cost),
+        ProgramAttribute::kQuadraticCost, &(this->quadratic_costs_));
+  } else if (dynamic_cast<LinearCost*>(cost_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LinearCost>(cost),
+        ProgramAttribute::kLinearCost, &(this->linear_costs_));
+  } else {
+    return RemoveCostOrConstraintImpl(cost, ProgramAttribute::kGenericCost,
+                                      &(this->generic_costs_));
+  }
+}
+
 void MathematicalProgram::CheckVariableType(VarType var_type) {
   switch (var_type) {
     case VarType::CONTINUOUS:

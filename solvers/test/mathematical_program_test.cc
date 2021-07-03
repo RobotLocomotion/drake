@@ -3261,6 +3261,71 @@ GTEST_TEST(TestMathematicalProgram, ReparsePolynomial) {
   }
 }
 
+template <typename C>
+void RemoveCostTest(MathematicalProgram* prog,
+                    const symbolic::Expression& cost1_expr,
+                    const std::vector<Binding<C>>* program_costs,
+                    ProgramAttribute affected_capability) {
+  auto cost1 = prog->AddCost(cost1_expr);
+  // cost1 and cost2 represent the same cost, but their evaluators point to
+  // different objects.
+  auto cost2 = prog->AddCost(cost1_expr);
+  ASSERT_NE(cost1.evaluator().get(), cost2.evaluator().get());
+  EXPECT_EQ(program_costs->size(), 2u);
+  EXPECT_EQ(prog->RemoveCost(cost1), 1);
+  EXPECT_EQ(program_costs->size(), 1u);
+  EXPECT_EQ(program_costs->at(0).evaluator().get(), cost2.evaluator().get());
+  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  // Now add another cost2 to program. If we remove cost2, now we get a program
+  // with empty linear cost.
+  prog->AddCost(cost2);
+  EXPECT_EQ(program_costs->size(), 2u);
+  EXPECT_EQ(prog->RemoveCost(cost2), 2);
+  EXPECT_EQ(program_costs->size(), 0u);
+  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+
+  // Currently program_costs is empty.
+  EXPECT_EQ(prog->RemoveCost(cost1), 0);
+  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+
+  prog->AddCost(cost1);
+  // prog doesn't contain cost2, removing cost2 from prog ends up as a no-opt.
+  EXPECT_EQ(prog->RemoveCost(cost2), 0);
+  EXPECT_EQ(program_costs->size(), 1u);
+  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+
+  // cost3 and cost1 share the same evaluator, but the associated variables are
+  // different.
+  VectorX<symbolic::Variable> cost3_vars = cost1.variables();
+  cost3_vars[0] = cost1.variables()[1];
+  cost3_vars[1] = cost1.variables()[0];
+  auto cost3 = prog->AddCost(cost1.evaluator(), cost3_vars);
+  EXPECT_EQ(prog->RemoveCost(cost1), 1);
+  EXPECT_EQ(program_costs->size(), 1u);
+  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_EQ(program_costs->at(0).evaluator().get(), cost3.evaluator().get());
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveLinearCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  RemoveCostTest<LinearCost>(&prog, x[0] + 2 * x[1], &(prog.linear_costs()),
+                             ProgramAttribute::kLinearCost);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  RemoveCostTest(&prog, x[0] * x[0] + 2 * x[1] * x[1],
+                 &(prog.quadratic_costs()), ProgramAttribute::kQuadraticCost);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveGenericCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  RemoveCostTest(&prog, x[0] * x[0] * x[1], &(prog.generic_costs()),
+                 ProgramAttribute::kGenericCost);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
