@@ -30,7 +30,7 @@ class VPolytope final : public ConvexSet {
 
   /** Construct the polytope from a SceneGraph geometry. */
   VPolytope(const QueryObject<double>& query_object, GeometryId geometry_id,
-            std::optional<FrameId> expressed_in = std::nullopt);
+            std::optional<FrameId> reference_frame = std::nullopt);
 
   ~VPolytope() final;
 
@@ -55,10 +55,12 @@ class VPolytope final : public ConvexSet {
   static VPolytope MakeUnitBox(int dim);
 
  private:
+  bool DoIsBounded() const { return true; }
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraint(
+  void DoAddPointInSetConstraints(
       solvers::MathematicalProgram*,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final;
 

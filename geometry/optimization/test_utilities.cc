@@ -28,11 +28,11 @@ MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG) {
 }
 
 // Returns true iff the convex optimization can make the `point` be in the set.
-bool CheckAddPointInSetConstraint(
+bool CheckAddPointInSetConstraints(
     const ConvexSet& set, const Eigen::Ref<const Eigen::VectorXd>& point) {
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(point.size());
-  set.AddPointInSetConstraint(&prog, x);
+  set.AddPointInSetConstraints(&prog, x);
   // x = point.
   prog.AddBoundingBoxConstraint(point, point, x);
   return solvers::Solve(prog).is_success();

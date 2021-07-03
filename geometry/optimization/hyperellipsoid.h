@@ -20,37 +20,51 @@ ellipsoid: `{Bu + center | |u|₂ ≤ 1}`, which is an affine scaling of the uni
 ball.  This is related to the quadratic form by `B = A⁻¹`, when `A` is
 invertible, but the quadratic form can also represent unbounded sets.
 
-Note: the name HyperEllipsoid was taken here to avoid conflicting with
+Note: the name Hyperellipsoid was taken here to avoid conflicting with
 geometry::Ellipsoid and to distinguish that this class supports N dimensions.
 
 @ingroup geometry_optimization
 */
-class HyperEllipsoid final : public ConvexSet {
+class Hyperellipsoid final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HyperEllipsoid)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
 
   /** Constructs the ellipsoid.
   @pre A.cols() == center.size(). */
-  HyperEllipsoid(const Eigen::Ref<const Eigen::MatrixXd>& A,
+  Hyperellipsoid(const Eigen::Ref<const Eigen::MatrixXd>& A,
                  const Eigen::Ref<const Eigen::VectorXd>& center);
 
-  /** Constructs a HyperEllipsoid from a SceneGraph geometry and pose in
-  the @p expressed_in frame, obtained via the QueryObject. If @p expressed_in
-  frame is std::nullopt, then it will be expressed in the world frame.
+  /** Constructs a Hyperellipsoid from a SceneGraph geometry and pose in
+  the @p reference_frame frame, obtained via the QueryObject. If @p
+  reference_frame frame is std::nullopt, then it will be expressed in the world
+  frame.
 
   @throws std::exception if geometry_id does not represent a shape that can be
-  described as an HyperEllipsoid. */
-  HyperEllipsoid(const QueryObject<double>& query_object,
+  described as an Hyperellipsoid. */
+  Hyperellipsoid(const QueryObject<double>& query_object,
                  GeometryId geometry_id,
-                 std::optional<FrameId> expressed_in = std::nullopt);
+                 std::optional<FrameId> reference_frame = std::nullopt);
 
-  ~HyperEllipsoid() final;
+  ~Hyperellipsoid() final;
 
   /** Returns the quadratic form matrix A. */
   const Eigen::MatrixXd& A() const { return A_; }
 
   /** Returns the center of the ellipsoid. */
   const Eigen::VectorXd& center() const { return center_; }
+
+  /** Returns the volume of the hyperellipsoid (in Euclidean space). */
+  double Volume() const;
+
+  /** Computes the smallest uniform scaling of this ellipsoid for which it still
+  intersects @p other. √ minₓ (x-center)ᵀAᵀA(x-center) s.t. x ∈ other.  Note
+  that if center ∈ other, then we expect scaling = 0 and x = center (up to
+  precision).
+  @pre @p other must have the same ambient_dimension as this.
+  @returns the minimal scaling and the witness point, x, on other.
+  */
+  std::pair<double, Eigen::VectorXd> MinimumUniformScalingToTouch(
+      const ConvexSet& other) const;
 
   /** Constructs a Ellipsoid shape description of this set.  Note that the
   choice of ellipsoid is not unique.  This method chooses to order the
@@ -65,15 +79,29 @@ class HyperEllipsoid final : public ConvexSet {
   but how does that translate into a numerical precision? */
   using ConvexSet::ToShapeWithPose;
 
+  /** Constructs the an axis-aligned Hyperellipsoid with the implicit form
+   (x₀-c₀)²/r₀² + (x₁-c₁)²/r₁² + ... + (x_N - c_N)²/r_N² ≤ 1, where c is
+   shorthand for @p center and r is shorthand for @p radius.
+   */
+  static Hyperellipsoid MakeAxisAligned(
+      const Eigen::Ref<const Eigen::VectorXd>& radius,
+      const Eigen::Ref<const Eigen::VectorXd>& center);
+
+  /** Constructs a hypersphere with @p radius and @p center. */
+  static Hyperellipsoid MakeHypersphere(
+      double radius, const Eigen::Ref<const Eigen::VectorXd>& center);
+
   /** Constructs the L₂-norm unit ball in @p dim dimensions, {x | |x|₂ <= 1 }.
    */
-  static HyperEllipsoid MakeUnitBall(int dim);
+  static Hyperellipsoid MakeUnitBall(int dim);
 
  private:
+  bool DoIsBounded() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraint(
+  void DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
       const final;

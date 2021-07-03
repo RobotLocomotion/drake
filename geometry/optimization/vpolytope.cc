@@ -27,14 +27,14 @@ VPolytope::VPolytope(const Eigen::Ref<const Eigen::MatrixXd>& vertices)
 
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
-                     std::optional<FrameId> expressed_in)
+                     std::optional<FrameId> reference_frame)
     : ConvexSet(&ConvexSetCloner<VPolytope>, 3) {
   Matrix3Xd vertices;
   query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
 
-  const RigidTransformd X_WE = expressed_in
-                                   ? query_object.GetPoseInWorld(*expressed_in)
-                                   : RigidTransformd::Identity();
+  const RigidTransformd X_WE =
+      reference_frame ? query_object.GetPoseInWorld(*reference_frame)
+                      : RigidTransformd::Identity();
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
   vertices_ = X_EG * vertices;
@@ -96,11 +96,11 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
   // LP, but then evaluate the constraints ourselves.
   // Note: The max(alpha, 0) and normalization were required for Gurobi.
   const VectorXd alpha_sol = result.GetSolution(alpha).cwiseMax(0);
-  const VectorXd x_sol = vertices_ * alpha_sol/(alpha_sol.sum());
+  const VectorXd x_sol = vertices_ * alpha_sol / (alpha_sol.sum());
   return is_approx_equal_abstol(x, x_sol, tol);
 }
 
-void VPolytope::DoAddPointInSetConstraint(
+void VPolytope::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x) const {
   const int n = ambient_dimension();
