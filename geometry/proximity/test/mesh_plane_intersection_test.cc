@@ -233,7 +233,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    vertices_W_ are exactly the same as the intersected polygon. It only
    guarantees that the representative triangle has the same centroid and area
    as the intersected polygon, which is done and tested in the subroutine
-   AddPolygonToMeshDataAsOneTriangle().
+   AddPolygonToMeshDataAsOneTriangle() in another file.
   */
   ::testing::AssertionResult SliceIsConsistentWithSingleTriangleRepresentation(
       VolumeElementIndex tet_index,
@@ -1384,66 +1384,89 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
   const Vector3d& grad_eMesh_W_expected1 =
       X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(1));
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
+  const auto test_case_1 = [this, &plane_F, &grad_eMesh_W_expected0,
+                            &grad_eMesh_W_expected1](
+                               ContactPolygonRepresentation representation) {
+    // Case: plane slices through both tets. The resulting surface should have
+    // six triangles. The gradient for pressure field on M should be defined, N
+    // is not. The gradient reported on the first three triangles is that of tet
+    // 0, and for the last three should be tet 1.
     SCOPED_TRACE(fmt::format("representation = {}", representation));
-    {
-      // Case: plane slices through both tets. The gradient for pressure
-      // field on M should be defined, N is not. The gradient reported on the
-      // first half of triangles is that of tet 0, and for the last half
-      // should be of tet 1.
-      unique_ptr<ContactSurface<double>> contact_surface =
-          ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                        both_tets_, X_WF_, representation);
-      ASSERT_NE(contact_surface, nullptr);
-      EXPECT_TRUE(contact_surface->HasGradE_M());
-      EXPECT_FALSE(contact_surface->HasGradE_N());
-      int num_faces = contact_surface->mesh_W().num_faces();
-      ASSERT_GT(num_faces, 0);
-      for (SurfaceFaceIndex f(0); f < num_faces / 2; ++f) {
-        SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
-        EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
-                                    grad_eMesh_W_expected0));
-      }
-      for (SurfaceFaceIndex f(num_faces / 2); f < num_faces; ++f) {
-        SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
-        EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
-                                    grad_eMesh_W_expected1));
-      }
+    unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                      both_tets_, X_WF_, representation);
+    ASSERT_NE(contact_surface, nullptr);
+    switch (representation) {
+      case ContactPolygonRepresentation::kCentroidSubdivision:
+        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+        break;
+      case ContactPolygonRepresentation::kSingleTriangle:
+        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
+        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+        break;
     }
+    EXPECT_TRUE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
+    int num_triangles = contact_surface->mesh_W().num_elements();
+    for (SurfaceFaceIndex f(0); f < num_triangles / 2; ++f) {
+      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                  grad_eMesh_W_expected0));
+    }
+    for (SurfaceFaceIndex f(num_triangles / 2); f < num_triangles; ++f) {
+      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                  grad_eMesh_W_expected1));
+    }
+  };
+  test_case_1(ContactPolygonRepresentation::kCentroidSubdivision);
+  test_case_1(ContactPolygonRepresentation::kSingleTriangle);
 
-    {
-      // Case: Reversing the ids will swap M and N. Otherwise all results should
-      // be the same.
-      unique_ptr<ContactSurface<double>> contact_surface =
-          ComputeContactSurface<double>(plane_id_, *field_F_, mesh_id_, plane_F,
-                                        both_tets_, X_WF_, representation);
-      ASSERT_NE(contact_surface, nullptr);
-      EXPECT_FALSE(contact_surface->HasGradE_M());
-      EXPECT_TRUE(contact_surface->HasGradE_N());
-      int num_faces = contact_surface->mesh_W().num_faces();
-      ASSERT_GT(num_faces, 0);
-      for (SurfaceFaceIndex f(0); f < num_faces / 2; ++f) {
-        SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
-        EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
-                                    grad_eMesh_W_expected0));
-      }
-      for (SurfaceFaceIndex f(num_faces / 2); f < num_faces; ++f) {
-        SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
-        EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
-                                    grad_eMesh_W_expected1));
-      }
+  const auto test_case_2 = [this, &plane_F, &grad_eMesh_W_expected0,
+                            &grad_eMesh_W_expected1](
+                               ContactPolygonRepresentation representation) {
+    // Case: Reversing the ids will swap M and N. Otherwise all results should
+    // be the same.
+    unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(plane_id_, *field_F_, mesh_id_, plane_F,
+                                      both_tets_, X_WF_, representation);
+    ASSERT_NE(contact_surface, nullptr);
+    switch (representation) {
+      case ContactPolygonRepresentation::kCentroidSubdivision:
+        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+        break;
+      case ContactPolygonRepresentation::kSingleTriangle:
+        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
+        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+        break;
     }
-  }
+    EXPECT_FALSE(contact_surface->HasGradE_M());
+    EXPECT_TRUE(contact_surface->HasGradE_N());
+    int num_triangles = contact_surface->mesh_W().num_elements();
+    for (SurfaceFaceIndex f(0); f < num_triangles / 2; ++f) {
+      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                  grad_eMesh_W_expected0));
+    }
+    for (SurfaceFaceIndex f(num_triangles / 2); f < num_triangles; ++f) {
+      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                  grad_eMesh_W_expected1));
+    }
+  };
+  test_case_2(ContactPolygonRepresentation::kCentroidSubdivision);
+  test_case_2(ContactPolygonRepresentation::kSingleTriangle);
 }
 
 /* Test of ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(). This function
  has the following unique responsibilities:
 
   1. Simply that all of the values contribute to the output (poses, ids, etc.)
-  2. Autodiff-valued transforms throw. */
-GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
+*/
+void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
+    const ContactPolygonRepresentation representation) {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
   // Create mesh and volume mesh.
@@ -1469,80 +1492,86 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
 
   constexpr double kEps = 16 * std::numeric_limits<double>::epsilon();
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-    {
-      // Case 1: in initial configuration, we get a contact surface with
-      // appropriate contact info. We won't exhaustively test the data, relying
-      // on previous tests to prove correctness. We're just looking for positive
-      // indicators.
-      SCOPED_TRACE("Case 1");
-      auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_A, field_F, bvh_F, X_WS, id_B, X_WR, representation);
-      EXPECT_TRUE(contact_surface->HasGradE_M());
-      EXPECT_FALSE(contact_surface->HasGradE_N());
-      ASSERT_NE(contact_surface, nullptr);
-      // We exploit the knowledge that id_M < id_N and id_A < id_B.
-      ASSERT_LT(id_A, id_B);
-      EXPECT_EQ(contact_surface->id_M(), id_A);
-      EXPECT_EQ(contact_surface->id_N(), id_B);
-      switch (representation) {
-        case ContactPolygonRepresentation::kCentroidSubdivision:
-          EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
-          break;
-        case ContactPolygonRepresentation::kSingleTriangle:
-          EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
-          break;
-      }
-      // Sample the face normals.
-      const Vector3d& norm_W =
-          contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
-      const Vector3d& Sx_W = X_WS.rotation().col(0);
-      EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
-      // Sample the vertex positions: in the S frame they should all have
-      // x = 0.5.
-      const Vector3d& p_WV =
-          contact_surface->mesh_W().vertex(SurfaceVertexIndex{0}).r_MV();
-      const Vector3d p_SV = X_WS.inverse() * p_WV;
-      EXPECT_NEAR(p_SV(0), 0.5, kEps);
+  {
+    // Case 1: in initial configuration, we get a contact surface with
+    // appropriate contact info. We won't exhaustively test the data, relying
+    // on previous tests to prove correctness. We're just looking for positive
+    // indicators.
+    SCOPED_TRACE("Case 1: Initial configuration gets a contact surface.");
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS, id_B, X_WR, representation);
+    EXPECT_TRUE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
+    ASSERT_NE(contact_surface, nullptr);
+    // We exploit the knowledge that id_M < id_N and id_A < id_B.
+    ASSERT_LT(id_A, id_B);
+    EXPECT_EQ(contact_surface->id_M(), id_A);
+    EXPECT_EQ(contact_surface->id_N(), id_B);
+    switch (representation) {
+      case ContactPolygonRepresentation::kCentroidSubdivision:
+        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+        break;
+      case ContactPolygonRepresentation::kSingleTriangle:
+        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
+        break;
     }
+    // Sample the face normals.
+    const Vector3d& norm_W =
+        contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
+    const Vector3d& Sx_W = X_WS.rotation().col(0);
+    EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
+    // Sample the vertex positions: in the S frame they should all have x = 0.5.
+    const Vector3d& p_WV =
+        contact_surface->mesh_W().vertex(SurfaceVertexIndex{0}).r_MV();
+    const Vector3d p_SV = X_WS.inverse() * p_WV;
+    EXPECT_NEAR(p_SV(0), 0.5, kEps);
+  }
 
-    // Subsequent tests will not test all the properties of the resulting
-    // contact surface. We assume that the initial test indicates the values
-    // come through.
+  // Subsequent tests will not test all the properties of the resulting contact
+  // surface. We assume that the initial test indicates the values come through.
 
-    {
-      SCOPED_TRACE("Case 2: Move the mesh out of intersection.");
-      const RigidTransformd X_SM{Vector3d{-0.51, 0, 0}};
-      auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR, representation);
-      ASSERT_EQ(contact_surface, nullptr);
-    }
+  {
+    SCOPED_TRACE("Case 2: Move the mesh out of intersection.");
+    const RigidTransformd X_SM{Vector3d{-0.51, 0, 0}};
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR, representation);
+    ASSERT_EQ(contact_surface, nullptr);
+  }
 
-    {
-      SCOPED_TRACE("Case 3: Move the plane out of intersection.");
-      const RigidTransformd X_SR2{X_SR.rotation(), Vector3d{1.01, 0, 0}};
-      auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2, representation);
-      ASSERT_EQ(contact_surface, nullptr);
-    }
+  {
+    SCOPED_TRACE("Case 3: Move the plane out of intersection.");
+    const RigidTransformd X_SR2{X_SR.rotation(), Vector3d{1.01, 0, 0}};
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2, representation);
+    ASSERT_EQ(contact_surface, nullptr);
+  }
 
-    {
-      SCOPED_TRACE("Case 4: Reverse GeometryIds.");
-      auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_B, field_F, bvh_F, X_WS, id_A, X_WR, representation);
-      ASSERT_NE(contact_surface, nullptr);
-      EXPECT_EQ(contact_surface->id_M(), id_A);
-      EXPECT_EQ(contact_surface->id_N(), id_B);
-      // The effect of reversing the labels reverses the normals, so repeat the
-      // normal test, but in the opposite direction.
-      const Vector3d& norm_W =
-          contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
-      const Vector3d& Sx_W = X_WS.rotation().col(0);
-      EXPECT_TRUE(CompareMatrices(norm_W, -Sx_W, kEps));
-    }
+  {
+    SCOPED_TRACE("Case 4: Reverse GeometryIds.");
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_B, field_F, bvh_F, X_WS, id_A, X_WR, representation);
+    ASSERT_NE(contact_surface, nullptr);
+    EXPECT_EQ(contact_surface->id_M(), id_A);
+    EXPECT_EQ(contact_surface->id_N(), id_B);
+    // The effect of reversing the labels reverses the normals, so repeat the
+    // normal test, but in the opposite direction.
+    const Vector3d& norm_W =
+        contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
+    const Vector3d& Sx_W = X_WS.rotation().col(0);
+    EXPECT_TRUE(CompareMatrices(norm_W, -Sx_W, kEps));
+  }
+}
+
+GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
+  {
+    SCOPED_TRACE("ContactPolygonRepresentation::kCentroidSubdivision");
+    MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
+        ContactPolygonRepresentation::kCentroidSubdivision);
+  }
+  {
+    SCOPED_TRACE("ContactPolygonRepresentation::kSingleTriangle");
+    MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
+        ContactPolygonRepresentation::kSingleTriangle);
   }
 }
 
