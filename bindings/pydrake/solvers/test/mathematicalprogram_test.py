@@ -1101,6 +1101,24 @@ class TestMathematicalProgram(unittest.TestCase):
         numpy_compare.assert_equal(prog.indeterminates()[0], x0)
         numpy_compare.assert_equal(prog.indeterminate(1), x1)
 
+    def test_remove_cost(self):
+        prog = MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        linear_cost1 = prog.AddLinearCost(x[0] + 2 * x[1])
+        prog.AddCost(linear_cost1)
+        prog.RemoveLinearCost(linear_cost1)
+        self.assertEqual(len(prog.linear_costs()), 0)
+
+        quadratic_cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
+        quadratic_cost2 = prog.AddQuadraticCost(x[2] * x[2])
+        prog.RemoveQuadraticCost(quadratic_cost1)
+        self.assertEqual(len(prog.quadratic_costs()), 1)
+
+        generic_cost1 = prog.AddCost(x[0] * x[1] * x[2])
+        generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
+        prog.RemoveCost(generic_cost2)
+        self.assertEqual(len(prog.generic_costs()), 1)
+
 
 class DummySolverInterface(SolverInterface):
 

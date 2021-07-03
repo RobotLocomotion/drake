@@ -1330,7 +1330,14 @@ for every column of ``prog_var_vals``. )""")
           py::arg("i"), doc.MathematicalProgram.decision_variable.doc)
       .def("decision_variable_index",
           &MathematicalProgram::decision_variable_index,
-          doc.MathematicalProgram.decision_variable_index.doc);
+          doc.MathematicalProgram.decision_variable_index.doc)
+      .def("RemoveLinearCost", &MathematicalProgram::RemoveLinearCost,
+          doc.MathematicalProgram.RemoveLinearCost.doc)
+      .def("RemoveQuadraticCost", &MathematicalProgram::RemoveQuadraticCost,
+          doc.MathematicalProgram.RemoveQuadraticCost.doc)
+      .def("RemoveCost", &MathematicalProgram::RemoveCost,
+          doc.MathematicalProgram.RemoveCost.doc);
+
   {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
