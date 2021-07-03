@@ -75,6 +75,13 @@ class ConvexSet : public ShapeReifier {
   rank(A)`. */
   int ambient_dimension() const { return ambient_dimension_; }
 
+  /** Returns true iff the set is bounded, e.g. there exists an element-wise
+   * finite lower and upper bound for the set.  Note: for some derived classes,
+   * this check is trivial, but for others it can require solving an (typically
+   * small) optimization problem.  Check the derived class documentation for any
+   * notes. */
+  bool IsBounded() const { return DoIsBounded(); }
+
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
@@ -86,11 +93,11 @@ class ConvexSet : public ShapeReifier {
   // dependent.
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set. */
-  void AddPointInSetConstraint(
+  void AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
     DRAKE_DEMAND(vars.size() == ambient_dimension());
-    return DoAddPointInSetConstraint(prog, vars);
+    return DoAddPointInSetConstraints(prog, vars);
   }
 
   /** Let S be this convex set.  When S is bounded, this method adds the convex
@@ -146,10 +153,12 @@ class ConvexSet : public ShapeReifier {
             int ambient_dimension);
 
   // Non-virtual interface implementations.
+  virtual bool DoIsBounded() const = 0;
+
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 
-  virtual void DoAddPointInSetConstraint(
+  virtual void DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 
@@ -176,6 +185,28 @@ std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
   const auto& typed_other = static_cast<const Derived&>(other);
   return std::make_unique<Derived>(typed_other);
 }
+
+// TODO(russt): Consider providing an iterator.
+/** Wraps a collection of owned ConvexSet objects, and provides const access to
+ * them.
+ */
+class ConvexSets {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSets)
+
+  /** Constructs an empty collection. */
+  ConvexSets();
+  virtual ~ConvexSets();
+
+  const ConvexSet& emplace_back(const ConvexSet& set);
+  const ConvexSet& emplace_back(std::unique_ptr<ConvexSet> set);
+
+  int size() const { return static_cast<int>(sets_.size()); }
+  const ConvexSet& operator[](size_t pos) const { return *sets_[pos]; }
+
+ private:
+  std::vector<std::shared_ptr<ConvexSet>> sets_{};
+};
 
 }  // namespace optimization
 }  // namespace geometry

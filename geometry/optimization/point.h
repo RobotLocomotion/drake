@@ -21,13 +21,14 @@ class Point final : public ConvexSet {
   explicit Point(const Eigen::Ref<const Eigen::VectorXd>& x);
 
   /** Constructs a Point from a SceneGraph geometry and pose in
-  the @p expressed_in frame, obtained via the QueryObject. If @p expressed_in
-  frame is std::nullopt, then it will be expressed in the world frame.
+  the @p reference_frame frame, obtained via the QueryObject. If @p
+  reference_frame frame is std::nullopt, then it will be expressed in the world
+  frame.
 
   @throws std::exception if geometry_id does not correspond to a Sphere or if
   the Sphere has radius greater than @p maximum_allowable_radius. */
   Point(const QueryObject<double>& query_object, GeometryId geometry_id,
-        std::optional<FrameId> expressed_in = std::nullopt,
+        std::optional<FrameId> reference_frame = std::nullopt,
         double maximum_allowable_radius = 0.0);
 
   ~Point() final;
@@ -39,10 +40,12 @@ class Point final : public ConvexSet {
   const Eigen::VectorXd& x() const { return x_; }
 
  private:
+  bool DoIsBounded() const final { return true; }
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraint(
+  void DoAddPointInSetConstraints(
       solvers::MathematicalProgram*,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final;
 

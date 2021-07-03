@@ -16,8 +16,9 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
-using internal::CheckAddPointInSetConstraint;
+using internal::CheckAddPointInSetConstraints;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
@@ -37,8 +38,9 @@ GTEST_TEST(PointTest, BasicTest) {
   EXPECT_FALSE(P.PointInSet(p_W + Vector3d::Constant(0.01)));
   EXPECT_TRUE(P.PointInSet(p_W + Vector3d::Constant(0.01), 0.01 + 1e-16));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(P, p_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(P, p_W + Vector3d::Constant(0.01)));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(P, p_W));
+  EXPECT_FALSE(
+      CheckAddPointInSetConstraints(P, p_W + Vector3d::Constant(0.01)));
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = P.ToShapeWithPose();
@@ -46,6 +48,9 @@ GTEST_TEST(PointTest, BasicTest) {
   EXPECT_TRUE(sphere != NULL);
   EXPECT_NEAR(sphere->radius(), 0.0, 0.0);
   EXPECT_TRUE(CompareMatrices(X_WG.translation(), p_W, 1e-16));
+
+  // Test IsBounded (which is trivially true for Point).
+  EXPECT_TRUE(P.IsBounded());
 }
 
 GTEST_TEST(PointTest, FromSceneGraphTest) {
@@ -70,7 +75,7 @@ GTEST_TEST(PointTest, FromSceneGraphTest) {
   EXPECT_THROW(Point(query, geom_id, std::nullopt, kRadius / 2.0),
                std::exception);
 
-  // Test expressed_in frame.
+  // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();
