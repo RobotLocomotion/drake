@@ -14,6 +14,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -27,6 +28,7 @@ namespace pydrake {
 
 using solvers::Binding;
 using solvers::BoundingBoxConstraint;
+using solvers::CommonSolverOption;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
@@ -404,17 +406,24 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::overload_cast<const SolverId&, const std::string&, double>(
               &SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
-          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+          py::arg("option_value"),
+          doc.SolverOptions.SetOption.doc_double_option)
       .def("SetOption",
           py::overload_cast<const SolverId&, const std::string&, int>(
               &SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
-          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc_int_option)
       .def("SetOption",
           py::overload_cast<const SolverId&, const std::string&,
               const std::string&>(&SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
-          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc_str_option)
+      .def("SetOption",
+          py::overload_cast<CommonSolverOption,
+              const std::variant<double, int, std::string>&>(
+              &SolverOptions::SetOption),
+          py::arg("key"), py::arg("value"),
+          doc.SolverOptions.SetOption.doc_common_option)
       .def(
           "GetOptions",
           [](const SolverOptions& solver_options, SolverId solver_id) {
@@ -425,7 +434,16 @@ top-level documentation for :py:mod:`pydrake.math`.
             update(solver_options.GetOptionsStr(solver_id));
             return out;
           },
-          py::arg("solver_id"), doc.SolverOptions.GetOptionsDouble.doc);
+          py::arg("solver_id"), doc.SolverOptions.GetOptionsDouble.doc)
+      .def("common_solver_options", &SolverOptions::common_solver_options,
+          doc.SolverOptions.common_solver_options.doc);
+
+  py::enum_<CommonSolverOption>(
+      m, "CommonSolverOption", doc.CommonSolverOption.doc)
+      .value("kPrintFileName", CommonSolverOption::kPrintFileName,
+          doc.CommonSolverOption.kPrintFileName.doc)
+      .value("kPrintToConsole", CommonSolverOption::kPrintToConsole,
+          doc.CommonSolverOption.kPrintToConsole.doc);
 
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
