@@ -3091,11 +3091,52 @@ class MathematicalProgram {
   void SetVariableScaling(const symbolic::Variable& var, double s);
   //@}
 
+  /**
+   * @anchor remove_cost_constraint
+   * @name    Remove costs or constraints
+   * Removes costs or constraints from this program. If this program contains
+   * multiple costs/constraints objects matching the given argument, then all of
+   * these costs/constraints are removed. If this program doesn't contain this
+   * cost, then the code does nothing. We regard two costs/constraints being
+   * equal, if their evaluators point to the same object, and the associated
+   * variables are also the same.
+   * @note If two costs/constraints represent the same expression, but their
+   * evaluators point to different objects, then they are NOT regarded the same.
+   * For example, if we have
+   * @code{.cc}
+   * auto cost1 = prog.AddLinearCost(x[0] + x[1]);
+   * auto cost2 = prog.AddLinearCost(x[0] + x[1]);
+   * // cost1 and cost2 represent the same cost, but cost1.evaluator() and
+   * // cost2.evaluator() point to different objects. So after removing cost1,
+   * // cost2 still lives in prog.
+   * prog.RemoveCost(cost1);
+   * std::cout << prog.linear_costs()[0].evaluator().get() ==
+   * cost2.evaluator().get() << "\n";  // This will print true.
+   * @endcode
+   */
+
+  // @{
+  /** Removes costs @p cost from this mathematical program.
+   * See @ref remove_cost_constraint for more details.
+   */
+  void RemoveCost(const Binding<Cost>& cost);
+  //@}
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 
-  // maps the ID of a symbolic variable to the index of the variable stored in
-  // the optimization program.
+  // Remove a cost or constraint @p removal stored inside this mathematical
+  // program in @p existings. If @p removal does not belong to @p existing,
+  // then do nothing. If @p removal appears multiple times in @p existing, then
+  // all matching terms are removed. After removing @p removal, we check if we
+  // need to erase @p affected_capability from required_capabilities_.
+  template <typename C>
+  void RemoveCostOrConstraintImpl(const Binding<C>& removal,
+                                  ProgramAttribute affected_capability,
+                                  std::vector<Binding<C>>* existings);
+
+  // maps the ID of a symbolic variable to the index of the variable stored
+  // in the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
 
   VectorXDecisionVariable decision_variables_;
