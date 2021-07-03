@@ -1384,9 +1384,9 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
   const Vector3d& grad_eMesh_W_expected1 =
       X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(1));
 
-  const auto test_case_1 = [this, &plane_F, &grad_eMesh_W_expected0,
-                            &grad_eMesh_W_expected1](
-                               ContactPolygonRepresentation representation) {
+  for (const auto representation :
+       {ContactPolygonRepresentation::kCentroidSubdivision,
+        ContactPolygonRepresentation::kSingleTriangle}) {
     // Case: plane slices through both tets. The resulting surface should have
     // six triangles. The gradient for pressure field on M should be defined, N
     // is not. The gradient reported on the first three triangles is that of tet
@@ -1419,13 +1419,11 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
       EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
                                   grad_eMesh_W_expected1));
     }
-  };
-  test_case_1(ContactPolygonRepresentation::kCentroidSubdivision);
-  test_case_1(ContactPolygonRepresentation::kSingleTriangle);
+  }
 
-  const auto test_case_2 = [this, &plane_F, &grad_eMesh_W_expected0,
-                            &grad_eMesh_W_expected1](
-                               ContactPolygonRepresentation representation) {
+  for (const auto representation :
+      {ContactPolygonRepresentation::kCentroidSubdivision,
+       ContactPolygonRepresentation::kSingleTriangle}) {
     // Case: Reversing the ids will swap M and N. Otherwise all results should
     // be the same.
     unique_ptr<ContactSurface<double>> contact_surface =
@@ -1455,9 +1453,7 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
       EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
                                   grad_eMesh_W_expected1));
     }
-  };
-  test_case_2(ContactPolygonRepresentation::kCentroidSubdivision);
-  test_case_2(ContactPolygonRepresentation::kSingleTriangle);
+  }
 }
 
 /* Test of ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(). This function
