@@ -14,6 +14,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -27,6 +28,7 @@ namespace pydrake {
 
 using solvers::Binding;
 using solvers::BoundingBoxConstraint;
+using solvers::CommonSolverOption;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
@@ -415,6 +417,23 @@ top-level documentation for :py:mod:`pydrake.math`.
               const std::string&>(&SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
           py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+      .def(
+          "SetOption",
+          [](SolverOptions* self, CommonSolverOption key, double value) {
+            self->SetOption(key, value);
+          },
+          py::arg("key"), py::arg("value"), doc.SolverOptions.SetOption.doc)
+      .def(
+          "SetOption",
+          [](SolverOptions* self, CommonSolverOption key, int value) {
+            self->SetOption(key, value);
+          },
+          py::arg("key"), py::arg("value"), doc.SolverOptions.SetOption.doc)
+      .def(
+          "SetOption",
+          [](SolverOptions* self, CommonSolverOption key,
+              const std::string& value) { self->SetOption(key, value); },
+          py::arg("key"), py::arg("value"), doc.SolverOptions.SetOption.doc)
       .def(
           "GetOptions",
           [](const SolverOptions& solver_options, SolverId solver_id) {

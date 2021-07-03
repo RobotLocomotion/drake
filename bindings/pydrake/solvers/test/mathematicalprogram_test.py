@@ -3,6 +3,7 @@ from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.scs import ScsSolver
 from pydrake.solvers.osqp import OsqpSolver
+from pydrake.solvers.common_solver_option import CommonSolverOption
 from pydrake.solvers.mathematicalprogram import (
     LinearConstraint,
     MathematicalProgramResult,
@@ -1061,6 +1062,7 @@ class TestMathematicalProgram(unittest.TestCase):
         options_object.SetOption(solver_id, "double_key", 1.0)
         options_object.SetOption(solver_id, "int_key", 2)
         options_object.SetOption(solver_id, "string_key", "3")
+        options_object.SetOption(CommonSolverOption.kPrintToConsole, 1)
         options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})

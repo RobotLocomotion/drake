@@ -61,6 +61,7 @@ drake_pybind_library(
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":common_solver_option_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
@@ -78,6 +79,15 @@ drake_pybind_library(
     py_deps = [
         ":mathematicalprogram_py",
     ],
+)
+
+drake_pybind_library(
+    name = "common_solver_option_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["common_solver_option_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_pybind_library(
@@ -256,6 +266,7 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":branch_and_bound_py",
     ":clp_py",
+    ":common_solver_option_py",
     ":csdp_py",
     ":dreal_py",
     ":gurobi_py",
