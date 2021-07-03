@@ -138,6 +138,8 @@ class TestAll(unittest.TestCase):
             # solvers
             # - mixed_integer_optimization_util
             "AddLogarithmicSos2Constraint",
+            # - common_solver_option
+            "CommonSolverOption",
             # - gurobi
             "GurobiSolver",
             # - sdpa_free_format
