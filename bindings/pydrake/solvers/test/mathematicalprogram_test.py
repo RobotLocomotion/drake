@@ -485,6 +485,12 @@ class TestMathematicalProgram(unittest.TestCase):
         np.testing.assert_array_equal(
             constraint.upper_bound(), np.array([2., 3.]))
 
+    def test_quadratic_constraint(self):
+        constraint = mp.QuadraticConstraint(
+            Q0=np.eye(2), b=np.array([1, 2.]), lb=0.5, ub=1.)
+        np.testing.assert_array_equal(constraint.Q(), np.eye(2))
+        np.testing.assert_array_equal(constraint.b(), np.array([1, 2.]))
+
     def test_positive_semidefinite_constraint(self):
         constraint = mp.PositiveSemidefiniteConstraint(rows=3)
         self.assertEqual(constraint.matrix_rows(), 3)

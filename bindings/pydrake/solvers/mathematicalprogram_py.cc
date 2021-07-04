@@ -42,6 +42,7 @@ using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
 using solvers::MatrixXIndeterminate;
 using solvers::PositiveSemidefiniteConstraint;
+using solvers::QuadraticConstraint;
 using solvers::QuadraticCost;
 using solvers::RotatedLorentzConeConstraint;
 using solvers::SolutionResult;
@@ -1575,6 +1576,19 @@ for every column of ``prog_var_vals``. )""")
         return std::make_unique<BoundingBoxConstraint>(lb, ub);
       }),
           py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
+
+  py::class_<QuadraticConstraint, Constraint,
+      std::shared_ptr<QuadraticConstraint>>(
+      m, "QuadraticConstraint", doc.QuadraticConstraint.doc)
+      .def(py::init([](const Eigen::Ref<const Eigen::MatrixXd>& Q0,
+                        const Eigen::Ref<const Eigen::VectorXd>& b, double lb,
+                        double ub) {
+        return std::make_unique<QuadraticConstraint>(Q0, b, lb, ub);
+      }),
+          py::arg("Q0"), py::arg("b"), py::arg("lb"), py::arg("ub"),
+          doc.QuadraticConstraint.ctor.doc)
+      .def("Q", &QuadraticConstraint::Q, doc.QuadraticConstraint.Q.doc)
+      .def("b", &QuadraticConstraint::b, doc.QuadraticConstraint.b.doc);
 
   py::class_<PositiveSemidefiniteConstraint, Constraint,
       std::shared_ptr<PositiveSemidefiniteConstraint>>(m,
