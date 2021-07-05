@@ -5,9 +5,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/linear_system_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
 namespace drake {
@@ -50,6 +52,34 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
     x_expected(0) = 1;
     MathematicalProgramResult result = Solve(prog, x_expected, solver_options);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
+  }
+}
+
+GTEST_TEST(SolveWithFirstAvailableSolverTest, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  prog.AddLinearCost(x[0] + 2 * x[1]);
+
+  GurobiSolver gurobi_solver{};
+  ScsSolver scs_solver{};
+
+  if ((gurobi_solver.available() && gurobi_solver.enabled()) ||
+      (scs_solver.available() && scs_solver.enabled())) {
+    auto result = SolveWithFirstAvailableSolver(
+        prog, {&gurobi_solver, &scs_solver}, std::nullopt, std::nullopt);
+    if (gurobi_solver.available() && gurobi_solver.enabled()) {
+      EXPECT_EQ(result.get_solver_id(), gurobi_solver.solver_id());
+    } else {
+      EXPECT_EQ(result.get_solver_id(), scs_solver.solver_id());
+    }
+  }
+
+  if (!(gurobi_solver.available() && gurobi_solver.enabled())) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        SolveWithFirstAvailableSolver(prog, {&gurobi_solver}, std::nullopt,
+                                      std::nullopt),
+        std::runtime_error, ".* is available or enabled.");
   }
 }
 
