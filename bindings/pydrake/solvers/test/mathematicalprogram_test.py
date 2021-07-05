@@ -1162,6 +1162,17 @@ class TestMathematicalProgram(unittest.TestCase):
         numpy_compare.assert_equal(prog.indeterminates()[0], x0)
         numpy_compare.assert_equal(prog.indeterminate(1), x1)
 
+    def test_solve_with_first_available_solver(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x.dot(x))
+        gurobi_solver = GurobiSolver()
+        scs_solver = ScsSolver()
+        if scs_solver.available() and scs_solver.enabled():
+            result = mp.SolveWithFirstAvailableSolver(
+                prog, [gurobi_solver, scs_solver])
+
 
 class DummySolverInterface(SolverInterface):
 
