@@ -521,16 +521,16 @@ std::string LoadSdf(
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
       return ResolveUri(_input, package_map, ".");
     });
-  // TODO(#15018): This means that unrecognized elements won't be shown to a
-  // user directly (via console or exception). We should change unrecognized
-  // elements policy to print a warning, and later become an error.
+  // TODO(#15018): Later, we should change unrecognized elements policy to
+  // become an error.
   DRAKE_DEMAND(
       parser_config.UnrecognizedElementsPolicy()
-      == sdf::EnforcementPolicy::LOG);
+      == sdf::EnforcementPolicy::WARN);
 
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
