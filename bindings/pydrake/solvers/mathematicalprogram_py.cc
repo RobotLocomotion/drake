@@ -1529,7 +1529,7 @@ for every column of ``prog_var_vals``. )""")
         return std::make_unique<LorentzConeConstraint>(A, b, eval_type);
       }),
           py::arg("A"), py::arg("b"),
-          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvex,
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
           doc.LorentzConeConstraint.ctor.doc)
       .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc)
       .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc);

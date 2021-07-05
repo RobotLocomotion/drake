@@ -304,14 +304,20 @@ class LorentzConeConstraint : public Constraint {
    * formulations, refer to LorentzConeConstraint documentation.
    */
   enum class EvalType {
-    kConvex,  ///< The constraint is g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
-    kConvexSmooth,  ///< Same as kConvex1, but with approximated gradient.
-    kNonconvex  ///< Nonconvex constraint z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 and z₀ ≥ 0
+    kConvex,  ///< The constraint is g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0.
+              ///< Note this formulation is non-differentiable at z₁= ...=
+              ///< zₙ₋₁=0
+    kConvexSmooth,  ///< Same as kConvex, but with approximated gradient that
+                    ///< exists everywhere..
+    kNonconvex  ///< Nonconvex constraint z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 and z₀ ≥ 0.
+                ///< Note this formulation is differentiable, but at z₁= ...=
+                ///< zₙ₋₁=0 the gradient is also 0, so a gradient-based
+                ///< nonlinear solver can get stuck.
   };
 
   LorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
                         const Eigen::Ref<const Eigen::VectorXd>& b,
-                        EvalType eval_type = EvalType::kConvex);
+                        EvalType eval_type = EvalType::kConvexSmooth);
 
   ~LorentzConeConstraint() override {}
 
