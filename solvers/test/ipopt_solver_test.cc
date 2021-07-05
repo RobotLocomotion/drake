@@ -6,6 +6,7 @@
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 #ifdef DRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT
 
@@ -208,6 +209,63 @@ GTEST_TEST(IpoptSolverTest, TestNonconvexQP) {
   if (solver.available()) {
     TestNonconvexQP(solver, false);
   }
+}
+
+TEST_P(TestEllipsoidsSeparation, TestSOCP) {
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    SolveAndCheckSolution(ipopt_solver, 1.E-8);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IpoptSolverTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn({EllipsoidsSeparationProblem::kProblem0,
+                         EllipsoidsSeparationProblem::kProblem1,
+                         EllipsoidsSeparationProblem::kProblem3}));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    SolveAndCheckSolution(ipopt_solver);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(IpoptSolverTest, TestQPasSOCP,
+                         ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    SolveAndCheckSolution(ipopt_solver, 2E-3);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IpoptSolverTest, TestFindSpringEquilibrium,
+    ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
+  MaximizeGeometricMeanTrivialProblem1 prob;
+  IpoptSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prob.prog(), {}, {});
+    prob.CheckSolution(result, 4E-6);
+  }
+}
+
+GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
+  MaximizeGeometricMeanTrivialProblem2 prob;
+  IpoptSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prob.prog(), {}, {});
+    prob.CheckSolution(result, 1.E-6);
+  }
+}
+
+GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
+  IpoptSolver solver;
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
 }
 }  // namespace test
 }  // namespace solvers
