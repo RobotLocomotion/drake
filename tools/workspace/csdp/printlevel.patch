@@ -1,0 +1,13 @@
+When no parameters file is in use, do not console print by default.
+
+--- lib/initparams.c	2017-07-25 11:44:57.000000000 -0700
++++ lib/initparams.c	2021-06-30 15:50:10.984899788 -0700
+@@ -35,7 +35,7 @@
+   params->affine=0;
+   params->perturbobj=1;
+   params->fastmode=0;
+-  *pprintlevel=1;
++  *pprintlevel=0;
+ 
+   /*
+    * Attempt to open param.csdp.  If it doesn't open, then just use 

@@ -1,0 +1,67 @@
+Add option to specify a filename to parse for CSDP parameters.
+
+--- include/declarations.h	2017-07-25 11:44:57.000000000 -0700
++++ include/declarations.h	2021-06-30 16:17:10.855119121 -0700
+@@ -132,7 +132,7 @@
+ 
+ void free_mat(struct blockmatrix A);
+ 
+-void initparams(struct paramstruc *params, int *pprintlevel);
++void initparams(const char *pathname, struct paramstruc *params, int *pprintlevel);
+ 
+ void initsoln(int n, int k, struct blockmatrix C, double *a, 
+ 	      struct constraintmatrix *constraints, struct blockmatrix *pX0,
+@@ -184,7 +184,7 @@
+ 	double *dy, double *dy1, double *Fp, int printlevel, 
+ 	struct paramstruc parameters);
+ 
+-int easy_sdp(int n, int k, struct blockmatrix C, double *a, 
++int easy_sdp(const char* params_pathname, int n, int k, struct blockmatrix C, double *a, 
+ 	     struct constraintmatrix *constraints, double constant_offset,
+ 	     struct blockmatrix *pX, double **py, struct blockmatrix *pZ,
+ 	     double *ppobj, double *pdobj);
+--- lib/initparams.c	2021-06-30 16:16:49.222803365 -0700
++++ lib/initparams.c	2021-06-30 16:16:08.046220044 -0700
+@@ -6,7 +6,8 @@
+ #include <strings.h>
+ #include "declarations.h"
+ 
+-void initparams(params,pprintlevel)
++void initparams(pathname,params,pprintlevel)
++     const char *pathname;
+      struct paramstruc *params;
+      int *pprintlevel;
+ {
+@@ -42,7 +43,10 @@
+    * the default values.
+    */
+ 
+-  paramfile=fopen("param.csdp","r");
++  if (pathname)
++    paramfile=fopen(pathname,"r");
++  else
++    paramfile=NULL;
+ 
+   if (paramfile != NULL)
+     {
+--- lib/easysdp.c	2017-07-25 11:44:57.000000000 -0700
++++ lib/easysdp.c	2021-06-30 16:18:42.336451557 -0700
+@@ -12,7 +12,8 @@
+ #include <math.h>
+ #include "declarations.h"
+ 
+-int easy_sdp(n,k,C,a,constraints,constant_offset,pX,py,pZ,ppobj,pdobj)
++int easy_sdp(params_pathname,n,k,C,a,constraints,constant_offset,pX,py,pZ,ppobj,pdobj)
++     const char *params_pathname;
+      int n;
+      int k;
+      struct blockmatrix C;
+@@ -72,7 +73,7 @@
+     *  Initialize the parameters.
+     */
+ 
+-   initparams(&params,&printlevel);
++   initparams(params_pathname,&params,&printlevel);
+ 
+ 
+   /*
