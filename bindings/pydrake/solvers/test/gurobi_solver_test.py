@@ -12,6 +12,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = GurobiSolver()
+        self.assertEqual(solver.solver_id(), GurobiSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_type(), mp.SolverType.kGurobi)
         result = solver.Solve(prog, None, None)

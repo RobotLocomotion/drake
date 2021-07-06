@@ -18,6 +18,7 @@ class TestNloptSolver(unittest.TestCase):
         x_expected = np.array([1., 1.])
 
         solver = NloptSolver()
+        self.assertEqual(solver.solver_id(), NloptSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "NLopt")
         self.assertEqual(solver.SolverName(), "NLopt")

@@ -12,6 +12,7 @@ class TestOsqpSolver(unittest.TestCase):
         constraint2 = prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = OsqpSolver()
+        self.assertEqual(solver.solver_id(), OsqpSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_type(), mp.SolverType.kOsqp)
         result = solver.Solve(prog, None, None)

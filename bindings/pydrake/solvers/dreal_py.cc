@@ -20,7 +20,8 @@ PYBIND11_MODULE(dreal, m) {
   py::module::import("pydrake.symbolic");
 
   auto solver = py::class_<DrealSolver, SolverInterface>(
-      m, "DrealSolver", doc.DrealSolver.doc);
+      m, "DrealSolver", doc.DrealSolver.doc)
+                    .def_static("id", &DrealSolver::id, doc.DrealSolver.id.doc);
 
   {
     using Class = DrealSolver::Interval;

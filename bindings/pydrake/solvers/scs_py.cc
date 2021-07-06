@@ -20,7 +20,8 @@ PYBIND11_MODULE(scs, m) {
   py::module::import("pydrake.solvers.mathematicalprogram");
 
   py::class_<ScsSolver, SolverInterface>(m, "ScsSolver", doc.ScsSolver.doc)
-      .def(py::init<>(), doc.ScsSolver.ctor.doc);
+      .def(py::init<>(), doc.ScsSolver.ctor.doc)
+      .def_static("id", &ScsSolver::id, doc.ScsSolver.id.doc);
 
   py::class_<ScsSolverDetails>(m, "ScsSolverDetails", doc.ScsSolverDetails.doc)
       .def_readonly("scs_status", &ScsSolverDetails::scs_status,
