@@ -45,12 +45,12 @@ TEST_F(BoolTestDouble, TypeCheck) {
 
 TEST_F(BoolTestDouble, All) {
   auto bools = Eigen::Matrix<bool, 3, 3>::Constant(true).eval();
-  EXPECT_TRUE(all(bools));
+  EXPECT_TRUE(drake::all(bools));
   bools(0, 0) = false;
-  EXPECT_FALSE(all(bools));
+  EXPECT_FALSE(drake::all(bools));
 
   // Vacuously true.
-  EXPECT_TRUE(all(Eigen::Matrix<bool, 0, 0>::Constant(false)));
+  EXPECT_TRUE(drake::all(Eigen::Matrix<bool, 0, 0>::Constant(false)));
 }
 
 TEST_F(BoolTestDouble, AllOf) {
@@ -210,7 +210,7 @@ TEST_F(BoolTestSymbolic, All) {
                isnan(x_) && isnan(y_) && isnan(z_) && isnan(w_));
 
   // Vacuously true.
-  EXPECT_TRUE(all(MatrixX<Formula>::Constant(0, 0, Formula::False())));
+  EXPECT_TRUE(drake::all(MatrixX<Formula>::Constant(0, 0, Formula::False())));
 }
 
 TEST_F(BoolTestSymbolic, AllOf) {

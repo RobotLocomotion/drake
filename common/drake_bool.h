@@ -49,7 +49,7 @@ boolean<typename Derived::Scalar> all_of(
     const Eigen::MatrixBase<Derived>& m,
     const std::function<boolean<typename Derived::Scalar>(
         const typename Derived::Scalar&)>& pred) {
-  return all(m.unaryExpr(pred));
+  return drake::all(m.unaryExpr(pred));
 }
 
 /// Checks truth for at least one element in matrix @p m.  This is identical to
@@ -81,7 +81,7 @@ template <typename Derived>
 typename Derived::Scalar none(const Eigen::MatrixBase<Derived>& m) {
   using Boolish = typename Derived::Scalar;
   const auto negate = [](const Boolish& v) -> Boolish { return !v; };
-  return all(m.unaryExpr(negate));
+  return drake::all(m.unaryExpr(negate));
 }
 
 /// Checks if unary predicate @p pred holds for no elements in the matrix @p m.
