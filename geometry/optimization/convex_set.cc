@@ -1,5 +1,6 @@
 #include "drake/geometry/optimization/convex_set.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 
@@ -29,6 +30,20 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
   constraints.emplace_back(prog->AddBoundingBoxConstraint(
       0, std::numeric_limits<double>::infinity(), t));
   return constraints;
+}
+
+ConvexSets::ConvexSets() = default;
+
+ConvexSets::~ConvexSets() = default;
+
+ConvexSet& ConvexSets::emplace_back(const ConvexSet& set) {
+  sets_.emplace_back(set.Clone());
+  return *sets_.back();
+}
+
+ConvexSet& ConvexSets::emplace_back(std::unique_ptr<ConvexSet> set) {
+  sets_.emplace_back(std::move(set));
+  return *sets_.back();
 }
 
 }  // namespace optimization

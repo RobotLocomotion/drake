@@ -1318,9 +1318,9 @@ void def_geometry_optimization(py::module m) {
             cls_doc.ambient_dimension.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
-        .def("AddPointInSetConstraint", &ConvexSet::AddPointInSetConstraint,
+        .def("AddPointInSetConstraints", &ConvexSet::AddPointInSetConstraints,
             py::arg("prog"), py::arg("vars"),
-            cls_doc.AddPointInSetConstraint.doc)
+            cls_doc.AddPointInSetConstraints.doc)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
   }
@@ -1334,7 +1334,7 @@ void def_geometry_optimization(py::module m) {
         .def(py::init<const QueryObject<double>&, GeometryId,
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
-            py::arg("expressed_in") = std::nullopt, cls_doc.ctor.doc_3args)
+            py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &HPolyhedron::A, cls_doc.A.doc)
         .def("b", &HPolyhedron::b, cls_doc.b.doc)
         .def("MaximumVolumeInscribedEllipsoid",
@@ -1347,17 +1347,17 @@ void def_geometry_optimization(py::module m) {
   }
 
   {
-    const auto& cls_doc = doc.HyperEllipsoid;
-    py::class_<HyperEllipsoid, ConvexSet>(m, "HyperEllipsoid", cls_doc.doc)
+    const auto& cls_doc = doc.Hyperellipsoid;
+    py::class_<Hyperellipsoid, ConvexSet>(m, "Hyperellipsoid", cls_doc.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("A"), py::arg("center"), cls_doc.ctor.doc_2args)
         .def(py::init<const QueryObject<double>&, GeometryId,
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
-            py::arg("expressed_in") = std::nullopt, cls_doc.ctor.doc_3args)
-        .def("A", &HyperEllipsoid::A, cls_doc.A.doc)
-        .def("center", &HyperEllipsoid::center, cls_doc.center.doc);
+            py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
+        .def("A", &Hyperellipsoid::A, cls_doc.A.doc)
+        .def("center", &Hyperellipsoid::center, cls_doc.center.doc);
   }
 }
 

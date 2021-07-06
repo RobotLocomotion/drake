@@ -910,7 +910,7 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.A(), A)
         np.testing.assert_array_equal(hpoly.b(), b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
-        hpoly.AddPointInSetConstraint(prog, x)
+        hpoly.AddPointInSetConstraints(prog, x)
         with self.assertRaisesRegex(
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
             hpoly.ToShapeWithPose()
@@ -922,15 +922,15 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_equal(h_box.b(), h_unit_box.b())
         self.assertIsInstance(
             h_box.MaximumVolumeInscribedEllipsoid(),
-            mut.optimization.HyperEllipsoid)
+            mut.optimization.Hyperellipsoid)
 
-        # Test HyperEllipsoid.
-        ellipsoid = mut.optimization.HyperEllipsoid(A=A, center=b)
+        # Test Hyperellipsoid.
+        ellipsoid = mut.optimization.Hyperellipsoid(A=A, center=b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
         np.testing.assert_array_equal(ellipsoid.A(), A)
         np.testing.assert_array_equal(ellipsoid.center(), b)
         self.assertTrue(ellipsoid.PointInSet(x=b, tol=0.0))
-        ellipsoid.AddPointInSetConstraint(prog, x)
+        ellipsoid.AddPointInSetConstraints(prog, x)
         shape, pose = ellipsoid.ToShapeWithPose()
         self.assertIsInstance(shape, mut.Ellipsoid)
         self.assertIsInstance(pose, RigidTransform)
@@ -957,11 +957,11 @@ class TestGeometry(unittest.TestCase):
         query_object = scene_graph.get_query_output_port().Eval(context)
         H = mut.optimization.HPolyhedron(
             query_object=query_object, geometry_id=box_geometry_id,
-            expressed_in=scene_graph.world_frame_id())
+            reference_frame=scene_graph.world_frame_id())
         self.assertEqual(H.ambient_dimension(), 3)
-        E = mut.optimization.HyperEllipsoid(
+        E = mut.optimization.Hyperellipsoid(
             query_object=query_object, geometry_id=sphere_geometry_id,
-            expressed_in=scene_graph.world_frame_id())
+            reference_frame=scene_graph.world_frame_id())
         self.assertEqual(E.ambient_dimension(), 3)
 
     def test_deprecated_struct_member(self):

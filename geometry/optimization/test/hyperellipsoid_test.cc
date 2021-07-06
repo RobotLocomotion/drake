@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/random_rotation.h"
@@ -18,8 +19,13 @@ namespace geometry {
 namespace optimization {
 
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::RowVector2d;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
-using internal::CheckAddPointInSetConstraint;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using internal::CheckAddPointInSetConstraints;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
 using math::RotationMatrixd;
@@ -27,11 +33,11 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
 
-GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
+GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   // Test constructor.
   const Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
   const Vector3d center = Vector3d::Zero();
-  HyperEllipsoid E(A, center);
+  Hyperellipsoid E(A, center);
   EXPECT_EQ(E.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(A, E.A()));
   EXPECT_TRUE(CompareMatrices(center, E.center()));
@@ -43,7 +49,7 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   auto query =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
-  HyperEllipsoid E_scene_graph(query, geom_id);
+  Hyperellipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(center, E_scene_graph.center()));
 
@@ -61,10 +67,10 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   EXPECT_FALSE(E.PointInSet(out1_W));
   EXPECT_FALSE(E.PointInSet(out2_W));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in1_W));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in2_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out1_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(E, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(E, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(E, out1_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(E, out2_W));
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = E.ToShapeWithPose();
@@ -78,7 +84,7 @@ GTEST_TEST(HyperEllipsoidTest, UnitSphereTest) {
   // sphere is rotationally symmetric.
 }
 
-GTEST_TEST(HyperEllipsoidTest, ScaledSphereTest) {
+GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   const double radius = 0.1;
   auto [scene_graph, geom_id] =
       MakeSceneGraphWithShape(Sphere(radius), RigidTransformd::Identity());
@@ -86,7 +92,7 @@ GTEST_TEST(HyperEllipsoidTest, ScaledSphereTest) {
   auto query =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
-  HyperEllipsoid E(query, geom_id);
+  Hyperellipsoid E(query, geom_id);
   EXPECT_TRUE(
       CompareMatrices(E.A(), Eigen::Matrix3d::Identity() / radius, 1e-16));
   EXPECT_TRUE(E.center().isZero(1e-16));
@@ -102,13 +108,13 @@ GTEST_TEST(HyperEllipsoidTest, ScaledSphereTest) {
   EXPECT_TRUE(X_WS.IsIdentityToEpsilon(1e-16));
 }
 
-GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
+GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
   const Eigen::Matrix3d D = Eigen::DiagonalMatrix<double, 3>(1.0, 2.0, 3.0);
   const RotationMatrixd R = RotationMatrixd::MakeZRotation(M_PI / 2.0);
   const Eigen::Matrix3d A = D * R.matrix();
   const Vector3d center{4.0, 5.0, 6.0};
 
-  HyperEllipsoid E(A, center);
+  Hyperellipsoid E(A, center);
   EXPECT_EQ(E.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(A, E.A()));
   EXPECT_TRUE(CompareMatrices(center, E.center()));
@@ -121,7 +127,7 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   auto query =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
 
-  HyperEllipsoid E_scene_graph(query, geom_id);
+  Hyperellipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(center, E_scene_graph.center(), 1e-15));
 
@@ -134,20 +140,22 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   out1_W = B * out1_W + center;
   out2_W = B * out2_W + center;
 
-  // TODO(russt): Add ComputeSignedDistanceToPoint queries once HyperEllipsoids
-  // are supported.
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in1_W)[0].distance, 0.0);
+  EXPECT_LE(query.ComputeSignedDistanceToPoint(in2_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out1_W)[0].distance, 0.0);
+  EXPECT_GE(query.ComputeSignedDistanceToPoint(out2_W)[0].distance, 0.0);
 
   EXPECT_TRUE(E.PointInSet(in1_W));
   EXPECT_TRUE(E.PointInSet(in2_W));
   EXPECT_FALSE(E.PointInSet(out1_W));
   EXPECT_FALSE(E.PointInSet(out2_W));
 
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in1_W));
-  EXPECT_TRUE(CheckAddPointInSetConstraint(E, in2_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out1_W));
-  EXPECT_FALSE(CheckAddPointInSetConstraint(E, out2_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(E, in1_W));
+  EXPECT_TRUE(CheckAddPointInSetConstraints(E, in2_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(E, out1_W));
+  EXPECT_FALSE(CheckAddPointInSetConstraints(E, out2_W));
 
-  // Test expressed_in frame.
+  // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();
@@ -158,7 +166,7 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
                                                         pose_vector);
   auto query2 =
       scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context2);
-  HyperEllipsoid E_F(query2, geom_id, frame_id);
+  Hyperellipsoid E_F(query2, geom_id, frame_id);
 
   const RigidTransformd X_FW = X_WF.inverse();
   EXPECT_TRUE(E_F.PointInSet(X_FW * in1_W));
@@ -187,8 +195,8 @@ GTEST_TEST(HyperEllipsoidTest, ArbitraryEllipsoidTest) {
   }
 }
 
-GTEST_TEST(HyperEllipsoidTest, UnitBall6DTest) {
-  HyperEllipsoid E = HyperEllipsoid::MakeUnitBall(6);
+GTEST_TEST(HyperellipsoidTest, UnitBall6DTest) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(6);
   EXPECT_EQ(E.ambient_dimension(), 6);
 
   const double kScale = sqrt(1.0 / 6.0);
@@ -203,19 +211,19 @@ GTEST_TEST(HyperEllipsoidTest, UnitBall6DTest) {
   EXPECT_FALSE(E.PointInSet(out2_W));
 }
 
-GTEST_TEST(HyperEllipsoidTest, CloneTest) {
-  HyperEllipsoid E(Eigen::Matrix<double, 6, 6>::Identity(), Vector6d::Zero());
+GTEST_TEST(HyperellipsoidTest, CloneTest) {
+  Hyperellipsoid E(Eigen::Matrix<double, 6, 6>::Identity(), Vector6d::Zero());
   std::unique_ptr<ConvexSet> clone = E.Clone();
   EXPECT_EQ(clone->ambient_dimension(), E.ambient_dimension());
-  HyperEllipsoid* pointer = dynamic_cast<HyperEllipsoid*>(clone.get());
+  Hyperellipsoid* pointer = dynamic_cast<Hyperellipsoid*>(clone.get());
   ASSERT_NE(pointer, nullptr);
   EXPECT_TRUE(CompareMatrices(E.A(), pointer->A()));
   EXPECT_TRUE(CompareMatrices(E.center(), pointer->center()));
 }
 
-GTEST_TEST(HyperEllipsoidTest, NonnegativeScalingTest) {
+GTEST_TEST(HyperellipsoidTest, NonnegativeScalingTest) {
   const Vector3d center{2, 2, 2};
-  HyperEllipsoid E(Matrix3d(Vector3d{1, 2, 3}.asDiagonal()), center);
+  Hyperellipsoid E(Matrix3d(Vector3d{1, 2, 3}.asDiagonal()), center);
 
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
@@ -258,6 +266,139 @@ GTEST_TEST(HyperEllipsoidTest, NonnegativeScalingTest) {
   prog.SetInitialGuess(t, 2.0);
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(constraints, 0));
 }
+
+GTEST_TEST(HyperellisoidTest, MakeUnitBallTest) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(4);
+  EXPECT_TRUE(CompareMatrices(E.A(), MatrixXd::Identity(4, 4)));
+  EXPECT_TRUE(CompareMatrices(E.center(), VectorXd::Zero(4)));
+}
+
+GTEST_TEST(HyperellipsoidTest, MakeHypersphereTest) {
+  const double kRadius = 3.0;
+  Vector4d center;
+  center << 1.3, 1.4, 7.2, 9.1;
+  Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kRadius, center);
+  EXPECT_TRUE(CompareMatrices(E.A(), MatrixXd::Identity(4, 4) / kRadius));
+  EXPECT_TRUE(CompareMatrices(E.center(), center));
+  const Vector4d xvec = Eigen::MatrixXd::Identity(4, 1);
+  EXPECT_TRUE(E.PointInSet(center + kRadius * xvec, 1e-16));
+  EXPECT_FALSE(E.PointInSet(center + 1.1 * kRadius * xvec, 1e-16));
+}
+
+GTEST_TEST(HyperellipsoidTest, MakeAxisAlignedTest) {
+  const double a = 2.3, b = 4.5, c = 6.1;
+  const Vector3d center{3.4, -2.3, 7.4};
+  Hyperellipsoid E = Hyperellipsoid::MakeAxisAligned(Vector3d{a, b, c}, center);
+  EXPECT_EQ(E.ambient_dimension(), 3);
+
+  auto [scene_graph, geom_id] =
+      MakeSceneGraphWithShape(Ellipsoid(a, b, c), RigidTransformd{center});
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+
+  Hyperellipsoid E_scene_graph(query, geom_id);
+  EXPECT_TRUE(CompareMatrices(E.A(), E_scene_graph.A(), 1e-16));
+  EXPECT_TRUE(CompareMatrices(E.center(), E_scene_graph.center(), 1e-16));
+}
+
+GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest) {
+  // A is 2x3, so the ellipsoid is unbounded.
+  Hyperellipsoid E(MatrixXd::Identity(2, 3), Vector3d::Zero());
+  EXPECT_FALSE(E.IsBounded());
+  EXPECT_EQ(E.Volume(), std::numeric_limits<double>::infinity());
+}
+
+GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest2) {
+  // A is 3x3 but low rank, so the ellipsoid is unbounded.
+  Hyperellipsoid E(Matrix3d(Vector3d(1.0, 1.0, 0).asDiagonal()),
+                   Vector3d::Zero());
+  EXPECT_FALSE(E.IsBounded());
+  EXPECT_EQ(E.Volume(), std::numeric_limits<double>::infinity());
+}
+
+GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest3) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  EXPECT_TRUE(E.IsBounded());
+  EXPECT_NEAR(E.Volume(), M_PI, 1e-16);
+}
+
+GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest4) {
+  const double kRadius = 4.0;
+  Hyperellipsoid E =
+      Hyperellipsoid::MakeHypersphere(kRadius, VectorXd::Ones(8));
+  EXPECT_TRUE(E.IsBounded());
+  EXPECT_NEAR(E.Volume(), std::pow(M_PI, 4) / 24.0 * std::pow(kRadius, 8),
+              1e-16);
+}
+
+GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest5) {
+  const double a = 2.3, b = 4.5, c = 6.1;
+  const Vector3d center{3.4, -2.3, 7.4};
+  Hyperellipsoid E = Hyperellipsoid::MakeAxisAligned(Vector3d{a, b, c}, center);
+  EXPECT_TRUE(E.IsBounded());
+  EXPECT_NEAR(E.Volume(), 4.0 / 3.0 * M_PI * a * b * c, 1e-16);
+}
+
+GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling) {
+  const double a = 2.5, b = 0.3;
+  Hyperellipsoid E =
+      Hyperellipsoid::MakeAxisAligned(Vector2d{a, b}, Vector2d::Ones());
+
+  const double kTol = 1e-6;  // Solver tolerances are large.
+
+  {
+    // x ≥ 5 (aka -x ≤ -5).
+    HPolyhedron H(RowVector2d(-1.0, 0.0), Vector1d(-5.0));
+    auto [sigma, x] = E.MinimumUniformScalingToTouch(H);
+    EXPECT_NEAR(sigma, (5.0 - 1.0) / a, kTol);
+    EXPECT_TRUE(CompareMatrices(x, Vector2d{5.0, 1.0}, kTol));
+  }
+
+  {
+    // y ≥ 5.
+    HPolyhedron H(RowVector2d(0.0, -1.0), Vector1d(-5.0));
+    auto [sigma, x] = E.MinimumUniformScalingToTouch(H);
+    EXPECT_NEAR(sigma, (5.0 - 1.0) / b, kTol);
+    EXPECT_TRUE(CompareMatrices(x, Vector2d{1.0, 5.0}, kTol));
+  }
+}
+
+GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling2) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+
+  const double kTol = 1e-6;  // Solver tolerances are large.
+  // x+y ≥ 3.  x* = [1.5, 1.5], σ* = |x*|₂.
+  const Vector2d xstar{1.5, 1.5};
+  HPolyhedron H(RowVector2d(-1.0, -1.0), Vector1d(-3.0));
+  auto [sigma, x] = E.MinimumUniformScalingToTouch(H);
+  EXPECT_NEAR(sigma, xstar.norm(), kTol);
+  EXPECT_TRUE(CompareMatrices(x, xstar, kTol));
+}
+
+// Confirm that the scaling is zero if E.center() is an element in the other
+// set.
+GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling3) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  HPolyhedron H = HPolyhedron::MakeUnitBox(2);
+
+  const double kTol = 1e-6;  // Solver tolerances are large.
+  auto [sigma, x] = E.MinimumUniformScalingToTouch(H);
+  EXPECT_NEAR(sigma, 0, kTol);
+  EXPECT_TRUE(CompareMatrices(x, Vector2d::Zero(), kTol));
+}
+
+// Check with another hyperellipsoid (to test SOCP constraint).
+GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling4) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  Hyperellipsoid E2 = Hyperellipsoid::MakeHypersphere(1.0, Vector2d{4.0, 0.0});
+
+  const double kTol = 1e-6;  // Solver tolerances are large.
+  auto [sigma, x] = E.MinimumUniformScalingToTouch(E2);
+  EXPECT_NEAR(sigma, 3.0, kTol);
+  EXPECT_TRUE(CompareMatrices(x, Vector2d{3.0, 0.0}, kTol));
+}
+
 
 }  // namespace optimization
 }  // namespace geometry
