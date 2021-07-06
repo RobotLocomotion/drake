@@ -30,6 +30,7 @@ class TestCsdpSolver(unittest.TestCase):
     def test_csdp_solver(self):
         prog, x1, x1_expected = self._make_prog()
         solver = CsdpSolver()
+        self.assertEqual(solver.solver_id(), CsdpSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "CSDP")
         self.assertEqual(solver.SolverName(), "CSDP")

@@ -12,6 +12,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = MosekSolver()
+        self.assertEqual(solver.solver_id(), MosekSolver.id())
         # Mosek prints output to the terminal.
         solver.set_stream_logging(True, "")
         self.assertTrue(solver.available())

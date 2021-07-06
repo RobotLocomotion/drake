@@ -26,6 +26,7 @@ class TestClpSolver(unittest.TestCase):
     def test_clp_solver(self):
         prog, x, x_expected = self._make_prog()
         solver = ClpSolver()
+        self.assertEqual(solver.solver_id(), ClpSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "CLP")
         self.assertEqual(solver.SolverName(), "CLP")

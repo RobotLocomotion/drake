@@ -23,6 +23,7 @@ PYBIND11_MODULE(mosek, m) {
   py::class_<MosekSolver, SolverInterface> cls(
       m, "MosekSolver", doc.MosekSolver.doc);
   cls.def(py::init<>(), doc.MosekSolver.ctor.doc)
+      .def_static("id", &MosekSolver::id, doc.MosekSolver.id.doc)
       .def("set_stream_logging", &MosekSolver::set_stream_logging,
           py::arg("flag"), py::arg("log_file"),
           doc.MosekSolver.set_stream_logging.doc);

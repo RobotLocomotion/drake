@@ -21,7 +21,8 @@ PYBIND11_MODULE(snopt, m) {
 
   py::class_<SnoptSolver, SolverInterface>(
       m, "SnoptSolver", doc.SnoptSolver.doc)
-      .def(py::init<>(), doc.SnoptSolver.ctor.doc);
+      .def(py::init<>(), doc.SnoptSolver.ctor.doc)
+      .def_static("id", &SnoptSolver::id, doc.SnoptSolver.id.doc);
 
   py::class_<SnoptSolverDetails>(
       m, "SnoptSolverDetails", doc.SnoptSolverDetails.doc)
