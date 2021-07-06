@@ -1704,11 +1704,8 @@ for every column of ``prog_var_vals``. )""")
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("SolveWithFirstAvailableSolver",
-          &solvers::SolveWithFirstAvailableSolver, py::arg("prog"),
-          py::arg("solvers"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(),
-          doc.SolveWithFirstAvailableSolver.doc);
+      .def("SelectFirstAvailableSolver", &solvers::SelectFirstAvailableSolver,
+          py::arg("solvers"), doc.SelectFirstAvailableSolver.doc);
 
   ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)

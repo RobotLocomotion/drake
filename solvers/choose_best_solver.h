@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <set>
+#include <vector>
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_id.h"
@@ -27,6 +28,13 @@ const std::set<SolverId>& GetKnownSolvers();
  * @throw invalid_argument if there is no matching solver.
  */
 std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id);
+
+/**
+ * Selects the first available and enabled solver. If no solvers are available,
+ * throw a runtime error.
+ */
+const SolverInterface* SelectFirstAvailableSolver(
+    const std::vector<const SolverInterface*>& solvers);
 
 }  // namespace solvers
 }  // namespace drake

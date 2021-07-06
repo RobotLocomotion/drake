@@ -1170,8 +1170,8 @@ class TestMathematicalProgram(unittest.TestCase):
         gurobi_solver = GurobiSolver()
         scs_solver = ScsSolver()
         if scs_solver.available() and scs_solver.enabled():
-            result = mp.SolveWithFirstAvailableSolver(
-                prog, [gurobi_solver, scs_solver])
+            solver = mp.SelectFirstAvailableSolver(
+                [gurobi_solver, scs_solver])
 
 
 class DummySolverInterface(SolverInterface):
