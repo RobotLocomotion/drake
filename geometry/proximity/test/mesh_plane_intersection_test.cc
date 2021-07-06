@@ -913,8 +913,8 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
 
 /* Confirms that unique vertices on the VolumeMesh produce unique vertices on
  the output (and conversely duplicate input vertices lead to duplicate output
- vertices).
- It only applies to ContactPolygonRepresentation::kCentroidSubdivision.  */
+ vertices). The output has this property only when `representation` parameter
+ is ContactPolygonRepresentation::kCentroidSubdivision.  */
 TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   // We create the mesh twice; once with duplicates, once without. The plane
   // will slice through *both* tets simultaneously. In both cases we should
@@ -1018,10 +1018,8 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<double> surface_pressure;
     unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
     VolumeElementIndex tet_index{0};
-    SCOPED_TRACE(fmt::format("tet_index = {}", tet_index));
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation, &faces,
                       &vertices_W, &surface_pressure, &cut_edges);
-
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision:
         EXPECT_EQ(faces.size(), 3u); break;
@@ -1030,17 +1028,16 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     }
   }
 
+  // Slicing against tet 1 should produce no intersection.
   for (const auto representation :
       {ContactPolygonRepresentation::kCentroidSubdivision,
        ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
-    // Slicing against tet 1 should produce no intersection.
     vector<SurfaceFace> faces;
     vector<SurfaceVertex<double>> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
     VolumeElementIndex tet_index{1};
-    SCOPED_TRACE(fmt::format("tet_index = {}", tet_index));
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation,
                       &faces, &vertices_W, &surface_pressure, &cut_edges);
     EXPECT_EQ(faces.size(), 0);
@@ -1153,80 +1150,84 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   const Vector3d p_FB = X_FM_.translation() + 0.5 * Mx_F;
   const Plane<double> plane_F{Mx_F, p_FB};
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+  // Passing in all tet indices produces the full intersection.
+  unique_ptr<ContactSurface<double>> contact_surface =
+      ComputeContactSurface<double>(
+          mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
+          ContactPolygonRepresentation::kCentroidSubdivision);
+  ASSERT_NE(contact_surface, nullptr);
+  EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+  EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+  contact_surface =
+      ComputeContactSurface<double>(
+          mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
+          ContactPolygonRepresentation::kSingleTriangle);
+  ASSERT_NE(contact_surface, nullptr);
+  EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
+  EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
 
-    // Passing in all tet indices produces the full intersection.
-    unique_ptr<ContactSurface<double>> contact_surface =
-        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                      both_tets_, X_WF_, representation);
-    ASSERT_NE(contact_surface, nullptr);
+  // Passing just one or the other produces only one tet's worth of triangles.
+  auto contact_surface_0 = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_0_, X_WF_,
+      ContactPolygonRepresentation::kCentroidSubdivision);
+  ASSERT_NE(contact_surface_0, nullptr);
+  EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 3);
+  EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 4);
+  const RigidTransformd X_MW = X_FM_.InvertAndCompose(X_WF_.inverse());
+  {
+    // For tet 0, the z-value of the last vertex should be > 0.
+    const Vector3d& p_WV =
+        contact_surface_0->mesh_W().vertices().back().r_MV();
+    const Vector3d& p_MV = X_MW * p_WV;
+    EXPECT_GT(p_MV(2), 0);
+  }
+  contact_surface_0 = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_0_, X_WF_,
+      ContactPolygonRepresentation::kSingleTriangle);
+  ASSERT_NE(contact_surface_0, nullptr);
+  EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 1);
+  EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 3);
+  {
+    // For tet 0, the z-value of the last vertex should be > 0.
+    const Vector3d& p_WV =
+        contact_surface_0->mesh_W().vertices().back().r_MV();
+    const Vector3d& p_MV = X_MW * p_WV;
+    EXPECT_GT(p_MV(2), 0);
+  }
 
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-        break;
-    }
-
-    // Passing just one or the other produces only one tet's worth of triangles.
-    auto contact_surface_0 =
-        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                      only_tet_0_, X_WF_, representation);
-    ASSERT_NE(contact_surface_0, nullptr);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 3);
-        EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 4);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 1);
-        EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 3);
-        break;
-    }
-    const RigidTransformd X_MW = X_FM_.InvertAndCompose(X_WF_.inverse());
-    {
-      // For tet 0, the z-value of the last vertex should be > 0.
-      const Vector3d& p_WV =
-          contact_surface_0->mesh_W().vertices().back().r_MV();
-      const Vector3d& p_MV = X_MW * p_WV;
-      EXPECT_GT(p_MV(2), 0);
-    }
-
-    auto contact_surface_1 =
-        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                      only_tet_1_, X_WF_, representation);
-    ASSERT_NE(contact_surface_1, nullptr);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 3);
-        EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 4);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 1);
-        EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 3);
-        break;
-    }
-    {
-      // For tet 1, the z-value of the last vertex should be < 0.
-      const Vector3d& p_WV =
-          contact_surface_1->mesh_W().vertices().back().r_MV();
-      const Vector3d& p_MV = X_MW * p_WV;
-      EXPECT_LT(p_MV(2), 0);
-    }
+  auto contact_surface_1 = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_,
+      ContactPolygonRepresentation::kCentroidSubdivision);
+  ASSERT_NE(contact_surface_1, nullptr);
+  EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 3);
+  EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 4);
+  {
+    // For tet 1, the z-value of the last vertex should be < 0.
+    const Vector3d& p_WV =
+        contact_surface_1->mesh_W().vertices().back().r_MV();
+    const Vector3d& p_MV = X_MW * p_WV;
+    EXPECT_LT(p_MV(2), 0);
+  }
+  contact_surface_1 = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_,
+      ContactPolygonRepresentation::kSingleTriangle);
+  ASSERT_NE(contact_surface_1, nullptr);
+  EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 1);
+  EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 3);
+  {
+    // For tet 1, the z-value of the last vertex should be < 0.
+    const Vector3d& p_WV =
+        contact_surface_1->mesh_W().vertices().back().r_MV();
+    const Vector3d& p_MV = X_MW * p_WV;
+    EXPECT_LT(p_MV(2), 0);
   }
 }
 
 /* Tests responsibility 3: no duplicates are introduced. While this is implied
  by the *counts* of vertices observed in other tests, this one explicitly
- compares vertex values to make sure they are reasonably distant.
- It only applies to ContactPolygonRepresentation::kCentroidSubdivision. */
+ compares vertex values to make sure they are reasonably distant. It has this
+ property only when `representation` parameter is
+ ContactPolygonRepresentation::kCentroidSubdivision. */
 TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
   const Vector3d& Mx_F = X_FM_.rotation().col(0);
   // The plane's normal aligns with Mx; slices through both tets.
@@ -1314,20 +1315,20 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
 /* Tests responsibility 4: the returned contact surface has a pressure field
  that references its own mesh. */
 TEST_F(ComputeContactSurfaceTest, ContactSurfaceFieldReferencesMesh) {
+  // The plane slices through tet 0.
   const Vector3d& Mz_F = X_FM_.rotation().col(2);
   const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
   const Plane<double> plane_F{Mz_F, p_FB};
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-    unique_ptr<ContactSurface<double>> contact =
-        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                      both_tets_, X_WF_, representation);
-    const auto& mesh_W = contact->mesh_W();
-    const auto& field_W = contact->e_MN();
-    EXPECT_EQ(&mesh_W, &field_W.mesh());
-  }
+
+  unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
+      ContactPolygonRepresentation::kCentroidSubdivision);
+  EXPECT_EQ(&contact->mesh_W(), &contact->e_MN().mesh());
+
+  contact = ComputeContactSurface<double>(
+      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
+      ContactPolygonRepresentation::kSingleTriangle);
+  EXPECT_EQ(&contact->mesh_W(), &contact->e_MN().mesh());
 }
 
 /* Tests responsibility 5: the normals point out of the plane and into the
@@ -1421,11 +1422,11 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
     }
   }
 
+  // Case: Reversing the ids will swap M and N. Otherwise all results should
+  // be the same.
   for (const auto representation :
       {ContactPolygonRepresentation::kCentroidSubdivision,
        ContactPolygonRepresentation::kSingleTriangle}) {
-    // Case: Reversing the ids will swap M and N. Otherwise all results should
-    // be the same.
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(plane_id_, *field_F_, mesh_id_, plane_F,
                                       both_tets_, X_WF_, representation);

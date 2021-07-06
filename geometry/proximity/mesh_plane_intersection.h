@@ -52,7 +52,7 @@ namespace internal {
      positions are the centroids of the intersected polygons.
 
  For `representation` = ContactPolygonRepresentation::kSingleTriangle, this
- method produces 3 or 4 times less triangles than the other choice by
+ choice produces 3 or 4 times fewer triangles than the other choice by
  representing the intersected polygon as one triangle. However, it does not
  guarantee unique vertices and ignores `cut_edges` parameter.
 
