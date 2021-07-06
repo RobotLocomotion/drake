@@ -20,7 +20,8 @@ PYBIND11_MODULE(clp, m) {
   py::module::import("pydrake.solvers.mathematicalprogram");
 
   py::class_<ClpSolver, SolverInterface>(m, "ClpSolver", doc.ClpSolver.doc)
-      .def(py::init<>(), doc.ClpSolver.ctor.doc);
+      .def(py::init<>(), doc.ClpSolver.ctor.doc)
+      .def_static("id", &ClpSolver::id, doc.ClpSolver.id.doc);
 
   py::class_<ClpSolverDetails>(m, "ClpSolverDetails", doc.ClpSolverDetails.doc)
       .def_readonly(

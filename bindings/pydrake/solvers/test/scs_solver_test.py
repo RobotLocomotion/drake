@@ -15,6 +15,7 @@ class TestScsSolver(unittest.TestCase):
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = ScsSolver()
+        self.assertEqual(solver.solver_id(), ScsSolver.id())
 
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "SCS")

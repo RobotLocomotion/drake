@@ -21,7 +21,8 @@ PYBIND11_MODULE(nlopt, m) {
 
   py::class_<NloptSolver, SolverInterface>(
       m, "NloptSolver", doc.NloptSolver.doc)
-      .def(py::init<>(), doc.NloptSolver.ctor.doc);
+      .def(py::init<>(), doc.NloptSolver.ctor.doc)
+      .def_static("id", &NloptSolver::id, doc.NloptSolver.id.doc);
 
   py::class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)

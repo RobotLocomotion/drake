@@ -23,7 +23,8 @@ PYBIND11_MODULE(csdp, m) {
   py::class_<CsdpSolver, SolverInterface>(m, "CsdpSolver", doc.CsdpSolver.doc)
       .def(py::init<RemoveFreeVariableMethod>(),
           py::arg("method") = RemoveFreeVariableMethod::kNullspace,
-          doc.CsdpSolver.ctor.doc);
+          doc.CsdpSolver.ctor.doc)
+      .def_static("id", &CsdpSolver::id, doc.CsdpSolver.id.doc);
 
   py::class_<CsdpSolverDetails>(
       m, "CsdpSolverDetails", doc.CsdpSolverDetails.doc)
