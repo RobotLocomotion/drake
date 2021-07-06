@@ -238,20 +238,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "WeldFrames",
             [](Class* self, const Frame<T>& A, const Frame<T>& B,
-                const RigidTransform<double>& X_AB) -> const WeldJoint<T>& {
-              WarnDeprecated(
-                  "Please use MultibodyPlant.WeldFrames("
-                  "frame_on_parent_P=value1, frame_on_child_C=value2,"
-                  " X_PC=value3) instead. This variant will be removed"
-                  " after 2021-07-01.");
-              return self->WeldFrames(A, B, X_AB);
-            },
-            py::arg("A"), py::arg("B"),
-            py::arg("X_AB") = RigidTransform<double>::Identity(),
-            py_rvp::reference_internal, cls_doc.WeldFrames.doc)
-        .def(
-            "WeldFrames",
-            [](Class* self, const Frame<T>& A, const Frame<T>& B,
                 const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
               WarnDeprecated(doc_iso3_deprecation);
               return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
