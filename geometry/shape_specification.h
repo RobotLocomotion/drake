@@ -348,7 +348,7 @@ class Convex final : public Shape {
    ...
    void ImplementGeometry(const Sphere& sphere, void* data) override {
      DRAKE_ASSERT(data);
-     ImportantData& data = *reinterpret_cast<ImportantData*>(data);
+     ImportantData& data = *static_cast<ImportantData*>(data);
      // Do work to create a sphere using the provided user data.
    }
  };
