@@ -29,5 +29,26 @@ MathematicalProgramResult Solve(
 MathematicalProgramResult Solve(const MathematicalProgram& prog) {
   return Solve(prog, {}, {});
 }
+
+MathematicalProgramResult SolveWithFirstAvailableSolver(
+    const MathematicalProgram& prog,
+    const std::vector<const SolverInterface*>& solvers,
+    const std::optional<Eigen::VectorXd>& initial_guess,
+    const std::optional<SolverOptions>& solver_options) {
+  MathematicalProgramResult result;
+  for (const auto solver : solvers) {
+    if (solver->available() && solver->enabled()) {
+      solver->Solve(prog, initial_guess, solver_options, &result);
+      return result;
+    }
+  }
+  std::string solver_names = "";
+  for (const auto solver : solvers) {
+    solver_names.append(solver->solver_id().name() + " ");
+  }
+  throw std::runtime_error(
+      "SolveWithFirstAvailableSolver(): none of the solvers " + solver_names +
+      "is available or enabled.");
+}
 }  // namespace solvers
 }  // namespace drake

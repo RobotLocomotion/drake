@@ -6,6 +6,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
@@ -41,6 +42,18 @@ MathematicalProgramResult Solve(
     const Eigen::Ref<const Eigen::VectorXd>& initial_guess);
 
 MathematicalProgramResult Solve(const MathematicalProgram& prog);
+
+/**
+ * Given a list of solvers, solve the program with the first available and
+ * enabled solver. If no solvers are available, throw a runtime error. It is the
+ * user's responsibility to guarantee that the solver capability meets the
+ * program requirement.
+ */
+MathematicalProgramResult SolveWithFirstAvailableSolver(
+    const MathematicalProgram& prog,
+    const std::vector<const SolverInterface*>& solvers,
+    const std::optional<Eigen::VectorXd>& initial_guess = std::nullopt,
+    const std::optional<SolverOptions>& solver_options = std::nullopt);
 
 }  // namespace solvers
 }  // namespace drake
