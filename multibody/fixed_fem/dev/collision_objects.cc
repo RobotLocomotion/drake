@@ -76,47 +76,47 @@ SurfaceMesh<double> MakeRigidSurfaceMesh(const Convex& convex_spec, double) {
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Sphere& sphere,
                                             void* user_data) {
-  MakeRigidRepresentation(sphere, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(sphere, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Cylinder& cylinder,
                                             void* user_data) {
-  MakeRigidRepresentation(cylinder, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(cylinder, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const HalfSpace& half_space,
                                             void* user_data) {
-  MakeRigidRepresentation(half_space, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(half_space, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Box& box, void* user_data) {
-  MakeRigidRepresentation(box, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(box, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Capsule& capsule,
                                             void* user_data) {
-  MakeRigidRepresentation(capsule, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(capsule, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Ellipsoid& ellipsoid,
                                             void* user_data) {
-  MakeRigidRepresentation(ellipsoid, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(ellipsoid, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  MakeRigidRepresentation(mesh, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(mesh, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>
 void CollisionObjects<T>::ImplementGeometry(const Convex& convex,
                                             void* user_data) {
-  MakeRigidRepresentation(convex, *reinterpret_cast<ReifyData*>(user_data));
+  MakeRigidRepresentation(convex, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename T>

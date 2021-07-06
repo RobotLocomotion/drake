@@ -483,8 +483,7 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
     mapper->SetInputConnection(source->GetOutputPort());
   }
 
-  const RegistrationData& data =
-      *reinterpret_cast<RegistrationData*>(user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
 
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
 
