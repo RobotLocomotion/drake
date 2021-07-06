@@ -51,17 +51,17 @@ GTEST_TEST(PointsCorrespondenceTest, PlaneCreationTest) {
 
 // Verifies whether the conversion is correct.
 GTEST_TEST(ConvertToVtkTransformTest, ConversionTest) {
-  const Eigen::Isometry3d expected(
-      (Eigen::Translation3d(1., 2., 3.) *
+  const math::RigidTransformd expected(
        Eigen::AngleAxisd(1., Eigen::Vector3d(1. / std::sqrt(3.),
                                              1. / std::sqrt(3.),
-                                             1. / std::sqrt(3.)))));
+                                             1. / std::sqrt(3.))),
+       Eigen::Vector3d(1., 2., 3.));
 
   auto dut = ConvertToVtkTransform(expected);
 
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
-      EXPECT_NEAR(expected.matrix()(i, j),
+      EXPECT_NEAR(expected.GetAsMatrix4()(i, j),
                   dut->GetMatrix()->GetElement(i, j),
                   kTolerance);
     }

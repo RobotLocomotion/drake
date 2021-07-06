@@ -31,12 +31,6 @@ using vtkPointerArray = std::array<vtkSmartPointer<T>, N>;
 /// @param size The size of the plane.
 vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size);
 
-/// Converts the provided `Eigen::Isometry3d` to a `vtkTransform`.
-///
-/// @param transform The transform to convert into a `vtkTransform`.
-vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
-    const Eigen::Isometry3d& transform);
-
 /// Converts the provided `transform` to a vtkTransform.
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
     const math::RigidTransformd& transform);
