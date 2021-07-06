@@ -213,5 +213,14 @@ extern const char* const kSetLogLevelUnchanged;
 /// An end-user help string suitable to describe the effects of set_log_level().
 extern const char* const kSetLogLevelHelpMessage;
 
+/// Invokes `drake::log()->set_pattern(pattern)`.
+/// @param pattern Formatting for message. For more information, see:
+/// https://github.com/gabime/spdlog/wiki/3.-Custom-formatting
+void set_log_pattern(const std::string& pattern);
+
+/// An end-user help string suitable to describe the effects of
+/// set_log_pattern().
+extern const char* const kSetLogPatternHelpMessage;
+
 }  // namespace logging
 }  // namespace drake
