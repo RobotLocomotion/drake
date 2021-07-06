@@ -1,5 +1,7 @@
 #include "drake/solvers/choose_best_solver.h"
 
+#include <string>
+
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
@@ -110,6 +112,22 @@ std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id) {
   } else {
     throw std::invalid_argument("MakeSolver: no matching solver " + id.name());
   }
+}
+
+std::unique_ptr<SolverInterface> MakeFirstAvailableSolver(
+    const std::vector<SolverId>& solver_ids) {
+  for (const auto& solver_id : solver_ids) {
+    auto solver = MakeSolver(solver_id);
+    if (solver->available() && solver->enabled()) {
+      return solver;
+    }
+  }
+  std::string solver_names = "";
+  for (const auto solver_id : solver_ids) {
+    solver_names.append(solver_id.name() + " ");
+  }
+  throw std::runtime_error("MakeFirstAvailableSolver(): none of the solvers " +
+                           solver_names + "is available and enabled.");
 }
 
 }  // namespace solvers
