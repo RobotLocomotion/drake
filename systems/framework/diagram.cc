@@ -605,9 +605,7 @@ bool Diagram<T>::AreConnected(const OutputPort<T>& output,
 
 template <typename T>
 Diagram<T>::Diagram() : System<T>(
-    SystemScalarConverter(
-        SystemTypeTag<Diagram>{},
-        SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
+    SystemScalarConverter::MakeWithoutSubtypeChecking<Diagram>()) {}
 
 template <typename T>
 Diagram<T>::Diagram(SystemScalarConverter converter)
