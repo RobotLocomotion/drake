@@ -168,11 +168,11 @@ class RotationConversionTest : public ::testing::Test {
     rpy_test_cases_.push_back(pitch_near_neg_half_piD);
 
     // non-singular cases
-    auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+    auto roll = Eigen::VectorXd::LinSpaced(kSweepSize,
                                            -0.99 * M_PI, M_PI);
-    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+    auto pitch = Eigen::VectorXd::LinSpaced(kSweepSize,
                                             -0.49 * M_PI, 0.49 * M_PI);
-    auto yaw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+    auto yaw = Eigen::VectorXd::LinSpaced(kSweepSize,
                                           -0.99 * M_PI, M_PI);
     for (int i = 0; i < roll.size(); ++i) {
       for (int j = 0; j < pitch.size(); ++j) {
@@ -272,10 +272,10 @@ class RotationConversionTest : public ::testing::Test {
     addAngleAxisTestCase((-1 + 1E-10) * M_PI, axis);
 
     // non-singularity cases
-    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+    auto a_x = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto a_y = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto a_z = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto a_angle = Eigen::VectorXd::LinSpaced(kSweepSize,
                                               -0.95 * M_PI, 0.95 * M_PI);
     for (int i = 0; i < a_x.size(); ++i) {
       for (int j = 0; j < a_y.size(); ++j) {
@@ -294,10 +294,10 @@ class RotationConversionTest : public ::testing::Test {
 
   void SetupQuaternionTestCases() {
     // Set up a variety of general tests for quaternions.
-    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qw = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
     for (int i = 0; i < qw.size(); ++i) {
       for (int j = 0; j < qx.size(); ++j) {
         for (int k = 0; k < qy.size(); ++k) {
