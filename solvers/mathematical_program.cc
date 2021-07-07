@@ -51,17 +51,13 @@ using symbolic::Variables;
 
 using internal::CreateBinding;
 
-MathematicalProgram::MathematicalProgram()
-    : x_initial_guess_(0),
-      optimal_cost_(numeric_limits<double>::quiet_NaN()),
-      lower_bound_cost_(-numeric_limits<double>::infinity()),
-      required_capabilities_{} {}
+MathematicalProgram::MathematicalProgram() = default;
 
 MathematicalProgram::~MathematicalProgram() = default;
 
 std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
   // The constructor of MathematicalProgram will construct each solver. It
-  // also sets x_values_ and x_initial_guess_ to default values.
+  // also sets x_initial_guess_ to default values.
   auto new_prog = std::make_unique<MathematicalProgram>();
   // Add variables and indeterminates
   // AddDecisionVariables and AddIndeterminates also set
@@ -90,7 +86,6 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
       linear_complementarity_constraints_;
 
   new_prog->x_initial_guess_ = x_initial_guess_;
-  new_prog->solver_id_ = solver_id_;
   new_prog->solver_options_ = solver_options_;
 
   new_prog->required_capabilities_ = required_capabilities_;
@@ -143,7 +138,6 @@ void MathematicalProgram::AddDecisionVariables(
   decision_variables_.conservativeResize(num_existing_decision_vars +
                                          decision_variables.rows());
   decision_variables_.tail(decision_variables.rows()) = decision_variables;
-  AppendNanToEnd(decision_variables.rows(), &x_values_);
   AppendNanToEnd(decision_variables.rows(), &x_initial_guess_);
 }
 

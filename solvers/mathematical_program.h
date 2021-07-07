@@ -3133,17 +3133,11 @@ class MathematicalProgram {
       linear_complementarity_constraints_;
 
   Eigen::VectorXd x_initial_guess_;
-  Eigen::VectorXd x_values_;
-  std::optional<SolverId> solver_id_;
-  double optimal_cost_{};
-  // The lower bound of the objective found by the solver, during the
-  // optimization process.
-  double lower_bound_cost_{};
 
   // The actual per-solver customization options.
   SolverOptions solver_options_;
 
-  ProgramAttributes required_capabilities_{};
+  ProgramAttributes required_capabilities_;
 
   template <typename T>
   void NewVariables_impl(
@@ -3162,7 +3156,6 @@ class MathematicalProgram {
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     decision_variables_.conservativeResize(num_vars() + num_new_vars,
                                            Eigen::NoChange);
-    AppendNanToEnd(num_new_vars, &x_values_);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
