@@ -148,7 +148,7 @@ TEST_F(StaticElasticityElementTest, StiffnessMatrixIsPositionDerivative) {
 TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
   Eigen::Matrix<T, kNumDofs, kNumDofs> damping_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      element().CalcDampingMatrix(*state_, &damping_matrix), std::exception,
+      element().CalcDampingMatrix(*state_, &damping_matrix),
       "Static elasticity forms a zero-th order ODE and does not provide a "
       "damping matrix.");
 }
@@ -156,7 +156,7 @@ TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
 TEST_F(StaticElasticityElementTest, NoMassMatrix) {
   Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      element().CalcMassMatrix(*state_, &mass_matrix), std::exception,
+      element().CalcMassMatrix(*state_, &mass_matrix),
       "Static elasticity forms a zero-th order ODE and does not provide a mass "
       "matrix.");
 }

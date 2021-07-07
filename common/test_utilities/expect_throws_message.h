@@ -1,6 +1,7 @@
 #pragma once
 
 #include <regex>
+#include <stdexcept>
 #include <string>
 
 #include "drake/common/drake_assert.h"
@@ -14,13 +15,17 @@ like GTest's `EXPECT_THROW` but is fussier about the particular error message.
 Usage example: @code
   DRAKE_EXPECT_THROWS_MESSAGE(
       StatementUnderTest(), // You expect this statement to throw ...
-      std::logic_error,     // ... this exception with ...
       ".*some important.*phrases.*that must appear.*");  // ... this message.
 @endcode
 The regular expression must match the entire error message. If there is
 boilerplate you don't care to match at the beginning and end, surround with
 with `.*` to ignore in single-line messages or `[\s\S]*` for multiline
 messages.
+
+The "exception" argument is optional and defaults to "std::exception" when
+omitted. In other words, if your test doesn't care what kind of exception
+was thrown, then call this macro as (expression, regexp) without the middle
+argument.
 
 Following GTest's conventions, failure to perform as expected here is a
 non-fatal test error. An `ASSERT` variant is provided to make it fatal. There
@@ -89,24 +94,63 @@ try { \
 } \
 } while (0)
 
-#define DRAKE_EXPECT_THROWS_MESSAGE(expression, exception, regexp) \
+#define DRAKE_EXPECT_THROWS_MESSAGE_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
       expression, exception, regexp, \
       true /*must_throw*/, false /*non-fatal*/)
 
-#define DRAKE_ASSERT_THROWS_MESSAGE(expression, exception, regexp) \
+#define DRAKE_ASSERT_THROWS_MESSAGE_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
       expression, exception, regexp, \
       true /*must_throw*/, true /*fatal*/)
 
-#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp) \
+#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
       expression, exception, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
 
-#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp) \
+#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_3(expression, exception, regexp) \
   DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
       expression, exception, regexp, \
       ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
+
+#define DRAKE_EXPECT_THROWS_MESSAGE_2(expression, regexp) \
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, std::exception, regexp, \
+      true /*must_throw*/, false /*non-fatal*/)
+
+#define DRAKE_ASSERT_THROWS_MESSAGE_2(expression, regexp) \
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, std::exception, regexp, \
+      true /*must_throw*/, true /*fatal*/)
+
+#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_2(expression, regexp) \
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, std::exception, regexp, \
+      ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
+
+#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_2(expression, regexp) \
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, std::exception, regexp, \
+      ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
+
+// Now overload the macro based on 2 vs 3 arguments.
+#define DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(_1, _2, _3, NAME, ...) NAME
+#define DRAKE_EXPECT_THROWS_MESSAGE(...) \
+  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
+    DRAKE_EXPECT_THROWS_MESSAGE_3, \
+    DRAKE_EXPECT_THROWS_MESSAGE_2)(__VA_ARGS__)
+#define DRAKE_ASSERT_THROWS_MESSAGE(...) \
+  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
+    DRAKE_ASSERT_THROWS_MESSAGE_3, \
+    DRAKE_ASSERT_THROWS_MESSAGE_2)(__VA_ARGS__)
+#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(...) \
+  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
+    DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_3, \
+    DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED_2)(__VA_ARGS__)
+#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(...) \
+  DRAKE_OVERLOAD_THROWS_MESSAGE_MACRO_ARITY(__VA_ARGS__, \
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_3, \
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED_2)(__VA_ARGS__)
 
 #endif  // DRAKE_DOXYGEN_CXX

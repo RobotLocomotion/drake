@@ -183,7 +183,6 @@ GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
     std::ifstream input(filename);
     DRAKE_EXPECT_THROWS_MESSAGE(
         ReadObjToSurfaceMesh(&input, 1.0, &FailOnWarning),
-        std::exception,
         "FailOnWarning: Warning parsing Wavefront obj file : "
         ".*CubeMaterial.*not found.*");
   }

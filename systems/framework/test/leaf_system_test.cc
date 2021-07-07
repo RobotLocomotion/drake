@@ -1147,7 +1147,6 @@ GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
   dut.set_name("dut");
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.AllocateInputAbstract(dut.get_input_port(0)),
-      std::exception,
       "System::AllocateInputAbstract\\(\\): a System with abstract input "
       "ports must pass a model_value to DeclareAbstractInputPort; the "
       "port\\[0\\] named 'no_model_input' did not do so \\(System ::dut\\)");
@@ -1172,7 +1171,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(0, Value<BasicVector<double>>(
                                    VectorXd::Constant(2, 0.0))),
-      std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
       "for input port 'input' \\(index 0\\) but the actual type was "
@@ -1180,7 +1178,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(0, Value<std::string>()),
-      std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
       "for input port 'input' \\(index 0\\) but the actual type was "
@@ -1191,7 +1188,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   context->FixInputPort(2, Value<int>(11));
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(2, Value<std::string>()),
-      std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
       "for input port 'abstract_input' \\(index 2\\) but the actual type was "
@@ -3197,7 +3193,7 @@ GTEST_TEST(SystemTest, MissedEventIssue12620) {
   auto events = nan_system.AllocateCompositeEventCollection();
   nan_context->SetTime(0.25);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      nan_system.CalcNextUpdateTime(*nan_context, events.get()), std::exception,
+      nan_system.CalcNextUpdateTime(*nan_context, events.get()),
       ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
       "time=0.25.*no update time.*NaN.*Return infinity.*");
 
@@ -3208,7 +3204,6 @@ GTEST_TEST(SystemTest, MissedEventIssue12620) {
   trigger_context->SetTime(0.25);
   DRAKE_EXPECT_THROWS_MESSAGE(
       trigger_system.CalcNextUpdateTime(*trigger_context, events.get()),
-      std::exception,
       ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
       "time=0.25.*update time 0.375.*empty Event collection.*"
       "at least one Event object must be provided.*");
@@ -3236,7 +3231,6 @@ GTEST_TEST(SystemTest, ForgotToSetTheUpdateTime) {
   forgot_context->SetTime(0.25);
   DRAKE_EXPECT_THROWS_MESSAGE(
       forgot_system.CalcNextUpdateTime(*forgot_context, events.get()),
-      std::exception,
       ".*CalcNextUpdateTime.*ForgotToSetTimeSystem.*MyForgetfulSystem.*"
       "time=0.25.*no update time.*NaN.*Return infinity.*");
 }

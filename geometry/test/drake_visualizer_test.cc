@@ -836,7 +836,7 @@ GTEST_TEST(DrakeVisualizerdTest, Transmogrify) {
   lcm::DrakeLcm lcm;
   DrakeVisualizerd vis_not_own_lcm_d(&lcm);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      vis_not_own_lcm_d.ToAutoDiffXd(), std::exception,
+      vis_not_own_lcm_d.ToAutoDiffXd(),
       "DrakeVisualizer can only be scalar converted if it owns its "
       "DrakeLcmInterface instance.");
 }

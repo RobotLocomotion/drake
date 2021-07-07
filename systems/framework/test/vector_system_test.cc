@@ -533,12 +533,12 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       dut.AllocateTimeDerivatives();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.CalcTimeDerivatives(*context, derivatives.get()), std::exception,
+      dut.CalcTimeDerivatives(*context, derivatives.get()),
       ".*TimeDerivatives.*derivatives->size.. == 0.*failed.*");
 
   const auto& output = dut.get_output_port();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      output.Eval(*context), std::exception,
+      output.Eval(*context),
       ".*Output.*'output->size.. == 0.*failed.*");
 }
 
@@ -561,12 +561,11 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
   auto discrete_updates = dut.AllocateDiscreteVariables();
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get()),
-      std::exception,
       ".*DiscreteVariableUpdates.*next_state->size.. == 0.*failed.*");
 
   const auto& output = dut.get_output_port();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      output.Eval(*context), std::exception,
+      output.Eval(*context),
       ".*Output.*'output->size.. == 0.*failed.*");
 }
 
