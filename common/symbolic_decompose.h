@@ -16,7 +16,7 @@ namespace symbolic {
 
 /** Decomposes @p expressions into @p M * @p vars.
 
-@throws std::runtime_error if @p expressions is not linear in @p vars.
+@throws std::exception if @p expressions is not linear in @p vars.
 @pre M.rows() == expressions.rows() && M.cols() == vars.rows(). */
 void DecomposeLinearExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
@@ -25,7 +25,7 @@ void DecomposeLinearExpressions(
 
 /** Decomposes @p expressions into @p M * @p vars + @p v.
 
-@throws std::runtime_error if @p expressions is not affine in @p vars.
+@throws std::exception if @p expressions is not affine in @p vars.
 @pre M.rows() == expressions.rows() && M.cols() == vars.rows().
 @pre v.rows() == expressions.rows(). */
 void DecomposeAffineExpressions(

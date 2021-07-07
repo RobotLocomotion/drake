@@ -284,7 +284,7 @@ class PointCloud final {
 
   /// Requires a given set of fields.
   /// @see HasFields for preconditions.
-  /// @throws std::runtime_error if this point cloud does not have these
+  /// @throws std::exception if this point cloud does not have these
   /// fields.
   void RequireFields(pc_flags::Fields fields_in) const;
 
@@ -294,7 +294,7 @@ class PointCloud final {
 
   /// Requires the exact given set of fields.
   /// @see HasFields for preconditions.
-  /// @throws std::runtime_error if this point cloud does not have exactly
+  /// @throws std::exception if this point cloud does not have exactly
   /// these fields.
   void RequireExactFields(pc_flags::Fields field_set) const;
 

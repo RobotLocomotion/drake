@@ -102,7 +102,7 @@ class RigidTransform {
   /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// @throws std::exception in debug builds if the rotation matrix
   /// that is built from `quaternion` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&)
   RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
@@ -114,7 +114,7 @@ class RigidTransform {
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A
-  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// @throws std::exception in debug builds if the rotation matrix
   /// that is built from `theta_lambda` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&)
   RigidTransform(const Eigen::AngleAxis<T>& theta_lambda, const Vector3<T>& p)
@@ -151,7 +151,7 @@ class RigidTransform {
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
-  /// @throws std::logic_error in debug builds if R_AB is not a proper
+  /// @throws std::exception in debug builds if R_AB is not a proper
   /// orthonormal 3x3 rotation matrix.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
@@ -166,7 +166,7 @@ class RigidTransform {
   ///  │ R_AB  p_AoBo_A │
   ///  └                ┘
   /// </pre>
-  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose` is
+  /// @throws std::exception in debug builds if the `R_AB` part of `pose` is
   /// not a proper orthonormal 3x3 rotation matrix.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
@@ -187,7 +187,7 @@ class RigidTransform {
   ///  │   0      1     │
   ///  └                ┘
   /// </pre>
-  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose`
+  /// @throws std::exception in debug builds if the `R_AB` part of `pose`
   /// is not a proper orthonormal 3x3 rotation matrix or if `pose` is a 4x4
   /// matrix whose final row is not `[0, 0, 0, 1]`.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
@@ -201,7 +201,7 @@ class RigidTransform {
 
   /// Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
   /// @param[in] pose Generic Eigen matrix <b>expression</b>.
-  /// @throws std::logic_error if the Eigen <b>expression</b> in pose does not
+  /// @throws std::exception if the Eigen <b>expression</b> in pose does not
   /// resolve to a Vector3 or 3x4 matrix or 4x4 matrix or if the rotational part
   /// of `pose` is not a proper orthonormal 3x3 rotation matrix or if `pose` is
   /// a 4x4 matrix whose final row is not `[0, 0, 0, 1]`.
@@ -263,7 +263,7 @@ class RigidTransform {
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
-  /// @throws std::logic_error in debug builds if R_AB is not a proper
+  /// @throws std::exception in debug builds if R_AB is not a proper
   /// orthonormal 3x3 rotation matrix.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().

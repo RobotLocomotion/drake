@@ -61,7 +61,7 @@ class LinearSystem : public AffineSystem<T> {
   /// Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
   ///
-  /// @throws std::runtime_error if either @p dynamics or @p outputs is not
+  /// @throws std::exception if either @p dynamics or @p outputs is not
   /// linear in @p state_vars and @p input_vars.
   static std::unique_ptr<LinearSystem<T>> MakeLinearSystem(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
@@ -152,9 +152,9 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 /// the derivative vector isZero at the nominal operating point.  @default 1e-6.
 /// @returns A LinearSystem that approximates the original system in the
 /// vicinity of the operating point.  See note below.
-/// @throws std::runtime_error if the operating point is not an
+/// @throws std::exception if the operating point is not an
 /// equilibrium point of the system (within the specified tolerance)
-/// @throws std::runtime_error if the system is not (only)
+/// @throws std::exception if the system is not (only)
 /// continuous or (only) discrete time with a single periodic update.
 ///
 /// @note All _vector_ inputs in the system must be connected, either to the

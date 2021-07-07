@@ -26,7 +26,7 @@ class OpenGlContext {
   ~OpenGlContext();
 
   /* Makes this context current.
-   @throw std::runtime_error if not successful.  */
+   @throws std::exception if not successful.  */
   void MakeCurrent() const;
 
   /* Displays the window at the given dimensions. Calling this redundantly (on
@@ -42,7 +42,7 @@ class OpenGlContext {
    Being "viewable" is not necessarily the same as visible to the user. The
    window might be occluded. But, at the very least, there is a window to view.
 
-   @throws std::runtime_error if the visibility status cannot be determined. */
+   @throws std::exception if the visibility status cannot be determined. */
   bool IsWindowViewable() const;
 
   /* Updates the window contents by drawing the back GL buffer into the window.

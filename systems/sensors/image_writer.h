@@ -189,7 +189,7 @@ class ImageWriter : public LeafSystem<double> {
                             PixelType). Must be one of {PixelType::kRgba8U,
                             PixelType::kDepth32F, PixelType::kLabel16I,
                             PixelType::kDepth16U, or PixelType::kGrey8U}.
-   @throws std::logic_error if (1) the directory encoded in the
+   @throws std::exception   if (1) the directory encoded in the
                             `file_name_format` is not "valid" (see
                             documentation above for definition),
                             (2) `publish_period` is not positive, or

@@ -1417,14 +1417,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
  protected:
   // Returns the inboard frame F of this node's mobilizer.
-  // @throws std::runtime_error if called on the root node corresponding to
+  // @throws std::exception if called on the root node corresponding to
   // the _world_ body.
   const Frame<T>& inboard_frame() const {
     return get_mobilizer().inboard_frame();
   }
 
   // Returns the outboard frame M of this node's mobilizer.
-  // @throws std::runtime_error if called on the root node corresponding to
+  // @throws std::exception if called on the root node corresponding to
   // the _world_ body.
   const Frame<T>& outboard_frame() const {
     return get_mobilizer().outboard_frame();

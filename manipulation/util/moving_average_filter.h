@@ -36,7 +36,7 @@ class MovingAverageFilter {
   /**
    * Constructs the filter with the specified `window_size`.
    * @param window_size The size of the window.
-   * @throws std::runtime_error when window_size <= 0.
+   * @throws std::exception when window_size <= 0.
    */
   explicit MovingAverageFilter(int window_size);
 

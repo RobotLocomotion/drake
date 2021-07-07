@@ -113,10 +113,10 @@ class ProximityEngine {
 
    @param geometry          The geometry to update.
    @param new_properties    The properties to associate with the given geometry.
-   @throws std::logic_error   if `geometry` doesn't map to a known geometry in
-                              the engine or if the new properties trigger work
-                              that can't meaningfully be completed because of
-                              incomplete or inconsistent property definitions.
+   @throws std::exception   if `geometry` doesn't map to a known geometry in
+                            the engine or if the new properties trigger work
+                            that can't meaningfully be completed because of
+                            incomplete or inconsistent property definitions.
    @pre `geometry` still has a copy of the original proximity properties that
          are to be replaced.  */
   void UpdateRepresentationForNewProperties(
@@ -128,7 +128,7 @@ class ProximityEngine {
   /* Removes the given geometry indicated by `id` from the engine.
    @param id          The id of the geometry to be removed.
    @param is_dynamic  True if the geometry is dynamic, false if anchored.
-   @throws std::logic_error if `id` does not refer to a geometry in this engine.
+   @throws std::exception if `id` does not refer to a geometry in this engine.
   */
   void RemoveGeometry(GeometryId id, bool is_dynamic);
 

@@ -100,7 +100,7 @@ class SystemConstraintAdapter {
    * SystemConstraint. If the SystemConstraint cannot be parsed to the generic
    * constraint using @p context instantiated with symbolic::Expression, then
    * constraint.has_value() = false.
-   * @throw invalid_argument if the system contains abstract state or abstract
+   * @throws std::exception if the system contains abstract state or abstract
    * parameters.
    */
   std::optional<solvers::Binding<solvers::Constraint>>

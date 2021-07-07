@@ -46,7 +46,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
-  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// @throws std::exception if timesteps are not declared as decision
   /// variables.
   const solvers::VectorDecisionVariable<1> timestep(int index) const {
     DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
@@ -178,14 +178,14 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// @param lower_bound  A scalar double lower bound.
   /// @param upper_bound  A scalar double upper bound.
   /// @return The bounding box constraint enforcing time interval bounds.
-  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// @throws std::exception if timesteps are not declared as decision
   /// variables.
   solvers::Binding<solvers::BoundingBoxConstraint> AddTimeIntervalBounds(
       double lower_bound, double upper_bound);
 
   /// Adds constraints to enforce that all timesteps have equal duration.
   /// @return A vector of constraints enforcing all time intervals are equal.
-  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// @throws std::exception if timesteps are not declared as decision
   /// variables.
   std::vector<solvers::Binding<solvers::LinearConstraint>>
   AddEqualTimeIntervalsConstraints();
@@ -194,7 +194,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// @param lower_bound  A scalar double lower bound.
   /// @param upper_bound  A scalar double upper bound.
   /// @return The constraint enforcing the duration bounds.
-  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// @throws std::exception if timesteps are not declared as decision
   /// variables.
   solvers::Binding<solvers::LinearConstraint> AddDurationBounds(
       double lower_bound, double upper_bound);
@@ -302,7 +302,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// If time steps are decision variables, then the initial guess for
   /// the time steps are evenly distributed to match the duration of the
   /// @p traj_init_u and @p traj_init_x.
-  /// @throws std::runtime_error if @p traj_init_u and @p traj_init_x are both
+  /// @throws std::exception if @p traj_init_u and @p traj_init_x are both
   /// empty, or if @p traj_init_u and @p traj_init_x are both non-empty, and
   /// have different start and end times.
   // TODO(russt): Consider taking the actual breakpoints from

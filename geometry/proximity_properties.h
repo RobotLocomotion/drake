@@ -112,9 +112,9 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
  */
 ///@{
 /**
- * @throws std::logic_error if any parameter doesn't satisfy the requirements
- *                          listed in @ref contact_material_utility_functions
- *                          "Contact Material Utility Functions".
+ * @throws std::exception if any parameter doesn't satisfy the requirements
+ *                        listed in @ref contact_material_utility_functions
+ *                        "Contact Material Utility Functions".
  */
 void AddContactMaterial(
     const std::optional<double>& elastic_modulus,
@@ -143,7 +143,7 @@ void AddContactMaterial(
                               will be ignored for geometry types that don't
                               require tessellation.
  @param[in,out] properties    The properties will be added to this property set.
- @throws std::logic_error     If `properties` already has properties with the
+ @throws std::exception       If `properties` already has properties with the
                               names that this function would need to add.
  @pre 0 < `resolution_hint` < ∞ and `properties` is not nullptr.  */
 void AddRigidHydroelasticProperties(double resolution_hint,
@@ -166,7 +166,7 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
                               refinement. This will be ignored for geometry
                               types that don't require tessellation.
  @param[in,out] properties    The properties will be added to this property set.
- @throws std::logic_error     If `properties` already has properties with the
+ @throws std::exception       If `properties` already has properties with the
                               names that this function would need to add.
  @pre 0 < `resolution_hint` < ∞, `properties` is not nullptr, and `properties`
       contains a valid elastic modulus value. */
@@ -186,8 +186,8 @@ void AddSoftHydroelasticProperties(ProximityProperties* properties);
                             rigid core (this helps define the extent field of
                             the half space).
  @param[out] properties     The properties will be added to this property set.
- @throws std::logic_error If `properties` already has properties with the names
-                          that this function would need to add.
+ @throws std::exception If `properties` already has properties with the names
+                        that this function would need to add.
  @pre 0 < `slab_thickness` < ∞ . */
 void AddSoftHydroelasticPropertiesForHalfSpace(double slab_thickness,
                                                ProximityProperties* properties);

@@ -30,7 +30,7 @@ struct LinearQuadraticRegulatorResult {
 /// @returns A structure that contains the optimal feedback gain K and the
 /// quadratic cost term S. The optimal feedback control is u = -Kx;
 ///
-/// @throws std::runtime_error if R is not positive definite.
+/// @throws std::exception if R is not positive definite.
 /// @ingroup control
 ///
 LinearQuadraticRegulatorResult LinearQuadraticRegulator(
@@ -58,7 +58,7 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 /// @returns A structure that contains the optimal feedback gain K and the
 /// quadratic cost term S. The optimal feedback control is u = -Kx;
 ///
-/// @throws std::runtime_error if R is not positive definite.
+/// @throws std::exception if R is not positive definite.
 /// @ingroup control
 LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -86,7 +86,7 @@ LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
-/// @throws std::runtime_error if R is not positive definite.
+/// @throws std::exception if R is not positive definite.
 /// @ingroup control_systems
 ///
 std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
@@ -127,7 +127,7 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
-/// @throws std::runtime_error if R is not positive definite.
+/// @throws std::exception if R is not positive definite.
 /// @ingroup control_systems
 /// @see drake::systems::Linearize()
 ///

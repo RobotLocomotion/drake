@@ -109,8 +109,8 @@ class MultibodyTree {
   //       model.AddBody(std::make_unique<RigidBody<T>>(spatial_inertia));
   // @endcode
   //
-  // @throws std::logic_error if `body` is a nullptr.
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
+  // @throws std::exception if `body` is a nullptr.
+  // @throws std::exception if Finalize() was already called on `this` tree.
   //
   // @param[in] body A unique pointer to a body to add to `this`
   //                 %MultibodyTree. The body class must be specialized on the
@@ -145,7 +145,7 @@ class MultibodyTree {
   //   auto body = model.template AddBody<RigidBody>(Args...);
   // @endcode
   //
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
+  // @throws std::exception if Finalize() was already called on `this` tree.
   //
   // @param[in] args The arguments needed to construct a valid Body of type
   //                 `BodyType`. `BodyType` must provide a public constructor
@@ -185,9 +185,9 @@ class MultibodyTree {
   //   frame B.
   // @returns A constant reference to the new RigidBody just added, which will
   //          remain valid for the lifetime of `this` %MultibodyTree.
-  // @throws std::logic_error if a body named `name` already exists in this
+  // @throws std::exception if a body named `name` already exists in this
   //         model instance.
-  // @throws std::logic_error if the model instance does not exist.
+  // @throws std::exception if the model instance does not exist.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B);
@@ -216,9 +216,9 @@ class MultibodyTree {
   //   frame B.
   // @returns A constant reference to the new RigidBody just added, which will
   //          remain valid for the lifetime of `this` %MultibodyTree.
-  // @throws std::logic_error if a body named `name` already exists.
-  // @throws std::logic_error if additional model instances have been created
-  //                          beyond the world and default instances.
+  // @throws std::exception if a body named `name` already exists.
+  // @throws std::exception if additional model instances have been created
+  //                        beyond the world and default instances.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B);
 
@@ -234,8 +234,8 @@ class MultibodyTree {
   //       model.AddFrame(std::make_unique<FixedOffsetFrame<T>>(body, X_BF));
   // @endcode
   //
-  // @throws std::logic_error if `frame` is a nullptr.
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
+  // @throws std::exception if `frame` is a nullptr.
+  // @throws std::exception if Finalize() was already called on `this` tree.
   //
   // @param[in] frame A unique pointer to a frame to be added to `this`
   //                  %MultibodyTree. The frame class must be specialized on
@@ -273,7 +273,7 @@ class MultibodyTree {
   //       model.template AddFrame<FixedOffsetFrame>(body, X_BF);
   // @endcode
   //
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
+  // @throws std::exception if Finalize() was already called on `this` tree.
   //
   // @param[in] args The arguments needed to construct a valid Frame of type
   //                 `FrameType`. `FrameType` must provide a public constructor
@@ -306,11 +306,11 @@ class MultibodyTree {
   // A %Mobilizer effectively connects the two bodies to which the inboard and
   // outboard frames belong.
   //
-  // @throws std::logic_error if `mobilizer` is a nullptr.
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
-  // @throws std::runtime_error if the new mobilizer attempts to connect a
+  // @throws std::exception if `mobilizer` is a nullptr.
+  // @throws std::exception if Finalize() was already called on `this` tree.
+  // @throws std::exception if the new mobilizer attempts to connect a
   // frame with itself.
-  // @throws std::runtime_error if attempting to connect two bodies with more
+  // @throws std::exception if attempting to connect two bodies with more
   // than one mobilizer between them.
   //
   // @param[in] mobilizer A unique pointer to a mobilizer to add to `this`
@@ -352,10 +352,10 @@ class MultibodyTree {
   // (say for instance you have a MultibodyTree<T> member within your custom
   // class).
   //
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
-  // @throws std::runtime_error if the new mobilizer attempts to connect a
+  // @throws std::exception if Finalize() was already called on `this` tree.
+  // @throws std::exception if the new mobilizer attempts to connect a
   // frame with itself.
-  // @throws std::runtime_error if attempting to connect two bodies with more
+  // @throws std::exception if attempting to connect two bodies with more
   // than one mobilizer between them.
   //
   // @param[in] args The arguments needed to construct a valid Mobilizer of
@@ -527,7 +527,7 @@ class MultibodyTree {
   //   A string that uniquely identifies the new instance to be added to `this`
   //   model. An exception is thrown if an instance with the same name
   //   already exists in the model. See HasModelInstanceNamed().
-  // @throws std::logic_error if Finalize() was already called on `this` tree.
+  // @throws std::exception if Finalize() was already called on `this` tree.
   ModelInstanceIndex AddModelInstance(const std::string& name);
 
   // @}
@@ -758,7 +758,7 @@ class MultibodyTree {
   // @returns `true` if a body named `name` was added to the model.
   // @see AddRigidBody().
   //
-  // @throws std::logic_error if the body name occurs in multiple model
+  // @throws std::exception if the body name occurs in multiple model
   // instances.
   bool HasBodyNamed(std::string_view name) const;
 
@@ -953,7 +953,7 @@ class MultibodyTree {
   // (Advanced) Allocates a new context for this %MultibodyTree uniquely
   // identifying the state of the multibody system.
   //
-  // @throws std::runtime_error if this is not owned by a MultibodyPlant /
+  // @throws std::exception if this is not owned by a MultibodyPlant /
   // MultibodyTreeSystem.
   std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const;
 
@@ -1929,8 +1929,8 @@ class MultibodyTree {
   // `selected_joints[0]` are first, followed by the positions for
   // `selected_joints[1]`, etc. Similarly for the selected velocities vₛ.
   //
-  // @throws std::logic_error if there are any duplicates in `selected_joints`.
-  // @throws std::logic_error if there is no joint in the model with a name
+  // @throws std::exception if there are any duplicates in `selected_joints`.
+  // @throws std::exception if there is no joint in the model with a name
   // specified in `selected_joints`.
   MatrixX<double> MakeStateSelectorMatrixFromJointNames(
       const std::vector<std::string>& selected_joints) const;
@@ -2394,7 +2394,7 @@ class MultibodyTree {
   // At Finalize(), this method performs all other finalization that is not
   // topological (i.e. performed by FinalizeTopology()). This includes for
   // instance the creation of BodyNode objects.
-  // This method will throw a std::logic_error if FinalizeTopology() was not
+  // This method will throw a std::exception if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
 

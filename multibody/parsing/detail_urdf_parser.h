@@ -15,7 +15,7 @@ namespace internal {
 // Parses a `<robot>` element from the URDF file specified by @p file_name and
 // adds it to @p plant.  A new model instance will be added to @p plant.
 //
-// @throws std::runtime_error if the file is not in accordance with the URDF
+// @throws std::exception if the file is not in accordance with the URDF
 // specification.  The exception contains a message with a list of errors
 // encountered while parsing the file.
 //

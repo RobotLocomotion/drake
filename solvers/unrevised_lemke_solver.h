@@ -80,7 +80,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
   /// @returns `true` if the solver computes a solution to floating point
   ///           tolerances (i.e., if IsSolution() returns `true` on the problem)
   ///           and `false` otherwise.
-  /// @throws std::logic_error if M is not square or the dimensions of M do not
+  /// @throws std::exception if M is not square or the dimensions of M do not
   ///         match the length of q.
   ///
   /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear

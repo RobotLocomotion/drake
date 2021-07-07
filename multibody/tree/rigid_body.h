@@ -134,7 +134,7 @@ class RigidBody : public Body<T> {
   }
 
   /// Gets the mass stored in @p context
-  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant
   const T& get_mass(const systems::Context<T>& context) const final {
     const systems::BasicVector<T>& spatial_inertia_parameter =
@@ -143,7 +143,7 @@ class RigidBody : public Body<T> {
   }
 
   /// Gets the center of mass stored in @p context
-  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant
   const Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const final {
@@ -179,7 +179,7 @@ class RigidBody : public Body<T> {
   // SpatialInertia<T> as an abstract parameter.
 
   /// Gets the spatial inertia stored in @p context
-  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const override {
@@ -190,7 +190,7 @@ class RigidBody : public Body<T> {
   }
 
   /// Sets the mass stored in @p context to @p mass
-  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant
   void SetMass(systems::Context<T>* context, const T& mass) const {
     systems::BasicVector<T>& spatial_inertia_parameter =
@@ -201,7 +201,7 @@ class RigidBody : public Body<T> {
   }
 
   /// Sets the center of mass stored in @p context to @p center_of_mass
-  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
                                   const Vector3<T>& com) const {
@@ -217,7 +217,7 @@ class RigidBody : public Body<T> {
   }
 
   /// Sets the spatial inertia stored in @p context to @p M_Bo_B
-  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// @throws std::exception if `this` RigidBody is not owned by a
   /// MultibodyPlant
   void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
                                     const SpatialInertia<T>& M_Bo_B) const {

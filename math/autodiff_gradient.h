@@ -152,7 +152,7 @@ void gradientMatrixToAutoDiff(
  *
  * @param precision is passed to Eigen's isZero(precision) to evaluate whether
  * the gradients are zero.
- * @throws std::runtime_error if the gradients were not empty nor zero.
+ * @throws std::exception if the gradients were not empty nor zero.
  *
  * @see DiscardGradient
  */

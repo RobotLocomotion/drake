@@ -338,7 +338,7 @@ drake::VectorX<drake::symbolic::Expression> ToSymbolic(
 bool IsDeterministic(const DistributionVariant& var);
 
 /// If `var` is deterministic, retrieves its value.
-/// @throws exception if `var` is not deterministic.
+/// @throws std::exception if `var` is not deterministic.
 double GetDeterministicValue(const DistributionVariant& var);
 
 // ---------------------------------------------------------------------------
@@ -494,7 +494,7 @@ template <int Size>
 bool IsDeterministic(const DistributionVectorVariant<Size>& vec);
 
 /// If `vec` is deterministic, retrieves its value.
-/// @throws exception if `vec` is not deterministic.
+/// @throws std::exception if `vec` is not deterministic.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
 Eigen::VectorXd GetDeterministicValue(

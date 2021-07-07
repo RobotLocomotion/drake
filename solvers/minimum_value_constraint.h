@@ -93,8 +93,8 @@ class MinimumValueConstraint final : public solvers::Constraint {
   @pre `value_function_double(math::autoDiffToValueMatrix(x), v_influence) ==
   math::autoDiffToValueMatrix(value_function(x, v_influence))` for all x.
   @pre `value_function(x).size() <= max_num_values` for all x.
-  @throws std::invalid_argument if influence_value_offset = ∞.
-  @throws std::invalid_argument if influence_value_offset ≤ 0.
+  @throws std::exception if influence_value_offset = ∞.
+  @throws std::exception if influence_value_offset ≤ 0.
   */
   MinimumValueConstraint(
       int num_vars, double minimum_value, double influence_value_offset,

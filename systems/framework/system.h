@@ -570,7 +570,7 @@ class System : public SystemBase {
   of the state variables to change. See the documentation for
   DispatchUnrestrictedUpdateHandler() for more details.
 
-  @throws std::logic_error if the dimensionality of the state variables
+  @throws std::exception if the dimensionality of the state variables
           changes in the callback. */
   void CalcUnrestrictedUpdate(
       const Context<T>& context,
@@ -796,14 +796,14 @@ class System : public SystemBase {
 
   /** Returns a const reference to the subcontext that corresponds to the
   contained %System `subsystem`.
-  @throws std::logic_error if `subsystem` not contained in `this` %System.
+  @throws std::exception if `subsystem` not contained in `this` %System.
   @pre The given `context` is valid for use with `this` %System. */
   const Context<T>& GetSubsystemContext(const System<T>& subsystem,
                                         const Context<T>& context) const;
 
   /** Returns a mutable reference to the subcontext that corresponds to the
   contained %System `subsystem`.
-  @throws std::logic_error if `subsystem` not contained in `this` %System.
+  @throws std::exception if `subsystem` not contained in `this` %System.
   @pre The given `context` is valid for use with `this` %System. */
   Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const;
@@ -812,7 +812,7 @@ class System : public SystemBase {
   `this` %System is already the top level (root) %System, just returns
   `root_context`. (A root Context is one that does not have a parent
   Context.)
-  @throws std::logic_error if the given `root_context` is not actually
+  @throws std::exception if the given `root_context` is not actually
       a root context.
   @see GetSubsystemContext() */
   const Context<T>& GetMyContextFromRoot(const Context<T>& root_context) const;
@@ -931,7 +931,7 @@ class System : public SystemBase {
   /** Returns the typed input port with the unique name @p port_name.
   The current implementation performs a linear search over strings; prefer
   get_input_port() when performance is a concern.
-  @throws std::logic_error if port_name is not found. */
+  @throws std::exception if port_name is not found. */
   const InputPort<T>& GetInputPort(const std::string& port_name) const;
 
   /** Returns true iff the system has an InputPort of the given @p
@@ -966,7 +966,7 @@ class System : public SystemBase {
   /** Returns the typed output port with the unique name @p port_name.
   The current implementation performs a linear search over strings; prefer
   get_output_port() when performance is a concern.
-  @throws std::logic_error if port_name is not found. */
+  @throws std::exception if port_name is not found. */
   const OutputPort<T>& GetOutputPort(const std::string& port_name) const;
 
   /** Returns true iff the system has an OutputPort of the given @p
@@ -978,7 +978,7 @@ class System : public SystemBase {
   int num_constraints() const;
 
   /** Returns the constraint at index @p constraint_index.
-  @throws std::out_of_range for an invalid constraint_index. */
+  @throws std::exception for an invalid constraint_index. */
   const SystemConstraint<T>& get_constraint(
       SystemConstraintIndex constraint_index) const;
 
@@ -1364,7 +1364,7 @@ class System : public SystemBase {
   /** Adds a port with the specified @p type and @p size to the input topology.
 
   Input port names must be unique for this system (passing in a duplicate
-  @p name will throw std::logic_error). If @p name is given as
+  @p name will throw std::exception). If @p name is given as
   kUseDefaultName, then a default value of e.g. "u2", where 2
   is the input number will be provided. An empty @p name is not permitted.
 
@@ -1374,7 +1374,7 @@ class System : public SystemBase {
   reason explicitly about randomness at the system level.  All random input
   ports are assumed to be statistically independent.
   @pre @p name must not be empty.
-  @throws std::logic_error for a duplicate port name.
+  @throws std::exception for a duplicate port name.
   @returns the declared port. */
   InputPort<T>& DeclareInputPort(
       std::variant<std::string, UseDefaultName> name, PortDataType type,
@@ -1557,7 +1557,7 @@ class System : public SystemBase {
 
   The default implementation uses the identity mapping, and correctly does
   nothing if the %System does not have second-order state variables. It
-  throws std::runtime_error if the `generalized_velocity` and
+  throws std::exception if the `generalized_velocity` and
   `qdot` are not the same size, but that is not enough to guarantee that
   the default implementation is adequate. Child classes must
   override this function if qdot != v (even if they are the same size).
@@ -1579,7 +1579,7 @@ class System : public SystemBase {
 
   The default implementation uses the identity mapping, and correctly does
   nothing if the %System does not have second-order state variables. It
-  throws std::runtime_error if the `generalized_velocity` (`v`) and
+  throws std::exception if the `generalized_velocity` (`v`) and
   `qdot` are not the same size, but that is not enough to guarantee that
   the default implementation is adequate. Child classes must
   override this function if `qdot != v` (even if they are the same size).

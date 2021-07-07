@@ -45,10 +45,10 @@ class GazeTargetConstraint : public solvers::Constraint {
    *   `plant`.  We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
-   * @throws std::invalid_argument if `plant` is nullptr.
-   * @throws std::invalid_argument if `n_A` is close to zero.
-   * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π/2].
-   * @throws std::invalid_argument if `plant_context` is nullptr.
+   * @throws std::exception if `plant` is nullptr.
+   * @throws std::exception if `n_A` is close to zero.
+   * @throws std::exception if `cone_half_angle` ∉ [0, π/2].
+   * @throws std::exception if `plant_context` is nullptr.
    */
   GazeTargetConstraint(const MultibodyPlant<double>* plant,
                        const Frame<double>& frameA,

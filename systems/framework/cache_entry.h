@@ -86,7 +86,7 @@ class CacheEntry {
   and the cache index and ticket must be valid. The description is an arbitrary
   string not interpreted in any way by Drake.
 
-  @throws std::logic_error if the prerequisite list is empty.
+  @throws std::exception if the prerequisite list is empty.
 
   @see drake::systems::SystemBase::DeclareCacheEntry() */
   CacheEntry(const internal::SystemMessageInterface* owning_system,
@@ -132,7 +132,7 @@ class CacheEntry {
   /** Invokes this cache entry's allocator function to allocate a concrete
   object suitable for holding the value to be held in this cache entry, and
   returns that as an AbstractValue. The returned object will never be null.
-  @throws std::logic_error if the allocator function returned null. */
+  @throws std::exception if the allocator function returned null. */
   std::unique_ptr<AbstractValue> Allocate() const;
 
   /** Unconditionally computes the value this cache entry should have given a
@@ -153,7 +153,7 @@ class CacheEntry {
   to date already, you may use the GetKnownUpToDate() method instead.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry.
-  @throws std::logic_error if the value doesn't actually have type V. */
+  @throws std::exception if the value doesn't actually have type V. */
   template <typename ValueType>
   const ValueType& Eval(const ContextBase& context) const {
     const AbstractValue& abstract_value = EvalAbstract(context);
@@ -186,8 +186,8 @@ class CacheEntry {
   is disabled. This method is constant time and _very_ fast if it succeeds.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry.
-  @throws std::logic_error if the value is out of date or if it does not
-                           actually have type `ValueType`. */
+  @throws std::exception if the value is out of date or if it does not
+                         actually have type `ValueType`. */
   // Keep this method as small as possible to encourage inlining; it gets
   // called *a lot*.
   template <typename ValueType>
@@ -203,7 +203,7 @@ class CacheEntry {
   information.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry.
-  @throws std::logic_error if the value is not up to date. */
+  @throws std::exception if the value is not up to date. */
   // Keep this method as small as possible to encourage inlining; it gets
   // called *a lot*.
   const AbstractValue& GetKnownUpToDateAbstract(

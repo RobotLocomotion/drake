@@ -106,8 +106,8 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
   /** Returns the value of the trajectory at @p t.
-  @throws runtime_error if t is not within tolerance of one of the sample times.
-  */
+  @throws std::exception if t is not within tolerance of one of the sample
+  times. */
   MatrixX<T> value(const T& t) const override;
 
   /** Returns the number of rows in the MatrixX<T> returned by value().

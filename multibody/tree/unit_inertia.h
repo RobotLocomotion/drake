@@ -46,14 +46,14 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.
-  /// In debug builds, throws std::logic_error if unit inertia constructed from
+  /// In debug builds, throws std::exception if unit inertia constructed from
   /// these arguments violates RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz)
       : RotationalInertia<T>(Ixx, Iyy, Izz) {}
 
   /// Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
-  /// In debug builds, throws std::logic_error if unit inertia constructed from
+  /// In debug builds, throws std::exception if unit inertia constructed from
   /// these arguments violates RotationalInertia::CouldBePhysicallyValid().
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz,
               const T& Ixy, const T& Ixz, const T& Iyz)
@@ -281,7 +281,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   `Bcm`, and expressed in the same frame E as the input axis of rotation
   ///   `b_E`.
   ///
-  /// @throws std::runtime_error
+  /// @throws std::exception
   ///   - Radius r is negative.
   ///   - Length L is negative.
   ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
@@ -323,7 +323,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// where `Id` is the identity matrix and ⊗ denotes the tensor product
   /// operator. See Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
   ///
-  /// @throws std::runtime_error
+  /// @throws std::exception
   ///   - J is negative. J can be zero.
   ///   - K is negative. K can be zero.
   ///   - J ≤ 2 * K, this corresponds to the triangle inequality, see
@@ -413,7 +413,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Constructs a unit inertia with equal moments of inertia along its
   /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the unit inertia of a uniform-density sphere or cube.
-  /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
+  /// In debug builds, throws std::exception if I_triaxial is negative/NaN.
   /// @see UnitInertia::SolidSphere() and UnitInertia::SolidCube() for examples.
   // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
   static UnitInertia<T> TriaxiallySymmetric(const T& I_triaxial) {

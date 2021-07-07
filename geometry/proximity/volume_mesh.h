@@ -442,7 +442,7 @@ Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
   // near the spanning line of an edge of ABC, or anywhere on the spanning plane
   // of ABC), the signed volume calculation ((AB x AC)⋅AV) may become a
   // near-zero number with the wrong sign. In these degenerate cases, we
-  // throw std::runtime_error.
+  // throw std::exception.
   //
   const Vector3<T> area_vector_M = p_AB_M.cross(p_AC_M);  // AB x AC
   const T signed_volume = area_vector_M.dot(p_AV_M);      // (AB x AC)⋅AV

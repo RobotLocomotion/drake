@@ -22,7 +22,7 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
 //
 // @returns false if the attribute is not present
 //
-// @throws std::invalid_argument if the attribute doesn't contain a
+// @throws std::exception if the attribute doesn't contain a
 // single numeric value.
 bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, double* val);
@@ -32,7 +32,7 @@ bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
 //
 // @returns false if the attribute is not present
 //
-// @throws std::invalid_argument if the attribute doesn't contain
+// @throws std::exception if the attribute doesn't contain
 // three numeric values.
 bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name,
@@ -43,7 +43,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
 //
 // @returns false if the attribute is not present
 //
-// @throws std::invalid_argument if the attribute doesn't contain
+// @throws std::exception if the attribute doesn't contain
 // four numeric values.
 bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name,
@@ -53,7 +53,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
 // RigidTransformd created from them.  If either the "xyz" or "rpy"
 // attributes are omitted they will be initialized with zero values.
 //
-// @throws std::invalid_argument if the "xyz" or "rpy" attributes are
+// @throws std::exception if the "xyz" or "rpy" attributes are
 // malformed.
 math::RigidTransformd OriginAttributesToTransform(
     const tinyxml2::XMLElement* node);
@@ -73,7 +73,7 @@ math::RigidTransformd OriginAttributesToTransform(
 //
 // @returns false if the attribute is not present
 //
-// @throws std::invalid_argument If any problem is encountered parsing the
+// @throws std::exception If any problem is encountered parsing the
 // three vector value.
 bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,

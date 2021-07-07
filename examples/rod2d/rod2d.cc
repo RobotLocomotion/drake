@@ -83,7 +83,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(
 
 /// Gets the integer variable 'k' used to determine the point of contact
 /// indicated by the current mode.
-/// @throws std::logic_error if this is a discretized system (implying that
+/// @throws std::exception if this is a discretized system (implying that
 ///         modes are unused).
 /// @returns the value -1 to indicate the bottom of the rod (when theta = pi/2),
 ///          +1 to indicate the top of the rod (when theta = pi/2), or 0 to

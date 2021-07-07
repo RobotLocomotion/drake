@@ -624,7 +624,7 @@ class TamsiSolver {
   /// @param[in] v_guess The initial guess used in by the Newton-Raphson
   /// iteration. Typically, the previous time step velocities.
   ///
-  /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
+  /// @throws std::exception if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
   TamsiSolverResult SolveWithGuess(
       double dt, const VectorX<T>& v_guess) const;

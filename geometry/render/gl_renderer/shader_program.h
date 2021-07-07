@@ -75,8 +75,8 @@ class ShaderProgram {
                                   shader.
    @param fragment_shader_source  The valid GLSL source code for a fragment
                                   shader.
-   @throws std::runtime_error if either shader source doesn't compile or the
-                              resulting program has errors.
+   @throws std::exception if either shader source doesn't compile or the
+                          resulting program has errors.
    */
   void LoadFromSources(const std::string& vertex_shader_source,
                        const std::string& fragment_shader_source);
@@ -87,9 +87,9 @@ class ShaderProgram {
                                 code for a vertex shader.
    @param fragment_shader_file  The path to a file containing valid GLSL source
                                 code for a fragment shader.
-   @throws std::runtime_error if there is an error in reading the files, either
-                              shader source doesn't compile, or the resulting
-                              program has errors.
+   @throws std::exception if there is an error in reading the files, either
+                          shader source doesn't compile, or the resulting
+                          program has errors.
    */
   void LoadFromFiles(const std::string& vertex_shader_file,
                      const std::string& fragment_shader_file);
@@ -147,7 +147,7 @@ class ShaderProgram {
                           const Eigen::Vector3d& scale) const;
 
   /* Provides the location of the named shader uniform parameter.
-   @throws std::runtime_error if the named uniform isn't part of the program. */
+   @throws std::exception if the named uniform isn't part of the program. */
   GLint GetUniformLocation(const std::string& uniform_name) const;
 
   /* Binds the program for usage.  */

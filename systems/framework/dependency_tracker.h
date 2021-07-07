@@ -292,15 +292,15 @@ class DependencyTracker {
   Methods used in test cases or for debugging. */
   //@{
 
-  /** Throws an std::logic_error if there is something clearly wrong with this
+  /** Throws an std::exception if there is something clearly wrong with this
   %DependencyTracker object. If the owning subcontext is known, provide a
   pointer to it here and we'll check that this tracker agrees. If you know which
   cache entry is supposed to be associated with this tracker, supply a pointer
   to that and we'll check it (trackers that are not associated with a real cache
   entry are still associated with the CacheEntryValue::dummy()). In addition we
   check for other internal inconsistencies.
-  @throws std::logic_error for anything that goes wrong, with an appropriate
-                           explanatory message. */
+  @throws std::exception for anything that goes wrong, with an appropriate
+                         explanatory message. */
   void ThrowIfBadDependencyTracker(
       const internal::ContextMessageInterface* owning_subcontext = nullptr,
       const CacheEntryValue* cache_value = nullptr) const;

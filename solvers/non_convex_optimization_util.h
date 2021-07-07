@@ -37,7 +37,7 @@ namespace solvers {
  *     By A. A. Ahmadi and G. Hall
  *     Mathematical Programming, 2015
  * @param Q A square matrix.
- * @throws std::runtime_error if Q is not square.
+ * @throws std::exception if Q is not square.
  * @return The optimal decomposition (Q₁, Q₂)
  */
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
@@ -105,7 +105,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *    If ub = +∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₂x ≤ pᵀy - lb. The user should not call this function
  *    to relax this convex constraint.
- *    @throws std::runtime_error if Q₁ = 0 and ub = +∞.
+ *    @throws std::exception if Q₁ = 0 and ub = +∞.
  *    If ub < +∞, then we introduce a new variable z, with the constraints
  *    lb ≤ -z + pᵀy ≤ ub
  *    z ≥ xᵀQ₂x
@@ -115,7 +115,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *    If lb = -∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₁x ≤ ub - pᵀy. The user should not call this function
  *    to relax this convex constraint.
- *    @throws std::runtime_error if Q₂ = 0 and lb = -∞.
+ *    @throws std::exception if Q₂ = 0 and lb = -∞.
  *    If lb > -∞, then we introduce a new variable z, with the constraints
  *    lb ≤ z + pᵀy ≤ ub
  *    z ≥ xᵀQ₁x
@@ -148,7 +148,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *      3. Q1, Q2, x, x₀ are all of the consistent size.
  *      4. p and y are of the consistent size.
  *      5. lower_bound ≤ upper_bound.
- *      @throws std::runtime_error when the precondition is not satisfied.
+ *      @throws std::exception when the precondition is not satisfied.
  * @ingroup solver_evaluators
  */
 std::tuple<Binding<LinearConstraint>,

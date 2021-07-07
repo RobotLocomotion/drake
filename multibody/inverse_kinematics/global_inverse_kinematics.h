@@ -73,7 +73,7 @@ class GlobalInverseKinematics {
    * measured and expressed in the world frame.
    * @param body_index  The index of the queried body. Notice that body 0 is
    * the world, and thus not a decision variable.
-   * @throws std::runtime_error if the index is smaller than 1, or greater
+   * @throws std::exception if the index is smaller than 1, or greater
    * than or equal to the total number of bodies in the robot.
    */
   const solvers::MatrixDecisionVariable<3, 3>& body_rotation_matrix(
@@ -83,7 +83,7 @@ class GlobalInverseKinematics {
    * origin measured and expressed in the world frame.
    * @param body_index The index of the queried body. Notice that body 0 is
    * the world, and thus not a decision variable.
-   * @throws std::runtime_error if the index is smaller than 1, or greater than
+   * @throws std::exception if the index is smaller than 1, or greater than
    * or equal to the total number of bodies in the robot.
    */
   const solvers::VectorDecisionVariable<3>& body_position(
@@ -206,13 +206,13 @@ class GlobalInverseKinematics {
    * 1. body_position_cost.rows() == plant.num_bodies(), where `plant`
    *    is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
-   * @throws std::runtime_error if the precondition is not satisfied.
+   * @throws std::exception if the precondition is not satisfied.
    * @param body_orientation_cost The cost for each body's orientation error.
    * @pre
    * 1. body_orientation_cost.rows() == plant.num_bodies() , where
    *    `plant` is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
-   * @throws std::runtime_error if the precondition is not satisfied.
+   * @throws std::exception if the precondition is not satisfied.
    */
   void AddPostureCost(
       const Eigen::Ref<const Eigen::VectorXd>& q_desired,

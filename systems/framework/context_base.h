@@ -48,7 +48,7 @@ class ContextBase : public internal::ContextMessageInterface {
   /** @} */
 
   /** Creates an identical copy of the concrete context object.
-  @throws std::logic_error if this is not the root context. */
+  @throws std::exception if this is not the root context. */
   std::unique_ptr<ContextBase> Clone() const;
 
   ~ContextBase() override;

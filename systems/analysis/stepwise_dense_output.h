@@ -33,7 +33,7 @@ class StepwiseDenseOutput : public DenseOutput<T> {
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
   ///      consolidation (via Consolidate()).
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   virtual void Rollback() = 0;
 
   /// Consolidates latest updates.
@@ -48,7 +48,7 @@ class StepwiseDenseOutput : public DenseOutput<T> {
   ///       last consolidation can be evaluated (via Evaluate()).
   /// @post Time extents covered by updates can be evaluated
   ///       (via start_time()/end_time()).
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   virtual void Consolidate() = 0;
 
  protected:

@@ -43,7 +43,7 @@ class MpcVariable {
    * @param[in] nu number of control input
    * @param[in] nc number of constraints per stage
    *
-   * Throws a runtime_error if any of the inputs are non-positive.
+   * Throws an exception if any of the inputs are non-positive.
    */
   MpcVariable(int N, int nx, int nu, int nc);
 
@@ -55,7 +55,7 @@ class MpcVariable {
    * @param[in] v    A vector to store the dual variables.
    * @param[in] y    A vector to store the inequality margin.
    *
-   * Throws a runtime_error if sizes are mismatched or if any of the inputs are
+   * Throws an exception if sizes are mismatched or if any of the inputs are
    * null.
    */
   MpcVariable(Eigen::VectorXd* z, Eigen::VectorXd* l, Eigen::VectorXd* v,
@@ -76,7 +76,7 @@ class MpcVariable {
 
   /**
    * Sets the constraint margin to y = b - Az.
-   * Throws a runtime_error if problem data hasn't been provided.
+   * Throws an exception if problem data hasn't been provided.
    */
   void InitializeConstraintMargin();
 
@@ -91,7 +91,7 @@ class MpcVariable {
    * Note that this handles the constraint margin correctly, i.e., after the
    * operation u.y = b - A*(u.z + a*x.z).
    *
-   * Throws a runtime_error if problem data hasn't been provided.
+   * Throws an exception if problem data hasn't been provided.
    */
   void axpy(double a, const MpcVariable& x);
 

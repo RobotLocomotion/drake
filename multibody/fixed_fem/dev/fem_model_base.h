@@ -145,7 +145,7 @@ class FemModelBase {
     dirichlet_bc_ = std::move(dirichlet_bc);
   }
 
-  /** (Internal use only) Throws std::logic_error to report a mismatch between
+  /** (Internal use only) Throws std::exception to report a mismatch between
   the concrete types of `this` FemModelBase and the FemStateBase that was
   passed to API method `func`. */
   virtual void ThrowIfModelStateIncompatible(

@@ -82,10 +82,10 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   to scale the signed distances between pairs of geometries. Smaller values may
   improve performance, as fewer pairs of geometries need to be considered in
   each constraint evaluation. @default 1 meter
-  @throws std::invalid_argument if `plant` has not registered its geometry with
+  @throws std::exception if `plant` has not registered its geometry with
   a SceneGraph object.
-  @throws std::invalid_argument if influence_distance_offset = ∞.
-  @throws std::invalid_argument if influence_distance_offset ≤ 0.
+  @throws std::exception if influence_distance_offset = ∞.
+  @throws std::exception if influence_distance_offset ≤ 0.
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,

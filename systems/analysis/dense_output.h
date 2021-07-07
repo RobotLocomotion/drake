@@ -53,9 +53,9 @@ class DenseOutput {
   /// @param t Time at which to evaluate output.
   /// @returns Output vector value.
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throws std::logic_error if any of the preconditions are not met.
-  /// @throws std::runtime_error if given @p t is not within output's domain
-  ///                            i.e. @p t ∉ [start_time(), end_time()].
+  /// @throws std::exception if any of the preconditions are not met.
+  /// @throws std::exception if given @p t is not within output's domain
+  ///                        i.e. @p t ∉ [start_time(), end_time()].
   VectorX<T> Evaluate(const T& t) const {
     ThrowIfOutputIsEmpty(__func__);
     ThrowIfTimeIsInvalid(__func__, t);
@@ -73,11 +73,11 @@ class DenseOutput {
   ///          value to evaluate.
   /// @returns Output value's `n`th scalar element (0-indexed).
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throws std::logic_error if any of the preconditions are not met.
-  /// @throws std::runtime_error if given @p t is not within output's domain
-  ///                            i.e. @p t ∉ [start_time(), end_time()].
-  /// @throws std::runtime_error if given @p n does not refer to a valid
-  ///                            output dimension i.e. @p n ∉ [0, size()).
+  /// @throws std::exception if any of the preconditions are not met.
+  /// @throws std::exception if given @p t is not within output's domain
+  ///                        i.e. @p t ∉ [start_time(), end_time()].
+  /// @throws std::exception if given @p n does not refer to a valid
+  ///                        output dimension i.e. @p n ∉ [0, size()).
   T EvaluateNth(const T& t, int n) const {
     ThrowIfOutputIsEmpty(__func__);
     ThrowIfNthElementIsInvalid(__func__, n);
@@ -88,7 +88,7 @@ class DenseOutput {
   /// Returns the output size (i.e. the number of elements in an
   /// output value).
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   int size() const {
     ThrowIfOutputIsEmpty(__func__);
     return this->do_size();
@@ -100,7 +100,7 @@ class DenseOutput {
   /// Returns output's start time, or in other words, the oldest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   const T& start_time() const {
     ThrowIfOutputIsEmpty(__func__);
     return this->do_start_time();
@@ -109,7 +109,7 @@ class DenseOutput {
   /// Returns output's end time, or in other words, the newest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   const T& end_time() const {
     ThrowIfOutputIsEmpty(__func__);
     return this->do_end_time();
@@ -143,7 +143,7 @@ class DenseOutput {
 
   // Asserts that this dense output is not empty.
   // @param func_name Call site name for error message clarity (i.e. __func__).
-  // @throws std::logic_error if output is empty i.e. is_empty() equals false.
+  // @throws std::exception if output is empty i.e. is_empty() equals false.
   void ThrowIfOutputIsEmpty(const char* func_name) const {
     if (is_empty()) {
       throw std::logic_error(fmt::format(
@@ -154,8 +154,8 @@ class DenseOutput {
   // Asserts that the given element index @p n is valid for this dense output.
   // @param func_name Call site name for error message clarity (i.e. __func__).
   // @param n The nth scalar element (0-indexed) to be checked.
-  // @throws std::runtime_error if given @p n does not refer to a valid
-  //                            output dimension i.e. @p n ∉ [0, size()).
+  // @throws std::exception if given @p n does not refer to a valid
+  //                        output dimension i.e. @p n ∉ [0, size()).
   void ThrowIfNthElementIsInvalid(const char* func_name, int n) const {
     if (n < 0 || this->do_size() <= n) {
       throw std::runtime_error(fmt::format(
@@ -167,8 +167,8 @@ class DenseOutput {
   // Asserts that the given given time @p t is valid for this dense output.
   // @param func_name Call site name for error message clarity (i.e. __func__).
   // @param t Time to be checked.
-  // @throws std::runtime_error if given @p t is not within output's domain
-  //                            i.e. @p t ∉ [start_time(), end_time()].
+  // @throws std::exception if given @p t is not within output's domain
+  //                        i.e. @p t ∉ [start_time(), end_time()].
   void ThrowIfTimeIsInvalid(const char* func_name, const T& t) const {
     if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error(fmt::format(

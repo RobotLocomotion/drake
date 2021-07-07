@@ -59,7 +59,7 @@ class PidController : public LeafSystem<T>,
    * @param ki I gain.
    * @param kd D gain.
    *
-   * @throws std::logic_error if @p kp, @p ki and @p kd have different
+   * @throws std::exception if @p kp, @p ki and @p kd have different
    * dimensions.
    */
   PidController(const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
@@ -73,7 +73,7 @@ class PidController : public LeafSystem<T>,
    * @param ki I gain.
    * @param kd D gain.
    *
-   * @throws std::logic_error if @p kp, @p ki and @p kd have different
+   * @throws std::exception if @p kp, @p ki and @p kd have different
    * dimensions or `P_x.row() != 2 * |kp|'.
    */
   PidController(const MatrixX<double>& state_projection,
@@ -96,7 +96,7 @@ class PidController : public LeafSystem<T>,
    * @param ki I gain.
    * @param kd V gain.
    *
-   * @throws std::logic_error if any assumption is violated.
+   * @throws std::exception if any assumption is violated.
    */
   PidController(const MatrixX<double>& state_projection,
                 const MatrixX<double>& output_projection,

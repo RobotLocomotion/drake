@@ -62,12 +62,12 @@ class SequentialExpressionManager {
    *                               sequential_expressions(i, j) is the value of
    *                               the i-th expression at the j-th index.
    * @param name Name for the newly registered sequential expression vector.
-   * @throw std::runtime_error unless `sequential_expressions` has
-   *                           `placeholders.size()` rows.
-   * @throw std::runtime_error unless `sequential_expressions` has num_samples()
-   *                           columns.
-   * @throw std::runtime_error if it has an existing registration under the
-   *                           `name`.
+   * @throws std::exception unless `sequential_expressions` has
+   *                        `placeholders.size()` rows.
+   * @throws std::exception unless `sequential_expressions` has num_samples()
+   *                        columns.
+   * @throws std::exception if it has an existing registration under the
+   *                        `name`.
    */
   void RegisterSequentialExpressions(
       const VectorX<symbolic::Variable>& placeholders,

@@ -63,7 +63,7 @@ class DenseLinearSolver {
    * @param[in]  sigma   Regularization strength
    * @return             true if factorization succeeds false otherwise.
    *
-   * Throws a runtime_error if x and xbar aren't the correct size,
+   * Throws an exception if x and xbar aren't the correct size,
    * sigma is negative or the problem data isn't linked.
    */
   bool Initialize(const DenseVariable& x, const DenseVariable& xbar,
@@ -78,7 +78,7 @@ class DenseLinearSolver {
    * @param[out]  x   Overwritten with the solution
    * @return true if successful, false otherwise
    *
-   * Throws a runtime_error if x and r aren't the correct sizes,
+   * Throws an exception if x and r aren't the correct sizes,
    * if x is null or if the problem data isn't linked.
    */
   bool Solve(const DenseResidual& r, DenseVariable* x) const;

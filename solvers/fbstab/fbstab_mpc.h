@@ -117,7 +117,7 @@ class FBstabMpc {
    * @param[in] nu number of control input
    * @param[in] nc number of constraints per timestep
    *
-   * Throws a runtime_error if any inputs are nonpositive.
+   * Throws an exception if any inputs are nonpositive.
    */
   FBstabMpc(int N, int nx, int nu, int nc);
 

@@ -18,7 +18,7 @@ namespace symbolic {
 /// methods which take @p f and @p args: `VisitConstant`, `VisitVariable`,
 /// `VisitAddition`, `VisitMultiplication`, `VisitDivision`, `VisitPow`.
 ///
-/// @throws std::runtime_error if NaN is detected during a visit.
+/// @throws std::exception if NaN is detected during a visit.
 ///
 /// See the implementation of @c DegreeVisitor class and @c Degree function in
 /// drake/common/symbolic_monomial.cc as an example usage.
@@ -86,7 +86,7 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
 /// `VisitMin`, `VisitMax`, `VisitCeil`, `VisitFloor`, `VisitIfThenElse`,
 /// `VisitUninterpretedFunction.
 ///
-/// @throws std::runtime_error if NaN is detected during a visit.
+/// @throws std::exception if NaN is detected during a visit.
 template <typename Result, typename Visitor, typename... Args>
 Result VisitExpression(Visitor* v, const Expression& e, Args&&... args) {
   switch (e.get_kind()) {

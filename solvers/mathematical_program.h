@@ -397,7 +397,7 @@ class MathematicalProgram {
    * @pre `decision_variables` should not intersect with the existing variables
    * or indeterminates in the optimization program.
    * @pre Each entry in `decision_variables` should not be a dummy variable.
-   * @throws std::runtime_error if the preconditions are not satisfied.
+   * @throws std::exception if the preconditions are not satisfied.
    */
   void AddDecisionVariables(
       const Eigen::Ref<const VectorXDecisionVariable>& decision_variables);
@@ -531,7 +531,7 @@ class MathematicalProgram {
    *   p = Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎
    * and Q.
    *
-   * @throws std::runtime_error if @p degree is not a positive even integer.
+   * @throws std::exception if @p degree is not a positive even integer.
    * @see MonomialBasis.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
@@ -1007,7 +1007,7 @@ class MathematicalProgram {
    * is_convex=nullopt (the default), then Drake will determine if `e` is a
    * convex quadratic cost or not. To improve the computation speed, the user
    * can set is_convex if the user knows whether the cost is convex or not.
-   * @throws std::runtime error if the expression is not quadratic.
+   * @throws std::exception if the expression is not quadratic.
    * @return The newly added cost together with the bound variables.
    */
   Binding<QuadraticCost> AddQuadraticCost(
@@ -1904,7 +1904,7 @@ class MathematicalProgram {
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
-   * @throws std::runtime_error if the preconditions are not satisfied.
+   * @throws std::exception if the preconditions are not satisfied.
    *
    * Notice this constraint is equivalent to the vector [z;y] is within a
    * Lorentz cone, where
@@ -2068,7 +2068,7 @@ class MathematicalProgram {
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
-   * @throws std::runtime_error if the preconditions are not satisfied.
+   * @throws std::exception if the preconditions are not satisfied.
    *
    * For example, to add the rotated Lorentz cone constraint
    *
@@ -2279,7 +2279,7 @@ class MathematicalProgram {
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
    *
-   * @throws std::runtime_error in Debug mode if @p symmetric_matrix_var is not
+   * @throws std::exception in Debug mode if @p symmetric_matrix_var is not
    * symmetric.
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
    */
@@ -2557,7 +2557,7 @@ class MathematicalProgram {
   /**
    * Gets the initial guess for a single variable.
    * @pre @p decision_variable has been registered in the optimization program.
-   * @throws std::runtime_error if the pre condition is not satisfied.
+   * @throws std::exception if the pre condition is not satisfied.
    */
   double GetInitialGuess(const symbolic::Variable& decision_variable) const;
 
@@ -2565,7 +2565,7 @@ class MathematicalProgram {
    * Gets the initial guess for some variables.
    * @pre Each variable in @p decision_variable_mat has been registered in the
    * optimization program.
-   * @throws std::runtime_error if the pre condition is not satisfied.
+   * @throws std::exception if the pre condition is not satisfied.
    */
   template <typename Derived>
   typename std::enable_if_t<
@@ -2591,7 +2591,7 @@ class MathematicalProgram {
    * Sets the initial guess for a single variable @p decision_variable.
    * The guess is stored as part of this program.
    * @pre decision_variable is a registered decision variable in the program.
-   * @throws std::runtime_error if precondition is not satisfied.
+   * @throws std::exception if precondition is not satisfied.
    */
   void SetInitialGuess(const symbolic::Variable& decision_variable,
                        double variable_guess_value);
@@ -2874,7 +2874,7 @@ class MathematicalProgram {
    * program.
    * @param prog_var_vals The value of all the decision variables in this
    * program.
-   * @throws std::logic_error if the size of `prog_var_vals` is invalid.
+   * @throws std::exception if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
   typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
@@ -2906,7 +2906,7 @@ class MathematicalProgram {
    * @param prog_var_vals The value of all the decision variables in this
    * program.
    * @return All binding values, concatenated into a single vector.
-   * @throws std::logic_error if the size of `prog_var_vals` is invalid.
+   * @throws std::exception if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
   typename std::enable_if_t<is_eigen_vector<DerivedX>::value,
@@ -2962,7 +2962,7 @@ class MathematicalProgram {
    *
    * @param prog_var_vals The value of all the decision variables in this
    * program.
-   * @throws std::logic_error if the size does not match.
+   * @throws std::exception if the size does not match.
    */
   void EvalVisualizationCallbacks(
       const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const;
@@ -3258,7 +3258,7 @@ class MathematicalProgram {
    * Ensure a binding is valid *before* adding it to the program.
    * @pre The binding has not yet been registered.
    * @pre The decision variables have been registered.
-   * @throws std::runtime_error if the binding is invalid.
+   * @throws std::exception if the binding is invalid.
    */
   template <typename C>
   void CheckBinding(const Binding<C>& binding) const {

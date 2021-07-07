@@ -135,7 +135,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Retrieves a reference to the subsystem with name @p name returned by
   /// get_name().
-  /// @throws std::logic_error if a match cannot be found.
+  /// @throws std::exception if a match cannot be found.
   /// @see System<T>::get_name()
   const System<T>& GetSubsystemByName(const std::string& name) const;
 

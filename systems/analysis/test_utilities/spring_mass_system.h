@@ -196,7 +196,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @param tf the time at which to return the position and velocity.
   /// @param[out] xf the position of the spring at time tf, on return.
   /// @param[out] vf the velocity of the spring at time tf, on return.
-  /// @throws std::logic_error if xf or vf is nullptr or if the system is
+  /// @throws std::exception if xf or vf is nullptr or if the system is
   ///         forced.
   void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
                              T* xf, T* vf) const {

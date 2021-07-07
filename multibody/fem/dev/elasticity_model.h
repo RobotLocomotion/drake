@@ -45,7 +45,7 @@ class ElasticityModel : public FemModel<T> {
    @pre The vertices of the input `mesh` must be locally indexed, and the
    indices must be consecutive. That is, the vertices in the `mesh` must be
    indexed consecutively from 0 to mesh.num_vertices()-1.
-   @throws std::runtime_error if `quadrature_order` is not 1, 2 or 3. */
+   @throws std::exception if `quadrature_order` is not 1, 2 or 3. */
   void AddElasticityElementsFromTetMesh(
       const geometry::VolumeMesh<T>& mesh, T density,
       const ConstitutiveModel<T>& constitutive_model, int quadrature_order) {

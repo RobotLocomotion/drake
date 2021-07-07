@@ -240,7 +240,7 @@ class GeometryProperties {
 
   /** Retrieves the indicated property group. The returned group is valid for
    as long as this instance.
-   @throws std::logic_error if there is no group with the given name.  */
+   @throws std::exception if there is no group with the given name.  */
   const Group& GetPropertiesInGroup(const std::string& group_name) const;
 
   /** Returns all of the defined group names.  */
@@ -252,7 +252,7 @@ class GeometryProperties {
    @param group_name   The group name.
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
-   @throws std::logic_error if the property already exists.
+   @throws std::exception if the property already exists.
    @tparam ValueType   The type of data to store with the attribute -- must be
                        copy constructible or cloneable (see Value).  */
   template <typename ValueType>
@@ -273,7 +273,7 @@ class GeometryProperties {
    @param group_name   The group name.
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
-   @throws std::logic_error if the property exists with a different type.
+   @throws std::exception if the property exists with a different type.
    @tparam ValueType   The type of data to store with the attribute -- must be
                        copy constructible or cloneable (see Value).  */
   template <typename ValueType>
@@ -288,7 +288,7 @@ class GeometryProperties {
    @param group_name   The group name.
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
-   @throws std::logic_error if the property already exists.  */
+   @throws std::exception if the property already exists.  */
   void AddPropertyAbstract(const std::string& group_name,
                            const std::string& name, const AbstractValue& value);
 
@@ -300,7 +300,7 @@ class GeometryProperties {
    @param group_name   The group name.
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
-   @throws std::logic_error if the property exists with a different type.  */
+   @throws std::exception if the property exists with a different type.  */
   void UpdatePropertyAbstract(const std::string& group_name,
                               const std::string& name,
                               const AbstractValue& value);
@@ -320,9 +320,9 @@ class GeometryProperties {
 
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
-   @throws std::logic_error if a) the group name is invalid,
-                            b) the property name is invalid, or
-                            c) the property type is not that specified.
+   @throws std::exception if a) the group name is invalid,
+                          b) the property name is invalid, or
+                          c) the property type is not that specified.
    @tparam ValueType  The expected type of the desired property.
    @returns const ValueType& of stored value.
             If ValueType is Eigen::Vector4d, the return type will be a copy
@@ -348,8 +348,8 @@ class GeometryProperties {
 
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
-   @throws std::logic_error if a) the group name is invalid, or
-                            b) the property name is invalid. */
+   @throws std::exception if a) the group name is invalid, or
+                          b) the property name is invalid. */
   const AbstractValue& GetPropertyAbstract(const std::string& group_name,
                                            const std::string& name) const;
 
@@ -375,8 +375,8 @@ class GeometryProperties {
    @param name           The name of the desired property.
    @param default_value  The alternate value to return if the property cannot
                          be acquired.
-   @throws std::logic_error if a property of the given name exists but is not
-                            of `ValueType`.  */
+   @throws std::exception if a property of the given name exists but is not
+                          of `ValueType`.  */
   template <typename ValueType>
   ValueType GetPropertyOrDefault(const std::string& group_name,
                                  const std::string& name,

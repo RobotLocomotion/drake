@@ -33,7 +33,7 @@ class ComPositionConstraint final : public solvers::Constraint {
    * @param plant_context The Context that has been allocated for this
    *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
-   * @throws std::invalid_argument if `plant` or `plant_context` is nullptr.
+   * @throws std::exception if `plant` or `plant_context` is nullptr.
    * @pydrake_mkdoc_identifier{ctor_double}
    */
   ComPositionConstraint(

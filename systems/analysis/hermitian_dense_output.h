@@ -125,7 +125,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /// @param initial_state_derivative Initial state derivative vector
     ///                                 d𝐱/dt₀ at @p initial_time as a
     ///                                 column matrix.
-    /// @throws std::runtime_error
+    /// @throws std::exception
     ///   if given @p initial_state 𝐱₀ is not a column matrix.<br>
     ///   if given @p initial_state_derivative d𝐱/t₀ is not a column
     ///   matrix.<br>
@@ -149,7 +149,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /// @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
     /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
     ///                         as a column matrix.
-    /// @throws std::runtime_error
+    /// @throws std::exception
     ///   if given @p state 𝐱ᵢ is not a column matrix.<br>
     ///   if given @p state_derivative d𝐱/dtᵢ is not a column matrix.<br>
     ///   if given @p time tᵢ is not greater than the previous time
@@ -274,7 +274,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   /// StepwiseDenseOutput class documentation).
   ///
   /// @param step Integration step to update this output with.
-  /// @throws std::runtime_error
+  /// @throws std::exception
   ///   if given @p step has zero length.<br>
   ///   if given @p step does not ensure C1 continuity at the end of
   ///   this dense output.<br>
@@ -355,7 +355,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   // @param next_step Integration step to be taken.
   // @param prev_step Last integration step consolidated or to be
   //                  consolidated into dense output.
-  // @throws std::runtime_error
+  // @throws std::exception
   //   if given @p next_step does not ensure C1 continuity at the
   //   end of the given @p prev_step.<br>
   //   if given @p next_step dimensions does not match @p prev_step

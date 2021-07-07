@@ -129,7 +129,7 @@ void AddSos2Constraint(
  * (y(0), ..., y(⌈log₂(n)⌉) equals to binary_encoding.row(M), then λ(M) = 1
  * @param binary_encoding A n x ⌈log₂(n)⌉ matrix. binary_encoding.row(i)
  * represents integer i. No two rows of `binary_encoding` can be the same.
- * @throws std::runtime_error if @p binary_encoding has a non-binary entry (0,
+ * @throws std::exception if @p binary_encoding has a non-binary entry (0,
  * 1).
  */
 void AddLogarithmicSos1Constraint(

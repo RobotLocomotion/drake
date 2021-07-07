@@ -189,7 +189,7 @@ class GeometryState {
   /** Reports the number of child geometries for this frame that have the
    indicated role assigned. This only includes the immediate child geometries of
    *this* frame, and not those of child frames.
-   @throws std::logic_error if the `frame_id` does not map to a valid frame.  */
+   @throws std::exception if the `frame_id` does not map to a valid frame.  */
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIdByName().  */
@@ -359,24 +359,24 @@ class GeometryState {
    `frame_id`, if it has been added to the renderer with the given
    `renderer_name` it is removed from that renderer.
    @return The number of geometries affected by the removal.
-   @throws std::logic_error if a) `source_id` does not map to a registered
-                            source,
-                            b) `frame_id` does not map to a registered frame,
-                            c) `frame_id` does not belong to `source_id` (unless
-                            `frame_id` is the world frame id), or
-                            d) the context has already been allocated.  */
+   @throws std::exception if a) `source_id` does not map to a registered
+                          source,
+                          b) `frame_id` does not map to a registered frame,
+                          c) `frame_id` does not belong to `source_id` (unless
+                          `frame_id` is the world frame id), or
+                          d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          FrameId frame_id);
 
   /** Removes the geometry with the given `geometry_id` from the renderer with
    the given `renderer_name`, _if_ it has previously been added.
    @return The number of geometries affected by the removal (0 or 1).
-   @throws std::logic_error if a) `source_id` does not map to a registered
-                            source,
-                            b) `geometry_id` does not map to a registered
-                            geometry,
-                            c) `geometry_id` does not belong to `source_id`, or
-                            d) the context has already been allocated.  */
+   @throws std::exception if a) `source_id` does not map to a registered
+                          source,
+                          b) `geometry_id` does not map to a registered
+                          geometry,
+                          c) `geometry_id` does not belong to `source_id`, or
+                          d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
   //@}
@@ -598,7 +598,7 @@ class GeometryState {
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
   // @pre source_id is a registered source.
-  // @throws std::logic_error  If the ids are invalid as defined by
+  // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
 
@@ -606,7 +606,7 @@ class GeometryState {
   // registered to the set's source id and that no extra frames are included.
   // @param values The kinematics values (ids and values) to validate.
   // @pre source_id is a registered source.
-  // @throws std::runtime_error if the set is inconsistent with known topology.
+  // @throws std::exception if the set is inconsistent with known topology.
   template <typename ValueType>
   void ValidateFrameIds(SourceId source_id,
                         const FrameKinematicsVector<ValueType>& values) const;
@@ -615,11 +615,11 @@ class GeometryState {
   // _all_ of the state's frames have had their poses updated.
   void FinalizePoseUpdate();
 
-  // Gets the source id for the given frame id. Throws std::logic_error if the
+  // Gets the source id for the given frame id. Throws std::exception if the
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
 
-  // Gets the source id for the given frame id. Throws std::logic_error if the
+  // Gets the source id for the given frame id. Throws std::exception if the
   // geometry belongs to no registered source.
   SourceId get_source_id(GeometryId frame_id) const;
 
@@ -642,7 +642,7 @@ class GeometryState {
   //    frame and, if it exists, its parent geometry.
   //   - RemoveGeometryUnchecked(): This is the recursive call; it's parent
   //    is already slated for removal, so parent references can be left alone.
-  // @throws std::logic_error if `geometry_id` is not in `geometries_`.
+  // @throws std::exception if `geometry_id` is not in `geometries_`.
   void RemoveGeometryUnchecked(GeometryId geometry_id,
                                RemoveGeometryOrigin caller);
 

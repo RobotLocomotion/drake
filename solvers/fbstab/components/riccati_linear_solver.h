@@ -60,7 +60,7 @@ class RiccatiLinearSolver {
    * @param[in] nu number of control input
    * @param[in] nc number of constraints per stage
    *
-   * Throws a runtime_error if any of the inputs are non-positive.
+   * Throws an exception if any of the inputs are non-positive.
    */
   RiccatiLinearSolver(int N, int nx, int nu, int nc);
 
@@ -83,7 +83,7 @@ class RiccatiLinearSolver {
    * @param[in]  sigma   Regularization strength
    * @return             true if factorization succeeds false otherwise.
    *
-   * Throws a runtime_error if x and xbar aren't the correct size,
+   * Throws an exception if x and xbar aren't the correct size,
    * sigma is negative or the problem data isn't linked.
    */
   bool Initialize(const MpcVariable& x, const MpcVariable& xbar, double sigma);
@@ -97,7 +97,7 @@ class RiccatiLinearSolver {
    * @param[out]  x   Overwritten with the solution
    * @return        true if the solve succeeds, false otherwise
    *
-   * Throws a runtime_error if x and r aren't the correct sizes,
+   * Throws an exception if x and r aren't the correct sizes,
    * if x is null or if the problem data isn't linked.
    */
   bool Solve(const MpcResidual& r, MpcVariable* dx) const;

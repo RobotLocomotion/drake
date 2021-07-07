@@ -1157,7 +1157,7 @@ class LeafSystem : public System<T> {
 
   You should normally provide a meaningful name for any input port you
   create. Names must be unique for this system (passing in a duplicate
-  name will throw std::logic_error). However, if you specify
+  name will throw std::exception). However, if you specify
   kUseDefaultName as the name, then a default name of e.g. "u2", where 2
   is the input port number will be provided. An empty name is not
   permitted. */

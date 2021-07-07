@@ -56,7 +56,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
    * MonomialBasisElement `x²z`.
    *
    * @pre The size of `vars` should be the same as the size of `degrees`.
-   * @throws std::logic_error if `degrees` includes a negative integer.
+   * @throws std::exception if `degrees` includes a negative integer.
    */
   MonomialBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
                        const Eigen::Ref<const Eigen::VectorXi>& degrees);
@@ -91,7 +91,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
       const Environment& env) const;
 
   /** Returns this monomial raised to @p p.
-   * @throws std::runtime_error if @p p is negative.
+   * @throws std::exception if @p p is negative.
    */
   MonomialBasisElement& pow_in_place(int p);
 
@@ -203,7 +203,7 @@ std::map<MonomialBasisElement, double> operator*(
  * return signature as other PolynomialBasisElement. For example, the power
  * of a ChebyshevBasisElement object is a weighted sum of ChebyshevBasisElement
  * objects.
- * @throws std::runtime_error if @p p is negative.
+ * @throws std::exception if @p p is negative.
  */
 std::map<MonomialBasisElement, double> pow(MonomialBasisElement m, int p);
 }  // namespace symbolic

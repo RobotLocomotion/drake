@@ -26,8 +26,8 @@ class Demultiplexer final : public LeafSystem<T> {
   /// is the length of this vector. The size of each output port is the value of
   /// the corresponding element of the vector @p output_ports_sizes.
   ///
-  /// @throws std::logic_error if @p output_ports_sizes is a zero length vector.
-  /// @throws std::logic_error if any element of the @p output_ports_sizes is
+  /// @throws std::exception if @p output_ports_sizes is a zero length vector.
+  /// @throws std::exception if any element of the @p output_ports_sizes is
   /// zero. Therefore, the Demultiplexer does not allow zero size output ports.
   ///
   /// @param output_ports_sizes Contains the sizes of each output port. The
@@ -39,7 +39,7 @@ class Demultiplexer final : public LeafSystem<T> {
   /// Constructs %Demultiplexer with one vector valued input port of size
   /// @p size and vector valued output ports of size @p output_ports_size.
   ///
-  /// @throws std::logic_error if output_ports_sizes can not exactly divide @p
+  /// @throws std::exception if output_ports_sizes can not exactly divide @p
   /// size. The number of output ports is therefore `size / output_ports_size`.
   ///
   /// @param size is the size of the input signal to be demultiplexed into its

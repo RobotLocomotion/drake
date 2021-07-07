@@ -73,25 +73,25 @@ class ExpressionCell {
   void set_expanded() { is_expanded_ = true; }
 
   /** Evaluates under a given environment (by default, an empty environment).
-   *  @throws std::runtime_error if NaN is detected during evaluation.
+   *  @throws std::exception if NaN is detected during evaluation.
    */
   [[nodiscard]] virtual double Evaluate(const Environment& env) const = 0;
 
   /** Expands out products and positive integer powers in expression.
-   * @throws std::runtime_error if NaN is detected during expansion.
+   * @throws std::exception if NaN is detected during expansion.
    */
   [[nodiscard]] virtual Expression Expand() const = 0;
 
   /** Returns an Expression obtained by replacing all occurrences of the
    * variables in @p s in the current expression cell with the corresponding
    * expressions in @p s.
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] virtual Expression Substitute(const Substitution& s) const = 0;
 
   /** Differentiates this symbolic expression with respect to the variable @p
    * var.
-   * @throws std::runtime_error if it is not differentiable.
+   * @throws std::exception if it is not differentiable.
    */
   [[nodiscard]] virtual Expression Differentiate(const Variable& x) const = 0;
 
@@ -490,7 +490,7 @@ class ExpressionLog : public UnaryExpressionCell {
   friend Expression log(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [0, +oo). */
+  /* Throws std::exception if v ∉ [0, +oo). */
   static void check_domain(double v);
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
@@ -536,7 +536,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
   friend Expression sqrt(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [0, +oo). */
+  /* Throws std::exception if v ∉ [0, +oo). */
   static void check_domain(double v);
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
@@ -553,7 +553,7 @@ class ExpressionPow : public BinaryExpressionCell {
   friend Expression pow(const Expression& e1, const Expression& e2);
 
  private:
-  /* Throws std::domain_error if v1 is finite negative and v2 is finite
+  /* Throws std::exception if v1 is finite negative and v2 is finite
      non-integer. */
   static void check_domain(double v1, double v2);
   [[nodiscard]] double DoEvaluate(double v1, double v2) const override;
@@ -610,7 +610,7 @@ class ExpressionAsin : public UnaryExpressionCell {
   friend Expression asin(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
+  /* Throws std::exception if v ∉ [-1.0, +1.0]. */
   static void check_domain(double v);
   [[nodiscard]] double DoEvaluate(double v) const override;
 };
@@ -627,7 +627,7 @@ class ExpressionAcos : public UnaryExpressionCell {
   friend Expression acos(const Expression& e);
 
  private:
-  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
+  /* Throws std::exception if v ∉ [-1.0, +1.0]. */
   static void check_domain(double v);
   [[nodiscard]] double DoEvaluate(double v) const override;
 };

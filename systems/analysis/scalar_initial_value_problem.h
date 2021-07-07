@@ -95,7 +95,7 @@ class ScalarInitialValueProblem {
   /// @pre An initial time @p default_values.t0 is provided.
   /// @pre An initial state @p default_values.x0 is provided.
   /// @pre An parameter vector @p default_values.k is provided.
-  /// @throws std::logic_error if preconditions are not met.
+  /// @throws std::exception if preconditions are not met.
   ScalarInitialValueProblem(const ScalarOdeFunction& scalar_ode_function,
                             const ScalarOdeContext& default_values) {
     // Wraps the given scalar ODE function as a vector ODE function.
@@ -121,7 +121,7 @@ class ScalarInitialValueProblem {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   T Solve(const T& tf, const ScalarOdeContext& values = {}) const {
     return this->vector_ivp_->Solve(tf, ToVectorIVPOdeContext(values))[0];
   }
@@ -153,7 +153,7 @@ class ScalarInitialValueProblem {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   std::unique_ptr<ScalarDenseOutput<T>> DenseSolve(
       const T& tf, const ScalarOdeContext& values = {}) const {
     // Delegates request to the vector form of this IVP by putting

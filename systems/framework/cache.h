@@ -92,9 +92,9 @@ class CacheEntryValue {
   frozen. However, the corresponding value won't be accessible while the cache
   remains frozen (since it is out of date).
 
-  @throws std::logic_error if the given value is null or if there is already a
-                           value, or if this %CacheEntryValue is malformed in
-                           some detectable way. */
+  @throws std::exception if the given value is null or if there is already a
+                         value, or if this %CacheEntryValue is malformed in
+                         some detectable way. */
   void SetInitialValue(std::unique_ptr<AbstractValue> init_value) {
     if (init_value == nullptr) {
       throw std::logic_error(FormatName(__func__) +
@@ -123,7 +123,7 @@ class CacheEntryValue {
   not be out of date with respect to any of its prerequisites. It is
   an error to call this if there is no stored value object, or if the value is
   out of date.
-  @throws std::logic_error if there is no value or it is out of date.
+  @throws std::exception if there is no value or it is out of date.
   @see get_abstract_value() */
   const AbstractValue& GetAbstractValueOrThrow() const {
     return GetAbstractValueOrThrowHelper(__func__);
@@ -132,8 +132,8 @@ class CacheEntryValue {
   /** Returns a const reference to the contained value of known type V. It is
   an error to call this if there is no stored value, or the value is out of
   date, or the value doesn't actually have type V.
-  @throws std::logic_error if there is no stored value, or if it is out of
-                           date, or it doesn't actually have type V.
+  @throws std::exception if there is no stored value, or if it is out of
+                         date, or it doesn't actually have type V.
   @see get_value() */
   template <typename V>
   const V& GetValueOrThrow() const {
@@ -156,9 +156,9 @@ class CacheEntryValue {
   large ones. You can alternatively obtain a mutable reference to the value
   already contained in the cache entry and update it in place via
   GetMutableValueOrThrow().
-  @throws std::logic_error if there is no value, or the value is already up
-                           to date, of it doesn't actually have type V.
-  @throws std::logic_error if the cache is frozen.
+  @throws std::exception if there is no value, or the value is already up
+                         to date, of it doesn't actually have type V.
+  @throws std::exception if the cache is frozen.
   @see set_value(), GetMutableValueOrThrow() */
   template <typename V>
   void SetValueOrThrow(const V& new_value) {
@@ -179,9 +179,9 @@ class CacheEntryValue {
   perform, use set_value() instead. If your computation completes successfully,
   you must mark the entry up to date yourself using mark_up_to_date() if you
   want anyone to be able to use the new value.
-  @throws std::logic_error if there is no value, or if the value is already
-                           up to date.
-  @throws std::logic_error if the cache is frozen.
+  @throws std::exception if there is no value, or if the value is already
+                         up to date.
+  @throws std::exception if the cache is frozen.
   @see SetValueOrThrow(), set_value(), mark_up_to_date() */
   AbstractValue& GetMutableAbstractValueOrThrow() {
     return GetMutableAbstractValueOrThrowHelper(__func__);
@@ -192,9 +192,9 @@ class CacheEntryValue {
   the contained value does not have the indicated concrete type. Note that you
   must call mark_up_to_date() after modifying the value through the returned
   reference. See GetMutableAbstractValueOrThrow() above for more information.
-  @throws std::logic_error if there is no value, or if the value is already
-                           up to date, of it doesn't actually have type V.
-  @throws std::logic_error if the cache is frozen.
+  @throws std::exception if there is no value, or if the value is already
+                         up to date, of it doesn't actually have type V.
+  @throws std::exception if the cache is frozen.
   @see SetValueOrThrow(), set_value(), mark_up_to_date()
   @tparam V The known actual value type. */
   template <typename V>
@@ -207,7 +207,7 @@ class CacheEntryValue {
   whether the value is out of date. This can be used to check type and size
   information but should not be used to look at the value unless you _really_
   know what you're doing.
-  @throws std::logic_error if there is no contained value. */
+  @throws std::exception if there is no contained value. */
   const AbstractValue& PeekAbstractValueOrThrow() const {
     ThrowIfNoValuePresent(__func__);
     return *value_;
@@ -217,8 +217,8 @@ class CacheEntryValue {
   downcast to its known concrete type, _without_ checking whether the value is
   out of date. This can be used to check type and size information but should
   not be used to look at the value unless you _really_ know what you're doing.
-  @throws std::logic_error if there is no contained value, or if the contained
-                           value does not actually have type V.
+  @throws std::exception if there is no contained value, or if the contained
+                         value does not actually have type V.
   @tparam V The known actual value type. */
   template <typename V>
   const V& PeekValueOrThrow() const {
@@ -277,7 +277,7 @@ class CacheEntryValue {
   this value went out of date. The serial number is incremented. If you are not
   in a performance-critical situation (and you probably are not!), use
   `SetValueOrThrow<V>()` instead.
-  @throws std::logic_error if the cache is frozen.
+  @throws std::exception if the cache is frozen.
   @tparam V The known actual value type. */
   template <typename V>
   void set_value(const V& new_value) {
@@ -296,7 +296,7 @@ class CacheEntryValue {
   This is useful for discrete updates of abstract state variables that contain
   large objects. Both values must be non-null and of the same concrete type but
   we won't check for errors except in Debug builds.
-  @throws std::logic_error if the cache is frozen.
+  @throws std::exception if the cache is frozen.
   */
   void swap_value(std::unique_ptr<AbstractValue>* other_value) {
     DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
@@ -411,12 +411,12 @@ class CacheEntryValue {
   can disable just a single entry if necessary. */
   //@{
 
-  /** Throws an std::logic_error if there is something clearly wrong with this
+  /** Throws an std::exception if there is something clearly wrong with this
   %CacheEntryValue object. If the owning subcontext is known, provide a pointer
   to it here and we'll check that this cache entry agrees. In addition we check
   for other internal inconsistencies.
-  @throws std::logic_error for anything that goes wrong, with an appropriate
-                           explanatory message. */
+  @throws std::exception for anything that goes wrong, with an appropriate
+                         explanatory message. */
   // These invariants hold for all CacheEntryValues except the dummy one.
   void ThrowIfBadCacheEntryValue(const internal::ContextMessageInterface*
                                      owning_subcontext = nullptr) const;

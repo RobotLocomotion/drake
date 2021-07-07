@@ -80,8 +80,8 @@ class RenderLabel {
   RenderLabel() = default;
 
   /** Constructs a label with the given `value`.
-   @throws std::logic_error if a) is negative, or b) the `value` is one of the
-                               reserved values.  */
+   @throws std::exception if a) is negative, or b) the `value` is one of the
+                             reserved values.  */
   explicit RenderLabel(int value) : RenderLabel(value, true) {}
 
   /** Compares this label with the `other` label. Reports true if they have the

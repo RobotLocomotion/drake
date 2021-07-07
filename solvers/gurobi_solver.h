@@ -153,7 +153,7 @@ class GurobiSolver final : public SolverBase {
    * @return A shared pointer to a license environment that will stay valid
    * as long as any shared_ptr returned by this function is alive. If Gurobi
    * not available in your build, this will return a null (empty) shared_ptr.
-   * @throws std::runtime_error if Gurobi is available but a license cannot be
+   * @throws std::exception if Gurobi is available but a license cannot be
    * obtained.
    */
   static std::shared_ptr<License> AcquireLicense();

@@ -12,7 +12,7 @@ namespace math {
  * points.
  * @param num_points The number of points we want on the unit sphere.
  * @return The generated points.
- * @pre num_samples >= 1. Throw std::runtime_error if num_points < 1
+ * @pre num_samples >= 1. Throw std::exception if num_points < 1
  */
 Eigen::Matrix3Xd UniformPtsOnSphereFibonacci(int num_points);
 }  // namespace math

@@ -25,7 +25,7 @@ class DenseFeasibility {
    * @param[in] nz number of decision variables
    * @param[in] nv number of inequality constraints
    *
-   * Throws a runtime_error is any inputs are non-positive.
+   * Throws an exception is any inputs are non-positive.
    */
   DenseFeasibility(int nz, int nv);
 
@@ -39,7 +39,7 @@ class DenseFeasibility {
    * @param[in] x   Variable to check
    * @param[in] tol Numerical tolerance
    *
-   * Throws a runtime_error if tol isn't positive.
+   * Throws an exception if tol isn't positive.
    */
   void ComputeFeasibility(const DenseVariable& x, double tol);
 
