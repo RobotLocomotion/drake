@@ -74,12 +74,12 @@ GTEST_TEST(InputPortTest, VectorTest) {
 
   // Check error messages.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut->Eval<std::string>(context), std::exception,
+      dut->Eval<std::string>(context),
       "InputPort::Eval..: wrong value type std::string specified; "
       "actual type was drake::systems::MyVector<double,3> "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut->Eval<MyVector2d>(context), std::exception,
+      dut->Eval<MyVector2d>(context),
       "InputPort::Eval..: wrong value type .*MyVector<double,2> specified; "
       "actual type was .*MyVector<double,3> "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
@@ -129,22 +129,22 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   EXPECT_EQ(eval_abs.get_value<std::string>(), data);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut->Eval(context), std::exception,
+      dut->Eval(context),
       "InputPort::Eval..: wrong value type .*BasicVector<double> specified; "
       "actual type was std::string "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut->Eval<BasicVector<T>>(context), std::exception,
+      dut->Eval<BasicVector<T>>(context),
       "InputPort::Eval..: wrong value type .*BasicVector<double> specified; "
       "actual type was std::string "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut->Eval<MyVector3d>(context), std::exception,
+      dut->Eval<MyVector3d>(context),
       "InputPort::Eval..: wrong value type .*BasicVector<double> specified; "
       "actual type was std::string "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut->Eval<int>(context), std::exception,
+      dut->Eval<int>(context),
       "InputPort::Eval..: wrong value type int specified; "
       "actual type was std::string "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
@@ -347,10 +347,10 @@ GTEST_TEST(InputPortTest, ContextForEmbeddedSystem) {
   // When given an inapproprate context, we fail-fast.
   auto diagram_context = diagram->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      system->int_port.HasValue(*diagram_context), std::exception,
+      system->int_port.HasValue(*diagram_context),
       ".*Context.*was not created for this InputPort.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      system->int_port.Eval<int>(*diagram_context), std::exception,
+      system->int_port.Eval<int>(*diagram_context),
       ".*Context.*was not created for this InputPort.*");
 }
 

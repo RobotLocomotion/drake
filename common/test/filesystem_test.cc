@@ -23,7 +23,7 @@ GTEST_TEST(NamespaceAliasSmokeTest, ExistTest) {
   EXPECT_FALSE(filesystem::is_directory({"/no/such/path"}));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      filesystem::read_symlink({"/no_such_readlink"}), std::exception,
+      filesystem::read_symlink({"/no_such_readlink"}),
       ".*(No such file or directory|Invalid argument).+/no_such_readlink.+");
 }
 

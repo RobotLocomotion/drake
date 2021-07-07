@@ -502,7 +502,6 @@ GTEST_TEST(SnoptSolverTest, BadIntegerParameter) {
   MathematicalProgram prog;
   prog.SetSolverOption(solver.solver_id(), "not an option", 15);
   DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
-      std::exception,
       "Error setting Snopt integer parameter not an option");
 }
 
@@ -511,7 +510,6 @@ GTEST_TEST(SnoptSolverTest, BadDoubleParameter) {
   MathematicalProgram prog;
   prog.SetSolverOption(solver.solver_id(), "not an option", 15.0);
   DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
-      std::exception,
       "Error setting Snopt double parameter not an option");
 }
 
@@ -520,7 +518,6 @@ GTEST_TEST(SnoptSolverTest, BadStringParameter) {
   MathematicalProgram prog;
   prog.SetSolverOption(solver.solver_id(), "not an option", "test");
   DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
-      std::exception,
       "Error setting Snopt string parameter not an option");
 }
 

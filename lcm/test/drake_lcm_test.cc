@@ -68,11 +68,11 @@ TEST_F(DrakeLcmTest, CustomUrlTest) {
 
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   auto noop = [](const void*, int) {};
-  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop), std::exception,
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop),
       ".*channel.empty.*");
 
   char data[1] = {};
-  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Publish("", data, 1, {}), std::exception,
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Publish("", data, 1, {}),
       ".*channel.empty.*");
 }
 

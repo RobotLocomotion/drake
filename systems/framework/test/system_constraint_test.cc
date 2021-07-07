@@ -159,7 +159,7 @@ class WrongOrderSystem final : public LeafSystem<double> {
 // We should fail-fast if constraints are added in the wrong order.
 GTEST_TEST(SystemConstraintTest, WrongOrder) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      WrongOrderSystem{}, std::exception,
+      WrongOrderSystem{},
       "System _ cannot add an internal constraint \\(named dummy2\\) after "
       "an external constraint \\(named empty\\) has already been added");
 }

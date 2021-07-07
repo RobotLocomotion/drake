@@ -99,7 +99,6 @@ TEST_F(DeformableModelTest, RegisterDeformableBodyUniqueNameRequirement) {
             SoftBodyIndex(1));
   EXPECT_EQ(deformable_model_->num_bodies(), 2);
   DRAKE_EXPECT_THROWS_MESSAGE(AddDeformableBox(deformable_model_.get(), "box1"),
-                              std::exception,
                               "RegisterDeformableBody\\(\\): A body with name "
                               "'box1' already exists in the system.");
 }

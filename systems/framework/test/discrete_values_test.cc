@@ -149,7 +149,7 @@ TEST_F(DiscreteValuesTest, SetFrom) {
   dut_symbolic.get_mutable_vector(0)[0] = symbolic::Variable("x");
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut_double.SetFrom(dut_symbolic),
-      std::exception, ".*variable x.*\n*");
+      ".*variable x.*\n*");
 }
 
 // Tests that the convenience accessors for a DiscreteValues that contains

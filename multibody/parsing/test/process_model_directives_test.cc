@@ -158,7 +158,7 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   // When the user gives a bogus filename, at minimum we must echo it back to
   // them so they know what failed.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      LoadModelDirectives("no-such-file.yaml"), std::exception,
+      LoadModelDirectives("no-such-file.yaml"),
       ".*no-such-file.yaml.*");
 }
 
