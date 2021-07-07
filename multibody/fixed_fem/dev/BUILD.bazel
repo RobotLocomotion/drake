@@ -514,6 +514,20 @@ drake_cc_binary(
 )
 
 drake_cc_library(
+    name = "schur_complement",
+    srcs = [
+        "schur_complement.cc",
+    ],
+    hdrs = [
+        "schur_complement.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "simplex_gaussian_quadrature",
     hdrs = [
         "simplex_gaussian_quadrature.h",
@@ -790,6 +804,14 @@ drake_cc_googletest(
     deps = [
         ":dummy_element",
         ":newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "schur_complement_test",
+    deps = [
+        ":schur_complement",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
