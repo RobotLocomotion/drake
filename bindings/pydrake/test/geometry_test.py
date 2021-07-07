@@ -945,7 +945,7 @@ class TestGeometry(unittest.TestCase):
         self.assertTrue(scale > 0.0)
         np.testing.assert_array_almost_equal(witness, p)
         e_ball = mut.optimization.Hyperellipsoid.MakeAxisAligned(
-            radius=[1,1,1], center=b)
+            radius=[1, 1, 1], center=b)
         np.testing.assert_array_equal(e_ball.A(), A)
         np.testing.assert_array_equal(e_ball.center(), b)
         e_ball2 = mut.optimization.Hyperellipsoid.MakeHypersphere(
@@ -1030,9 +1030,10 @@ class TestGeometry(unittest.TestCase):
         options.iteration_limit = 1
         options.termination_threshold = 0.1
         region = mut.optimization.Iris(
-            obstacles=obstacles, sample=[2,3.4,5],
-            domain=mut.optimization.HPolyhedron.MakeBox(
-            lb=[-5, -5, -5], ub=[5, 5, 5]), options=options)
+            obstacles=obstacles, sample=[2, 3.4, 5],
+            domain=mut.optimization.HPolyhedron.MakeBox(lb=[-5, -5, -5],
+                                                        ub=[5, 5, 5]),
+            options=options)
         self.assertIsInstance(region, mut.optimization.HPolyhedron)
 
     def test_deprecated_struct_member(self):

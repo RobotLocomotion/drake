@@ -200,7 +200,7 @@ class ConvexSets {
   ConvexSets();
   virtual ~ConvexSets();
 
-  /** Emplaces a copy of @p set at the end of the collection. 
+  /** Emplaces a copy of @p set at the end of the collection.
   @pydrake_mkdoc_identifier{from_reference} */
   ConvexSet& emplace_back(const ConvexSet& set);
 
