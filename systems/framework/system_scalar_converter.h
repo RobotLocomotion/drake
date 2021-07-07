@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <sstream>
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_map>
@@ -11,7 +10,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 #include "drake/systems/framework/system_type_tag.h"
@@ -248,6 +246,12 @@ std::unique_ptr<System<T>> SystemScalarConverter::Convert(
 }
 
 namespace system_scalar_converter_internal {
+// Throws an exception that `other` cannot be converted from S<U> to S<T>.
+[[noreturn]] void ThrowConversionMismatch(
+    const std::type_info& s_t_info,
+    const std::type_info& s_u_info,
+    const std::type_info& other_info);
+
 // N.B. This logic should be reflected in `TemplateSystem._make` in the file
 // `scalar_conversion.py`.
 template <bool subtype_preservation,
@@ -257,12 +261,7 @@ static std::unique_ptr<System<T>> Make(const System<U>& other) {
   // system type.  Fail fast if `other` is not of exact type S<U>.
   if (subtype_preservation &&
       (std::type_index{typeid(other)} != std::type_index{typeid(S<U>)})) {
-    std::ostringstream msg;
-    msg << "SystemScalarConverter::Convert was configured to convert a "
-        << NiceTypeName::Get<S<U>>() << " into a "
-        << NiceTypeName::Get<S<T>>() << " but was called with a "
-        << NiceTypeName::Get(other) << " at runtime";
-    throw std::runtime_error(msg.str());
+    ThrowConversionMismatch(typeid(S<T>), typeid(S<U>), typeid(other));
   }
   const S<U>& my_other = dynamic_cast<const S<U>&>(other);
   auto result = std::make_unique<S<T>>(my_other);
