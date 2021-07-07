@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): ElasticityElement and its derived classes should be
 //  placed in internal namespace.
 /** The traits class for ElasticityElement. This traits class is meant to be
@@ -542,6 +542,6 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   /* Gravity force on the element. */
   Vector<T, Traits::kNumDofs> gravity_force_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

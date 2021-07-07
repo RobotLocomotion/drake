@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* Some of the following methods involve calculations about a 4th order tensor
 (call it A) of dimension 3*3*3*3. We follow the following convention to flatten
@@ -174,6 +174,6 @@ void AddScaledCofactorMatrixDerivative(
   (*scaled_dCdM)(4, 8) += A(0, 0);
 }
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

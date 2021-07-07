@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Implements the interface StateUpdater with Newmark-beta time integration
  scheme. Given the value for the current time step acceleration `a`, the states
  are calculated from states from the previous time step according to the
@@ -76,6 +76,6 @@ class NewmarkScheme final : public StateUpdater<State> {
   double gamma_{0.5};
   double beta_{0.25};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

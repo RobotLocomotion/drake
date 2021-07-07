@@ -18,7 +18,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kSolutionDimension = 3;
@@ -166,6 +166,6 @@ TEST_F(FemSolverTest, IncompatibleState) {
 }
 // TODO(xuchenhan-tri): Add unit test for AdvanceOneTimeStep().
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

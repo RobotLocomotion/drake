@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 using test::DummyElement;
 using test::DummyElementTraits;
 static constexpr int kNumDofs = 3;
@@ -119,6 +119,6 @@ TEST_F(FemStateTest, ElementCache) {
   VerifyCacheEntries();
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

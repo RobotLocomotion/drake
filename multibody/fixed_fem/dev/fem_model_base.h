@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 /** %FemModel calculates the components of the discretized FEM equations.
  Suppose the PDE at hand is of the form
@@ -196,8 +196,8 @@ class FemModelBase {
   /* The Dirichlet boundary condition imposed on the model. */
   std::unique_ptr<DirichletBoundaryCondition<T>> dirichlet_bc_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemModelBase);
+    class ::drake::multibody::fem::FemModelBase);

@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** A constitutive model relates the strain to the stress of the material and
  governs the material response under deformation. This constitutive relationship
  is defined through a hyperelastic potential energy, which increases with
@@ -131,6 +131,6 @@ struct is_constitutive_model {
       std::is_base_of_v<ConstitutiveModel<Model, typename Model::Traits>,
                         Model>;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

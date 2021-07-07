@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 constexpr int kNumQuads = 1;
 
@@ -48,6 +48,6 @@ TEST_F(LinearConstitutiveModelCacheEntryTest, UpdateCacheEntry) {
   EXPECT_EQ(linear_elasticity_cache_entry_.trace_strain()[0], trace_strain);
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

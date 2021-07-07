@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Cache entry for the CorotatedModel constitutive model. See CorotatedModel
  for how the cache entry is used. See DeformationGradientCacheEntry for more
  about cached quantities for constitutive models.
@@ -72,6 +72,6 @@ class CorotatedModelCacheEntry
   /* The cofactor matrix of F, or JF⁻ᵀ. */
   std::array<Matrix3<T>, num_locations> JFinvT_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

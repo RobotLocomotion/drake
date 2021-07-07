@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /* Forward declare the model to be referred to in the traits class. */
 template <typename T, int num_locations>
 class LinearConstitutiveModel;
@@ -140,6 +140,6 @@ class LinearConstitutiveModel final
   Eigen::Matrix<T, 9, 9>
       dPdF_;  // The First Piola stress derivative is constant and precomputed.
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

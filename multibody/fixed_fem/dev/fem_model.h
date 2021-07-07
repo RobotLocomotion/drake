@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 /** %FemModel provides a fixed size implementaion of FemModelBase by
  templatizing on the type of FemElement. See FemModelBase for more information
@@ -336,6 +336,6 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
   /* The StateUpdater that updates the states for this model. */
   std::unique_ptr<StateUpdater<FemState<Element>>> state_updater_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): Move the implementation of this class to a .cc file.
 /** %FemSolver solves for the state of a given FemModel at which residual of the
  model is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
@@ -206,6 +206,6 @@ class FemSolver {
    doesn't converge in 20 iterations, chances are it will never converge. */
   int kMaxIterations_{20};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

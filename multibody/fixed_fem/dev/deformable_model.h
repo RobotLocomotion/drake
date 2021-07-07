@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): Consider changing the name to DeformableSolidModel.
 /** %DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
@@ -170,8 +170,8 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   /* The discrete state indexes for all deformable bodies. */
   std::vector<systems::DiscreteStateIndex> discrete_state_indexes_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::DeformableModel);
+    class ::drake::multibody::fem::DeformableModel);

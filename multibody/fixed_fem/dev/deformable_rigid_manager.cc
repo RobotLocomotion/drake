@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 using multibody::contact_solvers::internal::BlockSparseMatrix;
 using multibody::contact_solvers::internal::BlockSparseMatrixBuilder;
@@ -732,8 +732,8 @@ void DeformableRigidManager<T>::CalcContactPointData(
   }
 }
 
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::DeformableRigidManager);
+    class ::drake::multibody::fem::DeformableRigidManager);

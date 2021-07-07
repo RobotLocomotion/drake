@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
@@ -152,6 +152,6 @@ TEST_F(DynamicElasticityModelTest, MultipleMesh) {
       CompareMatrices(residual.head(kNumDofs), residual.tail(kNumDofs), 0));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

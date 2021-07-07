@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** The FEM model for dynamic 3D elasticity problems. Implements the interface
  in FemModel. It is assumed that elements are only added to, but never deleted
  from, the model.
@@ -102,6 +102,6 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
                              VectorX<T>::Zero(X.size()));
   }
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

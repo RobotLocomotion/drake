@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 using geometry::Box;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
@@ -113,6 +113,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &MakeDiamondCubicBoxVolumeMesh<T>
 ))
 
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

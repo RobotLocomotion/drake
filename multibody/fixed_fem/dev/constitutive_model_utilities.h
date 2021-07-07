@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* Verifies that the given Young's modulus and Poisson ratio are valid. If so,
  calculates the Lamé parameters from the Young's modulus and the Poisson
@@ -27,6 +27,6 @@ std::pair<T, T> CalcLameParameters(const T& youngs_modulus,
   return std::make_pair(lambda, mu);
 }
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

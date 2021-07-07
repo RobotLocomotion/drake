@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 class StaticElasticityElementTest : public ::testing::Test {
  protected:
   static constexpr int kNaturalDimension = 3;
@@ -161,6 +161,6 @@ TEST_F(StaticElasticityElementTest, NoMassMatrix) {
       "matrix.");
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

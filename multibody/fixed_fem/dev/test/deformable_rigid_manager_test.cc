@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /* Deformable body parameters. These parameters (with the exception of
  kMassDamping) are dummy in the sense that they do not affect the result of
  the test as long as they are valid. */
@@ -957,6 +957,6 @@ TEST_F(DeformableRigidContactDataTest, NoContact) {
 }
 
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

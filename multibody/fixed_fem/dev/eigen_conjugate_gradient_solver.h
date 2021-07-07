@@ -5,7 +5,7 @@
 #include "drake/multibody/fixed_fem/dev/linear_system_solver.h"
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* In order to implement the linear solver for contact_solvers::LinearOperator,
  we implement the matrix-free concept in
@@ -80,7 +80,7 @@ class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
   mutable VectorX<T> scratch_vector_;
 };
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
@@ -89,7 +89,7 @@ namespace internal {
 /* Minimal required traits for a custom linear operator to be used in a Eigen
   sparse iterative solver. */
 template <typename T>
-struct traits<drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>> {
+struct traits<drake::multibody::fem::internal::EigenMatrixProxy<T>> {
   using Scalar = T;
   using StorageIndex = int;
   /* It doesn't matter whether StorageKind is Sparse or Dense as long as it
@@ -111,19 +111,19 @@ struct traits<drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>> {
  by specializing the template Eigen::generic_product_impl. */
 template <typename Rhs, typename T>
 struct generic_product_impl<
-    drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>, Rhs,
+    drake::multibody::fem::internal::EigenMatrixProxy<T>, Rhs,
     SparseShape, DenseShape,
     GemvProduct>  // GEMV stands for matrix-vector
     : generic_product_impl_base<
-          drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>, Rhs,
+          drake::multibody::fem::internal::EigenMatrixProxy<T>, Rhs,
           generic_product_impl<
-              drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>,
+              drake::multibody::fem::internal::EigenMatrixProxy<T>,
               Rhs>> {
   template <typename Dest>
   static void scaleAndAddTo(
       // NOLINTNEXTLINE(runtime/references) Eigen internal signature.
       Dest& dst,
-      const drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>& lhs,
+      const drake::multibody::fem::internal::EigenMatrixProxy<T>& lhs,
       const Rhs& rhs, const T& alpha) {
     /* This method implements "dst += alpha * lhs * rhs" inplace. */
     lhs.ScaleProductAndAdd(alpha, rhs, &dst);
@@ -134,7 +134,7 @@ struct generic_product_impl<
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* Implements LinearSystemSolver with an underlying Eigen::ConjugateGradient
  solver. The linear operator A in the system Ax = b must be symmetric positive
@@ -195,6 +195,6 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
       cg_;
 };
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

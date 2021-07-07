@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 // TODO(SeanCurtis-TRI) The application of the template parameter T is *not*
 //  well reasoned. Currently, we're assuming that *all* quantities can and
@@ -106,6 +106,6 @@ DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
     const geometry::internal::Bvh<geometry::internal::Obb,
                                   geometry::SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_DR);
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

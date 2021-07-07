@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 namespace {
 using geometry::Box;
@@ -202,6 +202,6 @@ TEST_F(CollisionObjectsTest, Poses) {
 }
 }  // namespace
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

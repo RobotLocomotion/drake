@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Implements the interface StateUpdater with the zeroth-order state updater.
  Namely, q = z and dq = dz.
  @tparam State    The type of FemState to be updated by this %StateUpdater. The
@@ -31,6 +31,6 @@ class ZerothOrderStateUpdater final : public StateUpdater<State> {
     state->SetQ(state->q() + dz);
   }
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
