@@ -1338,23 +1338,6 @@ void def_geometry_optimization(py::module m) {
   }
 
   {
-    const auto& cls_doc = doc.ConvexSets;
-    py::class_<ConvexSets>(m, "ConvexSets", cls_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc)
-        .def("size", &ConvexSets::size, cls_doc.size.doc)
-        .def("emplace_back",
-            overload_cast_explicit<ConvexSet&, const ConvexSet&>(
-                &ConvexSets::emplace_back),
-            py::arg("set"), py_rvp::reference_internal,
-            cls_doc.emplace_back.doc_from_reference)
-        .def("__getitem__",
-            overload_cast_explicit<const ConvexSet&, std::size_t>(
-                &ConvexSets::operator[]),
-            py_rvp::reference_internal,
-            cls_doc.operator_array.doc_1args_pos_const);
-  }
-
-  {
     const auto& cls_doc = doc.HPolyhedron;
     py::class_<HPolyhedron, ConvexSet>(m, "HPolyhedron", cls_doc.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,

@@ -22,7 +22,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   const int N = obstacles.size();
   DRAKE_DEMAND(domain.ambient_dimension() == dim);
   for (int i = 0; i < N; ++i) {
-    DRAKE_DEMAND(obstacles[i].ambient_dimension() == dim);
+    DRAKE_DEMAND(obstacles[i]->ambient_dimension() == dim);
   }
   DRAKE_DEMAND(domain.IsBounded());
   const double kEpsilonEllipsoid = 1e-2;
@@ -47,7 +47,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   while (true) {
     // Find separating hyperplanes
     for (int i = 0; i < N; ++i) {
-      const auto touch = E.MinimumUniformScalingToTouch(obstacles[i]);
+      const auto touch = E.MinimumUniformScalingToTouch(*obstacles[i]);
       scaling[i].first = touch.first;
       scaling[i].second = i;
       closest_points.col(i) = touch.second;

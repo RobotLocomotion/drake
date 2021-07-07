@@ -64,8 +64,10 @@ GTEST_TEST(IrisTest, NoObstacles2) {
 └─────┴───┴─────┘ */
 GTEST_TEST(IrisTest, SmallBox) {
   ConvexSets obstacles;
+  // TODO(russt): Remove the Clone() here and below pending resolution of
+  // #15344.
   obstacles.emplace_back(
-      VPolytope::MakeBox(Vector2d(-.4, -1), Vector2d(.4, -.5)));
+      VPolytope::MakeBox(Vector2d(-.4, -1), Vector2d(.4, -.5)).Clone());
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{.45, -.95};  // low and to the right of the obstacle.
@@ -86,7 +88,7 @@ GTEST_TEST(IrisTest, SmallBox) {
 /* Unit ball inside the unit box; IRIS finds a region in the top corner. */
 GTEST_TEST(IrisTest, BallInBox) {
   ConvexSets obstacles;
-  obstacles.emplace_back(Hyperellipsoid::MakeUnitBall(2));
+  obstacles.emplace_back(Hyperellipsoid::MakeUnitBall(2).Clone());
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{.95, .95};  // top right corner.
@@ -110,13 +112,14 @@ GTEST_TEST(IrisTest, BallInBox) {
 └─────┴─┴─────┘ */
 GTEST_TEST(IrisTest, MultipleBoxes) {
   ConvexSets obstacles;
-  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
   obstacles.emplace_back(
-      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+      VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)).Clone());
   obstacles.emplace_back(
-      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)).Clone());
   obstacles.emplace_back(
-      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)).Clone());
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)).Clone());
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{0, 0};  // center of the bounding box.
@@ -136,7 +139,7 @@ GTEST_TEST(IrisTest, MultipleBoxes) {
 GTEST_TEST(IrisTest, BallInBoxNDims) {
   const int N = 8;
   ConvexSets obstacles;
-  obstacles.emplace_back(Hyperellipsoid::MakeUnitBall(N));
+  obstacles.emplace_back(Hyperellipsoid::MakeUnitBall(N).Clone());
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(N);
 
   const VectorXd sample = VectorXd::Constant(N, .95);  // top right corner.
@@ -183,7 +186,7 @@ TEST_F(SceneGraphTester, MakeIrisObstacles) {
   query = UpdateContextAndGetQueryObject();
   obstacles = MakeIrisObstacles(query);
   EXPECT_EQ(obstacles.size(), 1);
-  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(&obstacles[0]), nullptr);
+  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[0].get()), nullptr);
 
   RegisterAnchoredShape(Box(1., 2., 3.), RigidTransformd(Vector3d{4., 5., 6.}));
   query = UpdateContextAndGetQueryObject();
