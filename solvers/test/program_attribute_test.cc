@@ -88,6 +88,11 @@ GTEST_TEST(ProgramAttributeTest, Supported) {
   }
 }
 
+GTEST_TEST(ProgramTypeTest, tostring) {
+  EXPECT_EQ(to_string(ProgramType::kLP), "linear programming");
+  EXPECT_EQ(to_string(ProgramType::kQP), "quadratic programming");
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace solvers

@@ -3138,6 +3138,10 @@ class MathematicalProgram {
   int RemoveCost(const Binding<Cost>& cost);
   //@}
 
+  /** Returns the type of the optimization programs (LP, QP, etc).
+   */
+  ProgramType GetProgramType() const;
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 

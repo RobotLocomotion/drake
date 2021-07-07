@@ -3347,6 +3347,155 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeLP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kLP);
+  prog.AddLinearCost(x[0] + x[1]);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kLP);
+  prog.AddLinearConstraint(x[0] >= 0);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kLP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeQP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddQuadraticCost(x[0] * x[0] + x[1], true);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kQP);
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kQP);
+  prog.AddLinearCost(x[0] + x[1]);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kQP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeSOCP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>();
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSOCP);
+  prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSOCP);
+  prog.AddLinearConstraint(x[0] >= 1);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSOCP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeSDP) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearCost(X(0, 0) + X(1, 1));
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSDP);
+  prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(X(0, 0) + 1, X(1, 1), X(1, 2) + 2));
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSDP);
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
+       2 * Eigen::Matrix2d::Ones()},
+      x);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSDP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeGP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::SparseMatrix<double> A(3, 3);
+  A.setIdentity();
+  prog.AddExponentialConeConstraint(A, Eigen::Vector3d(0, 1, 2), x);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kGP);
+  // Adding a Lorentz cone constraint, now this program cannot be modelled as
+  // GP, but a CGP.
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kCGP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeNLP) {
+  {
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    auto quadratic_cost =
+        prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1), false);
+    EXPECT_EQ(prog.GetProgramType(), ProgramType::kNLP);
+  }
+  {
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    prog.AddPolynomialCost(x(0) * x(0) * x(1) + 2 * x(1));
+    EXPECT_EQ(prog.GetProgramType(), ProgramType::kNLP);
+  }
+  {
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    prog.AddConstraint(
+        std::make_shared<QuadraticConstraint>(Eigen::Matrix2d::Identity(),
+                                              Eigen::Vector2d(1, 0), 0, 1),
+        x);
+    EXPECT_EQ(prog.GetProgramType(), ProgramType::kNLP);
+  }
+}
+
+GTEST_TEST(MathematicalProgramTest, TestLCP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearComplementarityConstraint(Eigen::Matrix2d::Identity(),
+                                          Eigen::Vector2d(1, 2), x);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kLCP);
+  // LCP doesn't accept linear constraint.
+  prog.AddLinearConstraint(x[0] + x[1] >= 1);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kLCP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeMILP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto b = prog.NewBinaryVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] + b[1] + b[0] == 3);
+  prog.AddLinearCost(x[0] + x[1]);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kMILP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeMIQP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto b = prog.NewBinaryVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] + b[1] + b[0] == 3);
+  prog.AddLinearCost(x[0] + x[1]);
+  prog.AddQuadraticCost(x[0] * x[0], true);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kMIQP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeMISOCP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto b = prog.NewBinaryVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] + b[1] + b[0] == 3);
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  prog.AddLinearCost(x[0] + x[1]);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kMISOCP);
+}
+
+GTEST_TEST(MathematicalProgramTest, GetProgramTypeMISDP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto b = prog.NewBinaryVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] + b[1] + b[0] == 3);
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  prog.AddLinearCost(x[0] + x[1]);
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kMISDP);
+}
+
+GTEST_TEST(MathematicalProgramTest,
+           GetProgramTypeestQuadraticCostConicConstraint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>();
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
+  prog.AddQuadraticCost(x(0) * x(0) + x(3) * x(3), true);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kQuadraticCostConicConstraint);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
