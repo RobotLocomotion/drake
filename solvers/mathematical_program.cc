@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <initializer_list>
 #include <memory>
 #include <ostream>
 #include <set>
@@ -1435,6 +1436,244 @@ int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
   } else {
     return RemoveCostOrConstraintImpl(cost, ProgramAttribute::kGenericCost,
                                       &(this->generic_costs_));
+  }
+}
+
+namespace {
+// Returns true iff @p program_attributes satisfy all the following conditions
+// 1. @p program_attributes is a subset of @p acceptable_attributes.
+// 2. @p program_attributes must include all of @p must_include_attributes.
+// 3. @p program_attributes must include one of @p must_include_one_of.
+bool SatisfyProgramType(const ProgramAttributes& acceptable_attributes,
+                        const ProgramAttributes& must_include_attributes,
+                        const ProgramAttributes& must_include_one_of,
+                        const ProgramAttributes& program_attributes) {
+  // Check if program_attributes is a subset of acceptable_attributes
+  for (const auto attribute : program_attributes) {
+    if (acceptable_attributes.count(attribute) == 0) {
+      return false;
+    }
+  }
+  // Check if program_attributes include must_include_attributes
+  for (const auto& must_include : must_include_attributes) {
+    if (program_attributes.count(must_include) == 0) {
+      return false;
+    }
+  }
+  bool include_one_of = must_include_one_of.empty() ? true : false;
+  for (const auto& include : must_include_one_of) {
+    if (program_attributes.count(include) > 0) {
+      include_one_of = true;
+      break;
+    }
+  }
+  if (!include_one_of) {
+    return false;
+  }
+  return true;
+}
+
+ProgramAttributes LinearProgramAttributes() {
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearCost, ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kLinearEqualityConstraint}};
+  return attributes.access();
+}
+
+ProgramAttributes QuadraticProgramAttributes() {
+  auto qp_attributes = LinearProgramAttributes();
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      [&qp_attributes]() {
+        qp_attributes.emplace(ProgramAttribute::kQuadraticCost);
+        return qp_attributes;
+      }()};
+  return attributes.access();
+}
+
+ProgramAttributes SecondOrderConeProgramAttributes() {
+  auto socp_attributes = LinearProgramAttributes();
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      [&socp_attributes]() {
+        socp_attributes.emplace(ProgramAttribute::kLorentzConeConstraint);
+        socp_attributes.emplace(
+            ProgramAttribute::kRotatedLorentzConeConstraint);
+        return socp_attributes;
+      }()};
+  return attributes.access();
+}
+
+ProgramAttributes SemidefiniteProgramAttributes() {
+  auto sdp_attributes = SecondOrderConeProgramAttributes();
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      [&sdp_attributes]() {
+        sdp_attributes.emplace(
+            ProgramAttribute::kPositiveSemidefiniteConstraint);
+        return sdp_attributes;
+      }()};
+  return attributes.access();
+}
+
+ProgramAttributes GeometricProgramAttributes() {
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearCost,
+          ProgramAttribute::kExponentialConeConstraint}};
+  return attributes.access();
+}
+
+ProgramAttributes ConicGeometricProgramAttributes() {
+  auto cgp_attributes = SemidefiniteProgramAttributes();
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      [&cgp_attributes]() {
+        cgp_attributes.emplace(ProgramAttribute::kExponentialConeConstraint);
+        return cgp_attributes;
+      }()};
+  return attributes.access();
+}
+
+ProgramAttributes QuadraticCostConicProgramAttributes() {
+  auto quadratic_cost_conic_attributes = ConicGeometricProgramAttributes();
+  static const drake::never_destroyed<ProgramAttributes> attributes{
+      [&quadratic_cost_conic_attributes]() {
+        quadratic_cost_conic_attributes.emplace(
+            ProgramAttribute::kQuadraticCost);
+        return quadratic_cost_conic_attributes;
+      }()};
+  return attributes.access();
+}
+
+// Returns the attributes = input_attributes + ProgramAttribute::kBinary
+ProgramAttributes MixedIntegerAttributes(
+    const ProgramAttributes& input_attributes, ProgramType program_type) {
+  ProgramAttributes mi_attributes = input_attributes;
+  mi_attributes.emplace(ProgramAttribute::kBinaryVariable);
+  switch (program_type) {
+    case ProgramType::kMILP:
+      static const drake::never_destroyed<ProgramAttributes> milp_attributes{
+          mi_attributes};
+      return milp_attributes.access();
+    case ProgramType::kMIQP:
+      static const drake::never_destroyed<ProgramAttributes> miqp_attributes{
+          mi_attributes};
+      return miqp_attributes.access();
+    case ProgramType::kMISOCP:
+      static const drake::never_destroyed<ProgramAttributes> misocp_attributes{
+          mi_attributes};
+      return misocp_attributes.access();
+    case ProgramType::kMISDP:
+      static const drake::never_destroyed<ProgramAttributes> misdp_attributes{
+          mi_attributes};
+      return misdp_attributes.access();
+    default:
+      throw std::runtime_error(
+          "MixedIntegerAttributes(): invalid program type");
+  }
+}
+
+bool AllQuadraticCostsConvex(
+    const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
+  return std::all_of(quadratic_costs.begin(), quadratic_costs.end(),
+                     [](const Binding<QuadraticCost>& quadratic_cost) {
+                       return quadratic_cost.evaluator()->is_convex();
+                     });
+}
+}  // namespace
+
+ProgramType MathematicalProgram::GetProgramType() const {
+  if (SatisfyProgramType(LinearProgramAttributes(), {},
+                         LinearProgramAttributes(), required_capabilities_)) {
+    return ProgramType::kLP;
+  } else if (SatisfyProgramType(QuadraticProgramAttributes(),
+                                {ProgramAttribute::kQuadraticCost}, {},
+                                required_capabilities_) &&
+             AllQuadraticCostsConvex(quadratic_costs_)) {
+    return ProgramType::kQP;
+  } else if (SatisfyProgramType(
+                 SecondOrderConeProgramAttributes(), {},
+                 {ProgramAttribute::kLorentzConeConstraint,
+                  ProgramAttribute::kRotatedLorentzConeConstraint},
+                 required_capabilities_)) {
+    return ProgramType::kSOCP;
+  } else if (SatisfyProgramType(
+                 SemidefiniteProgramAttributes(),
+                 {ProgramAttribute::kPositiveSemidefiniteConstraint}, {},
+                 required_capabilities_)) {
+    return ProgramType::kSDP;
+  } else if (SatisfyProgramType(GeometricProgramAttributes(),
+                                {ProgramAttribute::kExponentialConeConstraint},
+                                {}, required_capabilities_)) {
+    // TODO(hongkai.dai): support more general type of geometric programming,
+    // with constraints on posynomials.
+    return ProgramType::kGP;
+  } else if (SatisfyProgramType(
+                 ConicGeometricProgramAttributes(),
+                 {ProgramAttribute::kExponentialConeConstraint},
+                 {ProgramAttribute::kLinearConstraint,
+                  ProgramAttribute::kLinearEqualityConstraint,
+                  ProgramAttribute::kLorentzConeConstraint,
+                  ProgramAttribute::kRotatedLorentzConeConstraint,
+                  ProgramAttribute::kPositiveSemidefiniteConstraint},
+                 required_capabilities_)) {
+    return ProgramType::kCGP;
+  } else if (SatisfyProgramType(
+                 MixedIntegerAttributes(LinearProgramAttributes(),
+                                        ProgramType::kMILP),
+                 {ProgramAttribute::kBinaryVariable}, LinearProgramAttributes(),
+                 required_capabilities_)) {
+    return ProgramType::kMILP;
+  } else if (SatisfyProgramType(
+                 MixedIntegerAttributes(QuadraticProgramAttributes(),
+                                        ProgramType::kMIQP),
+                 {ProgramAttribute::kBinaryVariable,
+                  ProgramAttribute::kQuadraticCost},
+                 {}, required_capabilities_) &&
+             AllQuadraticCostsConvex(quadratic_costs_)) {
+    return ProgramType::kMIQP;
+  } else if (SatisfyProgramType(
+                 MixedIntegerAttributes(SecondOrderConeProgramAttributes(),
+                                        ProgramType::kMISOCP),
+                 {ProgramAttribute::kBinaryVariable},
+                 {ProgramAttribute::kLorentzConeConstraint,
+                  ProgramAttribute::kRotatedLorentzConeConstraint},
+                 required_capabilities_)) {
+    return ProgramType::kMISOCP;
+  } else if (SatisfyProgramType(
+                 MixedIntegerAttributes(SemidefiniteProgramAttributes(),
+                                        ProgramType::kMISDP),
+                 {ProgramAttribute::kBinaryVariable,
+                  ProgramAttribute::kPositiveSemidefiniteConstraint},
+                 {}, required_capabilities_)) {
+    return ProgramType::kMISDP;
+  } else if (SatisfyProgramType(
+                 QuadraticCostConicProgramAttributes(),
+                 {ProgramAttribute::kQuadraticCost},
+                 {ProgramAttribute::kLorentzConeConstraint,
+                  ProgramAttribute::kRotatedLorentzConeConstraint,
+                  ProgramAttribute::kPositiveSemidefiniteConstraint,
+                  ProgramAttribute::kExponentialConeConstraint},
+                 required_capabilities_) &&
+             AllQuadraticCostsConvex(quadratic_costs_)) {
+    return ProgramType::kQuadraticCostConicConstraint;
+  } else if (SatisfyProgramType(
+                 {ProgramAttribute::kLinearComplementarityConstraint},
+                 {ProgramAttribute::kLinearComplementarityConstraint}, {},
+                 required_capabilities_)) {
+    // LCP only excepts LinearComplementarityConstraint, it doesn't accept any
+    // other cost/constraint.
+    return ProgramType::kLCP;
+  } else if ((required_capabilities_.count(ProgramAttribute::kGenericCost) >
+                  0 ||
+              (required_capabilities_.count(ProgramAttribute::kQuadraticCost) >
+                   0 &&
+               !AllQuadraticCostsConvex(quadratic_costs_)) ||
+              required_capabilities_.count(
+                  ProgramAttribute::kGenericConstraint) > 0) &&
+             required_capabilities_.count(ProgramAttribute::kBinaryVariable) ==
+                 0) {
+    return ProgramType::kNLP;
+  } else {
+    return ProgramType::kUnknown;
   }
 }
 
