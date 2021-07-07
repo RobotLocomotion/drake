@@ -1335,23 +1335,10 @@ void def_geometry_optimization(py::module m) {
             cls_doc.AddPointInNonnegativeScalingConstraints.doc)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
-  }
-
-  {
-    const auto& cls_doc = doc.ConvexSets;
-    py::class_<ConvexSets>(m, "ConvexSets", cls_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc)
-        .def("size", &ConvexSets::size, cls_doc.size.doc)
-        .def("emplace_back",
-            overload_cast_explicit<ConvexSet&, const ConvexSet&>(
-                &ConvexSets::emplace_back),
-            py::arg("set"), py_rvp::reference_internal,
-            cls_doc.emplace_back.doc_from_reference)
-        .def("__getitem__",
-            overload_cast_explicit<const ConvexSet&, std::size_t>(
-                &ConvexSets::operator[]),
-            py_rvp::reference_internal,
-            cls_doc.operator_array.doc_1args_pos_const);
+    py::class_<copyable_unique_ptr<ConvexSet>>(m, "CopyableUniquePtrConvexSet")
+        .def(py::init([](const ConvexSet& e) {
+          return copyable_unique_ptr<ConvexSet>(e);
+        }));
   }
 
   {
@@ -1373,6 +1360,7 @@ void def_geometry_optimization(py::module m) {
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc);
+    py::implicitly_convertible<HPolyhedron, copyable_unique_ptr<ConvexSet>>();
   }
 
   {
@@ -1397,6 +1385,8 @@ void def_geometry_optimization(py::module m) {
             py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
         .def_static("MakeUnitBall", &Hyperellipsoid::MakeUnitBall,
             py::arg("dim"), cls_doc.MakeUnitBall.doc);
+    py::implicitly_convertible<Hyperellipsoid,
+        copyable_unique_ptr<ConvexSet>>();
   }
 
   {
@@ -1410,6 +1400,7 @@ void def_geometry_optimization(py::module m) {
             py::arg("reference_frame") = std::nullopt,
             py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
         .def("x", &Point::x, cls_doc.x.doc);
+    py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
   }
 
   {
@@ -1426,6 +1417,7 @@ void def_geometry_optimization(py::module m) {
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc);
+    py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
   }
 
   py::class_<IrisOptions>(m, "IrisOptions", doc.IrisOptions.doc)

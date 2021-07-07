@@ -110,7 +110,8 @@ GTEST_TEST(IrisTest, BallInBox) {
 └─────┴─┴─────┘ */
 GTEST_TEST(IrisTest, MultipleBoxes) {
   ConvexSets obstacles;
-  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
   obstacles.emplace_back(
       VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
   obstacles.emplace_back(
@@ -183,7 +184,7 @@ TEST_F(SceneGraphTester, MakeIrisObstacles) {
   query = UpdateContextAndGetQueryObject();
   obstacles = MakeIrisObstacles(query);
   EXPECT_EQ(obstacles.size(), 1);
-  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(&obstacles[0]), nullptr);
+  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[0].get()), nullptr);
 
   RegisterAnchoredShape(Box(1., 2., 3.), RigidTransformd(Vector3d{4., 5., 6.}));
   query = UpdateContextAndGetQueryObject();
