@@ -1,0 +1,57 @@
+#- * - python - * -
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(
+    default_visibility = ["//multibody/fixed_fem:__subpackages__"],
+)
+
+drake_cc_package_library(
+    name = "fem",
+    visibility = ["//multibody/fixed_fem:__subpackages__"],
+    deps = [
+        ":quadrature",
+        ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "quadrature",
+    srcs = [
+        "quadrature.cc",
+    ],
+    hdrs = [
+        "quadrature.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "simplex_gaussian_quadrature",
+    srcs = [
+        "simplex_gaussian_quadrature.cc",
+    ],
+    hdrs = [
+        "simplex_gaussian_quadrature.h",
+    ],
+    deps = [
+        ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simplex_gaussian_quadrature_test",
+    deps = [
+        ":simplex_gaussian_quadrature",
+    ],
+)
+
+add_lint_tests()
