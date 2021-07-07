@@ -1325,6 +1325,13 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.RemoveConstraint(constraint=lcp_con)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
 
+    def test_get_program_type(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+        self.assertEqual(mp.GetProgramType(prog), mp.ProgramType.kQP)
+
 
 class DummySolverInterface(SolverInterface):
 

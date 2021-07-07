@@ -88,6 +88,28 @@ GTEST_TEST(ProgramAttributeTest, Supported) {
   }
 }
 
+GTEST_TEST(ProgramTypeTest, tostring) {
+  EXPECT_EQ(to_string(ProgramType::kLP), "linear programming");
+  EXPECT_EQ(to_string(ProgramType::kQP), "quadratic programming");
+  EXPECT_EQ(to_string(ProgramType::kSOCP), "second order cone programming");
+  EXPECT_EQ(to_string(ProgramType::kSDP), "semidefinite programming");
+  EXPECT_EQ(to_string(ProgramType::kGP), "geometric programming");
+  EXPECT_EQ(to_string(ProgramType::kCGP), "conic geometric programming");
+  EXPECT_EQ(to_string(ProgramType::kMILP), "mixed-integer linear programming");
+  EXPECT_EQ(to_string(ProgramType::kMIQP),
+            "mixed-integer quadratic programming");
+  EXPECT_EQ(to_string(ProgramType::kMISOCP),
+            "mixed-integer second order cone programming");
+  EXPECT_EQ(to_string(ProgramType::kMISDP),
+            "mixed-integer semidefinite programming");
+  EXPECT_EQ(to_string(ProgramType::kQuadraticCostConicConstraint),
+            "conic-constrained quadratic programming");
+  EXPECT_EQ(to_string(ProgramType::kNLP), "nonlinear programming");
+  EXPECT_EQ(to_string(ProgramType::kLCP), "linear complementarity programming");
+  EXPECT_EQ(to_string(ProgramType::kUnknown),
+            "uncategorized mathematical programming type");
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace solvers
