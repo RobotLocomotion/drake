@@ -130,5 +130,44 @@ std::ostream& operator<<(std::ostream& os, const ProgramAttributes& attrs) {
   return os;
 }
 
+std::string to_string(const ProgramType& program_type) {
+  switch (program_type) {
+    case ProgramType::kLP:
+      return "linear programming";
+    case ProgramType::kQP:
+      return "quadratic programming";
+    case ProgramType::kSOCP:
+      return "second order cone programming";
+    case ProgramType::kSDP:
+      return "semidefinite programming";
+    case ProgramType::kGP:
+      return "geometric programming";
+    case ProgramType::kCGP:
+      return "conic geometric programming";
+    case ProgramType::kMILP:
+      return "mixed-integer linear programming";
+    case ProgramType::kMIQP:
+      return "mixed-integer quadratic programming";
+    case ProgramType::kMISOCP:
+      return "mixed-integer second order cone programming";
+    case ProgramType::kMISDP:
+      return "mixed-integer semidefinite programming";
+    case ProgramType::kQuadraticCostConicConstraint:
+      return "conic-constrained quadratic programming";
+    case ProgramType::kNLP:
+      return "nonlinear programming";
+    case ProgramType::kLCP:
+      return "linear complementarity programming";
+    case ProgramType::kUnknown:
+      return "uncategorized mathematical programming type";
+  }
+  DRAKE_UNREACHABLE();
+}
+
+std::ostream& operator<<(std::ostream& os, const ProgramType& program_type) {
+  os << to_string(program_type);
+  return os;
+}
+
 }  // namespace solvers
 }  // namespace drake

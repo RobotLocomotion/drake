@@ -16,6 +16,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/common_solver_option.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -46,6 +47,7 @@ using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
 using solvers::MatrixXIndeterminate;
 using solvers::PositiveSemidefiniteConstraint;
+using solvers::ProgramType;
 using solvers::QuadraticConstraint;
 using solvers::QuadraticCost;
 using solvers::RotatedLorentzConeConstraint;
@@ -431,6 +433,24 @@ void BindSolverInterfaceAndFlags(py::module m) {
             return self != other;
           },
           py::is_operator());
+
+  py::enum_<ProgramType>(m, "ProgramType", doc.ProgramType.doc)
+      .value("kLP", ProgramType::kLP, doc.ProgramType.kLP.doc)
+      .value("kQP", ProgramType::kQP, doc.ProgramType.kQP.doc)
+      .value("kSOCP", ProgramType::kSOCP, doc.ProgramType.kSOCP.doc)
+      .value("kSDP", ProgramType::kSDP, doc.ProgramType.kSDP.doc)
+      .value("kGP", ProgramType::kGP, doc.ProgramType.kGP.doc)
+      .value("kCGP", ProgramType::kCGP, doc.ProgramType.kCGP.doc)
+      .value("kMILP", ProgramType::kMILP, doc.ProgramType.kMILP.doc)
+      .value("kMIQP", ProgramType::kMIQP, doc.ProgramType.kMIQP.doc)
+      .value("kMISOCP", ProgramType::kMISOCP, doc.ProgramType.kMISOCP.doc)
+      .value("kMISDP", ProgramType::kMISDP, doc.ProgramType.kMISDP.doc)
+      .value("kQuadraticCostConicConstraint",
+          ProgramType::kQuadraticCostConicConstraint,
+          doc.ProgramType.kQuadraticCostConicConstraint.doc)
+      .value("kNLP", ProgramType::kNLP, doc.ProgramType.kNLP.doc)
+      .value("kLCP", ProgramType::kLCP, doc.ProgramType.kLCP.doc)
+      .value("kUnknown", ProgramType::kUnknown, doc.ProgramType.kUnknown.doc);
 
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
       .value("kClp", SolverType::kClp, doc.SolverType.kClp.doc)
@@ -1834,7 +1854,8 @@ void BindFreeFunctions(py::module m) {
               const std::optional<Eigen::VectorXd>&,
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
+      .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
 }
 
 PYBIND11_MODULE(_mathematicalprogram, m) {

@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":equality_constrained_qp_solver",
         ":evaluator_base",
         ":function",
+        ":get_program_type",
         ":gurobi_qp",
         ":gurobi_solver",
         ":indeterminate",
@@ -226,6 +227,15 @@ drake_cc_library(
     hdrs = ["function.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "get_program_type",
+    srcs = ["get_program_type.cc"],
+    hdrs = ["get_program_type.h"],
+    deps = [
+        ":mathematical_program",
     ],
 )
 
@@ -1227,6 +1237,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "get_program_type_test",
+    deps = [
+        ":get_program_type",
+    ],
+)
+
+drake_cc_googletest(
     name = "gurobi_solver_test",
     tags = gurobi_test_tags(),
     use_default_main = False,
@@ -1757,6 +1774,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "dreal_solver.h",
     "dreal_solver_common.cc",
     "fast_qp.h",
+    "get_program_type.h",
+    "get_program_type.cc",
     "gurobi_qp.h",
     "gurobi_solver.cc",
     "gurobi_solver.h",
