@@ -1226,6 +1226,13 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.RemoveCost(generic_cost2)
         self.assertEqual(len(prog.generic_costs()), 1)
 
+    def test_get_program_type(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+        self.assertEqual(prog.GetProgramType(), mp.ProgramType.kQP)
+
 
 class DummySolverInterface(SolverInterface):
 
