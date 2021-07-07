@@ -1698,17 +1698,14 @@ for every column of ``prog_var_vals``. )""")
           doc.ChooseBestSolver.doc)
       .def(
           "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
+      .def("MakeFirstAvailableSolver", &solvers::MakeFirstAvailableSolver,
+          py::arg("solver_ids"), doc.MakeFirstAvailableSolver.doc)
       .def("Solve",
           py::overload_cast<const MathematicalProgram&,
               const std::optional<Eigen::VectorXd>&,
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("SolveWithFirstAvailableSolver",
-          &solvers::SolveWithFirstAvailableSolver, py::arg("prog"),
-          py::arg("solvers"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(),
-          doc.SolveWithFirstAvailableSolver.doc);
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
 
   ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)

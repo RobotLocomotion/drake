@@ -195,5 +195,27 @@ TEST_F(ChooseBestSolverTest, KnownSolvers) {
   }
 }
 
+GTEST_TEST(MakeFirstAvailableSolver, Test) {
+  const bool has_gurobi =
+      GurobiSolver::is_available() && GurobiSolver::is_enabled();
+  const bool has_scs = ScsSolver::is_available() && ScsSolver::is_enabled();
+
+  if (has_gurobi || has_scs) {
+    auto solver =
+        MakeFirstAvailableSolver({GurobiSolver::id(), ScsSolver::id()});
+    if (has_gurobi) {
+      EXPECT_EQ(solver->solver_id(), GurobiSolver::id());
+    } else {
+      EXPECT_EQ(solver->solver_id(), ScsSolver::id());
+    }
+  }
+
+  if (!has_gurobi) {
+    DRAKE_EXPECT_THROWS_MESSAGE(MakeFirstAvailableSolver({GurobiSolver::id()}),
+                                std::runtime_error,
+                                ".* is available and enabled.");
+  }
+}
+
 }  // namespace solvers
 }  // namespace drake

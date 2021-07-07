@@ -54,34 +54,5 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
   }
 }
-
-GTEST_TEST(SolveWithFirstAvailableSolverTest, Test) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
-  prog.AddLinearCost(x[0] + 2 * x[1]);
-
-  GurobiSolver gurobi_solver{};
-  ScsSolver scs_solver{};
-
-  if ((gurobi_solver.available() && gurobi_solver.enabled()) ||
-      (scs_solver.available() && scs_solver.enabled())) {
-    auto result = SolveWithFirstAvailableSolver(
-        prog, {&gurobi_solver, &scs_solver}, std::nullopt, std::nullopt);
-    if (gurobi_solver.available() && gurobi_solver.enabled()) {
-      EXPECT_EQ(result.get_solver_id(), gurobi_solver.solver_id());
-    } else {
-      EXPECT_EQ(result.get_solver_id(), scs_solver.solver_id());
-    }
-  }
-
-  if (!(gurobi_solver.available() && gurobi_solver.enabled())) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        SolveWithFirstAvailableSolver(prog, {&gurobi_solver}, std::nullopt,
-                                      std::nullopt),
-        std::runtime_error, ".* is available or enabled.");
-  }
-}
-
 }  // namespace solvers
 }  // namespace drake
