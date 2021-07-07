@@ -6,9 +6,9 @@
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_model.h"
+#include "drake/multibody/fixed_fem/simplex_gaussian_quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -20,8 +20,8 @@ constexpr int kSolutionDimension = 3;
 constexpr int kQuadratureOrder = 1;
 using T = double;
 using QuadratureType =
-    SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+constexpr int kNumQuads = QuadratureType::kNumQuadraturePoints;
 using IsoparametricElementType =
     LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
 using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;

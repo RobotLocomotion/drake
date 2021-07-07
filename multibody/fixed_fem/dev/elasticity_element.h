@@ -9,7 +9,7 @@
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/isoparametric_element.h"
-#include "drake/multibody/fixed_fem/dev/quadrature.h"
+#include "drake/multibody/fixed_fem/quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -32,7 +32,7 @@ struct ElasticityElementTraits {
       "The IsoparametricElementType template parameter must be a derived "
       "class of IsoparametricElement");
   static_assert(
-      is_quadrature<QuadratureType>::value,
+      internal::is_quadrature<QuadratureType>::value,
       "The QuadratureType template parameter must be a derived class of "
       "Quadrature<T, NaturalDim, NumLocations>, where NaturalDim can "
       "be 1, 2 or 3.");
@@ -44,13 +44,13 @@ struct ElasticityElementTraits {
   static_assert(std::is_same_v<typename IsoparametricElementType::T,
                                typename ConstitutiveModelType::T>);
   /* Check that the number of quadrature points are compatible. */
-  static_assert(QuadratureType::num_quadrature_points() ==
+  static_assert(QuadratureType::kNumQuadraturePoints ==
                 IsoparametricElementType::num_sample_locations());
-  static_assert(QuadratureType::num_quadrature_points() ==
+  static_assert(QuadratureType::kNumQuadraturePoints ==
                 ConstitutiveModelType::num_locations());
   /* Check that the natural dimensions are compatible. */
   static_assert(IsoparametricElementType::natural_dimension() ==
-                QuadratureType::natural_dimension());
+                QuadratureType::kNaturalDimension);
   /* Only 3D elasticity is supported. */
   static_assert(IsoparametricElementType::spatial_dimension() == 3);
 
@@ -61,8 +61,8 @@ struct ElasticityElementTraits {
 
   static constexpr int kNumNodes = IsoparametricElementType::num_nodes();
   static constexpr int kNumQuadraturePoints =
-      QuadratureType::num_quadrature_points();
-  static constexpr int kNaturalDimension = QuadratureType::natural_dimension();
+      QuadratureType::kNumQuadraturePoints;
+  static constexpr int kNaturalDimension = QuadratureType::kNaturalDimension;
   static constexpr int kSpatialDimension =
       IsoparametricElementType::spatial_dimension();
   static constexpr int kSolutionDimension = 3;

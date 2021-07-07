@@ -7,7 +7,7 @@
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
+#include "drake/multibody/fixed_fem/simplex_gaussian_quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -21,8 +21,8 @@ class DynamicElasticityElementTest : public ::testing::Test {
   const T kDummyDensity{1.23};
   const ElementIndex kZeroIndex{0};
   using QuadratureType =
-      SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-  static constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+      internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  static constexpr int kNumQuads = QuadratureType::kNumQuadraturePoints;
   using IsoparametricElementType =
       LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
   using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
