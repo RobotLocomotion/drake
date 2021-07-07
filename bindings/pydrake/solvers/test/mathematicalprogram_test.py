@@ -1172,6 +1172,13 @@ class TestMathematicalProgram(unittest.TestCase):
             solver = mp.MakeFirstAvailableSolver(
                 [gurobi_solver.solver_id(), scs_solver.solver_id()])
 
+    def test_get_program_type(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+        self.assertEqual(prog.GetProgramType(), mp.ProgramType.kQP)
+
 
 class DummySolverInterface(SolverInterface):
 
