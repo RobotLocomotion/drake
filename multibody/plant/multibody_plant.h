@@ -903,8 +903,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   in the body frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
-  /// @throws std::logic_error if additional model instances have been created
-  ///                          beyond the world and default instances.
+  /// @throws std::exception if additional model instances have been created
+  ///                        beyond the world and default instances.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     if (num_model_instances() != 2) {
@@ -1155,7 +1155,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @see is_finalized().
   ///
-  /// @throws std::logic_error if the %MultibodyPlant has already been
+  /// @throws std::exception if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
   /// @}
@@ -1661,7 +1661,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// section @ref mbp_penalty_method "Contact by penalty method" for further
   /// details.
   ///
-  /// @throws std::logic_error if penetration_allowance is not positive.
+  /// @throws std::exception if penetration_allowance is not positive.
   void set_penetration_allowance(double penetration_allowance = 0.001);
 
   /// Returns a time-scale estimate `tc` based on the requested penetration
@@ -2297,7 +2297,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
-  /// @throws std::logic_error if called pre-finalize.
+  /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPoseInWorldFrame(
       systems::Context<T>* context,
       const Body<T>& body, const math::RigidTransform<T>& X_WB) const;
@@ -2307,8 +2307,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Frame F must be anchored, meaning that it is either directly welded to the
   /// world frame W or, more generally, that there is a kinematic path between
   /// frame F and the world frame W that only includes weld joints.
-  /// @throws std::logic_error if called pre-finalize.
-  /// @throws std::logic_error if frame F is not anchored to the world.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if frame F is not anchored to the world.
   void SetFreeBodyPoseInAnchoredFrame(
       systems::Context<T>* context,
       const Frame<T>& frame_F, const Body<T>& body,
@@ -2356,7 +2356,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The body B for which the pose is requested.
   /// @retval X_WB
   ///   The pose of body frame B in the world frame W.
-  /// @throws std::logic_error if Finalize() was not called on `this` model or
+  /// @throws std::exception if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
@@ -2370,7 +2370,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] body_B  The body B for which the spatial velocity is requested.
   /// @retval V_WB_W Body B's spatial velocity in the world frame W,
   ///   expressed in W (for point Bo, the body's origin).
-  /// @throws std::logic_error if Finalize() was not called on `this` model or
+  /// @throws std::exception if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
@@ -2384,7 +2384,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] body_B  The body for which spatial acceleration is requested.
   /// @retval A_WB_W Body B's spatial acceleration in the world frame W,
   ///   expressed in W (for point Bo, the body's origin).
-  /// @throws std::logic_error if Finalize() was not called on `this` model or
+  /// @throws std::exception if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
@@ -2488,8 +2488,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   **must** be in `ℝ³ˣⁿᵖ`.
   ///
   /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
-  /// method will throw a std::runtime_error exception. This method also throws
-  /// a std::runtime_error exception if `p_BQi` and `p_AQi` differ in the number
+  /// method will throw a std::exception. This method also throws
+  /// a std::exception if `p_BQi` and `p_AQi` differ in the number
   /// of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
@@ -3224,7 +3224,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
-  /// @throws std::runtime_error if CCm does not exist, which occurs if there
+  /// @throws std::exception if CCm does not exist, which occurs if there
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::exception if composite_mass <= 0, where composite_mass is
   /// the total mass of all bodies except world_body() in MultibodyPlant.
@@ -3257,7 +3257,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_E The frame in which abias_ACcm is expressed on output.
   /// @retval abias_ACcm_E Point Ccm's translational "bias" acceleration term
   /// in frame A with respect to "speeds" 𝑠, expressed in frame E.
-  /// @throws std::runtime_error if Ccm does not exist, which occurs if there
+  /// @throws std::exception if Ccm does not exist, which occurs if there
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::exception if composite_mass <= 0, where composite_mass is
   /// the total mass of all bodies except world_body() in MultibodyPlant.
@@ -3291,7 +3291,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
   /// selected velocities vₛ.
   ///
-  /// @throws std::logic_error if there are repeated indexes in
+  /// @throws std::exception if there are repeated indexes in
   /// `user_to_joint_index_map`.
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const {
@@ -3345,7 +3345,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `user_to_joint_index_map` are actuated.
   /// See MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
   /// details.
-  /// @throws std::logic_error if any of the joints in
+  /// @throws std::exception if any of the joints in
   /// `user_to_joint_index_map` does not have an actuator.
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const {
@@ -3417,7 +3417,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant.
   /// @see AddRigidBody().
   ///
-  /// @throws std::logic_error if the body name occurs in multiple model
+  /// @throws std::exception if the body name occurs in multiple model
   /// instances.
   bool HasBodyNamed(std::string_view name) const {
     return internal_tree().HasBodyNamed(name);
@@ -3435,8 +3435,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to a body that is identified
   /// by the string `name` in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no body with the requested name.
-  /// @throws std::logic_error if the body name occurs in multiple model
+  /// @throws std::exception if there is no body with the requested name.
+  /// @throws std::exception if the body name occurs in multiple model
   /// instances.
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
@@ -3446,7 +3446,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the body that is uniquely identified
   /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::exception if there is no body with the requested name.
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
   const Body<T>& GetBodyByName(
@@ -3462,10 +3462,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to a rigid body that is identified
   /// by the string `name` in `this` model.
-  /// @throws std::logic_error if there is no body with the requested name.
-  /// @throws std::logic_error if the body name occurs in multiple model
+  /// @throws std::exception if there is no body with the requested name.
+  /// @throws std::exception if the body name occurs in multiple model
   /// instances.
-  /// @throws std::logic_error if the requested body is not a RigidBody.
+  /// @throws std::exception if the requested body is not a RigidBody.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const RigidBody<T>& GetRigidBodyByName(std::string_view name) const {
@@ -3474,9 +3474,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the rigid body that is uniquely identified
   /// by the string `name` in @p model_instance.
-  /// @throws std::logic_error if there is no body with the requested name.
-  /// @throws std::logic_error if the requested body is not a RigidBody.
-  /// @throws std::runtime_error if @p model_instance is not valid for this
+  /// @throws std::exception if there is no body with the requested name.
+  /// @throws std::exception if the requested body is not a RigidBody.
+  /// @throws std::exception if @p model_instance is not valid for this
   ///         model.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
@@ -3524,7 +3524,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a constant reference to the joint with unique index `joint_index`.
-  /// @throws std::runtime_error when `joint_index` does not correspond to a
+  /// @throws std::exception when `joint_index` does not correspond to a
   /// joint in this model.
   const Joint<T>& get_joint(JointIndex joint_index) const {
     return internal_tree().get_joint(joint_index);
@@ -3532,7 +3532,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// @returns `true` if a joint named `name` was added to this model.
   /// @see AddJoint().
-  /// @throws std::logic_error if the joint name occurs in multiple model
+  /// @throws std::exception if the joint name occurs in multiple model
   /// instances.
   bool HasJointNamed(std::string_view name) const {
     return internal_tree().HasJointNamed(name);
@@ -3547,7 +3547,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a mutable reference to the joint with unique index `joint_index`.
-  /// @throws std::runtime_error when `joint_index` does not correspond to a
+  /// @throws std::exception when `joint_index` does not correspond to a
   /// joint in this model.
   Joint<T>& get_mutable_joint(JointIndex joint_index) {
     return this->mutable_tree().get_mutable_joint(joint_index);
@@ -3565,7 +3565,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the specified `JointType`.
   /// @tparam JointType The specific type of the Joint to be retrieved. It must
   /// be a subclass of Joint.
-  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// @throws std::exception if the named joint is not of type `JointType` or
   /// if there is no Joint with that name.
   /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointNamed() to query if there exists a joint in `this`
@@ -3605,7 +3605,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// @returns `true` if a frame named `name` was added to the model.
   /// @see AddFrame().
-  /// @throws std::logic_error if the frame name occurs in multiple model
+  /// @throws std::exception if the frame name occurs in multiple model
   /// instances.
   bool HasFrameNamed(std::string_view name) const {
     return internal_tree().HasFrameNamed(name);
@@ -3621,8 +3621,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to a frame that is identified by the
   /// string `name` in `this` model.
-  /// @throws std::logic_error if there is no frame with the requested name.
-  /// @throws std::logic_error if the frame name occurs in multiple model
+  /// @throws std::exception if there is no frame with the requested name.
+  /// @throws std::exception if the frame name occurs in multiple model
   /// instances.
   /// @see HasFrameNamed() to query if there exists a frame in `this` model with
   /// a given specified name.
@@ -3632,8 +3632,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the frame that is uniquely identified
   /// by the string `name` in @p model_instance.
-  /// @throws std::logic_error if there is no frame with the requested name.
-  /// @throws std::runtime_error if @p model_instance is not valid for this
+  /// @throws std::exception if there is no frame with the requested name.
+  /// @throws std::exception if @p model_instance is not valid for this
   ///         model.
   /// @see HasFrameNamed() to query if there exists a frame in `this` model with
   /// a given specified name.
@@ -3680,7 +3680,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// @returns `true` if an actuator named `name` was added to this model.
   /// @see AddJointActuator().
-  /// @throws std::logic_error if the actuator name occurs in multiple model
+  /// @throws std::exception if the actuator name occurs in multiple model
   /// instances.
   bool HasJointActuatorNamed(std::string_view name) const {
     return internal_tree().HasJointActuatorNamed(name);
@@ -3697,8 +3697,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to an actuator that is identified
   /// by the string `name` in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no actuator with the requested name.
-  /// @throws std::logic_error if the actuator name occurs in multiple model
+  /// @throws std::exception if there is no actuator with the requested name.
+  /// @throws std::exception if the actuator name occurs in multiple model
   /// instances.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` %MultibodyPlant with a given specified name.
@@ -3709,7 +3709,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the actuator that is uniquely identified
   /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @throws std::exception if there is no actuator with the requested name.
   /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` %MultibodyPlant with a given specified name.
@@ -3726,7 +3726,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the force element with unique index
   /// `force_element_index`.
-  /// @throws std::runtime_error when `force_element_index` does not correspond
+  /// @throws std::exception when `force_element_index` does not correspond
   /// to a force element in this model.
   const ForceElement<T>& get_force_element(
       ForceElementIndex force_element_index) const {
@@ -3739,7 +3739,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `ForceElementType`.
   /// @tparam ForceElementType The specific type of the ForceElement to be
   /// retrieved. It must be a subclass of ForceElement.
-  /// @throws std::logic_error if the force element is not of type
+  /// @throws std::exception if the force element is not of type
   /// `ForceElementType` or if there is no ForceElement with that index.
   template <template <typename> class ForceElementType = ForceElement>
   const ForceElementType<T>& GetForceElement(
@@ -3765,7 +3765,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns the name of a `model_instance`.
-  /// @throws std::logic_error when `model_instance` does not correspond to a
+  /// @throws std::exception when `model_instance` does not correspond to a
   /// model in this model.
   const std::string& GetModelInstanceName(
       ModelInstanceIndex model_instance) const {
@@ -3780,7 +3780,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the index to the model instance that is uniquely identified
   /// by the string `name` in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no instance with the requested name.
+  /// @throws std::exception if there is no instance with the requested name.
   /// @see HasModelInstanceNamed() to query if there exists an instance in
   /// `this` %MultibodyPlant with a given specified name.
   ModelInstanceIndex GetModelInstanceByName(std::string_view name) const {
@@ -3830,7 +3830,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// limits for every generalized position coordinate. These include joint and
   /// free body coordinates. Any unbounded or unspecified limits will be
   /// -infinity.
-  /// @throws std::logic_error if called pre-finalize.
+  /// @throws std::exception if called pre-finalize.
   VectorX<double> GetPositionLowerLimits() const {
     return internal_tree().GetPositionLowerLimits();
   }
@@ -3846,7 +3846,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// limits for every generalized velocity coordinate. These include joint and
   /// free body coordinates. Any unbounded or unspecified limits will be
   /// -infinity.
-  /// @throws std::logic_error if called pre-finalize.
+  /// @throws std::exception if called pre-finalize.
   VectorX<double> GetVelocityLowerLimits() const {
     return internal_tree().GetVelocityLowerLimits();
   }
@@ -3862,7 +3862,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// acceleration limits for every generalized velocity coordinate. These
   /// include joint and free body coordinates. Any unbounded or unspecified
   /// limits will be -infinity.
-  /// @throws std::logic_error if called pre-finalize.
+  /// @throws std::exception if called pre-finalize.
   VectorX<double> GetAccelerationLowerLimits() const {
     return internal_tree().GetAccelerationLowerLimits();
   }

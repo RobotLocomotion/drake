@@ -9,7 +9,7 @@ namespace drake {
 /// otherwise ${TMPDIR:-/tmp}/robotlocomotion_drake_XXXXXX where each X is
 /// replaced by a character from the portable filename character set. Any
 /// trailing / will be stripped from the output.
-/// @throws std::runtime_error If the path referred to by TEST_TMPDIR or
+/// @throws std::exception If the path referred to by TEST_TMPDIR or
 /// ${TMPDIR:-/tmp}/robotlocomotion_drake_XXXXXX cannot be created, does not
 /// exist, or is not a directory.
 std::string temp_directory();

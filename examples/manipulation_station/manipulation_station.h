@@ -445,25 +445,25 @@ class ManipulationStation : public systems::Diagram<T> {
   std::vector<std::string> get_camera_names() const;
 
   /// Set the gains for the WSG controller.
-  /// @throws exception if Finalize() has been called.
+  /// @throws std::exception if Finalize() has been called.
   void SetWsgGains(double kp, double kd);
 
   /// Set the position gains for the IIWA controller.
-  /// @throws exception if Finalize() has been called.
+  /// @throws std::exception if Finalize() has been called.
   void SetIiwaPositionGains(const VectorX<double>& kp) {
     DRAKE_THROW_UNLESS(!plant_->is_finalized());
     iiwa_kp_ = kp;
   }
 
   /// Set the velocity gains for the IIWA controller.
-  /// @throws exception if Finalize() has been called.
+  /// @throws std::exception if Finalize() has been called.
   void SetIiwaVelocityGains(const VectorX<double>& kd) {
     DRAKE_THROW_UNLESS(!plant_->is_finalized());
     iiwa_kd_ = kd;
   }
 
   /// Set the integral gains for the IIWA controller.
-  /// @throws exception if Finalize() has been called.
+  /// @throws std::exception if Finalize() has been called.
   void SetIiwaIntegralGains(const VectorX<double>& ki) {
     DRAKE_THROW_UNLESS(!plant_->is_finalized());
     iiwa_ki_ = ki;

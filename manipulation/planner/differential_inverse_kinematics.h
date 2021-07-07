@@ -201,7 +201,7 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Adds a linear velocity constraint.
    * @param linear_velocity_constraint A linear constraint on joint velocities.
-   * @throws std::invalid_argument if `constraint->num_vars !=
+   * @throws std::exception if `constraint->num_vars !=
    * this->get_num_velocities()`.
    */
   void AddLinearVelocityConstraint(

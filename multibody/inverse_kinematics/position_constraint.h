@@ -36,8 +36,8 @@ class PositionConstraint : public solvers::Constraint {
    *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @pre p_AQ_lower(i) <= p_AQ_upper(i) for i = 1, 2, 3.
-   * @throws std::invalid_argument if `plant` is nullptr.
-   * @throws std::invalid_argument if `plant_context` is nullptr.
+   * @throws std::exception if `plant` is nullptr.
+   * @throws std::exception if `plant_context` is nullptr.
    */
   PositionConstraint(const MultibodyPlant<double>* plant,
                      const Frame<double>& frameA,

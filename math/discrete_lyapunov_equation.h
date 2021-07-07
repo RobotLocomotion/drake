@@ -20,12 +20,12 @@ namespace math {
  * Computes the unique solution X to the discrete Lyapunov equation: `AᵀXA - X +
  * Q = 0`, where A is real and square, and Q is real, symmetric and of equal
  * size as A.
- * @throws std::runtime_error if A or Q are not square matrices or do not
+ * @throws std::exception if A or Q are not square matrices or do not
  * have the same size.
  *
  * Limitations: Given the Eigenvalues of A as λ₁, ..., λₙ, there exists
  * a unique solution if and only if λᵢ * λⱼ ≠ 1 ∀ i,j and λᵢ ≠ ±1, ∀ i [1].
- * @throws std::runtime_error if the solution is not unique.[3]
+ * @throws std::exception if the solution is not unique.[3]
  *
  * There are no further limitations on the eigenvalues of A.
  * Further, if |λᵢ|<1, ∀ i, and if Q is
@@ -38,7 +38,7 @@ namespace math {
  * The implementation is based on SLICOT routine SB03MD [2]. Note the
  * transformation Q = -C. The complexity of this routine is O(n³).
  * If A is larger than 2-by-2, then a Schur factorization is performed.
- * @throws std::runtime_error if Schur factorization fails.
+ * @throws std::exception if Schur factorization fails.
  *
  * A tolerance of ε is used to check if a double variable is equal to zero,
  * where the default value for ε is 1e-10. It has been used to check (1) if λᵢ =

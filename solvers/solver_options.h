@@ -140,7 +140,7 @@ class SolverOptions {
    * @param double_keys The set of allowable keys for double options.
    * @param int_keys The set of allowable keys for int options.
    * @param str_keys The set of allowable keys for string options.
-   * @throw invalid_argument if the solver contains un-allowed options.
+   * @throws std::exception if the solver contains un-allowed options.
    */
   void CheckOptionKeysForSolver(
       const SolverId& solver_id,

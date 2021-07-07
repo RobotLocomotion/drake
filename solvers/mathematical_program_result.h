@@ -30,7 +30,7 @@ namespace solvers {
  * @param variable_values The values of all variables.
  * @return variable_values(variable_index[var.get_id()]) if
  * var.get_id() is a valid key of @p variable_index.
- * @throws an invalid_argument error if var.get_id() is not a valid key of @p
+ * @throws std::exception if var.get_id() is not a valid key of @p
  * variable_index.
  * @pre All the mapped value in variable_index is in the range [0,
  * variable_values.rows())
@@ -194,7 +194,7 @@ class MathematicalProgramResult final {
    * Gets the solution of a single decision variable.
    * @param var The decision variable.
    * @return The value of the decision variable after solving the problem.
-   * @throws invalid_argument if `var` is not captured in the mapping @p
+   * @throws std::exception if `var` is not captured in the mapping @p
    * decision_variable_index, as the input argument of
    * set_decision_variable_index().
    */

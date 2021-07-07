@@ -81,7 +81,7 @@ class Frame : public FrameBase<T> {
 
   /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   /// `this` frame F in the body frame B associated with this frame.
-  /// @throws std::logic_error if called on a %Frame that does not have a
+  /// @throws std::exception if called on a %Frame that does not have a
   /// fixed offset in the body frame.
   // %Frame sub-classes that can represent the fixed pose of `this` frame F in
   // a body frame B, must override this method.
@@ -97,7 +97,7 @@ class Frame : public FrameBase<T> {
 
   /// Returns the rotation matrix `R_BF` that relates body frame B to `this`
   /// frame F (B is the body frame to which `this` frame F is attached).
-  /// @throws std::logic_error if `this` frame F is a %Frame that does not have
+  /// @throws std::exception if `this` frame F is a %Frame that does not have
   /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
   /// %Frame sub-classes that have a constant `R_BF` must override this method.
   /// An example of a frame sub-class not implementing this method would be that
@@ -139,7 +139,7 @@ class Frame : public FrameBase<T> {
   /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
   /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
   /// frame B to which this frame is attached.
-  /// @throws std::logic_error if called on a %Frame that does not have a
+  /// @throws std::exception if called on a %Frame that does not have a
   /// fixed offset in the body frame.
   virtual math::RigidTransform<T> GetFixedOffsetPoseInBody(
       const math::RigidTransform<T>& X_FQ) const {
@@ -150,7 +150,7 @@ class Frame : public FrameBase<T> {
   /// B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   /// (B is the body frame to which `this` frame F is attached).
   /// @param[in] R_FQ rotation matrix that relates frame F to frame Q.
-  /// @throws std::logic_error if `this` frame F is a %Frame that does not have
+  /// @throws std::exception if `this` frame F is a %Frame that does not have
   /// a fixed offset in the body frame B (i.e., `R_BF` is not constant).
   virtual math::RotationMatrix<T> GetFixedRotationMatrixInBody(
       const math::RotationMatrix<T>& R_FQ) const {

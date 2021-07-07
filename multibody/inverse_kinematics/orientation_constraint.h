@@ -52,11 +52,11 @@ class OrientationConstraint : public solvers::Constraint {
    * @param plant_context The Context that has been allocated for this
    *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
-   * @throws std::invalid_argument if `plant` is nullptr.
-   * @throws std::logic_error if `frameAbar` or `frameBbar` does not belong to
+   * @throws std::exception if `plant` is nullptr.
+   * @throws std::exception if `frameAbar` or `frameBbar` does not belong to
    *   `plant`.
-   * @throws std::invalid_argument if angle_bound < 0.
-   * @throws std::invalid_argument if `plant_context` is nullptr.
+   * @throws std::exception if angle_bound < 0.
+   * @throws std::exception if `plant_context` is nullptr.
    */
   OrientationConstraint(
       const MultibodyPlant<double>* const plant,

@@ -158,7 +158,7 @@ class CameraInfo final {
    Constructs this instance by extracting focal_x, focal_y, center_x, and
    center_y from the provided intrinsic_matrix.
 
-   @throws std::runtime_error if intrinsic_matrix is not of the form indicated
+   @throws std::exception if intrinsic_matrix is not of the form indicated
    above for the pinhole camera model (representing an affine / homogeneous
    transform).
   */

@@ -9,7 +9,7 @@ namespace common {
 /// clients and libraries.
 /// @return The value of the environment variable TEST_TMPDIR if defined or
 /// otherwise /tmp. Any trailing / will be stripped from the output.
-/// @throws std::runtime_error If the path referred to by TEST_TMPDIR or /tmp
+/// @throws std::exception If the path referred to by TEST_TMPDIR or /tmp
 /// does not exist or is not a directory.
 std::string GetRpcPipeTempDirectory();
 

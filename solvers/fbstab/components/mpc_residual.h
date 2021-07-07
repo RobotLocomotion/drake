@@ -35,7 +35,7 @@ class MpcResidual {
    * @param[in] nu number of control input
    * @param[in] nc number of constraints per stage
    *
-   * Throws a runtime_error if any of the inputs
+   * Throws an exception if any of the inputs
    * are non-positive.
    */
   MpcResidual(int N, int nx, int nu, int nc);
@@ -81,7 +81,7 @@ class MpcResidual {
    * @param[in] xbar   Outer loop variable
    * @param[in] sigma  Regularization strength > 0
    *
-   * Throws a runtime_error if sigma isn't positive,
+   * Throws an exception if sigma isn't positive,
    * or if x and xbar aren't the same size.
    */
   void InnerResidual(const MpcVariable& x, const MpcVariable& xbar,

@@ -78,7 +78,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   @param[in] is_discrete Whether to allocate discrete state variables for the
       MultibodyTree kinematics. Otherwise allocates continuous state variables.
 
-  @throws std::logic_error if `tree` is null. */
+  @throws std::exception if `tree` is null. */
   explicit MultibodyTreeSystem(std::unique_ptr<MultibodyTree<T>> tree,
                                bool is_discrete = false);
 

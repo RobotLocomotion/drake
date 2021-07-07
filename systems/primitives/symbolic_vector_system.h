@@ -147,7 +147,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   /// scalar expression corresponding to either `\dot{var}` (continuous case) or
   /// `var[n+1]` (discrete case).
   ///
-  /// @throw std::out_of_range if this system has no corresponding dynamics for
+  /// @throws std::exception if this system has no corresponding dynamics for
   /// the variable @p var.
   const symbolic::Expression& dynamics_for_variable(
       const symbolic::Variable& var) const {
@@ -382,7 +382,7 @@ class SymbolicVectorSystemBuilder {
   /// scalar expression corresponding to either `\dot{var}` (continuous case) or
   /// `var[n+1]` (discrete case).
   ///
-  /// @throw std::out_of_range if this builder has no corresponding dynamics for
+  /// @throws std::exception if this builder has no corresponding dynamics for
   /// the variable @p var.
   const symbolic::Expression& dynamics_for_variable(
       const symbolic::Variable& var) const {
