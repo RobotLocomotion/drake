@@ -55,6 +55,10 @@ div.line {
   font-family: 'DejaVu Sans Mono', monospace;
 }
 
+div.groupText {
+  font-style: inherit;
+}
+
 .overload {
   font-family: 'DejaVu Sans Mono', monospace;
 }
