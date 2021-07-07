@@ -16,6 +16,8 @@ namespace optimization {
 @ingroup geometry_optimization
 */
 struct IrisOptions {
+  IrisOptions() = default;
+
   /** The initial polytope is guaranteed to contain the point if that point is
   collision-free. However, the IRIS alternation objectives do not include (and
   can not easily include) a constraint that the original sample point is
