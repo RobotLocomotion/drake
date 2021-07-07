@@ -1012,15 +1012,6 @@ class TestGeometry(unittest.TestCase):
             reference_frame=scene_graph.world_frame_id())
         self.assertEqual(V.ambient_dimension(), 3)
 
-        # Test ConvexSets.
-        sets = mut.optimization.ConvexSets()
-        self.assertIsInstance(sets.emplace_back(hpoly),
-                              mut.optimization.HPolyhedron)
-        self.assertIsInstance(sets.emplace_back(ellipsoid),
-                              mut.optimization.Hyperellipsoid)
-        self.assertEqual(sets.size(), 2)
-        self.assertIsInstance(sets[0], mut.optimization.HPolyhedron)
-
         # Test Iris.
         obstacles = mut.optimization.MakeIrisObstacles(
             query_object=query_object,
@@ -1029,6 +1020,17 @@ class TestGeometry(unittest.TestCase):
         options.require_sample_point_is_contained = True
         options.iteration_limit = 1
         options.termination_threshold = 0.1
+        region = mut.optimization.Iris(
+            obstacles=obstacles, sample=[2, 3.4, 5],
+            domain=mut.optimization.HPolyhedron.MakeBox(
+                lb=[-5, -5, -5], ub=[5, 5, 5]), options=options)
+        self.assertIsInstance(region, mut.optimization.HPolyhedron)
+
+        obstacles = [
+            mut.optimization.HPolyhedron.MakeUnitBox(3),
+            mut.optimization.Hyperellipsoid.MakeUnitBall(3),
+            mut.optimization.Point([0, 0, 0]),
+            mut.optimization.VPolytope.MakeUnitBox(3)]
         region = mut.optimization.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
             domain=mut.optimization.HPolyhedron.MakeBox(

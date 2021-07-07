@@ -32,20 +32,6 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
-ConvexSets::ConvexSets() = default;
-
-ConvexSets::~ConvexSets() = default;
-
-ConvexSet& ConvexSets::emplace_back(const ConvexSet& set) {
-  sets_.emplace_back(set.Clone());
-  return *sets_.back();
-}
-
-ConvexSet& ConvexSets::emplace_back(std::unique_ptr<ConvexSet> set) {
-  sets_.emplace_back(std::move(set));
-  return *sets_.back();
-}
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
