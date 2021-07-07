@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
@@ -169,6 +169,6 @@ TEST_F(StaticElasticityModelTest, ExternalForce) {
                               std::numeric_limits<double>::epsilon()));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

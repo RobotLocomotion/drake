@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Types of material models for the deformable body. */
 enum class MaterialModel {
   /** Corotational model. Recommended for modeling large deformations. More
@@ -104,6 +104,6 @@ class DeformableBodyConfig {
   T mass_density_{1.5e3};
   MaterialModel material_model_{MaterialModel::kCorotated};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

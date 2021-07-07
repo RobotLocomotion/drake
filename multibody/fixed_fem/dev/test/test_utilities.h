@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 /* Calculates an approximation of the condition number for the given matrix A.
 @tparam_nonsymbolic_scalar T. */
@@ -23,6 +23,6 @@ double CalcConditionNumber(const Eigen::Ref<const MatrixX<T>>& A) {
   }
 }
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

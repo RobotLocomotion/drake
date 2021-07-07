@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 template <typename T>
 std::unique_ptr<FemStateBase<T>> FemModelBase<T>::MakeFemStateBase() const {
   return DoMakeFemStateBase();
@@ -70,8 +70,8 @@ void FemModelBase<T>::ApplyBoundaryCondition(FemStateBase<T>* state) const {
     state->ApplyBoundaryCondition(*dirichlet_bc_);
   }
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemModelBase);
+    class ::drake::multibody::fem::FemModelBase);

@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 template <class>
 class DeformationGradientCacheEntry;
 // TODO(xuchenhan-tri) Consider renaming this class and its derived classes to
@@ -73,6 +73,6 @@ class DeformationGradientCacheEntry<
  private:
   std::array<Matrix3<T>, num_locations> deformation_gradient_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

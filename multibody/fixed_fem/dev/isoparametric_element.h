@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** IsoparametricElement is a class that evaluates shape functions
  and their derivatives at prescribed locations. The shape function
  `S` located at a vertex `a` maps the parent domain to a scalar. The reference
@@ -232,6 +232,6 @@ struct is_isoparametric_element {
       std::is_base_of_v<IsoparametricElement<Element, typename Element::Traits>,
                         Element>;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

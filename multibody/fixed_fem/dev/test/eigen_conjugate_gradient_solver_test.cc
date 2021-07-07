@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 namespace {
 /* Dimension of the system. */
@@ -173,6 +173,6 @@ GTEST_TEST(EigenConjugateGradientSolverTest, AutoDiffSolverTestLhs) {
 }
 }  // namespace
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

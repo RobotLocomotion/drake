@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** A simple viscous Rayleigh damping model. The resulting damping matrix is a
 nonnegative linear combination of mass and stiffness matrices. Namely, D = αM +
 βK where α and β are nonnegative. The damping ratio ξ for a given frequency of
@@ -36,6 +36,6 @@ class DampingModel {
   T mass_coeff_;
   T stiffness_coeff_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -56,7 +56,7 @@ DEFINE_double(
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;
@@ -130,12 +130,12 @@ int DoMain() {
   simulator->AdvanceTo(FLAGS_simulation_time);
   return 0;
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage("Demonstration of large deformation.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::multibody::fixed_fem::DoMain();
+  return drake::multibody::fem::DoMain();
 }

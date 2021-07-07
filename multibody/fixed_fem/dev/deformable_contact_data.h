@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 
 /* DeformbaleContactData stores all the contact query information related to a
@@ -106,8 +106,8 @@ class DeformableContactData {
 };
 
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::internal::DeformableContactData)
+    class ::drake::multibody::fem::internal::DeformableContactData)

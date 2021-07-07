@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 namespace {
 class ZerothOrderStateUpdaterTest : public ::testing::Test {
@@ -39,6 +39,6 @@ TEST_F(ZerothOrderStateUpdaterTest, AdvanceOneTimeStep) {
 }
 }  // namespace
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

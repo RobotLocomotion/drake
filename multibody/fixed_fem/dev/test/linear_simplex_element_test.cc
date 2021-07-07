@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 
 constexpr int kNumQuads = 2;
@@ -100,6 +100,6 @@ TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative3D) {
 }
 
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

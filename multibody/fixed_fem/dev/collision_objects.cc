@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 using geometry::Box;
 using geometry::Capsule;
@@ -137,8 +137,8 @@ void CollisionObjects<T>::MakeRigidRepresentation(const ShapeType& shape,
   geometry_ids_.emplace_back(data.id);
 }
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::fixed_fem::internal::CollisionObjects);
+    class ::drake::multibody::fem::internal::CollisionObjects);

@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Cache entry for the LinearConstitutiveModel constitutive model.
  See LinearConstitutiveModel for how the cache entry is used. See
  DeformationGradientCacheEntry for more about cached quantities for
@@ -63,6 +63,6 @@ class LinearConstitutiveModelCacheEntry
   // Trace of `strain_`.
   std::array<T, num_locations> trace_strain_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /* Forward declare the model to be referred to in the traits class. */
 template <typename T, int num_locations>
 class CorotatedModel;
@@ -130,6 +130,6 @@ class CorotatedModel final
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 namespace {
 /* An arbitrary number of degree of freedom made up for testing purpose. */
@@ -113,6 +113,6 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
 }
 }  // namespace
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

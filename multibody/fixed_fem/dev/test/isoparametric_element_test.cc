@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 
 constexpr int kNumSamplesTri = 4;
@@ -291,6 +291,6 @@ TEST_F(IsoparametricElementTest, InterpolateVector3D) {
   }
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

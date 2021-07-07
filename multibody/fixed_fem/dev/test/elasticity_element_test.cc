@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
@@ -326,6 +326,6 @@ TEST_F(ElasticityElementTest, Gravity) {
   EXPECT_TRUE(CompareMatrices(expected_gravity_force, gravity_force()));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

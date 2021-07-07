@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** The number of nodes of 1D simplices (segments) is 2. The number of nodes of
  2D simplices (triangles) is 3. The number of nodes of 3D simplices
  (tetrahedron) is 4. */
@@ -128,6 +128,6 @@ class LinearSimplexElement
    */
   ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>> dSdxi_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

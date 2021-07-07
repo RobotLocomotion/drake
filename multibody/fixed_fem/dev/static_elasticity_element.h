@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Traits class for FEM static elasticity. */
 template <class IsoparametricElementType, class QuadratureType,
           class ConstitutiveModelType>
@@ -111,6 +111,6 @@ class StaticElasticityElement final
         "mass matrix.");
   }
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

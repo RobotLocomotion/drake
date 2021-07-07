@@ -16,7 +16,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
@@ -221,6 +221,6 @@ void DeformableVisualizer::PublishMeshUpdate(
   }
   lcm::Publish(lcm_, "DEFORMABLE_MESHES_UPDATE", message);
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
