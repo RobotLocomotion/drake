@@ -1122,6 +1122,9 @@ class TestMathematicalProgram(unittest.TestCase):
         options_object.SetOption(solver_id, "double_key", 1.0)
         options_object.SetOption(solver_id, "int_key", 2)
         options_object.SetOption(solver_id, "string_key", "3")
+        options_object.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
+        options_object.SetOption(
+            mp.CommonSolverOption.kPrintFileName, "foo.txt")
         options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
