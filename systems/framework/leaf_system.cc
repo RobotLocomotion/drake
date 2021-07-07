@@ -546,27 +546,30 @@ void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdate(
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(int num_state_variables) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
+    int num_state_variables) {
   const int num_q = 0, num_v = 0;
-  DeclareContinuousState(num_q, num_v, num_state_variables);
+  return DeclareContinuousState(num_q, num_v, num_state_variables);
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(int num_q, int num_v, int num_z) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
+    int num_q, int num_v, int num_z) {
   const int n = num_q + num_v + num_z;
-  DeclareContinuousState(BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v,
-                         num_z);
+  return DeclareContinuousState(
+      BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v, num_z);
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(const BasicVector<T>& model_vector) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
+    const BasicVector<T>& model_vector) {
   const int num_q = 0, num_v = 0;
   const int num_z = model_vector.size();
-  DeclareContinuousState(model_vector, num_q, num_v, num_z);
+  return DeclareContinuousState(model_vector, num_q, num_v, num_z);
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
     const BasicVector<T>& model_vector, int num_q, int num_v, int num_z) {
   DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
   model_continuous_state_vector_ = model_vector.Clone();
@@ -585,6 +588,8 @@ void LeafSystem<T>::DeclareContinuousState(
         const ContinuousState<T>& state = context.get_continuous_state();
         return state.get_vector();
       });
+
+  return ContinuousStateIndex(0);
 }
 
 template <typename T>
@@ -689,6 +694,52 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
       NextOutputPortName(std::move(name)), std::move(alloc_function),
       std::move(calc_function), std::move(prerequisites_of_calc));
   return port;
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    ContinuousStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  DRAKE_THROW_UNLESS(state_index == 0);
+  return DeclareVectorOutputPort(
+      std::move(name), *model_continuous_state_vector_,
+      [](const Context<T>& context, BasicVector<T>* output) {
+        output->SetFrom(context.get_continuous_state_vector());
+      },
+      {this->xc_ticket()});
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    DiscreteStateIndex state_index) {
+  // DiscreteValues::get_vector already bounds checks the index, so we don't
+  // need to guard it here.
+  return DeclareVectorOutputPort(
+      std::move(name), this->model_discrete_state_.get_vector(state_index),
+      [state_index](const Context<T>& context, BasicVector<T>* output) {
+        output->SetFrom(context.get_discrete_state(state_index));
+      },
+      {this->discrete_state_ticket(state_index)});
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    AbstractStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  DRAKE_THROW_UNLESS(state_index >= 0);
+  DRAKE_THROW_UNLESS(state_index < this->model_abstract_states_.size());
+  return DeclareAbstractOutputPort(
+      std::move(name),
+      [this, state_index]() {
+        return this->model_abstract_states_.CloneModel(state_index);
+      },
+      [state_index](const Context<T>& context, AbstractValue* output) {
+        output->SetFrom(context.get_abstract_state().get_value(state_index));
+      },
+      {this->abstract_state_ticket(state_index)});
 }
 
 // (This function is deprecated.)

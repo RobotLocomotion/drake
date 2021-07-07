@@ -37,10 +37,8 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
   // Four inputs -- one for each propellor.
   this->DeclareInputPort("propellor_force", systems::kVectorValued, 4);
   // State is x ,y , z, roll, pitch, yaw + velocities.
-  this->DeclareContinuousState(12);
-  this->DeclareVectorOutputPort("state", systems::BasicVector<T>(12),
-                                &QuadrotorPlant::CopyStateOut,
-                                {this->all_state_ticket()});
+  auto state_index = this->DeclareContinuousState(12);
+  this->DeclareStateOutputPort("state", state_index);
   // TODO(russt): Declare input limits.  R2 has @ 2:1 thrust to weight ratio.
 }
 
@@ -51,13 +49,6 @@ QuadrotorPlant<T>:: QuadrotorPlant(const QuadrotorPlant<U>& other)
 
 template <typename T>
 QuadrotorPlant<T>::~QuadrotorPlant() {}
-
-template <typename T>
-void QuadrotorPlant<T>::CopyStateOut(const systems::Context<T> &context,
-                                     systems::BasicVector<T> *output) const {
-  output->set_value(
-      context.get_continuous_state_vector().CopyToVector());
-}
 
 // TODO(russt): Generalize this to support the rotor locations on the Skydio R2.
 template <typename T>

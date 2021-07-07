@@ -203,9 +203,6 @@ class BeadOnAWire : public systems::LeafSystem<T> {
       const Eigen::VectorXd& lambda) const;
 
  protected:
-  void CopyStateOut(const systems::Context<T>& context,
-                    systems::BasicVector<T>* output) const;
-
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;

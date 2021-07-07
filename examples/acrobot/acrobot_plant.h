@@ -97,9 +97,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   }
 
  private:
-  void CopyStateOut(const systems::Context<T>& context,
-                    AcrobotState<T>* output) const;
-
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
 
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;

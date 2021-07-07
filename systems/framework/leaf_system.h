@@ -1055,18 +1055,22 @@ class LeafSystem : public System<T> {
 
   /** Declares that this System should reserve continuous state with
   @p num_state_variables state variables, which have no second-order
-  structure. */
-  void DeclareContinuousState(int num_state_variables);
+  structure.
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(int num_state_variables);
 
   /** Declares that this System should reserve continuous state with @p num_q
   generalized positions, @p num_v generalized velocities, and @p num_z
-  miscellaneous state variables. */
-  void DeclareContinuousState(int num_q, int num_v, int num_z);
+  miscellaneous state variables.
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(int num_q, int num_v, int num_z);
 
   /** Declares that this System should reserve continuous state with
   @p model_vector.size() miscellaneous state variables, stored in a
-  vector cloned from @p model_vector. */
-  void DeclareContinuousState(const BasicVector<T>& model_vector);
+  vector cloned from @p model_vector.
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(
+      const BasicVector<T>& model_vector);
 
   /** Declares that this System should reserve continuous state with @p num_q
   generalized positions, @p num_v generalized velocities, and @p num_z
@@ -1074,9 +1078,10 @@ class LeafSystem : public System<T> {
   @p model_vector. Aborts if @p model_vector has the wrong size. If the
   @p model_vector declares any VectorBase::GetElementBounds()
   constraints, they will be re-declared as inequality constraints on this
-  system (see DeclareInequalityConstraint()). */
-  void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
-                              int num_v, int num_z);
+  system (see DeclareInequalityConstraint()).
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(
+      const BasicVector<T>& model_vector, int num_q, int num_v, int num_z);
   //@}
 
   /** @name            Declare discrete state variables
@@ -1506,6 +1511,29 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
+
+  /** Declares a vector-valued output port whose value is the continuous state
+  of this system.
+  @param state_index must be ContinuousStateIndex(0) for now, since LeafSystem
+  only supports a single continuous state group at the moment.
+  @pydrake_mkdoc_identifier{continuous} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      ContinuousStateIndex state_index);
+
+  /** Declares a vector-valued output port whose value is the given discrete
+  state group of this system.
+  @pydrake_mkdoc_identifier{discrete} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      DiscreteStateIndex state_index);
+
+  /** Declares an abstract-valued output port whose value is the given abstract
+  state of this system.
+  @pydrake_mkdoc_identifier{abstract} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      AbstractStateIndex state_index);
   //@}
 
   // =========================================================================
