@@ -1,12 +1,12 @@
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/dynamic_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/dynamic_elasticity_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -82,8 +82,8 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
   constexpr int kSpatialDimension = 3;
   constexpr int kQuadratureOrder = 1;
   using QuadratureType =
-      SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-  constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+      internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  constexpr int kNumQuads = QuadratureType::num_quadrature_points;
   using IsoparametricElementType =
       LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
   using ConstitutiveModelType = Model<T, kNumQuads>;
