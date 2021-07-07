@@ -393,7 +393,7 @@ GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling4) {
   Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
   Hyperellipsoid E2 = Hyperellipsoid::MakeHypersphere(1.0, Vector2d{4.0, 0.0});
 
-  const double kTol = 1e-6;  // Solver tolerances are large.
+  const double kTol = 1e-5;  // SCS requires this large tolerance.
   auto [sigma, x] = E.MinimumUniformScalingToTouch(E2);
   EXPECT_NEAR(sigma, 3.0, kTol);
   EXPECT_TRUE(CompareMatrices(x, Vector2d{3.0, 0.0}, kTol));
