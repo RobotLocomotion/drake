@@ -545,7 +545,7 @@ class DummyImplementation : public DistanceCallback<T> {
  public:
   bool Invoke(
       fcl::CollisionObjectd* obj_A, fcl::CollisionObjectd* obj_B,
-      const CollisionFilterLegacy*,
+      const CollisionFilter*,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>*) override {
     DummyCallbackData<T> data(&results_);
     return DummyCallback<T>(obj_A, obj_B, &data);
