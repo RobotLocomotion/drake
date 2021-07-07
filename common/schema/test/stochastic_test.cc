@@ -407,7 +407,6 @@ value: !Deterministic { value: 2.0 }
   FixedSize2 parsed;
   DRAKE_EXPECT_THROWS_MESSAGE(
       YamlReadArchive(YAML::Load(input)).Accept(&parsed),
-      std::exception,
       ".*unsupported type tag !Deterministic while selecting a variant<> entry"
       " for std::variant<.*> value.*");
 }

@@ -112,18 +112,16 @@ GTEST_TEST(LinearSpringDamper, BadParameters) {
       plant.AddForceElement<LinearSpringDamper>(bodyA, p_AP, bodyB, p_BQ,
                                                 -1.0 /* negative rest length */,
                                                 stiffness, damping),
-      std::exception, ".*condition 'free_length > 0' failed.*");
+      ".*condition 'free_length > 0' failed.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(plant.AddForceElement<LinearSpringDamper>(
                                   bodyA, p_AP, bodyB, p_BQ, free_length,
                                   -1.0 /* negative stiffness */, damping),
-                              std::exception,
                               ".*condition 'stiffness >= 0' failed.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(plant.AddForceElement<LinearSpringDamper>(
                                   bodyA, p_AP, bodyB, p_BQ, free_length,
                                   stiffness, -1.0 /* negative damping */),
-                              std::exception,
                               ".*condition 'damping >= 0' failed.*");
 }
 

@@ -235,7 +235,7 @@ GTEST_TEST(SineTest, BadSizeTest) {
   Eigen::Vector3d kPhase(1.9, 2.0, 2.1);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Sine<double>(kAmp, kFreq, kPhase, true),
-      std::exception, ".*amplitudes.*==.*phases.*");
+      ".*amplitudes.*==.*phases.*");
 }
 
 GTEST_TEST(SineTest, SineAccessorTest) {

@@ -47,7 +47,7 @@ GTEST_TEST(testLinearSystemSolver, EmptyProblem) {
 
   LinearSystemSolver solver;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog), std::exception,
+      solver.Solve(prog),
       ".*LinearEqualityConstraint is required.*");
 }
 
@@ -62,7 +62,7 @@ GTEST_TEST(testLinearSystemSolver, QuadraticProblem) {
 
   LinearSystemSolver solver;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog), std::exception,
+      solver.Solve(prog),
       ".*QuadraticCost was declared.*");
 }
 

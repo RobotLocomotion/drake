@@ -60,7 +60,7 @@ TEST_F(PhysicalModelTest, DiscreteStateAndOutputPorts) {
 // Tests that adding new state after Finalize is not allowed.
 TEST_F(PhysicalModelTest, PostFinalizeStateAdditionNotAllowed) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dummy_model_->AppendDiscreteState(dummy_state1()), std::exception,
+      dummy_model_->AppendDiscreteState(dummy_state1()),
       "Calls to 'AppendDiscreteState\\(\\)' after system resources have been "
       "declared are not allowed.");
 }

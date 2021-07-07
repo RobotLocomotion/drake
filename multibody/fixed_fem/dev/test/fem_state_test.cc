@@ -99,7 +99,7 @@ TEST_F(FemStateTest, MakeElementData) {
   std::vector<DummyElement<1>> invalid_ordered_elements;
   invalid_ordered_elements.emplace_back(ElementIndex(1), kNodeIndices);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      state_.MakeElementData(invalid_ordered_elements), std::exception,
+      state_.MakeElementData(invalid_ordered_elements),
       "Input element entry at 0 has index 1 instead of 0. The entry with index "
       "i must be stored at position i.");
 }
