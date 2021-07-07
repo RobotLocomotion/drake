@@ -72,7 +72,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
       plant.GetFloatingBaseBodies(), std::logic_error,
       "Pre-finalize calls to 'GetFloatingBaseBodies\\(\\)' are not allowed.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model), std::exception,
+      plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model),
       "Pre-finalize calls to 'GetUniqueFreeBaseBodyOrThrow\\(\\)' are not "
       "allowed.*");
 
@@ -109,7 +109,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   EXPECT_FALSE(plant.GetBodyByName("link", robot_table_model).is_floating());
   EXPECT_FALSE(plant.HasUniqueFreeBaseBody(robot_table_model));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model), std::exception,
+      plant.GetUniqueFreeBaseBodyOrThrow(robot_table_model),
       "Model " + plant.GetModelInstanceName(robot_table_model) +
           " has a unique base body, but it is not free.");
 
@@ -149,7 +149,6 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
   EXPECT_FALSE(plant.HasUniqueFreeBaseBody(default_model_instance()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetUniqueFreeBaseBodyOrThrow(default_model_instance()),
-      std::exception,
       "Model " + plant.GetModelInstanceName(default_model_instance()) +
           " does not have a unique base body.");
 }

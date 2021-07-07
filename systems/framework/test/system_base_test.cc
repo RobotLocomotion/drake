@@ -77,7 +77,6 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   MySystemBase other_system;
   auto other_context = other_system.AllocateContext();
   DRAKE_EXPECT_THROWS_MESSAGE(system.ValidateContext(*other_context),
-                              std::exception,
                               ".*Context.*was not created for.*");
 }
 

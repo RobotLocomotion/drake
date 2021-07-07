@@ -111,9 +111,9 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   // Verify we can get bodies/joints.
   EXPECT_EQ(graph.get_body(BodyIndex(3)).name(), "body3");
   EXPECT_EQ(graph.get_joint(JointIndex(3)).name(), "pin4");
-  DRAKE_EXPECT_THROWS_MESSAGE(graph.get_body(BodyIndex(9)), std::exception,
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.get_body(BodyIndex(9)),
                               ".*index < num_bodies\\(\\).*");
-  DRAKE_EXPECT_THROWS_MESSAGE(graph.get_joint(JointIndex(9)), std::exception,
+  DRAKE_EXPECT_THROWS_MESSAGE(graph.get_joint(JointIndex(9)),
                               ".*index < num_joints\\(\\).*");
 
   // Verify we can query if a body/joint is in the graph.

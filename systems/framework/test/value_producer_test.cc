@@ -49,19 +49,19 @@ TEST_F(ValueProducerTest, DefaultCtor) {
   const ValueProducer empty;
   EXPECT_FALSE(empty.is_valid());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      empty.Allocate(), std::exception,
+      empty.Allocate(),
       ".* null Allocate.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      empty.Calc(context_, storage.get()), std::exception,
+      empty.Calc(context_, storage.get()),
       ".* null Calc.*");
 
   const ValueProducer empty_copy(empty);
   EXPECT_FALSE(empty_copy.is_valid());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      empty_copy.Allocate(), std::exception,
+      empty_copy.Allocate(),
       ".* null Allocate.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      empty_copy.Calc(context_, storage.get()), std::exception,
+      empty_copy.Calc(context_, storage.get()),
       ".* null Calc.*");
 }
 
@@ -73,13 +73,13 @@ TEST_F(ValueProducerTest, InvalidCallbacks) {
   const CalcCallback bad_calc;
   EXPECT_NO_THROW(ValueProducer(good_allocate, good_calc));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ValueProducer(bad_allocate, good_calc), std::exception,
+      ValueProducer(bad_allocate, good_calc),
       ".* null Allocate.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ValueProducer(good_allocate, bad_calc), std::exception,
+      ValueProducer(good_allocate, bad_calc),
       ".* null Calc.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ValueProducer(bad_allocate, bad_calc), std::exception,
+      ValueProducer(bad_allocate, bad_calc),
       ".* null .*");
 }
 

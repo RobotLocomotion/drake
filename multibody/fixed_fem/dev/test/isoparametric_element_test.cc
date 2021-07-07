@@ -227,12 +227,12 @@ TEST_F(IsoparametricElementTest, DegenerateElementPseudoinverseJacobian) {
   /* Initialize a triangle in 3D that is degenerate. */
   Matrix3<double> xa;
   // clang-format off
-    xa << 1, 0, 0.5,
-          0, 1, 0.5,
-          0, 0, 0;
+  xa << 1, 0, 0.5,
+        0, 1, 0.5,
+        0, 0, 0;
   // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tri_3d_.CalcJacobianPseudoinverse(xa), std::exception,
+      tri_3d_.CalcJacobianPseudoinverse(xa),
       "The element is degenerate and does not have a valid Jacobian "
       "pseudoinverse \\(the pseudoinverse is not the left inverse\\).");
 }

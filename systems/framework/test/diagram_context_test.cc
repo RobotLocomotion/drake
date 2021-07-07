@@ -795,7 +795,6 @@ TEST_F(DiagramContextTest, SubcontextSetTimeStateAndParametersFromIsError) {
   auto& dest_subcontext = clone->GetMutableSubsystemContext(SubsystemIndex{0});
   DRAKE_EXPECT_THROWS_MESSAGE(
       dest_subcontext.SetTimeStateAndParametersFrom(source_subcontext),
-      std::exception,
       "SetTimeStateAndParametersFrom\\(\\): Time change allowed only in the "
       "root Context.");
 }

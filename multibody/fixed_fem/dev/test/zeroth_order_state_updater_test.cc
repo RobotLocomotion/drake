@@ -35,7 +35,7 @@ TEST_F(ZerothOrderStateUpdaterTest, AdvanceOneTimeStep) {
   FemState<DummyElement<0>> new_state(prev_state);
   DRAKE_EXPECT_THROWS_MESSAGE(
       state_updater.AdvanceOneTimeStep(prev_state, q, &new_state),
-      std::exception, "There is no notion of time in a zeroth order ODE.");
+      "There is no notion of time in a zeroth order ODE.");
 }
 }  // namespace
 }  // namespace test

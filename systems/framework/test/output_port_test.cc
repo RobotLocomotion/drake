@@ -437,7 +437,7 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   const auto& sys1_context = diagram_context.GetSubsystemContext(
       SubsystemIndex{0});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      out0.Eval<int>(sys1_context), std::exception,
+      out0.Eval<int>(sys1_context),
       ".*Context.*was not created for this OutputPort.*");
 }
 
