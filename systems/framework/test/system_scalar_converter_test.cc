@@ -243,7 +243,7 @@ GTEST_TEST(SystemScalarConverterTest, SubclassMismatch) {
         EXPECT_THAT(
             std::string(e.what()),
             testing::MatchesRegex(
-                "SystemScalarConverter::Convert was configured to convert a "
+                "SystemScalarConverter was configured to convert a "
                 ".*::AnyToAnySystem<double> into a "
                 ".*::AnyToAnySystem<drake::AutoDiffXd> but was called with a "
                 ".*::SubclassOfAnyToAnySystem<double> at runtime"));
