@@ -111,11 +111,9 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       const SurfaceMesh<double>& mesh_R = rigid.mesh();
       const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
-      // TODO(DamrongGuoy): Pass `representation` parameter (the choice of
-      //  contact polygons) when ComputeContactSurfaceFromSoftHalfSpaceRigidMesh
-      //  supports it.
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR);
+          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR,
+          representation);
     } else {
       // Soft volume vs rigid half space. The half space-mesh intersection
       // requires the mesh field to be a linear mesh field.
