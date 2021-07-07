@@ -200,10 +200,12 @@ class ConvexSets {
   ConvexSets();
   virtual ~ConvexSets();
 
-  /** Emplaces a copy of @p set at the end of the collection. */
+  /** Emplaces a copy of @p set at the end of the collection.
+  @pydrake_mkdoc_identifier{from_reference} */
   ConvexSet& emplace_back(const ConvexSet& set);
 
-  /** Takes ownership of @p set and emplaces it at the end of the collection. */
+  /** Takes ownership of @p set and emplaces it at the end of the collection.
+  @pydrake_mkdoc_identifier{from_unique_ptr} */
   ConvexSet& emplace_back(std::unique_ptr<ConvexSet> set);
 
   /** Returns the number of elements in the collection. */
