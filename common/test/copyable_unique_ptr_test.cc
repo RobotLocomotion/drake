@@ -542,6 +542,21 @@ GTEST_TEST(CopyableUniquePtrTest, MoveConstructFromUnique) {
   EXPECT_TRUE(is_dynamic_castable<CloneOnlyChildWithClone>(cup_ptr3.get()));
 }
 
+// Test the construction from a sample model value. We don't test all varieties
+// of cloneable types because we know that the model construction uses the same
+// underlying mechanism as has been tested by all the other constructors.
+GTEST_TEST(CopyableUniquePtrTest, ConstructByValue) {
+  CloneOnly clone_only(17);
+  cup<CloneOnly> clone_ptr(clone_only);
+  EXPECT_NE(&clone_only, clone_ptr.get());
+  EXPECT_EQ(clone_only.value, clone_ptr->value);
+
+  CopyOnly copy_only(2);
+  cup<CopyOnly> copy_ptr(copy_only);
+  EXPECT_NE(&copy_only, copy_ptr.get());
+  EXPECT_EQ(copy_only.value, copy_ptr->value);
+}
+
 // ------------------------ Destructor Tests ------------------------------
 // These tests the various methods that cause the object to be destroyed.
 
@@ -952,6 +967,18 @@ GTEST_TEST(CopyableUniquePtrTest, PointerAccessConstSemantics) {
   // get_mutable is non-const
   EXPECT_TRUE((std::is_same_v<CloneOnly*, decltype(ptr.get_mutable())>));
   EXPECT_TRUE((std::is_assignable_v<CloneOnly*&, decltype(ptr.get_mutable())>));
+
+  // Constness of dereferenced result depends on the constness of the smart
+  // pointer.
+  EXPECT_TRUE((std::is_same_v<CloneOnly&, decltype(*ptr)>));
+  const cup<CloneOnly>& const_ptr_ref = ptr;
+  EXPECT_TRUE((std::is_same_v<const CloneOnly&, decltype(*const_ptr_ref)>));
+
+  // Constness of T cannot be undone by non-const pointer container.
+  cup<const CloneOnly> ptr_to_const(new CloneOnly(2));
+  EXPECT_TRUE(
+      (std::is_same_v<const CloneOnly*, decltype(ptr_to_const.get_mutable())>));
+  EXPECT_TRUE((std::is_same_v<const CloneOnly&, decltype(*ptr_to_const)>));
 }
 
 // ------------------------ Core unique_ptr Tests ------------------------------

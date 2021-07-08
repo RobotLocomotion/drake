@@ -47,6 +47,9 @@ namespace drake {
  3. To allow for future copy-on-write optimizations, there is a distinction
     between writable and const access, the get() method is modified to return
     only a const pointer, with get_mutable() added to return a writable pointer.
+    Furthermore, derefencing (operator*()) a mutable pointer will give a mutable
+    reference (in so far as T is not declared const), and dereferencing a
+    const pointer will give a const reference.
 
  This class is entirely inline and has no computational or space overhead except
  when copying is required; it contains just a single pointer and does no
@@ -119,6 +122,11 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   /** Given a pointer to a writable heap-allocated object, take over
    ownership of that object. No copying occurs. */
   explicit copyable_unique_ptr(T* ptr) noexcept : std::unique_ptr<T>(ptr) {}
+
+  /** Constructs a unique instance of T as a copy of the provided model value.
+   */
+  explicit copyable_unique_ptr(const T& value)
+      : std::unique_ptr<T>(CopyOrNull(&value)) {}
 
   /** Copy constructor is deep; the new %copyable_unique_ptr object contains a
    new copy of the object in the source, created via the source object's
@@ -283,6 +291,9 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    here for that purpose. */
   const T* get() const noexcept { return std::unique_ptr<T>::get(); }
 
+  // TODO(SeanCurtis-TRI): Consider adding some debug assertions about whether
+  // T is const or not. If so, it would be nice to give feedback that calling
+  // the mutable version makes no sense.
   /** Return a writable pointer to the contained object if any, or `nullptr`.
    Note that you need write access to this container in order to get write
    access to the object it contains.
@@ -291,6 +302,48 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
    parameter (e.g., `copyable_unique_ptr<const Foo>`), then get_mutable()
    returns a const pointer. */
   T* get_mutable() noexcept { return std::unique_ptr<T>::get(); }
+
+  // TODO(15344) We need to shore up this const correctness hole. Rather than an
+  //  is-a relationship, we need some alternative relationship that will provide
+  //  the same functionality but not be upcastable. One possibility is to own
+  //  an unique_ptr and forward various APIs. Another is to implement from
+  //  scratch. The current "is-A" relationship was intended so that the
+  //  copyable_unique_ptr could be used where unique_ptrs are used. What would
+  //  the impact of such a change in the relationship be to Drake and Drake
+  //  users?
+
+  /** Return a const reference to the contained object. Note that this is
+   different from `std::unique_ptr::operator*()` which would return a non-const
+   reference (if `T` is non-const), even if the container itself is const. For
+   a const %copyable_unique_ptr will always return a const reference to its
+   contained value.
+
+   @warning Currently %copyable_unique_ptr is a std::unique_ptr. As such, a
+   const copyable_unique_ptr<Foo> can be upcast to a const unique_ptr<Foo> and
+   the parent's behavior will provide a mutable reference. This is strongly
+   discouraged and will break as the implementation of this class changes to
+   shore up this gap in the const correctness protection.
+
+   @pre `this != nullptr` reports `true`. */
+  const T& operator*() const { return *get(); }
+
+  /** Return a writable reference to the contained object (if T is itself not
+   const). Note that you need write access to this container in order to get
+   write access to the object it contains.
+
+   We *strongly* recommend, that, if dereferencing a %copyable_unique_ptr
+   without the intention of mutating the underlying value, prefer to dereference
+   a *const* %copyable_unique_ptr (or use *my_ptr.get()) and not a mutable
+   %copyable_unique_ptr. As "copy-on-write" behavior is introduced in the
+   future, this recommended practice will prevent unwanted copies of the
+   underlying value.
+
+   If %copyable_unique_ptr is instantiated on a const template parameter (e.g.,
+   `copyable_unique_ptr<const Foo>`), then operator*() must return a const
+   reference.
+
+   @pre `this != nullptr` reports `true`. */
+  T& operator*() { return *get_mutable(); }
 
   /**@}*/
  private:
