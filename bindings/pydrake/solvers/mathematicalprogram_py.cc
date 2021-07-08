@@ -1369,20 +1369,85 @@ for every column of ``prog_var_vals``. )""")
       .def("decision_variable_index",
           &MathematicalProgram::decision_variable_index,
           doc.MathematicalProgram.decision_variable_index.doc)
-      .def(  // Remove this overload when #15272 is resolved.
+      .def(  // Remove this overload when #15405 is resolved.
           "RemoveCost",
           [](MathematicalProgram* self, const Binding<LinearCost>& cost) {
             return self->RemoveCost(cost);
           },
           py::arg("cost"), doc.MathematicalProgram.RemoveCost.doc)
-      .def(  // Remove this overload when #15272 is resolved.
+      .def(  // Remove this overload when #15405 is resolved.
           "RemoveCost",
           [](MathematicalProgram* self, const Binding<QuadraticCost>& cost) {
             return self->RemoveCost(cost);
           },
           py::arg("cost"), doc.MathematicalProgram.RemoveCost.doc)
-      .def("RemoveCost", &MathematicalProgram::RemoveCost,
-          doc.MathematicalProgram.RemoveCost.doc);
+      .def("RemoveCost", &MathematicalProgram::RemoveCost, py::arg("cost"),
+          doc.MathematicalProgram.RemoveCost.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<LinearConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<LinearEqualityConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<BoundingBoxConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<LorentzConeConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<RotatedLorentzConeConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<PositiveSemidefiniteConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<LinearMatrixInequalityConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<ExponentialConeConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def(  // Remove this overload when #15405 is resolved.
+          "RemoveConstraint",
+          [](MathematicalProgram* self,
+              const Binding<LinearComplementarityConstraint>& constraint) {
+            return self->RemoveConstraint(constraint);
+          },
+          py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc)
+      .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
+          doc.MathematicalProgram.RemoveConstraint.doc);
 
   {
 #pragma GCC diagnostic push

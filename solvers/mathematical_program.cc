@@ -1413,12 +1413,131 @@ int MathematicalProgram::RemoveCostOrConstraintImpl(
   const int num_existing = static_cast<int>(existings->size());
   existings->erase(std::remove(existings->begin(), existings->end(), removal),
                    existings->end());
-  if (existings->empty()) {
-    // erasing a non-existing unordered_set element is not an error.
-    required_capabilities_.erase(affected_capability);
-  }
+  UpdateRequiredCapability(affected_capability);
   const int num_removed = num_existing - static_cast<int>(existings->size());
   return num_removed;
+}
+
+namespace {
+// Update @p program_capabilities. If @p binding is empty, then remove @p
+// capability from @p program_capabilities; otherwise add @p capability to @p
+// program_capabilities.
+template <typename C>
+void UpdateRequiredCapabilityImpl(ProgramAttribute capability,
+                                  const std::vector<C>& bindings,
+                                  ProgramAttributes* program_capabilities) {
+  if (bindings.empty()) {
+    // erasing a non-existent key doesn't cause an error.
+    program_capabilities->erase(capability);
+  } else {
+    program_capabilities->emplace(capability);
+  }
+}
+}  // namespace
+
+void MathematicalProgram::UpdateRequiredCapability(
+    ProgramAttribute query_capability) {
+  switch (query_capability) {
+    case ProgramAttribute::kLinearCost: {
+      UpdateRequiredCapabilityImpl(query_capability, this->linear_costs(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kQuadraticCost: {
+      UpdateRequiredCapabilityImpl(query_capability, this->quadratic_costs(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kGenericCost: {
+      UpdateRequiredCapabilityImpl(query_capability, this->generic_costs(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kGenericConstraint: {
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->generic_constraints(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kLinearConstraint: {
+      if (this->linear_constraints().empty() &&
+          this->bounding_box_constraints().empty()) {
+        required_capabilities_.erase(ProgramAttribute::kLinearConstraint);
+      } else {
+        required_capabilities_.emplace(ProgramAttribute::kLinearConstraint);
+      }
+      break;
+    }
+    case ProgramAttribute::kLinearEqualityConstraint: {
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->linear_equality_constraints(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kLinearComplementarityConstraint: {
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->linear_complementarity_constraints(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kLorentzConeConstraint: {
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->lorentz_cone_constraints(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kRotatedLorentzConeConstraint: {
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->rotated_lorentz_cone_constraints(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kPositiveSemidefiniteConstraint: {
+      if (positive_semidefinite_constraint_.empty() &&
+          linear_matrix_inequality_constraint_.empty()) {
+        required_capabilities_.erase(
+            ProgramAttribute::kPositiveSemidefiniteConstraint);
+      } else {
+        required_capabilities_.emplace(
+            ProgramAttribute::kPositiveSemidefiniteConstraint);
+      }
+      break;
+    }
+    case ProgramAttribute::kExponentialConeConstraint: {
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->exponential_cone_constraints(),
+                                   &required_capabilities_);
+      break;
+    }
+    case ProgramAttribute::kQuadraticConstraint: {
+      // Currently we store quadratic constraint as generic constraint. We
+      // don't enable kQuadraticConstraint capability.
+      throw std::runtime_error(
+          "UpdateRequiredCapability(): should not handle quadratic constraint "
+          "capability.");
+    }
+    case ProgramAttribute::kBinaryVariable: {
+      bool has_binary_var = false;
+      for (int i = 0; i < num_vars(); ++i) {
+        if (decision_variables_(i).get_type() ==
+            symbolic::Variable::Type::BINARY) {
+          has_binary_var = true;
+          break;
+        }
+      }
+      if (has_binary_var) {
+        required_capabilities_.emplace(ProgramAttribute::kBinaryVariable);
+      } else {
+        required_capabilities_.erase(ProgramAttribute::kBinaryVariable);
+      }
+      break;
+    }
+    case ProgramAttribute::kCallback: {
+      UpdateRequiredCapabilityImpl(query_capability, visualization_callbacks_,
+                                   &required_capabilities_);
+      break;
+    }
+  }
 }
 
 int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
@@ -1436,6 +1555,76 @@ int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
     return RemoveCostOrConstraintImpl(cost, ProgramAttribute::kGenericCost,
                                       &(this->generic_costs_));
   }
+  DRAKE_UNREACHABLE();
+}
+
+int MathematicalProgram::RemoveConstraint(
+    const Binding<Constraint>& constraint) {
+  Constraint* constraint_evaluator = constraint.evaluator().get();
+  // TODO(hongkai.dai): Remove the dynamic cast as part of #8349.
+  // Check constraints types in reverse order, such that classes that inherit
+  // from other classes will not be prematurely added to less specific (or
+  // incorrect) container.
+  if (dynamic_cast<ExponentialConeConstraint*>(constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<ExponentialConeConstraint>(constraint),
+        ProgramAttribute::kExponentialConeConstraint,
+        &exponential_cone_constraints_);
+  } else if (dynamic_cast<LinearMatrixInequalityConstraint*>(
+                 constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LinearMatrixInequalityConstraint>(
+            constraint),
+        ProgramAttribute::kPositiveSemidefiniteConstraint,
+        &linear_matrix_inequality_constraint_);
+  } else if (dynamic_cast<PositiveSemidefiniteConstraint*>(
+                 constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<PositiveSemidefiniteConstraint>(
+            constraint),
+        ProgramAttribute::kPositiveSemidefiniteConstraint,
+        &positive_semidefinite_constraint_);
+  } else if (dynamic_cast<RotatedLorentzConeConstraint*>(
+                 constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<RotatedLorentzConeConstraint>(constraint),
+        ProgramAttribute::kRotatedLorentzConeConstraint,
+        &rotated_lorentz_cone_constraint_);
+  } else if (dynamic_cast<LorentzConeConstraint*>(constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LorentzConeConstraint>(constraint),
+        ProgramAttribute::kLorentzConeConstraint, &lorentz_cone_constraint_);
+  } else if (dynamic_cast<LinearComplementarityConstraint*>(
+                 constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LinearComplementarityConstraint>(
+            constraint),
+        ProgramAttribute::kLinearComplementarityConstraint,
+        &linear_complementarity_constraints_);
+  } else if (dynamic_cast<LinearEqualityConstraint*>(constraint_evaluator)) {
+    // LinearEqualityConstraint is derived from LinearConstraint. Put this
+    // branch before the LinearConstraint branch.
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LinearEqualityConstraint>(constraint),
+        ProgramAttribute::kLinearEqualityConstraint,
+        &linear_equality_constraints_);
+  } else if (dynamic_cast<BoundingBoxConstraint*>(constraint_evaluator)) {
+    // BoundingBoxConstraint is derived from LinearConstraint. Put this branch
+    // before the LinearConstraint branch.
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<BoundingBoxConstraint>(constraint),
+        ProgramAttribute::kLinearConstraint, &bbox_constraints_);
+  } else if (dynamic_cast<LinearConstraint*>(constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<LinearConstraint>(constraint),
+        ProgramAttribute::kLinearConstraint, &linear_constraints_);
+  } else {
+    // All constraints are derived from Constraint class. Put this branch last.
+    return RemoveCostOrConstraintImpl(constraint,
+                                      ProgramAttribute::kGenericConstraint,
+                                      &generic_constraints_);
+  }
+  DRAKE_UNREACHABLE();
 }
 
 void MathematicalProgram::CheckVariableType(VarType var_type) {
