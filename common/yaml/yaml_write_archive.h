@@ -312,7 +312,7 @@ class YamlWriteArchive final {
         || (full_name == "int")) {
       // TODO(jwnimmer-tri) Add support for well-known YAML primitive types
       // within variants (when placed other than at the 0'th index).
-      throw std::runtime_error(fmt::format(
+      throw std::invalid_argument(fmt::format(
           "Cannot YamlWriteArchive the variant type {} with a non-zero index",
           full_name));
     }
