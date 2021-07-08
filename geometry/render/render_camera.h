@@ -18,8 +18,8 @@ class ClippingRange {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ClippingRange);
 
   /** Constructs the %ClippingRange.
-   @throws std::runtime_error if either value isn't positive, or if
-                              `near >= far`.  */
+   @throws std::exception if either value isn't positive, or if
+                          `near >= far`.  */
   ClippingRange(double near, double far);
 
   double near() const { return near_; }
@@ -133,8 +133,8 @@ class DepthRange {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRange);
 
   /** Constructs the %DepthRange.
-   @throws std::runtime_error if either value isn't positive, or if
-                              `min_in >= max_in`.  */
+   @throws std::exception if either value isn't positive, or if
+                          `min_in >= max_in`.  */
   DepthRange(double min_in, double max_in);
 
   double min_depth() const { return min_depth_; }
@@ -154,8 +154,8 @@ class DepthRenderCamera {
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.
 
-   @throws std::runtime_error if the depth_range is not fully contained within
-                              the clipping range.  */
+   @throws std::exception if the depth_range is not fully contained within
+                          the clipping range.  */
   DepthRenderCamera(RenderCameraCore core, DepthRange depth_range);
 
   /** This camera's core render properties.  */

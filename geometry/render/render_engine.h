@@ -89,8 +89,8 @@ class RenderEngine : public ShapeReifier {
    RenderLabel::kUnspecified or RenderLabel::kDontCare. (See
    @ref render_engine_default_label "this section" for more details.)
 
-   @throws std::logic_error if the default render label is not one of the two
-                            allowed labels.  */
+   @throws std::exception if the default render label is not one of the two
+                          allowed labels.  */
   explicit RenderEngine(
       const RenderLabel& default_label = RenderLabel::kUnspecified)
       : default_render_label_(default_label) {
@@ -126,11 +126,11 @@ class RenderEngine : public ShapeReifier {
                          UpdatePoses().
    @returns True if the %RenderEngine implementation accepted the shape for
             registration.
-   @throws std::runtime_error if the shape is an unsupported type, the
-                              shape's RenderLabel value is
-                              RenderLabel::kUnspecified or RenderLabel::kEmpty,
-                              or a geometry has already been registered with the
-                              given `id`.
+   @throws std::exception if the shape is an unsupported type, the
+                          shape's RenderLabel value is
+                          RenderLabel::kUnspecified or RenderLabel::kEmpty,
+                          or a geometry has already been registered with the
+                          given `id`.
   */
   bool RegisterVisual(
       GeometryId id,
@@ -182,9 +182,9 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The _render engine_ camera properties.
    @param[out] color_image_out  The rendered color image.
-   @throws std::logic_error if `color_image_out` is `nullptr` or the size of the
-                            given input image doesn't match the size declared in
-                            `camera`.  */
+   @throws std::exception if `color_image_out` is `nullptr` or the size of the
+                          given input image doesn't match the size declared in
+                          `camera`.  */
   void RenderColorImage(const ColorRenderCamera& camera,
                         systems::sensors::ImageRgba8U* color_image_out) const {
     ThrowIfInvalid(camera.core().intrinsics(), color_image_out, "color");
@@ -198,9 +198,9 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The _render engine_ camera properties.
    @param[out] depth_image_out  The rendered depth image.
-   @throws std::logic_error if `depth_image_out` is `nullptr` or the size of the
-                            given input image doesn't match the size declared in
-                            `camera`.  */
+   @throws std::exception if `depth_image_out` is `nullptr` or the size of the
+                          given input image doesn't match the size declared in
+                          `camera`.  */
   void RenderDepthImage(
       const DepthRenderCamera& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const {
@@ -216,9 +216,9 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The _render engine_ camera properties.
    @param[out] label_image_out  The rendered label image.
-   @throws std::logic_error if `label_image_out` is `nullptr` or the size of the
-                            given input image doesn't match the size declared in
-                            `camera`.  */
+   @throws std::exception if `label_image_out` is `nullptr` or the size of the
+                          given input image doesn't match the size declared in
+                          `camera`.  */
   void RenderLabelImage(
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const {
@@ -312,7 +312,7 @@ class RenderEngine : public ShapeReifier {
   /** Extracts the `(label, id)` RenderLabel property from the given
    `properties` and validates it (or the configured default if no such
    property is defined).
-   @throws std::logic_error If the tested render label value is deemed invalid.
+   @throws std::exception If the tested render label value is deemed invalid.
    */
   RenderLabel GetRenderLabelOrThrow(
       const PerceptionProperties& properties) const;

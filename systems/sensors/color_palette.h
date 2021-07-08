@@ -91,7 +91,7 @@ class ColorPalette {
   /// @param no_body_id The id to express pixels that have no body. This will be
   ///  used in the label image.
   ///
-  /// @throws std::logic_error When @p num_colors exceeds the maximum limit,
+  /// @throws std::exception When @p num_colors exceeds the maximum limit,
   /// which is 1535.
   ColorPalette(int num_colors, IdType terrain_id, IdType no_body_id)
       : terrain_id_(terrain_id), empty_id_(no_body_id) {

@@ -44,7 +44,7 @@ void ConvertSparseMatrixFormatToCsdpProblemData(
 
 /**
  * Converts to a CSDP problem data if `sdpa_free_format` has no free variables.
- * @throw a runtime error if sdpa_free_format has free variables.
+ * @throws std::exception if sdpa_free_format has free variables.
  */
 void GenerateCsdpProblemDataWithoutFreeVariables(
     const SdpaFreeFormat& sdpa_free_format, csdp::blockmatrix* C, double** b,

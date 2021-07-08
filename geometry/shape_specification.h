@@ -106,7 +106,7 @@ class Sphere final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
   /** Constructs a sphere with the given `radius`.
-   @throws std::logic_error if `radius` is negative. Note that a zero radius is
+   @throws std::exception if `radius` is negative. Note that a zero radius is
    is considered valid. */
   explicit Sphere(double radius);
 
@@ -123,7 +123,7 @@ class Cylinder final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
 
   /** Constructs a cylinder with the given `radius` and `length`.
-   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   @throws std::exception if `radius` or `length` are not strictly positive.
    */
   Cylinder(double radius, double length);
 
@@ -145,7 +145,7 @@ class Box final : public Shape {
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
    respectively.
-   @throws std::logic_error if `width`, `depth` or `height` are not strictly
+   @throws std::exception if `width`, `depth` or `height` are not strictly
    positive. */
   Box(double width, double depth, double height);
 
@@ -181,7 +181,7 @@ class Capsule final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
 
   /** Constructs a capsule with the given `radius` and `length`.
-   @throws std::logic_error if `radius` or `length` are not strictly positive.
+   @throws std::exception if `radius` or `length` are not strictly positive.
    */
   Capsule(double radius, double length);
 
@@ -207,7 +207,7 @@ class Ellipsoid final : public Shape {
 
   /** Constructs an ellipsoid with the given lengths of its principal
    semi-axes.
-   @throws std::logic_error if `a`, `b`, or `c` are not strictly positive.
+   @throws std::exception if `a`, `b`, or `c` are not strictly positive.
    */
   Ellipsoid(double a, double b, double c);
 
@@ -243,8 +243,8 @@ class HalfSpace final : public Shape {
    @param p_FB      A point B lying on the half space's boundary measured
                     and expressed in frame F.
    @retval X_FH     The pose of the canonical half-space in frame F.
-   @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
-                            ‖normal_F‖₂ < ε). */
+   @throws std::exception if the normal is _close_ to a zero-vector (e.g.,
+                          ‖normal_F‖₂ < ε). */
   static math::RigidTransform<double> MakePose(const Vector3<double>& Hz_dir_F,
                                                const Vector3<double>& p_FB);
 };
@@ -261,7 +261,7 @@ class Mesh final : public Shape {
 
   /** Constructs a mesh specification from the mesh file located at the given
    _absolute_ file path. Optionally uniformly scaled by the given scale factor.
-   @throws std::logic_error if |scale| < 1e-8. Note that a negative scale is
+   @throws std::exception if |scale| < 1e-8. Note that a negative scale is
    considered valid. We want to preclude scales near zero but recognise that
    scale is a convenience tool for "tweaking" models. 8 orders of magnitude
    should be plenty without considering revisiting the model itself. */
@@ -289,12 +289,12 @@ class Convex final : public Shape {
                                 We assume that the polyhedron is convex.
    @param scale                 An optional scale to coordinates.
 
-   @throws std::runtime_error   if the .obj file doesn't define a single object.
+   @throws std::exception       if the .obj file doesn't define a single object.
                                 This can happen if it is empty, if there are
                                 multiple object-name statements (e.g.,
                                 "o object_name"), or if there are faces defined
                                 outside a single object-name statement.
-   @throws std::logic_error     if |scale| < 1e-8. Note that a negative scale is
+   @throws std::exception       if |scale| < 1e-8. Note that a negative scale is
                                 considered valid. We want to preclude scales
                                 near zero but recognise that scale is a
                                 convenience tool for "tweaking" models. 8 orders

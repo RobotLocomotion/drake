@@ -41,7 +41,7 @@ class Trajectory {
   * Otherwise, if rows()==1, then evaluates the trajectory at each time @p t,
   * and returns the results as a Matrix with the ith row corresponding to
   * the ith time.
-  * @throws std::runtime_error if both cols and rows are not equal to 1.
+  * @throws std::exception if both cols and rows are not equal to 1.
   */
   MatrixX<T> vector_values(const std::vector<T>& t) const;
 

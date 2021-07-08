@@ -56,7 +56,7 @@ class PolynomialBasisElement {
   /**
    * Constructs a polynomial basis given the variable and the degree of that
    * variable.
-   * @throw std::logic_error if any of the degree is negative.
+   * @throws std::exception if any of the degree is negative.
    * @note we will ignore the variable with degree 0.
    */
   explicit PolynomialBasisElement(
@@ -65,8 +65,8 @@ class PolynomialBasisElement {
   /**
    * Constructs a polynomial basis, such that it contains the variable-to-degree
    * map vars(i)→degrees(i).
-   * @throws invalid_argument if @p vars contains repeated variables.
-   * @throws logic_error if any degree is negative.
+   * @throws std::exception if @p vars contains repeated variables.
+   * @throws std::exception if any degree is negative.
    */
   PolynomialBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
                          const Eigen::Ref<const Eigen::VectorXi>& degrees);
@@ -99,7 +99,7 @@ class PolynomialBasisElement {
 
   /** Evaluates under a given environment @p env.
    *
-   * @throws std::invalid_argument exception if there is a variable in this
+   * @throws std::exception exception if there is a variable in this
    * monomial whose assignment is not provided by @p env.
    */
   [[nodiscard]] double Evaluate(const Environment& env) const;

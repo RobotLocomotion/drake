@@ -127,7 +127,7 @@ class AntiderivativeFunction {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   T Evaluate(const T& u, const IntegrableFunctionContext& values = {}) const {
     typename ScalarInitialValueProblem<T>::ScalarOdeContext scalar_ivp_values(
         values.v, {}, values.k);
@@ -161,7 +161,7 @@ class AntiderivativeFunction {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
-  /// @throws std::logic_error if any of the preconditions is not met.
+  /// @throws std::exception if any of the preconditions is not met.
   std::unique_ptr<ScalarDenseOutput<T>> MakeDenseEvalFunction(
       const T& w, const IntegrableFunctionContext& values = {}) const {
     // Delegates request to the scalar IVP used for computations, by putting

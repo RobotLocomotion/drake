@@ -171,13 +171,13 @@ class RotationalInertia {
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.
-  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
+  /// @throws std::exception for Debug builds if not CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz)
       : RotationalInertia(Ixx, Iyy, Izz, 0.0, 0.0, 0.0) {}
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
-  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
+  /// @throws std::exception for Debug builds if not CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
@@ -192,14 +192,14 @@ class RotationalInertia {
   /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
   /// @retval I_QP_E, Q's rotational inertia about-point P expressed-in frame E.
   /// @remark Negating the position vector p_PQ_E has no affect on the result.
-  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
+  /// @throws std::exception for Debug builds if not CouldBePhysicallyValid().
   RotationalInertia(const T& mass, const Vector3<T>& p_PQ_E)
       : RotationalInertia(mass * p_PQ_E, p_PQ_E) {}
 
   /// Constructs a rotational inertia with equal moments of inertia along its
   /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the rotational inertia of a uniform-density sphere or cube.
-  /// In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
+  /// In debug builds, throws std::exception if I_triaxial is negative/NaN.
   // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
   static RotationalInertia<T> TriaxiallySymmetric(const T& I_triaxial) {
     return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
@@ -326,7 +326,7 @@ class RotationalInertia {
   ///        must have the same about-point P and expressed-in frame E.
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since rotational inertia `I_BP_E` has been subtracted from it.
-  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
+  /// @throws std::exception for Debug builds if not CouldBePhysicallyValid().
   /// @see operator-().
   /// @note This subtract operator is useful for computing rotational inertia
   /// of a body with a hole.  First the rotational inertia of a fully solid
@@ -347,7 +347,7 @@ class RotationalInertia {
   ///        be subtracted from `this` rotational inertia. `I_BP_E` and `this`
   ///        must have the same about-point P and expressed-in frame E.
   /// @return The subtraction of `I_BP_E` from `this` rotational inertia.
-  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
+  /// @throws std::exception for Debug builds if not CouldBePhysicallyValid().
   /// @see operator-=().
   /// @warning See warning and documentation for operator-=().
   RotationalInertia<T> operator-(const RotationalInertia<T>& I_BP_E) const {
@@ -368,7 +368,7 @@ class RotationalInertia {
   }
 
   /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
-  /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
+  /// In debug builds, throws std::exception if `nonnegative_scalar` < 0.
   /// @param nonnegative_scalar Nonnegative scalar which multiplies `this`.
   /// @return `this` rotational inertia multiplied by `nonnegative_scalar`.
   /// @see operator*=(), operator*(const T&, const RotationalInertia<T>&)
@@ -377,7 +377,7 @@ class RotationalInertia {
   }
 
   /// Multiplies a nonnegative scalar (>= 0) by the rotational inertia `I_BP_E`.
-  /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
+  /// In debug builds, throws std::exception if `nonnegative_scalar` < 0.
   /// @param nonnegative_scalar Nonnegative scalar which multiplies `I_BP_E`.
   /// @return `nonnegative_scalar` multiplied by rotational inertia `I_BP_E`.
   /// @see operator*=(), operator*()
@@ -411,7 +411,7 @@ class RotationalInertia {
   }
 
   /// Divides `this` rotational inertia by a positive scalar(> 0).
-  /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
+  /// In debug builds, throws std::exception if `positive_scalar` <= 0.
   /// @param positive_scalar Positive scalar (> 0) which divides `this`.
   /// @return `this` rotational inertia divided by `positive_scalar`.
   /// @see operator/=().
@@ -482,7 +482,7 @@ class RotationalInertia {
   ///
   /// @retval principal_moments The vector of principal moments of inertia
   ///                           `[Ixx Iyy Izz]` sorted in ascending order.
-  /// @throws std::runtime_error if eigenvalue solver fails or if scalar type T
+  /// @throws std::exception if eigenvalue solver fails or if scalar type T
   ///         cannot be converted to a double.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
     // Notes:
@@ -541,7 +541,7 @@ class RotationalInertia {
   ///
   /// @return `true` for a plausible rotational inertia passing the above
   ///          necessary but insufficient checks and `false` otherwise.
-  /// @throws std::runtime_error if principal moments of inertia cannot be
+  /// @throws std::exception if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
@@ -576,7 +576,7 @@ class RotationalInertia {
   /// @param[in] R_AE RotationMatrix relating frames A and E.
   /// @return A reference to `this` rotational inertia about-point P, but
   ///         with `this` now expressed in frame A (instead of frame E).
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
   RotationalInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
@@ -585,7 +585,7 @@ class RotationalInertia {
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
   /// @param[in] R_AE RotationMatrix relating frames A and E.
   /// @retval I_BP_A Rotational inertia of B about-point P expressed-in frame A.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpressInPlace()
   RotationalInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const
@@ -613,7 +613,7 @@ class RotationalInertia {
   ///         but with `this` shifted from about-point Bcm to about-point Q.
   ///         i.e., returns I_BQ_E,  B's rotational inertia about-point Bcm
   ///         expressed-in frame E.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
   RotationalInertia<T>& ShiftFromCenterOfMassInPlace(
@@ -630,7 +630,7 @@ class RotationalInertia {
   /// @param mass The mass of body (or composite body) B.
   /// @param p_BcmQ_E Position vector from Bcm to Q, expressed-in frame E.
   /// @retval I_BQ_E B's rotational inertia about-point Q expressed-in frame E.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
   RotationalInertia<T> ShiftFromCenterOfMass(const T& mass,
@@ -649,7 +649,7 @@ class RotationalInertia {
   ///         but with `this` shifted from about-point Q to about-point `Bcm`,
   ///         i.e., returns `I_BBcm_E`, B's rotational inertia about-point `Bcm`
   ///         expressed-in frame E.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
@@ -667,7 +667,7 @@ class RotationalInertia {
   /// @param p_QBcm_E Position vector from Q to `Bcm`, expressed-in frame E.
   /// @retval I_BBcm_E B's rotational inertia about-point `Bcm` expressed-in
   /// frame E.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
@@ -687,7 +687,7 @@ class RotationalInertia {
   ///         but with `this` shifted from about-point P to about-point Q,
   ///         i.e., returns I_BQ_E, B's rotational inertia about-point Q
   ///         expressed-in frame E.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
@@ -711,7 +711,7 @@ class RotationalInertia {
   /// @param p_PBcm_E Position vector from P to Bcm, expressed-in frame E.
   /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.
   /// @retval I_BQ_E, B's rotational inertia about-point Q expressed-in frame E.
-  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
@@ -763,7 +763,7 @@ class RotationalInertia {
   // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
   // expressed-in frame.  Particle Q's mass (or unit mass) is included in the
   // first argument.  This constructor is private as it is a "helper" function.
-  // In debug builds, throws std::logic_error if rotational inertia that is
+  // In debug builds, throws std::exception if rotational inertia that is
   // constructed from these arguments violates CouldBePhysicallyValid().
   // @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
   // @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
@@ -823,7 +823,7 @@ class RotationalInertia {
   // shifting the rotational inertia for a unit-mass body (or composite body) B
   // from about-point P to about-point Q via Bcm (B's center of mass).  In
   // other words, shifts `I_BP_E` to `I_BQ_E` (both are expressed-in frame E).
-  // In debug builds, throws std::logic_error if rotational inertia that is
+  // In debug builds, throws std::exception if rotational inertia that is
   // shifted to about-point Bcm or Q violates CouldBePhysicallyValid().
   // @param p_PBcm_E Position vector from P to Bcm, expressed-in frame E.
   // @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.

@@ -104,7 +104,7 @@ class FBstabDense {
   };
   /**
    * Allocates needed workspace given the dimensions of the QPs to
-   * be solved. Throws a runtime_error if any inputs are non-positive.
+   * be solved. Throws an exception if any inputs are non-positive.
    *
    * @param[in] num_variables
    * @param[in] num_constraints

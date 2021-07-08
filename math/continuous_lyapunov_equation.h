@@ -20,13 +20,13 @@ namespace math {
  * Computes a unique solution X to the continuous Lyapunov equation: `AᵀX + XA +
  * Q = 0`, where A is real and square, and Q is real, symmetric and of equal
  * size as A.
- * @throws std::runtime_error if A or Q are not square matrices or do not
+ * @throws std::exception if A or Q are not square matrices or do not
  * have the same size.
  *
  * Limitations: Given the Eigenvalues of A as λ₁, ..., λₙ, there exists
  * a unique solution if and only if λᵢ + λ̅ⱼ ≠ 0 ∀ i,j, where λ̅ⱼ is
  * the complex conjugate of λⱼ.
- * @throws std::runtime_error if the solution is not unique.
+ * @throws std::exception if the solution is not unique.
  *
  * There are no further limitations on the eigenvalues of A.
  * Further, if all λᵢ have negative real parts, and if Q is positive
@@ -38,7 +38,7 @@ namespace math {
  * The implementation is based on SLICOT routine SB03MD [2]. Note the
  * transformation Q = -C. The complexity of this routine is O(n³).
  * If A is larger than 2-by-2, then a Schur factorization is performed.
- * @throw std::runtime_error if Schur factorization failed.
+ * @throws std::exception if Schur factorization failed.
  *
  * A tolerance of ε is used to check if a double variable is equal to zero,
  * where the default value for ε is 1e-10. It has been used to check (1) if λᵢ +

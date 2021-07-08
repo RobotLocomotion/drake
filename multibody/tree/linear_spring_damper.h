@@ -128,7 +128,7 @@ class LinearSpringDamper final : public ForceElement<T> {
   // effect of δ is negligible for non-zero x.
   // This spring model does not allow the length of the spring to approach zero
   // since that would incur in a non-physical situation. Therefore this "safe"
-  // norm will throw a std::runtime_error when ‖x‖ < δ.
+  // norm will throw a std::exception when ‖x‖ < δ.
   T SafeSoftNorm(const Vector3<T> &x) const;
 
   // Helper method to compute the rate of change of the separation length

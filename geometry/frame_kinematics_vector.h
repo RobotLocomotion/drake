@@ -120,7 +120,7 @@ class FrameKinematicsVector {
   }
 
   /** Returns the value associated with the given `id`.
-   @throws std::runtime_error if `id` is not in the specified set of ids.  */
+   @throws std::exception if `id` is not in the specified set of ids.  */
   const KinematicsValue& value(FrameId id) const;
 
   /** Reports true if the given id is a member of this data. */

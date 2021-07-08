@@ -18,14 +18,14 @@ namespace solvers {
  * y.
  * @param x The bilinear product between `x` and `y` will be replaced by the
  * corresponding term in `W`.
- * @throws std::runtime_error if `x` contains duplicate entries.
+ * @throws std::exception if `x` contains duplicate entries.
  * @param y The bilinear product between `x` and `y` will be replaced by the
  * corresponding term in `W.
- * @throws std::runtime_error if `y` contains duplicate entries.
+ * @throws std::exception if `y` contains duplicate entries.
  * @param W Bilinear product term x(i) * y(j) will be replaced by W(i, j). If
  * W(i,j) is not a single variable, but an expression, then this expression
  * cannot contain a variable in either x or y.
- * @throws std::runtime_error, if W(i, j) is not a single variable, and also
+ * @throws std::exception, if W(i, j) is not a single variable, and also
  * contains a variable in x or y.
  * @return The symbolic expression after replacing x(i) * y(j) with W(i, j).
  */

@@ -194,7 +194,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `const std::vector<MatrixX<T>>&`) or a column vector (versions
    * taking `const Eigen::Ref<const MatrixX<T>>&`).
    *
-   * These methods will throw `std::runtime_error` if:
+   * These methods will throw `std::exception` if:
    *  - the breaks and samples have different length,
    *  - the breaks are not strictly increasing,
    *  - the samples have inconsistent dimensions (i.e., the matrices do not all
@@ -209,7 +209,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * points, although in this case, the second sample point's value is ignored,
    * and only its break time is used.
    *
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -223,7 +223,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * sample point.
    *
    * @pre `samples.cols() == breaks.size()`
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
   static PiecewisePolynomial<T> ZeroOrderHold(
@@ -233,7 +233,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /**
    * Constructs a piecewise linear %PiecewisePolynomial using matrix samples.
    *
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -247,7 +247,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * a sample point.
    *
    * @pre `samples.cols() == breaks.size()`
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
   static PiecewisePolynomial<T> FirstOrderHold(
@@ -286,13 +286,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * computing a cubic polynomial whose values are given by `samples`, and
    * derivatives set to zero.
    *
-   * @throws std::runtime_error if:
+   * @throws std::exception if:
    *  - `breaks` has length smaller than 3 and `zero_end_point_derivatives` is
    *    `false`,
    *  - `breaks` has length smaller than 2 and `zero_end_point_derivatives` is
    *    true.
    *
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -307,7 +307,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * MatrixX<T> arguments. Each column of `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
   static PiecewisePolynomial<T> CubicShapePreserving(
@@ -322,9 +322,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `sample_dot_at_start` and `sample_dot_at_end` are used for the first and
    * last first derivatives.
    *
-   * @throws std::runtime_error if `sample_dot_at_start` or `sample_dot_at_end`
+   * @throws std::exception if `sample_dot_at_start` or `sample_dot_at_end`
    * and `samples` have inconsistent dimensions.
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -340,7 +340,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
-   * @throws std::runtime_error under the conditions specified under
+   * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
@@ -547,13 +547,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Returns the row count of the output matrices.
-   * @throws std::runtime_error if empty().
+   * @throws std::exception if empty().
    */
   Eigen::Index rows() const override;
 
   /**
    * Returns the column count of the output matrices.
-   * @throws std::runtime_error if empty().
+   * @throws std::exception if empty().
    */
   Eigen::Index cols() const override;
 
@@ -580,7 +580,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponding Polynomial in the PolynomialMatrix of `this`, storing the
    * result in `this`. If `this` corresponds to t² and `other` corresponds to
    * t³, `this += other` will correspond to t³ + t².
-   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
@@ -591,7 +591,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponding Polynomial in the PolynomialMatrix of `this`, storing the
    * result in `this`. If `this` corresponds to t² and `other` corresponds to
    * t³, `this -= other` will correspond to t² - t³.
-   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
@@ -603,7 +603,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * coefficient-wise multiplication), storing the result in `this`. If `this`
    * corresponds to t² and `other` corresponds to t³, `this *= other` will
    * correspond to t⁵.
-   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
@@ -618,7 +618,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponding Polynomial in the PolynomialMatrix of `this`.
    * If `this` corresponds to t² and `other` corresponds to
    * t³, `this + other` will correspond to t³ + t².
-   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
@@ -629,7 +629,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponding Polynomial in the PolynomialMatrix of `this`.
    * If `this` corresponds to t² and `other` corresponds to
    * t³, `this - other` will correspond to t² - t³.
-   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times().
    */
@@ -646,7 +646,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
    * coefficient-wise multiplication). If `this` corresponds to t² and `other`
    * corresponds to t³, `this *= other` will correspond to t⁵.
-   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * @throws std::exception if every element of `other.get_segment_times()`
    * is not within PiecewiseTrajectory::kEpsilonTime from
    * `this->get_segment_times()1.
    */
@@ -677,13 +677,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *          the last Polynomial of `this`. See warning about evaluating
    *          discontinuous derivatives at breaks in derivative().
    * @param other %PiecewisePolynomial instance to concatenate.
-   * @throws std::runtime_error if trajectories' dimensions do not match
-   *                            each other (either rows() or cols() does
-   *                            not match between this and `other`).
-   * @throws std::runtime_error if `this->end_time()` and `other->start_time()`
-   *                            are not within
-   *                            PiecewiseTrajectory<T>::kEpsilonTime from
-   *                            each other.
+   * @throws std::exception if trajectories' dimensions do not match
+   *                        each other (either rows() or cols() does
+   *                        not match between this and `other`).
+   * @throws std::exception if `this->end_time()` and `other->start_time()`
+   *                        are not within
+   *                        PiecewiseTrajectory<T>::kEpsilonTime from
+   *                        each other.
    */
   void ConcatenateInTime(const PiecewisePolynomial& other);
 
@@ -789,7 +789,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   // Computes coeffecients for a cubic spline given the value and first
   // derivatives at the end points.
-  // Throws `std::runtime_error` if `dt < PiecewiseTrajectory::kEpsilonTime`.
+  // Throws `std::exception` if `dt < PiecewiseTrajectory::kEpsilonTime`.
   static Eigen::Matrix<T, 4, 1> ComputeCubicSplineCoeffs(const T& dt, T y0,
                                                          T y1, T yd0, T yd1);
 
@@ -833,7 +833,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<MatrixX<T>>& samples, int row, int col,
       std::vector<Eigen::Triplet<T>>* triplet_list, VectorX<T>* b);
 
-  // Throws std::runtime_error if
+  // Throws std::exception if
   // `breaks` and `samples` have different length,
   // `breaks` is not strictly increasing,
   // `samples` has inconsistent dimensions,

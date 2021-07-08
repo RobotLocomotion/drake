@@ -84,13 +84,13 @@ class Fields {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Fields)
 
-  /// @throws std::runtime_error if `base_fields` is not composed of valid
+  /// @throws std::exception if `base_fields` is not composed of valid
   /// `BaseField`s.
   Fields(BaseFieldT base_fields, DescriptorType descriptor_type)
       : base_fields_(base_fields),
         descriptor_type_(descriptor_type) {}
 
-  /// @throws std::runtime_error if `base_fields` is not composed of valid
+  /// @throws std::exception if `base_fields` is not composed of valid
   /// `BaseField`s.
   Fields(BaseFieldT base_fields)  // NOLINT(runtime/explicit)
       : base_fields_(base_fields) {
@@ -119,7 +119,7 @@ class Fields {
   }
 
   /// Provides in-place union.
-  /// @throws std::runtime_error if multiple non-None `DescriptorType`s are
+  /// @throws std::exception if multiple non-None `DescriptorType`s are
   /// specified.
   Fields& operator|=(const Fields& rhs) {
     base_fields_ = base_fields_ | rhs.base_fields_;

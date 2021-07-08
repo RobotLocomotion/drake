@@ -93,7 +93,7 @@ struct wrapper_pydrake_object {
 py::object GetParamAliases();
 
 // Gets Python type object given `std::type_info`.
-// @throws std::runtime_error if type is neither aliased nor registered in
+// @throws std::exception if type is neither aliased nor registered in
 // `pybind11`.
 py::object GetPyParamScalarImpl(const std::type_info& tinfo);
 
@@ -130,7 +130,7 @@ inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
 
 /// Gets the canonical Python parameters for each C++ type.
 /// @returns Python tuple of canonical parameters.
-/// @throws std::runtime_error on the first type it encounters that is neither
+/// @throws std::exception on the first type it encounters that is neither
 /// aliased nor registered in `pybind11`.
 /// @tparam Ts The types to get C++ types for.
 /// @pre Ts must be public symbols.

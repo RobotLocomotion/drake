@@ -31,7 +31,7 @@ namespace estimators {
 /// @returns The steady-state observer gain matrix of size num_states x
 /// num_outputs.
 ///
-/// @throws std::runtime_error if V is not positive definite.
+/// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
 ///
 Eigen::MatrixXd SteadyStateKalmanFilter(
@@ -51,7 +51,7 @@ Eigen::MatrixXd SteadyStateKalmanFilter(
 /// @param V The measurement noise covariance matrix, E[vv'], of size num_.
 /// @returns A unique_ptr to the constructed observer system.
 ///
-/// @throws std::runtime_error if V is not positive definite.
+/// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<LinearSystem<double>> system,
@@ -83,7 +83,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
 /// @param V The measurement noise covariance matrix, E[vv'], of size num_.
 /// @returns A unique_ptr to the constructed observer system.
 ///
-/// @throws std::runtime_error if V is not positive definite.
+/// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<System<double>> system,

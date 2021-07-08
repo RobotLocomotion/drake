@@ -216,7 +216,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // the knowledge of the inboard and outboard frames it connects.
   // Subclasses of %Mobilizer are therefore required to provide this
   // information in their respective constructors.
-  // @throws std::runtime_error if `inboard_frame` and `outboard_frame`
+  // @throws std::exception if `inboard_frame` and `outboard_frame`
   // reference the same frame object.
   Mobilizer(const Frame<T>& inboard_frame,
             const Frame<T>& outboard_frame) :

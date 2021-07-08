@@ -359,7 +359,7 @@ class SystemBase : public internal::SystemMessageInterface {
     is truly independent of the Context (rare!) say so explicitly by providing
     the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
   @returns a reference to the newly-created %CacheEntry.
-  @throws std::logic_error if given an explicitly empty prerequisite list. */
+  @throws std::exception if given an explicitly empty prerequisite list. */
   CacheEntry& DeclareCacheEntry(
       std::string description, ValueProducer value_producer,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -866,7 +866,7 @@ class SystemBase : public internal::SystemMessageInterface {
   System. Insists that the port already contains a reference to this System, and
   that the port's index is already set to the next available output port index
   for this System, and that the name of the port is unique.
-  @throws std::logic_error if the name of the output port is not unique. */
+  @throws std::exception if the name of the output port is not unique. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
@@ -1019,7 +1019,7 @@ class SystemBase : public internal::SystemMessageInterface {
                                              const ContextBase& context,
                                              InputPortIndex port_index) const;
 
-  /** Throws std::out_of_range to report a negative `port_index` that was
+  /** Throws std::exception to report a negative `port_index` that was
   passed to API method `func`. Caller must ensure that the function name
   makes it clear what kind of port we're complaining about. */
   // We're taking an int here for the index; InputPortIndex and OutputPortIndex
@@ -1027,23 +1027,23 @@ class SystemBase : public internal::SystemMessageInterface {
   [[noreturn]] void ThrowNegativePortIndex(const char* func,
                                            int port_index) const;
 
-  /** Throws std::out_of_range to report bad input `port_index` that was passed
+  /** Throws std::exception to report bad input `port_index` that was passed
   to API method `func`. */
   [[noreturn]] void ThrowInputPortIndexOutOfRange(
       const char* func, InputPortIndex port_index) const;
 
-  /** Throws std::out_of_range to report bad output `port_index` that was passed
+  /** Throws std::exception to report bad output `port_index` that was passed
   to API method `func`. */
   [[noreturn]] void ThrowOutputPortIndexOutOfRange(
       const char* func, OutputPortIndex port_index) const;
 
-  /** Throws std::logic_error because someone misused API method `func`, that is
+  /** Throws std::exception because someone misused API method `func`, that is
   only allowed for declared-vector input ports, on an abstract port whose
   index is given here. */
   [[noreturn]] void ThrowNotAVectorInputPort(const char* func,
                                              InputPortIndex port_index) const;
 
-  /** Throws std::logic_error because someone called API method `func` claiming
+  /** Throws std::exception because someone called API method `func` claiming
   the input port had some value type that was wrong. */
   [[noreturn]] void ThrowInputPortHasWrongType(
       const char* func, InputPortIndex port_index,
@@ -1051,21 +1051,21 @@ class SystemBase : public internal::SystemMessageInterface {
 
   // This method is static for use from outside the System hierarchy but where
   // the problematic System is clear.
-  /** Throws std::logic_error because someone called API method `func` claiming
+  /** Throws std::exception because someone called API method `func` claiming
   the input port had some value type that was wrong. */
   [[noreturn]] static void ThrowInputPortHasWrongType(
       const char* func, const std::string& system_pathname, InputPortIndex,
       const std::string& port_name, const std::string& expected_type,
       const std::string& actual_type);
 
-  /** Throws std::logic_error because someone called API method `func`, that
+  /** Throws std::exception because someone called API method `func`, that
   requires this input port to be evaluatable, but the port was neither
   fixed nor connected. */
   [[noreturn]] void ThrowCantEvaluateInputPort(const char* func,
                                                InputPortIndex port_index) const;
 
   /** (Internal use only) Returns the InputPortBase at index `port_index`,
-  throwing std::out_of_range we don't like the port index. The name of the
+  throwing std::exception we don't like the port index. The name of the
   public API method that received the bad index is provided in `func` and is
   included in the error message. */
   const InputPortBase& GetInputPortBaseOrThrow(const char* func,
@@ -1079,7 +1079,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** (Internal use only) Returns the OutputPortBase at index `port_index`,
-  throwing std::out_of_range if we don't like the port index. The name of the
+  throwing std::exception if we don't like the port index. The name of the
   public API method that received the bad index is provided in `func` and is
   included in the error message. */
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
