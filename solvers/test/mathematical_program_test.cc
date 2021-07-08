@@ -3347,6 +3347,107 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+GTEST_TEST(TestMathematicalProgram, RemoveLinearConstraint) {
+  // ProgramAttribute::kLinearConstraint depends on both
+  // prog.linear_constraints() and prog.bounding_box_constraints().
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto lin_con1 = prog.AddLinearConstraint(x[0] + x[1] <= 1);
+  auto lin_con2 = prog.AddLinearConstraint(x[0] + 2 * x[1] <= 1);
+  EXPECT_EQ(prog.RemoveConstraint(lin_con1), 1);
+  EXPECT_EQ(prog.linear_constraints().size(), 1u);
+  EXPECT_GT(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+  // Now the program contains 2 lin_con2
+  prog.AddConstraint(lin_con2);
+  EXPECT_EQ(prog.RemoveConstraint(lin_con1), 0);
+  EXPECT_EQ(prog.RemoveConstraint(lin_con2), 2);
+  EXPECT_EQ(prog.linear_constraints().size(), 0u);
+  EXPECT_EQ(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+
+  auto bbcon = prog.AddBoundingBoxConstraint(1, 2, x);
+  EXPECT_GT(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+  EXPECT_EQ(prog.RemoveConstraint(bbcon), 1);
+  EXPECT_EQ(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveConstraintPSD) {
+  // ProgramAttribute::kPositiveSemidefiniteConstraint depends on both
+  // prog.positive_semidefinite_constraints() and
+  // prog.linear_matrix_inequality_constraints().
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  auto x = prog.NewContinuousVariables<2>();
+  auto lmi_con = prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Ones(),
+       2 * Eigen::Matrix3d::Ones()},
+      x);
+  EXPECT_EQ(prog.RemoveConstraint(psd_con), 1);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 0u);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kPositiveSemidefiniteConstraint),
+            0);
+  EXPECT_EQ(prog.RemoveConstraint(lmi_con), 1);
+  EXPECT_EQ(prog.linear_matrix_inequality_constraints().size(), 0u);
+  EXPECT_EQ(prog.required_capabilities().count(
+                ProgramAttribute::kPositiveSemidefiniteConstraint),
+            0);
+}
+
+// Remove a constraint from @p prog. Before removing the constraint, @p
+// prog_constraints has only one entry.
+template <typename C>
+void TestRemoveConstraint(MathematicalProgram* prog,
+                          const Binding<C>& constraint,
+                          const std::vector<Binding<C>>* prog_constraints,
+                          ProgramAttribute removed_capability) {
+  ASSERT_EQ(prog_constraints->size(), 1);
+  ASSERT_GT(prog->required_capabilities().count(removed_capability), 0);
+  EXPECT_EQ(prog->RemoveConstraint(constraint), 1);
+  EXPECT_EQ(prog_constraints->size(), 0u);
+  EXPECT_EQ(prog->required_capabilities().count(removed_capability), 0);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto lin_eq_con = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1);
+  auto lorentz_con =
+      prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  auto rotated_lorentz_con =
+      prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
+  Eigen::SparseMatrix<double> A(3, 3);
+  A.setIdentity();
+  auto exponential_con =
+      prog.AddExponentialConeConstraint(A, Eigen::Vector3d(1, 2, 3), x);
+  auto generic_con = prog.AddConstraint(x(0) * x(0) * x(1) == 1);
+  TestRemoveConstraint(&prog, lin_eq_con, &(prog.linear_equality_constraints()),
+                       ProgramAttribute::kLinearEqualityConstraint);
+  TestRemoveConstraint(&prog, lorentz_con, &(prog.lorentz_cone_constraints()),
+                       ProgramAttribute::kLorentzConeConstraint);
+  TestRemoveConstraint(&prog, rotated_lorentz_con,
+                       &(prog.rotated_lorentz_cone_constraints()),
+                       ProgramAttribute::kRotatedLorentzConeConstraint);
+  TestRemoveConstraint(&prog, exponential_con,
+                       &(prog.exponential_cone_constraints()),
+                       ProgramAttribute::kExponentialConeConstraint);
+  TestRemoveConstraint(&prog, generic_con, &(prog.generic_constraints()),
+                       ProgramAttribute::kGenericConstraint);
+
+  auto lcp_con = prog.AddLinearComplementarityConstraint(
+      Eigen::Matrix3d::Identity(), Eigen::Vector3d::Ones(), x);
+  TestRemoveConstraint(&prog, lcp_con,
+                       &(prog.linear_complementarity_constraints()),
+                       ProgramAttribute::kLinearComplementarityConstraint);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
