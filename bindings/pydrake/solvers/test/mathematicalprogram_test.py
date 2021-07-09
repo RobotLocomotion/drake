@@ -450,6 +450,26 @@ class TestMathematicalProgram(unittest.TestCase):
         np.testing.assert_allclose(
             prog.GetBindingVariableValues(binding2, x_val), np.array([1, 2]))
 
+    def test_prog_check_satisfied(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        binding1 = prog.AddBoundingBoxConstraint(-1, 1, x[0])
+        binding2 = prog.AddLinearConstraint(x[1]+x[2] <= 2.0)
+        x_val = np.array([-2, .1, .3])
+        self.assertTrue(
+            prog.CheckSatisfied(binding=binding2, prog_var_vals=x_val,
+                                tol=0.0))
+        self.assertFalse(
+            prog.CheckSatisfied(bindings=[binding1, binding2],
+                                prog_var_vals=x_val,
+                                tol=0.0))
+        prog.SetInitialGuessForAllVariables(x_val)
+        self.assertTrue(
+            prog.CheckSatisfiedAtInitialGuess(binding=binding2, tol=0.0))
+        self.assertFalse(
+            prog.CheckSatisfiedAtInitialGuess(
+                bindings=[binding1, binding2], tol=0.0))
+
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 2, "x")
