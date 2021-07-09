@@ -314,7 +314,6 @@ drake_cc_library(
         ":fem_indexes",
         ":fem_model_base",
         ":fem_state",
-        ":state_updater",
         "//common:essential",
         "//common:unused",
     ],
@@ -331,6 +330,7 @@ drake_cc_library(
     deps = [
         ":dirichlet_boundary_condition",
         ":fem_state_base",
+        ":state_updater",
         "//common:default_scalars",
         "//common:essential",
     ],

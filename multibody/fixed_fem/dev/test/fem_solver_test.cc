@@ -14,7 +14,6 @@
 #include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_model.h"
 #include "drake/multibody/fixed_fem/dev/test/dummy_element.h"
-#include "drake/multibody/fixed_fem/dev/zeroth_order_state_updater.h"
 
 namespace drake {
 namespace multibody {
@@ -140,7 +139,6 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
   const T initial_error = nodal_force.norm();
   model_.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
-  const ZerothOrderStateUpdater<State> state_updater;
   solver_.SolveStaticModelWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
