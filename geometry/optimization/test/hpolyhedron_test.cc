@@ -318,6 +318,35 @@ GTEST_TEST(HPolyhedronTest, IsBounded4) {
   EXPECT_FALSE(H.IsBounded());
 }
 
+GTEST_TEST(HPolyhedronTest, CartesianPowerTest) {
+  MatrixXd A_1{2, 3};
+  MatrixXd A_2{4, 6};
+  MatrixXd A_3{6, 9};
+  VectorXd b_1{2};
+  VectorXd b_2{4};
+  VectorXd b_3{6};
+  MatrixXd zero = MatrixXd::Zero(2, 3);
+  // clang-format off
+  A_1 << 1, 2, 3,
+         4, 5, 6;
+  b_1 << 1, 2;
+  A_2 <<  A_1, zero,
+         zero,  A_1;
+  b_2 << b_1, b_1;
+  A_3 <<  A_1, zero, zero,
+         zero,  A_1, zero,
+         zero, zero,  A_1;
+  b_3 << b_1, b_1, b_1;
+  // clang-format on
+  HPolyhedron H_1(A_1, b_1);
+  HPolyhedron H_2 = H_1.CartesianPower(2);
+  HPolyhedron H_3 = H_1.CartesianPower(3);
+  EXPECT_TRUE(CompareMatrices(H_2.A(), A_2));
+  EXPECT_TRUE(CompareMatrices(H_2.b(), b_2));
+  EXPECT_TRUE(CompareMatrices(H_3.A(), A_3));
+  EXPECT_TRUE(CompareMatrices(H_3.b(), b_3));
+}
+
 
 }  // namespace optimization
 }  // namespace geometry

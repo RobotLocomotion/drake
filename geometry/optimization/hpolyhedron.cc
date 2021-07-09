@@ -117,6 +117,15 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
   return result.GetSolution(x);
 }
 
+HPolyhedron HPolyhedron::CartesianPower(int n) const {
+  MatrixXd A_power = MatrixXd::Zero(n * A_.rows(), n * A_.cols());
+  for (int i{0}; i < n; ++i) {
+    A_power.block(i * A_.rows(), i * A_.cols(), A_.rows(), A_.cols()) = A_;
+  }
+  VectorXd b_power = b_.replicate(n, 1);
+  return {A_power, b_power};
+}
+
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
                                  const Eigen::Ref<const VectorXd>& ub) {
   DRAKE_DEMAND(lb.size() == ub.size());
