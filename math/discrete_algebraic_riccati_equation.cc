@@ -453,5 +453,21 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   return X;
 }
 
+Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const Eigen::Ref<const Eigen::MatrixXd>& N) {
+    DRAKE_DEMAND(N.rows() == B.rows() && N.cols() == B.cols());
+
+    // This is a change of variables to make the DARE that includes Q, R, and N
+    // cost matrices fit the form of the DARE that includes only Q and R cost
+    // matrices.
+    Eigen::MatrixXd A2 = A - B * R.llt().solve(N.transpose());
+    Eigen::MatrixXd Q2 = Q - N * R.llt().solve(N.transpose());
+    return DiscreteAlgebraicRiccatiEquation(A2, B, Q2, R);
+}
+
 }  // namespace math
 }  // namespace drake
