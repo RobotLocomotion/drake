@@ -126,6 +126,10 @@ wrote this beginner's tutorial: [https://drake.guzhaoyuan.com](https://drake.guz
 
 
 ## Shoe simulation
+
+A great simulation of a robot tying shoe laces. Implemented using pydrake with
+the laces represented in a piecewise linear approximation of string.
+
 {% include video.html
   url = "https://www.youtube.com/embed/ImKYMKyVdZc"
   full_width = true
