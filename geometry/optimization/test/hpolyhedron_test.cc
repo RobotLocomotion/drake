@@ -205,6 +205,34 @@ GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
   EXPECT_NEAR(polytope_halfspace_residue.minCoeff(), 0, kTol);
 }
 
+GTEST_TEST(HPolyhedronTest, ChebyshevCenter) {
+  HPolyhedron box = HPolyhedron::MakeUnitBox(6);
+  EXPECT_TRUE(CompareMatrices(box.ChebyshevCenter(), Vector6d::Zero(), 1e-6));
+}
+
+// A rotated long thin rectangle in 2 dimensions.
+GTEST_TEST(HPolyhedronTest, ChebyshevCenter2) {
+  Matrix<double, 4, 2> A;
+  Vector4d b;
+  // clang-format off
+  A << -2, -1,  // 2x + y ≥ 4
+        2,  1,  // 2x + y ≤ 6
+       -1,  2,  // x - 2y ≥ 2
+        1, -2;  // x - 2y ≤ 8
+  b << -4, 6, -2, 8;
+  // clang-format on
+  HPolyhedron H(A, b);
+  const VectorXd center = H.ChebyshevCenter();
+  EXPECT_TRUE(H.PointInSet(center));
+  // For the rectangle, the center should have distance = 1.0 from the first
+  // two half-planes, and ≥ 1.0 for the other two.
+  const VectorXd distance = b - A*center;
+  EXPECT_NEAR(distance[0], 1.0, 1e-6);
+  EXPECT_NEAR(distance[1], 1.0, 1e-6);
+  EXPECT_GE(distance[2], 1.0 - 1e-6);
+  EXPECT_GE(distance[3], 1.0 - 1e-6);
+}
+
 GTEST_TEST(HPolyhedronTest, CloneTest) {
   HPolyhedron H = HPolyhedron::MakeBox(Vector3d{-3, -4, -5}, Vector3d{6, 7, 8});
   std::unique_ptr<ConvexSet> clone = H.Clone();
