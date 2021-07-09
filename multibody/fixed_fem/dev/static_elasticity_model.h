@@ -27,7 +27,7 @@ class StaticElasticityModel : public ElasticityModel<Element> {
 
   StaticElasticityModel()
       : ElasticityModel<Element>(
-            std::make_unique<ZerothOrderStateUpdater<FemState<Element>>>()) {}
+            std::make_unique<internal::ZerothOrderStateUpdater<T>>()) {}
 
   ~StaticElasticityModel() = default;
 

@@ -119,7 +119,7 @@ class ElasticityModel : public FemModel<Element> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ElasticityModel);
 
   explicit ElasticityModel(
-      std::unique_ptr<StateUpdater<FemState<Element>>> state_updater)
+      std::unique_ptr<internal::StateUpdater<T>> state_updater)
       : FemModel<Element>(std::move(state_updater)) {}
 
   virtual ~ElasticityModel() = default;

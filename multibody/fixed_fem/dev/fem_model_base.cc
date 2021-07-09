@@ -41,25 +41,32 @@ void FemModelBase<T>::SetTangentMatrixSparsityPattern(
 }
 
 template <typename T>
+const VectorX<T>& FemModelBase<T>::GetUnknowns(
+    const FemStateBase<T>& state) const {
+  ThrowIfModelStateIncompatible(__func__, state);
+  return state_updater_->GetUnknowns(state);
+}
+
+template <typename T>
 void FemModelBase<T>::UpdateStateFromChangeInUnknowns(
     const VectorX<T>& dz, FemStateBase<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(dz.size() == state->num_generalized_positions());
   ThrowIfModelStateIncompatible(__func__, *state);
-  DoUpdateStateFromChangeInUnknowns(dz, state);
+  state_updater_->UpdateStateFromChangeInUnknowns(dz, state);
 }
 
 template <typename T>
 void FemModelBase<T>::AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
-                                         const VectorX<T>& highest_order_state,
+                                         const VectorX<T>& unknown_variable,
                                          FemStateBase<T>* next_state) const {
   DRAKE_DEMAND(next_state != nullptr);
-  DRAKE_DEMAND(highest_order_state.size() ==
+  DRAKE_DEMAND(unknown_variable.size() ==
                next_state->num_generalized_positions());
   DRAKE_THROW_UNLESS(ode_order() > 0);
   ThrowIfModelStateIncompatible(__func__, prev_state);
   ThrowIfModelStateIncompatible(__func__, *next_state);
-  DoAdvanceOneTimeStep(prev_state, highest_order_state, next_state);
+  state_updater_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
 }
 
 template <typename T>
