@@ -930,6 +930,8 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(
             h_box.MaximumVolumeInscribedEllipsoid(),
             mut.optimization.Hyperellipsoid)
+        np.testing.assert_array_almost_equal(
+            h_box.ChebyshevCenter(), [0, 0, 0])
 
         # Test Hyperellipsoid.
         ellipsoid = mut.optimization.Hyperellipsoid(A=A, center=b)

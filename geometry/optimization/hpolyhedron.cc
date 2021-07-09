@@ -16,6 +16,7 @@ namespace geometry {
 namespace optimization {
 
 using Eigen::MatrixXd;
+using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 using math::RigidTransformd;
 using solvers::Binding;
@@ -79,10 +80,41 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
     throw std::runtime_error(fmt::format(
         "Solver {} failed to solve the maximum inscribed ellipse problem; it "
         "terminated with SolutionResult {}). Make sure that your polyhedron is "
-        "bounded.",
+        "bounded and has an interior.",
         result.get_solver_id().name(), result.get_solution_result()));
   }
   return Hyperellipsoid(result.GetSolution(C).inverse(), result.GetSolution(d));
+}
+
+VectorXd HPolyhedron::ChebyshevCenter() const {
+  MathematicalProgram prog;
+  VectorXDecisionVariable x = prog.NewContinuousVariables(ambient_dimension());
+  VectorXDecisionVariable r = prog.NewContinuousVariables<1>("r");
+
+  const double inf = std::numeric_limits<double>::infinity();
+  // max r
+  prog.AddLinearCost(Vector1d(-1.0), 0, r);
+
+  // r ≥ 0.
+  prog.AddBoundingBoxConstraint(0, inf, r);
+
+  // aᵢᵀ x + |aᵢ| r ≤ bᵢ.
+  RowVectorXd a(A_.cols() + 1);
+  for (int i = 0; i < A_.rows(); i++) {
+    a[0] = A_.row(i).norm();
+    a.tail(A_.cols()) = A_.row(i);
+    prog.AddLinearConstraint(a, -inf, b_[i], {r, x});
+  }
+
+  auto result = solvers::Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(fmt::format(
+        "Solver {} failed to solve the Chebyshev center problem; it terminated "
+        "with SolutionResult {}). Make sure that your polyhedron is bounded "
+        "and has an interior.",
+        result.get_solver_id().name(), result.get_solution_result()));
+  }
+  return result.GetSolution(x);
 }
 
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
