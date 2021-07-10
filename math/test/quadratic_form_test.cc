@@ -169,13 +169,18 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test2) {
 }
 
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test3) {
-  // Decomposes a positive form with no constant term.
+  // Decomposes a positive form with no constant or linear term.
   // x² + 4xy + 4y²
   Eigen::Matrix2d Q;
   Q << 1, 2, 2, 4;
   Eigen::Vector2d b(0, 0);
   double c = 0;
   CheckDecomposePositiveQuadraticForm(Q, b, c);
+  Eigen::MatrixXd R;
+  Eigen::VectorXd d;
+  // Make sure that R.rows() = rank(Q) (since b and c = 0).
+  std::tie(R, d) = DecomposePositiveQuadraticForm(Q, b, c);
+  EXPECT_EQ(R.rows(), 1);
 }
 
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test4) {
