@@ -1,5 +1,7 @@
 #include "drake/common/reset_after_move.h"
 
+#include <type_traits>
+
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -153,6 +155,13 @@ GTEST_TEST(DefaultValueTest, Move) {
   // Self-assignment during move.
   MoveAssign(&w, &w);
   EXPECT_EQ(w, 3);
+}
+
+GTEST_TEST(DefaultValueTest, Traits) {
+  // Make sure that our wrapper is is nothrow move-constructible so that it can
+  // be moved (not copied) when an STL container is resized.
+  EXPECT_TRUE(std::is_nothrow_move_constructible_v<reset_after_move<int>>);
+  EXPECT_TRUE(std::is_nothrow_move_assignable_v<reset_after_move<int>>);
 }
 
 }  // namespace
