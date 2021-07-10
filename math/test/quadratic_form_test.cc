@@ -169,13 +169,18 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test2) {
 }
 
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test3) {
-  // Decomposes a positive form with no constant term.
-  // x² + 4xy + 4y²
+  // Decomposes a positive form with no constant or linear term, Q is not full
+  // rank. x² + 4xy + 4y²
   Eigen::Matrix2d Q;
   Q << 1, 2, 2, 4;
   Eigen::Vector2d b(0, 0);
   double c = 0;
   CheckDecomposePositiveQuadraticForm(Q, b, c);
+  Eigen::MatrixXd R;
+  Eigen::VectorXd d;
+  // Make sure that R.rows() = rank(Q) (since b and c = 0).
+  std::tie(R, d) = DecomposePositiveQuadraticForm(Q, b, c);
+  EXPECT_EQ(R.rows(), 1);
 }
 
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test4) {
@@ -210,6 +215,21 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test6) {
   // tolerance has to be non-negative.
   EXPECT_THROW(DecomposePositiveQuadraticForm(Q, b, c, -1E-15),
                std::runtime_error);
+}
+
+GTEST_TEST(TestDecomposePositiveQuadraticForm, Test7) {
+  // Decomposes a positive form with no constant or linear term, Q is full rank.
+  // x² + 4xy + 5y²
+  Eigen::Matrix2d Q;
+  Q << 1, 2, 2, 5;
+  Eigen::Vector2d b(0, 0);
+  double c = 0;
+  CheckDecomposePositiveQuadraticForm(Q, b, c);
+  Eigen::MatrixXd R;
+  Eigen::VectorXd d;
+  // Make sure that R.rows() = rank(Q) (since b and c = 0).
+  std::tie(R, d) = DecomposePositiveQuadraticForm(Q, b, c);
+  EXPECT_EQ(R.rows(), 2);
 }
 
 void CheckBalancing(const Eigen::Matrix3d& S, const Eigen::Matrix3d& P,
