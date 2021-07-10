@@ -4,6 +4,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
@@ -216,13 +217,46 @@ GTEST_TEST(MosekTest, TestLogFile) {
   // By default, no logging file.
   EXPECT_FALSE(filesystem::exists({log_file}));
   // Output the logging to the console
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   solver.set_stream_logging(true, "");
   solver.Solve(prog, {}, {}, &result);
   EXPECT_FALSE(filesystem::exists({log_file}));
   // Output the logging to the file.
   solver.set_stream_logging(true, log_file);
+#pragma GCC diagnostic pop
   solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(filesystem::exists({log_file}));
+}
+
+GTEST_TEST(MosekTest, TestLogging) {
+  // Test if we can print the logging info to a log file.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) == 1);
+
+  const std::string log_file = temp_directory() + "/mosek_logging.log";
+  EXPECT_FALSE(filesystem::exists({log_file}));
+  MosekSolver solver;
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  // By default, no logging file.
+  EXPECT_FALSE(filesystem::exists({log_file}));
+  // Print to console. We can only test this doesn't cause any runtime error. We
+  // can't test if the logging message is actually printed to the console.
+  SolverOptions solver_options;
+  solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  solver.Solve(prog, {}, solver_options, &result);
+  solver_options.SetOption(CommonSolverOption::kPrintToConsole, 0);
+  // Output the logging to the console
+  solver_options.SetOption(CommonSolverOption::kPrintFileName, log_file);
+  solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_TRUE(filesystem::exists({log_file}));
+  // Now set both print to console and the log file. This will cause an error.
+  solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog, {}, solver_options, &result), std::runtime_error,
+      ".* cannot print to both the console and the log file.");
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {
