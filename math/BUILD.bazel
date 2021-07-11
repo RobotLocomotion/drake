@@ -457,6 +457,7 @@ drake_cc_googletest(
         ":geometric_transform",
         ":quadratic_form",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
