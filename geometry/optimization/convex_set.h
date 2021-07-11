@@ -187,39 +187,9 @@ std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
   return std::make_unique<Derived>(typed_other);
 }
 
-// TODO(russt): Consider providing an iterator.
-/** Wraps a collection of owned ConvexSet objects.
-
-Use the move operator/constructor on this collection to transfer ownership
-without forcing a copy of the underlying sets. */
-class ConvexSets {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSets)
-
-  /** Constructs an empty collection. */
-  ConvexSets();
-  virtual ~ConvexSets();
-
-  /** Emplaces a copy of @p set at the end of the collection.
-  @pydrake_mkdoc_identifier{from_reference} */
-  ConvexSet& emplace_back(const ConvexSet& set);
-
-  /** Takes ownership of @p set and emplaces it at the end of the collection.
-  @pydrake_mkdoc_identifier{from_unique_ptr} */
-  ConvexSet& emplace_back(std::unique_ptr<ConvexSet> set);
-
-  /** Returns the number of elements in the collection. */
-  int size() const { return static_cast<int>(sets_.size()); }
-
-  /** Returns a const reference to the set at @p pos. */
-  const ConvexSet& operator[](size_t pos) const { return *sets_[pos]; }
-
-  /** Returns a (mutable) reference to the set at @p pos. */
-  ConvexSet& operator[](size_t pos) { return *sets_[pos]; }
-
- private:
-  std::vector<copyable_unique_ptr<ConvexSet>> sets_{};
-};
+/** Provides the recommended container for passing a collection of ConvexSet
+instances. */
+typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
 
 }  // namespace optimization
 }  // namespace geometry
