@@ -12,6 +12,7 @@
 #endif
 
 #include <algorithm>  // for cpplint only
+#include <atomic>
 #include <cstddef>
 #include <map>
 #include <ostream>
@@ -44,6 +45,14 @@ bool is_non_negative_integer(double v);
  */
 class ExpressionCell {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCell)
+
+  /** Default destructor. */
+  virtual ~ExpressionCell() = default;
+
+  /** Returns the intrusive use count. */
+  std::atomic<int>& use_count() const { return use_count_; }
+
   /** Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const { return kind_; }
 
@@ -97,26 +106,15 @@ class ExpressionCell {
   /** Outputs string representation of expression into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
-  /** Move-assigns (DELETED). */
-  ExpressionCell& operator=(ExpressionCell&& e) = delete;
-
-  /** Copy-assigns (DELETED). */
-  ExpressionCell& operator=(const ExpressionCell& e) = delete;
-
  protected:
-  /** Default constructor. */
+  /** Default constructor. The use_count is zero. */
   ExpressionCell() = default;
-  /** Move-constructs an ExpressionCell from an rvalue. */
-  ExpressionCell(ExpressionCell&& e) = default;
-  /** Copy-constructs an ExpressionCell from an lvalue. */
-  ExpressionCell(const ExpressionCell& e) = default;
   /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded.
    */
   ExpressionCell(ExpressionKind k, bool is_poly, bool is_expanded);
-  /** Default destructor. */
-  virtual ~ExpressionCell() = default;
 
  private:
+  mutable std::atomic<int> use_count_{int{}};
   const ExpressionKind kind_{};
   const bool is_polynomial_{false};
   bool is_expanded_{false};
@@ -133,20 +131,7 @@ class UnaryExpressionCell : public ExpressionCell {
   /** Returns the argument. */
   [[nodiscard]] const Expression& get_argument() const { return e_; }
 
-  /** Default constructor (DELETED). */
-  UnaryExpressionCell() = delete;
-
-  /** Move-assigns (DELETED). */
-  UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
-
-  /** Copy-assigns (DELETED). */
-  UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
-
  protected:
-  /** Move-constructs from an rvalue. */
-  UnaryExpressionCell(UnaryExpressionCell&& e) = default;
-  /** Copy-constructs from an lvalue. */
-  UnaryExpressionCell(const UnaryExpressionCell& e) = default;
   /** Constructs UnaryExpressionCell of kind @p k with @p e, @p is_poly, and @p
    * is_expanded. */
   UnaryExpressionCell(ExpressionKind k, Expression e, bool is_poly,
@@ -172,20 +157,7 @@ class BinaryExpressionCell : public ExpressionCell {
   /** Returns the second argument. */
   [[nodiscard]] const Expression& get_second_argument() const { return e2_; }
 
-  /** Default constructor (DELETED). */
-  BinaryExpressionCell() = delete;
-
-  /** Move-assigns (DELETED). */
-  BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
-
-  /** Copy-assigns (DELETED). */
-  BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
-
  protected:
-  /** Move-constructs from an rvalue. */
-  BinaryExpressionCell(BinaryExpressionCell&& e) = default;
-  /** Copy-constructs from an lvalue. */
-  BinaryExpressionCell(const BinaryExpressionCell& e) = default;
   /** Constructs BinaryExpressionCell of kind @p k with @p e1, @p e2,
    * @p is_poly, and @p is_expanded.
    */
@@ -219,25 +191,6 @@ class ExpressionVar : public ExpressionCell {
 
  private:
   const Variable var_;
-};
-
-/** Symbolic expression representing a constant. */
-class ExpressionConstant : public ExpressionCell {
- public:
-  explicit ExpressionConstant(double v);
-  [[nodiscard]] double get_value() const { return v_; }
-  void HashAppendDetail(DelegatingHasher*) const override;
-  [[nodiscard]] Variables GetVariables() const override;
-  [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
-  [[nodiscard]] bool Less(const ExpressionCell& e) const override;
-  [[nodiscard]] double Evaluate(const Environment& env) const override;
-  [[nodiscard]] Expression Expand() const override;
-  [[nodiscard]] Expression Substitute(const Substitution& s) const override;
-  [[nodiscard]] Expression Differentiate(const Variable& x) const override;
-  std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const double v_{};
 };
 
 /** Symbolic expression representing NaN (not-a-number). */
