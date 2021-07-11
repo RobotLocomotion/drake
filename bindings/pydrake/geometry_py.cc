@@ -1369,6 +1369,8 @@ void def_geometry_optimization(py::module m) {
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
+        .def("ChebyshevCenter", &HPolyhedron::ChebyshevCenter,
+            cls_doc.ChebyshevCenter.doc)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
