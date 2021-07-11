@@ -14,7 +14,6 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <map>
-#include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -313,17 +312,15 @@ class ExpressionAddFactory {
   ExpressionAddFactory(double constant,
                        std::map<Expression, double> expr_to_coeff_map);
 
-  /** Constructs ExpressionAddFactory from @p ptr. */
-  explicit ExpressionAddFactory(
-      const std::shared_ptr<const ExpressionAdd>& ptr);
+  /** Constructs ExpressionAddFactory from @p add. */
+  explicit ExpressionAddFactory(const ExpressionAdd& add);
 
   /** Adds @p e to this factory. */
   void AddExpression(const Expression& e);
   /** Adds ExpressionAdd pointed by @p ptr to this factory. */
-  void Add(const std::shared_ptr<const ExpressionAdd>& ptr);
-  /** Assigns a factory from a shared pointer to ExpressionAdd.  */
-  ExpressionAddFactory& operator=(
-      const std::shared_ptr<const ExpressionAdd>& ptr);
+  void Add(const ExpressionAdd& add);
+  /** Assigns a factory from a an ExpressionAdd.  */
+  ExpressionAddFactory& operator=(const ExpressionAdd& ptr);
 
   /** Negates the expressions in factory.
    * If it represents c0 + c1 * t1 + ... + * cn * tn,
@@ -417,17 +414,15 @@ class ExpressionMulFactory {
   ExpressionMulFactory(double constant,
                        std::map<Expression, Expression> base_to_exponent_map);
 
-  /** Constructs ExpressionMulFactory from @p ptr. */
-  explicit ExpressionMulFactory(
-      const std::shared_ptr<const ExpressionMul>& ptr);
+  /** Constructs ExpressionMulFactory from @p mul. */
+  explicit ExpressionMulFactory(const ExpressionMul& mul);
 
   /** Adds @p e to this factory. */
   void AddExpression(const Expression& e);
   /** Adds ExpressionMul pointed by @p ptr to this factory. */
-  void Add(const std::shared_ptr<const ExpressionMul>& ptr);
-  /** Assigns a factory from a shared pointer to ExpressionMul.  */
-  ExpressionMulFactory& operator=(
-      const std::shared_ptr<const ExpressionMul>& ptr);
+  void Add(const ExpressionMul& ptr);
+  /** Assigns a factory from an ExpressionMul.  */
+  ExpressionMulFactory& operator=(const ExpressionMul& ptr);
   /** Negates the expressions in factory.
    * If it represents c0 * p1 * ... * pn,
    * this method flips it into -c0 * p1 * ... * pn.
@@ -820,6 +815,10 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
 bool is_constant(const ExpressionCell& c);
 /** Checks if @p c is a variable expression. */
 bool is_variable(const ExpressionCell& c);
+/** Checks if @p c is a unary expression. */
+bool is_unary(const ExpressionCell& c);
+/** Checks if @p c is a binary expression. */
+bool is_binary(const ExpressionCell& c);
 /** Checks if @p c is an addition expression. */
 bool is_addition(const ExpressionCell& c);
 /** Checks if @p c is an multiplication expression. */
@@ -868,174 +867,6 @@ bool is_floor(const ExpressionCell& c);
 bool is_if_then_else(const ExpressionCell& c);
 /** Checks if @p c is an uninterpreted-function expression. */
 bool is_uninterpreted_function(const ExpressionCell& c);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionConstant>.
- *  @pre @p *expr_ptr is of @c ExpressionConstant.
- */
-std::shared_ptr<ExpressionConstant> to_constant(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionVar>.
- *  @pre @p *expr_ptr is of @c ExpressionVar.
- */
-std::shared_ptr<ExpressionVar> to_variable(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<UnaryExpressionCell>.
- *  @pre @c *expr_ptr is of @c UnaryExpressionCell.
- */
-std::shared_ptr<UnaryExpressionCell> to_unary(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<BinaryExpressionCell>.
- *  @pre @c *expr_ptr is of @c BinaryExpressionCell.
- */
-std::shared_ptr<BinaryExpressionCell> to_binary(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionAdd>.
- *  @pre @c *expr_ptr is of @c ExpressionAdd.
- */
-std::shared_ptr<ExpressionAdd> to_addition(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionMul>.
- *  @pre @c *expr_ptr is of @c ExpressionMul.
- */
-std::shared_ptr<ExpressionMul> to_multiplication(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionDiv>.
- *  @pre @c *expr_ptr is of @c ExpressionDiv.
- */
-std::shared_ptr<ExpressionDiv> to_division(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionLog>.
- *  @pre @c *expr_ptr is of @c ExpressionLog.
- */
-std::shared_ptr<ExpressionLog> to_log(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionExp>.
- *  @pre @c *expr_ptr is of @c ExpressionExp.
- */
-std::shared_ptr<ExpressionExp> to_exp(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionAbs>.
- *  @pre @c *expr_ptr is of @c ExpressionAbs.
- */
-std::shared_ptr<ExpressionAbs> to_abs(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionSqrt>.
- *  @pre @c *expr_ptr is of @c ExpressionSqrt.
- */
-std::shared_ptr<ExpressionSqrt> to_sqrt(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionPow>.
- *  @pre @c *expr_ptr is of @c ExpressionPow.
- */
-std::shared_ptr<ExpressionPow> to_pow(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionSin>.
- *  @pre @c *expr_ptr is of @c ExpressionSin.
- */
-std::shared_ptr<ExpressionSin> to_sin(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionCos>.
- *  @pre @c *expr_ptr is of @c ExpressionCos.
- */
-std::shared_ptr<ExpressionCos> to_cos(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionTan>.
- *  @pre @c *expr_ptr is of @c ExpressionTan.
- */
-std::shared_ptr<ExpressionTan> to_tan(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionAsin>.
- *  @pre @c *expr_ptr is of @c ExpressionAsin.
- */
-std::shared_ptr<ExpressionAsin> to_asin(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionAcos>.
- *  @pre @c *expr_ptr is of @c ExpressionAcos.
- */
-std::shared_ptr<ExpressionAcos> to_acos(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionAtan>.
- *  @pre @c *expr_ptr is of @c ExpressionAtan.
- */
-std::shared_ptr<ExpressionAtan> to_atan(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionAtan2>.
- *  @pre @c *expr_ptr is of @c ExpressionAtan2.
- */
-std::shared_ptr<ExpressionAtan2> to_atan2(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionSinh>.
- *  @pre @c *expr_ptr is of @c ExpressionSinh.
- */
-std::shared_ptr<ExpressionSinh> to_sinh(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionCosh>.
- *  @pre @c *expr_ptr is of @c ExpressionCosh.
- */
-std::shared_ptr<ExpressionCosh> to_cosh(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionTanh>.
- *  @pre @c *expr_ptr is of @c ExpressionTanh.
- */
-std::shared_ptr<ExpressionTanh> to_tanh(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionMin>.
- *  @pre @c *expr_ptr is of @c ExpressionMin.
- */
-std::shared_ptr<ExpressionMin> to_min(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionMax>.
- *  @pre @c *expr_ptr is of @c ExpressionMax.
- */
-std::shared_ptr<ExpressionMax> to_max(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionCeiling>.
- *  @pre @c *expr_ptr is of @c ExpressionCeiling.
- */
-std::shared_ptr<ExpressionCeiling> to_ceil(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionFloor>.
- *  @pre @c *expr_ptr is of @c ExpressionFloor.
- */
-std::shared_ptr<ExpressionFloor> to_floor(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionIfThenElse>.
- *  @pre @c *expr_ptr is of @c ExpressionIfThenElse.
- */
-std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
-
-/** Casts @p expr_ptr to @c shared_ptr<ExpressionUninterpretedFunction>.
- *  @pre @c *expr_ptr is of @c ExpressionUninterpretedFunction.
- */
-std::shared_ptr<ExpressionUninterpretedFunction> to_uninterpreted_function(
-    const std::shared_ptr<ExpressionCell>& expr_ptr);
 
 }  // namespace symbolic
 }  // namespace drake
