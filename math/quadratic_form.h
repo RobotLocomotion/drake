@@ -69,7 +69,7 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
  * Then (R₁*x+d₁)ᵀ(R₁*x+d₁) gives the same quadratic form.
  * @param Q The square matrix.
  * @param b The vector containing the linear coefficients.
- * @param c The constatnt term.
+ * @param c The constant term.
  * @param tol We will determine if this quadratic form is always non-negative,
  * by checking the Eigen values of the matrix
  * [Q    b/2]
