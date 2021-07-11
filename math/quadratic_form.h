@@ -29,12 +29,43 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
  * Rewrite a quadratic form xᵀQx + bᵀx + c to
  * (Rx+d)ᵀ(Rx+d)
  * where
+ * <pre>
  * RᵀR = Q
  * Rᵀd = b / 2
- * Notice that this decomposition is not unique. For example, with any
+ * dᵀd = c
+ * </pre>
+ *
+ * This decomposition requires the matrix
+ * <pre>
+ * ⌈Q     b/2⌉
+ * ⌊bᵀ/2    c⌋
+ * </pre>
+ * to be positive semidefinite.
+ *
+ * We return R and d with the minimal number of rows, namely the rows of R
+ * and d equal to the rank of the matrix
+ * <pre>
+ * ⌈Q     b/2⌉
+ * ⌊bᵀ/2    c⌋
+ * </pre>
+ *
+ * Notice that R might have more rows than Q, For example, the quadratic
+ * expression x² + 2x + 5 =(x+1)² + 2², it can be decomposed as
+ * <pre>
+ * ⎛⌈1⌉ * x + ⌈1⌉⎞ᵀ * ⎛⌈1⌉ * x + ⌈1⌉⎞
+ * ⎝⌊0⌋       ⌊2⌋⎠    ⎝⌊0⌋       ⌊2⌋⎠
+ * </pre>
+ * Here R has 2 rows while Q only has 1 row.
+ *
+ * On the other hand the quadratic expression x² + 2x + 1 can be decomposed
+ * as (x+1) * (x+1), where R has 1 row, same as Q.
+ *
+ * Also notice that this decomposition is not unique. For example, with any
  * permutation matrix P, we can define
+ * <pre>
  * R₁ = P*R
  * d₁ = P*d
+ * </pre>
  * Then (R₁*x+d₁)ᵀ(R₁*x+d₁) gives the same quadratic form.
  * @param Q The square matrix.
  * @param b The vector containing the linear coefficients.
@@ -45,7 +76,7 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
  * [bᵀ/2   c]
  * are all greater than -tol. @default is 0.
  * @retval (R, d). R and d have the same number of rows. R.cols() == x.rows().
- * The matrix X = [R d] has the same number of rows as the rank of
+ * R.rows() equals to the rank of the matrix
  * <pre>
  *    [Q    b/2]
  *    [bᵀ/2   c]
