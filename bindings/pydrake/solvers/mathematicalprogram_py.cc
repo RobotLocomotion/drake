@@ -574,6 +574,8 @@ top-level documentation for :py:mod:`pydrake.math`.
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
   DefClone(&prog_cls);
   prog_cls  // BR
+      .def("__str__", &MathematicalProgram::to_string,
+          doc.MathematicalProgram.to_string.doc)
       .def("NewContinuousVariables",
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
               int, const std::string&)>(

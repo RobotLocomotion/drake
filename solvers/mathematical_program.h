@@ -171,6 +171,18 @@ class MathematicalProgram {
   std::unique_ptr<MathematicalProgram> Clone() const;
 
   /**
+   * Returns string representation of this program, listing the decision
+   * variables, costs, and constraints.
+   *
+   * Note that by default, we do not require variables to have unique names.
+   * Providing useful variable names and calling Evaluator::set_description() to
+   * describe the costs and constraints can dramatically improve the readability
+   * of the output.  See the tutorial `debug_mathematical_program.ipynb`
+   * for more information.
+   */
+  std::string to_string() const;
+
+  /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The initial guess values for the new variables are set to NaN, to
@@ -3372,6 +3384,9 @@ class MathematicalProgram {
 
   void CheckVariableType(VarType var_type);
 };
+
+std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);
+
 
 }  // namespace solvers
 }  // namespace drake
