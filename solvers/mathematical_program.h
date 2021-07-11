@@ -171,6 +171,12 @@ class MathematicalProgram {
   std::unique_ptr<MathematicalProgram> Clone() const;
 
   /**
+   * Returns string representation of this program, listing the decision
+   * variables, costs, and constraints.
+   */
+  std::string to_string() const;
+
+  /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
    * The initial guess values for the new variables are set to NaN, to
@@ -3372,6 +3378,9 @@ class MathematicalProgram {
 
   void CheckVariableType(VarType var_type);
 };
+
+std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);
+
 
 }  // namespace solvers
 }  // namespace drake
