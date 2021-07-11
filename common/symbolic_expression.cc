@@ -63,6 +63,11 @@ shared_ptr<ExpressionCell> Expression::make_cell(const double d) {
     // `ExpressionConstant` object created in `Expression::Zero()`.
     //
     // See https://github.com/RobotLocomotion/drake/issues/12453 for details.
+    //
+    // Typically we should never access a ptr_ directly, but here we know it
+    // poses no risk because ExpressionConstant has no non-const member fields
+    // of any consequence (only "is_expanded_" is non-const, and it can never
+    // be reset to false).
     return Expression::Zero().ptr_;
   }
   if (std::isnan(d)) {
@@ -72,20 +77,29 @@ shared_ptr<ExpressionCell> Expression::make_cell(const double d) {
 }
 
 Expression::Expression(const Variable& var)
-    : ptr_{make_shared<ExpressionVar>(var)} {}
-Expression::Expression(const double d) : ptr_{make_cell(d)} {}
+    : Expression{make_shared<ExpressionVar>(var)} {}
+
+Expression::Expression(const double d) : Expression{make_cell(d)} {}
+
 Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
-    : ptr_{std::move(ptr)} {}
+    : ptr_{std::move(ptr)} {
+  DRAKE_ASSERT(ptr_ != nullptr);
+}
 
 ExpressionKind Expression::get_kind() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->get_kind();
+  return cell().get_kind();
 }
 
 void Expression::HashAppend(DelegatingHasher* hasher) const {
   using drake::hash_append;
   hash_append(*hasher, get_kind());
-  ptr_->HashAppendDetail(hasher);
+  cell().HashAppendDetail(hasher);
+}
+
+ExpressionCell& Expression::mutable_cell() {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  DRAKE_DEMAND(ptr_.use_count() == 1);
+  return *ptr_;
 }
 
 Expression Expression::Zero() {
@@ -119,27 +133,26 @@ Expression Expression::NaN() {
 }
 
 Variables Expression::GetVariables() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->GetVariables();
+  return cell().GetVariables();
 }
 
 bool Expression::EqualTo(const Expression& e) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_ASSERT(e.ptr_ != nullptr);
-  if (ptr_ == e.ptr_) {
+  const auto& this_cell = cell();
+  const auto& other_cell = e.cell();
+  if (&this_cell == &other_cell) {
     return true;
   }
   if (get_kind() != e.get_kind()) {
     return false;
   }
   // Check structural equality.
-  return ptr_->EqualTo(*(e.ptr_));
+  return cell().EqualTo(e.cell());
 }
 
 bool Expression::Less(const Expression& e) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  DRAKE_ASSERT(e.ptr_ != nullptr);
-  if (ptr_ == e.ptr_) {
+  const auto& this_cell = cell();
+  const auto& other_cell = e.cell();
+  if (&this_cell == &other_cell) {
     return false;  // this equals to e, not less-than.
   }
   const ExpressionKind k1{get_kind()};
@@ -151,38 +164,28 @@ bool Expression::Less(const Expression& e) const {
     return false;
   }
   // k1 == k2
-  return ptr_->Less(*(e.ptr_));
+  return this_cell.Less(other_cell);
 }
 
 bool Expression::is_polynomial() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->is_polynomial();
+  return cell().is_polynomial();
 }
 
 bool Expression::is_expanded() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->is_expanded();
-}
-
-Expression& Expression::set_expanded() {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  ptr_->set_expanded();
-  return *this;
+  return cell().is_expanded();
 }
 
 double Expression::Evaluate(const Environment& env,
                             RandomGenerator* const random_generator) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
   if (random_generator == nullptr) {
-    return ptr_->Evaluate(env);
+    return cell().Evaluate(env);
   } else {
-    return ptr_->Evaluate(
+    return cell().Evaluate(
         PopulateRandomVariables(env, GetVariables(), random_generator));
   }
 }
 
 double Expression::Evaluate(RandomGenerator* const random_generator) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
   return Evaluate(Environment{}, random_generator);
 }
 
@@ -204,33 +207,33 @@ Expression Expression::EvaluatePartial(const Environment& env) const {
 }
 
 Expression Expression::Expand() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  if (ptr_->is_expanded()) {
+  if (cell().is_expanded()) {
     // If it is already expanded, return the current expression without calling
     // Expand() on the cell.
     return *this;
-  } else {
-    return ptr_->Expand();
   }
+
+  Expression result = cell().Expand();
+  if (!result.is_expanded()) {
+    result.mutable_cell().set_expanded();
+  }
+  return result;
 }
 
 Expression Expression::Substitute(const Variable& var,
                                   const Expression& e) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Substitute({{var, e}});
+  return cell().Substitute({{var, e}});
 }
 
 Expression Expression::Substitute(const Substitution& s) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
   if (!s.empty()) {
-    return ptr_->Substitute(s);
+    return cell().Substitute(s);
   }
   return *this;
 }
 
 Expression Expression::Differentiate(const Variable& x) const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Differentiate(x);
+  return cell().Differentiate(x);
 }
 
 RowVectorX<Expression> Expression::Jacobian(
@@ -543,7 +546,7 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
     lhs = Expression::One();
     return lhs;
   }
-  lhs.ptr_ = make_shared<ExpressionDiv>(lhs, rhs);
+  lhs = Expression{make_shared<ExpressionDiv>(lhs, rhs)};
   return lhs;
 }
 
@@ -567,10 +570,9 @@ class PrecisionGuard {
 }  // namespace
 
 ostream& operator<<(ostream& os, const Expression& e) {
-  DRAKE_ASSERT(e.ptr_ != nullptr);
   const PrecisionGuard precision_guard{&os,
                                        numeric_limits<double>::max_digits10};
-  return e.ptr_->Display(os);
+  return e.cell().Display(os);
 }
 
 Expression log(const Expression& e) {
@@ -789,94 +791,94 @@ Expression uninterpreted_function(string name, vector<Expression> arguments) {
       std::move(name), std::move(arguments))};
 }
 
-bool is_constant(const Expression& e) { return is_constant(*e.ptr_); }
+bool is_constant(const Expression& e) { return is_constant(e.cell()); }
 bool is_constant(const Expression& e, const double v) {
-  return is_constant(e) && (to_constant(e)->get_value() == v);
+  return is_constant(e) && (to_constant(e).get_value() == v);
 }
 bool is_zero(const Expression& e) { return is_constant(e, 0.0); }
 bool is_one(const Expression& e) { return is_constant(e, 1.0); }
 bool is_neg_one(const Expression& e) { return is_constant(e, -1.0); }
 bool is_two(const Expression& e) { return is_constant(e, 2.0); }
 bool is_nan(const Expression& e) { return e.get_kind() == ExpressionKind::NaN; }
-bool is_variable(const Expression& e) { return is_variable(*e.ptr_); }
-bool is_addition(const Expression& e) { return is_addition(*e.ptr_); }
+bool is_variable(const Expression& e) { return is_variable(e.cell()); }
+bool is_addition(const Expression& e) { return is_addition(e.cell()); }
 bool is_multiplication(const Expression& e) {
-  return is_multiplication(*e.ptr_);
+  return is_multiplication(e.cell());
 }
-bool is_division(const Expression& e) { return is_division(*e.ptr_); }
-bool is_log(const Expression& e) { return is_log(*e.ptr_); }
-bool is_abs(const Expression& e) { return is_abs(*e.ptr_); }
-bool is_exp(const Expression& e) { return is_exp(*e.ptr_); }
-bool is_sqrt(const Expression& e) { return is_sqrt(*e.ptr_); }
-bool is_pow(const Expression& e) { return is_pow(*e.ptr_); }
-bool is_sin(const Expression& e) { return is_sin(*e.ptr_); }
-bool is_cos(const Expression& e) { return is_cos(*e.ptr_); }
-bool is_tan(const Expression& e) { return is_tan(*e.ptr_); }
-bool is_asin(const Expression& e) { return is_asin(*e.ptr_); }
-bool is_acos(const Expression& e) { return is_acos(*e.ptr_); }
-bool is_atan(const Expression& e) { return is_atan(*e.ptr_); }
-bool is_atan2(const Expression& e) { return is_atan2(*e.ptr_); }
-bool is_sinh(const Expression& e) { return is_sinh(*e.ptr_); }
-bool is_cosh(const Expression& e) { return is_cosh(*e.ptr_); }
-bool is_tanh(const Expression& e) { return is_tanh(*e.ptr_); }
-bool is_min(const Expression& e) { return is_min(*e.ptr_); }
-bool is_max(const Expression& e) { return is_max(*e.ptr_); }
-bool is_ceil(const Expression& e) { return is_ceil(*e.ptr_); }
-bool is_floor(const Expression& e) { return is_floor(*e.ptr_); }
-bool is_if_then_else(const Expression& e) { return is_if_then_else(*e.ptr_); }
+bool is_division(const Expression& e) { return is_division(e.cell()); }
+bool is_log(const Expression& e) { return is_log(e.cell()); }
+bool is_abs(const Expression& e) { return is_abs(e.cell()); }
+bool is_exp(const Expression& e) { return is_exp(e.cell()); }
+bool is_sqrt(const Expression& e) { return is_sqrt(e.cell()); }
+bool is_pow(const Expression& e) { return is_pow(e.cell()); }
+bool is_sin(const Expression& e) { return is_sin(e.cell()); }
+bool is_cos(const Expression& e) { return is_cos(e.cell()); }
+bool is_tan(const Expression& e) { return is_tan(e.cell()); }
+bool is_asin(const Expression& e) { return is_asin(e.cell()); }
+bool is_acos(const Expression& e) { return is_acos(e.cell()); }
+bool is_atan(const Expression& e) { return is_atan(e.cell()); }
+bool is_atan2(const Expression& e) { return is_atan2(e.cell()); }
+bool is_sinh(const Expression& e) { return is_sinh(e.cell()); }
+bool is_cosh(const Expression& e) { return is_cosh(e.cell()); }
+bool is_tanh(const Expression& e) { return is_tanh(e.cell()); }
+bool is_min(const Expression& e) { return is_min(e.cell()); }
+bool is_max(const Expression& e) { return is_max(e.cell()); }
+bool is_ceil(const Expression& e) { return is_ceil(e.cell()); }
+bool is_floor(const Expression& e) { return is_floor(e.cell()); }
+bool is_if_then_else(const Expression& e) { return is_if_then_else(e.cell()); }
 bool is_uninterpreted_function(const Expression& e) {
-  return is_uninterpreted_function(*e.ptr_);
+  return is_uninterpreted_function(e.cell());
 }
 
 double get_constant_value(const Expression& e) {
-  return to_constant(e)->get_value();
+  return to_constant(e).get_value();
 }
 const Variable& get_variable(const Expression& e) {
-  return to_variable(e)->get_variable();
+  return to_variable(e).get_variable();
 }
 const Expression& get_argument(const Expression& e) {
-  return to_unary(e)->get_argument();
+  return to_unary(e).get_argument();
 }
 const Expression& get_first_argument(const Expression& e) {
-  return to_binary(e)->get_first_argument();
+  return to_binary(e).get_first_argument();
 }
 const Expression& get_second_argument(const Expression& e) {
-  return to_binary(e)->get_second_argument();
+  return to_binary(e).get_second_argument();
 }
 double get_constant_in_addition(const Expression& e) {
-  return to_addition(e)->get_constant();
+  return to_addition(e).get_constant();
 }
 const map<Expression, double>& get_expr_to_coeff_map_in_addition(
     const Expression& e) {
-  return to_addition(e)->get_expr_to_coeff_map();
+  return to_addition(e).get_expr_to_coeff_map();
 }
 double get_constant_in_multiplication(const Expression& e) {
-  return to_multiplication(e)->get_constant();
+  return to_multiplication(e).get_constant();
 }
 const map<Expression, Expression>& get_base_to_exponent_map_in_multiplication(
     const Expression& e) {
-  return to_multiplication(e)->get_base_to_exponent_map();
+  return to_multiplication(e).get_base_to_exponent_map();
 }
 
 const string& get_uninterpreted_function_name(const Expression& e) {
-  return to_uninterpreted_function(e)->get_name();
+  return to_uninterpreted_function(e).get_name();
 }
 
 const vector<Expression>& get_uninterpreted_function_arguments(
     const Expression& e) {
-  return to_uninterpreted_function(e)->get_arguments();
+  return to_uninterpreted_function(e).get_arguments();
 }
 
 const Formula& get_conditional_formula(const Expression& e) {
-  return to_if_then_else(e)->get_conditional_formula();
+  return to_if_then_else(e).get_conditional_formula();
 }
 
 const Expression& get_then_expression(const Expression& e) {
-  return to_if_then_else(e)->get_then_expression();
+  return to_if_then_else(e).get_then_expression();
 }
 
 const Expression& get_else_expression(const Expression& e) {
-  return to_if_then_else(e)->get_else_expression();
+  return to_if_then_else(e).get_else_expression();
 }
 
 Expression operator+(const Variable& var) { return Expression{var}; }
