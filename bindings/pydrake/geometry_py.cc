@@ -1403,7 +1403,8 @@ void def_geometry_optimization(py::module m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt,
             py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
-        .def("x", &Point::x, cls_doc.x.doc);
+        .def("x", &Point::x, cls_doc.x.doc)
+        .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc);
     py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
   }
 

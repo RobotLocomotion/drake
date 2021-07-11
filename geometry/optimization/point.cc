@@ -46,6 +46,11 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
 
 Point::~Point() = default;
 
+void Point::set_x(const Eigen::Ref<const Eigen::VectorXd>& x) {
+  DRAKE_DEMAND(x.size() == x_.size());
+  x_ = x;
+}
+
 bool Point::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);

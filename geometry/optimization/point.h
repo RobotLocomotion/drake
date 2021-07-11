@@ -42,6 +42,10 @@ class Point final : public ConvexSet {
   /** Retrieves the point. */
   const Eigen::VectorXd& x() const { return x_; }
 
+  /** Changes the element @p x describing the set.
+  @pre @p x must be of size ambient_dimension(). */
+  void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
+
  private:
   bool DoIsBounded() const final { return true; }
 
