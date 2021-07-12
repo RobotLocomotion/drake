@@ -37,12 +37,12 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
 ///
 /// This is equivalent to:
 /// \f[
-/// A_{scr}'XA_{scr} - X - A_{scr}'XB(B'XB + R)^{-1}B'XA_{scr} + Q_{scr} = 0
+/// \mathcal{A}'X\mathcal{A} - X - \mathcal{A}'XB(B'XB + R)^{-1}B'X\mathcal{A} + \mathcal{Q} = 0
 /// \f]
 ///
 /// where:
 /// \f[
-/// A_{scr} = A - BR^{-1}N' and Q_{scr} = Q - NR^{-1}N'
+/// \mathcal{A} = A - BR^{-1}N' and \mathcal{Q} = Q - NR^{-1}N'
 /// \f]
 ///
 /// @throws std::runtime_error if Q is not positive semi-definite.
