@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
@@ -3326,6 +3327,26 @@ GTEST_TEST(TestMathematicalProgram, RemoveGenericCost) {
   RemoveCostTest(&prog, x[0] * x[0] * x[1], &(prog.generic_costs()),
                  ProgramAttribute::kGenericCost);
 }
+
+GTEST_TEST(TestMathematicalProgram, TestToString) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewIndeterminates<1>("y");
+  prog.AddLinearCost(2*x[0] + 3*x[1]);
+  prog.AddLinearConstraint(x[0]+x[1] <= 2.0);
+  prog.AddSosConstraint(x[0]*y[0]*y[0]);
+
+  std::string s = prog.to_string();
+  EXPECT_THAT(s, testing::HasSubstr("Decision variables"));
+  EXPECT_THAT(s, testing::HasSubstr("Indeterminates"));
+  EXPECT_THAT(s, testing::HasSubstr("Cost"));
+  EXPECT_THAT(s, testing::HasSubstr("Constraint"));
+  EXPECT_THAT(s, testing::HasSubstr("x"));
+  EXPECT_THAT(s, testing::HasSubstr("y"));
+  EXPECT_THAT(s, testing::HasSubstr("2"));
+  EXPECT_THAT(s, testing::HasSubstr("3"));
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
