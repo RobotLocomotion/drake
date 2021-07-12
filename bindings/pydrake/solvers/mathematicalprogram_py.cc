@@ -33,6 +33,7 @@ using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::ExponentialConeConstraint;
+using solvers::L2NormCost;
 using solvers::LinearComplementarityConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
@@ -1715,9 +1716,27 @@ for every column of ``prog_var_vals``. )""")
           py::arg("is_convex") = py::none(),
           doc.QuadraticCost.UpdateCoefficients.doc);
 
+  py::class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>>(
+      m, "L2NormCost", doc.L2NormCost.doc)
+      .def(py::init([](const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+        return std::make_unique<L2NormCost>(A, b);
+      }),
+          py::arg("A"), py::arg("b"), doc.L2NormCost.ctor.doc)
+      .def("A", &L2NormCost::A, doc.L2NormCost.A.doc)
+      .def("b", &L2NormCost::b, doc.L2NormCost.b.doc)
+      .def(
+          "UpdateCoefficients",
+          [](L2NormCost& self, const Eigen::MatrixXd& new_A,
+              const Eigen::VectorXd& new_b) {
+            self.UpdateCoefficients(new_A, new_b);
+          },
+          py::arg("new_A"), py::arg("new_b") = 0,
+          doc.L2NormCost.UpdateCoefficients.doc);
+
   RegisterBinding<Cost>(&m, "Cost");
   RegisterBinding<LinearCost>(&m, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, "QuadraticCost");
+  RegisterBinding<L2NormCost>(&m, "L2NormCost");
 
   py::class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(
