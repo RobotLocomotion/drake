@@ -8,6 +8,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
 using drake::multibody::MultibodyPlant;
+using drake::symbolic::Expression;
 using drake::systems::Context;
 using drake::test::LimitMalloc;
 
@@ -297,6 +298,46 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
     compute();
   }
   tracker_.Report(&state);
+}
+
+// Fixture that holds a Cassie robot model in a MultibodyPlant<Expression>. It
+// also holds a default context for expression.
+class CassieExpressionFixture : public CassieDoubleFixture {
+ public:
+  using CassieDoubleFixture::SetUp;
+  void SetUp(benchmark::State& state) override {
+    CassieDoubleFixture::SetUp(state);
+    plant_expression_ = systems::System<double>::ToSymbolic(*plant_);
+    context_expression_ = plant_expression_->CreateDefaultContext();
+  }
+
+  // @see CassieDoubleFixture::InvalidateState(). This method invalidates the
+  // expression version of state.
+  void InvalidateState() override {
+    context_expression_->NoteContinuousStateChange();
+  }
+
+ protected:
+  std::unique_ptr<MultibodyPlant<Expression>> plant_expression_;
+  std::unique_ptr<Context<Expression>> context_expression_;
+};
+
+BENCHMARK_F(CassieExpressionFixture, ExpressionMassMatrix)
+    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
+    (benchmark::State& state) {
+  MatrixX<Expression> M(nv_, nv_);
+  auto compute = [&]() {
+    InvalidateState();
+    plant_expression_->CalcMassMatrix(*context_expression_, &M);
+  };
+
+  // Warm up the heap.
+  compute();
+
+  for (auto _ : state) {
+    LimitMalloc guard({.max_num_allocations = 0});
+    compute();
+  }
 }
 
 }  // namespace

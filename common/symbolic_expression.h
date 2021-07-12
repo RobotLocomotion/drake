@@ -193,20 +193,69 @@ symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
-  ~Expression() = default;
-
   /** Default constructor. It constructs Zero(). */
-  Expression() { *this = Zero(); }
+  Expression() : value_{0.0} {}
+
+  /** Copyable. */
+  Expression(const Expression& other) {
+    if (is_constant(other)) {
+      value_ = other.value_;
+    } else {
+      set_shared_cell(&other.cell());
+    }
+  }
+
+  /** Copyable-assignable. */
+  Expression& operator=(const Expression& other) {
+    if (is_constant(other)) {
+      // TODO(jwnimmer-tri) This branch needs a unit test.
+      if (!is_constant(*this)) {
+        set_zero();
+      }
+      value_ = other.value_;
+    } else if (this != &other) {
+      set_zero();
+      set_shared_cell(&other.cell());
+    }
+    return *this;
+  }
+
+  /** Moveable. */
+  Expression(Expression&& other) noexcept {
+    value_ = other.value_;
+    other.value_ = 0;
+  }
+
+  /** Move-assignable. */
+  Expression& operator=(Expression&& other) noexcept {
+    std::swap(value_, other.value_);
+    return *this;
+  }
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Expression(double d);
+  Expression(double value) {
+    if (std::isnan(value)) {
+      value_ = 0.0;
+      *this = NaN();
+    } else {
+      value_ = value;
+    }
+  }
+
   /** Constructs an expression from @p var.
    * @pre @p var is neither a dummy nor a BOOLEAN variable.
    */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
+
+  ~Expression() {
+    if (!is_constant(*this)) {
+      // This is required in order to decrement our use_count of the cell.
+      set_zero();
+    }
+  }
+
   /** Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const;
   /** Collects variables in expression. */
@@ -356,9 +405,22 @@ class Expression {
     item.HashAppend(&delegating_hasher);
   }
 
-  friend Expression operator+(Expression lhs, const Expression& rhs);
+  friend Expression operator+(Expression lhs, const Expression& rhs) {
+    lhs += rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator+=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator+=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) + Expression(c2) => Expression(c1 + c2)
+    const double speculative_result = lhs.value_ + rhs.value_;
+    if (std::isfinite(speculative_result)) {
+      lhs.value_ = speculative_result;
+      return lhs;
+    }
+    lhs.DoAdd(rhs);
+    return lhs;
+  }
+  void DoAdd(const Expression& rhs);
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
@@ -367,9 +429,22 @@ class Expression {
   /** Provides unary plus operator. */
   friend Expression operator+(const Expression& e);
 
-  friend Expression operator-(Expression lhs, const Expression& rhs);
+  friend Expression operator-(Expression lhs, const Expression& rhs) {
+    lhs -= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator-=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator-=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
+    const double speculative_result = lhs.value_ - rhs.value_;
+    if (std::isfinite(speculative_result)) {
+      lhs.value_ = speculative_result;
+      return lhs;
+    }
+    lhs.DoSub(rhs);
+    return lhs;
+  }
+  void DoSub(const Expression& rhs);
 
   /** Provides unary minus operator. */
   friend Expression operator-(const Expression& e);
@@ -378,13 +453,39 @@ class Expression {
   /** Provides postfix decrement operator (i.e. x--). */
   Expression operator--(int);
 
-  friend Expression operator*(Expression lhs, const Expression& rhs);
+  friend Expression operator*(Expression lhs, const Expression& rhs) {
+    lhs *= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator*=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator*=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
+    const double speculative_result = lhs.value_ * rhs.value_;
+    if (std::isfinite(speculative_result)) {
+      lhs.value_ = speculative_result;
+      return lhs;
+    }
+    lhs.DoMul(rhs);
+    return lhs;
+  }
+  void DoMul(const Expression& rhs);
 
-  friend Expression operator/(Expression lhs, const Expression& rhs);
+  friend Expression operator/(Expression lhs, const Expression& rhs) {
+    lhs /= rhs;
+    return lhs;
+  }
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend Expression& operator/=(Expression& lhs, const Expression& rhs);
+  friend Expression& operator/=(Expression& lhs, const Expression& rhs) {
+    // Simplification: Expression(c1) / Expression(c2) => Expression(c1 / c2)
+    const double speculative_result = lhs.value_ / rhs.value_;
+    if (std::isfinite(speculative_result)) {
+      lhs.value_ = speculative_result;
+      return lhs;
+    }
+    lhs.DoDiv(rhs);
+    return lhs;
+  }
+  void DoDiv(const Expression& rhs);
 
   friend Expression log(const Expression& e);
   friend Expression abs(const Expression& e);
@@ -450,9 +551,12 @@ class Expression {
                                            std::vector<Expression> arguments);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
-  friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
+  friend void swap(Expression& a, Expression& b) {
+    std::swap(a.value_, b.value_);
+  }
 
   friend bool is_constant(const Expression& e);
+  friend double get_constant_value(const Expression& e);
   friend bool is_variable(const Expression& e);
   friend bool is_addition(const Expression& e);
   friend bool is_multiplication(const Expression& e);
@@ -483,97 +587,94 @@ class Expression {
   // and not exposed to the user of drake/common/symbolic_expression.h
   // header. These functions are declared in
   // drake/common/symbolic_expression_cell.h header.
-  friend std::shared_ptr<const ExpressionConstant> to_constant(
-      const Expression& e);
-  friend std::shared_ptr<const ExpressionVar> to_variable(const Expression& e);
-  friend std::shared_ptr<const UnaryExpressionCell> to_unary(
-      const Expression& e);
-  friend std::shared_ptr<const BinaryExpressionCell> to_binary(
-      const Expression& e);
-  friend std::shared_ptr<const ExpressionAdd> to_addition(const Expression& e);
-  friend std::shared_ptr<const ExpressionMul> to_multiplication(
-      const Expression& e);
-  friend std::shared_ptr<const ExpressionDiv> to_division(const Expression& e);
-  friend std::shared_ptr<const ExpressionLog> to_log(const Expression& e);
-  friend std::shared_ptr<const ExpressionAbs> to_abs(const Expression& e);
-  friend std::shared_ptr<const ExpressionExp> to_exp(const Expression& e);
-  friend std::shared_ptr<const ExpressionSqrt> to_sqrt(const Expression& e);
-  friend std::shared_ptr<const ExpressionPow> to_pow(const Expression& e);
-  friend std::shared_ptr<const ExpressionSin> to_sin(const Expression& e);
-  friend std::shared_ptr<const ExpressionCos> to_cos(const Expression& e);
-  friend std::shared_ptr<const ExpressionTan> to_tan(const Expression& e);
-  friend std::shared_ptr<const ExpressionAsin> to_asin(const Expression& e);
-  friend std::shared_ptr<const ExpressionAcos> to_acos(const Expression& e);
-  friend std::shared_ptr<const ExpressionAtan> to_atan(const Expression& e);
-  friend std::shared_ptr<const ExpressionAtan2> to_atan2(const Expression& e);
-  friend std::shared_ptr<const ExpressionSinh> to_sinh(const Expression& e);
-  friend std::shared_ptr<const ExpressionCosh> to_cosh(const Expression& e);
-  friend std::shared_ptr<const ExpressionTanh> to_tanh(const Expression& e);
-  friend std::shared_ptr<const ExpressionMin> to_min(const Expression& e);
-  friend std::shared_ptr<const ExpressionMax> to_max(const Expression& e);
-  friend std::shared_ptr<const ExpressionCeiling> to_ceil(const Expression& e);
-  friend std::shared_ptr<const ExpressionFloor> to_floor(const Expression& e);
-  friend std::shared_ptr<const ExpressionIfThenElse> to_if_then_else(
-      const Expression& e);
-  friend std::shared_ptr<const ExpressionUninterpretedFunction>
+  friend const ExpressionVar& to_variable(const Expression& e);
+  friend const UnaryExpressionCell& to_unary(const Expression& e);
+  friend const BinaryExpressionCell& to_binary(const Expression& e);
+  friend const ExpressionAdd& to_addition(const Expression& e);
+  friend const ExpressionMul& to_multiplication(const Expression& e);
+  friend const ExpressionDiv& to_division(const Expression& e);
+  friend const ExpressionLog& to_log(const Expression& e);
+  friend const ExpressionAbs& to_abs(const Expression& e);
+  friend const ExpressionExp& to_exp(const Expression& e);
+  friend const ExpressionSqrt& to_sqrt(const Expression& e);
+  friend const ExpressionPow& to_pow(const Expression& e);
+  friend const ExpressionSin& to_sin(const Expression& e);
+  friend const ExpressionCos& to_cos(const Expression& e);
+  friend const ExpressionTan& to_tan(const Expression& e);
+  friend const ExpressionAsin& to_asin(const Expression& e);
+  friend const ExpressionAcos& to_acos(const Expression& e);
+  friend const ExpressionAtan& to_atan(const Expression& e);
+  friend const ExpressionAtan2& to_atan2(const Expression& e);
+  friend const ExpressionSinh& to_sinh(const Expression& e);
+  friend const ExpressionCosh& to_cosh(const Expression& e);
+  friend const ExpressionTanh& to_tanh(const Expression& e);
+  friend const ExpressionMin& to_min(const Expression& e);
+  friend const ExpressionMax& to_max(const Expression& e);
+  friend const ExpressionCeiling& to_ceil(const Expression& e);
+  friend const ExpressionFloor& to_floor(const Expression& e);
+  friend const ExpressionIfThenElse& to_if_then_else(const Expression& e);
+  friend const ExpressionUninterpretedFunction&
   to_uninterpreted_function(const Expression& e);
 
   // Cast functions which takes a pointer to a non-const Expression.
-  friend std::shared_ptr<ExpressionConstant> to_constant(Expression* e);
-  friend std::shared_ptr<ExpressionVar> to_variable(Expression* e);
-  friend std::shared_ptr<UnaryExpressionCell> to_unary(Expression* e);
-  friend std::shared_ptr<BinaryExpressionCell> to_binary(Expression* e);
-  friend std::shared_ptr<ExpressionAdd> to_addition(Expression* e);
-  friend std::shared_ptr<ExpressionMul> to_multiplication(Expression* e);
-  friend std::shared_ptr<ExpressionDiv> to_division(Expression* e);
-  friend std::shared_ptr<ExpressionLog> to_log(Expression* e);
-  friend std::shared_ptr<ExpressionAbs> to_abs(Expression* e);
-  friend std::shared_ptr<ExpressionExp> to_exp(Expression* e);
-  friend std::shared_ptr<ExpressionSqrt> to_sqrt(Expression* e);
-  friend std::shared_ptr<ExpressionPow> to_pow(Expression* e);
-  friend std::shared_ptr<ExpressionSin> to_sin(Expression* e);
-  friend std::shared_ptr<ExpressionCos> to_cos(Expression* e);
-  friend std::shared_ptr<ExpressionTan> to_tan(Expression* e);
-  friend std::shared_ptr<ExpressionAsin> to_asin(Expression* e);
-  friend std::shared_ptr<ExpressionAcos> to_acos(Expression* e);
-  friend std::shared_ptr<ExpressionAtan> to_atan(Expression* e);
-  friend std::shared_ptr<ExpressionAtan2> to_atan2(Expression* e);
-  friend std::shared_ptr<ExpressionSinh> to_sinh(Expression* e);
-  friend std::shared_ptr<ExpressionCosh> to_cosh(Expression* e);
-  friend std::shared_ptr<ExpressionTanh> to_tanh(Expression* e);
-  friend std::shared_ptr<ExpressionMin> to_min(Expression* e);
-  friend std::shared_ptr<ExpressionMax> to_max(Expression* e);
-  friend std::shared_ptr<ExpressionCeiling> to_ceil(Expression* e);
-  friend std::shared_ptr<ExpressionFloor> to_floor(Expression* e);
-  friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(Expression* e);
-  friend std::shared_ptr<ExpressionUninterpretedFunction>
+  friend ExpressionVar& to_variable(Expression* e);
+  friend UnaryExpressionCell& to_unary(Expression* e);
+  friend BinaryExpressionCell& to_binary(Expression* e);
+  friend ExpressionAdd& to_addition(Expression* e);
+  friend ExpressionMul& to_multiplication(Expression* e);
+  friend ExpressionDiv& to_division(Expression* e);
+  friend ExpressionLog& to_log(Expression* e);
+  friend ExpressionAbs& to_abs(Expression* e);
+  friend ExpressionExp& to_exp(Expression* e);
+  friend ExpressionSqrt& to_sqrt(Expression* e);
+  friend ExpressionPow& to_pow(Expression* e);
+  friend ExpressionSin& to_sin(Expression* e);
+  friend ExpressionCos& to_cos(Expression* e);
+  friend ExpressionTan& to_tan(Expression* e);
+  friend ExpressionAsin& to_asin(Expression* e);
+  friend ExpressionAcos& to_acos(Expression* e);
+  friend ExpressionAtan& to_atan(Expression* e);
+  friend ExpressionAtan2& to_atan2(Expression* e);
+  friend ExpressionSinh& to_sinh(Expression* e);
+  friend ExpressionCosh& to_cosh(Expression* e);
+  friend ExpressionTanh& to_tanh(Expression* e);
+  friend ExpressionMin& to_min(Expression* e);
+  friend ExpressionMax& to_max(Expression* e);
+  friend ExpressionCeiling& to_ceil(Expression* e);
+  friend ExpressionFloor& to_floor(Expression* e);
+  friend ExpressionIfThenElse& to_if_then_else(Expression* e);
+  friend ExpressionUninterpretedFunction&
   to_uninterpreted_function(Expression* e);
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
-  // The following classes call the private method `set_expand()` and need to be
-  // friends of this class.
-  friend class ExpressionAdd;
-  friend class ExpressionMul;
-  friend class ExpressionDiv;
-  friend class ExpressionPow;
-
  private:
-  // This is a helper function used to handle `Expression(double)` constructor.
-  static std::shared_ptr<ExpressionCell> make_cell(double d);
+  explicit Expression(std::unique_ptr<ExpressionCell>);
 
-  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+  // Resets this to zero, freeing the cell if necessary.
+  void set_zero() noexcept;
+
+  // Resets this to point at the given cell, increasing its use_count.
+  // @pre `this` does not currently own any cell.
+  void set_shared_cell(const ExpressionCell*) noexcept;
 
   void HashAppend(DelegatingHasher* hasher) const;
 
-  // Note: We use "non-const" ExpressionCell type. This allows us to perform
-  // destructive updates on the pointed cell if the cell is not shared with
-  // other Expressions (that is, ptr_.use_count() == 1).
-  std::shared_ptr<ExpressionCell> ptr_;
+  // Returns a mutable reference to the owned cell. This function may only be
+  // called when this object is the sole owner of the cell.
+  ExpressionCell& mutable_cell();
 
-  /** Sets this symbolic expression as already expanded. */
-  Expression& set_expanded();
+  // Returns a const reference to the owned cell.
+  const ExpressionCell& cell() const;
+
+  // When value_ is NaN, that means it's actually a (boxed) pointer.
+  // N.B. We are careful that every constructor always sets this.
+#ifdef DRAKE_ASSERT_IS_ARMED
+  double value_{};
+#else
+  double value_;
+#endif
 };
 
 Expression operator+(Expression lhs, const Expression& rhs);
@@ -627,7 +728,9 @@ void swap(Expression& a, Expression& b);
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** Checks if @p e is a constant expression. */
-bool is_constant(const Expression& e);
+inline bool is_constant(const Expression& e) {
+  return !std::isnan(e.value_);
+}
 /** Checks if @p e is a constant expression representing @p v. */
 bool is_constant(const Expression& e, double v);
 /** Checks if @p e is 0.0. */
@@ -694,7 +797,10 @@ bool is_uninterpreted_function(const Expression& e);
 /** Returns the constant value of the constant expression @p e.
  *  \pre{@p e is a constant expression.}
  */
-double get_constant_value(const Expression& e);
+inline double get_constant_value(const Expression& e) {
+  DRAKE_ASSERT(is_constant(e));
+  return e.value_;
+}
 /** Returns the embedded variable in the variable expression @p e.
  *  \pre{@p e is a variable expression.}
  */
