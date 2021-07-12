@@ -24,10 +24,14 @@ void SolveDAREandVerify(const Eigen::Ref<const MatrixXd>& A,
     EXPECT_GE(es.eigenvalues()[i], 0);
   }
   // Check that X is the solution to the discrete time ARE.
-  MatrixXd Y = A.transpose() * X * A - X -
-               A.transpose() * X * B * (B.transpose() * X * B + R).inverse() *
-                   B.transpose() * X * A +
-               Q;
+  // clang-format off
+  MatrixXd Y =
+      A.transpose() * X * A
+      - X
+      - (A.transpose() * X * B * (B.transpose() * X * B + R).inverse()
+        * B.transpose() * X * A)
+      + Q;
+  // clang-format on
   EXPECT_TRUE(CompareMatrices(Y, MatrixXd::Zero(n, n), 1E-10,
                               MatrixCompareType::absolute));
 }
@@ -47,10 +51,14 @@ void SolveDAREandVerify(const Eigen::Ref<const MatrixXd>& A,
     EXPECT_GE(es.eigenvalues()[i], 0);
   }
   // Check that X is the solution to the discrete time ARE.
-  MatrixXd Y = A.transpose() * X * A - X -
-               (A.transpose() * X * B + N) * (B.transpose() * X * B + R).inverse() *
-                   (B.transpose() * X * A + N.transpose()) +
-               Q;
+  // clang-format off
+  MatrixXd Y =
+      A.transpose() * X * A
+      - X
+      - ((A.transpose() * X * B + N) * (B.transpose() * X * B + R).inverse()
+        * (B.transpose() * X * A + N.transpose()))
+      + Q;
+  // clang-format on
   EXPECT_TRUE(CompareMatrices(Y, MatrixXd::Zero(n, n), 1E-10,
                               MatrixCompareType::absolute));
 }
