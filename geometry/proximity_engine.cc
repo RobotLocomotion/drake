@@ -158,10 +158,16 @@ namespace {
       drake::log()->warn("Warning parsing file '{}' : {}", filename, warn);
     }
 
-    if (shapes.size() != 1) {
+    if (shapes.size() == 0) {
       throw std::runtime_error(
-          fmt::format("The OBJ contains multiple objects; only OBJs with a "
-                      "single object are supported: '{}'",
+          fmt::format("The file parsed contains no objects; only OBJs with "
+                      "a single object are supported. The file could be "
+                      "corrupt, empty, or not an OBJ file. File name: '{}'",
+                      filename));
+    } else if (shapes.size() > 1) {
+      throw std::runtime_error(
+          fmt::format("The OBJ file contains multiple objects; only OBJs with "
+                      "a single object are supported: File name: '{}'",
                       filename));
     }
 

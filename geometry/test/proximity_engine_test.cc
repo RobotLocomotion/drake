@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <cmath>
+#include <fstream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -8,7 +9,9 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -606,15 +609,41 @@ GTEST_TEST(ProximityEngineTests, RemoveGeometry) {
 
 // Tests for reading .obj files.------------------------------------------------
 
-// Tests exception when we read an .obj file with two objects into Convex
-GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
+// Tests exception when we fail to read an .obj file into a Convex.
+GTEST_TEST(ProximityEngineTests, FailedParsing) {
   ProximityEngine<double> engine;
-  Convex convex{
-      drake::FindResourceOrThrow("drake/geometry/test/forbidden_two_cubes.obj"),
-      1.0};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-      std::runtime_error, ".*only OBJs with a single object.*");
+
+  // The obj contains multiple objects.
+  {
+    Convex convex{drake::FindResourceOrThrow(
+                      "drake/geometry/test/forbidden_two_cubes.obj"),
+                  1.0};
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
+        std::runtime_error, ".*only OBJs with a single object.*");
+  }
+
+  const filesystem::path temp_dir = temp_directory();
+  // An empty file.
+  {
+    const filesystem::path file = temp_dir / "empty.obj";
+    std::ofstream f(file.string());
+    f.close();
+    Convex convex{file.string(), 1.0};
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
+        std::runtime_error, "The file parsed contains no objects;.+");
+  }
+
+  // The file is not an OBJ.
+  { const filesystem::path file = temp_dir / "not_an_obj.txt";
+    std::ofstream f(file.string());
+    f << "I'm not a valid obj\n";
+    f.close();
+    Convex convex{file.string(), 1.0};
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
+        std::runtime_error, "The file parsed contains no objects;.+");}
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
