@@ -97,6 +97,30 @@ To check if this worked, follow the instructions as
 * Use ``<venv_path>/bin/python`` instead of ``python3``, or
 * Source ``<venv_path>/bin/activate`` in your current shell session.
 
+## Installing with ``Anaconda``
+
+You can also install the python bindings in an Anaconda/Miniconda virtual environment.
+
+Here's an example, where you should replace ``<conda_env_path>``, ``<platform>`` and ``<pyversion>``. Note that ``<pyversion>`` is tied to the ``<platform>`` you are using.
+
+```bash
+# Setup drake, and run prerequisites.
+curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
+
+# pyversion will be a function of the specific platform you are using,
+# e.g., with Ubuntu 18.04 Bionic, replace pyversion with python3.6
+conda create -n drake python=<pyversion>
+conda activate drake
+pip install --upgrade pip numpy
+
+# conda_env_path will be the path to the virtual conda env you just created,
+# in this case, drake. It will be located in $CONDA_PREFIX/envs/ and so with
+# an env called drake, conda_env_path=$CONDA_PREFIX/envs/drake
+tar -xvzf drake.tar.gz -C <conda_env_path> --strip-components=1
+# - You may need `sudo` here.
+<conda_env_path>/share/drake/setup/install_prereqs
+```
+
 ## Building the Python Bindings
 
 To use the Python bindings from Drake externally, we recommend using CMake.
