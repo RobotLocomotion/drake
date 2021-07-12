@@ -88,61 +88,78 @@ class MyContextBase : public ContextBase {
 class MySystemBase final : public SystemBase {
  public:
   // Use at least one of each of the six DeclareCacheEntry() variants.
-  MySystemBase()
-        // 1. Use the most general method, taking free functions. Unspecified
-        //    prerequisites should default to all_sources_ticket().
-      : entry0_(DeclareCacheEntry("entry0", ValueProducer(Alloc3, Calc99))),
-        // 2. Use the method that takes two member functions.
-        entry1_(DeclareCacheEntry("entry1", &MySystemBase::MakeInt1,
-                                  &MySystemBase::CalcInt98,
-                                  {entry0_.ticket()})),
-        // 3a. Use the method that takes a model value and member calculator.
-        entry2_(DeclareCacheEntry("entry2", 2, &MySystemBase::CalcInt98,
-                                  {entry0_.ticket(), entry1_.ticket()})),
-        // 4. Use the method that takes a model value and member calculator that
-        // uses function return for its value.
-        entry3_(DeclareCacheEntry("entry3", 17, &MySystemBase::CalcReturnInt11,
-                                  {entry0_.ticket(), entry1_.ticket()})),
-        // 5. Use the method that takes just a member calculator that uses
-        // an output argument. (Entry will be value-initialized.)
-        entry4_(DeclareCacheEntry("entry4",
-                                  &MySystemBase::CalcInt98,
-                                  {entry0_.ticket(), entry1_.ticket()})),
-        // 6. Use the method that takes just a member calculator that uses
-        // function return for its value. (Entry will be value-initialized.)
-        entry5_(DeclareCacheEntry("entry5",
-                                  &MySystemBase::CalcReturnInt11,
-                                  {entry0_.ticket(), entry1_.ticket()})),
-        // 6b. Use the method that takes just a member calculator with output
-        // argument (value-initializes the cache entry).
-        string_entry_(DeclareCacheEntry("string thing",
-                                        &MySystemBase::CalcString,
-                                        {time_ticket()})),
-        // 3b. Also a model value and member calculator.
-        vector_entry_(
-            DeclareCacheEntry("vector thing", MyVector3d(Vector3d(1., 2., 3.)),
-                              &MySystemBase::CalcMyVector3,
-                              {xc_ticket(), string_entry_.ticket()})) {
+  MySystemBase() {
+    // 1. Use the most general method, taking free functions. Unspecified
+    //    prerequisites should default to all_sources_ticket().
+    entry0_ = &DeclareCacheEntry("entry0", ValueProducer(Alloc3, Calc99));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // 2. Use the method that takes two member functions.
+    entry1_ = &DeclareCacheEntry("entry1", &MySystemBase::MakeInt1,
+                                 &MySystemBase::CalcInt98,
+                                 {entry0_->ticket()});
+#pragma GCC diagnostic pop
+
+    // 3a. Use the method that takes a model value and member calculator.
+    entry2_ = &DeclareCacheEntry("entry2", 2, &MySystemBase::CalcInt98,
+                                 {entry0_->ticket(), entry1_->ticket()});
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // 4. Use the method that takes a model value and member calculator that
+    // uses function return for its value.
+    entry3_ = &DeclareCacheEntry("entry3", 17, &MySystemBase::CalcReturnInt11,
+                                 {entry0_->ticket(), entry1_->ticket()});
+#pragma GCC diagnostic pop
+
+    // 5. Use the method that takes just a member calculator that uses
+    // an output argument. (Entry will be value-initialized.)
+    entry4_ = &DeclareCacheEntry("entry4",
+                                 &MySystemBase::CalcInt98,
+                                 {entry0_->ticket(), entry1_->ticket()});
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // 6. Use the method that takes just a member calculator that uses
+    // function return for its value. (Entry will be value-initialized.)
+    entry5_ = &DeclareCacheEntry("entry5",
+                                 &MySystemBase::CalcReturnInt11,
+                                 {entry0_->ticket(), entry1_->ticket()});
+#pragma GCC diagnostic pop
+
+    // 6b. Use the method that takes just a member calculator with output
+    // argument (value-initializes the cache entry).
+    string_entry_ = &DeclareCacheEntry("string thing",
+                                       &MySystemBase::CalcString,
+                                       {time_ticket()});
+
+    // 3b. Also a model value and member calculator.
+    vector_entry_ =
+        &DeclareCacheEntry("vector thing", MyVector3d(Vector3d(1., 2., 3.)),
+                           &MySystemBase::CalcMyVector3,
+                           {xc_ticket(), string_entry_->ticket()});
+
     set_name("cache_entry_test_system");
 
     // We'll make entry4 disabled by default; everything else is enabled.
-    entry4_.disable_caching_by_default();
+    entry4_->disable_caching_by_default();
 
     EXPECT_EQ(num_cache_entries(), 8);
     EXPECT_EQ(GetSystemName(), "cache_entry_test_system");
 
-    EXPECT_FALSE(entry3_.is_disabled_by_default());
-    EXPECT_TRUE(entry4_.is_disabled_by_default());
+    EXPECT_FALSE(entry3_->is_disabled_by_default());
+    EXPECT_TRUE(entry4_->is_disabled_by_default());
   }
 
-  const CacheEntry& entry0() const { return entry0_; }
-  const CacheEntry& entry1() const { return entry1_; }
-  const CacheEntry& entry2() const { return entry2_; }
-  const CacheEntry& entry3() const { return entry3_; }
-  const CacheEntry& entry4() const { return entry4_; }
-  const CacheEntry& entry5() const { return entry5_; }
-  const CacheEntry& string_entry() const { return string_entry_; }
-  const CacheEntry& vector_entry() const { return vector_entry_; }
+  const CacheEntry& entry0() const { return *entry0_; }
+  const CacheEntry& entry1() const { return *entry1_; }
+  const CacheEntry& entry2() const { return *entry2_; }
+  const CacheEntry& entry3() const { return *entry3_; }
+  const CacheEntry& entry4() const { return *entry4_; }
+  const CacheEntry& entry5() const { return *entry5_; }
+  const CacheEntry& string_entry() const { return *string_entry_; }
+  const CacheEntry& vector_entry() const { return *vector_entry_; }
 
   // For use as an allocator.
   int MakeInt1() const { return 1; }
@@ -178,14 +195,14 @@ class MySystemBase final : public SystemBase {
     throw std::logic_error("GetDirectFeedthroughs is not implemented");
   }
 
-  CacheEntry& entry0_;
-  CacheEntry& entry1_;
-  CacheEntry& entry2_;
-  CacheEntry& entry3_;
-  CacheEntry& entry4_;
-  CacheEntry& entry5_;
-  CacheEntry& string_entry_;
-  CacheEntry& vector_entry_;
+  CacheEntry* entry0_{};
+  CacheEntry* entry1_{};
+  CacheEntry* entry2_{};
+  CacheEntry* entry3_{};
+  CacheEntry* entry4_{};
+  CacheEntry* entry5_{};
+  CacheEntry* string_entry_{};
+  CacheEntry* vector_entry_{};
 };
 
 // An allocator is not permitted to return null. That should be caught when
