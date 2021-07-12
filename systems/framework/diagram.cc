@@ -1420,8 +1420,7 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   event_times_buffer_cache_index_ =
       this->DeclareCacheEntry(
           "event_times_buffer", ValueProducer(
-              // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
-              internal::AbstractValueCloner(std::vector<T>(num_subsystems())),
+              std::vector<T>(num_subsystems()),
               &ValueProducer::NoopCalc),
           {this->nothing_ticket()}).cache_index();
 
