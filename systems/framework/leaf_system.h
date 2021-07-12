@@ -1463,18 +1463,15 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
-  /** Declares an abstract-valued output port by specifying member functions to
-  use both for the allocator and calculator. The signatures are:
-  @code
-  OutputType MySystem::MakeOutputValue() const;
-  void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
-  @endcode
-  where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  may be any concrete type such that `Value<OutputType>` is permitted.
-  See alternate signature if your allocator method needs a Context.
-  Template arguments will be deduced and do not need to be specified.
-  @see drake::Value */
+  // Declares an output port by specifying an allocator function pointer that
+  // returns by-value, and a calc function pointer.
   template <class MySystem, typename OutputType>
+  DRAKE_DEPRECATED("2021-11-01",
+      "This overload for DeclareAbstractOutputPort is rarely the best choice;"
+      " it is unusual for allocation to return an OutputType by value rather"
+      " than just Clone of a model_value. If the default constructor or a"
+      " model value cannot be used, use the AllocCallback overload (below)"
+      " instead.")
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
       OutputType (MySystem::*make)() const,
@@ -1592,8 +1589,11 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return DeclareAbstractOutputPort(kUseDefaultName, make, calc,
                                      std::move(prerequisites_of_calc));
+#pragma GCC diagnostic pop
   }
 
   DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
