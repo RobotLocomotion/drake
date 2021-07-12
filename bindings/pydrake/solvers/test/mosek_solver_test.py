@@ -14,11 +14,10 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = MosekSolver()
         self.assertEqual(solver.solver_id(), MosekSolver.id())
         # Mosek prints output to the terminal.
-        solver_options = mp.SolverOptions()
-        solver_options.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
+        solver.set_stream_logging(True, "")
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_type(), mp.SolverType.kMosek)
-        result = solver.Solve(prog, None, solver_options)
+        result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
