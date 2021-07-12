@@ -119,6 +119,22 @@ class DeformableRigidManager final
 
   void DeclareCacheEntries() final;
 
+  /* Extracts the q, qdot, and qddot from the given context and copies them to
+   the cached fem state. */
+  void CopyToFemState(SoftBodyIndex deformable_body_id,
+                      const systems::Context<T>& context,
+                      FemStateBase<T>* fem_state) const;
+
+  /* Calculates the free-motion velocity for the deformable body. */
+  void CalcFemStateStar(SoftBodyIndex deformable_body_id,
+                        const systems::Context<T>& context,
+                        FemStateBase<T>* fem_state_star) const;
+
+  /* Calculates the contact data for all deformable bodies. */
+  void CalcContactData(
+      const systems::Context<T>& context,
+      std::vector<internal::DeformableContactData<T>>* result) const;
+
   void DoCalcContactSolverResults(
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const final;
