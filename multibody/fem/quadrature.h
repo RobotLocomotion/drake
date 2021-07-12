@@ -34,13 +34,13 @@ class Quadrature {
   /* The number of quadrature locations. */
   static constexpr int kNumQuadraturePoints = num_locations;
 
-  /* The position in parent coordinates of all quadrature points. */
+  /* The position in parent domain coordinates of all quadrature points. */
   const LocationsType& get_points() const { return points_; }
 
   /* The weight of all quadrature points. */
   const WeightsType& get_weights() const { return weights_; }
 
-  /* The position in parent coordinates of the q-th quadrature point. */
+  /* The position in parent domain coordinates of the q-th quadrature point. */
   const VectorD& get_point(int q) const {
     DRAKE_ASSERT(0 <= q && q < num_locations);
     return points_[q];
