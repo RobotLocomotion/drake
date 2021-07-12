@@ -120,7 +120,7 @@ std::string Simulate(const YAML::Node& scenario_node) {
   simulator.AdvanceTo(scenario.t_final);
 
   Output output;
-  output.x_tape = state_logger->data();
+  output.x_tape = state_logger->GetLog(*diagram, context).data();
   drake::yaml::YamlWriteArchive writer;
   writer.Accept(output);
   // The EmitString call below saves a document like so:

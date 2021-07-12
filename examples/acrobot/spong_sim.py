@@ -37,6 +37,7 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
     plant_context = diagram.GetMutableSubsystemContext(plant, context)
     controller_context = diagram.GetMutableSubsystemContext(
         controller, context)
+    log = state_logger.GetLog(diagram, context)
 
     plant_context.SetContinuousState(initial_state)
     controller_context.get_mutable_numeric_parameter(0).SetFromVector(
@@ -44,7 +45,7 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 
     simulator.AdvanceTo(t_final)
 
-    x_tape = state_logger.data()
+    x_tape = log.data()
     return x_tape
 
 

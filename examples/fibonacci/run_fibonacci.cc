@@ -29,12 +29,13 @@ int main(int argc, char* argv[]) {
 
   // Create a Simulator and use it to advance time until t=steps*h.
   systems::Simulator<double> simulator(*diagram);
+  const auto& log = logger->GetLog(*diagram, simulator.get_context());
   simulator.AdvanceTo(FLAGS_steps * FibonacciDifferenceEquation::kPeriod);
 
   // Print out the contents of the log.
-  for (int n = 0; n < logger->sample_times().size(); ++n) {
-    const double t = logger->sample_times()[n];
-    std::cout << n << ": " << logger->data()(0, n)
+  for (int n = 0; n < log.sample_times().size(); ++n) {
+    const double t = log.sample_times()[n];
+    std::cout << n << ": " << log.data()(0, n)
               << " (t=" << t << ")\n";
   }
 
