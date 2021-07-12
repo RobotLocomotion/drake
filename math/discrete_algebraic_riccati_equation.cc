@@ -461,9 +461,9 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& N) {
     DRAKE_DEMAND(N.rows() == B.rows() && N.cols() == B.cols());
 
-    Eigen::MatrixXd scrA = A - B * R.llt().solve(N.transpose());
-    Eigen::MatrixXd scrQ = Q - N * R.llt().solve(N.transpose());
-    return DiscreteAlgebraicRiccatiEquation(scrA, B, scrQ, R);
+    Eigen::MatrixXd A_mathcal = A - B * R.llt().solve(N.transpose());
+    Eigen::MatrixXd Q_mathcal = Q - N * R.llt().solve(N.transpose());
+    return DiscreteAlgebraicRiccatiEquation(A_mathcal, B, Q_mathcal, R);
 }
 
 }  // namespace math
