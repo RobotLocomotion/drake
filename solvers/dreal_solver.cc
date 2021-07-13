@@ -395,11 +395,16 @@ dreal::Expression DrealConverter::VisitUninterpretedFunction(
 // Implementation of DrealSolver
 // -----------------------------
 std::optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
-    const symbolic::Formula& f, const double delta) {
+    const symbolic::Formula& f, const double delta, const Polytope polytope,
+    const int jobs) {
   DrealConverter dreal_converter;
   dreal::Box model;
+  dreal::Config config;
+  config.mutable_precision() = delta;
+  config.mutable_number_of_jobs() = jobs;
+  config.mutable_use_polytope() = polytope == Polytope::kUse;
   const bool result{
-      dreal::CheckSatisfiability(dreal_converter.Convert(f), delta, &model)};
+      dreal::CheckSatisfiability(dreal_converter.Convert(f), config, &model)};
   if (result) {
     return dreal_converter.Convert(model);
   } else {
@@ -409,13 +414,15 @@ std::optional<DrealSolver::IntervalBox> DrealSolver::CheckSatisfiability(
 
 std::optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
     const symbolic::Expression& objective, const symbolic::Formula& constraint,
-    const double delta, const LocalOptimization local_optimization) {
+    const double delta, const LocalOptimization local_optimization,
+    const int jobs) {
   DrealConverter dreal_converter;
   dreal::Box model;
   dreal::Config config;
   config.mutable_precision() = delta;
   config.mutable_use_local_optimization() =
       local_optimization == LocalOptimization::kUse;
+  config.mutable_number_of_jobs() = jobs;
   const bool result{dreal::Minimize(dreal_converter.Convert(objective),
                                     dreal_converter.Convert(constraint), config,
                                     &model)};
@@ -528,14 +535,13 @@ void ExtractQuadraticCosts(const MathematicalProgram& prog,
 
 }  // namespace
 
-void DrealSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void DrealSolver::DoSolve(const MathematicalProgram& prog,
+                          const Eigen::VectorXd& initial_guess,
+                          const SolverOptions& merged_options,
+                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "DrealSolver doesn't support the feature of variable scaling.");
+        "DrealSolver doesn't support the feature of variable scaling.");
   }
 
   unused(initial_guess);
@@ -557,27 +563,32 @@ void DrealSolver::DoSolve(
   // TODO(soonho): Add ExtractGenericCosts.
 
   // 3. Call dReal to check the delta-satisfiability of the problem.
-
-  // TODO(soonho): Support other dReal options. For now, we only support
-  // "--precision" and "--local-optimization".
-
-  const double precision{GetOptionWithDefaultValue(
-      merged_options, "precision", 0.001 /* default */)};
-  const LocalOptimization local_optimization{
-      GetOptionWithDefaultValue<int>(
-          merged_options, "use_local_optimization", 1 /* default */) > 0
+  const double precision{GetOptionWithDefaultValue(merged_options, "precision",
+                                                   0.001 /* default */)};
+  const LocalOptimization use_local_optimization{
+      GetOptionWithDefaultValue<int>(merged_options, "use_local_optimization",
+                                     1 /* default */) > 0
           ? LocalOptimization::kUse
           : LocalOptimization::kNotUse};
+  const Polytope use_polytope{
+      GetOptionWithDefaultValue<int>(merged_options, "use_polytope",
+                                     0 /* default */) > 0
+          ? Polytope::kUse
+          : Polytope::kNotUse};
+
+  const int jobs{
+      GetOptionWithDefaultValue(merged_options, "jobs", 1 /* default */)};
   std::optional<IntervalBox> dreal_result;
   if (costs.size() == 0) {
     // No cost functions in the problem. Call Checksatisfiability.
-    dreal_result = CheckSatisfiability(constraints, precision);
+    dreal_result =
+        CheckSatisfiability(constraints, precision, use_polytope, jobs);
   } else {
     // Call Minimize with cost = ∑ᵢ costs(i).
     dreal_result = Minimize(
         accumulate(costs.begin(), costs.end(), symbolic::Expression::Zero(),
                    std::plus<symbolic::Expression>{}),
-        constraints, precision, local_optimization);
+        constraints, precision, use_local_optimization);
   }
 
   // 4. Sets MathematicalProgramResult.

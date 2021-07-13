@@ -27,6 +27,13 @@ namespace solvers {
 ///                                   the solver is using NLopt. See
 ///                                   https://link.springer.com/chapter/10.1007%2F978-3-319-96142-2_15
 ///                                   for details. Default value = True.
+///  * use_polytope <bool>: Use IBEX's CtcPolytopeHull contractor in addition to
+///                         CtcFwdBwd contractor. It gives us the possibility to
+///                         contract a box to the hull of the polytope (the set
+///                         of feasible points). Internally, it is using CLP.
+///                         Default value = False.
+///
+///  * jobs <int>: Number of threads to use in parallel. Default value = 1.
 ///
 /// To see the full list of dReal4 options, visit
 /// https://github.com/dreal/dreal4#command-line-options.
@@ -64,10 +71,19 @@ class DrealSolver final : public SolverBase {
 
   using IntervalBox = std::unordered_map<symbolic::Variable, Interval>;
 
+  /// TODO(soonho-tri): Merge the following enum classes into a separate option
+  /// class.
+
   /// Indicates whether to use dReal's --local-optimization option or not.
   enum class LocalOptimization {
     kUse,     ///< Use "--local-optimization" option.
     kNotUse,  ///< Do not use "--local-optimization" option.
+  };
+
+  /// Indicates whether to use dReal's --polytope option or not.
+  enum class Polytope {
+    kUse,     ///< Use "--polytope" option.
+    kNotUse,  ///< Do not use "--polytope" option.
   };
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrealSolver)
@@ -76,29 +92,30 @@ class DrealSolver final : public SolverBase {
   ~DrealSolver() final;
 
   /// Checks the satisfiability of a given formula @p f with a given precision
-  /// @p delta.
+  /// @p delta. If @p polytope is set, it uses IBEX's CtcPolytopeHull contractor
+  /// in addition to the basic CtcFwdBwd contractor. It uses @p jobs threads in
+  /// parallel.
   ///
   /// @returns a model, a mapping from a variable to an interval, if @p f is
   /// δ-satisfiable.
   /// @returns a nullopt, if @p is unsatisfiable.
   static std::optional<IntervalBox> CheckSatisfiability(
-      const symbolic::Formula& f,
-      double delta);
+      const symbolic::Formula& f, double delta,
+      Polytope polytope = Polytope::kNotUse, int jobs = 1);
 
   /// Finds a solution to minimize @p objective function while satisfying a
   /// given @p constraint using @p delta. When @p local_optimization is
   /// Localoptimization::kUse, enable "--local-optimization" dReal option which
   /// uses NLopt's local-optimization algorithms to refine counterexamples in
-  /// the process of global optimization.
+  /// the process of global optimization. It uses @p jobs threads in parallel.
   ///
   /// @returns a model, a mapping from a variable to an interval, if a solution
   /// exists.
   /// @returns nullopt, if there is no solution.
   static std::optional<IntervalBox> Minimize(
       const symbolic::Expression& objective,
-      const symbolic::Formula& constraint,
-      double delta,
-      LocalOptimization local_optimization);
+      const symbolic::Formula& constraint, double delta,
+      LocalOptimization local_optimization, int jobs = 1);
 
   /// @name Static versions of the instance methods with similar names.
   //@{
