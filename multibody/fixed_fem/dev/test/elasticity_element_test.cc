@@ -5,10 +5,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -18,8 +18,8 @@ constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
 const ElementIndex kZeroIndex(0);
 using QuadratureType =
-    SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-static constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     LinearSimplexElement<AutoDiffXd, kNaturalDimension, kSpatialDimension,
                          kNumQuads>;
@@ -208,7 +208,7 @@ TEST_F(ElasticityElementTest, UndeformedState) {
     rigid_transformed_X.col(i) = transform * X.col(i);
   }
   state.SetQ(Eigen::Map<Vector<T, kNumDofs>>(rigid_transformed_X.data(),
-                                              rigid_transformed_X.size()));
+                                             rigid_transformed_X.size()));
   VerifyEnergyAndForceAreZero(state);
 }
 

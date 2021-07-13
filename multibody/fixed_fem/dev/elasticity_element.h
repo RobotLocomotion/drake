@@ -5,11 +5,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/fem/quadrature.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/isoparametric_element.h"
-#include "drake/multibody/fixed_fem/dev/quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -32,7 +32,7 @@ struct ElasticityElementTraits {
       "The IsoparametricElementType template parameter must be a derived "
       "class of IsoparametricElement");
   static_assert(
-      is_quadrature<QuadratureType>::value,
+      internal::is_quadrature<QuadratureType>::value,
       "The QuadratureType template parameter must be a derived class of "
       "Quadrature<T, NaturalDim, NumLocations>, where NaturalDim can "
       "be 1, 2 or 3.");
@@ -44,13 +44,13 @@ struct ElasticityElementTraits {
   static_assert(std::is_same_v<typename IsoparametricElementType::T,
                                typename ConstitutiveModelType::T>);
   /* Check that the number of quadrature points are compatible. */
-  static_assert(QuadratureType::num_quadrature_points() ==
+  static_assert(QuadratureType::num_quadrature_points ==
                 IsoparametricElementType::num_sample_locations());
-  static_assert(QuadratureType::num_quadrature_points() ==
+  static_assert(QuadratureType::num_quadrature_points ==
                 ConstitutiveModelType::num_locations());
   /* Check that the natural dimensions are compatible. */
   static_assert(IsoparametricElementType::natural_dimension() ==
-                QuadratureType::natural_dimension());
+                QuadratureType::natural_dimension);
   /* Only 3D elasticity is supported. */
   static_assert(IsoparametricElementType::spatial_dimension() == 3);
 
@@ -61,8 +61,8 @@ struct ElasticityElementTraits {
 
   static constexpr int kNumNodes = IsoparametricElementType::num_nodes();
   static constexpr int kNumQuadraturePoints =
-      QuadratureType::num_quadrature_points();
-  static constexpr int kNaturalDimension = QuadratureType::natural_dimension();
+      QuadratureType::num_quadrature_points;
+  static constexpr int natural_dimension = QuadratureType::natural_dimension;
   static constexpr int kSpatialDimension =
       IsoparametricElementType::spatial_dimension();
   static constexpr int kSolutionDimension = 3;
@@ -216,7 +216,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     DRAKE_DEMAND(density_ > 0);
     /* Find the Jacobian of the change of variable function X(ξ). */
     const std::array<
-        Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNaturalDimension>,
+        Eigen::Matrix<T, Traits::kSpatialDimension, Traits::natural_dimension>,
         Traits::kNumQuadraturePoints>
         dXdxi = isoparametric_element_.CalcJacobian(reference_positions);
     /* Record the quadrature point volume in reference configuration for each
@@ -225,27 +225,27 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
       /* The scale to transform quadrature weight in parent coordinates to
        reference coordinates. */
       T volume_scale;
-      if constexpr (Traits::kNaturalDimension == 3) {
+      if constexpr (Traits::natural_dimension == 3) {
         volume_scale = dXdxi[q].determinant();
         /* Degenerate tetrahedron in the initial configuration is not allowed.
          */
         DRAKE_DEMAND(volume_scale > 0);
         // NOLINTNEXTLINE(readability/braces) false positive
-      } else if constexpr (Traits::kNaturalDimension == 2) {
+      } else if constexpr (Traits::natural_dimension == 2) {
         /* Given the QR decomposition of the Jacobian matrix J = QR, where Q is
          unitary and R is upper triangular, the 2x2 top left corner of R gives
          the in plane deformation of the reference triangle. Its determinant
          provides the ratio of the area of triangle in the reference
          configuration over the area of the triangle in parent domain. */
         Eigen::ColPivHouseholderQR<Eigen::Matrix<T, Traits::kSpatialDimension,
-                                                 Traits::kNaturalDimension>>
+                                                 Traits::natural_dimension>>
             qr(dXdxi[q]);
         volume_scale = abs(qr.matrixR()
-                               .topLeftCorner(Traits::kNaturalDimension,
-                                              Traits::kNaturalDimension)
+                               .topLeftCorner(Traits::natural_dimension,
+                                              Traits::natural_dimension)
                                .template triangularView<Eigen::Upper>()
                                .determinant());
-      } else if constexpr (Traits::kNaturalDimension == 1) {
+      } else if constexpr (Traits::natural_dimension == 1) {
         volume_scale = dXdxi[q].norm();
       } else {
         DRAKE_UNREACHABLE();
@@ -258,7 +258,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     dxidX_ = isoparametric_element_.CalcJacobianPseudoinverse(dXdxi);
 
     const std::array<
-        Eigen::Matrix<T, Traits::kNumNodes, Traits::kNaturalDimension>,
+        Eigen::Matrix<T, Traits::kNumNodes, Traits::natural_dimension>,
         Traits::kNumQuadraturePoints>& dSdxi =
         isoparametric_element_.GetGradientInParentCoordinates();
     // TODO(xuchenhan-tri) Replace this with CalcGradientInSpatialCoordinates()
@@ -521,7 +521,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   /* The inverse element Jacobian evaluated at reference configuration at
    the quadrature points in this element. */
   std::array<
-      Eigen::Matrix<T, Traits::kNaturalDimension, Traits::kSolutionDimension>,
+      Eigen::Matrix<T, Traits::natural_dimension, Traits::kSolutionDimension>,
       Traits::kNumQuadraturePoints>
       dxidX_;
   /* The transpose of the derivatives of the shape functions with respect to the
