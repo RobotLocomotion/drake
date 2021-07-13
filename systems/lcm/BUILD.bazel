@@ -189,6 +189,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "connect_lcm_scope_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":connect_lcm_scope",
         "//lcm:real",

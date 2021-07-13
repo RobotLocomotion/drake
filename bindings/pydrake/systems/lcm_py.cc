@@ -3,6 +3,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
@@ -197,11 +198,16 @@ PYBIND11_MODULE(lcm, m) {
             cls_doc.AddToBuilder.doc);
   }
 
-  m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),
-      py::arg("builder"), py::arg("lcm") = nullptr,
-      py::arg("publish_period") = 0.0, py::keep_alive<0, 2>(),
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("ConnectLcmScope",
+      WrapDeprecated(doc.ConnectLcmScope.doc_deprecated, &ConnectLcmScope),
+      py::arg("src"), py::arg("channel"), py::arg("builder"),
+      py::arg("lcm") = nullptr, py::arg("publish_period") = 0.0,
+      py::keep_alive<0, 2>(),
       // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectLcmScope.doc);
+      py_rvp::reference, doc.ConnectLcmScope.doc_deprecated);
+#pragma GCC diagnostic pop
 
   // Bind C++ serializers.
   BindCppSerializers();

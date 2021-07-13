@@ -214,6 +214,7 @@ drake_pybind_library(
     cc_deps = [
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//lcmtypes:contact_results_for_viz",
         "//lcmtypes:iiwa",
         "//lcmtypes:image_array",
