@@ -3205,12 +3205,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         Js_v_ABi_E);
   }
 
-  /// This method computes J𝑠_v_ACcm_E, point Ccm's translational velocity
-  /// Jacobian in frame A with respect to "speeds" 𝑠, expressed in frame E,
-  /// where point Ccm is the composite center of mass of the system of all
-  /// bodies in the MultibodyPlant (except world_body()).
-  ///
-  /// @param[in] context The state of the multibody system.
+  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
+  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
+  /// is the center of mass of the system of all non-world bodies contained in
+  /// `this` MultibodyPlant.
+  /// @param[in] context contains the state of the model.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
@@ -3226,18 +3225,60 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// pulled from the context).
   /// @throws std::exception if CCm does not exist, which occurs if there
   /// are no massive bodies in MultibodyPlant (except world_body()).
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
+  /// bodies contained in `this` MultibodyPlant).
   /// @throws std::exception if composite_mass <= 0, where composite_mass is
   /// the total mass of all bodies except world_body() in MultibodyPlant.
   void CalcJacobianCenterOfMassTranslationalVelocity(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
-    // TODO(yangwill): Add an optional parameter to calculate this for a
-    // subset of bodies instead of the full system
     this->ValidateContext(context);
     DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
     internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
         context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
+  }
+
+  /// Calculates J𝑠_v_ACcm_E, point Ccm's translational velocity Jacobian in
+  /// frame A with respect to "speeds" 𝑠, expressed in frame E, where point CCm
+  /// is the center of mass of the system of all non-world bodies contained in
+  /// model_instances.
+  /// @param[in] context contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances.  If a model
+  /// instance is repeated in the vector (unusual), it is only counted once.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ACcm_E` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_A The frame in which the translational velocity
+  /// v_ACcm and its Jacobian J𝑠_v_ACcm are measured.
+  /// @param[in] frame_E The frame in which the Jacobian J𝑠_v_ACcm is
+  /// expressed on output.
+  /// @param[out] J𝑠_v_ACcm_E Point Ccm's translational velocity Jacobian in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// J𝑠_v_ACcm_E is a 3 x n matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
+  /// bodies contained in model_instances).
+  /// @throws std::exception if model_instances is empty or only has world body.
+  /// @note The world_body() is ignored.  J𝑠_v_ACcm_ = ∑ (mᵢ Jᵢ) / mₛ, where
+  /// mₛ = ∑ mᵢ, mᵢ is the mass of the iᵗʰ body contained in model_instances,
+  /// and Jᵢ is Bcm's translational velocity Jacobian in frame A, expressed in
+  /// frame E (Bcm is the center of mass of the iᵗʰ body).
+  void CalcJacobianCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+       const std::vector<ModelInstanceIndex>& model_instances,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+    this->ValidateContext(context);
+    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
+    internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(context,
+        model_instances, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
   }
 
   /// Calculates abias_ACcm_E, point Ccm's translational "bias" acceleration
