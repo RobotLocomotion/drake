@@ -163,6 +163,9 @@ class DeformableRigidManager final
         .template Eval<FemStateBase<T>>(context);
   }
 
+  void CalcFemStateBase(const systems::Context<T>& context, SoftBodyIndex id,
+                        FemStateBase<T>* fem_state) const;
+
   /* Evaluates the free motion FEM state of the deformable body with index `id`.
    */
   const FemStateBase<T>& EvalFreeMotionFemStateBase(
@@ -171,6 +174,10 @@ class DeformableRigidManager final
         .get_cache_entry(free_motion_cache_indexes_[id])
         .template Eval<FemStateBase<T>>(context);
   }
+
+  void CalcFreeMotionFemStateBase(const systems::Context<T>& context,
+                                  SoftBodyIndex id,
+                                  FemStateBase<T>* fem_state_star) const;
 
   // TODO(xuchenhan-tri): Remove this method when SceneGraph takes control of
   //  all geometries. SceneGraph should be responsible for obtaining the most
@@ -206,10 +213,6 @@ class DeformableRigidManager final
    deformable body is not in contact with any rigid body, then the i-th entry
    (data[i]) in the return value will have `data[i].num_contact_points() == 0`.
   */
-  std::vector<internal::DeformableContactData<T>> CalcDeformableRigidContact(
-      const systems::Context<T>& context) const;
-
-  /* Eval version of the method CalcDeformableRigidContact(). */
   const std::vector<internal::DeformableContactData<T>>&
   EvalDeformableRigidContact(const systems::Context<T>& context) const {
     return this->plant()
@@ -217,6 +220,10 @@ class DeformableRigidManager final
         .template Eval<std::vector<internal::DeformableContactData<T>>>(
             context);
   }
+
+  void CalcDeformableRigidContact(
+      const systems::Context<T>& context,
+      std::vector<internal::DeformableContactData<T>>* result) const;
 
   // TODO(xuchenhan-tri): Modify the description of the contact jacobian when
   //  sparsity for rigid dofs are exploited.

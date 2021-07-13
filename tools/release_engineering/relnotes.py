@@ -91,7 +91,7 @@ def _format_commit(gh, drake, commit):
     lines = message.splitlines()
     subject = lines[0]
 
-    # Now, we'll try to find the pull request numbert and GH API object.  If
+    # Now, we'll try to find the pull request number and GH API object.  If
     # we can't find the PR number, we'll leave the sha there for someone to
     # clean up later.
     pr_num = commit.sha

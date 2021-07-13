@@ -2,11 +2,11 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_model.h"
 
@@ -20,8 +20,8 @@ constexpr int kSolutionDimension = 3;
 constexpr int kQuadratureOrder = 1;
 using T = double;
 using QuadratureType =
-    SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
 using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
@@ -94,17 +94,18 @@ class StretchTest : public ::testing::Test {
       const DofIndex y_dof_index(kSolutionDimension * node + 1);
       const DofIndex z_dof_index(kSolutionDimension * node + 2);
       /* No translation in the xz-plane. */
-      if (std::abs(q(x_dof_index)) <= kTol) {
-        bc->AddBoundaryCondition(x_dof_index, Vector1<T>(q(x_dof_index)));
+      if (std::abs(q(int{x_dof_index})) <= kTol) {
+        bc->AddBoundaryCondition(x_dof_index, Vector1<T>(q(int{x_dof_index})));
       }
       /* Stretch the two ends of the bar in y-direction. */
-      if (std::abs(std::abs(q(y_dof_index)) - std::abs(kLy / 2)) <= kTol) {
+      if (std::abs(std::abs(q(int{y_dof_index})) - std::abs(kLy / 2)) <= kTol) {
         bc->AddBoundaryCondition(y_dof_index,
-                                 Vector1<T>(kStretchFactor * q(y_dof_index)));
+                                 Vector1<T>(
+                                     kStretchFactor * q(int{y_dof_index})));
       }
       /* No translation in the xz-plane. */
-      if (std::abs(q(z_dof_index)) <= kTol) {
-        bc->AddBoundaryCondition(z_dof_index, Vector1<T>(q(z_dof_index)));
+      if (std::abs(q(int{z_dof_index})) <= kTol) {
+        bc->AddBoundaryCondition(z_dof_index, Vector1<T>(q(int{z_dof_index})));
       }
     }
     return bc;

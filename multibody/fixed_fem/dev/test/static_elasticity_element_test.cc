@@ -5,10 +5,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -21,8 +21,8 @@ class StaticElasticityElementTest : public ::testing::Test {
   const ElementIndex kZeroIndex{0};
   using T = AutoDiffXd;
   using QuadratureType =
-      SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-  static constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+      internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
   using IsoparametricElementType =
       LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
   using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
