@@ -85,8 +85,8 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
     for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
       JointActuator<double>& joint_actuator =
           plant->get_mutable_joint_actuator(index);
-      joint_actuator.set_default_rotor_inertia(rotor_inertias(index));
-      joint_actuator.set_default_gear_ratio(gear_ratios(index));
+      joint_actuator.set_default_rotor_inertia(rotor_inertias(int{index}));
+      joint_actuator.set_default_gear_ratio(gear_ratios(int{index}));
     }
   }
 
