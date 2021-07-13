@@ -97,6 +97,7 @@ drake_cc_googletest(
     deps = [
         ":iiwa_command_sender",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
@@ -105,6 +106,7 @@ drake_cc_googletest(
     deps = [
         ":iiwa_status_receiver",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
