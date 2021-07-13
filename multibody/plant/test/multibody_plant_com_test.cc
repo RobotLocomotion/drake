@@ -277,7 +277,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
           frame_W, frame_W, &Js_v_WCcm_W),
       "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): There must be at "
       "least one non-world body contained in model_instances.");
-  
+
   // Verify CalcCenterOfMassPositionInWorld() works for 1 instance in
   // model_instances.
   model_instances.push_back(triangle_instance_);

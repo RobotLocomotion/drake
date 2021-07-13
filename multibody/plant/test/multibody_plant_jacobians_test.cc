@@ -463,10 +463,6 @@ TEST_F(TwoDOFPlanarPendulumTest,
   plant_->CalcJacobianCenterOfMassTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W);
 
-  // Test for CalcJacobianCenterOfMassTranslationalVelocity().
-  plant_->CalcJacobianCenterOfMassTranslationalVelocity(
-      *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W);
-
   Eigen::MatrixXd Js_v_WScm_W_expected(3, plant_->num_velocities());
   // Denoting Scm as the center of mass of the system formed by links A and B,
   // Scm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) Wy,
