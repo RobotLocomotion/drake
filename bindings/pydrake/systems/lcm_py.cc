@@ -11,6 +11,7 @@
 #include "drake/systems/lcm/connect_lcm_scope.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_scope_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/serializer.h"
 
@@ -167,6 +168,33 @@ PYBIND11_MODULE(lcm, m) {
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,
             py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);
+  }
+
+  {
+    using Class = LcmScopeSystem;
+    constexpr auto& cls_doc = doc.LcmScopeSystem;
+    py::class_<Class, LeafSystem<double>>(m, "LcmScopeSystem")
+        .def(py::init<int>(), py::arg("size"), cls_doc.ctor.doc)
+        .def_static(
+            "AddToBuilder",
+            [](systems::DiagramBuilder<double>* builder,
+                drake::lcm::DrakeLcmInterface* lcm,
+                const OutputPort<double>& signal, const std::string& channel,
+                double publish_period) {
+              auto [scope, publisher] = LcmScopeSystem::AddToBuilder(
+                  builder, lcm, signal, channel, publish_period);
+              // Annotate the proper rvp on the tuple of pointers.
+              py::object py_builder = py::cast(builder, py_rvp::reference);
+              py::list result;
+              result.append(
+                  py::cast(scope, py_rvp::reference_internal, py_builder));
+              result.append(
+                  py::cast(publisher, py_rvp::reference_internal, py_builder));
+              return result;
+            },
+            py::arg("builder"), py::arg("lcm"), py::arg("signal"),
+            py::arg("channel"), py::arg("publish_period"),
+            cls_doc.AddToBuilder.doc);
   }
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),
