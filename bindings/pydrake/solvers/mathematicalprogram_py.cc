@@ -98,6 +98,9 @@ auto RegisterBinding(py::handle* scope, const string& name) {
     // TODO(eric.cousineau): See if there is a more elegant mechanism for this.
     py::implicitly_convertible<B, Binding<EvaluatorBase>>();
   }
+  if (std::is_base_of_v<Constraint, C> && !std::is_same_v<C, Constraint>) {
+    py::implicitly_convertible<B, Binding<Constraint>>();
+  }
   return binding_cls;
 }
 
@@ -1325,6 +1328,34 @@ for every column of ``prog_var_vals``. )""")
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.GetBindingVariableValues.doc)
+      .def(
+          "CheckSatisfied",
+          [](const MathematicalProgram& prog,
+              const Binding<Constraint>& binding,
+              const VectorX<double>& prog_var_vals, double tol) {
+            return prog.CheckSatisfied(binding, prog_var_vals, tol);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"), py::arg("tol") = 1e-6,
+          doc.MathematicalProgram.CheckSatisfied.doc)
+      .def(
+          "CheckSatisfied",
+          [](const MathematicalProgram& prog,
+              const std::vector<Binding<Constraint>>& bindings,
+              const VectorX<double>& prog_var_vals, double tol) {
+            return prog.CheckSatisfied(bindings, prog_var_vals, tol);
+          },
+          py::arg("bindings"), py::arg("prog_var_vals"), py::arg("tol") = 1e-6,
+          doc.MathematicalProgram.CheckSatisfied.doc_vector)
+      .def("CheckSatisfiedAtInitialGuess",
+          overload_cast_explicit<bool, const Binding<Constraint>&, double>(
+              &MathematicalProgram::CheckSatisfiedAtInitialGuess),
+          py::arg("binding"), py::arg("tol") = 1e-6,
+          doc.MathematicalProgram.CheckSatisfiedAtInitialGuess.doc)
+      .def("CheckSatisfiedAtInitialGuess",
+          overload_cast_explicit<bool, const std::vector<Binding<Constraint>>&,
+              double>(&MathematicalProgram::CheckSatisfiedAtInitialGuess),
+          py::arg("bindings"), py::arg("tol") = 1e-6,
+          doc.MathematicalProgram.CheckSatisfiedAtInitialGuess.doc_vector)
       .def("indeterminates", &MathematicalProgram::indeterminates,
           doc.MathematicalProgram.indeterminates.doc)
       .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
@@ -1659,7 +1690,14 @@ for every column of ``prog_var_vals``. )""")
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
-  RegisterBinding<Constraint>(&m, "Constraint");
+  RegisterBinding<Constraint>(&m, "Constraint")
+      .def(py::init([](py::object binding) {
+        // Define a type-erased downcast to mirror the implicit
+        // "downcast-ability" of Binding<> types.
+        return std::make_unique<Binding<Constraint>>(
+            binding.attr("evaluator")().cast<std::shared_ptr<Constraint>>(),
+            binding.attr("variables")().cast<VectorXDecisionVariable>());
+      }));
   RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
   RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
   RegisterBinding<RotatedLorentzConeConstraint>(
