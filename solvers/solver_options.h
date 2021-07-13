@@ -46,6 +46,9 @@ namespace solvers {
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference
  * https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
+ *
+ * "dReal" -- Parameter name and values as specified in dReal Reference
+ * https://github.com/dreal/dreal4/blob/master/README.md#command-line-options
  */
 class SolverOptions {
  public:
