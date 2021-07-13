@@ -32,6 +32,20 @@ class DrakeLcm : public DrakeLcmInterface {
   explicit DrakeLcm(std::string lcm_url);
 
   /**
+   * (Advanced) Constructs using the given URL, but with the ability to defer
+   * launching the receive thread.
+   *
+   * @param setup_recv_parts controls whether or not the background receive
+   * thread will be launched immediately during the constructor (when true)
+   * or deferred until the first time it's needed (when false).  This can be
+   * useful if the scheduling configuration for new threads varies between
+   * the construction time and and first use.  For all other constructions,
+   * this setting defaults to `true`.
+   */
+  DrakeLcm(std::string lcm_url, bool setup_recv_parts);
+
+
+  /**
    * A destructor that forces the receive thread to be stopped.
    */
   ~DrakeLcm() override;

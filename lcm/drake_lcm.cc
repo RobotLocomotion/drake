@@ -56,13 +56,17 @@ class DrakeLcm::Impl {
 
 DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
 
-DrakeLcm::DrakeLcm(std::string lcm_url)
+DrakeLcm::DrakeLcm(std::string lcm_url) : DrakeLcm(std::move(lcm_url), true) {}
+
+DrakeLcm::DrakeLcm(std::string lcm_url, bool setup_recv_parts)
     : impl_(std::make_unique<Impl>(std::move(lcm_url))) {
-  // Ensure that LCM's self-test happens deterministically (here in our ctor),
-  // and NOT in the receive thread or first HandleSubscriptions call.  Without
-  // this, ThreadSanitizer builds may report false positives related to the
-  // self-test happening concurrently with the LCM publishing.
-  impl_->lcm_.getFileno();
+  if (setup_recv_parts) {
+    // Ensure that LCM's self-test happens deterministically (here in our
+    // ctor) and NOT in the first HandleSubscriptions call.  Without this,
+    // ThreadSanitizer builds may report false positives related to the
+    // self-test happening concurrently with LCM publishing.
+    impl_->lcm_.getFileno();
+  }
 }
 
 std::string DrakeLcm::get_lcm_url() const {
