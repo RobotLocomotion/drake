@@ -28,6 +28,7 @@ drake_cc_test(
 sh_test(
     name = "record_results",
     size = "small",
+    timeout = "moderate",
     srcs = ["record_results.sh"],
     data = [
         ":cassie_bench",
