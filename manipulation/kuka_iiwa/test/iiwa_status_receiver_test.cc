@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 
 namespace drake {
 namespace manipulation {
@@ -11,6 +12,8 @@ namespace kuka_iiwa {
 namespace {
 
 using Eigen::VectorXd;
+using drake::test::LimitMalloc;
+
 constexpr int N = kIiwaArmNumJoints;
 
 class IiwaStatusReceiverTest : public testing::Test {
@@ -84,6 +87,34 @@ TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
   EXPECT_TRUE(CompareMatrices(
       dut_.get_torque_external_output_port().Eval(context_),
       torque_external));
+}
+
+// This class is likely to be used on the critical path for robot control, so
+// we insist that it must not perform heap operations while in steady-state.
+TEST_F(IiwaStatusReceiverTest, MallocTest) {
+  // Set as input a non-trivial message.
+  status_.utime = 1;
+  status_.num_joints = N;
+  status_.joint_position_commanded.resize(N);
+  status_.joint_position_measured.resize(N);
+  status_.joint_velocity_estimated.resize(N);
+  status_.joint_torque_commanded.resize(N);
+  status_.joint_torque_measured.resize(N);
+  status_.joint_torque_external.resize(N);
+  // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
+  fixed_input_.GetMutableData()->
+      template get_mutable_value<lcmt_iiwa_status>() = status_;
+
+  // Compute the output. No heap changes are allowed.
+  {
+    LimitMalloc guard;
+    const systems::LeafSystem<double>& leaf = dut_;
+    const int num_output_ports = leaf.num_output_ports();
+    for (int i = 0; i < num_output_ports; ++i) {
+      const auto& port = leaf.get_output_port(i);
+      port.Eval(context_);
+    }
+  }
 }
 
 }  // namespace
