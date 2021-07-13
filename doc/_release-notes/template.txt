@@ -40,7 +40,7 @@ Fixes
 
 * TBD
 
-## Multibody Dynamics
+## Multibody Dynamics and Geometry
 
 <!-- <relnotes for geometry,multibody go here> -->
 
