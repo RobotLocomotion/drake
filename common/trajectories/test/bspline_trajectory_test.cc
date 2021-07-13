@@ -346,7 +346,6 @@ GTEST_TEST(BsplineTrajectorySerializeTests, NotEnoughControlPointsTest) {
   BsplineTrajectory<double> dut{};
     DRAKE_EXPECT_THROWS_MESSAGE(
       YamlReadArchive(YAML::Load(not_enough_control_points)).Accept(&dut),
-      std::runtime_error,
       ".*CheckInvariants.*");
 }
 
