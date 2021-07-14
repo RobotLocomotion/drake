@@ -81,7 +81,6 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, negativeY) {
   // Y is a negative definite matrix.
   DRAKE_EXPECT_THROWS_MESSAGE(
       DecomposePSDmatrixIntoXtransposeTimesX(-Eigen::Matrix3d::Identity(), 0),
-      std::runtime_error,
       "Y is not positive definite. It has an eigenvalue -1.* that is more "
       "negative than the tolerance 0.*.");
 }

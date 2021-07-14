@@ -50,13 +50,13 @@ GTEST_TEST(DiscreteTimeTrajectoryTest, ValueThrowsTest) {
   DiscreteTimeTrajectory<double> traj(times, values);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      traj.value(-1), std::runtime_error,
+      traj.value(-1),
       "Value requested at time -1(\\.0)? does not match .*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      traj.value(0.4), std::runtime_error,
+      traj.value(0.4),
       "Value requested at time 0.4 does not match .*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      traj.value(1), std::runtime_error,
+      traj.value(1),
       "Value requested at time 1(\\.0)? does not match .*");
 
   const double kLooseTolerance = 0.1;
@@ -106,13 +106,13 @@ GTEST_TEST(DicreteTimeTrajectoryTest, SymbolicTimes) {
   values << 6, 5, 67, 5, -4, 1, 34, 16, -23;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      DiscreteTimeTrajectory<Expression>(times, values), std::runtime_error,
+      DiscreteTimeTrajectory<Expression>(times, values),
       ".*environment does not have an entry for the variable t.*\n*");
 
   times[1] = 0.4;
   DiscreteTimeTrajectory<Expression> traj(times, values);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      traj.value(t), std::runtime_error,
+      traj.value(t),
       ".*environment does not have an entry for the variable t.*\n*");
 }
 
