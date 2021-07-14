@@ -40,7 +40,7 @@ Fixes
 
 * TBD
 
-## Multibody Dynamics
+## Multibody Dynamics and Geometry
 
 <!-- <relnotes for geometry,multibody go here> -->
 
@@ -90,7 +90,8 @@ Newly bound
 
 ## Build dependencies
 
-<!-- Manually relocate any "Upgrade foo_external to latest" lines to here. -->
+<!-- Manually relocate any "Upgrade foo_external to latest" lines to here, -->
+<!-- and then sort them alphabetically. -->
 
 * TBD
 
