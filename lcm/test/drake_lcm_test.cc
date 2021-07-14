@@ -66,6 +66,13 @@ TEST_F(DrakeLcmTest, CustomUrlTest) {
   EXPECT_EQ(dut_->get_lcm_url(), kUdpmUrl);
 }
 
+TEST_F(DrakeLcmTest, DeferThreadTest) {
+  dut_ = std::make_unique<DrakeLcm>(kUdpmUrl, false);
+  EXPECT_EQ(dut_->get_lcm_url(), kUdpmUrl);
+  // There's no easy way to check whether the thread is running.  For now,
+  // we'll satisfy ourselves that the test compiles and preserves the URL.
+}
+
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   auto noop = [](const void*, int) {};
   DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop),
