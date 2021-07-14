@@ -15,7 +15,7 @@ namespace fem {
 
 template <typename T>
 SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
-    const geometry::VolumeMesh<T>& mesh, std::string name,
+    internal::ReferenceDeformableGeometry<T> geometry, std::string name,
     const DeformableBodyConfig<T>& config,
     geometry::ProximityProperties proximity_props) {
   /* Throw if name is not unique. */
@@ -30,14 +30,15 @@ SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
   switch (config.material_model()) {
     case MaterialModel::kLinear:
       RegisterDeformableBodyHelper<LinearConstitutiveModel>(
-          mesh, std::move(name), config);
+          geometry.mesh(), std::move(name), config);
       break;
     case MaterialModel::kCorotated:
-      RegisterDeformableBodyHelper<CorotatedModel>(mesh, std::move(name),
-                                                   config);
+      RegisterDeformableBodyHelper<CorotatedModel>(geometry.mesh(),
+                                                   std::move(name), config);
       break;
   }
   proximity_properties_.emplace_back(std::move(proximity_props));
+  reference_configuration_geometries_.emplace_back(std::move(geometry));
   return body_index;
 }
 
@@ -119,7 +120,6 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
   model_discrete_states_.emplace_back(discrete_state);
 
   fem_models_.emplace_back(std::move(fem_model));
-  reference_configuration_meshes_.emplace_back(mesh);
   names_.emplace_back(std::move(name));
 }
 

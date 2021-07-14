@@ -10,6 +10,7 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/multibody/fixed_fem/dev/deformable_body_config.h"
 #include "drake/multibody/fixed_fem/dev/fem_model_base.h"
+#include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 #include "drake/multibody/plant/physical_model.h"
 
 namespace drake {
@@ -19,7 +20,8 @@ namespace fem {
 /** %DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
  deformable bodies can change in a simulation. Each deformable body is modeled
- as a volumetric mesh with persisting topology and changing vertex positions.
+ as a volumetric mesh with persisting topology, changing vertex positions, and
+ an approximated signed distance field.
 
  Deformable bodies can only be added, but not deleted. Each deformable body is
  uniquely identified by its index, which is equal to the number of deformable
@@ -35,10 +37,11 @@ namespace fem {
  and 3j + 2 in the i-th VectorX from the output port.
 
  The connectivity of the meshes representing the deformable bodies and their
- initial positions can be queried via `reference_configuration_meshes()` which
- returns an std::vector of volume meshes. The i-th mesh stores the connectivity
- for body i, which does not change throughout the simulation, as well as the
- initial positions of the vertices of the i-th body.
+ initial positions can be queried via `reference_configuration_geometries()`
+ which returns the geometries of the deformable bodies at the reference
+ configuration. The i-th mesh stores the connectivity for body i, which does not
+ change throughout the simulation, as well as the initial positions of the
+ vertices of the i-th body.
 
  Simple zero DirichletBoundaryCondition can be configured via
  `SetRegisteredBodyInWall()`.
@@ -69,7 +72,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    @throw std::exception if `name` is not distinct from names of all previously
    registered bodies. */
   SoftBodyIndex RegisterDeformableBody(
-      const geometry::VolumeMesh<T>& mesh, std::string name,
+      internal::ReferenceDeformableGeometry<T> geometry, std::string name,
       const DeformableBodyConfig<T>& config,
       geometry::ProximityProperties proximity_props);
 
@@ -84,7 +87,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
                                 double distance_tolerance = 1e-6);
 
   /** Returns the number of deformable bodies registered. */
-  int num_bodies() const { return reference_configuration_meshes_.size(); }
+  int num_bodies() const { return reference_configuration_geometries_.size(); }
 
   /** Returns the FEM model of the selected deformable body. Each deformable
    body is modeled as an individual FEM model. */
@@ -101,12 +104,12 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
     return discrete_state_indexes_;
   }
 
-  /** Returns the volume meshes of the deformable bodies at reference
-   configuration. The meshes have the same order as the registration of their
-   corresponding deformable bodies. */
-  const std::vector<geometry::VolumeMesh<T>>& reference_configuration_meshes()
-      const {
-    return reference_configuration_meshes_;
+  /** Returns the geometries of the deformable bodies at reference
+   configuration. The geometries have the same order as the registration of
+   their corresponding deformable bodies. */
+  const std::vector<internal::ReferenceDeformableGeometry<T>>&
+  reference_configuration_geometries() const {
+    return reference_configuration_geometries_;
   }
 
   /* Returns the proximity properties of the registered deformable bodies in the
@@ -154,12 +157,13 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   const MultibodyPlant<T>* plant_{nullptr};
   /* The FemModels owned by this DeformableModel. One per deformable body. */
   std::vector<std::unique_ptr<FemModelBase<T>>> fem_models_{};
-  /* Initial meshes for all deformable bodies at time of registration. */
-  std::vector<geometry::VolumeMesh<T>> reference_configuration_meshes_{};
+  /* The geometries of the deformable bodies at reference configuration. */
+  std::vector<internal::ReferenceDeformableGeometry<T>>
+      reference_configuration_geometries_{};
   /* The state of each deformable body at reference configuration. This contains
    the same information as the vertex positions in
-   reference_configuration_meshes_, but is stored in a more convenient format.
-  */
+   reference_configuration_geometries_, but is stored in a more convenient
+   format. */
   std::vector<VectorX<T>> model_discrete_states_;
   /* Proximity properties for all registered deformable bodies. */
   std::vector<geometry::ProximityProperties> proximity_properties_{};
