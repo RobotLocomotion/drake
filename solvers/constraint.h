@@ -65,6 +65,8 @@ class Constraint : public EvaluatorBase {
         lower_bound_(lb),
         upper_bound_(ub) {
     check(num_constraints);
+    DRAKE_DEMAND(!lower_bound_.array().isNaN().any());
+    DRAKE_DEMAND(!upper_bound_.array().isNaN().any());
   }
 
   /**
@@ -530,6 +532,7 @@ class LinearConstraint : public Constraint {
                    const Eigen::MatrixBase<DerivedUB>& ub)
       : Constraint(a.rows(), a.cols(), lb, ub), A_(a) {
     DRAKE_DEMAND(a.rows() == lb.rows());
+    DRAKE_DEMAND(A_.array().isFinite().all());
   }
 
   ~LinearConstraint() override {}
