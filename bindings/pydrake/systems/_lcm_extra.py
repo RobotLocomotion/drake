@@ -13,6 +13,9 @@ class PySerializer(SerializerInterface):
         SerializerInterface.__init__(self)
         self._lcm_type = lcm_type
 
+    def Clone(self):
+        return PySerializer(self._lcm_type)
+
     def CreateDefaultValue(self):
         return AbstractValue.Make(self._lcm_type())
 

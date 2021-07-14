@@ -40,6 +40,11 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
   // `PySerializerInterface`). C++ implementations will use the bindings on the
   // interface below.
 
+  std::unique_ptr<SerializerInterface> Clone() const override {
+    PYBIND11_OVERLOAD_PURE(
+        std::unique_ptr<SerializerInterface>, SerializerInterface, Clone);
+  }
+
   std::unique_ptr<AbstractValue> CreateDefaultValue() const override {
     PYBIND11_OVERLOAD_PURE(std::unique_ptr<AbstractValue>, SerializerInterface,
         CreateDefaultValue);
@@ -117,6 +122,7 @@ PYBIND11_MODULE(lcm, m) {
     // implementations of this interface. Python implementations of the
     // interface will call the trampoline implementation methods above.
     cls  // BR
+        .def("Clone", &Class::Clone, cls_doc.Clone.doc)
         .def("CreateDefaultValue", &Class::CreateDefaultValue,
             cls_doc.CreateDefaultValue.doc)
         .def(
