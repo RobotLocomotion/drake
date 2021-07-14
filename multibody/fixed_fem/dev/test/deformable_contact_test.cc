@@ -13,6 +13,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
+#include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
 namespace drake {
 namespace multibody {
@@ -31,71 +32,7 @@ using geometry::internal::DeformableVolumeMesh;
 using geometry::internal::Obb;
 using std::vector;
 
-/* The OctahedronVolume() and MakePyramidSurface() methods are stolen from
- mesh_intersection_test.cc. */
-
-/* Generates a volume mesh of an octahedron comprising of eight tetrahedral
- elements with vertices on the coordinate axes and the origin like this:
-
-                +Z   -X
-                 |   /
-              v5 ●  ● v3
-                 | /
-       v4     v0 |/
-  -Y----●--------●------●----+Y
-                /|      v2
-               / |
-           v1 ●  ● v6
-             /   |
-           +X    |
-                -Z
-*/
-template <typename T>
-VolumeMesh<T> OctahedronVolume() {
-  const int element_data[8][4] = {
-      // The top four tetrahedrons share the top vertex v5.
-      {0, 1, 2, 5},
-      {0, 2, 3, 5},
-      {0, 3, 4, 5},
-      {0, 4, 1, 5},
-      // The bottom four tetrahedrons share the bottom vertex v6.
-      {0, 2, 1, 6},
-      {0, 3, 2, 6},
-      {0, 4, 3, 6},
-      {0, 1, 4, 6}};
-  vector<VolumeElement> elements;
-  for (const auto& element : element_data) {
-    elements.emplace_back(element);
-  }
-  // clang-format off
-  const Vector3<T> vertex_data[7] = {
-      { 0,  0,  0},
-      { 1,  0,  0},
-      { 0,  1,  0},
-      {-1,  0,  0},
-      { 0, -1,  0},
-      { 0,  0,  1},
-      { 0,  0, -1}};
-  // clang-format on
-  vector<VolumeVertex<T>> vertices;
-  for (const auto& vertex : vertex_data) {
-    vertices.emplace_back(vertex);
-  }
-  return VolumeMesh<T>(std::move(elements), std::move(vertices));
-}
-
-template <typename T>
-internal::ReferenceDeformableGeometry<T> OctahedronDeformableGeometry() {
-  auto mesh = std::make_unique<VolumeMesh<T>>(OctahedronVolume<T>());
-  /* The distance to surface of the octahedron is zero for all vertices except
-   for v0 that has signed distance to the surface of -1/√3. */
-  std::vector<T> signed_distances(7, 0.0);
-  signed_distances[0] = -1.0 / std::sqrt(3);
-  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "Approximated signed distance", std::move(signed_distances), mesh.get(),
-      false);
-  return {std::move(mesh), std::move(mesh_field)};
-}
+/* The MakePyramidSurface() method is stolen from mesh_intersection_test.cc. */
 
 /* Generates a simple surface mesh of a pyramid with vertices on the
  coordinate axes and the origin like this:
@@ -162,12 +99,12 @@ bool CompareSetOfVector3s(const std::vector<Vector3<T>>& A,
 
 /* Returns the contact surface between the rigid pyramid surface (see
  MakePyramidSurface()) and the deforamble octahedron volume (see
- OctahedronVolume()) where the pose of the rigid mesh in the deformable mesh's
- frame is given by X_DR. */
+ MakeOctahedronVolumeMesh()) where the pose of the rigid mesh in the deformable
+ mesh's frame is given by X_DR. */
 template <typename T>
 DeformableContactSurface<T> MakeDeformableContactSurface(
     const math::RigidTransform<T>& X_DR) {
-  const DeformableVolumeMesh<T> volume_D(OctahedronVolume<T>());
+  const DeformableVolumeMesh<T> volume_D(MakeOctahedronVolumeMesh<T>());
   /* Deformable contact assumes the rigid surface is double-valued, regardless
    of the scalar value for the volume mesh.  */
   const SurfaceMesh<double> surface_R = MakePyramidSurface<double>();
@@ -243,7 +180,7 @@ void TestComputeTetMeshTriMeshContact() {
       CompareSetOfVector3s(calculated_centroids_D, expected_centroids_D, kEps));
 
   /* Verify the centroids in barycentric coordinates are as expected. */
-  const VolumeMesh<T> volume_D = OctahedronVolume<T>();
+  const VolumeMesh<T> volume_D = MakeOctahedronVolumeMesh<T>();
   calculated_centroids_D.clear();
   for (int i = 0; i < kNumPolys; ++i) {
     const Vector4<T> b_centroid = contact_data[i].b_centroid;
@@ -343,7 +280,7 @@ GTEST_TEST(DeformableContactTest, DeformableContactData) {
       MakeDeformableContactSurface<double>(X_DR);
   const internal::DeformableContactData<double> contact_data =
       MakeDeformableContactData(std::move(contact_surface),
-                                OctahedronDeformableGeometry<double>());
+                                MakeOctahedronDeformableGeometry<double>());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
   /* v0, v1, v2, v3, v4, v6 are participating in contact so they get new indexes
@@ -368,7 +305,7 @@ GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {
       MakeDeformableContactSurface<double>(X_DR);
   const internal::DeformableContactData<double> contact_data =
       MakeDeformableContactData(std::move(contact_surface),
-                                OctahedronDeformableGeometry<double>());
+                                MakeOctahedronDeformableGeometry<double>());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
   EXPECT_EQ(contact_data.num_vertices_in_contact(), 0);

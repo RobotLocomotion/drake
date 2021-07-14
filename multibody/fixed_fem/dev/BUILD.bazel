@@ -186,6 +186,8 @@ drake_cc_library(
         ":deformable_model",
         ":deformable_rigid_contact_pair",
         ":fem_solver",
+        ":permute_tangent_matrix",
+        ":schur_complement",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_matrix",
         "//multibody/plant",
@@ -492,6 +494,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "permute_tangent_matrix",
+    srcs = [
+        "permute_tangent_matrix.cc",
+    ],
+    hdrs = [
+        "permute_tangent_matrix.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
 drake_cc_binary(
     name = "run_scripted_deformable_motion",
     srcs = [
@@ -605,6 +621,7 @@ drake_cc_googletest(
     deps = [
         ":deformable_contact",
         ":deformable_contact_data",
+        ":mesh_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:surface_mesh",
         "//geometry/proximity:volume_mesh",
@@ -804,6 +821,14 @@ drake_cc_googletest(
     deps = [
         ":dummy_element",
         ":newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "permute_tangent_matrix_test",
+    deps = [
+        ":permute_tangent_matrix",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
