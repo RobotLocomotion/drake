@@ -67,6 +67,16 @@ class PyPlotVisualizer(LeafSystem):
                 callback=on_initialize))
 
     def DoPublish(self, context, event):
+        # TODO(SeanCurtis-TRI) The test for this class makes use of the
+        #  Publish(context) API -- aka a forced event. Due to the sparsity of
+        #  the pydrake bindings, the *only* way to get a forced event in a
+        #  pydrake system is to override DoPublish(). There are two possible
+        #  resolutions:
+        #    1. Explicitly decide/document if we want Publish(context) to work
+        #       on this visualizer. Ideally, bind functions to allow force
+        #       declaration (see DrakeVisualizer constructor).
+        #    2. Stop expecting Publish(context) to work and modify how the
+        #       test is formulated (also documenting that it won't work).
         LeafSystem.DoPublish(self, context, event)
         if self._show:
             self.draw(context)
