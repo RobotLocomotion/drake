@@ -50,6 +50,8 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             py::init<std::string>(), py::arg("lcm_url"), cls_doc.ctor.doc_1args)
+        .def(py::init<std::string, bool>(), py::arg("lcm_url"),
+            py::arg("defer_initialization"), cls_doc.ctor.doc_2args)
         .def(
             "Subscribe",
             [](Class* self, const std::string& channel,

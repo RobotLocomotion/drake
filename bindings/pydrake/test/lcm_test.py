@@ -17,6 +17,8 @@ class TestLcm(unittest.TestCase):
     def test_lcm(self):
         dut = DrakeLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
+        DrakeLcm(lcm_url="")
+        DrakeLcm(lcm_url="", defer_initialization=True)
         # Test virtual function names.
         dut.Publish
         dut.HandleSubscriptions
