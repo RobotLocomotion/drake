@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":convex_set",
+        ":graph_of_convex_sets",
         ":iris",
     ],
 )
@@ -43,12 +44,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "graph_of_convex_sets",
+    srcs = ["graph_of_convex_sets.cc"],
+    hdrs = ["graph_of_convex_sets.h"],
+    deps = [
+        ":convex_set",
+    ],
+)
+
+drake_cc_library(
     name = "iris",
     srcs = ["iris.cc"],
     hdrs = ["iris.h"],
     deps = [
         ":convex_set",
-        "//geometry:scene_graph",
     ],
 )
 
@@ -68,6 +77,14 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "graph_of_convex_sets_test",
+    deps = [
+        ":graph_of_convex_sets",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
