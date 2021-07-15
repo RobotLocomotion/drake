@@ -2286,7 +2286,7 @@ GTEST_TEST(GraphvizTest, Ports) {
   EXPECT_THAT(dot, ::testing::HasSubstr("{{<u0>u0|<u1>u1} | {<y0>y0}}"));
 }
 
-// This class serves as the mechanism by which we confirm that LeafSystems's
+// This class serves as the mechanism by which we confirm that LeafSystem's
 // implementation of DispatchPublishHandler() actually calls DoPublish() and,
 // furthermore, the per-event dispatch implemented in DoPublish is completely
 // replaced by an overridden implementation.
@@ -2320,7 +2320,7 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
  public:
   /* Constructs the system to *default* event handling -- events will *not*
    be ignored. */
-  explicit DoPublishOverrideSystem() : LeafSystem<double>() {
+  DoPublishOverrideSystem() : LeafSystem<double>() {
     DeclareForcedPublishEvent(&DoPublishOverrideSystem::HandleEvent);
   }
 
@@ -2382,7 +2382,7 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   EXPECT_EQ(system.do_publish_count(), 2);
   EXPECT_EQ(system.event_handle_count(), 2);
 
-  // Now ignore default behaviors. This confirms *out* DoPublish completely
+  // Now ignore default behaviors. This confirms *our* DoPublish completely
   // supplants the default behavior.
   system.set_ignore_events(true);
   ASSERT_TRUE(system.ignore_events());

@@ -67,6 +67,14 @@ class PyPlotVisualizer(LeafSystem):
                 callback=on_initialize))
 
     def DoPublish(self, context, event):
+        # TODO(SeanCurtis-TRI) We want to be able to use this visualizer to
+        # draw without having it part of a Simulator. That means we'd like
+        # vis.Publish(context) to work. Currently, pydrake offers no mechanism
+        # to declare a forced event. However, by overriding DoPublish and
+        # putting the forced event callback code in the override, we can
+        # simulate it.
+        # We need to bind a mechanism for declaring forced events so we don't
+        # have to resort to overriding the dispatcher.
         LeafSystem.DoPublish(self, context, event)
         if self._show:
             self.draw(context)
