@@ -30,9 +30,10 @@ class DrakeLcm::Impl {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
-  explicit Impl(std::string lcm_url)
+  explicit Impl(std::string lcm_url, bool defer_initialization)
       : requested_lcm_url_(std::move(lcm_url)),
         lcm_url_(requested_lcm_url_),
+        deferred_initialization_(defer_initialization),
         lcm_(requested_lcm_url_) {
     // This duplicates logic from external/lcm/lcm.c, but until LCM offers an
     // API for this it's the best we can do.
@@ -49,6 +50,7 @@ class DrakeLcm::Impl {
 
   std::string requested_lcm_url_;
   std::string lcm_url_;
+  bool deferred_initialization_{};
   ::lcm::LCM lcm_;
   std::vector<std::weak_ptr<DrakeSubscription>> subscriptions_;
   std::string handle_subscriptions_error_message_;
@@ -56,13 +58,17 @@ class DrakeLcm::Impl {
 
 DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
 
-DrakeLcm::DrakeLcm(std::string lcm_url)
-    : impl_(std::make_unique<Impl>(std::move(lcm_url))) {
-  // Ensure that LCM's self-test happens deterministically (here in our ctor),
-  // and NOT in the receive thread or first HandleSubscriptions call.  Without
-  // this, ThreadSanitizer builds may report false positives related to the
-  // self-test happening concurrently with the LCM publishing.
-  impl_->lcm_.getFileno();
+DrakeLcm::DrakeLcm(std::string lcm_url) : DrakeLcm(std::move(lcm_url), false) {}
+
+DrakeLcm::DrakeLcm(std::string lcm_url, bool defer_initialization)
+    : impl_(std::make_unique<Impl>(std::move(lcm_url), defer_initialization)) {
+  if (!defer_initialization) {
+    // Ensure that LCM's self-test happens deterministically (here in our
+    // ctor) and NOT in the first HandleSubscriptions call.  Without this,
+    // ThreadSanitizer builds may report false positives related to the
+    // self-test happening concurrently with LCM publishing.
+    impl_->lcm_.getFileno();
+  }
 }
 
 std::string DrakeLcm::get_lcm_url() const {
@@ -102,18 +108,14 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
 
     // Create the result.
     auto result = std::make_shared<DrakeSubscription>();
+    result->channel_regex_ = channel_regex;
     result->native_instance_ = native_instance;
     result->user_callback_ = std::move(handler);
     result->weak_self_reference_ = result;
     result->strong_self_reference_ = result;
-    result->native_subscription_ = native_instance->subscribeFunction(
-        channel_regex, &DrakeSubscription::NativeCallback, result.get());
-    result->native_subscription_->setQueueCapacity(1);
 
     // Sanity checks.  (The use_count will be 2 because both 'result' and
     // 'strong_self_reference' keep the subscription alive.)
-    DRAKE_DEMAND(result->native_instance_ != nullptr);
-    DRAKE_DEMAND(result->native_subscription_ != nullptr);
     DRAKE_DEMAND(result->user_callback_ != nullptr);
     DRAKE_DEMAND(result->weak_self_reference_.use_count() == 2);
     DRAKE_DEMAND(result->strong_self_reference_.use_count() == 2);
@@ -143,10 +145,20 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
 
   void set_queue_capacity(int capacity) final {
     DRAKE_DEMAND(!weak_self_reference_.expired());
+    queue_capacity_ = capacity;
     if (native_subscription_) {
       DRAKE_DEMAND(native_instance_ != nullptr);
       native_subscription_->setQueueCapacity(capacity);
     }
+  }
+
+  void AttachIfNeeded() {
+    if (native_subscription_ != nullptr) {
+      return;
+    }
+    native_subscription_ = native_instance_->subscribeFunction(
+        channel_regex_, &DrakeSubscription::NativeCallback, this);
+    native_subscription_->setQueueCapacity(queue_capacity_);
   }
 
   // This is ONLY called from the DrakeLcm dtor.  Thus, a HandleSubscriptions
@@ -190,9 +202,12 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     }
   }
 
+  std::string channel_regex_;
+
   // The native handle we can use to unsubscribe.
   ::lcm::LCM* native_instance_{};
   ::lcm::Subscription* native_subscription_{};
+  int queue_capacity_{1};
 
   // The user's function that handles raw message data.
   DrakeLcmInterface::HandlerFunction user_callback_;
@@ -220,12 +235,21 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::Subscribe(
   // Add the new subscriber.
   auto result = DrakeSubscription::Create(
       &(impl_->lcm_), channel, std::move(handler));
+  if (!impl_->deferred_initialization_) {
+    result->AttachIfNeeded();
+  }
   subs.push_back(result);
   DRAKE_DEMAND(!subs.back().expired());
   return result;
 }
 
 int DrakeLcm::HandleSubscriptions(int timeout_millis) {
+  if (impl_->deferred_initialization_) {
+    for (auto& sub : impl_->subscriptions_) {
+      sub.lock()->AttachIfNeeded();
+    }
+    impl_->deferred_initialization_ = false;
+  }
   // Keep pumping handleTimeout until it's empty, but only pause for the
   // timeout on the first attempt.
   int total_messages = 0;
