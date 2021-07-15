@@ -883,6 +883,8 @@ class MathematicalProgram {
 
   /**
    * Adds a generic cost to the optimization program.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<Cost> AddCost(const Binding<Cost>& binding);
 
@@ -890,6 +892,8 @@ class MathematicalProgram {
    * Adds a cost type to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
+   *
+   * @pydrake_mkdoc_identifier{2args_obj_vars}
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj,
@@ -903,6 +907,8 @@ class MathematicalProgram {
    * Adds a generic cost to the optimization program.
    * @param obj The added objective.
    * @param vars The decision variables on which the cost depend.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj, const VariableRefList& vars) {
@@ -922,6 +928,8 @@ class MathematicalProgram {
   /**
    * Adds a cost to the optimization program on a list of variables.
    * @tparam F it should define functions numInputs, numOutputs and eval. Check
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F>
   typename std::enable_if_t<internal::is_cost_functor_candidate<F>::value,
@@ -934,6 +942,8 @@ class MathematicalProgram {
    * Adds a cost to the optimization program on an Eigen::Vector containing
    * decision variables.
    * @tparam F Type that defines functions numInputs, numOutputs and eval.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F>
   typename std::enable_if_t<internal::is_cost_functor_candidate<F>::value,
@@ -947,6 +957,8 @@ class MathematicalProgram {
    * Statically assert if a user inadvertently passes a
    * binding-compatible Constraint.
    * @tparam F The type to check.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename F, typename Vars>
   typename std::enable_if_t<internal::assert_if_is_constraint<F>::value,
@@ -959,6 +971,8 @@ class MathematicalProgram {
    * Adds a cost term of the form c'*x.
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearCost> AddCost(const Binding<LinearCost>& binding);
 
@@ -1007,6 +1021,8 @@ class MathematicalProgram {
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticCost> AddCost(const Binding<QuadraticCost>& binding);
 
@@ -1151,6 +1167,8 @@ class MathematicalProgram {
    * @param e The linear or quadratic expression of the cost.
    * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
    * @return The newly created cost, together with the bound variables.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<Cost> AddCost(const symbolic::Expression& e);
 

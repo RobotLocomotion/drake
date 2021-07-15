@@ -192,7 +192,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIn("QuadraticCost", s)
 
 # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
-    # perhaps we should test both of them?
+# perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
@@ -978,6 +978,33 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddConstraint(x[0] <= 2)
         result = mp.Solve(prog)
         self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
+
+    def test_addcost_shared_ptr(self):
+        # In particular, confirm that LinearCost ends up in linear_costs, etc.
+        # as opposed to everything ending up as a generic_cost.
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, "x")
+        binding = prog.AddCost(obj=mp.LinearCost([1.0], 0.0), vars=x)
+        # Would be great if this was Binding_LinearCost, but we currently
+        # expect it to be only Binding_Cost
+        self.assertIsInstance(binding, mp.Binding_Cost)
+        self.assertIsInstance(binding.evaluator(), mp.LinearCost)
+        self.assertEqual(len(prog.linear_costs()), 1)
+
+        binding = prog.AddCost(mp.QuadraticCost([[1.0]], [0.0], 0.0), x)
+        # Would be great if this was Binding_QuadraticCost, but we currently
+        # expect it to be only Binding_Cost
+        self.assertIsInstance(binding, mp.Binding_Cost)
+        self.assertIsInstance(binding.evaluator(), mp.QuadraticCost)
+        self.assertEqual(len(prog.quadratic_costs()), 1)
+
+        # Confirm that I can add an L2NormCost. This is the only way to add an
+        # L2NormCost to a MathematicalProgram pending further progress on
+        # #15366.
+        binding = prog.AddCost(mp.L2NormCost([[1.0]], [0.0]), x)
+        self.assertIsInstance(binding, mp.Binding_Cost)
+        self.assertIsInstance(binding.evaluator(), mp.L2NormCost)
+        self.assertEqual(len(prog.generic_costs()), 1)
 
     def test_addconstraint_matrix(self):
         prog = mp.MathematicalProgram()
