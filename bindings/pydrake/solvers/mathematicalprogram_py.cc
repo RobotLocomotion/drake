@@ -54,7 +54,6 @@ using solvers::SolverInterface;
 using solvers::SolverOptions;
 using solvers::SolverType;
 using solvers::SolverTypeConverter;
-using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using solvers::VectorXIndeterminate;
 using solvers::VisualizationCallback;
@@ -718,13 +717,21 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("func"), py::arg("vars"), py::arg("description") = "",
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
-          "Adds a cost function")
+          "Adds a cost function.")
       .def("AddCost",
           static_cast<Binding<Cost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddCost),
           // N.B. There is no corresponding C++ method, so the docstring here
           // is a literal, not a reference to documentation_pybind.h
-          "Adds a cost expression")
+          "Adds a cost expression.")
+      .def(
+          "AddCost",
+          [](MathematicalProgram* self, const std::shared_ptr<Cost>& obj,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddCost(obj, vars);
+          },
+          py::arg("obj"), py::arg("vars"),
+          doc.MathematicalProgram.AddCost.doc_2args_obj_vars)
       .def("AddLinearCost",
           static_cast<Binding<LinearCost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddLinearCost),
