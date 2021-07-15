@@ -1,6 +1,6 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 
-#include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace manipulation {
@@ -38,6 +38,8 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
       &IiwaStatusReceiver::CalcLcmOutput<
         &lcmt_iiwa_status::joint_torque_external>);
 }
+
+IiwaStatusReceiver::~IiwaStatusReceiver() = default;
 
 using OutPort = systems::OutputPort<double>;
 const OutPort& IiwaStatusReceiver::get_position_commanded_output_port() const {
