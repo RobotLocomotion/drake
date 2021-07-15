@@ -1424,16 +1424,15 @@ class PublishingSystem : public LeafSystem<double> {
   explicit PublishingSystem(std::function<void(double)> callback)
       : callback_(callback) {
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
-  }
-
- protected:
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>&) const override {
-    callback_(this->get_input_port(0).Eval(context)[0]);
+    this->DeclareForcedPublishEvent(&PublishingSystem::InvokeCallback);
   }
 
  private:
+  EventStatus InvokeCallback(const Context<double>& context) const {
+    callback_(this->get_input_port(0).Eval(context)[0]);
+    return EventStatus::Succeeded();
+  }
+
   std::function<void(int)> callback_;
 };
 
@@ -1814,27 +1813,25 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
 
 const double kTestPublishPeriod = 19.0;
 
-class TestPublishingSystem : public LeafSystem<double> {
+class TestPublishingSystem final : public LeafSystem<double> {
  public:
   TestPublishingSystem() {
+    this->DeclarePeriodicPublishEvent(
+        kTestPublishPeriod, 0.0, &TestPublishingSystem::HandlePeriodPublish);
     this->DeclarePeriodicPublish(kTestPublishPeriod);
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
   }
 
-  ~TestPublishingSystem() override {}
-
-  bool published() { return published_; }
-
- protected:
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
-    published_ = true;
-  }
+  bool published() const { return published_; }
 
  private:
+  EventStatus HandlePeriodPublish(const Context<double>&) const {
+    published_ = true;
+    return EventStatus::Succeeded();
+  }
+
   // Recording state through event handlers, like this system does, is an
   // anti-pattern, but we do it to simplify testing.
   mutable bool published_{false};
@@ -3008,12 +3005,28 @@ GTEST_TEST(NonUniqueNamesTest, ForcedEmptyNames) {
   EXPECT_THROW(builder.Build(), std::runtime_error);
 }
 
-// A system for testing per step actions.
+// A system for testing per step actions. A system can add per-step events for
+// each event type as selected.
 class PerStepActionTestSystem : public LeafSystem<double> {
  public:
   PerStepActionTestSystem() {
     DeclareDiscreteState(1);
     DeclareAbstractState(Value<std::string>(""));
+  }
+
+  // Methods for adding events post-construction.
+  void AddPublishEvent() {
+    DeclarePerStepPublishEvent(&PerStepActionTestSystem::PublishHandler);
+  }
+
+  void AddDiscreteUpdateEvent() {
+    DeclarePerStepDiscreteUpdateEvent(
+        &PerStepActionTestSystem::DiscreteHandler);
+  }
+
+  void AddUnrestrictedUpdateEvent() {
+    DeclarePerStepUnrestrictedUpdateEvent(
+        &PerStepActionTestSystem::UnrestrictedHandler);
   }
 
   using LeafSystem<double>::DeclarePerStepEvent;
@@ -3027,36 +3040,43 @@ class PerStepActionTestSystem : public LeafSystem<double> {
     state->get_mutable_abstract_state<std::string>(0) = "wow";
   }
 
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>& events,
-      DiscreteValues<double>* discrete_state) const override {
+  EventStatus DiscreteHandler(const Context<double>& context,
+                              DiscreteValues<double>* discrete_state) const {
     (*discrete_state)[0] = context.get_discrete_state(0)[0] + 1;
+    return EventStatus::Succeeded();
   }
 
-  void DoCalcUnrestrictedUpdate(
-      const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      State<double>* state) const override {
-    int int_num =
-        static_cast<int>(context.get_discrete_state(0)[0]);
+  EventStatus UnrestrictedHandler(const Context<double>& context,
+                                  State<double>* state) const {
+    // Depends on discrete state (therefore order of event evaluation).
+    int int_num = static_cast<int>(context.get_discrete_state(0)[0]);
     state->get_mutable_abstract_state<std::string>(0) =
         "wow" + std::to_string(int_num);
+    return EventStatus::Succeeded();
   }
 
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
-    publish_ctr_++;
+  EventStatus PublishHandler(const Context<double>& context) const {
+    ++publish_ctr_;
+    return EventStatus::Succeeded();
   }
 
-  // A hack to test publish calls easily.
+  // A hack to test publish calls easily as the Publish events have no access
+  // to writable memory anywhere in the context. This is an anti-pattern outside
+  // of unit tests.
   mutable int publish_ctr_{0};
 };
 
-// Builds a nested diagram and tests per step publish, discrete and
-// unrestricted updates.
-GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
+// Test that the diagram successfully dispatches events into its component
+// systems. To that end, we create a diagram with nested a nested diagram and
+// leafs. Each leaf system has unique events registered to it (None, discrete
+// and unrestricted, and unrestricted and publish, respectively). By invoking
+// the various event processing methods (CalcUnrestrictedUpdate,
+// CalcDiscreteVariableUpdates, and Publish), we can observe the results by
+// observing the context for the system (and its for-the-unit-test, hacked
+// internal state). The fact that these unit tests use events triggered by
+// per-step events is wholly irrelevant -- at this tested level of the API, the
+// trigger doesn't matter.
+GTEST_TEST(DiagramEventEvaluation, Propagation) {
   std::unique_ptr<Diagram<double>> sub_diagram;
   PerStepActionTestSystem* sys0;
   PerStepActionTestSystem* sys1;
@@ -3069,11 +3089,11 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
     DiagramBuilder<double> builder;
     sys0 = builder.AddSystem<PerStepActionTestSystem>();
     sys0->set_name("sys0");
+
     sys1 = builder.AddSystem<PerStepActionTestSystem>();
     sys1->set_name("sys1");
-
-    sys1->DeclarePerStepEvent(DiscreteUpdateEvent<double>());
-    sys1->DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
+    sys1->AddDiscreteUpdateEvent();
+    sys1->AddUnrestrictedUpdateEvent();
 
     sub_diagram = builder.Build();
     sub_diagram->set_name("sub_diagram");
@@ -3083,10 +3103,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   builder.AddSystem(std::move(sub_diagram));
   sys2 = builder.AddSystem<PerStepActionTestSystem>();
   sys2->set_name("sys2");
-
-  // sys2 has publish and unrestricted updates.
-  sys2->DeclarePerStepEvent(PublishEvent<double>());
-  sys2->DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
+  sys2->AddPublishEvent();
+  sys2->AddUnrestrictedUpdateEvent();
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -3097,6 +3115,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   auto events = diagram->AllocateCompositeEventCollection();
   diagram->GetPerStepEvents(*context, events.get());
+  ASSERT_TRUE(events->HasEvents());
 
   // Does unrestricted update first.
   diagram->CalcUnrestrictedUpdate(
@@ -3104,9 +3123,8 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   context->get_mutable_state().SetFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdates(*context,
-                                       events->get_discrete_update_events(),
-                                       tmp_discrete_state.get());
+  diagram->CalcDiscreteVariableUpdates(
+      *context, events->get_discrete_update_events(), tmp_discrete_state.get());
   context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
@@ -3117,20 +3135,23 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   EXPECT_EQ(sys1->get_publish_ctr(), 0);
   EXPECT_EQ(sys2->get_publish_ctr(), 1);
 
-  // sys0 doesn't have any updates.
+  // sys0 doesn't have any updates; the state is in its initial state.
   auto& sys0_context = diagram->GetSubsystemContext(*sys0, *context);
   EXPECT_EQ(sys0_context.get_discrete_state(0)[0], 0);
   EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
+  EXPECT_EQ(sys0->get_publish_ctr(), 0);
 
   // sys1 should have an unrestricted update then a discrete update.
   auto& sys1_context = diagram->GetSubsystemContext(*sys1, *context);
   EXPECT_EQ(sys1_context.get_discrete_state(0)[0], 1);
   EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
+  EXPECT_EQ(sys1->get_publish_ctr(), 0);
 
   // sys2 should have a unrestricted update then a publish.
   auto& sys2_context = diagram->GetSubsystemContext(*sys2, *context);
   EXPECT_EQ(sys2_context.get_discrete_state(0)[0], 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
+  EXPECT_EQ(sys2->get_publish_ctr(), 1);
 }
 
 class MyEventTestSystem : public LeafSystem<double> {
@@ -3139,13 +3160,12 @@ class MyEventTestSystem : public LeafSystem<double> {
   // a per step publish event.
   MyEventTestSystem(const std::string& name, double p) {
     if (p > 0) {
-      DeclarePeriodicPublish(p);
+      DeclarePeriodicPublishEvent(p, 0.0, &MyEventTestSystem::PublishPeriodic);
 
       // Verify that no periodic discrete updates are registered.
       EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
-      DeclarePerStepEvent<PublishEvent<double>>(
-          PublishEvent<double>(TriggerType::kPerStep));
+      DeclarePerStepPublishEvent(&MyEventTestSystem::PublishPerStep);
     }
     set_name(name);
   }
@@ -3155,46 +3175,50 @@ class MyEventTestSystem : public LeafSystem<double> {
   int get_per_step_count() const { return per_step_count_; }
 
  private:
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
-    for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() ==
-          TriggerType::kPeriodic) {
-        periodic_count_++;
-      } else if (event->get_trigger_type() ==
-          TriggerType::kPerStep) {
-        per_step_count_++;
-      } else {
-        ADD_FAILURE() << "MyEventTestSystem doesn't support this trigger type";
-      }
-    }
+  EventStatus PublishPeriodic(const Context<double>&) const {
+     ++periodic_count_;
+     return EventStatus::Succeeded();
+  }
+
+  EventStatus PublishPerStep(const Context<double>&) const {
+    ++per_step_count_;
+    return EventStatus::Succeeded();
   }
 
   mutable int periodic_count_{0};
   mutable int per_step_count_{0};
 };
 
+// Test the event functionality of the MyEventTestSystem before using it in the
+// diagram.
 GTEST_TEST(MyEventTest, MyEventTestLeaf) {
-  MyEventTestSystem dut("sys", 0.2);
-  auto events = dut.AllocateCompositeEventCollection();
-  auto context = dut.CreateDefaultContext();
-  EXPECT_EQ(events->get_system_id(), context->get_system_id());
+  // Test both construction modes: periodic and per-step events.
+  for (double period : {0.2, 0.0}) {
+    MyEventTestSystem dut("sys", period);
+    auto events = dut.AllocateCompositeEventCollection();
+    auto periodic_events = dut.AllocateCompositeEventCollection();
+    auto perstep_events = dut.AllocateCompositeEventCollection();
+    auto context = dut.CreateDefaultContext();
+    EXPECT_EQ(events->get_system_id(), context->get_system_id());
 
-  double time = dut.CalcNextUpdateTime(*context, events.get());
-  context->SetTime(time);
-  dut.Publish(*context, events->get_publish_events());
+    // If period is zero, we still need to evaluate the per step events.
+    double time = dut.CalcNextUpdateTime(*context, periodic_events.get());
+    dut.GetPerStepEvents(*context, perstep_events.get());
+    events->AddToEnd(*periodic_events);
+    events->AddToEnd(*perstep_events);
+    context->SetTime(time);
+    dut.Publish(*context, events->get_publish_events());
 
-  EXPECT_EQ(dut.get_periodic_count(), 1);
-  EXPECT_EQ(dut.get_per_step_count(), 0);
+    EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
+    EXPECT_EQ(dut.get_per_step_count(), period > 0 ? 0 : 1);
+  }
 }
 
 // Builds a diagram with a sub diagram (has 3 MyEventTestSystem) and 2
-// MyEventTestSystem. sys4 is configured to have per step events, and all
-// the others should have periodic publish events. Tests
-// Diagram::CalcNextUpdateTime, Diagram::GetPerStepEvents, and
-// CompositeEventCollection::AddToEnd. The result should be sys1, sys2, sys3,
-// sys4 fired their proper callbacks.
+// MyEventTestSystem. sys4 is configured to have a per-step event, and all
+// the others have periodic publish events. Tests Diagram::CalcNextUpdateTime,
+// and Diagram::GetPerStepEvents. The result should be sys1, sys2, sys3, sys4
+// fired their proper callbacks.
 GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   std::unique_ptr<Diagram<double>> sub_diagram;
   std::vector<const MyEventTestSystem*> sys(5);
@@ -3231,9 +3255,11 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   context->SetTime(time);
   dut->Publish(*context, events->get_publish_events());
 
+  // Sys0's period is larger, so it doesn't get evaluated.
   EXPECT_EQ(sys[0]->get_periodic_count(), 0);
   EXPECT_EQ(sys[0]->get_per_step_count(), 0);
 
+  // Sys1, 2, & 3, all have periodic events at `time`.
   EXPECT_EQ(sys[1]->get_periodic_count(), 1);
   EXPECT_EQ(sys[1]->get_per_step_count(), 0);
 
@@ -3243,6 +3269,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   EXPECT_EQ(sys[3]->get_periodic_count(), 1);
   EXPECT_EQ(sys[3]->get_per_step_count(), 0);
 
+  // Sys4 has only a per-step event, it gets triggered because we're taking a
+  // step.
   EXPECT_EQ(sys[4]->get_periodic_count(), 0);
   EXPECT_EQ(sys[4]->get_per_step_count(), 1);
 }

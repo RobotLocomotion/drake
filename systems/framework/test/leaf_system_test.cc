@@ -2320,7 +2320,7 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
  public:
   /* Constructs the system to *default* event handling -- events will *not*
    be ignored. */
-  explicit DoPublishOverrideSystem() : LeafSystem<double>() {
+  DoPublishOverrideSystem() : LeafSystem<double>() {
     DeclareForcedPublishEvent(&DoPublishOverrideSystem::HandleEvent);
   }
 

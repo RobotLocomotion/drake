@@ -191,7 +191,7 @@ class MeshcatVisualizer(LeafSystem):
         LeafSystem.__init__(self)
 
         self.set_name('meshcat_visualizer')
-        self.DeclarePeriodicPublish(draw_period, 0.0)
+        self.DeclarePeriodicEvent(draw_period, 0.0, PublishEvent(self.update))
         self.draw_period = draw_period
         self._delete_prefix_on_load = delete_prefix_on_load
         if role not in [Role.kIllustration, Role.kProximity]:
@@ -438,10 +438,7 @@ class MeshcatVisualizer(LeafSystem):
             warnings.warn(f"Non-existent frame {frame_id} ignored")
             continue
 
-    def DoPublish(self, context, event):
-
-        LeafSystem.DoPublish(self, context, event)
-
+    def update(self, context, unused_event):
         vis = self.vis[self.prefix]
 
         query_object = self.get_geometry_query_input_port().Eval(context)
@@ -532,7 +529,8 @@ class MeshcatContactVisualizer(LeafSystem):
         self._radius = contact_force_radius
 
         self.set_name('meshcat_contact_visualizer')
-        self.DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
+        self.DeclarePeriodicEvent(self._meshcat_viz.draw_period, 0.0,
+                                  PublishEvent(self.update))
 
         # Contact results input port from MultibodyPlant
         self.DeclareAbstractInputPort(
@@ -545,9 +543,7 @@ class MeshcatContactVisualizer(LeafSystem):
         vis = self._meshcat_viz.vis[self._meshcat_viz.prefix]["contact_forces"]
         vis.delete()
 
-    def DoPublish(self, context, event):
-        LeafSystem.DoPublish(self, context, event)
-
+    def update(self, context, unused_event):
         contact_results = self.EvalAbstractInput(context, 0).get_value()
 
         vis = self._meshcat_viz.vis[self._meshcat_viz.prefix]["contact_forces"]
@@ -677,13 +673,12 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         self._name = name
 
         self.set_name('meshcat_point_cloud_visualizer_' + name)
-        self.DeclarePeriodicPublish(draw_period, 0.0)
+        self.DeclarePeriodicEvent(draw_period, 0.0, PublishEvent(self.update))
 
         self.DeclareAbstractInputPort("point_cloud_P",
                                       AbstractValue.Make(mut.PointCloud()))
 
-    def DoPublish(self, context, event):
-        LeafSystem.DoPublish(self, context, event)
+    def update(self, context, unused_event):
         point_cloud_P = self.EvalAbstractInput(context, 0).get_value()
 
         # `Q` is a point in the point cloud.
