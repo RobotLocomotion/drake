@@ -1300,18 +1300,8 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
-  auto this_ptr = dynamic_cast<const MySystem*>(this);
-  DRAKE_DEMAND(this_ptr != nullptr);
-  auto allocate_callback = internal::AbstractValueCloner(model_value);
-  auto calc_callback = [this_ptr, calc](const ContextBase& context,
-                                        AbstractValue* result) {
-    const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->get_mutable_value<ValueType>();
-    (this_ptr->*calc)(typed_context, &typed_result);
-  };
   auto& entry = DeclareCacheEntry(
-      std::move(description),
-      ValueProducer(std::move(allocate_callback), std::move(calc_callback)),
+      std::move(description), ValueProducer(this, model_value, calc),
       std::move(prerequisites_of_calc));
   return entry;
 }
