@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -38,11 +37,12 @@ namespace kuka_iiwa {
 /// @endsystem
 ///
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
-class IiwaStatusReceiver : public systems::LeafSystem<double> {
+class IiwaStatusReceiver final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusReceiver)
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
+  ~IiwaStatusReceiver() final;
 
   /// @name Named accessors for this System's input and output ports.
   //@{

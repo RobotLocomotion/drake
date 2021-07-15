@@ -4,24 +4,22 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
+using drake::systems::Context;
+using drake::systems::kVectorValued;
+
 IiwaStatusSender::IiwaStatusSender(int num_joints)
     : num_joints_(num_joints),
       zero_vector_(Eigen::VectorXd::Zero(num_joints)) {
-  this->DeclareInputPort(
-      "position_commanded", systems::kVectorValued, num_joints_);
-  this->DeclareInputPort(
-      "position_measured", systems::kVectorValued, num_joints_);
-  this->DeclareInputPort(
-      "velocity_estimated", systems::kVectorValued, num_joints_);
-  this->DeclareInputPort(
-      "torque_commanded", systems::kVectorValued, num_joints_);
-  this->DeclareInputPort(
-      "torque_measured", systems::kVectorValued, num_joints_);
-  this->DeclareInputPort(
-      "torque_external", systems::kVectorValued, num_joints_);
-  this->DeclareAbstractOutputPort(
-      "lcmt_iiwa_status", &IiwaStatusSender::CalcOutput);
+  DeclareInputPort("position_commanded", kVectorValued, num_joints_);
+  DeclareInputPort("position_measured", kVectorValued, num_joints_);
+  DeclareInputPort("velocity_estimated", kVectorValued, num_joints_);
+  DeclareInputPort("torque_commanded", kVectorValued, num_joints_);
+  DeclareInputPort("torque_measured", kVectorValued, num_joints_);
+  DeclareInputPort("torque_external", kVectorValued, num_joints_);
+  DeclareAbstractOutputPort("lcmt_iiwa_status", &IiwaStatusSender::CalcOutput);
 }
+
+IiwaStatusSender::~IiwaStatusSender() = default;
 
 using InPort = systems::InputPort<double>;
 const InPort& IiwaStatusSender::get_position_commanded_input_port() const {
@@ -50,10 +48,10 @@ namespace {
 // If more than max_num_connected of (port1,port2) are connected, throws.
 // If port2_tail is provided, a suffix of port2's value is returned.
 Eigen::Ref<const Eigen::VectorXd> EvalFirstConnected(
-    const systems::Context<double>& context,
+    const Context<double>& context,
     int min_num_connected, int max_num_connected, const Eigen::VectorXd& zeros,
     const InPort& port1, const InPort& port2,
-    int port2_tail = -1) {
+    const int port2_tail = -1) {
   const int total_connected =
       (port1.HasValue(context) ? 1 : 0) +
       (port2.HasValue(context) ? 1 : 0);
@@ -80,11 +78,10 @@ Eigen::Ref<const Eigen::VectorXd> EvalFirstConnected(
   }
   return zeros;
 }
-
 }  // namespace
 
 void IiwaStatusSender::CalcOutput(
-    const systems::Context<double>& context, lcmt_iiwa_status* output) const {
+    const Context<double>& context, lcmt_iiwa_status* output) const {
   const auto& position_commanded =
       get_position_commanded_input_port().Eval(context);
   const auto& position_measured =
