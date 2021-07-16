@@ -373,6 +373,7 @@ class TestGeometry(unittest.TestCase):
             mut.SourceId,
             mut.FrameId,
             mut.GeometryId,
+            mut.FilterId,
         ]
 
         for cls in cls_list:
@@ -771,6 +772,12 @@ class TestGeometry(unittest.TestCase):
             mut.CollisionFilterDeclaration().AllowWithin(
                 geometry_set=geometries))
 
+        id = dut.ApplyTransient(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+        self.assertTrue(dut.has_transient_history())
+        self.assertTrue(dut.IsActive(id))
+        self.assertTrue(dut.RemoveDeclaration(id))
+
         # Mutate context data
         dut = sg.collision_filter_manager(sg_context)
         dut.Apply(
@@ -784,6 +791,12 @@ class TestGeometry(unittest.TestCase):
         dut.Apply(
             mut.CollisionFilterDeclaration().AllowWithin(
                 geometry_set=geometries))
+
+        id = dut.ApplyTransient(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+        self.assertTrue(dut.has_transient_history())
+        self.assertTrue(dut.IsActive(id))
+        self.assertTrue(dut.RemoveDeclaration(id))
 
         # TODO(2021-11-01) Remove these with deprecation resolution.
         # Legacy API
