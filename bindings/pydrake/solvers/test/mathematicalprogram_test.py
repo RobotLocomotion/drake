@@ -1,4 +1,5 @@
 from pydrake.solvers import mathematicalprogram as mp
+import pydrake.solvers.mathematicalprogram._testing as mp_testing
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.scs import ScsSolver
@@ -1252,6 +1253,32 @@ class TestMathematicalProgram(unittest.TestCase):
         generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
         prog.RemoveCost(generic_cost2)
         self.assertEqual(len(prog.generic_costs()), 1)
+
+    def test_binding_upcasting(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+
+        # Add general evaluators, costs, and constraints, and take bindings for
+        # them.
+        evaluator = mp_testing.Binding_StubEvaluatorBase.Make(x)
+        cost = prog.AddCost(x[0] ** 2)
+        constraint = prog.AddConstraint(x[0] >= 0.0)
+
+        mp_testing.AcceptBindingEvaluatorBase(evaluator)
+        mp_testing.AcceptBindingEvaluatorBase(cost)
+        mp_testing.AcceptBindingEvaluatorBase(constraint)
+
+        mp_testing.AcceptBindingCost(cost)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingCost(evaluator)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingCost(constraint)
+
+        mp_testing.AcceptBindingConstraint(constraint)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingConstraint(evaluator)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingConstraint(cost)
 
 
 class DummySolverInterface(SolverInterface):
