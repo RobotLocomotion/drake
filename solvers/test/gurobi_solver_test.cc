@@ -358,15 +358,16 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
 
   GurobiSolver solver;
   if (solver.available()) {
-    SolverOptions solver_options;
+    SolverOptions solver_options1;
     // Report error when we set an unknown attribute to Gurobi.
-    solver_options.SetOption(solver.solver_id(), "Foo", 1);
-    auto result = solver.Solve(prog, {}, solver_options);
-    // The error code is listed in
-    // https://www.gurobi.com/documentation/9.0/refman/error_codes.html
-    const int UNKNOWN_PARAMETER{10007};
-    EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
-              UNKNOWN_PARAMETER);
+    solver_options1.SetOption(solver.solver_id(), "Foo", 1);
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options1),
+                                ".* 'Foo' is an unknown parameter in Gurobi.*");
+    // Report error when we pass an incorect value to a valid Gurobi parameter
+    SolverOptions solver_options2;
+    solver_options2.SetOption(solver.solver_id(), "FeasibilityTol", 1E10);
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options2),
+                                ".* is outside the parameter Feasibility.*");
   }
 }
 
