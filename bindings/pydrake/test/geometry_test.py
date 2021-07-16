@@ -925,10 +925,13 @@ class TestGeometry(unittest.TestCase):
         t = prog.NewContinuousVariables(1, "t")
 
         # Test Point.
-        p = [11.1, 12.2, 13.3]
+        p = np.array([11.1, 12.2, 13.3])
         point = mut.optimization.Point(p)
         self.assertEqual(point.ambient_dimension(), 3)
         np.testing.assert_array_equal(point.x(), p)
+        point.set_x(x=2*p)
+        np.testing.assert_array_equal(point.x(), 2*p)
+        point.set_x(x=p)
 
         # Test HPolyhedron.
         hpoly = mut.optimization.HPolyhedron(A=A, b=b)
