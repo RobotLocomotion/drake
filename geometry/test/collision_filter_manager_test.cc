@@ -95,6 +95,22 @@ GTEST_TEST(CollisionFilterManagerTest, Apply) {
   EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
   EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
 
+  EXPECT_FALSE(filter_manager.has_transient_history());
+
+  const FilterId filter_id =
+      filter_manager.ApplyTransient(CollisionFilterDeclaration().ExcludeBetween(
+          GeometrySet({g_id1, g_id2}), GeometrySet({g_id3})));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id2, g_id3));
+
+  EXPECT_TRUE(filter_manager.has_transient_history());
+  EXPECT_TRUE(filter_manager.IsActive(filter_id));
+  EXPECT_TRUE(filter_manager.RemoveDeclaration(filter_id));
+  EXPECT_TRUE(inspector.CollisionFiltered(g_id1, g_id2));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id1, g_id3));
+  EXPECT_FALSE(inspector.CollisionFiltered(g_id2, g_id3));
+
   // Note that the underlying model *didn't* change.
   const auto& model_inspector = scene_graph.model_inspector();
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, g_id2));
