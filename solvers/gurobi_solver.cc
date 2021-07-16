@@ -768,6 +768,29 @@ void AddSecondOrderConeVariables(
     }
   }
 }
+
+template <typename T>
+void SetGurobiOptionCheck(int error, const std::string& option, const T& val) {
+  if (error) {
+    if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): {} is an unknown parameter in Gurobi, check "
+          "https://www.gurobi.com/documentation/9.1/refman/parameters.html for "
+          "allowable parameters",
+          option));
+    } else if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): {} is outside the parameter {}'s valid range", val,
+          option));
+    }
+    throw std::runtime_error(
+        fmt::format("GurobiSolver(): error code {}, cannot set option {} to "
+                    "value {}, check "
+                    "https://www.gurobi.com/documentation/9.1/refman/"
+                    "parameters.html for all allowable options and values.",
+                    error, option, val));
+  }
+}
 }  // anonymous namespace
 
 bool GurobiSolver::is_available() { return true; }
@@ -1004,16 +1027,19 @@ void GurobiSolver::DoSolve(
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
       error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
+      SetGurobiOptionCheck(error, it.first.c_str(), it.second);
     }
   }
   for (const auto& it : merged_options.GetOptionsInt(id())) {
     if (!error) {
       error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+      SetGurobiOptionCheck(error, it.first.c_str(), it.second);
     }
   }
   for (const auto& it : merged_options.GetOptionsStr(id())) {
     if (!error) {
       error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+      SetGurobiOptionCheck(error, it.first.c_str(), it.second);
     }
   }
 
