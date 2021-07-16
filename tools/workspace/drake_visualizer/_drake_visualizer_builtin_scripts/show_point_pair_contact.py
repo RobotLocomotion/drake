@@ -240,17 +240,26 @@ class ContactVisualizer:
                 scale /= mag
             vis_force = force * scale
 
-            key1 = (str(contact.body1_name), str(contact.body2_name))
-            key2 = (str(contact.body2_name), str(contact.body1_name))
+            # In point_pair_contact_info, the force is defined as the force
+            # *on body B*. That is what's placed in
+            # lcmt_point_pair_contact_info_for_viz.
+            # However, for two bodies (1, 2), MBP provides no guarantees which
+            # body is "body1" and which is "body2". Some contacts could be
+            # reported as (1, 2) and some as (2, 1). In order to aggregate all
+            # such interactions into a single debug artifact, we need to
+            # reconcile the ordering.
 
-            if key1 in collision_pair_to_forces:
-                collision_pair_to_forces[key1].append(
-                    (point, vis_force))
-            elif key2 in collision_pair_to_forces:
-                collision_pair_to_forces[key2].append(
-                    (point, vis_force))
+            force_format = "Force on {} from {}"
+            key = force_format.format(contact.body2_name, contact.body1_name)
+            alt_key = force_format.format(contact.body1_name,
+                                          contact.body2_name)
+
+            if key in collision_pair_to_forces:
+                collision_pair_to_forces[key].append((point, vis_force))
+            elif alt_key in collision_pair_to_forces:
+                collision_pair_to_forces[alt_key].append((point, -vis_force))
             else:
-                collision_pair_to_forces[key1] = [(point, vis_force)]
+                collision_pair_to_forces[key] = [(point, vis_force)]
 
         if self.magnitude_mode == ContactVisModes.kAutoScale:
             auto_scale = 1.0 / max_force
