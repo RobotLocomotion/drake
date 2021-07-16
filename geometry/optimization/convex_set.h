@@ -76,6 +76,12 @@ class ConvexSet : public ShapeReifier {
   rank(A)`. */
   int ambient_dimension() const { return ambient_dimension_; }
 
+  /** Returns true iff the intersection between `this` and `other` is non-empty.
+  @throws std::exception if the ambient dimension of `other` is not the same as
+  that of `this`.
+   */
+  bool IntersectsWith(const ConvexSet& other) const;
+
   /** Returns true iff the set is bounded, e.g. there exists an element-wise
    * finite lower and upper bound for the set.  Note: for some derived classes,
    * this check is trivial, but for others it can require solving an (typically
