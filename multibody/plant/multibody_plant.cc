@@ -38,6 +38,7 @@ namespace multibody {
 // pre-finalize.
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
+using geometry::CollisionFilterDeclaration;
 using geometry::ContactSurface;
 using geometry::FrameId;
 using geometry::FramePoseVector;
@@ -786,6 +787,12 @@ struct MultibodyPlant<T>::SceneGraphStub {
     }
   };
 
+  struct StubCollisionFilterManager {
+    void Apply(const geometry::CollisionFilterDeclaration&) {
+      return;
+    }
+  };
+
   static void Throw(const char* operation_name) {
     throw std::logic_error(fmt::format(
         "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
@@ -800,14 +807,16 @@ struct MultibodyPlant<T>::SceneGraphStub {
   Ret Name(Args...) const { Throw(#Name); return Ret(); }
 
   DRAKE_STUB(void, AssignRole)
-  DRAKE_STUB(void, ExcludeCollisionsBetween)
-  DRAKE_STUB(void, ExcludeCollisionsWithin)
   DRAKE_STUB(FrameId, RegisterFrame)
   DRAKE_STUB(GeometryId, RegisterGeometry)
   DRAKE_STUB(SourceId, RegisterSource)
   const StubSceneGraphInspector model_inspector() const {
     Throw("model_inspector");
     return StubSceneGraphInspector();
+  }
+  StubCollisionFilterManager collision_filter_manager() {
+    Throw("collision_filter_manager");
+    return StubCollisionFilterManager();
   }
 
 #undef DRAKE_STUB
@@ -850,16 +859,18 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
     if (child_id && parent_id) {
-      member_scene_graph().ExcludeCollisionsBetween(
+      member_scene_graph().collision_filter_manager().Apply(
+        CollisionFilterDeclaration().ExcludeBetween(
           geometry::GeometrySet(*child_id),
-          geometry::GeometrySet(*parent_id));
+          geometry::GeometrySet(*parent_id)));
     }
   }
   // We must explicitly exclude collisions between all geometries registered
   // against the world.
   // TODO(eric.cousineau): Do this in a better fashion (#11117).
   auto g_world = CollectRegisteredGeometries(GetBodiesWeldedTo(world_body()));
-  member_scene_graph().ExcludeCollisionsWithin(g_world);
+  member_scene_graph().collision_filter_manager().Apply(
+      CollisionFilterDeclaration().ExcludeWithin(g_world));
 }
 
 template <typename T>
@@ -873,8 +884,12 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   for (const auto& body_geometries : collision_geometries_) {
     collision.Add(body_geometries);
   }
-  member_scene_graph().ExcludeCollisionsWithin(visual);
-  member_scene_graph().ExcludeCollisionsBetween(visual, collision);
+  // clang-format off
+  member_scene_graph().collision_filter_manager().Apply(
+      CollisionFilterDeclaration()
+          .ExcludeWithin(visual)
+          .ExcludeBetween(visual, collision));
+  // clang-format on
 }
 
 template <typename T>
@@ -887,15 +902,17 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
   DRAKE_DEMAND(geometry_source_is_registered());
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
-    member_scene_graph().ExcludeCollisionsWithin(
-        collision_filter_group_a.second);
+    member_scene_graph().collision_filter_manager().Apply(
+        CollisionFilterDeclaration().ExcludeWithin(
+            collision_filter_group_a.second));
   } else {
-    member_scene_graph().ExcludeCollisionsBetween(
-        collision_filter_group_a.second, collision_filter_group_b.second);
+    member_scene_graph().collision_filter_manager().Apply(
+        CollisionFilterDeclaration().ExcludeBetween(
+            collision_filter_group_a.second, collision_filter_group_b.second));
   }
 }
 
-template<typename T>
+template <typename T>
 void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const systems::Context<T>& context,
     const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,

@@ -773,11 +773,13 @@ class TestGeometry(unittest.TestCase):
         dut.Apply(
             mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
 
+        # TODO(2021-11-01) Remove these with deprecation resolution.
         # Legacy API
-        sg.ExcludeCollisionsBetween(geometries, geometries)
-        sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
-        sg.ExcludeCollisionsWithin(geometries)
-        sg.ExcludeCollisionsWithin(sg_context, geometries)
+        with catch_drake_warnings(expected_count=4):
+            sg.ExcludeCollisionsBetween(geometries, geometries)
+            sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
+            sg.ExcludeCollisionsWithin(geometries)
+            sg.ExcludeCollisionsWithin(sg_context, geometries)
 
     @numpy_compare.check_nonsymbolic_types
     def test_value_instantiations(self, T):
