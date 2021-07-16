@@ -13,6 +13,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <fmt/format.h>
 #include <mosek.h>
 
 #include "drake/common/never_destroyed.h"
@@ -1602,6 +1603,21 @@ MSKrescodee SetDualSolution(
   return rescode;
 }
 
+// Throws a runtime error if the mosek option is set incorrectly.
+template <typename T>
+void MosekSetOptionCheck(MSKrescodee rescode, MSKtask_t* task,
+                         const std::string& option, const T& val) {
+  if (rescode != MSK_RES_OK) {
+    MSK_deletetask(task);
+    throw std::runtime_error(fmt::format(
+        "MosekSolver(): cannot set Mosek option {} to value {}, check "
+        "https://docs.mosek.com/9.2/capi/param-groups.html for allowable "
+        "values in C++, or https://docs.mosek.com/9.2/capi/param-groups.html "
+        "for allowable values in python.",
+        option, val));
+  }
+}
+
 }  // anonymous namespace
 
 /*
@@ -1730,18 +1746,24 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnadouparam(task, double_options.first.c_str(),
                                   double_options.second);
+      MosekSetOptionCheck(rescode, &task, double_options.first,
+                          double_options.second);
     }
   }
   for (const auto& int_options : merged_options.GetOptionsInt(id())) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnaintparam(task, int_options.first.c_str(),
                                   int_options.second);
+      MosekSetOptionCheck(rescode, &task, int_options.first,
+                          int_options.second);
     }
   }
   for (const auto& str_options : merged_options.GetOptionsStr(id())) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnastrparam(task, str_options.first.c_str(),
                                   str_options.second.c_str());
+      MosekSetOptionCheck(rescode, &task, str_options.first,
+                          str_options.second);
     }
   }
 
