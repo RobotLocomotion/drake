@@ -769,6 +769,36 @@ void AddSecondOrderConeVariables(
     }
   }
 }
+
+template <typename T>
+void ThrowForInvalidOption(int error, const std::string& option, const T& val) {
+  if (error) {
+    const std::string gurobi_version =
+        fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+    if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): '{}' is an unknown parameter in Gurobi, check "
+          "https://www.gurobi.com/documentation/{}/refman/parameters.html for "
+          "allowable parameters",
+          option, gurobi_version));
+    } else if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): '{}' is outside the parameter {}'s valid range", val,
+          option));
+    }
+    // The error message for Setting a Gurobi option should be either
+    // GRB_ERROR_UNKNOWN_PARAMETER or GRB_ERROR_VALUE_OF_OF_RANGE. But just in
+    // case I missed something, I added this throw to capture any other possible
+    // error message. This is untested because I don't know how to trigger an
+    // unknown error.
+    throw std::runtime_error(
+        fmt::format("GurobiSolver(): error code {}, cannot set option '{}' to "
+                    "value '{}', check "
+                    "https://www.gurobi.com/documentation/{}/refman/"
+                    "parameters.html for all allowable options and values.",
+                    error, option, val, gurobi_version));
+  }
+}
 }  // anonymous namespace
 
 bool GurobiSolver::is_available() { return true; }
@@ -1000,11 +1030,14 @@ void GurobiSolver::DoSolve(
   // can be overridden by parameters set in the MathematicalProgram).
   if (!error) {
     error = GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
+    // Setting GRB_INT_PAR_OUTPUTFLAG=0 should never cause error.
+    DRAKE_DEMAND(!error);
   }
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
       error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
+      ThrowForInvalidOption(error, it.first, it.second);
     }
   }
   bool compute_iis = false;
@@ -1020,6 +1053,7 @@ void GurobiSolver::DoSolve(
         }
       } else {
         error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+        ThrowForInvalidOption(error, it.first, it.second);
       }
     }
   }
@@ -1032,6 +1066,7 @@ void GurobiSolver::DoSolve(
         }
       } else {
         error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+        ThrowForInvalidOption(error, it.first, it.second);
       }
     }
   }
