@@ -24,6 +24,7 @@ import pydrake
 from pydrake.common import kDrakeAssertIsArmed
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
@@ -985,16 +986,16 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1, "x")
         binding = prog.AddCost(obj=mp.LinearCost([1.0], 0.0), vars=x)
-        # Would be great if this was Binding_LinearCost, but we currently
-        # expect it to be only Binding_Cost
-        self.assertIsInstance(binding, mp.Binding_Cost)
+        # Would be great if this was Binding[LinearCost], but we currently
+        # expect it to be only Binding[Cost]
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
         self.assertIsInstance(binding.evaluator(), mp.LinearCost)
         self.assertEqual(len(prog.linear_costs()), 1)
 
         binding = prog.AddCost(mp.QuadraticCost([[1.0]], [0.0], 0.0), x)
-        # Would be great if this was Binding_QuadraticCost, but we currently
-        # expect it to be only Binding_Cost
-        self.assertIsInstance(binding, mp.Binding_Cost)
+        # Would be great if this was Binding[QuadraticCost], but we currently
+        # expect it to be only Binding[Cost]
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
         self.assertIsInstance(binding.evaluator(), mp.QuadraticCost)
         self.assertEqual(len(prog.quadratic_costs()), 1)
 
@@ -1002,7 +1003,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # L2NormCost to a MathematicalProgram pending further progress on
         # #15366.
         binding = prog.AddCost(mp.L2NormCost([[1.0]], [0.0]), x)
-        self.assertIsInstance(binding, mp.Binding_Cost)
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
         self.assertIsInstance(binding.evaluator(), mp.L2NormCost)
         self.assertEqual(len(prog.generic_costs()), 1)
 
@@ -1252,6 +1253,40 @@ class TestMathematicalProgram(unittest.TestCase):
         generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
         prog.RemoveCost(generic_cost2)
         self.assertEqual(len(prog.generic_costs()), 1)
+
+    def test_binding_instantiations(self):
+        # Explicit spelling
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIs(mp.Binding_Cost, mp.Binding[mp.Cost])
+            self.assertIn(
+                "Binding_Cost is deprecated; please use Binding[Cost] instead",
+                str(w[0].message))
+
+        # Patterned spelling.
+        cls_list = [
+            mp.EvaluatorBase,
+            mp.Constraint,
+            mp.LinearConstraint,
+            mp.LorentzConeConstraint,
+            mp.RotatedLorentzConeConstraint,
+            mp.LinearEqualityConstraint,
+            mp.BoundingBoxConstraint,
+            mp.PositiveSemidefiniteConstraint,
+            mp.LinearMatrixInequalityConstraint,
+            mp.LinearComplementarityConstraint,
+            mp.ExponentialConeConstraint,
+            # mp.Cost,  # Checked above.
+            mp.LinearCost,
+            mp.QuadraticCost,
+            mp.L2NormCost,
+            mp.VisualizationCallback,
+        ]
+        for cls in cls_list:
+            binding_cls = mp.Binding[cls]
+            old_spelling = f"Binding_{cls.__name__}"
+            with catch_drake_warnings(expected_count=1):
+                binding_cls_old_spelling = getattr(mp, old_spelling)
+            self.assertIs(binding_cls, binding_cls_old_spelling)
 
 
 class DummySolverInterface(SolverInterface):

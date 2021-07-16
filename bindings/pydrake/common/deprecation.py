@@ -63,7 +63,7 @@ class ModuleShim:
             try:
                 value = self._handler(name)
             except AttributeError as e:
-                if e.message:
+                if str(e):
                     raise e
                 else:
                     raise AttributeError(
@@ -88,7 +88,7 @@ class ModuleShim:
         return self._orig_module.__all__
 
     @classmethod
-    def _install(cls, name, handler):
+    def _install(cls, name, handler, *, auto_all=False):
         """Hook into module's attribute accessors and mutators.
 
         Args:
@@ -102,6 +102,12 @@ class ModuleShim:
             `__bases__`.
         """
         old_module = sys.modules[name]
+        if auto_all:
+            old_module.__all__ = [
+                name
+                for name in old_module.__dict__
+                if not name.startswith("_")
+            ]
         new_module = cls(old_module, handler)
         sys.modules[name] = new_module
 
