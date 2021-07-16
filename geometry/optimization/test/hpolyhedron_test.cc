@@ -319,6 +319,19 @@ GTEST_TEST(HPolyhedronTest, IsBounded4) {
 }
 
 GTEST_TEST(HPolyhedronTest, CartesianPowerTest) {
+  // First test the concept. If x ∈ H, then [x; x]  ∈ H x H and
+  // [x; x]  ∈ H x H x H.
+  MatrixXd A{4, 2};
+  A << MatrixXd::Identity(2, 2), -MatrixXd::Identity(2, 2);
+  VectorXd b = VectorXd::Ones(4);
+  HPolyhedron H(A, b);
+  VectorXd x = VectorXd::Zero(2);
+  EXPECT_TRUE(H.PointInSet(x));
+  EXPECT_TRUE(H.CartesianPower(2).PointInSet((VectorXd(4) << x, x).finished()));
+  EXPECT_TRUE(
+      H.CartesianPower(3).PointInSet((VectorXd(6) << x, x, x).finished()));
+
+  // Now test the HPolyhedron-specific behavior.
   MatrixXd A_1{2, 3};
   MatrixXd A_2{4, 6};
   MatrixXd A_3{6, 9};
