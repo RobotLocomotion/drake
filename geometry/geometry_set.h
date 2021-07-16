@@ -269,14 +269,14 @@ class GeometrySet {
   friend class GeometryState;
 
   // Returns the frame ids in the set.
-  const std::unordered_set<FrameId> frames() const { return frame_ids_; }
+  const std::unordered_set<FrameId>& frames() const { return frame_ids_; }
 
   // Reports the number of frames in the set.
   int num_frames() const { return static_cast<int>(frame_ids_.size()); }
 
   // Returns the geometry ids in the set -- these are only the geometry ids
   // explicitly added to the set and _not_ those implied by added frames.
-  const std::unordered_set<GeometryId> geometries() const {
+  const std::unordered_set<GeometryId>& geometries() const {
     return geometry_ids_;
   }
 
