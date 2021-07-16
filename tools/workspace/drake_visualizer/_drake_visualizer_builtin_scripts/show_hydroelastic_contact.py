@@ -1083,6 +1083,8 @@ class HydroelasticContactVisualizer:
                 point = np.array([surface.centroid_W[0],
                                   surface.centroid_W[1],
                                   surface.centroid_W[2]])
+                # This is actually the force on body 1. It is documented as such
+                # in the lcm message.
                 force = np.array([surface.force_C_W[0],
                                   surface.force_C_W[1],
                                   surface.force_C_W[2]])
@@ -1120,7 +1122,7 @@ class HydroelasticContactVisualizer:
                         tubeRadius=0.002,
                         headRadius=0.004, color=[0, 0, 1])
             self.visual_model.set_contact_debug_data(
-                surface, force_data, "Spatial force")
+                surface, force_data, f"Spatial force on {surface.body1_name}")
 
             # Iterate over all quadrature points, drawing traction and slip
             # velocity vectors.
