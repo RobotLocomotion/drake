@@ -4,6 +4,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
@@ -261,18 +262,9 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   MosekSolver mosek_solver;
   SolverOptions solver_options;
   solver_options.SetOption(MosekSolver::id(), "non-existing options", 42);
-  mosek_solver.Solve(prog, {}, solver_options, &result);
-  const auto& solver_details = result.get_solver_details<MosekSolver>();
-  // This response code is defined in
-  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
-  const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
-  EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
-  // This problem status is defined in
-  // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
-  const int MSK_PRO_STA_UNKNOWN = 0;
-  EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
-
-  EXPECT_FALSE(result.is_success());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mosek_solver.Solve(prog, {}, solver_options, &result),
+      ".*cannot set Mosek option \'non-existing options\' to value \'42\'.*");
 }
 
 GTEST_TEST(MosekSolver, TestInitialGuess) {
