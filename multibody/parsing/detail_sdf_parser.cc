@@ -521,16 +521,13 @@ std::string LoadSdf(
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  // TODO(#15018): Later, we should change unrecognized elements policy to
+  // become an error.
   parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
       return ResolveUri(_input, package_map, ".");
     });
-  // TODO(#15018): Later, we should change unrecognized elements policy to
-  // become an error.
-  DRAKE_DEMAND(
-      parser_config.UnrecognizedElementsPolicy()
-      == sdf::EnforcementPolicy::WARN);
 
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
