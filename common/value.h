@@ -114,6 +114,14 @@ class AbstractValue {
   template <typename T>
   const T* maybe_get_value() const;
 
+  /// Returns the mutable value wrapped in this AbstractValue, if T matches the
+  /// originally declared type of this AbstractValue.
+  /// @tparam T The originally declared type of this AbstractValue, e.g., from
+  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match,
+  /// returns nullptr.
+  template <typename T>
+  T* maybe_get_mutable_value();
+
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
 
@@ -664,6 +672,13 @@ const T* AbstractValue::maybe_get_value() const {
   if (!is_maybe_matched<T>()) { return nullptr; }
   auto& self = static_cast<const Value<T>&>(*this);
   return &self.get_value();
+}
+
+template <typename T>
+T* AbstractValue::maybe_get_mutable_value() {
+  if (!is_maybe_matched<T>()) { return nullptr; }
+  auto& self = static_cast<Value<T>&>(*this);
+  return &self.get_mutable_value();
 }
 
 // In Debug mode, returns true iff `this` is-a `Value<T>`.  In Release mode, a
