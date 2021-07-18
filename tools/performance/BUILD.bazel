@@ -13,4 +13,4 @@ py_binary(
     ],
 )
 
-add_lint_tests(python_lint_extra_srcs = ["benchmark_tool"])
+add_lint_tests(python_lint_extra_srcs = ["benchmark_tool.py"])

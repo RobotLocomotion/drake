@@ -9,4 +9,4 @@ HERE=$(dirname $ME)
 
 cd "$HERE"/../../..
 
-./tools/performance/benchmark_tool copy_results $TARGET "$1"
+python3 -B tools/performance/benchmark_tool.py copy_results $TARGET "$1"

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tool to help with controlled benchmark experiments.
 
 Subcommands:
@@ -19,7 +18,7 @@ conduct_experiment:
   It is possible to customize the bazel build and run steps by using
   "--extra-build-args=" (a.k.a. "-b=") options:
 
-    benchmark_tool conduct_experiment \\
+    python3 -B benchmark_tool.py conduct_experiment \\
       -b=--copt=-mtune=haswell \\
       -b=--copt=-g \\
       [TARGET] [OUTPUT-DIR]
