@@ -18,6 +18,10 @@ load(
     "@drake//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
 )
+load(
+    "@drake//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
@@ -424,7 +428,7 @@ drake_py_test(
     ],
 )
 
-drake_cc_binary(
+drake_cc_googlebench_binary(
     name = "benchmark_autodiff",
     srcs = ["benchmark_autodiff.cc"],
     deps = [
@@ -435,7 +439,7 @@ drake_cc_binary(
         "//math:gradient",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//multibody/parsing",
-        "@googlebenchmark//:benchmark",
+        "//tools/performance:fixture_common",
     ],
 )
 
