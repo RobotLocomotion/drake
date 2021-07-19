@@ -941,6 +941,7 @@ drake_cc_library(
         "//common:essential",
     ] + select({
         "//conditions:default": [
+            "//common:scope_exit",
             "//math:eigen_sparse_triplet",
             "@scs//:scsdir",
         ],
