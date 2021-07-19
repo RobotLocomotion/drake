@@ -31,7 +31,7 @@
       <material name="green"/>
     </visual>
   </link>
-  <joint drake_ignore="true" name="base_weld" type="fixed">
+  <joint name="base_weld" type="fixed">
     <parent link="world"/>
     <child link="base"/>
     <origin xyz="0 0 1"/>

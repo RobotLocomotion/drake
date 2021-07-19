@@ -23,7 +23,6 @@ def run_pendulum_example(args):
     parser = Parser(plant)
     parser.AddModelFromFile(FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf"))
-    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"))
     plant.Finalize()
 
     pose_bundle_output_port = scene_graph.get_pose_bundle_output_port()

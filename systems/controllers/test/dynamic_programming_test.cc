@@ -215,7 +215,6 @@ GTEST_TEST(FittedValueIteration, MultibodyPlant) {
   multibody::Parser(mbp, scene_graph)
       .AddModelFromFile(
           FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
-  mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("base"));
   mbp->Finalize();
 
   // Export an input that we don't need, and export it first, just to test the
