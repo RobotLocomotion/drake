@@ -569,6 +569,8 @@ drake_cc_googletest(
     deps = [
         ":region_of_attraction",
         "//solvers:mosek_solver",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:constant_vector_source",
         "//systems/primitives:symbolic_vector_system",
     ],
 )
