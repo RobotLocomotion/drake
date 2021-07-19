@@ -35,6 +35,8 @@ document:
     --version=v0.26.0 --prior_version=v0.25.0
   bazel-bin/tools/release_engineering/relnotes --action=update \
     --version=v0.26.0
+  bazel-bin/tools/release_engineering/relnotes --action=update \
+    --version=v0.26.0 --target_commit=5b3377b9
 """
 
 import argparse
@@ -168,7 +170,7 @@ def _format_commit(gh, drake, commit):
     return packages, f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
 
 
-def _update(args, notes_filename, gh, drake):
+def _update(args, notes_filename, gh, drake, target_commit):
     """The --update action."""
 
     # Read in the existing content.
@@ -190,9 +192,15 @@ def _update(args, notes_filename, gh, drake):
         raise RuntimeError("Could not find newest_commit inclusive")
     logging.debug(f"Prior newest_commit {prior_newest_commit}")
 
+    if target_commit is None:
+        target_commit = "master"
+
+    # TODO: Figure out how to assert target_commmit >= prior_newest_commit.
+    assert False
+
     # Find new commits from newest to oldest.
     commits = []
-    for commit in drake.commits(sha='master'):
+    for commit in drake.commits(sha=target_commit):
         if commit.sha == prior_newest_commit:
             break
         commits.append(commit)
@@ -311,6 +319,10 @@ def main():
         "--max_num_commits", type=int, default=400,
         help="Stop after chasing this many commits")
     parser.add_argument(
+        "--target_commit", type=str,
+        help="Use this as the target commit for --action=update. This *must* "
+        "be newer than the prior commit.")
+    parser.add_argument(
         "--token_file", default="~/.config/readonly_github_api_token.txt",
         help="Uses an API token read from this filename (default: "
         "%(default)s)")
@@ -341,11 +353,14 @@ def main():
     # Perform the requested action.
     if args.action == "create":
         if not args.prior_version:
-            parser.error("--prior_version is required to --create")
+            parser.error("--prior_version is required to --action=create")
+        if args.target_commit is not None:
+            parser.error(
+                "--target_commit cannot be specified with --action=create")
         _create(args, notes_dir, notes_filename, gh, drake)
     else:
         assert args.action == "update"
-        _update(args, notes_filename, gh, drake)
+        _update(args, notes_filename, gh, drake, args.target_commit)
 
 
 if __name__ == '__main__':

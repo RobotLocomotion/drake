@@ -117,6 +117,8 @@ the main body of the document:
     sure that the nightly build git sha from the prior step matches the
     ``newest_commit`` whose changes are enumerated in the notes.  Some dates
     are YYYYMMDD format, some are YYYY-MM-DD format; be sure to fix them all.
+      * To ensure your commit matches the target commit of your release, use
+      the `--commit=` argument for `relnotes`.
 11. Merge the release notes PR
    1. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
