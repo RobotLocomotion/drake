@@ -152,10 +152,10 @@ drake_cc_library(
         ":dynamic_elasticity_model",
         ":fem_model_base",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":mesh_utilities",
         "//common:essential",
         "//geometry/proximity:volume_mesh",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
         "//multibody/plant",
     ],
@@ -272,9 +272,9 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":fem_element",
-        ":isoparametric_element",
         "//common:essential",
         "//common:unused",
+        "//multibody/fem:isoparametric_element",
         "//multibody/fem:quadrature",
     ],
 )
@@ -397,16 +397,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "isoparametric_element",
-    hdrs = [
-        "isoparametric_element.h",
-    ],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "linear_constitutive_model",
     hdrs = [
         "linear_constitutive_model.h",
@@ -429,16 +419,6 @@ drake_cc_library(
         ":deformation_gradient_cache_entry",
         "//common:default_scalars",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_simplex_element",
-    hdrs = [
-        "linear_simplex_element.h",
-    ],
-    deps = [
-        ":isoparametric_element",
     ],
 )
 
@@ -661,9 +641,9 @@ drake_cc_googletest(
     deps = [
         ":dynamic_elasticity_element",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -674,10 +654,10 @@ drake_cc_googletest(
         ":dynamic_elasticity_element",
         ":dynamic_elasticity_model",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -697,10 +677,10 @@ drake_cc_googletest(
     deps = [
         ":elasticity_element",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -719,7 +699,6 @@ drake_cc_googletest(
         ":eigen_conjugate_gradient_solver",
         ":fem_solver",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":static_elasticity_element",
         ":static_elasticity_model",
         ":zeroth_order_state_updater",
@@ -727,6 +706,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -755,27 +735,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "isoparametric_element_test",
-    deps = [
-        ":isoparametric_element",
-        ":linear_simplex_element",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "linear_constitutive_model_cache_entry_test",
     deps = [
         ":linear_constitutive_model_cache_entry",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_simplex_element_test",
-    deps = [
-        ":linear_simplex_element",
     ],
 )
 
@@ -820,11 +783,11 @@ drake_cc_googletest(
     name = "static_elasticity_element_test",
     deps = [
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":static_elasticity_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -833,12 +796,12 @@ drake_cc_googletest(
     name = "static_elasticity_model_test",
     deps = [
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":static_elasticity_element",
         ":static_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -848,12 +811,12 @@ drake_cc_googletest(
     deps = [
         ":fem_solver",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":mesh_utilities",
         ":static_elasticity_element",
         ":static_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
