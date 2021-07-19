@@ -9,6 +9,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -82,11 +83,12 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
  * @param name Name of the Cost / Constraint class.
  */
 template <typename C>
-auto RegisterBinding(py::handle* scope, const string& name) {
+auto RegisterBinding(py::handle* scope, const string&) {
   constexpr auto& cls_doc = pydrake_doc.drake.solvers.Binding;
   typedef Binding<C> B;
-  string pyname = "Binding_" + name;
+  const string pyname = TemporaryClassName<B>();
   py::class_<B> binding_cls(*scope, pyname.c_str());
+  AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
@@ -350,7 +352,8 @@ void DefTesting(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(mathematicalprogram, m) {
+// N.B. Leading `_` is only for deprecation.
+PYBIND11_MODULE(_mathematicalprogram, m) {
   m.doc() = R"""(
 Bindings for MathematicalProgram
 
