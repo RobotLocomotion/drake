@@ -198,11 +198,38 @@ GTEST_TEST(ValueTest, MaybeGetValue) {
   EXPECT_EQ(double_value->maybe_get_value<std::string>(), nullptr);
   EXPECT_EQ(string_value->maybe_get_value<double>(), nullptr);
 
-  ASSERT_NE(double_value->maybe_get_value<double>(), nullptr);
-  EXPECT_EQ(*double_value->maybe_get_value<double>(), 3.);
+  const double* const double_pointer =
+      double_value->maybe_get_value<double>();
+  const std::string* const string_pointer =
+      string_value->maybe_get_value<std::string>();
 
-  ASSERT_NE(string_value->maybe_get_value<std::string>(), nullptr);
-  EXPECT_EQ(*string_value->maybe_get_value<std::string>(), "hello");
+  ASSERT_NE(double_pointer, nullptr);
+  ASSERT_NE(string_pointer, nullptr);
+  EXPECT_EQ(*double_pointer, 3.);
+  EXPECT_EQ(*string_pointer, "hello");
+}
+
+// Check that maybe_get_mutable_value() returns nullptr for wrong-type
+// requests, and returns the correct value for right-type requests.
+GTEST_TEST(ValueTest, MaybeGetMutableValue) {
+  auto double_value = AbstractValue::Make<double>(3.);
+  auto string_value = AbstractValue::Make<std::string>("hello");
+
+  EXPECT_EQ(double_value->maybe_get_mutable_value<std::string>(), nullptr);
+  EXPECT_EQ(string_value->maybe_get_mutable_value<double>(), nullptr);
+
+  double* const double_pointer =
+      double_value->maybe_get_mutable_value<double>();
+  std::string* const string_pointer =
+      string_value->maybe_get_mutable_value<std::string>();
+
+  ASSERT_NE(double_pointer, nullptr);
+  ASSERT_NE(string_pointer, nullptr);
+  EXPECT_EQ(*double_pointer, 3.);
+  EXPECT_EQ(*string_pointer, "hello");
+
+  *string_pointer = "goodbye";
+  EXPECT_EQ(string_value->get_value<std::string>(), "goodbye");
 }
 
 TYPED_TEST(TypedValueTest, Access) {
