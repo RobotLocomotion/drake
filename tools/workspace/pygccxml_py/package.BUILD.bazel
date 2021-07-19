@@ -1,0 +1,12 @@
+# -*- mode: python; -*-
+# vi: set ft=python:
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # BSL-1.0
+
+py_library(
+    name = "pygccxml_py",
+    srcs = glob(["pygccxml/**/*.py"]),
+    visibility = ["//visibility:public"],
+)
