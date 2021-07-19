@@ -84,9 +84,10 @@ class TestPyplotVisualizer(unittest.TestCase):
         context.SetContinuousState([0.9])
 
         simulator = Simulator(diagram, context)
+        log = logger.GetLog(diagram, context)
         simulator.AdvanceTo(.1)
 
-        ani = visualizer.animate(logger, repeat=True)
+        ani = visualizer.animate(log, repeat=True)
         self.assertIsInstance(ani, animation.FuncAnimation)
 
     def test_trajectory(self):

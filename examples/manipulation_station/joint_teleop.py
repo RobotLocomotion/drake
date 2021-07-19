@@ -152,8 +152,10 @@ def main():
     # Ensure that our initialization logic was correct, by inspecting our
     # logged joint velocities.
     if args.test:
-        for time, qdot in zip(iiwa_velocities.sample_times(),
-                              iiwa_velocities.data().transpose()):
+        iiwa_velocities_log = iiwa_velocities.GetLog(
+            diagram, simulator.get_context())
+        for time, qdot in zip(iiwa_velocities_log.sample_times(),
+                              iiwa_velocities_log.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40
             # rad/sec limit, but that's the best we can enforce for now.
             if qdot.max() > 0.1:

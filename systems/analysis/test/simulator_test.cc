@@ -1086,14 +1086,16 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 
   // Create a Simulator and use it to advance time until t=3*h.
   Simulator<double> simulator(*diagram);
+  const auto& log = logger->GetLog(*diagram, simulator.get_context());
+
   simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
 
   testing::internal::CaptureStdout();  // Not in example.
 
   // Print out the contents of the log.
-  for (int n = 0; n < logger->sample_times().size(); ++n) {
-    const double t = logger->sample_times()[n];
-    std::cout << n << ": " << logger->data()(0, n)
+  for (int n = 0; n < log.sample_times().size(); ++n) {
+    const double t = log.sample_times()[n];
+    std::cout << n << ": " << log.data()(0, n)
               << " (" << t << ")\n";
   }
 
@@ -1162,9 +1164,10 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   const double t_final = 10.0;
   const double initial_value = std::sin(-f * h);  // = sin(f*-1*h)
   Simulator<double> simulator(*diagram);
+  auto& context = simulator.get_mutable_context();
+  const auto& log = logger->GetLog(*diagram, context);
 
-  simulator.get_mutable_context().get_mutable_discrete_state()[0] =
-      initial_value;
+  context.get_mutable_discrete_state()[0] = initial_value;
   simulator.AdvanceTo(t_final);
 
   // Set a very tight tolerance value.
@@ -1180,8 +1183,8 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   // y₂         2    t = 2 h              sin(f h)
   // y₃         3    t = 3 h              sin(f 2 h)
   // ...
-  const VectorX<double> times = logger->sample_times();
-  const MatrixX<double> data = logger->data();
+  const VectorX<double> times = log.sample_times();
+  const MatrixX<double> data = log.data();
 
   ASSERT_EQ(times.size(), std::round(t_final/h) + 1);
   ASSERT_EQ(data.rows(), 1);
@@ -1819,7 +1822,7 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   // Should log exactly once every kPeriod, up to and including
   // kTime.
   Eigen::VectorBlock<const VectorX<double>> t_periodic =
-      periodic_logger.sample_times();
+      periodic_logger.GetLog(*diagram, simulator.get_context()).sample_times();
   EXPECT_EQ(t_periodic.size(), kTime * kFrequency + 1);
 }
 

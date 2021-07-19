@@ -57,7 +57,7 @@ Eigen::Matrix2Xd VanDerPolOscillator<T>::CalcLimitCycle() {
   // simulation results) of the cycle for μ=1.
   simulator.AdvanceTo(6.667);
 
-  return logger->data();
+  return logger->GetLog(*diagram, simulator.get_context()).data();
 }
 
 // q̈ + μ(q² - 1)q̇ + q = 0

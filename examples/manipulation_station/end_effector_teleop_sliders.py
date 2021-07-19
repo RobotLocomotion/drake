@@ -380,13 +380,15 @@ def main():
         differential_ik, simulator.get_mutable_context()), q0)
 
     simulator.set_target_realtime_rate(args.target_realtime_rate)
+    iiwa_velocities_log = iiwa_velocities.GetLog(
+        diagram, simulator.get_context())
     simulator.AdvanceTo(args.duration)
 
     # Ensure that our initialization logic was correct, by inspecting our
     # logged joint velocities.
     if args.test:
-        for time, qdot in zip(iiwa_velocities.sample_times(),
-                              iiwa_velocities.data().transpose()):
+        for time, qdot in zip(iiwa_velocities_log.sample_times(),
+                              iiwa_velocities_log.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40
             # rad/sec limit, but that's the best we can enforce for now.
             if qdot.max() > 0.1:

@@ -7,8 +7,19 @@ namespace systems {
 
 template <typename T>
 SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
-    : LeafSystem<T>(SystemTypeTag<SignalLogger>{}),
-      log_(input_size, batch_allocation_size) {
+    : LeafSystem<T>(SystemTypeTag<SignalLogger>{}) {
+  // This cache entry just maintains log storage. It is only ever updated by
+  // WriteToLog(). This declaration of the cache entry invokes no invalidation
+  // support from the cache system.
+  log_cache_index_ =
+      this->DeclareCacheEntry(
+          "log", ValueProducer(
+              // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
+              internal::AbstractValueCloner(
+                  SignalLog<T>(input_size, batch_allocation_size)),
+              &ValueProducer::NoopCalc),
+          {this->nothing_ticket()}).cache_index();
+
   this->DeclareInputPort("data", kVectorValued, input_size);
 
   // Use a per-step event by default; disabled by set_publish_period() or
@@ -82,8 +93,43 @@ void SignalLogger<T>::set_forced_publish_only() {
 }
 
 template <typename T>
+const SignalLog<T>&
+SignalLogger<T>::GetLog(const Context<T>& context) const {
+  // Relying on the mutable implementation here avoids pointless out-of-date
+  // checks.
+  return GetMutableLog(context);
+}
+
+template <typename T>
+const SignalLog<T>&
+SignalLogger<T>::GetLog(const System<T>& outer_system,
+                        const Context<T>& outer_context) const {
+  // Relying on the mutable implementation here avoids pointless out-of-date
+  // checks.
+  return GetMutableLog(outer_system, outer_context);
+}
+
+template <typename T>
+SignalLog<T>&
+SignalLogger<T>::GetMutableLog(const Context<T>& context) const {
+  CacheEntryValue& value =
+      this->get_cache_entry(log_cache_index_)
+      .get_mutable_cache_entry_value(context);
+  return value.GetMutableValueOrThrow<SignalLog<T>>();
+}
+
+template <typename T>
+SignalLog<T>&
+SignalLogger<T>::GetMutableLog(const System<T>& outer_system,
+                               const Context<T>& outer_context) const {
+  return GetMutableLog(
+      outer_system.GetSubsystemContext(*this, outer_context));
+}
+
+template <typename T>
 EventStatus SignalLogger<T>::WriteToLog(const Context<T>& context) const {
-  log_.AddData(context.get_time(), this->get_input_port().Eval(context));
+  GetMutableLog(context).AddData(
+      context.get_time(), this->get_input_port().Eval(context));
   return EventStatus::Succeeded();
 }
 

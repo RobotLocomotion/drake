@@ -15,13 +15,12 @@
 namespace drake {
 namespace systems {
 
-// TODO(sherm1) This System has problems as discussed in issue #10228 that
-//              should be fixed.
-/// A discrete sink block which logs its input to memory (not thread safe). This
-/// data is then retrievable (e.g. after a simulation) via a handful of accessor
-/// methods. This system holds a large, mutable Eigen matrix for data storage,
-/// where each column corresponds to a data point. It saves a data point and
-/// the context time whenever it samples its input.
+/// A discrete sink block which logs its input to a SignalLog object stored in
+/// the context. This data is then retrievable (e.g. after a simulation) via
+/// methods of the SignalLog. The SignalLog object holds a large, mutable Eigen
+/// matrix for data storage, where each column corresponds to a data
+/// point. This system saves a data point and the context time whenever it
+/// samples its input.
 ///
 /// By default, sampling is performed every time the Simulator completes a
 /// trajectory-advancing substep (that is, via a per-step Publish event), with
@@ -34,11 +33,6 @@ namespace systems {
 /// The Simulator's "publish every time step" option also results in forced
 /// publish events, so should be disabled if you want to control logging
 /// yourself.
-///
-/// @warning %SignalLogger is _not_ thread-safe because it writes to a mutable
-/// buffer internally. If you have a Diagram that contains a SignalLogger,
-/// even with each thread having its own Context, the threads will conflict.
-/// You would have to have separate Diagrams in each thread to avoid trouble.
 ///
 /// @see LogOutput() for a convenient way to add %logging to a Diagram.
 /// @see Simulator::set_publish_every_time_step()
@@ -90,23 +84,22 @@ class SignalLogger final : public LeafSystem<T> {
   /// @throws std::exception if set_publish_period() has been called.
   void set_forced_publish_only();
 
-  /// Returns the number of samples taken since construction or last reset().
-  int num_samples() const { return log_.num_samples(); }
+  /// Access the signal log within this component's context.
+  const SignalLog<T>& GetLog(const Context<T>& context) const;
 
-  /// Provides access to the sample times of the logged data. Time is taken
-  /// from the Context when the log entry is added.
-  Eigen::VectorBlock<const VectorX<T>> sample_times() const {
-    return log_.sample_times();
-  }
+  /// Access the signal log within this component's context, given a containing
+  /// system and its matching context.
+  const SignalLog<T>& GetLog(const System<T>& outer_system,
+                             const Context<T>& outer_context) const;
 
-  /// Provides access to the logged data.
-  Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true>
-  data() const {
-    return log_.data();
-  }
+  /// Access the signal log as a mutable object within this component's
+  /// context.
+  SignalLog<T>& GetMutableLog(const Context<T>& context) const;
 
-  /// Clears the logged data.
-  void reset() { log_.reset(); }
+  /// Access the signal log as a mutable object within this component's
+  /// context, given a containing system and its matching context.
+  SignalLog<T>& GetMutableLog(const System<T>& outer_system,
+                              const Context<T>& outer_context) const;
 
  private:
   template <typename> friend class SignalLogger;
@@ -125,7 +118,9 @@ class SignalLogger final : public LeafSystem<T> {
 
   LoggingMode logging_mode_{kPerStep};
 
-  mutable SignalLog<T> log_;  // TODO(sherm1) Not thread safe :(
+  // The index of a cache entry that stores the log data. It is stored as a
+  // cache entry to maintain thread safety in context-per-thread usage.
+  CacheIndex log_cache_index_{};
 };
 
 /// Provides a convenience function for adding a SignalLogger, initialized to

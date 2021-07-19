@@ -141,27 +141,31 @@ class TestGeneral(unittest.TestCase):
 
         diagram = builder.Build()
         simulator = Simulator_[T](diagram)
+        context = simulator.get_context()
         kTime = 1.
         simulator.AdvanceTo(kTime)
 
         # Verify outputs of the every-step logger
-        t = logger_per_step.sample_times()
-        x = logger_per_step.data()
+        log_per_step = logger_per_step.GetMutableLog(diagram, context)
+        t = log_per_step.sample_times()
+        x = log_per_step.data()
 
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
         numpy_compare.assert_allclose(
             t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
         )
-        numpy_compare.assert_equal(x, logger_per_step_2.data())
+        log_per_step_2 = logger_per_step_2.GetLog(diagram, context)
+        numpy_compare.assert_equal(x, log_per_step_2.data())
 
         # Verify outputs of the periodic logger
-        t = logger_periodic.sample_times()
-        x = logger_periodic.data()
+        log_periodic = logger_periodic.GetLog(diagram, context)
+        t = log_periodic.sample_times()
+        x = log_periodic.data()
         # Should log exactly once every kPeriod, up to and including kTime.
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
-        logger_per_step.reset()
+        log_per_step.reset()
 
         # Verify that t and x retain their values after systems are deleted.
         t_copy = t.copy()

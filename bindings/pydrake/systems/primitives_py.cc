@@ -229,31 +229,72 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("min_value"), py::arg("max_value"),
             doc.Saturation.ctor.doc_2args);
 
-    DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
-        m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
+    DefineTemplateClassWithDefault<SignalLog<T>>(
+        m, "SignalLog", GetPyParam<T>(), doc.SignalLog.doc)
         .def(py::init<int, int>(), py::arg("input_size"),
-            py::arg("batch_allocation_size") = 1000, doc.SignalLogger.ctor.doc)
-        .def("set_publish_period", &SignalLogger<T>::set_publish_period,
-            py::arg("period"), doc.SignalLogger.set_publish_period.doc)
-        .def("set_forced_publish_only",
-            &SignalLogger<T>::set_forced_publish_only,
-            doc.SignalLogger.set_forced_publish_only.doc)
+            py::arg("batch_allocation_size") = 1000, doc.SignalLog.ctor.doc)
+        .def("num_samples", &SignalLog<T>::num_samples,
+            doc.SignalLog.num_samples.doc)
         .def(
             "sample_times",
-            [](const SignalLogger<T>* self) {
+            [](const SignalLog<T>* self) {
               // Reference
               return CopyIfNotPodType(self->sample_times());
             },
             return_value_policy_for_scalar_type<T>(),
-            doc.SignalLogger.sample_times.doc)
+            doc.SignalLog.sample_times.doc)
         .def(
             "data",
-            [](const SignalLogger<T>* self) {
+            [](const SignalLog<T>* self) {
               // Reference.
               return CopyIfNotPodType(self->data());
             },
-            return_value_policy_for_scalar_type<T>(), doc.SignalLogger.data.doc)
-        .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
+            return_value_policy_for_scalar_type<T>(), doc.SignalLog.data.doc)
+        .def("reset", &SignalLog<T>::reset, doc.SignalLog.reset.doc)
+        .def("AddData", &SignalLog<T>::AddData, py::arg("time"),
+            py::arg("sample"), doc.SignalLog.AddData.doc)
+        .def("get_input_size", &SignalLog<T>::get_input_size,
+            doc.SignalLog.get_input_size.doc);
+
+    auto cls =
+        DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
+            m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
+            .def(py::init<int, int>(), py::arg("input_size"),
+                py::arg("batch_allocation_size") = 1000,
+                doc.SignalLogger.ctor.doc)
+            .def("set_publish_period", &SignalLogger<T>::set_publish_period,
+                py::arg("period"), doc.SignalLogger.set_publish_period.doc)
+            .def("set_forced_publish_only",
+                &SignalLogger<T>::set_forced_publish_only,
+                doc.SignalLogger.set_forced_publish_only.doc)
+            .def(
+                "GetLog",
+                [](const SignalLogger<T>* self, const Context<T>& context)
+                    -> const SignalLog<T>& { return self->GetLog(context); },
+                py::arg("context"), py_rvp::reference,
+                doc.SignalLogger.GetLog.doc_1args)
+            .def(
+                "GetLog",
+                [](const SignalLogger<T>* self, const System<T>& outer_system,
+                    const Context<T>& outer_context) -> const SignalLog<T>& {
+                  return self->GetLog(outer_system, outer_context);
+                },
+                py::arg("outer_system"), py::arg("outer_context"),
+                py_rvp::reference, doc.SignalLogger.GetLog.doc_2args)
+            .def(
+                "GetMutableLog",
+                [](const SignalLogger<T>* self, const Context<T>& context)
+                    -> SignalLog<T>& { return self->GetMutableLog(context); },
+                py::arg("context"), py_rvp::reference,
+                doc.SignalLogger.GetMutableLog.doc_1args)
+            .def(
+                "GetMutableLog",
+                [](const SignalLogger<T>* self, const System<T>& outer_system,
+                    const Context<T>& outer_context) -> SignalLog<T>& {
+                  return self->GetMutableLog(outer_system, outer_context);
+                },
+                py::arg("outer_system"), py::arg("outer_context"),
+                py_rvp::reference, doc.SignalLogger.GetMutableLog.doc_2args);
 
     AddTemplateFunction(m, "LogOutput", &LogOutput<T>, GetPyParam<T>(),
         py::arg("src"), py::arg("builder"),

@@ -22,6 +22,7 @@ GTEST_TEST(Fibonacci, CheckSequence) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
+  const auto& log = logger->GetLog(*diagram, simulator.get_context());
 
   // Simulate forward to fibonacci(6): 0 1 1 2 3 5 8
   simulator.AdvanceTo(6 * FibonacciDifferenceEquation::kPeriod);
@@ -29,7 +30,7 @@ GTEST_TEST(Fibonacci, CheckSequence) {
   Eigen::VectorXd expected(7);
   expected << 0, 1, 1, 2, 3, 5, 8;
 
-  EXPECT_EQ(logger->data().transpose(), expected);
+  EXPECT_EQ(log.data().transpose(), expected);
 }
 
 }  // namespace
