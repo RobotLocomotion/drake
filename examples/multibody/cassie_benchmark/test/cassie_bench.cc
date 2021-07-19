@@ -6,6 +6,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/tools/performance/fixture_common.h"
 
 using drake::multibody::MultibodyPlant;
 using drake::symbolic::Expression;
@@ -73,12 +74,7 @@ class AllocationTracker {
 class CassieDoubleFixture : public benchmark::Fixture {
  public:
   CassieDoubleFixture() {
-    ComputeStatistics("min", [](const std::vector<double>& v) -> double {
-        return *(std::min_element(std::begin(v), std::end(v)));
-      });
-    ComputeStatistics("max", [](const std::vector<double>& v) -> double {
-        return *(std::max_element(std::begin(v), std::end(v)));
-      });
+    tools::performance::AddMinMaxStatistics(this);
   }
 
   // This apparently futile using statement works around "overloaded virtual"
