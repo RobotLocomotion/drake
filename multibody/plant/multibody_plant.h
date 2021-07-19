@@ -3227,8 +3227,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// are no massive bodies in MultibodyPlant (except world_body()).
   /// @throws std::exception if mₛ ≤ 0 (where mₛ is the mass of all non-world
   /// bodies contained in `this` MultibodyPlant).
-  /// @throws std::exception if composite_mass <= 0, where composite_mass is
-  /// the total mass of all bodies except world_body() in MultibodyPlant.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
