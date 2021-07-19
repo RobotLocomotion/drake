@@ -74,7 +74,7 @@ class TestTrajectories(unittest.TestCase):
         p2 = Polynomial(2)
         pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
 
-    def test_zero_order_hold(self):
+    def test_zero_order_hold_vector(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
         pp_d = pp.derivative(derivative_order=1)
@@ -88,12 +88,26 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.get_number_of_segments(), 2)
         self.assertEqual(pp.start_time(), 0.)
         self.assertEqual(pp.end_time(), 2.)
+        self.assertEqual(pp.rows(), 2)
+        self.assertEqual(pp.cols(), 1)
         self.assertEqual(pp.start_time(segment_index=0), 0.)
         self.assertEqual(pp.end_time(segment_index=0), 1.)
         self.assertEqual(pp.duration(segment_index=0), 1.)
         self.assertTrue(pp.is_time_in_range(t=1.5))
         self.assertEqual(pp.get_segment_index(t=1.5), 1)
         self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
+
+    def test_zero_order_hold_matrix(self):
+        A0 = np.array([[1, 2, 3], [4, 5, 6]])
+        A1 = np.array([[7, 8, 9], [10, 11, 12]])
+        A2 = np.array([[13, 14, 15], [16, 17, 18]])
+        pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], [A0, A1, A2])
+        self.assertEqual(pp.get_number_of_segments(), 2)
+        self.assertEqual(pp.start_time(), 0.)
+        self.assertEqual(pp.end_time(), 2.)
+        self.assertEqual(pp.rows(), 2)
+        self.assertEqual(pp.cols(), 3)
+        np.testing.assert_equal(A0, pp.value(.5))
 
     def test_first_order_hold(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()

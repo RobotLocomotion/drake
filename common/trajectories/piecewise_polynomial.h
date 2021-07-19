@@ -211,7 +211,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{matrix}
    */
   static PiecewisePolynomial<T> ZeroOrderHold(
       const std::vector<T>& breaks,
@@ -225,6 +225,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @pre `samples.cols() == breaks.size()`
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
+   * @pydrake_mkdoc_identifier{vector}
    */
   static PiecewisePolynomial<T> ZeroOrderHold(
       const Eigen::Ref<const VectorX<T>>& breaks,
