@@ -3156,7 +3156,8 @@ class MathematicalProgram {
   int RemoveCost(const Binding<Cost>& cost);
   //@}
 
-  /** Returns the type of the optimization programs (LP, QP, etc).
+  /** Returns the type of the optimization programs (LP, QP, etc), based on the
+   * properties of cost/constraints/variables.
    */
   ProgramType GetProgramType() const;
 
