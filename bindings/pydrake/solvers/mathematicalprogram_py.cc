@@ -100,7 +100,24 @@ auto RegisterBinding(py::handle* scope, const string& name) {
   if (std::is_base_of_v<Constraint, C> && !std::is_same_v<C, Constraint>) {
     py::implicitly_convertible<B, Binding<Constraint>>();
   }
+  if (std::is_base_of_v<Cost, C> && !std::is_same_v<C, Cost>) {
+    py::implicitly_convertible<B, Binding<Cost>>();
+  }
   return binding_cls;
+}
+
+template <typename C, typename PyClass>
+void DefBindingCastConstructor(PyClass* cls) {
+  static_assert(std::is_same_v<Binding<C>, typename PyClass::type>,
+      "Bound type must be Binding<C>");
+  (*cls)  // BR
+      .def(py::init([](py::object binding) {
+        // Define a type-erased downcast to mirror the implicit
+        // "downcast-ability" of Binding<> types.
+        return std::make_unique<Binding<C>>(
+            binding.attr("evaluator")().cast<std::shared_ptr<C>>(),
+            binding.attr("variables")().cast<VectorXDecisionVariable>());
+      }));
 }
 
 enum class ArrayShapeType { Scalar, Vector };
@@ -294,6 +311,43 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
         ExplainUnsatisfiedProgramAttributes, prog);
   }
 };
+
+class StubEvaluatorBase : public EvaluatorBase {
+ public:
+  StubEvaluatorBase() : EvaluatorBase(1, 1) {}
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
+      Eigen::VectorXd*) const override {
+    throw std::runtime_error("Not implemented");
+  }
+
+  void DoEval(
+      const Eigen::Ref<const AutoDiffVecXd>&, AutoDiffVecXd*) const override {
+    throw std::runtime_error("Not implemented");
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+      VectorX<symbolic::Expression>*) const override {
+    throw std::runtime_error("Not implemented");
+  }
+};
+
+void DefTesting(py::module m) {
+  // To test binding casting.
+  py::class_<StubEvaluatorBase, EvaluatorBase,
+      std::shared_ptr<StubEvaluatorBase>>(m, "StubEvaluatorBase");
+  RegisterBinding<StubEvaluatorBase>(&m, "StubEvaluatorBase")
+      .def_static(
+          "Make", [](const Eigen::Ref<const VectorXDecisionVariable>& v) {
+            return Binding<StubEvaluatorBase>(
+                std::make_shared<StubEvaluatorBase>(), v);
+          });
+  m  // BR
+      .def("AcceptBindingEvaluatorBase", [](const Binding<EvaluatorBase>&) {})
+      .def("AcceptBindingCost", [](const Binding<Cost>&) {})
+      .def("AcceptBindingConstraint", [](const Binding<Constraint>&) {});
+}
+
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
@@ -1470,14 +1524,8 @@ for every column of ``prog_var_vals``. )""")
     bind_eval(symbolic::Variable{}, symbolic::Expression{});
   }
 
-  RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase")
-      .def(py::init([](py::object binding) {
-        // Define a type-erased downcast to mirror the implicit
-        // "downcast-ability" of Binding<> types.
-        return std::make_unique<Binding<EvaluatorBase>>(
-            binding.attr("evaluator")().cast<std::shared_ptr<EvaluatorBase>>(),
-            binding.attr("variables")().cast<VectorXDecisionVariable>());
-      }));
+  auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase");
+  DefBindingCastConstructor<EvaluatorBase>(&evaluator_binding);
 
   py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
       m, "Constraint", doc.Constraint.doc)
@@ -1697,14 +1745,8 @@ for every column of ``prog_var_vals``. )""")
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
-  RegisterBinding<Constraint>(&m, "Constraint")
-      .def(py::init([](py::object binding) {
-        // Define a type-erased downcast to mirror the implicit
-        // "downcast-ability" of Binding<> types.
-        return std::make_unique<Binding<Constraint>>(
-            binding.attr("evaluator")().cast<std::shared_ptr<Constraint>>(),
-            binding.attr("variables")().cast<VectorXDecisionVariable>());
-      }));
+  auto constraint_binding = RegisterBinding<Constraint>(&m, "Constraint");
+  DefBindingCastConstructor<Constraint>(&constraint_binding);
   RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
   RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
   RegisterBinding<RotatedLorentzConeConstraint>(
@@ -1780,7 +1822,8 @@ for every column of ``prog_var_vals``. )""")
           py::arg("new_A"), py::arg("new_b") = 0,
           doc.L2NormCost.UpdateCoefficients.doc);
 
-  RegisterBinding<Cost>(&m, "Cost");
+  auto cost_binding = RegisterBinding<Cost>(&m, "Cost");
+  DefBindingCastConstructor<Cost>(&cost_binding);
   RegisterBinding<LinearCost>(&m, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, "QuadraticCost");
   RegisterBinding<L2NormCost>(&m, "L2NormCost");
@@ -1805,6 +1848,8 @@ for every column of ``prog_var_vals``. )""")
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+
+  DefTesting(m.def_submodule("_testing"));
 
   ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
