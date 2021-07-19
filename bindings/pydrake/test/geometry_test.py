@@ -764,6 +764,12 @@ class TestGeometry(unittest.TestCase):
                 geometries, geometries))
         dut.Apply(
             mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowBetween(
+                set_A=geometries, set_B=geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowWithin(
+                geometry_set=geometries))
 
         # Mutate context data
         dut = sg.collision_filter_manager(sg_context)
@@ -772,6 +778,12 @@ class TestGeometry(unittest.TestCase):
                 geometries, geometries))
         dut.Apply(
             mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowBetween(
+                set_A=geometries, set_B=geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowWithin(
+                geometry_set=geometries))
 
         # TODO(2021-11-01) Remove these with deprecation resolution.
         # Legacy API
