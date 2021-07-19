@@ -3347,6 +3347,14 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+// We don't exhaustively test for "false positives" in these tests for
+// GetProgramType(). The argument for not doing so is based on the idea that
+// mathematical programs are uniquely characterized as a single type. It is
+// impossible for a program that would classify as one type to ever provide a
+// misclassificaiton as a different type. We rely on the sampling of
+// mathematical programs to provide sufficient coverage of meaningful
+// mathematical programs to render testing false positives unnecessary (as those
+// candidates for false positives test positively elsewhere).
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeLP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -3356,6 +3364,8 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeLP) {
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kLP);
   prog.AddLinearConstraint(x[0] >= 0);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kLP);
+  prog.AddQuadraticCost(x[0] * x[0]);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kLP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeQP) {
@@ -3367,6 +3377,17 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeQP) {
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kQP);
   prog.AddLinearCost(x[0] + x[1]);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kQP);
+
+  // Add a non-convex quadratic cost.
+  auto nonconvex_cost =
+      prog.AddQuadraticCost(-x[1] * x[1], false /* non-convex */);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kQP);
+  prog.RemoveCost(nonconvex_cost);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kQP);
+
+  prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(x[0] + 2, 2 * x[0] + 1, x[0] + x[1]));
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kQP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeSOCP) {
@@ -3378,6 +3399,13 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeSOCP) {
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kSOCP);
   prog.AddLinearConstraint(x[0] >= 1);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kSOCP);
+  auto quadratic_cost = prog.AddQuadraticCost(x[0] * x[0]);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kSOCP);
+  prog.RemoveCost(quadratic_cost);
+  EXPECT_EQ(prog.GetProgramType(), ProgramType::kSOCP);
+  prog.AddPositiveSemidefiniteConstraint(x[0] * Eigen::Matrix2d::Identity() +
+                                         x[1] * Eigen::Matrix2d::Ones());
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kSOCP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeSDP) {
@@ -3395,6 +3423,8 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeSDP) {
        2 * Eigen::Matrix2d::Ones()},
       x);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kSDP);
+  auto quadratic_cost = prog.AddQuadraticCost(x[0] * x[0]);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kSDP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeGP) {
@@ -3407,6 +3437,7 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeGP) {
   // Adding a Lorentz cone constraint, now this program cannot be modelled as
   // GP, but a CGP.
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kGP);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kCGP);
 }
 
@@ -3432,6 +3463,8 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeNLP) {
                                               Eigen::Vector2d(1, 0), 0, 1),
         x);
     EXPECT_EQ(prog.GetProgramType(), ProgramType::kNLP);
+    auto b = prog.NewBinaryVariables<2>();
+    EXPECT_NE(prog.GetProgramType(), ProgramType::kNLP);
   }
 }
 
@@ -3453,6 +3486,8 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeMILP) {
   prog.AddLinearConstraint(x[0] + x[1] + b[1] + b[0] == 3);
   prog.AddLinearCost(x[0] + x[1]);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kMILP);
+  prog.AddQuadraticCost(x[0] * x[0]);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kMILP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeMIQP) {
@@ -3463,6 +3498,9 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeMIQP) {
   prog.AddLinearCost(x[0] + x[1]);
   prog.AddQuadraticCost(x[0] * x[0], true);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kMIQP);
+  // Add a non-convex quadratic cost.
+  prog.AddQuadraticCost(-x[1] * x[1], false /* non-convex */);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kMIQP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeMISOCP) {
@@ -3473,6 +3511,9 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeMISOCP) {
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
   prog.AddLinearCost(x[0] + x[1]);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kMISOCP);
+  prog.AddPositiveSemidefiniteConstraint(x[0] * Matrix2d::Identity() +
+                                         b[0] * Matrix2d::Ones());
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kMISOCP);
 }
 
 GTEST_TEST(MathematicalProgramTest, GetProgramTypeMISDP) {
@@ -3485,6 +3526,8 @@ GTEST_TEST(MathematicalProgramTest, GetProgramTypeMISDP) {
   auto X = prog.NewSymmetricContinuousVariables<3>();
   prog.AddPositiveSemidefiniteConstraint(X);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kMISDP);
+  prog.AddQuadraticCost(x[0] * x[0], true);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kMISDP);
 }
 
 GTEST_TEST(MathematicalProgramTest,
@@ -3493,8 +3536,10 @@ GTEST_TEST(MathematicalProgramTest,
   auto x = prog.NewContinuousVariables<4>();
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
   prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
-  prog.AddQuadraticCost(x(0) * x(0) + x(3) * x(3), true);
+  auto quadratic_cost = prog.AddQuadraticCost(x(0) * x(0) + x(3) * x(3), true);
   EXPECT_EQ(prog.GetProgramType(), ProgramType::kQuadraticCostConicConstraint);
+  prog.RemoveCost(quadratic_cost);
+  EXPECT_NE(prog.GetProgramType(), ProgramType::kQuadraticCostConicConstraint);
 }
 }  // namespace test
 }  // namespace solvers
