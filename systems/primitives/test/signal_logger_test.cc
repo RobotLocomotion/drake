@@ -32,18 +32,20 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
       Eigen::MatrixXd::Zero(1, 0));  // D.
   plant->set_name("plant");
 
-  auto logger = builder.AddSystem<SignalLogger<double>>(1);
+  auto logger = builder.AddSystem<SignalLogger<double>>(1, kLogPerContext);
   logger->set_name("logger");
   builder.Cascade(*plant, *logger);
 
   // Test the AddSignalLogger helper method, too.
-  auto logger2 = LogOutput(plant->get_output_port(), &builder);
+  auto logger2 = LogOutput(plant->get_output_port(), &builder, kLogPerContext);
 
   auto diagram = builder.Build();
 
   // Simulate the simple system from x(0) = 1.0.
   Simulator<double> simulator(*diagram);
   Context<double>& context = simulator.get_mutable_context();
+  const auto& log = logger->GetLog(*diagram, context);
+  const auto& log2 = logger2->GetLog(*diagram, context);
   context.get_mutable_continuous_state_vector().SetAtIndex(0, 1.0);
 
   // Make the integrator tolerance sufficiently tight for the test to pass.
@@ -55,14 +57,14 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   simulator.AdvanceTo(3);
 
   // Gets the time stamps when each data point is saved.
-  const auto& t = logger->sample_times();
+  const auto& t = log.sample_times();
 
   // Gets the logged data.
-  const auto& x = logger->data();
+  const auto& x = log.data();
   EXPECT_EQ(x.cols(), t.size());
 
   // Check that num_samples() makes sense.
-  EXPECT_EQ(logger->num_samples(), t.size());
+  EXPECT_EQ(log.num_samples(), t.size());
 
   // Now check the data (against the known solution to the diff eq).
   const Eigen::MatrixXd expected_x = exp(-t.transpose().array());
@@ -72,17 +74,17 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   EXPECT_TRUE(CompareMatrices(expected_x, x, tol));
 
   // Confirm that both loggers acquired the same data.
-  EXPECT_TRUE(CompareMatrices(logger->sample_times(), logger2->sample_times()));
-  EXPECT_TRUE(CompareMatrices(logger->data(), logger2->data()));
+  EXPECT_TRUE(CompareMatrices(log.sample_times(), log2.sample_times()));
+  EXPECT_TRUE(CompareMatrices(log.data(), log2.data()));
 
   // Test that reset makes everything empty.
-  logger->reset();
-  EXPECT_EQ(logger->num_samples(), 0);
-  EXPECT_EQ(logger->sample_times().size(), 0);
-  EXPECT_EQ(logger->data().cols(), 0);
+  logger->GetMutableLog(*diagram, context).reset();
+  EXPECT_EQ(log.num_samples(), 0);
+  EXPECT_EQ(log.sample_times().size(), 0);
+  EXPECT_EQ(log.data().cols(), 0);
 
   simulator.AdvanceTo(4.);
-  EXPECT_EQ(logger->data().cols(), logger->num_samples());
+  EXPECT_EQ(log.data().cols(), log.num_samples());
 }
 
 // Test that set_publish_period() causes correct triggering even for logging
@@ -91,7 +93,7 @@ GTEST_TEST(TestSignalLogger, SetPublishPeriod) {
   // Add System and Connect
   DiagramBuilder<double> builder;
   auto system = builder.AddSystem<ConstantVectorSource<double>>(2.0);
-  auto logger = LogOutput(system->get_output_port(), &builder);
+  auto logger = LogOutput(system->get_output_port(), &builder, kLogPerContext);
   logger->set_publish_period(0.1);
   auto diagram = builder.Build();
 
@@ -101,7 +103,8 @@ GTEST_TEST(TestSignalLogger, SetPublishPeriod) {
   // Run simulation
   simulator.AdvanceTo(1);
 
-  EXPECT_EQ(logger->num_samples(), 11);
+  const auto& log = logger->GetLog(*diagram, simulator.get_context());
+  EXPECT_EQ(log.num_samples(), 11);
 
   // Check that we can only call set_publish_period() once.
   DRAKE_EXPECT_THROWS_MESSAGE(logger->set_publish_period(0.2), std::logic_error,
@@ -118,20 +121,22 @@ GTEST_TEST(TestSignalLogger, SetForcedPublishOnly) {
   // Add System and Connect
   DiagramBuilder<double> builder;
   auto system = builder.AddSystem<ConstantVectorSource<double>>(2.0);
-  auto logger = LogOutput(system->get_output_port(), &builder);
+  auto logger = LogOutput(system->get_output_port(), &builder, kLogPerContext);
   logger->set_forced_publish_only();
   auto diagram = builder.Build();
 
   auto context = diagram->CreateDefaultContext();
-  EXPECT_EQ(logger->num_samples(), 0);
+  const SignalLog<double>& log(logger->GetLog(*diagram, *context));
+
+  EXPECT_EQ(log.num_samples(), 0);
 
   diagram->Publish(*context);
-  EXPECT_EQ(logger->num_samples(), 1);
+  EXPECT_EQ(log.num_samples(), 1);
 
   // Harmless to call this again.
   DRAKE_EXPECT_NO_THROW(logger->set_forced_publish_only());
   diagram->Publish(*context);
-  EXPECT_EQ(logger->num_samples(), 2);
+  EXPECT_EQ(log.num_samples(), 2);
 
   // Check that set_publish_period() can't be called after forced-publish.
   DRAKE_EXPECT_THROWS_MESSAGE(

@@ -12,7 +12,7 @@ from pydrake.examples.acrobot import (
 )
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.primitives import LogOutput
+from pydrake.systems.primitives import LogOutput, kLogPerContext
 
 from drake.examples.acrobot.acrobot_io import load_scenario, save_output
 
@@ -28,7 +28,8 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 
     builder.Connect(plant.get_output_port(0), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_input_port(0))
-    state_logger = LogOutput(plant.get_output_port(0), builder)
+    state_logger = LogOutput(plant.get_output_port(0), builder,
+                             storage_mode=kLogPerContext)
     state_logger.set_publish_period(tape_period)
 
     diagram = builder.Build()
@@ -37,6 +38,7 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
     plant_context = diagram.GetMutableSubsystemContext(plant, context)
     controller_context = diagram.GetMutableSubsystemContext(
         controller, context)
+    log = state_logger.GetLog(diagram, context)
 
     plant_context.SetContinuousState(initial_state)
     controller_context.get_mutable_numeric_parameter(0).SetFromVector(
@@ -44,7 +46,7 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 
     simulator.AdvanceTo(t_final)
 
-    x_tape = state_logger.data()
+    x_tape = log.data()
     return x_tape
 
 

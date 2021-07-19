@@ -97,7 +97,8 @@ std::string Simulate(const YAML::Node& scenario_node) {
 
   builder.Connect(plant->get_output_port(0), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), plant->get_input_port(0));
-  auto state_logger = LogOutput(plant->get_output_port(0), &builder);
+  auto state_logger = LogOutput(plant->get_output_port(0), &builder,
+                                systems::kLogPerContext);
   state_logger->set_publish_period(scenario.tape_period);
 
   auto diagram = builder.Build();
@@ -120,7 +121,7 @@ std::string Simulate(const YAML::Node& scenario_node) {
   simulator.AdvanceTo(scenario.t_final);
 
   Output output;
-  output.x_tape = state_logger->data();
+  output.x_tape = state_logger->GetLog(*diagram, context).data();
   drake::yaml::YamlWriteArchive writer;
   writer.Accept(output);
   // The EmitString call below saves a document like so:
