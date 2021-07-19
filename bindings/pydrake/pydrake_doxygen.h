@@ -498,6 +498,12 @@ for arrays.
 For simplicity, we instead bind the explicitly named `.multiply()` method, and
 alias the `__matmul__` operator `@` to this function.
 
+### Clone Methods
+
+If you wish to bind a `Clone()` method, please use `DefClone()` so that
+`__copy__()` and `__deepcopy__()` will also be defined. (It is simplest to do
+these things together.)
+
 @anchor PydrakeReturnVectorsOrMatrices
 #### Returning Vectors or Matrices
 
