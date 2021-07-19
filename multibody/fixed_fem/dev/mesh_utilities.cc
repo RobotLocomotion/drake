@@ -14,6 +14,7 @@ namespace fem {
 using geometry::Box;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
+using geometry::VolumeMeshFieldLinear;
 using geometry::VolumeVertex;
 using geometry::VolumeVertexIndex;
 /* Generates connectivity for the tetrahedral elements of the mesh by splitting
@@ -135,14 +136,62 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
       GenerateDiamondCubicElements(num_vertices);
   auto mesh =
       std::make_unique<VolumeMesh<T>>(std::move(elements), std::move(vertices));
-  auto mesh_field = std::make_unique<geometry::VolumeMeshFieldLinear<T, T>>(
+  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
+      "Approximated signed distance", std::move(signed_distances), mesh.get(),
+      false);
+  return {std::move(mesh), std::move(mesh_field)};
+}
+
+template <typename T>
+VolumeMesh<T> MakeOctahedronVolumeMesh() {
+  const int element_data[8][4] = {
+      // The top four tetrahedrons share the top vertex v5.
+      {0, 1, 2, 5},
+      {0, 2, 3, 5},
+      {0, 3, 4, 5},
+      {0, 4, 1, 5},
+      // The bottom four tetrahedrons share the bottom vertex v6.
+      {0, 2, 1, 6},
+      {0, 3, 2, 6},
+      {0, 4, 3, 6},
+      {0, 1, 4, 6}};
+  std::vector<VolumeElement> elements;
+  for (const auto& element : element_data) {
+    elements.emplace_back(element);
+  }
+  // clang-format off
+  const Vector3<T> vertex_data[7] = {
+      { 0,  0,  0},
+      { 1,  0,  0},
+      { 0,  1,  0},
+      {-1,  0,  0},
+      { 0, -1,  0},
+      { 0,  0,  1},
+      { 0,  0, -1}};
+  // clang-format on
+  std::vector<VolumeVertex<T>> vertices;
+  for (const auto& vertex : vertex_data) {
+    vertices.emplace_back(vertex);
+  }
+  return VolumeMesh<T>(std::move(elements), std::move(vertices));
+}
+
+template <typename T>
+internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry() {
+  auto mesh = std::make_unique<VolumeMesh<T>>(MakeOctahedronVolumeMesh<T>());
+  /* The distance to surface of the octahedron is zero for all vertices except
+   for v0 that has signed distance to the surface of -1/√3. */
+  std::vector<T> signed_distances(7, 0.0);
+  signed_distances[0] = -1.0 / std::sqrt(3);
+  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
       "Approximated signed distance", std::move(signed_distances), mesh.get(),
       false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeDiamondCubicBoxDeformableGeometry<T>))
+    (&MakeDiamondCubicBoxDeformableGeometry<T>, &MakeOctahedronVolumeMesh<T>,
+     &MakeOctahedronDeformableGeometry<T>))
 
 }  // namespace fem
 }  // namespace multibody

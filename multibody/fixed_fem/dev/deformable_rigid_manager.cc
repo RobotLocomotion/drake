@@ -92,11 +92,13 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
   for (SoftBodyIndex deformable_body_id(0);
        deformable_body_id < deformable_model_->num_bodies();
        ++deformable_body_id) {
+    const FemModelBase<T>& fem_model =
+        deformable_model_->fem_model(deformable_body_id);
     const std::unique_ptr<const FemStateBase<T>> model_fem_state =
-        deformable_model_->fem_model(deformable_body_id).MakeFemStateBase();
+        fem_model.MakeFemStateBase();
 
-    // Extracts the q, qdot, and qddot from the given context and copies them
-    // to the cached fem state.
+    /* Extracts the q, qdot, and qddot from the given context and copies them
+     to the cached fem state. */
     const auto& fem_state_cache_entry = this->DeclareCacheEntry(
         fmt::format("FEM state {}", deformable_body_id),
         systems::ValueProducer(
@@ -108,7 +110,7 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
         {systems::System<T>::xd_ticket()});
     fem_state_cache_indexes_.emplace_back(fem_state_cache_entry.cache_index());
 
-    // Calculates the free-motion velocity for the deformable body.
+    /* Calculates the free-motion velocity for the deformable body. */
     const auto& free_motion_cache_entry = this->DeclareCacheEntry(
         fmt::format("Free motion FEM state {}", deformable_body_id),
         systems::ValueProducer(
@@ -121,9 +123,48 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
         {fem_state_cache_entry.ticket()});
     free_motion_cache_indexes_.emplace_back(
         free_motion_cache_entry.cache_index());
+
+    /* Allocates and calculates the free-motion tangent matrix for the
+     deformable body. */
+    Eigen::SparseMatrix<T> model_tangent_matrix(fem_model.num_dofs(),
+                                                fem_model.num_dofs());
+    fem_model.SetTangentMatrixSparsityPattern(&model_tangent_matrix);
+    const auto& tangent_matrix_cache_entry = this->DeclareCacheEntry(
+        fmt::format("Free motion FEM tangent matrix {}", deformable_body_id),
+        systems::ValueProducer(model_tangent_matrix,
+                               std::function<void(const systems::Context<T>&,
+                                                  Eigen::SparseMatrix<T>*)>{
+                                   [this, deformable_body_id](
+                                       const systems::Context<T>& context,
+                                       Eigen::SparseMatrix<T>* tangent_matrix) {
+                                     this->CalcFreeMotionTangentMatrix(
+                                         context, deformable_body_id,
+                                         tangent_matrix);
+                                   }}),
+        {free_motion_cache_entry.ticket()});
+    tangent_matrix_cache_indexes_.emplace_back(
+        tangent_matrix_cache_entry.cache_index());
+
+    /* Calculates the Schur complement of the free-motion tangent matrix for the
+     deformable body. */
+    const auto& tangent_matrix_schur_complement_cache_entry =
+        this->DeclareCacheEntry(
+            fmt::format("Free motion FEM tangent matrix Schur complement {}",
+                        deformable_body_id),
+            systems::ValueProducer(std::function{
+                [this, deformable_body_id](
+                    const systems::Context<T>& context,
+                    internal::SchurComplement<T>* schur_complement) {
+                  this->CalcFreeMotionTangentMatrixSchurComplement(
+                      context, deformable_body_id, schur_complement);
+                }}),
+            {free_motion_cache_entry.ticket(),
+             tangent_matrix_cache_entry.ticket()});
+    tangent_matrix_schur_complement_cache_indexes_.emplace_back(
+        tangent_matrix_schur_complement_cache_entry.cache_index());
   }
 
-  // Calculates the contact data for all deformable bodies.
+  /* Calculates the contact data for all deformable bodies. */
   const auto& deformable_contact_data_cache_entry = this->DeclareCacheEntry(
       "Deformable contact data",
       systems::ValueProducer(
@@ -131,51 +172,15 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket()});
   deformable_contact_data_cache_index_ =
       deformable_contact_data_cache_entry.cache_index();
-}
 
-template <typename T>
-void DeformableRigidManager<T>::CalcFemStateBase(
-    const systems::Context<T>& context, SoftBodyIndex id,
-    FemStateBase<T>* fem_state) const {
-  const systems::BasicVector<T>& discrete_state =
-      context.get_discrete_state().get_vector(
-          deformable_model_->discrete_state_indexes()[id]);
-  const auto& discrete_value = discrete_state.get_value();
-  DRAKE_DEMAND(discrete_value.size() % 3 == 0);
-  const int num_dofs = discrete_value.size() / 3;
-  const auto& q = discrete_value.head(num_dofs);
-  const auto& qdot = discrete_value.segment(num_dofs, num_dofs);
-  const auto& qddot = discrete_value.tail(num_dofs);
-  fem_state->SetQ(q);
-  fem_state->SetQdot(qdot);
-  fem_state->SetQddot(qddot);
-}
-
-template <typename T>
-void DeformableRigidManager<T>::CalcFreeMotionFemStateBase(
-    const systems::Context<T>& context, SoftBodyIndex id,
-    FemStateBase<T>* fem_state_star) const {
-  const FemStateBase<T>& fem_state = EvalFemStateBase(context, id);
-  // TODO(xuchenhan-tri): FemState needs a SetFrom() method.
-  fem_state_star->SetQ(fem_state.q());
-  fem_state_star->SetQdot(fem_state.qdot());
-  fem_state_star->SetQddot(fem_state.qddot());
-  /* Obtain the contact-free state for the deformable body. */
-  fem_solvers_[id]->AdvanceOneTimeStep(fem_state, fem_state_star);
-}
-
-template <typename T>
-void DeformableRigidManager<T>::CalcDeformableRigidContact(
-    const systems::Context<T>& context,
-    std::vector<internal::DeformableContactData<T>>* result) const {
-  result->clear();
-  UpdateCollisionObjectPoses(context);
-  UpdateDeformableVertexPositions(context);
-  const int num_bodies = deformable_model_->num_bodies();
-  result->reserve(num_bodies);
-  for (SoftBodyIndex i(0); i < num_bodies; ++i) {
-    result->emplace_back(CalcDeformableContactData(i));
-  }
+  /* Calculates the tangent matrix for the contact solver. */
+  const auto& contact_tangent_matrix_cache_entry = this->DeclareCacheEntry(
+      "Tangent matrix for contact",
+      systems::ValueProducer(
+          this, &DeformableRigidManager<T>::CalcContactTangentMatrix),
+      {systems::System<T>::xd_ticket()});
+  contact_tangent_matrix_cache_index_ =
+      contact_tangent_matrix_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -349,6 +354,71 @@ void DeformableRigidManager<T>::DoCalcDiscreteValues(
 }
 
 template <typename T>
+void DeformableRigidManager<T>::CalcFemStateBase(
+    const systems::Context<T>& context, SoftBodyIndex id,
+    FemStateBase<T>* fem_state) const {
+  const systems::BasicVector<T>& discrete_state =
+      context.get_discrete_state().get_vector(
+          deformable_model_->discrete_state_indexes()[id]);
+  const auto& discrete_value = discrete_state.get_value();
+  DRAKE_DEMAND(discrete_value.size() % 3 == 0);
+  const int num_dofs = discrete_value.size() / 3;
+  const auto& q = discrete_value.head(num_dofs);
+  const auto& qdot = discrete_value.segment(num_dofs, num_dofs);
+  const auto& qddot = discrete_value.tail(num_dofs);
+  fem_state->SetQ(q);
+  fem_state->SetQdot(qdot);
+  fem_state->SetQddot(qddot);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionFemStateBase(
+    const systems::Context<T>& context, SoftBodyIndex id,
+    FemStateBase<T>* fem_state_star) const {
+  const FemStateBase<T>& fem_state = EvalFemStateBase(context, id);
+  // TODO(xuchenhan-tri): FemState needs a SetFrom() method.
+  fem_state_star->SetQ(fem_state.q());
+  fem_state_star->SetQdot(fem_state.qdot());
+  fem_state_star->SetQddot(fem_state.qddot());
+  /* Obtain the contact-free state for the deformable body. */
+  fem_solvers_[id]->AdvanceOneTimeStep(fem_state, fem_state_star);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionTangentMatrix(
+    const systems::Context<T>& context, SoftBodyIndex index,
+    Eigen::SparseMatrix<T>* tangent_matrix) const {
+  const FemStateBase<T>& free_motion_fem_state =
+      EvalFreeMotionFemStateBase(context, index);
+  const FemModelBase<T>& fem_model = deformable_model_->fem_model(index);
+  fem_model.CalcTangentMatrix(free_motion_fem_state, tangent_matrix);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionTangentMatrixSchurComplement(
+    const systems::Context<T>& context, SoftBodyIndex index,
+    internal::SchurComplement<T>* schur_complement) const {
+  const Eigen::SparseMatrix<T>& free_motion_tangent_matrix =
+      EvalFreeMotionTangentMatrix(context, index);
+  const std::vector<internal::DeformableContactData<T>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+  const Eigen::SparseMatrix<T> permuted_tangent_matrix =
+      internal::PermuteTangentMatrix(
+          free_motion_tangent_matrix,
+          deformable_contact_data[index].permuted_vertex_indexes());
+  constexpr int kDimension = 3;
+  const int dofs_in_contact =
+      deformable_contact_data[index].num_vertices_in_contact() * kDimension;
+  const int total_dofs = free_motion_tangent_matrix.rows();
+  *schur_complement = internal::SchurComplement<T>(
+      permuted_tangent_matrix.topLeftCorner(dofs_in_contact, dofs_in_contact),
+      permuted_tangent_matrix.bottomLeftCorner(total_dofs - dofs_in_contact,
+                                               dofs_in_contact),
+      permuted_tangent_matrix.bottomRightCorner(total_dofs - dofs_in_contact,
+                                                total_dofs - dofs_in_contact));
+}
+
+template <typename T>
 void DeformableRigidManager<T>::UpdateCollisionObjectPoses(
     const systems::Context<T>& context) const {
   const geometry::QueryObject<T>& query_object =
@@ -450,6 +520,20 @@ DeformableRigidManager<T>::CalcDeformableContactData(
   return {
       std::move(deformable_rigid_contact_pairs),
       deformable_model_->reference_configuration_geometries()[deformable_id]};
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcDeformableRigidContact(
+    const systems::Context<T>& context,
+    std::vector<internal::DeformableContactData<T>>* result) const {
+  result->clear();
+  UpdateCollisionObjectPoses(context);
+  UpdateDeformableVertexPositions(context);
+  const int num_bodies = deformable_model_->num_bodies();
+  result->reserve(num_bodies);
+  for (SoftBodyIndex i(0); i < num_bodies; ++i) {
+    result->emplace_back(CalcDeformableContactData(i));
+  }
 }
 
 template <typename T>
@@ -694,6 +778,58 @@ void DeformableRigidManager<T>::CalcContactPointData(
       contact_offset += nc_in_pair;
     }
   }
+}
+
+template <typename T>
+BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactTangentMatrix(
+    const systems::Context<T>& context) const {
+  const std::vector<internal::DeformableContactData<T>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+
+  int num_deformable_body_in_contact = 0;
+  for (const auto& contact_data : deformable_contact_data) {
+    if (contact_data.num_contact_points() > 0) {
+      ++num_deformable_body_in_contact;
+    }
+  }
+
+  const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs =
+      this->EvalDiscreteContactPairs(context);
+
+  /* Return an empty tangent matrix if there is no contact. */
+  if (rigid_contact_pairs.empty() && num_deformable_body_in_contact == 0) {
+    return BlockSparseMatrix<T>();
+  }
+
+  // TODO(xuchenhan-tri): The mass matrix of the rigid dofs is treated as a
+  //  single block. Exploit its branch-induced sparsity in the future.
+  const int num_rigid_blocks = 1;
+  const int num_deformable_blocks = num_deformable_body_in_contact;
+  const int num_blocks = num_rigid_blocks + num_deformable_blocks;
+  BlockSparseMatrixBuilder<T> builder(num_blocks, num_blocks, num_blocks);
+
+  const int num_rigid_dofs = this->plant().num_velocities();
+  MatrixX<T> M(num_rigid_dofs, num_rigid_dofs);
+  this->plant().CalcMassMatrix(context, &M);
+  /* The rigid dofs come before the deformable dofs in the contact formulation,
+   so we put the rigid block on the top-left corner. */
+  builder.PushBlock(0, 0, M);
+
+  /* Now start building the deformable blocks. */
+  int block_index = 1;
+  DRAKE_DEMAND(deformable_model_ != nullptr);
+  for (SoftBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
+    /* Skip deformable bodies not in contact. */
+    if (deformable_contact_data[i].num_contact_points() == 0) {
+      continue;
+    }
+    const internal::SchurComplement<T>& tangent_matrix_schur_complement =
+        EvalFreeMotionTangentMatrixSchurComplement(context, i);
+    builder.PushBlock(block_index, block_index,
+                      tangent_matrix_schur_complement.get_D_complement());
+    ++block_index;
+  }
+  return builder.Build();
 }
 
 }  // namespace fem

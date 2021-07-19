@@ -43,12 +43,39 @@ namespace fem {
      providing a resolution hint at least as large as the box's largest
      dimension.
  @param[in] X_WB
-     The pose of the rectanglur volume mesh in the world frame.
+     The pose of the rectangular volume mesh in the world frame.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
     const geometry::Box& box, double resolution_hint,
     const math::RigidTransform<T>& X_WB);
+
+/* Note that this method is copypasted from mesh_intersection_test.cc. */
+/* Generates a volume mesh of an octahedron comprising of eight tetrahedral
+ elements with vertices on the coordinate axes and the origin like this:
+
+                +Z   -X
+                 |   /
+              v5 ●  ● v3
+                 | /
+       v4     v0 |/
+  -Y----●--------●------●----+Y
+                /|      v2
+               / |
+           v1 ●  ● v6
+             /   |
+           +X    |
+                -Z
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
+
+/* Generates a deformable geometry whose underlying mesh is given by
+ MakeOctahedronVolumeMesh().
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry();
+
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
