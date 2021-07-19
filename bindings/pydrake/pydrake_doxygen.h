@@ -197,6 +197,10 @@ modules should not re-define this alias at global scope.
 - If a certain namespace is being bound (e.g. `drake::systems::sensors`), you
 may use `using namespace drake::systems::sensors` within functions or
 anonymous namespaces. Avoid `using namespace` directives otherwise.
+- For function / method docstrings, please ensure that any types used in your
+function signature have already had their binding code executed. Otherwise, the
+generated docstring from pybind11 may use the raw C++ `typeid` rather than the
+Python type name.
 - If a module depends on the *bindings* for another module, then you should do
 the following:
   - Ensure that the dependent bindings module is listed in the `py_deps`
