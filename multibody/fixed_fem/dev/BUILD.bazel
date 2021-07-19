@@ -398,6 +398,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "isoparametric_element",
+    srcs = [
+        "isoparametric_element.cc",
+    ],
     hdrs = [
         "isoparametric_element.h",
     ],
@@ -434,11 +437,15 @@ drake_cc_library(
 
 drake_cc_library(
     name = "linear_simplex_element",
+    srcs = [
+        "linear_simplex_element.cc",
+    ],
     hdrs = [
         "linear_simplex_element.h",
     ],
     deps = [
         ":isoparametric_element",
+        "//common:default_scalars",
     ],
 )
 
@@ -776,6 +783,7 @@ drake_cc_googletest(
     name = "linear_simplex_element_test",
     deps = [
         ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

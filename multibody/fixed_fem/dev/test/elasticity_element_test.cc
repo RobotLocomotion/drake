@@ -21,8 +21,8 @@ using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
 static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    LinearSimplexElement<AutoDiffXd, kNaturalDimension, kSpatialDimension,
-                         kNumQuads>;
+    internal::LinearSimplexElement<AutoDiffXd, kNaturalDimension,
+                                   kSpatialDimension, kNumQuads>;
 using ConstitutiveModelType = LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
 
 /* The traits for the DummyElasticityElement. `kOdeOrder` is set to zero to
