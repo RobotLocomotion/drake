@@ -350,18 +350,8 @@ void DefTesting(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(mathematicalprogram, m) {
-  m.doc() = R"""(
-Bindings for MathematicalProgram
-
-If you are formulating constraints using symbolic formulas, please review the
-top-level documentation for :py:mod:`pydrake.math`.
-)""";
+void BindSolverInterfaceAndFlags(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
-
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.symbolic");
-
   py::class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
       .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
@@ -502,7 +492,10 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.CommonSolverOption.kPrintFileName.doc)
       .value("kPrintToConsole", CommonSolverOption::kPrintToConsole,
           doc.CommonSolverOption.kPrintToConsole.doc);
+}
 
+void BindMathematicalProgram(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
       .def(py::init<>(), doc.MathematicalProgramResult.ctor.doc)
@@ -1490,7 +1483,10 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
+}  // NOLINT(readability/fn_size)
 
+void BindEvaluatorsAndBindings(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
   {
     using Class = EvaluatorBase;
     constexpr auto& cls_doc = doc.EvaluatorBase;
@@ -1833,7 +1829,10 @@ for every column of ``prog_var_vals``. )""")
       m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m, "VisualizationCallback");
+}  // NOLINT(readability/fn_size)
 
+void BindFreeFunctions(py::module m) {
+  constexpr auto& doc = pydrake_doc.drake.solvers;
   // Bind the free functions in choose_best_solver.h and solve.h.
   m  // BR
       .def("ChooseBestSolver", &solvers::ChooseBestSolver, py::arg("prog"),
@@ -1848,11 +1847,28 @@ for every column of ``prog_var_vals``. )""")
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+}
+
+PYBIND11_MODULE(mathematicalprogram, m) {
+  m.doc() = R"""(
+Bindings for MathematicalProgram
+
+If you are formulating constraints using symbolic formulas, please review the
+top-level documentation for :py:mod:`pydrake.math`.
+)""";
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+
+  BindEvaluatorsAndBindings(m);
+  BindSolverInterfaceAndFlags(m);
+  BindMathematicalProgram(m);
+  BindFreeFunctions(m);
 
   DefTesting(m.def_submodule("_testing"));
 
   ExecuteExtraPythonCode(m);
-}  // NOLINT(readability/fn_size)
+}
 
 }  // namespace pydrake
 }  // namespace drake
