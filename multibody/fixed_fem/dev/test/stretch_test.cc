@@ -23,7 +23,8 @@ using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
 constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
+    internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                   kNumQuads>;
 using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
 using ElementType =
     StaticElasticityElement<IsoparametricElementType, QuadratureType,
@@ -100,9 +101,8 @@ class StretchTest : public ::testing::Test {
       }
       /* Stretch the two ends of the bar in y-direction. */
       if (std::abs(std::abs(q(int{y_dof_index})) - std::abs(kLy / 2)) <= kTol) {
-        bc->AddBoundaryCondition(y_dof_index,
-                                 Vector1<T>(
-                                     kStretchFactor * q(int{y_dof_index})));
+        bc->AddBoundaryCondition(
+            y_dof_index, Vector1<T>(kStretchFactor * q(int{y_dof_index})));
       }
       /* No translation in the xz-plane. */
       if (std::abs(q(int{z_dof_index})) <= kTol) {

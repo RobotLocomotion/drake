@@ -24,7 +24,8 @@ class StaticElasticityElementTest : public ::testing::Test {
       internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
   static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
   using IsoparametricElementType =
-      LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
+      internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                     kNumQuads>;
   using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
   using ElementType =
       StaticElasticityElement<IsoparametricElementType, QuadratureType,
