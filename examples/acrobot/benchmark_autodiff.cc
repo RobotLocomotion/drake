@@ -13,6 +13,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/tools/performance/fixture_common.h"
 
 using Eigen::MatrixXd;
 using drake::multibody::MultibodyPlant;
@@ -28,12 +29,7 @@ template <typename T>
 class FixtureBase : public benchmark::Fixture {
  public:
   FixtureBase() {
-    ComputeStatistics("min", [](const std::vector<double>& v) -> double {
-        return *(std::min_element(std::begin(v), std::end(v)));
-      });
-    ComputeStatistics("max", [](const std::vector<double>& v) -> double {
-        return *(std::max_element(std::begin(v), std::end(v)));
-      });
+    tools::performance::AddMinMaxStatistics(this);
   }
 
   void Populate(const System<T>& plant) {
