@@ -747,6 +747,8 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
 }
 
 // (This function is deprecated.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     const BasicVector<T>& model_vector,
@@ -756,8 +758,11 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
                                  std::move(vector_calc_function),
                                  std::move(prerequisites_of_calc));
 }
+#pragma GCC diagnostic pop
 
 // (This function is deprecated.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     typename LeafOutputPort<T>::AllocCallback alloc_function,
@@ -767,6 +772,7 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
                                    std::move(calc_function),
                                    std::move(prerequisites_of_calc));
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
