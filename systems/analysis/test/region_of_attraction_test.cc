@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/solvers/mosek_solver.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 
 namespace drake {
@@ -148,6 +150,57 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   // As an inner approximation of the ROA, It should be inside the boundary
   // of U(x) <= 1 (but this time with the tolerance of the SDP solver).
   EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
+}
+
+// The CubicPolynomialTest again, but this time with an input port that must be
+// fixed to zero for the computation to succeed.
+GTEST_TEST(RegionOfAttractionTest, FixedInput) {
+  Variable x("x");
+  Variable u("u");
+  const auto system = SymbolicVectorSystemBuilder()
+                          .state(x)
+                          .input(u)
+                          .dynamics(u - x + pow(x, 3))
+                          .Build();
+  auto context = system->CreateDefaultContext();
+
+  system->get_input_port().FixValue(context.get(), Vector1d::Zero());
+  const Expression V = RegionOfAttraction(*system, *context);
+
+  // V does not use my original variable (unless I pass it in through the
+  // options, but I want to test this case).
+  x = *V.GetVariables().begin();
+  const Polynomial V_expected{x * x};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+}
+
+// A copy of CubicPolynomicalTest but with the analyzed system embedded into a
+// diagram with a constant vector source.  This confirms that one can apply
+// RegionOfAttraction to a subsystem.
+GTEST_TEST(RegionOfAttractionTest, SubSystem) {
+  DiagramBuilder<double> builder;
+  Variable x("x");
+  Variable y{"y"};
+  const auto& system = *builder.AddSystem(SymbolicVectorSystemBuilder()
+                                             .state(x)
+                                             .dynamics(-x + pow(x, 3) + y)
+                                             .input(y)
+                                             .Build());
+  const auto& value_system =
+      *builder.AddSystem<ConstantVectorSource<double>>(0);
+  builder.Connect(value_system, system);
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  const auto& system_context =
+      diagram->GetMutableSubsystemContext(system, diagram_context.get());
+
+  const Expression V = RegionOfAttraction(system, system_context);
+
+  // V does not use my original variable (unless I pass it in through the
+  // options, but I want to test this case).
+  x = *V.GetVariables().begin();
+  const Polynomial V_expected{x * x};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
 }
 
 }  // namespace
