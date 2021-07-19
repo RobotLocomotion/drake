@@ -54,6 +54,12 @@ struct RegionOfAttractionOptions {
  * {x | V(x)<=1} containing the fixed-point in @p context represents the region
  * of attraction.
  *
+ * @pre For the given @p system and @p context, any required input ports on @p
+ * system must be fixed. Failure to do so may lead to inscrutable errors. Note
+ * that analyzing a closed-loop system would be accomplished by having both
+ * the plant and the controller in a diagram (which then has no input ports),
+ * and passing the diagram into this method as @p system.
+ *
  * Note: There are more numerical techniques that we know how to apply here.
  * Do report an issue if you discover a system for which this code does not
  * perform well.

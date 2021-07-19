@@ -150,6 +150,28 @@ GTEST_TEST(RegionOfAttractionTest, NonConvexROA) {
   EXPECT_LE(U.Evaluate(env), 1.0 + 1e-6);
 }
 
+// The CubicPolynomialTest again, but this time with an input port that must be
+// fixed to zero for the computation to succeed.
+GTEST_TEST(RegionOfAttractionTest, FixedInput) {
+  Variable x("x");
+  Variable u("u");
+  const auto system = SymbolicVectorSystemBuilder()
+                          .state(x)
+                          .input(u)
+                          .dynamics(u - x + pow(x, 3))
+                          .Build();
+  auto context = system->CreateDefaultContext();
+
+  system->get_input_port().FixValue(context.get(), Vector1d::Zero());
+  const Expression V = RegionOfAttraction(*system, *context);
+
+  // V does not use my original variable (unless I pass it in through the
+  // options, but I want to test this case).
+  x = *V.GetVariables().begin();
+  const Polynomial V_expected{x * x};
+  EXPECT_TRUE(Polynomial(V).CoefficientsAlmostEqual(V_expected, 1e-6));
+}
+
 }  // namespace
 }  // namespace analysis
 }  // namespace systems
