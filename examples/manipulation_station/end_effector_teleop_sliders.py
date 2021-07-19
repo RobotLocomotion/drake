@@ -30,7 +30,8 @@ from pydrake.systems.framework import (BasicVector, DiagramBuilder,
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer, MeshcatVisualizer)
-from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
+from pydrake.systems.primitives import (
+    FirstOrderLowPassFilter, SignalLogger, kLogPerContext)
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
     PlanarSceneGraphVisualizer
@@ -340,7 +341,8 @@ def main():
     # that they were sufficiently quiet.
     num_iiwa_joints = station.num_iiwa_joints()
     if args.test:
-        iiwa_velocities = builder.AddSystem(SignalLogger(num_iiwa_joints))
+        iiwa_velocities = builder.AddSystem(
+            SignalLogger(num_iiwa_joints, storage_mode=kLogPerContext))
         builder.Connect(station.GetOutputPort("iiwa_velocity_estimated"),
                         iiwa_velocities.get_input_port(0))
     else:
@@ -380,13 +382,15 @@ def main():
         differential_ik, simulator.get_mutable_context()), q0)
 
     simulator.set_target_realtime_rate(args.target_realtime_rate)
+    iiwa_velocities_log = iiwa_velocities.GetLog(
+        diagram, simulator.get_context())
     simulator.AdvanceTo(args.duration)
 
     # Ensure that our initialization logic was correct, by inspecting our
     # logged joint velocities.
     if args.test:
-        for time, qdot in zip(iiwa_velocities.sample_times(),
-                              iiwa_velocities.data().transpose()):
+        for time, qdot in zip(iiwa_velocities_log.sample_times(),
+                              iiwa_velocities_log.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40
             # rad/sec limit, but that's the best we can enforce for now.
             if qdot.max() > 0.1:

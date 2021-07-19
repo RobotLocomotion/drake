@@ -17,7 +17,7 @@ namespace systems {
 template <typename T>
 class SignalLog {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLog)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignalLog)
 
   /** Constructs the signal log.
    @param input_size                Dimension of the per-time step data set.
@@ -58,12 +58,13 @@ class SignalLog {
   int64_t get_input_size() const { return data_.rows(); }
 
  private:
-  const int batch_allocation_size_{1000};
+  // This is logically constant over an instance, but is not declared const so
+  // that default copy and assignment can work.
+  int batch_allocation_size_{1000};
 
-  // Use mutable variables to hold the logged data.
-  mutable int64_t num_samples_{0};
-  mutable VectorX<T> sample_times_;
-  mutable MatrixX<T> data_;
+  int64_t num_samples_{0};
+  VectorX<T> sample_times_;
+  MatrixX<T> data_;
 };
 }  // namespace systems
 }  // namespace drake

@@ -29,7 +29,7 @@ void CheckStatistics(
 
   auto source = builder.AddSystem(std::move(random_source_system));
   source->set_name("source");
-  auto logger = LogOutput(source->get_output_port(0), &builder);
+  auto logger = LogOutput(source->get_output_port(0), &builder, kLogPerContext);
   logger->set_name("logger");
 
   auto diagram = builder.Build();
@@ -44,7 +44,8 @@ void CheckStatistics(
   simulator.Initialize();
   simulator.AdvanceTo(20);
 
-  const auto& x = logger->data();
+  const auto& log = logger->GetLog(*diagram, simulator.get_context());
+  const auto& x = log.data();
 
   const int N = x.size();
 
@@ -257,20 +258,25 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
   const double kSampleTime = 0.0025;
   const auto* random1 = builder.AddSystem<RandomSourced>(
       RandomDistribution::kGaussian, kSize, kSampleTime);
-  const auto* log1 = LogOutput(random1->get_output_port(0), &builder);
+  const auto* logger1 = LogOutput(random1->get_output_port(0), &builder,
+                                  kLogPerContext);
 
   const auto* random2 = builder.AddSystem<RandomSourced>(
       RandomDistribution::kGaussian, kSize, kSampleTime);
-  const auto* log2 = LogOutput(random2->get_output_port(0), &builder);
+  const auto* logger2 = LogOutput(random2->get_output_port(0), &builder,
+                                  kLogPerContext);
 
   const auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
+  const auto& context = simulator.get_context();
+  const auto& log1(logger1->GetLog(*diagram, context));
+  const auto& log2(logger2->GetLog(*diagram, context));
   simulator.Initialize();
   simulator.AdvanceTo(20);
 
-  const auto& x1 = log1->data();
-  const auto& x2 = log2->data();
+  const auto& x1 = log1.data();
+  const auto& x2 = log2.data();
 
   EXPECT_EQ(x1.size(), x2.size());
   const int N = static_cast<int>(x1.size()) / 2;

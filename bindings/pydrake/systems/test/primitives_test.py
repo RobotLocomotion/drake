@@ -37,6 +37,7 @@ from pydrake.systems.primitives import (
     Integrator, Integrator_,
     IsControllable,
     IsObservable,
+    kLogPerContext,
     Linearize,
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
@@ -116,7 +117,8 @@ class TestGeneral(unittest.TestCase):
         source = builder.AddSystem(ConstantVectorSource_[T]([kValue]))
         kSize = 1
         integrator = builder.AddSystem(Integrator_[T](kSize))
-        logger_per_step = builder.AddSystem(SignalLogger_[T](kSize))
+        logger_per_step = builder.AddSystem(
+            SignalLogger_[T](kSize, storage_mode=kLogPerContext))
         builder.Connect(source.get_output_port(0),
                         integrator.get_input_port(0))
         builder.Connect(integrator.get_output_port(0),
@@ -125,15 +127,18 @@ class TestGeneral(unittest.TestCase):
         # Add a redundant logger via the helper method.
         if T == float:
             logger_per_step_2 = LogOutput(
-                integrator.get_output_port(0), builder
+                integrator.get_output_port(0), builder,
+                storage_mode=kLogPerContext
             )
         else:
             logger_per_step_2 = LogOutput[T](
-                integrator.get_output_port(0), builder
+                integrator.get_output_port(0), builder,
+                storage_mode=kLogPerContext
             )
 
         # Add a periodic logger
-        logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
+        logger_periodic = builder.AddSystem(SignalLogger_[T](
+            kSize, storage_mode=kLogPerContext))
         kPeriod = 0.1
         logger_periodic.set_publish_period(kPeriod)
         builder.Connect(integrator.get_output_port(0),
@@ -141,27 +146,31 @@ class TestGeneral(unittest.TestCase):
 
         diagram = builder.Build()
         simulator = Simulator_[T](diagram)
+        context = simulator.get_context()
         kTime = 1.
         simulator.AdvanceTo(kTime)
 
         # Verify outputs of the every-step logger
-        t = logger_per_step.sample_times()
-        x = logger_per_step.data()
+        log_per_step = logger_per_step.GetMutableLog(diagram, context)
+        t = log_per_step.sample_times()
+        x = log_per_step.data()
 
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
         numpy_compare.assert_allclose(
             t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
         )
-        numpy_compare.assert_equal(x, logger_per_step_2.data())
+        log_per_step_2 = logger_per_step_2.GetLog(diagram, context)
+        numpy_compare.assert_equal(x, log_per_step_2.data())
 
         # Verify outputs of the periodic logger
-        t = logger_periodic.sample_times()
-        x = logger_periodic.data()
+        log_periodic = logger_periodic.GetLog(diagram, context)
+        t = log_periodic.sample_times()
+        x = log_periodic.data()
         # Should log exactly once every kPeriod, up to and including kTime.
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
-        logger_per_step.reset()
+        log_per_step.reset()
 
         # Verify that t and x retain their values after systems are deleted.
         t_copy = t.copy()

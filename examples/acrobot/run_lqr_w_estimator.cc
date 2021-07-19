@@ -95,14 +95,19 @@ int do_main() {
   builder.Connect(controller->get_output_port(), observer->get_input_port(1));
 
   // Log the true state and the estimated state.
-  auto x_logger = LogOutput(acrobot_w_encoder->get_output_port(1), &builder);
+  auto x_logger = LogOutput(acrobot_w_encoder->get_output_port(1), &builder,
+                            systems::kLogPerContext);
   x_logger->set_name("x_logger");
-  auto xhat_logger = LogOutput(observer->get_output_port(0), &builder);
+  auto xhat_logger = LogOutput(observer->get_output_port(0), &builder,
+                               systems::kLogPerContext);
   xhat_logger->set_name("xhat_logger");
 
   // Build the system/simulator.
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
+  const auto& context = simulator.get_context();
+  const auto& x_log = x_logger->GetLog(*diagram, context);
+  const auto& xhat_log = xhat_logger->GetLog(*diagram, context);
 
   // Set an initial condition near the upright fixed point.
   AcrobotState<double>& x0 = acrobot_w_encoder->get_mutable_acrobot_state(
@@ -135,18 +140,18 @@ int do_main() {
   using common::ToPythonTuple;
   CallPython("figure", 1);
   CallPython("clf");
-  CallPython("plot", x_logger->sample_times(),
-             (x_logger->data().row(0).array() - M_PI)
+  CallPython("plot", x_log.sample_times(),
+             (x_log.data().row(0).array() - M_PI)
                  .matrix().transpose());
-  CallPython("plot", x_logger->sample_times(),
-             x_logger->data().row(1).transpose());
+  CallPython("plot", x_log.sample_times(),
+             x_log.data().row(1).transpose());
   CallPython("legend", ToPythonTuple("theta1 - PI", "theta2"));
   CallPython("axis", "tight");
 
   CallPython("figure", 2);
   CallPython("clf");
-  CallPython("plot", x_logger->sample_times(),
-             (x_logger->data().array() - xhat_logger->data().array())
+  CallPython("plot", x_log.sample_times(),
+             (x_log.data().array() - xhat_log.data().array())
                  .matrix().transpose());
   CallPython("ylabel", "error");
   CallPython("legend", ToPythonTuple("theta1", "theta2", "theta1dot",

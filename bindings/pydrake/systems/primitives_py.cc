@@ -50,6 +50,13 @@ PYBIND11_MODULE(primitives, m) {
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
   constexpr auto& doc = pydrake_doc.drake.systems;
 
+  py::enum_<LogStorageMode>(m, "LogStorageMode", doc.LogStorageMode.doc)
+      .value("kDeprecatedLogPerSystem", kDeprecatedLogPerSystem,
+          doc.LogStorageMode.kDeprecatedLogPerSystem.doc)
+      .value("kLogPerContext", kLogPerContext,
+          doc.LogStorageMode.kLogPerContext.doc)
+      .export_values();
+
   py::module::import("pydrake.systems.framework");
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
@@ -229,15 +236,80 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("min_value"), py::arg("max_value"),
             doc.Saturation.ctor.doc_2args);
 
-    DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
-        m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
+    DefineTemplateClassWithDefault<SignalLog<T>>(
+        m, "SignalLog", GetPyParam<T>(), doc.SignalLog.doc)
         .def(py::init<int, int>(), py::arg("input_size"),
-            py::arg("batch_allocation_size") = 1000, doc.SignalLogger.ctor.doc)
-        .def("set_publish_period", &SignalLogger<T>::set_publish_period,
-            py::arg("period"), doc.SignalLogger.set_publish_period.doc)
-        .def("set_forced_publish_only",
-            &SignalLogger<T>::set_forced_publish_only,
-            doc.SignalLogger.set_forced_publish_only.doc)
+            py::arg("batch_allocation_size") = 1000, doc.SignalLog.ctor.doc)
+        .def("num_samples", &SignalLog<T>::num_samples,
+            doc.SignalLog.num_samples.doc)
+        .def(
+            "sample_times",
+            [](const SignalLog<T>* self) {
+              // Reference
+              return CopyIfNotPodType(self->sample_times());
+            },
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignalLog.sample_times.doc)
+        .def(
+            "data",
+            [](const SignalLog<T>* self) {
+              // Reference.
+              return CopyIfNotPodType(self->data());
+            },
+            return_value_policy_for_scalar_type<T>(), doc.SignalLog.data.doc)
+        .def("reset", &SignalLog<T>::reset, doc.SignalLog.reset.doc)
+        .def("AddData", &SignalLog<T>::AddData, py::arg("time"),
+            py::arg("sample"), doc.SignalLog.AddData.doc)
+        .def("get_input_size", &SignalLog<T>::get_input_size,
+            doc.SignalLog.get_input_size.doc);
+
+    auto cls =
+        DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
+            m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
+            .def(py::init<int, int, LogStorageMode>(), py::arg("input_size"),
+                py::arg("batch_allocation_size") = 1000,
+                py::arg("storage_mode") = kDeprecatedLogPerSystem,
+                doc.SignalLogger.ctor.doc_3args)
+            .def(py::init<int, LogStorageMode>(), py::arg("input_size"),
+                py::arg("storage_mode"), doc.SignalLogger.ctor.doc_2args)
+            .def("set_publish_period", &SignalLogger<T>::set_publish_period,
+                py::arg("period"), doc.SignalLogger.set_publish_period.doc)
+            .def("set_forced_publish_only",
+                &SignalLogger<T>::set_forced_publish_only,
+                doc.SignalLogger.set_forced_publish_only.doc)
+            .def(
+                "GetLog",
+                [](const SignalLogger<T>* self, const Context<T>& context)
+                    -> const SignalLog<T>& { return self->GetLog(context); },
+                py::arg("context"), py_rvp::reference,
+                doc.SignalLogger.GetLog.doc_1args)
+            .def(
+                "GetLog",
+                [](const SignalLogger<T>* self, const System<T>& outer_system,
+                    const Context<T>& outer_context) -> const SignalLog<T>& {
+                  return self->GetLog(outer_system, outer_context);
+                },
+                py::arg("outer_system"), py::arg("outer_context"),
+                py_rvp::reference, doc.SignalLogger.GetLog.doc_2args)
+            .def(
+                "GetMutableLog",
+                [](const SignalLogger<T>* self, const Context<T>& context)
+                    -> SignalLog<T>& { return self->GetMutableLog(context); },
+                py::arg("context"), py_rvp::reference,
+                doc.SignalLogger.GetMutableLog.doc_1args)
+            .def(
+                "GetMutableLog",
+                [](const SignalLogger<T>* self, const System<T>& outer_system,
+                    const Context<T>& outer_context) -> SignalLog<T>& {
+                  return self->GetMutableLog(outer_system, outer_context);
+                },
+                py::arg("outer_system"), py::arg("outer_context"),
+                py_rvp::reference, doc.SignalLogger.GetMutableLog.doc_2args);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("num_samples", &SignalLogger<T>::num_samples,
+           doc.SignalLogger.num_samples.doc_deprecated)
         .def(
             "sample_times",
             [](const SignalLogger<T>* self) {
@@ -245,22 +317,29 @@ PYBIND11_MODULE(primitives, m) {
               return CopyIfNotPodType(self->sample_times());
             },
             return_value_policy_for_scalar_type<T>(),
-            doc.SignalLogger.sample_times.doc)
+            doc.SignalLogger.sample_times.doc_deprecated)
         .def(
             "data",
             [](const SignalLogger<T>* self) {
               // Reference.
               return CopyIfNotPodType(self->data());
             },
-            return_value_policy_for_scalar_type<T>(), doc.SignalLogger.data.doc)
-        .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignalLogger.data.doc_deprecated)
+        .def("reset", &SignalLogger<T>::reset,
+            doc.SignalLogger.reset.doc_deprecated);
+#pragma GCC diagnostic pop
 
-    AddTemplateFunction(m, "LogOutput", &LogOutput<T>, GetPyParam<T>(),
-        py::arg("src"), py::arg("builder"),
+    AddTemplateFunction(m, "LogOutput",
+        py::overload_cast<const OutputPort<T>&, DiagramBuilder<T>*, int,
+            LogStorageMode>(&LogOutput<T>),
+        GetPyParam<T>(), py::arg("src"), py::arg("builder"),
+        py::arg("batch_allocation_size") = 1000,
+        py::arg("storage_mode") = kDeprecatedLogPerSystem,
         // Keep alive, ownership: `return` keeps `builder` alive.
         py::keep_alive<0, 2>(),
         // See #11531 for why `py_rvp::reference` is needed.
-        py_rvp::reference, doc.LogOutput.doc);
+        py_rvp::reference, doc.LogOutput.doc_4args);
 
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
@@ -527,7 +606,7 @@ PYBIND11_MODULE(primitives, m) {
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

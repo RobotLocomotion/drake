@@ -76,7 +76,8 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   builder.Connect(w_uniform->get_output_port(0),
                   beam_model->get_uniform_random_input_port());
 
-  auto logger = LogOutput(beam_model->get_output_port(0), &builder);
+  auto logger = LogOutput(beam_model->get_output_port(0), &builder,
+                          kLogPerContext);
 
   auto diagram = builder.Build();
 
@@ -129,7 +130,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   simulator.Initialize();
   simulator.AdvanceTo(50);
 
-  const auto& x = logger->data();
+  const auto& x = logger->GetLog(*diagram, simulator.get_context()).data();
 
   const int N = x.size();
 
