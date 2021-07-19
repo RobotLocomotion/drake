@@ -43,13 +43,23 @@ PYBIND11_MODULE(dreal, m) {
         .value("kNotUse", Class::kNotUse, cls_doc.kNotUse.doc);
   }
 
+  {
+    using Class = DrealSolver::Polytope;
+    const auto& cls_doc = doc.DrealSolver.Polytope;
+    py::enum_<Class>(solver, "Polytope", cls_doc.doc)
+        .value("kUse", Class::kUse, cls_doc.kUse.doc)
+        .value("kNotUse", Class::kNotUse, cls_doc.kNotUse.doc);
+  }
+
   solver.def(py::init<>(), doc.DrealSolver.ctor.doc)
       .def_static("CheckSatisfiability", &DrealSolver::CheckSatisfiability,
           py::arg("f"), py::arg("delta"),
-          doc.DrealSolver.CheckSatisfiability.doc)
+          py::arg("polytope") = DrealSolver::Polytope::kNotUse,
+          py::arg("jobs") = 1, doc.DrealSolver.CheckSatisfiability.doc)
       .def_static("Minimize", &DrealSolver::Minimize, py::arg("objective"),
           py::arg("constraint"), py::arg("delta"),
-          py::arg("local_optimization"), doc.DrealSolver.Minimize.doc);
+          py::arg("local_optimization"), py::arg("jobs") = 1,
+          doc.DrealSolver.Minimize.doc);
 }
 
 }  // namespace pydrake
