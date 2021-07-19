@@ -1,0 +1,59 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+filegroup(
+    name = "models",
+    srcs = glob([
+        "**/*.sdf",
+    ]),
+)
+
+drake_cc_binary(
+    name = "bushing_as_revolute_joint",
+    srcs = ["bushing_as_revolute_joint.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    deps = [
+        ":sim_utils",
+        "//common:default_scalars",
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//lcm",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/controllers:pid_controller",
+        "//systems/framework:diagram",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:multiplexer",
+        "//systems/primitives:sine",
+        "@gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_utils",
+    srcs = ["sim_utils.cc"],
+    hdrs = ["sim_utils.h"],
+    deps = [
+        "//geometry:scene_graph",
+        "//lcm",
+        "//lcmtypes:viewer",
+        "//math",
+        "//multibody/plant",
+    ],
+)
+
+add_lint_tests()
