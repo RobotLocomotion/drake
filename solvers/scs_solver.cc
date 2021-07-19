@@ -13,6 +13,7 @@
 #include "linsys/amatrix.h"
 // clang-format on
 
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/math/quadratic_form.h"
@@ -742,6 +743,8 @@ void ScsSolver::DoSolve(
 
   ScsData* scs_problem_data =
       static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
+  ScopeExit problem_data_guard(
+      [&scs_problem_data, &cone]() { scs_free_data(scs_problem_data, cone); });
   SetScsProblemData(A_row_count, num_x, A, b, c, scs_problem_data);
   std::unordered_map<std::string, int> input_solver_options_int =
       merged_options.GetOptionsInt(id());
@@ -756,6 +759,7 @@ void ScsSolver::DoSolve(
 
   ScsSolution* scs_sol =
       static_cast<ScsSolution*>(scs_calloc(1, sizeof(ScsSolution)));
+  ScopeExit sol_guard([&scs_sol]() { scs_free_sol(scs_sol); });
 
   ScsSolverDetails& solver_details =
       result->SetSolverDetailsType<ScsSolverDetails>();
@@ -801,10 +805,6 @@ void ScsSolver::DoSolve(
   }
 
   result->set_solution_result(solution_result);
-
-  // Free allocated memory
-  scs_free_data(scs_problem_data, cone);
-  scs_free_sol(scs_sol);
 }
 
 }  // namespace solvers
