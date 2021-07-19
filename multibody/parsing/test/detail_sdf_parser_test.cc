@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <memory>
+#include <regex>
 #include <stdexcept>
 
 #include <gtest/gtest.h>
@@ -8,6 +9,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -1118,13 +1120,43 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
 </model>
 )""");
 
-  // TODO(#15018): Have this be a printed warning, and then make this an error.
+  std::stringstream buffer;
+  sdf::Console::ConsoleStream old_stream =
+    sdf::Console::Instance()->GetMsgStream();
+  ScopeExit revert_stream(
+    [&old_stream]()
+    { sdf::Console::Instance()->GetMsgStream() = old_stream; });
+  sdf::Console::Instance()->GetMsgStream() =
+    sdf::Console::ConsoleStream(&buffer);
+
+  // TODO(#15018): This throws a warning, make this an error.
   ParseTestString(R"""(
 <model name='model_with_bad_element'>
   <link name='a'/>
   <bad_element/>
 </model>
 )""");
+
+  EXPECT_TRUE(std::regex_match(buffer.str(), std::regex(
+    R"([\s\S]*Warning[\s\S]*XML Element\[bad_element\], child of )"
+    R"(element\[model\], not defined in SDF[\s\S]*)")));
+
+  ParseTestString(R"""(
+<model name='a'>
+  <link name='l1'/>
+  <link name='l2'/>
+  <joint name='b' type="revolute">
+    <child>l1</child>
+    <parent>l2</parent>
+    <axis>
+      <initial_position>0</initial_position>
+    </axis>
+  </joint>
+</model>)""", "1.8");
+
+  EXPECT_TRUE(std::regex_match(buffer.str(), std::regex(
+    R"([\s\S]*Warning[\s\S]*SDF Element\[initial_position\] is )"
+    R"(deprecated[\s\S]*)")));
 }
 
 // Reports if the frame with the given id has a geometry with the given role
