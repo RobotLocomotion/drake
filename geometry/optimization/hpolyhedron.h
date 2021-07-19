@@ -98,7 +98,7 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedron CartesianPower(int n) const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
-   * corners. */
+  corners. */
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
                              const Eigen::Ref<const Eigen::VectorXd>& ub);
 

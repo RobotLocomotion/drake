@@ -320,7 +320,7 @@ GTEST_TEST(HPolyhedronTest, IsBounded4) {
 
 GTEST_TEST(HPolyhedronTest, CartesianPowerTest) {
   // First test the concept. If x ∈ H, then [x; x]  ∈ H x H and
-  // [x; x]  ∈ H x H x H.
+  // [x; x; x]  ∈ H x H x H.
   MatrixXd A{4, 2};
   A << MatrixXd::Identity(2, 2), -MatrixXd::Identity(2, 2);
   VectorXd b = VectorXd::Ones(4);
