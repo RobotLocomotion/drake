@@ -1,6 +1,7 @@
 #include "drake/multibody/tree/planar_mobilizer.h"
 
 #include <memory>
+#include <string>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
@@ -9,6 +10,34 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+template <typename T>
+std::string PlanarMobilizer<T>::position_suffix(
+  int position_index_in_mobilizer) const {
+  switch (position_index_in_mobilizer) {
+    case 0:
+      return "_x";
+    case 1:
+      return "_y";
+    case 2:
+      return "_qz";
+  }
+  throw std::runtime_error("PlanarMobilizer has only 3 positions.");
+}
+
+template <typename T>
+std::string PlanarMobilizer<T>::velocity_suffix(
+  int velocity_index_in_mobilizer) const {
+  switch (velocity_index_in_mobilizer) {
+    case 0:
+      return "_vx";
+    case 1:
+      return "_vy";
+    case 2:
+      return "_wz";
+  }
+  throw std::runtime_error("PlanarMobilizer has only 3 velocities.");
+}
 
 template <typename T>
 Vector2<T> PlanarMobilizer<T>::get_translations(

@@ -202,6 +202,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return do_get_num_positions();
   }
 
+  /// Returns a string such that `name() + position_suffix(k)` is a unique name
+  /// for the `k`th position in this joint.
+  std::string position_suffix(int position_index_in_joint) const {
+    return do_get_position_suffix(position_index_in_joint);
+  }
+
+  /// Returns a string such that `name() + velocity_suffix(k)` is a unique name
+  /// for the `k`th velocity in this joint.
+  std::string velocity_suffix(int velocity_index_in_joint) const {
+    return do_get_velocity_suffix(velocity_index_in_joint);
+  }
+
   /// Returns the position coordinate for joints with a single degree of
   /// freedom.
   /// @throws std::exception if the joint does not have a single degree of
@@ -478,6 +490,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// @note Implementations must meet the styleguide requirements for
   /// snake_case accessor methods.
   virtual int do_get_num_positions() const = 0;
+
+  /// Implementation to the NVI position_suffix(), see position_suffix() for
+  /// details.
+  /// @note Implementations must meet the styleguide requirements for
+  /// snake_case accessor methods.
+  virtual std::string do_get_position_suffix(int index) const = 0;
+
+  /// Implementation to the NVI velocity_suffix(), see velocity_suffix() for
+  /// details.
+  /// @note Implementations must meet the styleguide requirements for
+  /// snake_case accessor methods.
+  virtual std::string do_get_velocity_suffix(int index) const = 0;
 
   /// Implementation to the NVI set_default_positions(), see
   /// set_default_positions() for details. It is the responsibility of the

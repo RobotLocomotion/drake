@@ -262,6 +262,25 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.floating_velocities_start;
   }
 
+  /// Returns a string such that `name() + position_suffix(k)` is a unique name
+  /// for the `k`th position in the floating base.
+  std::string floating_position_suffix(int position_index_in_body) const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(is_floating());
+    return this->get_parent_tree().get_mobilizer(
+      topology_.inboard_mobilizer).position_suffix(position_index_in_body);
+  }
+
+  /// Returns a string such that `name() + velocity_suffix(k)` is a unique name
+  /// for the `k`th velocity in the floating base.
+  std::string floating_velocity_suffix(int velocity_index_in_body) const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(is_floating());
+    return this->get_parent_tree().get_mobilizer(
+      topology_.inboard_mobilizer).velocity_suffix(velocity_index_in_body);
+  }
+
+
   /// Returns the default mass (not Context dependent) for `this` body.
   /// In general, the mass for a body can be a parameter of the model that can
   /// be retrieved with the method get_mass(). When the mass of a body is a

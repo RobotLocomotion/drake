@@ -1,6 +1,7 @@
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 
 #include <memory>
+#include <string>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
@@ -10,6 +11,50 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+template <typename T>
+std::string QuaternionFloatingMobilizer<T>::position_suffix(
+  int position_index_in_mobilizer) const {
+  switch (position_index_in_mobilizer) {
+    case 0:
+      return "_qw";
+    case 1:
+      return "_qx";
+    case 2:
+      return "_qy";
+    case 3:
+      return "_qz";
+    case 4:
+      return "_x";
+    case 5:
+      return "_y";
+    case 6:
+      return "_z";
+  }
+  throw std::runtime_error(
+    "QuaternionFloatingMobilizer has only 7 positions.");
+}
+
+template <typename T>
+std::string QuaternionFloatingMobilizer<T>::velocity_suffix(
+  int velocity_index_in_mobilizer) const {
+  switch (velocity_index_in_mobilizer) {
+    case 0:
+      return "_wx";
+    case 1:
+      return "_wy";
+    case 2:
+      return "_wz";
+    case 3:
+      return "_vx";
+    case 4:
+      return "_vy";
+    case 5:
+      return "_vz";
+  }
+  throw std::runtime_error(
+    "QuaternionFloatingMobilizer has only 6 velocities.");
+}
 
 template <typename T>
 Quaternion<T> QuaternionFloatingMobilizer<T>::get_quaternion(
