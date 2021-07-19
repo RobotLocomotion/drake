@@ -56,15 +56,24 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_param_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
     ],
+    # N.B. Leading `_` is only for deprecation.
+    cc_so_name = "_mathematicalprogram",
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/common:cpp_param_py",
+        "//bindings/pydrake/common:cpp_template_py",
     ],
-    py_srcs = ["_mathematicalprogram_extra.py"],
+    py_srcs = [
+        "_mathematicalprogram_extra.py",
+        # N.B. This file is only for deprecation.
+        "mathematicalprogram.py",
+    ],
 )
 
 drake_pybind_library(
