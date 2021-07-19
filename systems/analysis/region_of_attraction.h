@@ -42,7 +42,9 @@ struct RegionOfAttractionOptions {
  * system must be polynomial.
  *
  * @param context a Context that defines the parameters of the system and
- * the fixed-point about which we are analyzing the regional stability.
+ * the fixed-point about which we are analyzing the regional stability.  Any
+ * input ports to the system are fixed to the values in this Context for the
+ * analysis.
  *
  * @param options provides a variety of configuration options.  @see
  * RegionOfAttractionOptions.
