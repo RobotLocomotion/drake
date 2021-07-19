@@ -4,6 +4,7 @@
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/point.h"
 
 namespace drake {
@@ -51,6 +52,34 @@ GTEST_TEST(ConvexSetsTest, BasicTest) {
   EXPECT_FALSE(moved[1]->PointInSet(new_point));
   b_pointer->set_x(new_point);
   EXPECT_TRUE(moved[1]->PointInSet(new_point));
+}
+
+
+GTEST_TEST(ConvexSetTest, IntersectsWithTest) {
+/* Test that IntersectsWith() yields correct results for the following
+arrangement of boxes:
+     5                ┏━━━━━━━━━┓
+                      ┃      C  ┃
+     4      ┏━━━━━━━━━┃━━━━┓    ┃
+            ┃         ┃    ┃    ┃
+     3      ┃         ┗━━━━━━━━━┛
+            ┃      B       ┃
+     2 ┏━━━━┃━━━━┓         ┃
+       ┃    ┃    ┃         ┃
+     1 ┃    ┗━━━━━━━━━━━━━━┛
+       ┃  A      ┃
+     0 ┗━━━━━━━━━┛
+       0    1    2    3    4    5
+*/
+  HPolyhedron set_A = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(2, 2));
+  HPolyhedron set_B = HPolyhedron::MakeBox(Vector2d(1, 1), Vector2d(4, 4));
+  HPolyhedron set_C = HPolyhedron::MakeBox(Vector2d(3, 3), Vector2d(5, 5));
+  EXPECT_TRUE(set_A.IntersectsWith(set_B));
+  EXPECT_TRUE(set_B.IntersectsWith(set_A));
+  EXPECT_TRUE(set_B.IntersectsWith(set_C));
+  EXPECT_TRUE(set_C.IntersectsWith(set_B));
+  EXPECT_FALSE(set_A.IntersectsWith(set_C));
+  EXPECT_FALSE(set_C.IntersectsWith(set_A));
 }
 }  // namespace
 

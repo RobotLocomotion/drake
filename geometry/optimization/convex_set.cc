@@ -4,6 +4,9 @@
 #include <limits>
 #include <memory>
 
+#include "drake/solvers/solution_result.h"
+#include "drake/solvers/solve.h"
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -18,6 +21,16 @@ ConvexSet::ConvexSet(
 ConvexSet::~ConvexSet() = default;
 
 std::unique_ptr<ConvexSet> ConvexSet::Clone() const { return cloner_(*this); }
+
+bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
+  DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());
+  solvers::MathematicalProgram prog{};
+  const auto& x = prog.NewContinuousVariables(this->ambient_dimension(), "x");
+  this->AddPointInSetConstraints(&prog, x);
+  other.AddPointInSetConstraints(&prog, x);
+  solvers::MathematicalProgramResult result = solvers::Solve(prog);
+  return result.is_success();
+}
 
 std::vector<solvers::Binding<solvers::Constraint>>
 ConvexSet::AddPointInNonnegativeScalingConstraints(
