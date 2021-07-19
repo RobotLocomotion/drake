@@ -963,7 +963,7 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
 
     // The abstract value must be a Value<BasicVector<T>>, even if the
     // underlying object is a more-derived vector type.
-    auto value = dynamic_cast<Value<BasicVector<T>>*>(abstract);
+    auto* value = abstract->maybe_get_mutable_value<BasicVector<T>>();
 
     // TODO(sherm1) Make this error message more informative by capturing
     // system and port index info.
@@ -974,7 +974,7 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
           NiceTypeName::Get<Value<BasicVector<T>>>(),
           abstract->GetNiceTypeName()));
     }
-    vector_calculator(context, &value->get_mutable_value());
+    vector_calculator(context, value);
   };
 
   // The allocator function is identical between output port and cache.
