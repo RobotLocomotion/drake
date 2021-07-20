@@ -3564,6 +3564,34 @@ GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {
     EXPECT_NEAR(d, 1.0, 4 * kEps);
   }
 }
+
+// Demonstrate that FixInputPortsFrom does *not* currently work for a
+// MultibodyPlant if the other MultibodyPlant was connected to a
+// SceneGraph. This is because the geometry query input port is a QueryValue<T>,
+// and FixInputPortsFrom does not convert its scalar type.
+// TODO(5454) Once transmogrification of scalar-dependent abstract values is
+// implemented, this test can simply be removed (as we no longer have to track
+// this undesirable behavior).
+GTEST_TEST(MultibodyPlant, FixInputPortsFrom) {
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelFromFile(
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf"));
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*context);
+
+  // Convert only the plant to autodiff.
+  auto autodiff_plant = plant.ToAutoDiffXd();
+  auto autodiff_context = autodiff_plant->CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(autodiff_plant->FixInputPortsFrom(
+                                  plant, plant_context, autodiff_context.get()),
+                              ".*FixInputPortTypeCheck.*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
