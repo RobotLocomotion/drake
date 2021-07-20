@@ -3564,6 +3564,29 @@ GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {
     EXPECT_NEAR(d, 1.0, 4 * kEps);
   }
 }
+
+// Demonstrate that FixInputPortsFrom does *not* currently work for a
+// MBP+SceneGraph combo.
+GTEST_TEST(MultibodyPlant, FixInputPortsFrom) {
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant).AddModelFromFile(
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf"));
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyContextFromRoot(*context);
+
+  // Convert only the plant to autodiff.
+  auto autodiff_plant = plant.ToAutoDiffXd();
+  auto autodiff_context = autodiff_plant->CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(autodiff_plant->FixInputPortsFrom(
+                                  plant, plant_context, autodiff_context.get()),
+                              std::exception, ".*FixInputPortTypeCheck.*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
