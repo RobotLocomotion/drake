@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <ios>
 #include <regex>
+#include <set>
 
 #include "drake/common/unused.h"
 #include "drake/systems/framework/system_visitor.h"
@@ -901,24 +902,27 @@ System<T>::System(SystemScalarConverter converter)
   // EvalConservativePower() to see why.
 
   // TODO(sherm1) Due to issue #9171 we cannot always recognize which
-  // variables contribute to configuration so we'll invalidate on all changes.
-  // Use configuration, kinematics, and mass tickets when #9171 is resolved.
+  // variables contribute to configuration so we'll invalidate on all changes
+  // except for time and inputs.  Once #9171 is resolved, we should use the
+  // more specific configuration, kinematics, and mass tickets.
+  const std::set<DependencyTicket> energy_prereqs_for_9171{
+      accuracy_ticket(), all_state_ticket(), all_parameters_ticket()};
   potential_energy_cache_index_ =
       DeclareCacheEntry("potential energy",
           &System<T>::CalcPotentialEnergy,
-          {all_sources_ticket()})  // After #9171: configuration + mass.
+          energy_prereqs_for_9171)  // After #9171: configuration + mass.
           .cache_index();
 
   kinetic_energy_cache_index_ =
       DeclareCacheEntry("kinetic energy",
           &System<T>::CalcKineticEnergy,
-          {all_sources_ticket()})  // After #9171: kinematics + mass.
+          energy_prereqs_for_9171)  // After #9171: kinematics + mass.
           .cache_index();
 
   conservative_power_cache_index_ =
       DeclareCacheEntry("conservative power",
           &System<T>::CalcConservativePower,
-          {all_sources_ticket()})  // After #9171: kinematics + mass.
+          energy_prereqs_for_9171)  // After #9171: kinematics + mass.
           .cache_index();
 
   // Only non-conservative power can have an explicit time or input
