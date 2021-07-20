@@ -1280,6 +1280,13 @@ class TestMathematicalProgram(unittest.TestCase):
         with self.assertRaises(TypeError):
             mp_testing.AcceptBindingConstraint(cost)
 
+    def test_get_program_type(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+        self.assertEqual(prog.GetProgramType(), mp.ProgramType.kQP)
+
 
 class DummySolverInterface(SolverInterface):
 

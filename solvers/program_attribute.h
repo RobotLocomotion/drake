@@ -54,5 +54,38 @@ std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
 std::string to_string(const ProgramAttributes&);
 std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
 
+enum class ProgramType {
+  kLP,       ///< Linear Programming, with a linear cost and linear constraints.
+  kQP,       ///< Quadratic Programming, with a convex quadratic cost and linear
+             ///< constraints.
+  kSOCP,     ///< Second-order Cone Programming, with a linear cost and
+             ///< second-order cone constraints.
+  kSDP,      ///< Semidefinite Programming, with a linear cost and positive
+             ///< semidefinite matrix constraints.
+  kGP,       ///< Geometric Programming, with a linear cost and exponential cone
+             ///< constraints.
+  kCGP,      ///< Conic Geometric Programming, this is a superset that unifies
+             ///< GP and SDP. Refer to
+             ///< http://people.lids.mit.edu/pari/cgp_preprint.pdf for more
+             ///< details.
+  kMILP,     ///< Mixed-integer Linear Programming. LP with some variables
+             ///< taking binary values.
+  kMIQP,     ///< Mixed-integer Quadratic Programming. QP with some variables
+             ///< taking binary values.
+  kMISOCP,   ///< Mixed-integer Second-order Cone Programming. SOCP with some
+             ///< variables taking binary values.
+  kMISDP,    ///< Mixed-integer Semidefinite Programming. SDP with some
+             ///< variables taking binary values.
+  kQuadraticCostConicConstraint,  ///< convex quadratic cost with nonlinear
+                                  ///< conic constraints.
+  kNLP,      ///< nonlinear programming. Programs with generic costs or
+             ///< constraints.
+  kLCP,      ///< Linear Complementarity Programs. Programs with linear
+             ///< complementary constraints and no cost.
+  kUnknown,  ///< Does not fall into any of the types above.
+};
+
+std::string to_string(const ProgramType&);
+std::ostream& operator<<(std::ostream&, const ProgramType&);
 }  // namespace solvers
 }  // namespace drake

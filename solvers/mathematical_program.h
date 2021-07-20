@@ -3156,6 +3156,16 @@ class MathematicalProgram {
   int RemoveCost(const Binding<Cost>& cost);
   //@}
 
+  /** Returns the type of the optimization programs (LP, QP, etc), based on the
+   * properties of cost/constraints/variables.
+   * Each mathematical program should be characterized by a unique type. If a
+   * program can be characterized as either type A or type B (for example, a
+   * program with linear constraint and linear costs can be characterized as
+   * either an LP or an SDP), then we choose the type corresponding to a smaller
+   * set of programs (LP in this case).
+   */
+  ProgramType GetProgramType() const;
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 

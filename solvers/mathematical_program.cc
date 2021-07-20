@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <initializer_list>
 #include <memory>
 #include <ostream>
 #include <set>
@@ -1435,6 +1436,242 @@ int MathematicalProgram::RemoveCost(const Binding<Cost>& cost) {
   } else {
     return RemoveCostOrConstraintImpl(cost, ProgramAttribute::kGenericCost,
                                       &(this->generic_costs_));
+  }
+}
+
+namespace {
+struct Requirements {
+  ProgramAttributes acceptable;
+  ProgramAttributes must_include;
+  ProgramAttributes must_include_one_of;
+};
+
+Requirements GetRequirementsLP() {
+  ProgramAttributes attributes{
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearCost, ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kLinearEqualityConstraint}};
+  static const drake::never_destroyed<Requirements> requirements{
+      Requirements{.acceptable = attributes,
+                   .must_include = {},
+                   .must_include_one_of = attributes}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsQP() {
+  const Requirements lp_requirements = GetRequirementsLP();
+  ProgramAttributes acceptable = lp_requirements.acceptable;
+  acceptable.emplace(ProgramAttribute::kQuadraticCost);
+  static const drake::never_destroyed<Requirements> requirements{
+      Requirements{.acceptable = acceptable,
+                   .must_include = {ProgramAttribute::kQuadraticCost},
+                   .must_include_one_of = {}}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsSOCP() {
+  const Requirements lp_requirements = GetRequirementsLP();
+  ProgramAttributes acceptable = lp_requirements.acceptable;
+  acceptable.emplace(ProgramAttribute::kLorentzConeConstraint);
+  acceptable.emplace(ProgramAttribute::kRotatedLorentzConeConstraint);
+  static const drake::never_destroyed<Requirements> requirements{
+      Requirements{.acceptable = acceptable,
+                   .must_include = {},
+                   .must_include_one_of = {
+                       ProgramAttribute::kLorentzConeConstraint,
+                       ProgramAttribute::kRotatedLorentzConeConstraint}}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsSDP() {
+  const Requirements socp_requirements = GetRequirementsSOCP();
+  ProgramAttributes acceptable = socp_requirements.acceptable;
+  acceptable.emplace(ProgramAttribute::kPositiveSemidefiniteConstraint);
+  static const drake::never_destroyed<Requirements> requirements{Requirements{
+      .acceptable = acceptable,
+      .must_include = {ProgramAttribute::kPositiveSemidefiniteConstraint},
+      .must_include_one_of = {}}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsGP() {
+  static const drake::never_destroyed<Requirements> requirements{Requirements{
+      .acceptable = {ProgramAttribute::kLinearCost,
+                     ProgramAttribute::kExponentialConeConstraint},
+      .must_include = {ProgramAttribute::kExponentialConeConstraint},
+      .must_include_one_of = {}}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsCGP() {
+  const Requirements sdp_requirements = GetRequirementsSDP();
+  ProgramAttributes acceptable = sdp_requirements.acceptable;
+  acceptable.emplace(ProgramAttribute::kExponentialConeConstraint);
+  ProgramAttributes must_include_one_of = sdp_requirements.acceptable;
+  must_include_one_of.erase(ProgramAttribute::kLinearCost);
+  static const drake::never_destroyed<Requirements> requirements{Requirements{
+      .acceptable = acceptable,
+      .must_include = {ProgramAttribute::kExponentialConeConstraint},
+      .must_include_one_of = must_include_one_of}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsQuadraticCostConicProgram() {
+  const Requirements cgp_requirements = GetRequirementsCGP();
+  ProgramAttributes acceptable = cgp_requirements.acceptable;
+  acceptable.emplace(ProgramAttribute::kQuadraticCost);
+  static const drake::never_destroyed<Requirements> requirements{Requirements{
+      .acceptable = acceptable,
+      .must_include = {ProgramAttribute::kQuadraticCost},
+      .must_include_one_of = {ProgramAttribute::kLorentzConeConstraint,
+                              ProgramAttribute::kRotatedLorentzConeConstraint,
+                              ProgramAttribute::kPositiveSemidefiniteConstraint,
+                              ProgramAttribute::kExponentialConeConstraint}}};
+  return requirements.access();
+}
+
+Requirements GetRequirementsLCP() {
+  static const drake::never_destroyed<Requirements> requirements{Requirements{
+      .acceptable = {ProgramAttribute::kLinearComplementarityConstraint},
+      .must_include = {ProgramAttribute::kLinearComplementarityConstraint},
+      .must_include_one_of = {}}};
+  return requirements.access();
+}
+
+// Returns the requirements of a mixed-integer optimization program
+// Append kBinaryVariable to acceptable and must_include.
+// Retain must_include_one_of.
+Requirements MixedIntegerRequirements(
+    const Requirements& continuous_requirements) {
+  Requirements mip_requirements = continuous_requirements;
+  mip_requirements.acceptable.emplace(ProgramAttribute::kBinaryVariable);
+  mip_requirements.must_include.emplace(ProgramAttribute::kBinaryVariable);
+  return mip_requirements;
+}
+
+Requirements GetRequirementsMILP() {
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsLP());
+  }()};
+  return requirements.access();
+}
+
+Requirements GetRequirementsMIQP() {
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsQP());
+  }()};
+  return requirements.access();
+}
+
+Requirements GetRequirementsMISOCP() {
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsSOCP());
+  }()};
+  return requirements.access();
+}
+
+Requirements GetRequirementsMISDP() {
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsSDP());
+  }()};
+  return requirements.access();
+}
+
+// Returns true iff @p program_attributes satisfy all the following conditions
+// 1. @p program_attributes is a subset of @p acceptable_attributes.
+// 2. @p program_attributes must include all of @p must_include_attributes.
+// 3. @p program_attributes must include at least one of @p
+// must_include_one_of. If must_include_one_of is empty, then we ignore this
+// condition.
+bool SatisfiesProgramType(const Requirements& requirements,
+                          const ProgramAttributes& program_attributes) {
+  // Check if program_attributes is a subset of acceptable_attributes
+  for (const auto attribute : program_attributes) {
+    if (requirements.acceptable.count(attribute) == 0) {
+      return false;
+    }
+  }
+  // Check if program_attributes include must_include_attributes
+  for (const auto& must_include : requirements.must_include) {
+    if (program_attributes.count(must_include) == 0) {
+      return false;
+    }
+  }
+  bool include_one_of = requirements.must_include_one_of.empty() ? true : false;
+  for (const auto& include : requirements.must_include_one_of) {
+    if (program_attributes.count(include) > 0) {
+      include_one_of = true;
+      break;
+    }
+  }
+  if (!include_one_of) {
+    return false;
+  }
+  return true;
+}
+
+bool AllQuadraticCostsConvex(
+    const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
+  return std::all_of(quadratic_costs.begin(), quadratic_costs.end(),
+                     [](const Binding<QuadraticCost>& quadratic_cost) {
+                       return quadratic_cost.evaluator()->is_convex();
+                     });
+}
+}  // namespace
+
+ProgramType MathematicalProgram::GetProgramType() const {
+  if (SatisfiesProgramType(GetRequirementsLP(), required_capabilities_)) {
+    return ProgramType::kLP;
+  } else if (SatisfiesProgramType(GetRequirementsQP(),
+                                  required_capabilities_) &&
+             AllQuadraticCostsConvex(quadratic_costs_)) {
+    return ProgramType::kQP;
+  } else if (SatisfiesProgramType(GetRequirementsSOCP(),
+                                  required_capabilities_)) {
+    return ProgramType::kSOCP;
+  } else if (SatisfiesProgramType(GetRequirementsSDP(),
+                                  required_capabilities_)) {
+    return ProgramType::kSDP;
+  } else if (SatisfiesProgramType(GetRequirementsGP(),
+                 required_capabilities_)) {
+    // TODO(hongkai.dai): support more general type of geometric programming,
+    // with constraints on posynomials.
+    return ProgramType::kGP;
+  } else if (SatisfiesProgramType(GetRequirementsCGP(),
+                                  required_capabilities_)) {
+    return ProgramType::kCGP;
+  } else if (SatisfiesProgramType(GetRequirementsMILP(),
+                 required_capabilities_)) {
+    return ProgramType::kMILP;
+  } else if (SatisfiesProgramType(GetRequirementsMIQP(),
+                                  required_capabilities_) &&
+             AllQuadraticCostsConvex(quadratic_costs_)) {
+    return ProgramType::kMIQP;
+  } else if (SatisfiesProgramType(GetRequirementsMISOCP(),
+                                  required_capabilities_)) {
+    return ProgramType::kMISOCP;
+  } else if (SatisfiesProgramType(GetRequirementsMISDP(),
+                                  required_capabilities_)) {
+    return ProgramType::kMISDP;
+  } else if (SatisfiesProgramType(GetRequirementsQuadraticCostConicProgram(),
+                                  required_capabilities_) &&
+             AllQuadraticCostsConvex(quadratic_costs_)) {
+    return ProgramType::kQuadraticCostConicConstraint;
+  } else if (SatisfiesProgramType(GetRequirementsLCP(),
+                                  required_capabilities_)) {
+    return ProgramType::kLCP;
+  } else if ((required_capabilities_.count(ProgramAttribute::kGenericCost) >
+                  0 ||
+              (required_capabilities_.count(ProgramAttribute::kQuadraticCost) >
+                   0 &&
+               !AllQuadraticCostsConvex(quadratic_costs_)) ||
+              required_capabilities_.count(
+                  ProgramAttribute::kGenericConstraint) > 0) &&
+             required_capabilities_.count(ProgramAttribute::kBinaryVariable) ==
+                 0) {
+    return ProgramType::kNLP;
+  } else {
+    return ProgramType::kUnknown;
   }
 }
 
