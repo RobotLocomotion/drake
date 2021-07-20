@@ -959,7 +959,10 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
   // BasicVector<T> calculator function.
   auto cache_calc_function = [vector_calculator](
       const ContextBase& context_base, AbstractValue* abstract) {
-    auto& context = dynamic_cast<const Context<T>&>(context_base);
+    // Downcasting via static_cast here is safe because OutputPort::Eval and
+    // OutputPort::Calc validate the SystemId before beginning calling the code
+    // that calls this lambda, so we know the Context must be ours.
+    auto& context = static_cast<const Context<T>&>(context_base);
 
     // The abstract value must be a Value<BasicVector<T>>, even if the
     // underlying object is a more-derived vector type.
