@@ -50,7 +50,6 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
     const geometry::Box& box, double resolution_hint,
     const math::RigidTransform<T>& X_WB);
 
-/* Note that this method is copypasted from mesh_intersection_test.cc. */
 /* Generates a volume mesh of an octahedron comprising of eight tetrahedral
  elements with vertices on the coordinate axes and the origin like this:
 
@@ -70,7 +69,7 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
 template <typename T>
 geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
 
-/* Generates a deformable geometry whose underlying mesh is given by
+/* Generates a ReferenceDeformableGeometry whose underlying mesh is given by
  MakeOctahedronVolumeMesh().
  @tparam_nonsymbolic_scalar */
 template <typename T>

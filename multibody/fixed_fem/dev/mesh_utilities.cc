@@ -144,6 +144,9 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
 
 template <typename T>
 VolumeMesh<T> MakeOctahedronVolumeMesh() {
+  // Eight tetrahedra in the octahedron mesh. Order the vertices to follow the
+  // convention in geometry::VolumeMesh. See geometry::VolumeMesh for more
+  // details.
   const int element_data[8][4] = {
       // The top four tetrahedrons share the top vertex v5.
       {0, 1, 2, 5},

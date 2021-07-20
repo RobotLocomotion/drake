@@ -4,9 +4,6 @@
 
 #include <Eigen/SparseCore>
 
-#include "drake/common/default_scalars.h"
-#include "drake/common/drake_assert.h"
-
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -17,9 +14,12 @@ namespace internal {
 
  In the context of deformable contact, we may reindex the deformable dofs so
  that the tangent matrix (see FemModel) forms a particular pattern that
- facilitates subsequent computations. The reindexing is done by reindexing the
- vertices with the given `vertex_permutation` and keeping the vertex indexed `i`
- correspond to dofs `3*i`, `3*i+1`, and `3*i+2`.
+ facilitates subsequent computations.
+
+ The tangent matrix has a block structure with 3x3 block entries Bᵢⱼ where
+ i, j ∈ V = {0,...,num_vertices-1}. Given a permutation P on V, this method
+ builds the permuted tangent matrix with 3x3 block entries Cᵢⱼ such that
+ Cᵢⱼ = B_{P(i),P(j)}.
 
  For example, suppose the input `tangent matrix is given by
         a a a b b b
@@ -28,7 +28,7 @@ namespace internal {
         c c c d d d
         c c c d d d
         c c c d d d
- and the input `vertex permutation` is {1, 0}, then the result of the
+ and the input `vertex_permutation` is {1, 0}, then the result of the
  permutation will be:
         d d d c c c
         d d d c c c

@@ -1,5 +1,8 @@
 #include "drake/multibody/fixed_fem/dev/permute_tangent_matrix.h"
 
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -23,11 +26,11 @@ Eigen::SparseMatrix<T> PermuteTangentMatrix(
       const int col_dim = it.col() % 3;
       const int row_vertex = it.row() / 3;
       const int col_vertex = it.col() / 3;
-      const int new_row_vertex = vertex_permutation[row_vertex];
-      const int new_col_vertex = vertex_permutation[col_vertex];
-      const int new_row = new_row_vertex * 3 + row_dim;
-      const int new_col = new_col_vertex * 3 + col_dim;
-      triplets.emplace_back(new_row, new_col, it.value());
+      const int permuted_row_vertex = vertex_permutation[row_vertex];
+      const int permuted_col_vertex = vertex_permutation[col_vertex];
+      const int permuted_row = permuted_row_vertex * 3 + row_dim;
+      const int permuted_col = permuted_col_vertex * 3 + col_dim;
+      triplets.emplace_back(permuted_row, permuted_col, it.value());
     }
   }
   /* The permuted matrix should have the exact same number of non-zero entries
