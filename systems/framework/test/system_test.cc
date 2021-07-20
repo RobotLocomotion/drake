@@ -1027,9 +1027,11 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -4.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);
   test_sys_.ExpectCount(3, 2, 2, 2, 2);  // Above is just one evaluation.
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
-  test_sys_.ExpectCount(3, 2, 2, 2, 3);
-  // TODO(sherm1) Verify that other methods don't depend on time.
+  test_sys_.ExpectCount(3, 2, 2, 2, 3);  // Only pnc depends on time.
 
   // This should mark all state variables as changed and force recomputation.
   context_->get_mutable_state();
