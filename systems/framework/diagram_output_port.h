@@ -97,14 +97,26 @@ class DiagramOutputPort final : public OutputPort<T> {
   // delegates to the source output port.
   void DoCalc(const Context<T>& diagram_context,
               AbstractValue* value) const final {
-    const Context<T>& subcontext = get_subcontext(diagram_context);
+    // Downcasting via static_cast here is safe because OutputPort::Eval and
+    // OutputPort::Calc validate the SystemId before beginning calling the code
+    // that calls this lambda, so we know the Context must be ours.
+    const DiagramContext<T>& downcast =
+        static_cast<const DiagramContext<T>&>(diagram_context);
+    const Context<T>& subcontext = downcast.GetSubsystemContext(
+        source_subsystem_index_);
     return source_output_port_->Calc(subcontext, value);
   }
 
   // Given he whole Diagram context, extracts the appropriate subcontext and
   // delegates to the source output port.
   const AbstractValue& DoEval(const Context<T>& diagram_context) const final {
-    const Context<T>& subcontext = get_subcontext(diagram_context);
+    // Downcasting via static_cast here is safe because OutputPort::Eval and
+    // OutputPort::Calc validate the SystemId before beginning calling the code
+    // that calls this lambda, so we know the Context must be ours.
+    const DiagramContext<T>& downcast =
+        static_cast<const DiagramContext<T>&>(diagram_context);
+    const Context<T>& subcontext = downcast.GetSubsystemContext(
+        source_subsystem_index_);
     return source_output_port_->template Eval<AbstractValue>(subcontext);
   }
 
