@@ -1241,17 +1241,17 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
         linear_cost1 = prog.AddLinearCost(x[0] + 2 * x[1])
-        prog.RemoveCost(linear_cost1)
+        prog.RemoveCost(cost=linear_cost1)
         self.assertEqual(len(prog.linear_costs()), 0)
 
         quadratic_cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
         quadratic_cost2 = prog.AddQuadraticCost(x[2] * x[2])
-        prog.RemoveCost(quadratic_cost1)
+        prog.RemoveCost(cost=quadratic_cost1)
         self.assertEqual(len(prog.quadratic_costs()), 1)
 
         generic_cost1 = prog.AddCost(x[0] * x[1] * x[2])
         generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
-        prog.RemoveCost(generic_cost2)
+        prog.RemoveCost(cost=generic_cost2)
         self.assertEqual(len(prog.generic_costs()), 1)
 
     def test_binding_upcasting(self):
@@ -1279,6 +1279,51 @@ class TestMathematicalProgram(unittest.TestCase):
             mp_testing.AcceptBindingConstraint(evaluator)
         with self.assertRaises(TypeError):
             mp_testing.AcceptBindingConstraint(cost)
+
+    def test_remove_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        X = prog.NewSymmetricContinuousVariables(3)
+
+        lin_con = prog.AddLinearConstraint(x[0] + x[1] <= 1)
+        prog.RemoveConstraint(constraint=lin_con)
+        self.assertEqual(len(prog.linear_constraints()), 0)
+
+        lin_eq_con = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1)
+        prog.RemoveConstraint(constraint=lin_eq_con)
+        self.assertEqual(len(prog.linear_equality_constraints()), 0)
+
+        bb_con = prog.AddBoundingBoxConstraint(0, 1, x)
+        prog.RemoveConstraint(constraint=bb_con)
+        self.assertEqual(len(prog.bounding_box_constraints()), 0)
+
+        lorentz_con = prog.AddLorentzConeConstraint(x)
+        prog.RemoveConstraint(constraint=lorentz_con)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 0)
+
+        rotated_lorentz_con = prog.AddRotatedLorentzConeConstraint(x)
+        prog.RemoveConstraint(constraint=rotated_lorentz_con)
+        self.assertEqual(len(prog.rotated_lorentz_cone_constraints()), 0)
+
+        psd_con = prog.AddPositiveSemidefiniteConstraint(X)
+        prog.RemoveConstraint(constraint=psd_con)
+        self.assertEqual(len(prog.positive_semidefinite_constraints()), 0)
+
+        lmi_con = prog.AddLinearMatrixInequalityConstraint(
+            [np.eye(3), np.eye(3), 2 * np.ones((3, 3))], x[:2])
+        prog.RemoveConstraint(constraint=lmi_con)
+        self.assertEqual(len(prog.linear_matrix_inequality_constraints()), 0)
+
+        exponential_con = prog.AddExponentialConeConstraint(
+            A=np.array([[1, 3], [2, 4], [0, 1]]), b=np.array([0, 1, 3]),
+            vars=x[:2])
+        prog.RemoveConstraint(constraint=exponential_con)
+        self.assertEqual(len(prog.exponential_cone_constraints()), 0)
+
+        lcp_con = prog.AddLinearComplementarityConstraint(
+            np.eye(3), np.ones((3,)), x)
+        prog.RemoveConstraint(constraint=lcp_con)
+        self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
 
 
 class DummySolverInterface(SolverInterface):
