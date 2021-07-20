@@ -3154,6 +3154,17 @@ class MathematicalProgram {
    * @p cost objects, then returns the repetition of @p cost in this program.
    */
   int RemoveCost(const Binding<Cost>& cost);
+
+  /** Removes @p constraint from this mathematical program.
+   * See @ref remove_cost_constraint "Remove costs or constraints" for more
+   * details.
+   * @return number of constraint objects removed from this program. If this
+   * program doesn't contain @p constraint, then returns 0. If this program
+   * contains multiple
+   * @p constraint objects, then returns the repetition of @p constraint in this
+   * program.
+   */
+  int RemoveConstraint(const Binding<Constraint>& constraint);
   //@}
 
  private:
@@ -3170,6 +3181,13 @@ class MathematicalProgram {
   int RemoveCostOrConstraintImpl(const Binding<C>& removal,
                                  ProgramAttribute affected_capability,
                                  std::vector<Binding<C>>* existings);
+
+  /**
+   * Check and update if this program requires @p query_capability
+   * This method should be called after changing stored
+   * costs/constraints/callbacks.
+   */
+  void UpdateRequiredCapability(ProgramAttribute query_capability);
 
   // maps the ID of a symbolic variable to the index of the variable stored
   // in the optimization program.
