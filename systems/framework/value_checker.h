@@ -58,12 +58,11 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
 template <typename T>
 void CheckVectorValueInvariants(const AbstractValue* abstract_value) {
   DRAKE_THROW_UNLESS(abstract_value != nullptr);
-  const Value<BasicVector<T>>* const vector_value =
-      dynamic_cast<const Value<BasicVector<T>>*>(abstract_value);
-  if (vector_value != nullptr) {
+  const auto* const basic_vector =
+      abstract_value->maybe_get_value<BasicVector<T>>();
+  if (basic_vector != nullptr) {
     // We are a Value<BasicVector<T>>, so check the invariants.
-    const BasicVector<T>& basic_vector = vector_value->get_value();
-    CheckBasicVectorInvariants<T>(&basic_vector);
+    CheckBasicVectorInvariants<T>(basic_vector);
   }
 }
 
