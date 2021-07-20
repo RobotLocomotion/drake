@@ -127,9 +127,8 @@ Expression RegionOfAttraction(const System<double>& system,
 
   const auto symbolic_system = system.ToSymbolic();
   const auto symbolic_context = symbolic_system->CreateDefaultContext();
-  // Time and parameters should just be doubles (not Variables).
-  symbolic_context->SetTime(0.0);
-  symbolic_context->get_mutable_parameters().SetFrom(context.get_parameters());
+  symbolic_context->SetTimeStateAndParametersFrom(context);
+  symbolic_system->FixInputPortsFrom(system, context, symbolic_context.get());
 
   // Subroutines should create their own programs to avoid incidental
   // sharing of costs or constraints.  However, we pass x and expect that
