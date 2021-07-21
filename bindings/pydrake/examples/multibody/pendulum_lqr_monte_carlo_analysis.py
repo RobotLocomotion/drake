@@ -58,8 +58,6 @@ def main():
     file_name = FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf")
     Parser(pendulum).AddModelFromFile(file_name)
-    pendulum.WeldFrames(pendulum.world_frame(),
-                        pendulum.GetFrameByName("base"))
     pendulum.Finalize()
 
     # Set the pendulum to start at uniformly random
