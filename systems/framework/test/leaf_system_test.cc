@@ -2286,6 +2286,115 @@ GTEST_TEST(GraphvizTest, Ports) {
   EXPECT_THAT(dot, ::testing::HasSubstr("{{<u0>u0|<u1>u1} | {<y0>y0}}"));
 }
 
+// This class serves as the mechanism by which we confirm that LeafSystems's
+// implementation of DispatchPublishHandler() actually calls DoPublish() and,
+// furthermore, the per-event dispatch implemented in DoPublish is completely
+// replaced by an overridden implementation.
+//
+// The system has to be able to detect when its DoPublish() is called but also
+// has to allow us to detect the difference between the built-in LeafSystem
+// publish event dispatching and the overridden behavior.
+// We do this in the following way:
+//
+//   1. We create a system that overrides DoPublish().
+//     a. The system can be configured to run in one of two modes:
+//        i. Ignore publish events.
+//        ii. Use default publication dispatch.
+//        iii. In either mode, we increment a counter that will allow us to
+//             recognize that our DoPublish override got exercised.
+//     b. The system declares one force publish event.
+//        i. The force event allows us to test both APIs
+//           System::Publish(context) and System::Publish(context, events). As
+//           all other trigger types exercise the two apis, we'll ignore other
+//           trigger types.
+//        ii. The event handler increments a counter allowing us to recognize
+//            when the *event* has been handled.
+//   2. We instantiate the system and evaluate the force events on it.
+//      i. In the "default" mode, we should see DoPublish() and the event
+//         handler invoked. This allows us to observe the "default" behavior and
+//         see that it changes.
+//      ii. In the "ignore events" mode, we expect DoPublish() to be called but
+//         not the event handler - we'll have completely supplanted the
+//         LeafSystem::DoPublish implementation).
+class DoPublishOverrideSystem : public LeafSystem<double> {
+ public:
+  /* Constructs the system to *default* event handling -- events will *not*
+   be ignored. */
+  explicit DoPublishOverrideSystem() : LeafSystem<double>() {
+    DeclareForcedPublishEvent(&DoPublishOverrideSystem::HandleEvent);
+  }
+
+  bool ignore_events() const { return ignore_events_; }
+  void set_ignore_events(bool ignore_events) { ignore_events_ = ignore_events; }
+  int do_publish_count() const { return do_publish_count_; }
+  int event_handle_count() const { return event_handle_count_; }
+
+  EventStatus HandleEvent(const Context<double>&) const {
+    ++event_handle_count_;
+    return EventStatus::Succeeded();
+  }
+
+  // We need public access to the event collection to call
+  // Publish(context, events).
+  const EventCollection<PublishEvent<double>>&
+  get_forced_publish_events_collection() const {
+    return get_forced_publish_events();
+  }
+
+ private:
+  void DoPublish(
+      const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override {
+    ++do_publish_count_;
+    if (!ignore_events_) LeafSystem<double>::DoPublish(context, events);
+  }
+
+  // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
+  bool ignore_events_{false};
+
+  // These mutable system members are an anti-pattern only acceptable as part of
+  // a unit test.
+
+  // The number of times DoPublish() has been called on this instance.
+  mutable int do_publish_count_{0};
+
+  // The number of times the force publish event handler has been called on this
+  // instance.
+  mutable int event_handle_count_{0};
+};
+
+GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
+  DoPublishOverrideSystem system;
+  std::unique_ptr<Context<double>> context = system.CreateDefaultContext();
+  const EventCollection<PublishEvent<double>>& events =
+      system.get_forced_publish_events_collection();
+
+  // First test default behaviors - DoPublish gets called and event handler
+  // get called.
+  ASSERT_FALSE(system.ignore_events());
+  ASSERT_EQ(system.do_publish_count(), 0);
+  ASSERT_EQ(system.event_handle_count(), 0);
+
+  system.Publish(*context);
+  EXPECT_EQ(system.do_publish_count(), 1);
+  EXPECT_EQ(system.event_handle_count(), 1);
+  system.Publish(*context, events);
+  EXPECT_EQ(system.do_publish_count(), 2);
+  EXPECT_EQ(system.event_handle_count(), 2);
+
+  // Now ignore default behaviors. This confirms *out* DoPublish completely
+  // supplants the default behavior.
+  system.set_ignore_events(true);
+  ASSERT_TRUE(system.ignore_events());
+
+  system.Publish(*context);
+  EXPECT_EQ(system.do_publish_count(), 3);
+  EXPECT_EQ(system.event_handle_count(), 2);
+  system.Publish(*context, events);
+  EXPECT_EQ(system.do_publish_count(), 4);
+  EXPECT_EQ(system.event_handle_count(), 2);
+}
+
 // The custom context type for the CustomContextSystem.
 template <typename T>
 class CustomContext : public LeafContext<T> {};
