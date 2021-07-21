@@ -2608,11 +2608,11 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
 
 template<typename T>
 void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
-    const systems::Context<T> &context,
-    const std::vector<ModelInstanceIndex> &model_instances,
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances,
     JacobianWrtVariable with_respect_to,
-    const Frame<T> &frame_A,
-    const Frame<T> &frame_E,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E,
     EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
                           num_positions() : num_velocities();
@@ -2641,11 +2641,11 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   // model_instances in std::vector are considered an upstream user error.
   int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
-    const Body<T> &body = get_body(body_index);
+    const Body<T>& body = get_body(body_index);
     if (std::find(model_instances.begin(), model_instances.end(),
                   body.model_instance()) != model_instances.end()) {
       // total mass = ∑ mᵢ.
-      const T &body_mass = body.get_mass(context);
+      const T& body_mass = body.get_mass(context);
       total_mass += body_mass;
       ++number_of_non_world_bodies_processed;
 

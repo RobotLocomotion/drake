@@ -309,8 +309,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     bodyB_instance_ = plant_->AddModelInstance("bodyBInstanceName");
     bodyA_ = &plant_->AddRigidBody("bodyA", bodyA_instance_, M_Bcm);
     bodyB_ = &plant_->AddRigidBody("bodyB", bodyB_instance_, M_Bcm);
-    // bodyA_ = &plant_->AddRigidBody("BodyA", M_Bcm);
-    // bodyB_ = &plant_->AddRigidBody("BodyB", M_Bcm);
 
     // Create a revolute joint that connects point Wo of the world frame to a
     // unnamed point of link A that is a distance of link_length/2 from link A's
