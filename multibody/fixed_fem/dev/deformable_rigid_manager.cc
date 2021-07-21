@@ -85,119 +85,95 @@ void DeformableRigidManager<T>::RegisterDeformableGeometries() {
 
 template <typename T>
 void DeformableRigidManager<T>::DeclareCacheEntries() {
-  // TODO(xuchenhan-tri): Use the sugar that takes member methods as arguments
-  //  to declare cache entries when they are available (PR#15161).
   DRAKE_DEMAND(deformable_model_ != nullptr);
+
   for (SoftBodyIndex deformable_body_id(0);
        deformable_body_id < deformable_model_->num_bodies();
        ++deformable_body_id) {
-    const FemModelBase<T>& fem_model =
-        deformable_model_->fem_model(deformable_body_id);
-    auto allocate_fem_state_base = [&fem_model]() {
-      return AbstractValue::Make(*fem_model.MakeFemStateBase());
-    };
-    /* Lambda function to extract the q, qdot, and qddot from context and copy
-     them to the cached fem state. */
-    auto copy_to_fem_state = [this, deformable_body_id](
-                                 const systems::ContextBase& context_base,
-                                 AbstractValue* cache_value) {
-      const auto& context =
-          dynamic_cast<const systems::Context<T>&>(context_base);
-      const systems::DiscreteValues<T>& all_discrete_states =
-          context.get_discrete_state();
-      /* Extract q, qdot and qddot from context. */
-      const systems::BasicVector<T>& discrete_state =
-          all_discrete_states.get_vector(
-              deformable_model_->discrete_state_indexes()[deformable_body_id]);
-      const auto& discrete_value = discrete_state.get_value();
-      DRAKE_DEMAND(discrete_value.size() % 3 == 0);
-      const int num_dofs = discrete_value.size() / 3;
-      const auto& q = discrete_value.head(num_dofs);
-      const auto& qdot = discrete_value.segment(num_dofs, num_dofs);
-      const auto& qddot = discrete_value.tail(num_dofs);
-      auto& fem_state =
-          cache_value->template get_mutable_value<FemStateBase<T>>();
-      fem_state.SetQ(q);
-      fem_state.SetQdot(qdot);
-      fem_state.SetQddot(qddot);
-    };
+    const std::unique_ptr<const FemStateBase<T>> model_fem_state =
+        deformable_model_->fem_model(deformable_body_id).MakeFemStateBase();
+
+    // Extracts the q, qdot, and qddot from the given context and copies them
+    // to the cached fem state.
     const auto& fem_state_cache_entry = this->DeclareCacheEntry(
-        "FEM state",
-        // TODO(jwnimmer-tri) The use of lambdas for calculation functions is
-        // strongly discouraged. We should use class member functions instead.
-        // Do not cargo-cult this ValueProducer pattern elsewhere.
-        systems::ValueProducer(allocate_fem_state_base,
-                               std::move(copy_to_fem_state)),
+        fmt::format("FEM state {}", deformable_body_id),
+        systems::ValueProducer(
+            *model_fem_state,
+            std::function<void(const systems::Context<T>&, FemStateBase<T>*)>(
+                std::bind(&DeformableRigidManager<T>::CalcFemStateBase, this,
+                          std::placeholders::_1, deformable_body_id,
+                          std::placeholders::_2))),
         {systems::System<T>::xd_ticket()});
     fem_state_cache_indexes_.emplace_back(fem_state_cache_entry.cache_index());
 
-    /* Lambda function to calculate the free-motion velocity for the deformable
-     body. */
-    auto calc_fem_state_star = [this, deformable_body_id](
-                                   const systems::ContextBase& context_base,
-                                   AbstractValue* cache_value) {
-      const auto& context =
-          dynamic_cast<const systems::Context<T>&>(context_base);
-      const FemStateBase<T>& fem_state =
-          EvalFemStateBase(context, deformable_body_id);
-      auto& fem_state_star =
-          cache_value->template get_mutable_value<FemStateBase<T>>();
-      // TODO(xuchenhan-tri): FemState needs a SetFrom() method.
-      fem_state_star.SetQ(fem_state.q());
-      fem_state_star.SetQdot(fem_state.qdot());
-      fem_state_star.SetQddot(fem_state.qddot());
-      /* Obtain the contact-free state for the deformable body. */
-      fem_solvers_[deformable_body_id]->AdvanceOneTimeStep(fem_state,
-                                                           &fem_state_star);
-    };
-    /* Declares the free-motion cache entry which only depends on the fem state.
-     */
+    // Calculates the free-motion velocity for the deformable body.
+    const auto& free_motion_cache_entry = this->DeclareCacheEntry(
+        fmt::format("Free motion FEM state {}", deformable_body_id),
+        systems::ValueProducer(
+            *model_fem_state,
+            std::function<void(const systems::Context<T>&, FemStateBase<T>*)>(
+                std::bind(
+                    &DeformableRigidManager<T>::CalcFreeMotionFemStateBase,
+                    this, std::placeholders::_1, deformable_body_id,
+                    std::placeholders::_2))),
+        {fem_state_cache_entry.ticket()});
     free_motion_cache_indexes_.emplace_back(
-        // TODO(jwnimmer-tri) The use of lambdas for calculation functions is
-        // strongly discouraged. We should use class member functions instead.
-        // Do not cargo-cult this ValueProducer pattern elsewhere.
-        this->DeclareCacheEntry(
-                "Free motion FEM state",
-                systems::ValueProducer(std::move(allocate_fem_state_base),
-                                       std::move(calc_fem_state_star)),
-                {fem_state_cache_entry.ticket()})
-            .cache_index());
+        free_motion_cache_entry.cache_index());
   }
 
-  /* Lambda to allocate for a std::vector<internal::DeformableContactData<T>>.
-   */
-  auto allocate_contact_data = []() {
-    return AbstractValue::Make(
-        std::vector<internal::DeformableContactData<T>>());
-  };
-  /* Lambda to calculate the contact data for all deformable bodies. */
-  auto calc_contact_data = [this](const systems::ContextBase& context_base,
-                                  AbstractValue* cache_value) {
-    const auto& context =
-        dynamic_cast<const systems::Context<T>&>(context_base);
-    auto& deformable_contact_data = cache_value->template get_mutable_value<
-        std::vector<internal::DeformableContactData<T>>>();
-    this->UpdateCollisionObjectPoses(context);
-    this->UpdateDeformableVertexPositions(context);
-    const int num_bodies = deformable_model_->num_bodies();
-    deformable_contact_data.clear();
-    for (SoftBodyIndex deformable_body_index(0);
-         deformable_body_index < num_bodies; ++deformable_body_index) {
-      deformable_contact_data.emplace_back(
-          this->CalcDeformableContactData(deformable_body_index));
-    }
-  };
-  /* Declares the deformable contact data cache entry. */
+  // Calculates the contact data for all deformable bodies.
   const auto& deformable_contact_data_cache_entry = this->DeclareCacheEntry(
       "Deformable contact data",
-      // TODO(jwnimmer-tri) The use of lambdas for calculation functions is
-      // strongly discouraged. We should use class member functions instead.
-      // Do not cargo-cult this ValueProducer pattern elsewhere.
-      systems::ValueProducer(std::move(allocate_contact_data),
-                             std::move(calc_contact_data)),
+      systems::ValueProducer(
+          this, &DeformableRigidManager<T>::CalcDeformableRigidContact),
       {systems::System<T>::xd_ticket()});
   deformable_contact_data_cache_index_ =
       deformable_contact_data_cache_entry.cache_index();
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFemStateBase(
+    const systems::Context<T>& context, SoftBodyIndex id,
+    FemStateBase<T>* fem_state) const {
+  const systems::BasicVector<T>& discrete_state =
+      context.get_discrete_state().get_vector(
+          deformable_model_->discrete_state_indexes()[id]);
+  const auto& discrete_value = discrete_state.get_value();
+  DRAKE_DEMAND(discrete_value.size() % 3 == 0);
+  const int num_dofs = discrete_value.size() / 3;
+  const auto& q = discrete_value.head(num_dofs);
+  const auto& qdot = discrete_value.segment(num_dofs, num_dofs);
+  const auto& qddot = discrete_value.tail(num_dofs);
+  fem_state->SetQ(q);
+  fem_state->SetQdot(qdot);
+  fem_state->SetQddot(qddot);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionFemStateBase(
+    const systems::Context<T>& context, SoftBodyIndex id,
+    FemStateBase<T>* fem_state_star) const {
+  const FemStateBase<T>& fem_state = EvalFemStateBase(context, id);
+  // TODO(xuchenhan-tri): FemState needs a SetFrom() method.
+  fem_state_star->SetQ(fem_state.q());
+  fem_state_star->SetQdot(fem_state.qdot());
+  fem_state_star->SetQddot(fem_state.qddot());
+  /* Obtain the contact-free state for the deformable body. */
+  fem_solvers_[id]->AdvanceOneTimeStep(fem_state, fem_state_star);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcDeformableRigidContact(
+    const systems::Context<T>& context,
+    std::vector<internal::DeformableContactData<T>>* result) const {
+  result->clear();
+  UpdateCollisionObjectPoses(context);
+  UpdateDeformableVertexPositions(context);
+  const int num_bodies = deformable_model_->num_bodies();
+  result->reserve(num_bodies);
+  for (SoftBodyIndex i(0); i < num_bodies; ++i) {
+    result->emplace_back(CalcDeformableContactData(i));
+  }
 }
 
 template <typename T>
@@ -471,23 +447,6 @@ DeformableRigidManager<T>::CalcDeformableContactData(
   }
   return {std::move(deformable_rigid_contact_pairs),
           deformable_meshes_[deformable_id].mesh()};
-}
-
-template <typename T>
-std::vector<internal::DeformableContactData<T>>
-DeformableRigidManager<T>::CalcDeformableRigidContact(
-    const systems::Context<T>& context) const {
-  UpdateCollisionObjectPoses(context);
-  UpdateDeformableVertexPositions(context);
-  std::vector<internal::DeformableContactData<T>> deformable_contact_data;
-  const int num_deformable_bodies = deformable_model_->num_bodies();
-  deformable_contact_data.reserve(num_deformable_bodies);
-  for (SoftBodyIndex deformable_body_id(0);
-       deformable_body_id < num_deformable_bodies; ++deformable_body_id) {
-    deformable_contact_data.emplace_back(
-        CalcDeformableContactData(deformable_body_id));
-  }
-  return deformable_contact_data;
 }
 
 template <typename T>

@@ -12,6 +12,24 @@
 namespace drake {
 namespace solvers {
 
+/// An implementation of SolverInterface for the dReal4 solver
+/// (https://github.com/dreal/dreal4).
+///
+/// Currently this implementation supports the following options:
+///  * precision <double>: This value is used as a termination condition. When
+///                        the ICP algorithm finds an interval box whose width
+///                        is smaller than this value, it concludes that the
+///                        query is delta-satisfiable and provides the interval
+///                        box as a witness. Default value = 0.001.
+///
+///  * use_local_optimization <bool>: Use local-optimization algorithms in
+///                                   solving exists-forall problem. For now,
+///                                   the solver is using NLopt. See
+///                                   https://link.springer.com/chapter/10.1007%2F978-3-319-96142-2_15
+///                                   for details. Default value = True.
+///
+/// To see the full list of dReal4 options, visit
+/// https://github.com/dreal/dreal4#command-line-options.
 class DrealSolver final : public SolverBase {
  public:
   /// Class representing an interval of doubles.

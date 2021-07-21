@@ -40,7 +40,6 @@ using std::runtime_error;
 using std::set;
 using std::shared_ptr;
 using std::string;
-using std::to_string;
 using std::unordered_map;
 using std::vector;
 
@@ -92,6 +91,12 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
   return new_prog;
 }
 
+string MathematicalProgram::to_string() const {
+  std::ostringstream os;
+  os << *this;
+  return os.str();
+}
+
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
     const vector<string>& names) {
@@ -106,7 +111,8 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
   int count = 0;
   for (int j = 0; j < static_cast<int>(rows); ++j) {
     for (int i = j; i < static_cast<int>(rows); ++i) {
-      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      names[count] =
+          name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
       ++count;
     }
   }
@@ -331,7 +337,7 @@ VectorXIndeterminate MathematicalProgram::NewIndeterminates(
     int rows, const string& name) {
   vector<string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + "(" + to_string(i) + ")";
+    names[i] = name + "(" + std::to_string(i) + ")";
   }
   return NewIndeterminates(rows, names);
 }
@@ -342,7 +348,8 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
   int count = 0;
   for (int j = 0; j < static_cast<int>(cols); ++j) {
     for (int i = 0; i < static_cast<int>(rows); ++i) {
-      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      names[count] =
+          name + "(" + std::to_string(i) + "," + std::to_string(j) + ")";
       ++count;
     }
   }
@@ -1456,6 +1463,28 @@ void MathematicalProgram::CheckVariableType(VarType var_type) {
           "variables.");
   }
 }
+
+std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
+  if (prog.num_vars() > 0) {
+    os << "Decision variables:" << prog.decision_variables().transpose()
+       << "\n\n";
+  } else {
+    os << "No decision variables.\n";
+  }
+
+  if (prog.num_indeterminates() > 0) {
+    os << "Indeterminates:" << prog.indeterminates().transpose() << "\n\n";
+  }
+
+  for (const auto& b : prog.GetAllCosts()) {
+    os << b << "\n";
+  }
+  for (const auto& b : prog.GetAllConstraints()) {
+    os << b;
+  }
+  return os;
+}
+
 
 }  // namespace solvers
 }  // namespace drake
