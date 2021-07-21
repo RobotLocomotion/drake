@@ -281,12 +281,12 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
   // Compute N.
   MatrixX<double> N(1, 1);
   mobilizer_->CalcNMatrix(*context_, &N);
-  EXPECT_EQ(N, Matrix1d::Identity());
+  EXPECT_EQ(N, Matrix1d::Identity().eval());
 
   // Compute Nplus.
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
-  EXPECT_EQ(Nplus, Matrix1d::Identity());
+  EXPECT_EQ(Nplus, Matrix1d::Identity().eval());
 }
 
 }  // namespace
