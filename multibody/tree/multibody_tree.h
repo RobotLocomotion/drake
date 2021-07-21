@@ -1240,8 +1240,19 @@ class MultibodyTree {
 
   // See MultibodyPlant method.
   void CalcJacobianCenterOfMassTranslationalVelocity(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const;
+
+  // See MultibodyPlant method.
+  void CalcJacobianCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const;
 
   // See MultibodyPlant method.
