@@ -889,7 +889,16 @@ class ComputationTestSystem final : public TestSystemBase<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComputationTestSystem)
 
-  ComputationTestSystem() {}
+  ComputationTestSystem() {
+    DeclareInputPort("u0", kVectorValued, 1);
+  }
+
+  // Just u0.
+  std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<double>& input_port) const final {
+    DRAKE_DEMAND(input_port.get_index() == 0);
+    return std::make_unique<Value<BasicVector<double>>>(1);
+  }
 
   // One q, one v, one z.
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
@@ -1004,6 +1013,7 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 4.);
   test_sys_.ExpectCount(1, 1, 1, 1, 1);
 
+
   // Each of the Calc methods should cause computation.
   auto derivatives = test_sys_.AllocateTimeDerivatives();
   test_sys_.CalcTimeDerivatives(*context_, derivatives.get());
@@ -1027,22 +1037,35 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -4.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);
   test_sys_.ExpectCount(3, 2, 2, 2, 2);  // Above is just one evaluation.
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
-  test_sys_.ExpectCount(3, 2, 2, 2, 3);
-  // TODO(sherm1) Verify that other methods don't depend on time.
+  test_sys_.ExpectCount(3, 2, 2, 2, 3);  // Only pnc depends on time.
+
+  // Modify an input. Derivatives are recomputed, but PE, KE, PC are not.
+  const Eigen::VectorXd u0 = Eigen::VectorXd::Constant(1, 0.0);
+  test_sys_.get_input_port(0).FixValue(context_.get(), u0);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[0], -2.);
+  test_sys_.ExpectCount(4, 2, 2, 2, 3);
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
+  test_sys_.ExpectCount(4, 2, 2, 2, 4);  // Only pnc depends on input.
 
   // This should mark all state variables as changed and force recomputation.
   context_->get_mutable_state();
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);  // Again.
-  test_sys_.ExpectCount(4, 2, 2, 2, 3);
+  test_sys_.ExpectCount(5, 2, 2, 2, 4);
   EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
-  test_sys_.ExpectCount(4, 3, 2, 2, 3);
+  test_sys_.ExpectCount(5, 3, 2, 2, 4);
   EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
-  test_sys_.ExpectCount(4, 3, 3, 2, 3);
+  test_sys_.ExpectCount(5, 3, 3, 2, 4);
   EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
-  test_sys_.ExpectCount(4, 3, 3, 3, 3);
+  test_sys_.ExpectCount(5, 3, 3, 3, 4);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);  // Again.
-  test_sys_.ExpectCount(4, 3, 3, 3, 4);
+  test_sys_.ExpectCount(5, 3, 3, 3, 5);
 
   // Check that the reported time derivatives cache entry is the right one.
   context_->SetTime(3.);  // Invalidate.
