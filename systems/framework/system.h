@@ -906,7 +906,13 @@ class System : public SystemBase {
   // TODO(sherm1) Make this an InputPortIndex.
   /** Returns the typed input port at index @p port_index. */
   const InputPort<T>& get_input_port(int port_index) const {
-    return dynamic_cast<const InputPort<T>&>(
+    // Profiling revealed that it is too expensive to do a dynamic_cast here.
+    // A static_cast is safe as long as GetInputPortBaseOrThrow always returns
+    // a satisfactory type. As of this writing, it only ever returns values
+    // supplied via SystemBase::AddInputPort, which atop its implementation
+    // has a check that port.get_system_interface() matches `this` which is a
+    // System<T>, so we are safe.
+    return static_cast<const InputPort<T>&>(
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
@@ -941,7 +947,13 @@ class System : public SystemBase {
   // TODO(sherm1) Make this an OutputPortIndex.
   /** Returns the typed output port at index @p port_index. */
   const OutputPort<T>& get_output_port(int port_index) const {
-    return dynamic_cast<const OutputPort<T>&>(
+    // Profiling revealed that it is too expensive to do a dynamic_cast here.
+    // A static_cast is safe as long as GetInputPortBaseOrThrow always returns
+    // a satisfactory type. As of this writing, it only ever returns values
+    // supplied via SystemBase::AddInputPort, which atop its implementation
+    // has a check that port.get_system_interface() matches `this` which is a
+    // System<T>, so we are safe.
+    return static_cast<const OutputPort<T>&>(
         this->GetOutputPortBaseOrThrow(__func__, port_index));
   }
 
