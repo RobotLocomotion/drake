@@ -169,7 +169,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     constexpr int kDim = Traits::kSpatialDimension;
     // TODO(xuchenhan-tri): Consider caching the lumped mass locally when it is
     //  used for more than computing the gravity force.
-    const auto& lumped_mass = mass_matrix_.rowwise().sum();
+    const auto& lumped_mass = mass_matrix_.rowwise().sum().eval();
     for (int i = 0; i < Traits::kNumNodes; ++i) {
       /* The following computation is equivalent to performing the matrix-vector
        multiplication of the mass matrix and the stacked gravity vector. */
