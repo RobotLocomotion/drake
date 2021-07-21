@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 namespace {
 
@@ -141,6 +141,6 @@ GTEST_TEST(MeshUtilitiesTest, MakeDiamondCubicBoxVolumeMesh) {
   EXPECT_TRUE(VerifyDiamondCubicBoxMesh(rectangle_mesh, rectangle, X_WB));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

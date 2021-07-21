@@ -1,5 +1,6 @@
 #include "drake/common/never_destroyed.h"
 
+#include <random>
 #include <unordered_map>
 
 #include <gtest/gtest.h>
@@ -47,6 +48,7 @@ class Singleton {
   friend never_destroyed<Singleton>;
   Singleton() = default;
 };
+
 GTEST_TEST(NeverDestroyedExampleTest, Singleton) {
   const Singleton* get1 = &Singleton::getInstance();
   const Singleton* get2 = &Singleton::getInstance();
@@ -66,9 +68,30 @@ Foo ParseFoo(const std::string& foo_string) {
   };
   return string_to_enum.access().at(foo_string);
 }
+
 GTEST_TEST(NeverDestroyedExampleTest, ParseFoo) {
   EXPECT_EQ(ParseFoo("bar"), Foo::kBar);
   EXPECT_EQ(ParseFoo("baz"), Foo::kBaz);
+}
+
+// This is an example from the class overview API docs; we repeat it here to
+// ensure it remains valid.
+const std::vector<double>& GetConstantMagicNumbers() {
+  static const drake::never_destroyed<std::vector<double>> result{[]() {
+    std::vector<double> prototype;
+    std::mt19937 random_generator;
+    for (int i = 0; i < 10; ++i) {
+      double new_value = random_generator();
+      prototype.push_back(new_value);
+    }
+    return prototype;
+  }()};
+  return result.access();
+}
+
+GTEST_TEST(NeverDestroyedExampleTest, GetConstantMagicNumbers) {
+  const auto& numbers = GetConstantMagicNumbers();
+  EXPECT_EQ(numbers.size(), 10);
 }
 
 }  // namespace

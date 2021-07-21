@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
@@ -140,6 +140,6 @@ TEST_F(StretchTest, Stretch) {
       u2.transpose(), Q.row(2) * -kPoissonRatio * kEpsilon, kLz * kTol));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

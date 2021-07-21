@@ -58,30 +58,40 @@ class MutablePoint final : public ConvexSet {
 GTEST_TEST(ConvexSetsTest, BasicTest) {
   ConvexSets sets;
 
-  const ConvexSet& a = sets.emplace_back(MutablePoint(Vector2d{1., 2.}));
+  const ConvexSet& a =
+      *sets.emplace_back(MutablePoint(Vector2d{1., 2.}));
   const Vector3d b_point{3., 4., 5.};
   std::unique_ptr<MutablePoint> b_original =
       std::make_unique<MutablePoint>(b_point);
   MutablePoint* b_pointer = b_original.get();
-  const ConvexSet& b = sets.emplace_back(std::move(b_original));
+  const ConvexSet& b = *sets.emplace_back(std::move(b_original));
 
   EXPECT_EQ(a.ambient_dimension(), 2);
   EXPECT_EQ(b.ambient_dimension(), 3);
 
   EXPECT_EQ(sets.size(), 2);
-  EXPECT_EQ(sets[0].ambient_dimension(), 2);
-  EXPECT_EQ(sets[1].ambient_dimension(), 3);
+  EXPECT_EQ(sets[0]->ambient_dimension(), 2);
+  EXPECT_EQ(sets[1]->ambient_dimension(), 3);
 
-  // Confirm that I can move without copying the underlying data.
+  // Confirm that a const reference to the container provides only const access
+  // to the set.
+  const ConvexSets& const_sets = sets;
+  static_assert(std::is_same_v<const ConvexSet&, decltype(*const_sets[0])>);
+
+  // Confirm that I can move sets without copying the underlying data.
+  // Note: jwnimmer-tri argued that this should not be a strong requirement.
+  // Derived ConvexSets with substantial memory footprint could implement
+  // Clone() using a shared_ptr on their data.  It may be fine to remove this if
+  // a different pattern requires it.
   ConvexSets moved = std::move(sets);
   EXPECT_EQ(moved.size(), 2);
-  EXPECT_EQ(moved[0].ambient_dimension(), 2);
-  EXPECT_EQ(moved[1].ambient_dimension(), 3);
-  EXPECT_TRUE(moved[1].PointInSet(b_point));
+  EXPECT_EQ(moved[0]->ambient_dimension(), 2);
+  EXPECT_EQ(moved[1]->ambient_dimension(), 3);
+  EXPECT_TRUE(moved[1]->PointInSet(b_point));
   const Vector3d new_point{6., 7., 8.};
-  EXPECT_FALSE(moved[1].PointInSet(new_point));
+  EXPECT_FALSE(moved[1]->PointInSet(new_point));
   b_pointer->x() = new_point;
-  EXPECT_TRUE(moved[1].PointInSet(new_point));
+  EXPECT_TRUE(moved[1]->PointInSet(new_point));
 }
 }  // namespace
 

@@ -293,13 +293,13 @@ GTEST_TEST(BasicVectorTest, ValuesAccess) {
 GTEST_TEST(BasicVectorTest, ExceptionMessages) {
   BasicVector<double> pair{1.0, 2.0};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      pair.GetAtIndex(-1), std::exception,
+      pair.GetAtIndex(-1),
       "Index -1 is not within \\[0, 2\\) while accessing .*BasicVector.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      pair.GetAtIndex(10), std::exception,
+      pair.GetAtIndex(10),
       "Index 10 is not within \\[0, 2\\) while accessing .*BasicVector.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      pair.SetFromVector(Eigen::Vector3d::Zero()), std::exception,
+      pair.SetFromVector(Eigen::Vector3d::Zero()),
       "Operand vector size 3 does not match this .*BasicVector.* size 2");
 }
 

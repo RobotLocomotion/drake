@@ -191,7 +191,6 @@ TEST_F(YamlWriteArchiveTest, Variant) {
   // does not yet support that output syntax.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Save(VariantStruct{double{1.0}}),
-      std::exception,
       "Cannot YamlWriteArchive the variant type double with a non-zero index");
 }
 

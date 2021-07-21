@@ -73,7 +73,7 @@ class FixedInputPortValue {
   /** Returns a pointer to the data inside this %FixedInputPortValue, and
   notifies the dependent input port that the value has changed, invalidating
   downstream computations.
-  @throws std::bad_cast if the data is not vector data.
+  @throws std::exception if the data is not vector data.
 
   To ensure invalidation notifications are delivered, callers should call this
   method every time they wish to update the stored value. In particular, callers

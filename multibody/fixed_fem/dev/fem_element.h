@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri) Document the definition of quantities like "natural
 // dimension". See issue #14475.
 /** %FemElement is the base class for spatially discretized FEM elements.
@@ -242,6 +242,6 @@ class FemElement {
   /* The node indices of this element within the model. */
   std::array<NodeIndex, Traits::kNumNodes> node_indices_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

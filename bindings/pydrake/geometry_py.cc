@@ -21,6 +21,9 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/iris.h"
+#include "drake/geometry/optimization/point.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -1314,15 +1317,30 @@ void def_geometry_optimization(py::module m) {
   {
     const auto& cls_doc = doc.ConvexSet;
     py::class_<ConvexSet>(m, "ConvexSet", cls_doc.doc)
+        .def("Clone",
+            static_cast<::std::unique_ptr<ConvexSet> (ConvexSet::*)() const>(
+                &ConvexSet::Clone),
+            cls_doc.Clone.doc)
         .def("ambient_dimension", &ConvexSet::ambient_dimension,
             cls_doc.ambient_dimension.doc)
+        .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
         .def("AddPointInSetConstraints", &ConvexSet::AddPointInSetConstraints,
             py::arg("prog"), py::arg("vars"),
             cls_doc.AddPointInSetConstraints.doc)
+        .def("AddPointInNonnegativeScalingConstraints",
+            &ConvexSet::AddPointInNonnegativeScalingConstraints,
+            py::arg("prog"), py::arg("x"), py::arg("t"),
+            cls_doc.AddPointInNonnegativeScalingConstraints.doc)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
+    // Note: We use the copyable_unique_ptr constructor which calls Clone() on
+    // the set, so that the new object is never an alias to the old.
+    py::class_<copyable_unique_ptr<ConvexSet>>(m, "CopyableUniquePtrConvexSet")
+        .def(py::init([](const ConvexSet& s) {
+          return copyable_unique_ptr<ConvexSet>(s);
+        }));
   }
 
   {
@@ -1340,10 +1358,13 @@ void def_geometry_optimization(py::module m) {
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
+        .def("ChebyshevCenter", &HPolyhedron::ChebyshevCenter,
+            cls_doc.ChebyshevCenter.doc)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc);
+    py::implicitly_convertible<HPolyhedron, copyable_unique_ptr<ConvexSet>>();
   }
 
   {
@@ -1357,8 +1378,68 @@ void def_geometry_optimization(py::module m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &Hyperellipsoid::A, cls_doc.A.doc)
-        .def("center", &Hyperellipsoid::center, cls_doc.center.doc);
+        .def("center", &Hyperellipsoid::center, cls_doc.center.doc)
+        .def("Volume", &Hyperellipsoid::Volume, cls_doc.Volume.doc)
+        .def("MinimumUniformScalingToTouch",
+            &Hyperellipsoid::MinimumUniformScalingToTouch, py::arg("other"),
+            cls_doc.MinimumUniformScalingToTouch.doc)
+        .def_static("MakeAxisAligned", &Hyperellipsoid::MakeAxisAligned,
+            py::arg("radius"), py::arg("center"), cls_doc.MakeAxisAligned.doc)
+        .def_static("MakeHypersphere", &Hyperellipsoid::MakeHypersphere,
+            py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
+        .def_static("MakeUnitBall", &Hyperellipsoid::MakeUnitBall,
+            py::arg("dim"), cls_doc.MakeUnitBall.doc);
+    py::implicitly_convertible<Hyperellipsoid,
+        copyable_unique_ptr<ConvexSet>>();
   }
+
+  {
+    const auto& cls_doc = doc.Point;
+    py::class_<Point, ConvexSet>(m, "Point", cls_doc.doc)
+        .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(), py::arg("x"),
+            cls_doc.ctor.doc_1args)
+        .def(py::init<const QueryObject<double>&, GeometryId,
+                 std::optional<FrameId>, double>(),
+            py::arg("query_object"), py::arg("geometry_id"),
+            py::arg("reference_frame") = std::nullopt,
+            py::arg("maximum_allowable_radius") = 0.0, cls_doc.ctor.doc_4args)
+        .def("x", &Point::x, cls_doc.x.doc);
+    py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
+  }
+
+  {
+    const auto& cls_doc = doc.VPolytope;
+    py::class_<VPolytope, ConvexSet>(m, "VPolytope", cls_doc.doc)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
+            py::arg("vertices"), cls_doc.ctor.doc_1args)
+        .def(py::init<const QueryObject<double>&, GeometryId,
+                 std::optional<FrameId>>(),
+            py::arg("query_object"), py::arg("geometry_id"),
+            py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
+        .def("vertices", &VPolytope::vertices, cls_doc.vertices.doc)
+        .def_static("MakeBox", &VPolytope::MakeBox, py::arg("lb"),
+            py::arg("ub"), cls_doc.MakeBox.doc)
+        .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
+            cls_doc.MakeUnitBox.doc);
+    py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
+  }
+
+  py::class_<IrisOptions>(m, "IrisOptions", doc.IrisOptions.doc)
+      .def(py::init<>(), doc.IrisOptions.ctor.doc)
+      .def_readwrite("require_sample_point_is_contained",
+          &IrisOptions::require_sample_point_is_contained,
+          doc.IrisOptions.require_sample_point_is_contained.doc)
+      .def_readwrite("iteration_limit", &IrisOptions::iteration_limit,
+          doc.IrisOptions.iteration_limit.doc)
+      .def_readwrite("termination_threshold",
+          &IrisOptions::termination_threshold,
+          doc.IrisOptions.termination_threshold.doc);
+
+  m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
+      py::arg("domain"), py::arg("options") = IrisOptions(), doc.Iris.doc);
+
+  m.def("MakeIrisObstacles", &MakeIrisObstacles, py::arg("query_object"),
+      py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
 }
 
 void def_geometry_testing(py::module m) {

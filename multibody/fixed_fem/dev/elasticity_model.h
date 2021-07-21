@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** The FEM model for static and dynamic 3D elasticity problems. Provides
  methods common to both StaticElasticityModel and DynamicElasticityModel.
  @tparam Element    The type of ElasticityElement used in this %ElasticityModel.
@@ -186,6 +186,6 @@ class ElasticityModel : public FemModel<Element> {
    */
   VectorX<T> explicit_external_forces_{};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

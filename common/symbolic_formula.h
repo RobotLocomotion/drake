@@ -167,10 +167,10 @@ class Formula {
    * value and use it to substitute all occurrences of the random variable in
    * this formula.
    *
-   * @throws std::runtime_error if a variable `v` is needed for an evaluation
-   *                            but not provided by @p env.
-   * @throws std::runtime_error if an unassigned random variable is detected
-   *                            while @p random_generator is `nullptr`.
+   * @throws std::exception if a variable `v` is needed for an evaluation
+   *                        but not provided by @p env.
+   * @throws std::exception if an unassigned random variable is detected
+   *                        while @p random_generator is `nullptr`.
    */
   bool Evaluate(const Environment& env = Environment{},
                 RandomGenerator* random_generator = nullptr) const;
@@ -183,7 +183,7 @@ class Formula {
 
   /** Returns a copy of this formula replacing all occurrences of @p var
    * with @p e.
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] Formula Substitute(const Variable& var,
                                    const Expression& e) const;
@@ -192,7 +192,7 @@ class Formula {
    * variables in @p s with corresponding expressions in @p s. Note that the
    * substitutions occur simultaneously. For example, (x / y >
    * 0).Substitute({{x, y}, {y, x}}) gets (y / x > 0).
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] Formula Substitute(const Substitution& s) const;
 
@@ -317,20 +317,20 @@ Formula operator>=(const Expression& e1, const Expression& e2);
  *
  * When this formula is evaluated, there are two possible outcomes:
  * - Returns false if the e.Evaluate() is not NaN.
- * - Throws std::runtime_error if NaN is detected during evaluation.
+ * - Throws std::exception if NaN is detected during evaluation.
  * Note that the evaluation of `isnan(e)` never returns true.
  */
 Formula isnan(const Expression& e);
 
 /** Returns a Formula determining if the given expression @p e is a
  * positive or negative infinity.
- * @throws std::runtime_error if NaN is detected during evaluation.
+ * @throws std::exception if NaN is detected during evaluation.
  */
 Formula isinf(const Expression& e);
 
 /** Returns a Formula determining if the given expression @p e has a finite
  * value.
- * @throws std::runtime_error if NaN is detected during evaluation.
+ * @throws std::exception if NaN is detected during evaluation.
  */
 Formula isfinite(const Expression& e);
 
@@ -338,7 +338,7 @@ Formula isfinite(const Expression& e);
  * matrix. By definition, a symmetric matrix @p m is positive-semidefinte if xᵀ
  * m x ≥ 0 for all vector x ∈ ℝⁿ.
  *
- * @throws std::runtime_error if @p m is not symmetric.
+ * @throws std::exception if @p m is not symmetric.
  *
  * @note This method checks if @p m is symmetric, which can be costly. If you
  * want to avoid it, please consider using
@@ -351,7 +351,7 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 /** Constructs and returns a symbolic positive-semidefinite formula from @p
  * m. If @p mode is Eigen::Lower, it's using the lower-triangular part of @p m
  * to construct a positive-semidefinite formula. If @p mode is Eigen::Upper, the
- * upper-triangular part of @p m is used. It throws std::runtime_error if @p has
+ * upper-triangular part of @p m is used. It throws std::exception if @p has
  * other values. See the following code snippet.
  *
  * @code

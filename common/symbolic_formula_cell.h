@@ -342,7 +342,7 @@ class FormulaPositiveSemidefinite : public FormulaCell {
  public:
   /** Constructs a positive-semidefinite formula from a symmetric matrix @p m.
    *
-   * @throws std::runtime_error if @p m is not symmetric.
+   * @throws std::exception if @p m is not symmetric.
    *
    * @note This constructor checks if @p m is symmetric, which can be costly.
    */

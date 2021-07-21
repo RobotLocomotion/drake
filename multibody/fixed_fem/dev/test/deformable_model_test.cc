@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): Add a test to verify that the deformable body parameters
 //  are properly passed to the FemModel.
 /* Deformable body parameters. These parameters are arbitrary and they do not
@@ -99,7 +99,6 @@ TEST_F(DeformableModelTest, RegisterDeformableBodyUniqueNameRequirement) {
             SoftBodyIndex(1));
   EXPECT_EQ(deformable_model_->num_bodies(), 2);
   DRAKE_EXPECT_THROWS_MESSAGE(AddDeformableBox(deformable_model_.get(), "box1"),
-                              std::exception,
                               "RegisterDeformableBody\\(\\): A body with name "
                               "'box1' already exists in the system.");
 }
@@ -124,6 +123,6 @@ TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
   }
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

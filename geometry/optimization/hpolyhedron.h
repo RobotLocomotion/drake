@@ -52,7 +52,6 @@ class HPolyhedron final : public ConvexSet {
   alternatives). */
   using ConvexSet::IsBounded;
 
-  // TODO(russt): Add bool IsBounded() so users can test the precondition.
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
   From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
   @verbatim
@@ -67,6 +66,31 @@ class HPolyhedron final : public ConvexSet {
   @throws std::exception if the solver fails to solve the problem.
   */
   Hyperellipsoid MaximumVolumeInscribedEllipsoid() const;
+
+  /** Solves a linear program to compute the center of the largest inscribed
+  ball in the polyhedron.  This is often the recommended way to find some
+  interior point of the set, for example, as a step towards computing the convex
+  hull or a vertex-representation of the set.
+
+  Note that the Chebyshev center is not necessarily unique, and may not conform
+  to the point that one might consider the "visual center" of the set.  For
+  example, for a long thin rectangle, any point in the center line segment
+  illustrated below would be a valid center point.  The solver may return
+  any point on that line segment.
+  @verbatim
+    ┌──────────────────────────────────┐
+    │                                  │
+    │   ────────────────────────────   │
+    │                                  │
+    └──────────────────────────────────┘
+  @endverbatim
+  To find the visual center, consider using the more expensive
+  MaximumVolumeInscribedEllipsoid() method, and then taking the center of the
+  returned Hyperellipsoid.
+
+  @throws std::exception if the solver fails to solve the problem.
+  */
+  Eigen::VectorXd ChebyshevCenter() const;
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
    * corners. */

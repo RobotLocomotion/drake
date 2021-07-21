@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* A wrapper around DeformableContactSurface that provides additional
  information about the geometries/bodies involved in the contact and proximity
@@ -53,6 +53,6 @@ struct DeformableRigidContactPair {
   std::vector<math::RotationMatrix<T>> R_CWs;
 };
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

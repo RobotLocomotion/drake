@@ -94,7 +94,7 @@ class Polynomial {
   /// Constructs a polynomial from an expression @p e. Note that all variables
   /// in `e` are considered as indeterminates.
   ///
-  /// @throws std::runtime_error if @p e is not a polynomial.
+  /// @throws std::exception if @p e is not a polynomial.
   explicit Polynomial(const Expression& e);
 
   /// Constructs a polynomial from an expression @p e by decomposing it with
@@ -103,7 +103,7 @@ class Polynomial {
   /// @note It collects the intersection of the variables appeared in `e` and
   /// the provided @p indeterminates.
   ///
-  /// @throws std::runtime_error if @p e is not a polynomial in @p
+  /// @throws std::exception if @p e is not a polynomial in @p
   /// indeterminates.
   Polynomial(const Expression& e, Variables indeterminates);
 
@@ -183,18 +183,18 @@ class Polynomial {
 
   /// Evaluates this polynomial under a given environment @p env.
   ///
-  /// @throws std::out_of_range if there is a variable in this polynomial whose
+  /// @throws std::exception if there is a variable in this polynomial whose
   /// assignment is not provided by @p env.
   double Evaluate(const Environment& env) const;
 
   /// Partially evaluates this polynomial using an environment @p env.
   ///
-  /// @throws std::runtime_error if NaN is detected during evaluation.
+  /// @throws std::exception if NaN is detected during evaluation.
   Polynomial EvaluatePartial(const Environment& env) const;
 
   /// Partially evaluates this polynomial by substituting @p var with @p c.
   ///
-  /// @throws std::runtime_error if NaN is detected at any point during
+  /// @throws std::exception if NaN is detected at any point during
   /// evaluation.
   Polynomial EvaluatePartial(const Variable& var, double c) const;
 
@@ -259,7 +259,7 @@ class Polynomial {
   friend Polynomial operator/(Polynomial p, double v);
 
  private:
-  // Throws std::runtime_error if there is a variable appeared in both of
+  // Throws std::exception if there is a variable appeared in both of
   // decision_variables() and indeterminates().
   void CheckInvariant() const;
 
@@ -476,7 +476,7 @@ namespace symbolic {
 /// Evaluates a matrix `m` of symbolic polynomials using `env`.
 ///
 /// @returns a matrix of double whose size is the size of @p m.
-/// @throws std::runtime_error if NaN is detected during evaluation.
+/// @throws std::exception if NaN is detected during evaluation.
 /// @pydrake_mkdoc_identifier{polynomial}
 template <typename Derived>
 std::enable_if_t<

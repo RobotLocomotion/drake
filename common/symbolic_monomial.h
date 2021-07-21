@@ -36,7 +36,7 @@ class Monomial {
   explicit Monomial(std::nullptr_t) : Monomial() {}
 
   /** Constructs a Monomial from @p powers.
-   * @throws std::logic_error if `powers` includes a negative exponent.
+   * @throws std::exception if `powers` includes a negative exponent.
    */
   explicit Monomial(const std::map<Variable, int>& powers);
 
@@ -45,7 +45,7 @@ class Monomial {
    * For example, `Monomial([x, y, z], [2, 0, 1])` constructs a Monomial `x²z`.
    *
    * @pre The size of `vars` should be the same as the size of `exponents`.
-   * @throws std::logic_error if `exponents` includes a negative integer.
+   * @throws std::exception if `exponents` includes a negative integer.
    */
   Monomial(const Eigen::Ref<const VectorX<Variable>>& vars,
            const Eigen::Ref<const Eigen::VectorXi>& exponents);
@@ -78,7 +78,7 @@ class Monomial {
 
   /** Evaluates under a given environment @p env.
    *
-   * @throws std::out_of_range exception if there is a variable in this monomial
+   * @throws std::exception if there is a variable in this monomial
    * whose assignment is not provided by @p env.
    */
   double Evaluate(const Environment& env) const;
@@ -113,7 +113,7 @@ class Monomial {
   Monomial& operator*=(const Monomial& m);
 
   /** Returns this monomial raised to @p p.
-   * @throws std::runtime_error if @p p is negative.
+   * @throws std::exception if @p p is negative.
    */
   Monomial& pow_in_place(int p);
 
@@ -139,7 +139,7 @@ std::ostream& operator<<(std::ostream& out, const Monomial& m);
 Monomial operator*(Monomial m1, const Monomial& m2);
 
 /** Returns @p m1 raised to @p p.
- * @throws std::runtime_error if @p p is negative.
+ * @throws std::exception if @p p is negative.
  */
 Monomial pow(Monomial m, int p);
 }  // namespace symbolic

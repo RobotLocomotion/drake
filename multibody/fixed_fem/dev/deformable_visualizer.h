@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 /** A class for visualizing deformable meshes in `drake_visualizer`.
  Specifically, it dispatches LCM messages to initialize mesh definitions and
@@ -100,6 +100,6 @@ class DeformableVisualizer : public systems::LeafSystem<double> {
   /* Port Indexes.  */
   systems::InputPortIndex vertex_positions_port_{};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

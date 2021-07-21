@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 namespace {
 using geometry::Box;
@@ -182,7 +182,6 @@ TEST_F(CollisionObjectsTest, AddHalfSpace) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       collision_objects_.AddCollisionObject(id, half_space,
                                             proximity_properties_),
-      std::exception,
       "Trying to make a rigid surface mesh for an unsupported type shape. The "
       "types supported are: Sphere, Box, Cylinder, Capsule, Ellipsoid, Mesh "
       "and Convex. The shape provided is drake::geometry::HalfSpace.");
@@ -203,6 +202,6 @@ TEST_F(CollisionObjectsTest, Poses) {
 }
 }  // namespace
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

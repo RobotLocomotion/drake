@@ -38,12 +38,12 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    *   `plant`.  We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
-   * @throws std::invalid_argument if `plant` is nullptr.
-   * @throws std::invalid_argument if `a_A` is close to zero.
-   * @throws std::invalid_argument if `b_B` is close to zero.
-   * @throws std::invalid_argument if `angle_lower` is negative.
-   * @throws std::invalid_argument if `angle_upper` ∉ [`angle_lower`, π].
-   * @throws std::invalid_argument if `plant_context` is nullptr.
+   * @throws std::exception if `plant` is nullptr.
+   * @throws std::exception if `a_A` is close to zero.
+   * @throws std::exception if `b_B` is close to zero.
+   * @throws std::exception if `angle_lower` is negative.
+   * @throws std::exception if `angle_upper` ∉ [`angle_lower`, π].
+   * @throws std::exception if `plant_context` is nullptr.
    */
   AngleBetweenVectorsConstraint(const MultibodyPlant<double>* plant,
                                 const Frame<double>& frameA,

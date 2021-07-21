@@ -123,11 +123,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
           dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
               soft.pressure_field());
       const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
-      // TODO(DamrongGuoy): Pass `representation` parameter (the choice of
-      //  contact polygons) when
-      //  ComputeContactSurfaceFromSoftVolumeRigidHalfSpace supports it.
       return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+          id_S, field_S, bvh_S, X_WS, id_R, X_WR, representation);
     }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.

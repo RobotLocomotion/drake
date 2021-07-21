@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 class DynamicElasticityElementTest : public ::testing::Test {
  protected:
   using T = AutoDiffXd;
@@ -193,6 +193,6 @@ TEST_F(DynamicElasticityElementTest, MassMatrixIsAccelerationDerivative) {
   }
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

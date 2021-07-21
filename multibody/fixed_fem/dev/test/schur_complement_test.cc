@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 namespace {
 
@@ -92,6 +92,6 @@ GTEST_TEST(SchurComplementTest, MisA) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

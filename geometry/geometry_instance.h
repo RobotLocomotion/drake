@@ -86,7 +86,7 @@ class GeometryInstance {
    @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
    @param shape  The underlying shape for this geometry instance.
    @param name   The name of the geometry (must satisfy the name requirements).
-   @throws std::logic_error if the canonicalized version of `name` is empty.
+   @throws std::exception if the canonicalized version of `name` is empty.
    */
   GeometryInstance(const math::RigidTransform<double>& X_PG,
       std::unique_ptr<Shape> shape, const std::string& name);

@@ -113,7 +113,7 @@ class MobyLCPSolver final : public SolverBase {
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.
-  /// @throws std::logic_error if M is non-square or M's dimensions do not
+  /// @throws std::exception if M is non-square or M's dimensions do not
   ///         equal q's dimension.
   /// @returns `true` if the solver succeeded and `false` otherwise.
   ///
@@ -168,7 +168,7 @@ class MobyLCPSolver final : public SolverBase {
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.
-  /// @throws std::logic_error if M is non-square or M's dimensions do not
+  /// @throws std::exception if M is non-square or M's dimensions do not
   ///         equal q's dimension.
   /// @returns `true` if the solver succeeded and `false` if the solver did not
   ///          find a solution for α = 10ᵞ.
@@ -217,7 +217,7 @@ class MobyLCPSolver final : public SolverBase {
   ///          "artificial" variable (see [Cottle 1992]) and `false` otherwise.
   /// @warning The caller should verify that the algorithm has solved the LCP to
   ///          the desired tolerances on returns indicating success.
-  /// @throws std::logic_error if M is not square or the dimensions of M do not
+  /// @throws std::exception if M is not square or the dimensions of M do not
   ///         match the length of q.
   ///
   /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear

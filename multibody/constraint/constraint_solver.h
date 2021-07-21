@@ -341,11 +341,11 @@ class ConstraintSolver {
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
-  /// @throws std::runtime_error if the constraint forces cannot be computed
+  /// @throws std::exception if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
   ///         solve a complementarity problem); in such cases, it is
   ///         recommended to increase regularization and attempt again.
-  /// @throws std::logic_error if `cf` is null.
+  /// @throws std::exception if `cf` is null.
   void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
@@ -402,9 +402,9 @@ class ConstraintSolver {
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
-  /// @throws std::runtime_error if the constraint forces cannot be computed
+  /// @throws std::exception if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
-  /// @throws std::logic_error if `cf` is null.
+  /// @throws std::exception if `cf` is null.
   void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
                               VectorX<T>* cf) const;
 
@@ -418,7 +418,7 @@ class ConstraintSolver {
   ///             This method will resize `generalized_force` as necessary. The
   ///             indices of `generalized_force` will exactly match the indices
   ///             of `problem_data.f`.
-  /// @throws std::logic_error if `generalized_force` is null or `cf`
+  /// @throws std::exception if `generalized_force` is null or `cf`
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
       const ConstraintAccelProblemData<T>& problem_data,
@@ -436,7 +436,7 @@ class ConstraintSolver {
   ///             This method will resize `generalized_force` as necessary. The
   ///             indices of `generalized_force` will exactly match the indices
   ///             of `problem_data.f`.
-  /// @throws std::logic_error if `generalized_force` is null or `cf`
+  /// @throws std::exception if `generalized_force` is null or `cf`
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
       const ConstraintVelProblemData<T>& problem_data,
@@ -450,7 +450,7 @@ class ConstraintSolver {
   ///           format described in documentation for SolveConstraintProblem.
   /// @param[out] generalized_acceleration The generalized acceleration, on
   ///             return.
-  /// @throws std::logic_error if @p generalized_acceleration is null or
+  /// @throws std::exception if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
       const ConstraintAccelProblemData<T>& problem_data,
@@ -477,7 +477,7 @@ class ConstraintSolver {
   /// @warning This method uses the method `problem_data.solve_inertia()` in
   ///          order to compute `v(t+dt)`, so the computational demands may
   ///          be significant.
-  /// @throws std::logic_error if `generalized_acceleration` is null or
+  /// @throws std::exception if `generalized_acceleration` is null or
   ///         `cf` vector is incorrectly sized.
   /// @pre `dt` is positive.
   static void ComputeGeneralizedAcceleration(
@@ -491,7 +491,7 @@ class ConstraintSolver {
   /// forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
-  /// @throws std::logic_error if @p generalized_acceleration is null or
+  /// @throws std::exception if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAccelerationFromConstraintForces(
       const ConstraintAccelProblemData<T>& problem_data,
@@ -502,7 +502,7 @@ class ConstraintSolver {
   /// forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
-  /// @throws std::logic_error if @p generalized_acceleration is null or
+  /// @throws std::exception if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAccelerationFromConstraintForces(
     const ConstraintVelProblemData<T>& problem_data,
@@ -513,7 +513,7 @@ class ConstraintSolver {
   /// impulses.
   /// @param cf The computed constraint impulses, in the packed storage
   ///           format described in documentation for SolveImpactProblem.
-  /// @throws std::logic_error if `generalized_delta_v` is null or
+  /// @throws std::exception if `generalized_delta_v` is null or
   ///         `cf` vector is incorrectly sized.
   static void ComputeGeneralizedVelocityChange(
       const ConstraintVelProblemData<T>& problem_data,
@@ -534,7 +534,7 @@ class ConstraintSolver {
   /// @param[out] contact_forces a non-null vector of a doublet of values, where
   ///             the iᵗʰ element represents the force along each basis
   ///             vector in the iᵗʰ contact frame.
-  /// @throws std::logic_error if `contact_forces` is null, if
+  /// @throws std::exception if `contact_forces` is null, if
   ///         `contact_forces` is not empty, if `cf` is not the
   ///         proper size, if the number of tangent directions is not one per
   ///         non-sliding contact (indicating that the contact problem might not
@@ -565,7 +565,7 @@ class ConstraintSolver {
   /// @param[out] contact_forces a non-null vector of a doublet of values,
   ///             where the iᵗʰ element represents the force along
   ///             each basis vector in the iᵗʰ contact frame.
-  /// @throws std::logic_error if `contact_forces` is null, if
+  /// @throws std::exception if `contact_forces` is null, if
   ///         `contact_forces` is not empty, if `cf` is not the
   ///         proper size, if the number of tangent directions is not one per
   ///         contact (indicating that the contact problem might not be 2D), if

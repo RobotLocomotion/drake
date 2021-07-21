@@ -255,12 +255,12 @@ class Expression {
    * sample a value and use the value to substitute all occurrences of the
    * variable in this expression.
    *
-   * @throws std::runtime_error if there exists a non-random variable in this
-   *                            expression whose assignment is not provided by
-   *                            @p env.
-   * @throws std::runtime_error if an unassigned random variable is detected
-   *                            while @p random_generator is `nullptr`.
-   * @throws std::runtime_error if NaN is detected during evaluation.
+   * @throws std::exception if there exists a non-random variable in this
+   *                        expression whose assignment is not provided by
+   *                        @p env.
+   * @throws std::exception if an unassigned random variable is detected
+   *                        while @p random_generator is `nullptr`.
+   * @throws std::exception if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{},
                   RandomGenerator* random_generator = nullptr) const;
@@ -277,7 +277,7 @@ class Expression {
    * env. Internally, this method promotes @p env into a substitution
    * (Variable → Expression) and call Evaluate::Substitute with it.
    *
-   * @throws std::runtime_error if NaN is detected during evaluation.
+   * @throws std::exception if NaN is detected during evaluation.
    */
   [[nodiscard]] Expression EvaluatePartial(const Environment& env) const;
 
@@ -299,13 +299,13 @@ class Expression {
    * 2y)`. It also simplifies "division by constant" cases. See
    * "drake/common/test/symbolic_expansion_test.cc" to find the examples.
    *
-   * @throws std::runtime_error if NaN is detected during expansion.
+   * @throws std::exception if NaN is detected during expansion.
    */
   [[nodiscard]] Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] Expression Substitute(const Variable& var,
                                       const Expression& e) const;
@@ -314,13 +314,13 @@ class Expression {
    * variables in @p s with corresponding expressions in @p s. Note that the
    * substitutions occur simultaneously. For example, (x / y).Substitute({{x,
    * y}, {y, x}}) gets (y / x).
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] Expression Substitute(const Substitution& s) const;
 
   /** Differentiates this symbolic expression with respect to the variable @p
    * var.
-   * @throws std::runtime_error if it is not differentiable.
+   * @throws std::exception if it is not differentiable.
    */
   [[nodiscard]] Expression Differentiate(const Variable& x) const;
 
@@ -830,7 +830,7 @@ class uniform_real_distribution<drake::symbolic::Expression> {
   /// Constructs a new distribution object with a minimum value @p a and a
   /// maximum value @p b.
   ///
-  /// @throw std::runtime_error if a and b are constant expressions but a > b.
+  /// @throws std::exception if a and b are constant expressions but a > b.
   explicit uniform_real_distribution(RealType a, RealType b = 1.0)
       : a_{std::move(a)},
         b_{std::move(b)},
@@ -966,7 +966,7 @@ class normal_distribution<drake::symbolic::Expression> {
 
   /// Constructs a new distribution object with @p mean and @p stddev.
   ///
-  /// @throw std::runtime_error if stddev is a non-positive constant expression.
+  /// @throws std::exception if stddev is a non-positive constant expression.
   explicit normal_distribution(RealType mean, RealType stddev = 1.0)
       : mean_{std::move(mean)},
         stddev_{std::move(stddev)},
@@ -1072,7 +1072,7 @@ class exponential_distribution<drake::symbolic::Expression> {
 
   /// Constructs a new distribution object with @p lambda.
   ///
-  /// @throw std::runtime_error if lambda is a non-positive constant expression.
+  /// @throws std::exception if lambda is a non-positive constant expression.
   explicit exponential_distribution(RealType lambda)
       : lambda_{std::move(lambda)},
         random_variables_{std::make_shared<std::vector<Variable>>()} {
@@ -1346,9 +1346,9 @@ auto operator*(
 /// substitute all occurrences of the random variable in @p m.
 ///
 /// @returns a matrix of double whose size is the size of @p m.
-/// @throws std::runtime_error if NaN is detected during evaluation.
-/// @throws std::runtime_error if @p m includes unassigned random variables but
-///                               @p random_generator is `nullptr`.
+/// @throws std::exception if NaN is detected during evaluation.
+/// @throws std::exception if @p m includes unassigned random variables but
+///                           @p random_generator is `nullptr`.
 /// @pydrake_mkdoc_identifier{expression}
 template <typename Derived>
 std::enable_if_t<
@@ -1377,9 +1377,9 @@ Evaluate(const Eigen::MatrixBase<Derived>& m,
 
 /** Evaluates @p m using a given environment (by default, an empty environment).
  *
- * @throws std::runtime_error if there exists a variable in @p m whose value is
- *                            not provided by @p env.
- * @throws std::runtime_error if NaN is detected during evaluation.
+ * @throws std::exception if there exists a variable in @p m whose value is
+ *                        not provided by @p env.
+ * @throws std::exception if NaN is detected during evaluation.
  */
 Eigen::SparseMatrix<double> Evaluate(
     const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
@@ -1388,7 +1388,7 @@ Eigen::SparseMatrix<double> Evaluate(
 /// Substitutes a symbolic matrix @p m using a given substitution @p subst.
 ///
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.
-/// @throws std::runtime_error if NaN is detected during substitution.
+/// @throws std::exception if NaN is detected during substitution.
 template <typename Derived>
 Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
               Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
@@ -1405,7 +1405,7 @@ Substitute(const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
 /// Substitutes @p var with @p e in a symbolic matrix @p m.
 ///
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.
-/// @throws std::runtime_error if NaN is detected during substitution.
+/// @throws std::exception if NaN is detected during substitution.
 template <typename Derived>
 Eigen::Matrix<Expression, Derived::RowsAtCompileTime,
               Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
@@ -1420,7 +1420,7 @@ Substitute(const Eigen::MatrixBase<Derived>& m, const Variable& var,
 }
 
 /// Constructs a vector of variables from the vector of variable expressions.
-/// @throws std::logic_error if there is an expression in @p vec which is not a
+/// @throws std::exception if there is an expression in @p vec which is not a
 /// variable.
 VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& expressions);

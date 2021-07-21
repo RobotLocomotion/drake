@@ -6,7 +6,7 @@
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 template <typename T>
 class DirichletBoundaryCondition;
@@ -137,8 +137,8 @@ class FemStateBase {
   /* Time second derivatives of generalized node positions. */
   VectorX<T> qddot_{};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemStateBase);
+    class ::drake::multibody::fem::FemStateBase);

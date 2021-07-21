@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 const ElementIndex kDummyElementIndex(0);
 constexpr int kNumQuads = 1;
@@ -168,6 +168,6 @@ GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
   TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, kNumQuads>>();
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

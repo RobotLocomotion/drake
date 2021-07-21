@@ -76,12 +76,12 @@ class MeshDeformerTest : public ::testing::Test {
 
     const VectorX<T> too_small(q_size- 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        deformer_.SetAllPositions(too_small), std::exception,
+        deformer_.SetAllPositions(too_small),
         ".+SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
 
     const VectorX<T> too_large(q_size + 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        deformer_.SetAllPositions(too_large), std::exception,
+        deformer_.SetAllPositions(too_large),
         ".+SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
   }
 

@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** Calculates the number of quadrature points used for simplices given the
  natural dimension and the order of the quadrature rule as template
  parameters. */
@@ -156,6 +156,6 @@ class SimplexGaussianQuadrature
     }
   }
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

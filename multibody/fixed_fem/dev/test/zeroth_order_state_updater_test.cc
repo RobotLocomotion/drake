@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 namespace {
 class ZerothOrderStateUpdaterTest : public ::testing::Test {
@@ -35,10 +35,10 @@ TEST_F(ZerothOrderStateUpdaterTest, AdvanceOneTimeStep) {
   FemState<DummyElement<0>> new_state(prev_state);
   DRAKE_EXPECT_THROWS_MESSAGE(
       state_updater.AdvanceOneTimeStep(prev_state, q, &new_state),
-      std::exception, "There is no notion of time in a zeroth order ODE.");
+      "There is no notion of time in a zeroth order ODE.");
 }
 }  // namespace
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

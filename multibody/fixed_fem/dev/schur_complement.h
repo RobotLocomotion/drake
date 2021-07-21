@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 
 /* Computes the Schur complement of a matrix given its block components.
@@ -69,9 +69,9 @@ class SchurComplement {
 };
 
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::internal::SchurComplement)
+    class ::drake::multibody::fem::internal::SchurComplement)

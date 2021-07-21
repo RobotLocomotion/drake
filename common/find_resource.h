@@ -26,7 +26,7 @@ class FindResourceResult {
   std::optional<std::string> get_absolute_path() const;
 
   /// Either returns the get_absolute_path() iff the resource was found,
-  /// or else throws std::runtime_error.
+  /// or else throws std::exception.
   std::string get_absolute_path_or_throw() const;
 
   /// Returns the error message, iff the resource was not found.

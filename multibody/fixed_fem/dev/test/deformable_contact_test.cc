@@ -16,7 +16,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 
 using Eigen::Vector3d;
@@ -363,6 +363,6 @@ GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {
 }
 
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

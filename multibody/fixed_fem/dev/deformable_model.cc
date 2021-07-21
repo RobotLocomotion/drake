@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 template <typename T>
 SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
@@ -154,9 +154,9 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
         this->DeclareDiscreteState(plant, model_discrete_states_[i]));
   }
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::DeformableModel);
+    class ::drake::multibody::fem::DeformableModel);

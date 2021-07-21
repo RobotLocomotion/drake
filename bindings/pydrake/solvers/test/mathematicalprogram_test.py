@@ -58,6 +58,16 @@ class TestCost(unittest.TestCase):
         cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
         self.assertTrue(cost.is_convex())
 
+    def test_l2norm_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.L2NormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
+
 
 class TestQP:
     def __init__(self):
@@ -1165,12 +1175,29 @@ class TestMathematicalProgram(unittest.TestCase):
         numpy_compare.assert_equal(prog.indeterminates()[0], x0)
         numpy_compare.assert_equal(prog.indeterminate(1), x1)
 
-    def test_solve_with_first_available_solver(self):
+    def test_make_first_available_solver(self):
         gurobi_solver = GurobiSolver()
         scs_solver = ScsSolver()
         if scs_solver.available() and scs_solver.enabled():
             solver = mp.MakeFirstAvailableSolver(
                 [gurobi_solver.solver_id(), scs_solver.solver_id()])
+
+    def test_remove_cost(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        linear_cost1 = prog.AddLinearCost(x[0] + 2 * x[1])
+        prog.RemoveCost(linear_cost1)
+        self.assertEqual(len(prog.linear_costs()), 0)
+
+        quadratic_cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
+        quadratic_cost2 = prog.AddQuadraticCost(x[2] * x[2])
+        prog.RemoveCost(quadratic_cost1)
+        self.assertEqual(len(prog.quadratic_costs()), 1)
+
+        generic_cost1 = prog.AddCost(x[0] * x[1] * x[2])
+        generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
+        prog.RemoveCost(generic_cost2)
+        self.assertEqual(len(prog.generic_costs()), 1)
 
 
 class DummySolverInterface(SolverInterface):

@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
@@ -495,6 +495,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &ComputeTetMeshTriMeshContact<T>
 ))
 
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

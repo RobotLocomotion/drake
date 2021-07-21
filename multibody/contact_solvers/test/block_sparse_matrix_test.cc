@@ -100,7 +100,7 @@ TEST_F(BlockSparseMatrixTest, EmptyRow) {
   // builder.PushBlock(1, 2, J_.block(3, 3, 4, 2));  // 3rd block omitted.
   builder.PushBlock(2, 1, J_.block(7, 2, 3, 1));
   builder.PushBlock(2, 3, J_.block(7, 5, 3, 4));
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::exception,
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(),
                               "No block was specified for row 1.");
 }
 
@@ -112,7 +112,7 @@ TEST_F(BlockSparseMatrixTest, EmptyColumn) {
   builder.PushBlock(1, 2, J_.block(3, 3, 4, 2));
   // builder.PushBlock(2, 1, J_.block(7, 2, 3, 1));  // 4th block omitted.
   builder.PushBlock(2, 3, J_.block(7, 5, 3, 4));
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::exception,
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(),
                               "No block was specified for column 1.");
 }
 

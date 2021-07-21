@@ -56,11 +56,11 @@ class YamlPerformanceTest : public ::testing::Test {
   static YAML::Node Load(const std::string& contents) {
     const YAML::Node loaded = YAML::Load(contents);
     if (loaded.Type() != YAML::NodeType::Map) {
-      throw std::runtime_error("Bad contents parse " + contents);
+      throw std::invalid_argument("Bad contents parse " + contents);
     }
     const YAML::Node doc = loaded["doc"];
     if (doc.Type() != YAML::NodeType::Map) {
-      throw std::runtime_error("Bad doc parse " + contents);
+      throw std::invalid_argument("Bad doc parse " + contents);
     }
     return doc;
   }

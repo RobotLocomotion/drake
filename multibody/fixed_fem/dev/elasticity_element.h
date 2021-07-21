@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): ElasticityElement and its derived classes should be
 //  placed in internal namespace.
 /** The traits class for ElasticityElement. This traits class is meant to be
@@ -311,8 +311,8 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    The negative force derivative we calculate here is given by ∫ dF/dxᵇ :
    dP/dF : dF/dxᵃ dX. The calculation uses a different conjugate pair, but is
    analytically equal to Kₐᵦ,c + Kₐᵦ,σ. See
-   multibody/fem/dev/doc/stiffness_matrix.pdf for the derivation that shows
-   the equivalence.
+   multibody/fixed_fem/dev/doc/stiffness_matrix.pdf for the derivation that
+   shows the equivalence.
    // TODO(xuchenhan-tri): Update the directory above when this file moves out
    //  of dev/.
 
@@ -542,6 +542,6 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   /* Gravity force on the element. */
   Vector<T, Traits::kNumDofs> gravity_force_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

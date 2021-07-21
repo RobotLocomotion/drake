@@ -1853,14 +1853,46 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // log file.
+  bool print_to_console = false;
+  bool print_to_file = false;
+  // Refer to https://docs.mosek.com/9.2/capi/solver-io.html#stream-logging
+  // for Mosek stream logging.
+  if (rescode == MSK_RES_OK) {
+    auto it_kPrintToConsole = merged_options.common_solver_options().find(
+        CommonSolverOption::kPrintToConsole);
+    if (it_kPrintToConsole != merged_options.common_solver_options().end()) {
+      if (std::get<int>(it_kPrintToConsole->second) == 1) {
+        rescode =
+            MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
+        print_to_console = true;
+      }
+    }
+    auto it_kPrintFileName = merged_options.common_solver_options().find(
+        CommonSolverOption::kPrintFileName);
+    if (it_kPrintFileName != merged_options.common_solver_options().end()) {
+      rescode = MSK_linkfiletotaskstream(
+          task, MSK_STREAM_LOG,
+          std::get<std::string>(it_kPrintFileName->second).c_str(), 0);
+      print_to_file = true;
+    }
+  }
+  // TODO(hongkai.dai) remove stream_logging_ and log_file_ once
+  // set_stream_logging() is deprecated on 2021-11-01.
   if (rescode == MSK_RES_OK && stream_logging_) {
     if (log_file_.empty()) {
       rescode =
           MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
+      print_to_console = true;
     } else {
       rescode =
           MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);
+      print_to_file = true;
     }
+  }
+  if (print_to_console && print_to_file) {
+    throw std::runtime_error(
+        "MosekSolver::Solve(): cannot print to both the console and the log "
+        "file.");
   }
 
   // Mosek can accept the initial guess on its integer/binary variables, but

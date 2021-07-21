@@ -20,7 +20,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** %DeformableRigidManager implements the interface in DiscreteUpdateManager
  and performs discrete update for deformable and rigid bodies with a two-way
  coupling scheme.
@@ -314,8 +314,8 @@ class DeformableRigidManager final
       deformable_meshes_;
   mutable internal::CollisionObjects<T> collision_objects_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::DeformableRigidManager)
+    class ::drake::multibody::fem::DeformableRigidManager)

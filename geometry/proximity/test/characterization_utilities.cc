@@ -461,7 +461,6 @@ void CharacterizeResultTest<T>::RunCallback(
     case kThrows:
       DRAKE_ASSERT_THROWS_MESSAGE(
           callback_->Invoke(obj_A, obj_B, collision_filter, X_WGs),
-          std::exception,
           ".+ queries between shapes .+ and .+ are not supported.+");
       break;
   }

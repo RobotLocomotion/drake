@@ -15,8 +15,8 @@ namespace math {
 /// A'XA - X - A'XB(B'XB+R)^{-1}B'XA + Q = 0
 /// @f]
 ///
-/// @throws std::runtime_error if Q is not positive semi-definite.
-/// @throws std::runtime_error if R is not positive definite.
+/// @throws std::exception if Q is not positive semi-definite.
+/// @throws std::exception if R is not positive definite.
 ///
 /// Based on the Schur Vector approach outlined in this paper:
 /// "On the Numerical Solution of the Discrete-Time Algebraic Riccati Equation"

@@ -915,7 +915,6 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
       tree().CalcBiasForJacobianTranslationalVelocity(
           *context_, JacobianWrtVariable::kV, *frame_H_, p_HQi,
           world_frame, world_frame),
-      std::exception,
       ".* condition '.*.rows\\(\\) == 3' failed.");
 
   // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
@@ -1368,7 +1367,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), nullptr),
-      std::exception, ".*'Js_V_ABp_E != nullptr'.*");
+      ".*'Js_V_ABp_E != nullptr'.*");
 
   // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of rows.
@@ -1378,7 +1377,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
-      std::exception, ".*'Js_V_ABp_E->rows\\(\\) == 6'.*");
+      ".*'Js_V_ABp_E->rows\\(\\) == 6'.*");
 
   // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of columns.
@@ -1387,7 +1386,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
-      std::exception, ".*'Js_V_ABp_E->cols\\(\\) == num_columns'.*");
+      ".*'Js_V_ABp_E->cols\\(\\) == num_columns'.*");
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in

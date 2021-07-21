@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 
 template <typename T>
@@ -78,8 +78,8 @@ void DeformableContactData<T>::CalcParticipatingVertices(
 }
 
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::internal::DeformableContactData)
+    class ::drake::multibody::fem::internal::DeformableContactData)

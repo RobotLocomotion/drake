@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 namespace {
 /* An arbitrary number of degree of freedom made up for testing purpose. */
@@ -100,19 +100,19 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   bc_.AddBoundaryCondition(DofIndex(4), Vector<double, kOdeOrder + 1>(3, 4));
   State state = MakeState();
   DRAKE_EXPECT_THROWS_MESSAGE(
-    state.ApplyBoundaryCondition(bc_), std::exception,
+    state.ApplyBoundaryCondition(bc_),
           "An index of the dirichlet boundary condition is out of the range.");
   VectorXd b = MakeResidual();
   DRAKE_EXPECT_THROWS_MESSAGE(
-  bc_.ApplyBcToResidual(&b), std::exception,
+  bc_.ApplyBcToResidual(&b),
           "An index of the dirichlet boundary condition is out of the range.");
   SparseMatrix A_sparse = MakeTangentMatrix();
   DRAKE_EXPECT_THROWS_MESSAGE(
-  bc_.ApplyBcToTangentMatrix(&A_sparse), std::exception,
+  bc_.ApplyBcToTangentMatrix(&A_sparse),
           "An index of the dirichlet boundary condition is out of the range.");
 }
 }  // namespace
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

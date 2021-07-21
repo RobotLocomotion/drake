@@ -29,7 +29,7 @@ class MpcFeasibility {
    * @param[in] nu number of control input
    * @param[in] nc number of constraints per stage
    *
-   * Throws a runtime_error if any inputs are non-positive.
+   * Throws an exception if any inputs are non-positive.
    */
   MpcFeasibility(int N, int nx, int nu, int nc);
 
@@ -39,7 +39,7 @@ class MpcFeasibility {
    * @param[in] x   infeasibility certificate candidate
    * @param[in] tol numerical tolerance
    *
-   * Throws a runtime_error if x and *this aren't the same size
+   * Throws an exception if x and *this aren't the same size
    * or if the problem data hasn't been linked.
    */
   void ComputeFeasibility(const MpcVariable& x, double tol);

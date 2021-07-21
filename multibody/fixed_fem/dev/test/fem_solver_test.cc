@@ -18,7 +18,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kSolutionDimension = 3;
@@ -153,20 +153,19 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
 TEST_F(FemSolverTest, IncompatibleState) {
   FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_.SolveStaticModelWithInitialGuess(&dummy_state), std::exception,
+      solver_.SolveStaticModelWithInitialGuess(&dummy_state),
       "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
       "incompatible "
       "with the type of the FemModel.");
   State state_with_wrong_size(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_.SolveStaticModelWithInitialGuess(&state_with_wrong_size),
-      std::exception,
       "SolveStaticModelWithInitialGuess\\(\\): The size of the "
       "FemState \\(3\\) is incompatible "
       "with the size of the FemModel \\(24\\).");
 }
 // TODO(xuchenhan-tri): Add unit test for AdvanceOneTimeStep().
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -36,7 +36,7 @@ fast to visualize. */
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 /** A dummy softsim system that deforms registered geometry with a sinusoidal
  ripple motion. */
@@ -148,12 +148,12 @@ int DoMain() {
   simulator->AdvanceTo(10);
   return 0;
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage("Test for deformable visualizer.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::multibody::fixed_fem::DoMain();
+  return drake::multibody::fem::DoMain();
 }

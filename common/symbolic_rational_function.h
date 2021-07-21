@@ -41,7 +41,7 @@ class RationalFunction {
    * @pre None of the indeterminates in the numerator can be decision variables
    * in the denominator; similarly none of the indeterminates in the denominator
    * can be decision variables in the numerator.
-   * @throws std::logic_error if the precondition is not satisfied.
+   * @throws std::exception if the precondition is not satisfied.
    */
   RationalFunction(Polynomial numerator, Polynomial denominator);
 
@@ -110,7 +110,7 @@ class RationalFunction {
   friend std::ostream& operator<<(std::ostream&, const RationalFunction& f);
 
  private:
-  // Throws std::logic_error if an indeterminate of the denominator (numerator,
+  // Throws std::exception if an indeterminate of the denominator (numerator,
   // respectively) is a decision variable of the numerator (denominator).
   void CheckIndeterminates() const;
   Polynomial numerator_;

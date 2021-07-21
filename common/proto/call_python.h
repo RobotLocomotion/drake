@@ -17,7 +17,7 @@ namespace common {
 
 /// Initializes `CallPython` for a given file.  If this function is not called,
 /// then the filename defaults to `/tmp/python_rpc`.
-/// @throws std::runtime_error If either this function or `CallPython` have
+/// @throws std::exception If either this function or `CallPython` have
 /// already been called.
 void CallPythonInit(const std::string& filename);
 

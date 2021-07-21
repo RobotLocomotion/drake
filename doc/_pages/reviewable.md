@@ -66,6 +66,26 @@ curated``, which removes the single-commit requirement.  PRs with this label
 should be merged to master using the "Create a merge commit" option, not
 "Squash and merge" option.
 
+# Release Notes
+
+By default, your commit message's subject line and full text will be collated
+into the release notes as part of the next numbered release.  The collation
+involves human review (it is not completely mechanical) so while we are able to
+improve the text later as part of document assembly, please be kind to the
+human editor and do your best to provide a correct and helpful commit message
+up front.
+
+Commits that do not meaningfully affect the release will be manually culled from
+the release notes during editing.  To aid the human editor in making that
+determination, you may add the tag ``release notes: none`` to the PR and the
+commit will be omitted.  For example, you should apply that tag to any PRs that
+only fix code style problems, or only affect tests or documentation.
+
+Commits that contain breaking changes receive special attention in the release
+notes.  To aid the human editor in making that determination, you must add the
+tag ``release notes: breaking change`` to any PR that makes a breaking change
+without a deprecation period.
+
 # Joint Feature and Platform review
 
 For a review to be considered complete, both Feature Review and Platform Review

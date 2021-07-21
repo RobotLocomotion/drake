@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 template <typename T>
 void FemStateBase<T>::SetQ(const Eigen::Ref<const VectorX<T>>& value) {
   DRAKE_THROW_UNLESS(value.size() == q_.size());
@@ -45,8 +45,8 @@ void FemStateBase<T>::ApplyBoundaryCondition(
     }
   }
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemStateBase);
+    class ::drake::multibody::fem::FemStateBase);

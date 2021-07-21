@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 namespace {
 const double kDt = 1e-4;
@@ -76,6 +76,6 @@ TEST_F(NewmarkSchemeTest, AdvanceOneTimeStep) {
 }
 }  // namespace
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

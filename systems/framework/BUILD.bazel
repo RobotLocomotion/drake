@@ -450,9 +450,11 @@ drake_cc_library(
     srcs = ["value_producer.cc"],
     hdrs = ["value_producer.h"],
     deps = [
+        ":abstract_value_cloner",
         ":context_base",
         ":framework_common",
         "//common:copyable_unique_ptr",
+        "//common:nice_type_name",
         "//common:value",
     ],
 )

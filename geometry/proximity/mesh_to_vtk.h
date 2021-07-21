@@ -25,7 +25,7 @@ namespace internal {
  @param mesh       A tetrahedral volume mesh.
  @param title      Name of the data set will be written on the second line of
                    the VTK file.
- @throws std::runtime_error if unable to create the file.
+ @throws std::exception if unable to create the file.
  */
 void WriteVolumeMeshToVtk(const std::string& file_name,
                           const VolumeMesh<double>& mesh,
@@ -37,7 +37,7 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
  @param mesh       A triangulated surface mesh.
  @param title      Name of the data set will be written on the second line of
                    the VTK file.
- @throws std::runtime_error if unable to create the file.
+ @throws std::exception if unable to create the file.
  */
 void WriteSurfaceMeshToVtk(const std::string& file_name,
                            const SurfaceMesh<double>& mesh,
@@ -51,7 +51,7 @@ void WriteSurfaceMeshToVtk(const std::string& file_name,
                    the VTK file.
  @note `field.name()` will be written to VTK file with space ' ' replaced by
        underscore '_' on the "SCALARS field.name()" line.
- @throws std::runtime_error if unable to create the file.
+ @throws std::exception if unable to create the file.
  */
 void WriteVolumeMeshFieldLinearToVtk(
     const std::string& file_name,
@@ -66,7 +66,7 @@ void WriteVolumeMeshFieldLinearToVtk(
                    the VTK file.
  @note `field.name()` will be written to VTK file with space ' ' replaced by
        underscore '_' on the "SCALARS field.name()" line.
- @throws std::runtime_error if unable to create the file.
+ @throws std::exception if unable to create the file.
  */
 void WriteSurfaceMeshFieldLinearToVtk(
     const std::string& file_name,

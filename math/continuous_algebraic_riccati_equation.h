@@ -12,7 +12,7 @@ namespace math {
 /// S A + A' S - S B R^{-1} B' S + Q = 0
 /// @f]
 ///
-/// @throws std::runtime_error if R is not positive definite.
+/// @throws std::exception if R is not positive definite.
 ///
 /// Based on the Matrix Sign Function method outlined in this paper:
 /// http://www.engr.iupui.edu/~skoskie/ECE684/Riccati_algorithms.pdf

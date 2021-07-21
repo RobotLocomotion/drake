@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 /** %FemState implements FemStateBase for a particular type of FemElement.
  It is templated on the concrete FemElement type in order to allow compile time
@@ -134,6 +134,6 @@ class FemState : public FemStateBase<typename Element::T> {
       internal::ElementCacheEntry<typename Element::Traits::Data>>
       element_cache_{};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

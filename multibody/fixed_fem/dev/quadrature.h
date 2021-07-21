@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): Consider allowing AutoDiffScalar if it simplifies the
 // syntax in the AutoDiff case.
 /** A base class for quadratures that facilitates numerical integrations in FEM.
@@ -75,6 +75,6 @@ struct is_quadrature {
                                    ObjectType::num_quadrature_points()>,
                         ObjectType>;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

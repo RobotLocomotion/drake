@@ -7,6 +7,7 @@
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -19,20 +20,9 @@ namespace internal {
 /* Intersects a tetrahedron with a plane, storing the result in the provided
  collections.
 
- This method constructs a mesh by a sequence of invocations. It guarantees
- the output surface mesh has the same topological coherency as the input mesh.
- For example, if the plane cuts through a tetrahedron edge e at vertex v, then
- each of the tetrahedra incident to that edge will be cut into a polygon which
- includes the same vertex v; no duplicate vertices will be introduced.
-
- This is accomplished by storing the edges that have already been evaluated.
- Call after call, the cached set of intersected edges grows and subsequent
- calls look up edges in the cache to see if the plane-edge intersection has
- already been accounted for.
-
- The unique vertices are written to `vertices_W`, the unique triangles are
- written to `faces`, and the pressure values at each intersection vertex are
- written to `surface_e`.
+ This method constructs a mesh by a sequence of invocations. The vertices are
+ written to `vertices_W`, the triangles are written to `faces`, and the
+ pressure values at each intersection vertex are written to `surface_e`.
 
  The face vertices are ordered such that the normal implied by their winding
  points in the direction of the plane's normal.
@@ -43,10 +33,28 @@ namespace internal {
    - `i ∈ [0, N) ∀ i` referenced in `faces` (and `N = vertices_W.size()`).
    - The iᵗʰ entry in `surface_e` is the pressure at the position for the iᵗʰ
      vertex in `vertices_W`.
+   - No intersection guarantees no changes to _any_ of the output parameters.
+
+ For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
+ this method represents the intersected polygon as its fan-triangulation
+ around its centroid and guarantees the output surface mesh has the same
+ topological coherency as the input mesh. For example, if the plane cuts
+ through a tetrahedron edge e at vertex v, then each of the tetrahedra
+ incident to that edge will be cut into a polygon which includes the same
+ vertex v; no duplicate vertices will be introduced. This is accomplished by
+ storing the edges that have already been evaluated. Call after call, the
+ cached set of intersected edges grows and subsequent calls look up edges in
+ the cache to see if the plane-edge intersection has already been accounted
+ for. After each call the following additional invariants are maintained:
+
    - Every vertex position in `vertices_W` that represents an intersection of
      edge and plane can be found in `cut_edges`. All remaining vertex
-     positions are the centroids of the intersected polygon.
-   - No intersection guarantees no changes to _any_ of the out parameters.
+     positions are the centroids of the intersected polygons.
+
+ For `representation` = ContactPolygonRepresentation::kSingleTriangle, this
+ choice produces 3 or 4 times fewer triangles than the other choice by
+ representing the intersected polygon as one triangle. However, it does not
+ guarantee unique vertices and ignores the `cut_edges` parameter.
 
  @param[in] tet_index       The index of the tetrahedron to attempt to
                             intersect.
@@ -59,6 +67,8 @@ namespace internal {
                             in Frame M.
  @param[in] X_WM            The relative pose between the mesh frame M and the
                             world frame W.
+ @param[in] representation  The preferred representation of the intersected
+                            polygon.
  @param[in,out] faces       The triangles (defined by triples of vertex
                             indices) forming the intersection mesh so far.
  @param[in,out] vertices_W  The vertex positions for the intersecting mesh,
@@ -75,6 +85,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                        const VolumeMeshFieldLinear<double, double>& field_M,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
+                       ContactPolygonRepresentation representation,
                        std::vector<SurfaceFace>* faces,
                        std::vector<SurfaceVertex<T>>* vertices_W,
                        std::vector<T>* surface_e,
@@ -94,12 +105,15 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
  @param[in] plane_id        The id associated with the plane.
  @param[in] plane_M         The plane to intersect against the tetrahedra;
                             measured and expressed in the same frame M.
- @param[in] tet_indces      Indices for the tetrahedra in mesh_M to test against
+ @param[in] tet_indices     Indices for the tetrahedra in mesh_M to test against
                             the plane.
  @param[in] X_WM            The relative pose between the mesh frame M and the
                             world frame W. Used to guarantee that the contact
                             surface is measured and expressed in the world
                             frame.
+ @param[in] representation  The preferred representation of each contact
+                            polygon.
+
  @returns `nullptr` if there is no intersection, otherwise the appropriate
            ContactSurface. The normals of the contact surface mesh will all
            be parallel with the plane normal.
@@ -111,8 +125,9 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     GeometryId mesh_id,
     const VolumeMeshFieldLinear<double, double>& mesh_field_M,
     GeometryId plane_id, const Plane<T>& plane_M,
-    const std::vector<VolumeElementIndex> tet_indices,
-    const math::RigidTransform<T>& X_WM);
+    const std::vector<VolumeElementIndex>& tet_indices,
+    const math::RigidTransform<T>& X_WM,
+    ContactPolygonRepresentation representation);
 
 // TODO(SeanCurtis-TRI): This is, in some sense, the "public" api. It refers to
 //  half spaces. Does it belong in this file? Does it belong elsewhere? At the
@@ -136,6 +151,9 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
  @param[in] id_R        The id of the rigid half space.
  @param[in] X_WR        The relative pose between Frame R -- the frame the half
                         space is defined in -- and the world frame W.
+ @param[in] representation  The preferred representation of each contact
+                            polygon.
+
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. The normals of the contact surface mesh
           will all be parallel with the plane normal.
@@ -147,7 +165,8 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR);
+    const math::RigidTransform<T>& X_WR,
+    ContactPolygonRepresentation representation);
 
 }  // namespace internal
 }  // namespace geometry
