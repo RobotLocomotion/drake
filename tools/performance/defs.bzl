@@ -1,6 +1,8 @@
 # -*- python -*-
 
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_test")
+load("@drake//tools/skylark:py.bzl", "py_binary")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 # This file provides build system sugar for crafting benchmarking programs.
 
@@ -35,4 +37,40 @@ def drake_cc_googlebench_binary(
             "@googlebenchmark//:benchmark",
         ],
         **kwargs
+    )
+
+def drake_py_experiment_binary(name, *, googlebench_binary, **kwargs):
+    """Declares a testonly binary that wraps google benchmark binary with
+    machinery to run it under controlled conditions and summarize results.
+    """
+    if not googlebench_binary.startswith(":"):
+        fail("googlebench_binary must be local to this package")
+    dut = "drake/{}/{}".format(native.package_name(), googlebench_binary[1:])
+    _TEMPLATE = """
+    import os, sys
+    from bazel_tools.tools.python.runfiles.runfiles import Create
+    runfiles = Create()
+    tool = runfiles.Rlocation("drake/tools/performance/benchmark_tool")
+    dut = runfiles.Rlocation({dut})
+    assert tool and dut
+    env = dict(os.environ)
+    env.update(runfiles.EnvVars())
+    os.execve(tool, [tool, "--binary", dut] + sys.argv[1:], env=env)
+    """.replace("\n    ", "\n")
+    generate_file(
+        name = "{}.py".format(name),
+        content = _TEMPLATE.format(dut = repr(dut)),
+    )
+    py_binary(
+        name = name,
+        testonly = True,
+        srcs = [":{}.py".format(name)],
+        tags = ["nolint"],
+        data = [
+            googlebench_binary,
+            "//tools/performance:benchmark_tool",
+        ],
+        deps = [
+            "@bazel_tools//tools/python/runfiles",
+        ],
     )

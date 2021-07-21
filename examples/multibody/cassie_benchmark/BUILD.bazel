@@ -23,16 +23,6 @@ drake_cc_googlebench_binary(
     ],
 )
 
-sh_test(
-    name = "record_results",
-    size = "small",
-    timeout = "moderate",
-    srcs = ["record_results.sh"],
-    data = [
-        ":cassie_bench",
-        "//tools/performance:record_results",
-    ],
-    tags = ["no_valgrind_tools"],
-)
+# TODO(jwnimmer-tri) Add curried benchmark_tool binary here.
 
 add_lint_tests()
