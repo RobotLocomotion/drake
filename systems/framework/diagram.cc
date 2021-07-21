@@ -995,10 +995,18 @@ template <typename T>
 const AbstractValue* Diagram<T>::EvalConnectedSubsystemInputPort(
     const ContextBase& context_base,
     const InputPortBase& input_port_base) const {
+  // When our sole caller EvalAbstractInputImpl invokes us, the context_base
+  // is fed by get_parent_base(context), which must be a diagram context.
+  // XXX but anyone can call set_parent?
+  // XXX But EvalConnectedSubsystemInputPort is callable by end users.
   auto& diagram_context =
-      dynamic_cast<const DiagramContext<T>&>(context_base);
+      static_cast<const DiagramContext<T>&>(context_base);
+
+  // When our sole caller EvalAbstractInputImpl invokes us, the input_port_base
+  // argument is fed from this->get_input_port_base, the type must be right.
+  // XXX But EvalConnectedSubsystemInputPort is callable by end users.
   auto& system =
-      dynamic_cast<const System<T>&>(input_port_base.get_system_interface());
+      static_cast<const System<T>&>(input_port_base.get_system_interface());
   const InputPortLocator id{&system, input_port_base.get_index()};
 
   // Find if this input port is exported (connected to an input port of this
