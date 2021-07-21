@@ -909,19 +909,19 @@ System<T>::System(SystemScalarConverter converter)
       accuracy_ticket(), all_state_ticket(), all_parameters_ticket()};
   potential_energy_cache_index_ =
       DeclareCacheEntry("potential energy",
-          &System<T>::CalcPotentialEnergy,
+          ValueProducer(this, &System<T>::CalcPotentialEnergy),
           energy_prereqs_for_9171)  // After #9171: configuration + mass.
           .cache_index();
 
   kinetic_energy_cache_index_ =
       DeclareCacheEntry("kinetic energy",
-          &System<T>::CalcKineticEnergy,
+          ValueProducer(this, &System<T>::CalcKineticEnergy),
           energy_prereqs_for_9171)  // After #9171: kinematics + mass.
           .cache_index();
 
   conservative_power_cache_index_ =
       DeclareCacheEntry("conservative power",
-          &System<T>::CalcConservativePower,
+          ValueProducer(this, &System<T>::CalcConservativePower),
           energy_prereqs_for_9171)  // After #9171: kinematics + mass.
           .cache_index();
 
@@ -930,8 +930,8 @@ System<T>::System(SystemScalarConverter converter)
   // EvalNonConservativePower() to see why.
   nonconservative_power_cache_index_ =
       DeclareCacheEntry("non-conservative power",
-                        &System<T>::CalcNonConservativePower,
-                        {all_sources_ticket()})  // This is correct.
+          ValueProducer(this, &System<T>::CalcNonConservativePower),
+          {all_sources_ticket()})  // This is correct.
           .cache_index();
 
   // We must assume that time derivatives can depend on *any* context source.
