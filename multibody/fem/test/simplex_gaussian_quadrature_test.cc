@@ -1,20 +1,38 @@
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
-
-#include <limits>
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 
 #include <gtest/gtest.h>
 
 namespace drake {
 namespace multibody {
 namespace fem {
+namespace internal {
 namespace {
+
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-struct LinearTestFunction2D {
-  static constexpr double a0 = 1.0;
-  static constexpr double a1 = 3.0;
-  static constexpr double a2 = -2.0;
+// Arbitrary polynomial constants used in this file.
+static constexpr double a0 = 1.0;
+static constexpr double a1 = 3.0;
+static constexpr double a2 = -2.0;
+static constexpr double a3 = -4.0;
+static constexpr double a4 = -2.7;
+static constexpr double a5 = -1.3;
+static constexpr double a6 = 7.0;
+static constexpr double a7 = -3.6;
+static constexpr double a8 = -2.1;
+static constexpr double a9 = 5.3;
+static constexpr double a10 = 1.2;
+static constexpr double a11 = 2.3;
+static constexpr double a12 = 3.4;
+static constexpr double a13 = 4.5;
+static constexpr double a14 = 5.6;
+static constexpr double a15 = 6.7;
+static constexpr double a16 = 7.8;
+static constexpr double a17 = 8.9;
+static constexpr double a18 = 9.0;
+static constexpr double a19 = 1.2;
 
+struct LinearTestFunction2D {
   // Returns the value of function
   //     y(x₀, x₁) = a₀ + a₁ * x₀+ a₂ * x₁
   // evaluated at input x.
@@ -32,12 +50,6 @@ struct LinearTestFunction2D {
 };
 
 struct QuadraticTestFunction2D {
-  static constexpr double a0 = 1.0;
-  static constexpr double a1 = 3.0;
-  static constexpr double a2 = -2.0;
-  static constexpr double a3 = 7.2;
-  static constexpr double a4 = -3.15;
-  static constexpr double a5 = -0.82;
   // Returns the value of function
   //     y(x₀, x₁) = a₀ + a₁*x₀ + a₂*x₁ + a₃*x₀*x₁ + a₄*x₀² + a₅*x₁²
   // evaluated at input x.
@@ -62,16 +74,6 @@ struct QuadraticTestFunction2D {
 };
 
 struct CubicTestFunction2D {
-  static constexpr double a0 = 1.0;
-  static constexpr double a1 = 3.0;
-  static constexpr double a2 = -2.0;
-  static constexpr double a3 = 7.2;
-  static constexpr double a4 = -3.15;
-  static constexpr double a5 = -0.82;
-  static constexpr double a6 = 9.22;
-  static constexpr double a7 = -1.84;
-  static constexpr double a8 = -3.32;
-  static constexpr double a9 = 8.31;
   // Returns the value of function
   //     y(x₀, x₁) = a₀ + a₁*x₀ + a₂*x₁ + a₃*x₀*x₁ + a₄*x₀² + a₅*x₁² + a₆*x₀³ +
   //     a₇*x₀²x₁ + a₈x₀x₁² + a₉*x₁³
@@ -109,11 +111,6 @@ struct CubicTestFunction2D {
 };
 
 struct LinearTestFunction3D {
-  static constexpr double a0 = 1.0;
-  static constexpr double a1 = 3.0;
-  static constexpr double a2 = -2.0;
-  static constexpr double a3 = -4.0;
-
   // Returns the value of function
   //     y(x₀, x₁, x₂) = a₀ + a₁ * x₀+ a₂ * x₁+ a₃ * x₂
   // evaluated at input x.
@@ -133,17 +130,6 @@ struct LinearTestFunction3D {
 };
 
 struct QuadraticTestFunction3D {
-  static constexpr double a0 = 1.0;
-  static constexpr double a1 = 3.0;
-  static constexpr double a2 = -2.0;
-  static constexpr double a3 = -4.0;
-  static constexpr double a4 = -2.7;
-  static constexpr double a5 = -1.3;
-  static constexpr double a6 = 7.0;
-  static constexpr double a7 = -3.6;
-  static constexpr double a8 = -2.1;
-  static constexpr double a9 = 5.3;
-
   // Returns the value of function
   //     y(x₀, x₁, x₂) = a₀ + a₁ * x₀+ a₂ * x₁+ a₃ * x₂ + a₄ * x₀*x₁ + a₅ *
   //     x₀*x₂ + a₆ * x₁*x₂ + a₇*x₀²  + a₈*x₁² + a₉*x₂².
@@ -173,27 +159,6 @@ struct QuadraticTestFunction3D {
 };
 
 struct CubicTestFunction3D {
-  static constexpr double a0 = 1.0;
-  static constexpr double a1 = 3.0;
-  static constexpr double a2 = -2.0;
-  static constexpr double a3 = -4.0;
-  static constexpr double a4 = -2.7;
-  static constexpr double a5 = -1.3;
-  static constexpr double a6 = 7.0;
-  static constexpr double a7 = -3.6;
-  static constexpr double a8 = -2.1;
-  static constexpr double a9 = 5.3;
-  static constexpr double a10 = 1.2;
-  static constexpr double a11 = 2.3;
-  static constexpr double a12 = 3.4;
-  static constexpr double a13 = 4.5;
-  static constexpr double a14 = 5.6;
-  static constexpr double a15 = 6.7;
-  static constexpr double a16 = 7.8;
-  static constexpr double a17 = 8.9;
-  static constexpr double a18 = 9.0;
-  static constexpr double a19 = 1.2;
-
   // Returns the value of function
   //     y(x₀, x₁, x₂) = a₀ + a₁x₀ + a₂x₁ + a₃x₂ + a₄x₀x₁ + a₅x₀x₂ + a₆x₁x₂ +
   //     a₇x₀²  + a₈x₁² + a₉x₂² + a₁₀x₀³ + a₁₁x₁³ + a₁₂x₂³ +  a₁₃x₀²x₁ +
@@ -243,15 +208,13 @@ struct CubicTestFunction3D {
 };
 
 class SimplexGaussianQuadratureTest : public ::testing::Test {
-  void SetUp() override {}
-
  protected:
-  template <int NaturalDim, int NumQuadratureLocations>
-  double Integrate(const Quadrature<
-                       NaturalDim, NumQuadratureLocations>& quadrature,
-                   double (*f)(const Eigen::Matrix<double, NaturalDim, 1>&)) {
+  template <int natural_dim, int num_quadrature_locations>
+  double Integrate(
+      const Quadrature<natural_dim, num_quadrature_locations>& quadrature,
+      double (*f)(const Eigen::Matrix<double, natural_dim, 1>&)) {
     double numerical_integral = 0;
-    for (int i = 0; i < NumQuadratureLocations; ++i) {
+    for (int i = 0; i < num_quadrature_locations; ++i) {
       numerical_integral +=
           quadrature.get_weight(i) * f(quadrature.get_point(i));
     }
@@ -268,70 +231,75 @@ class SimplexGaussianQuadratureTest : public ::testing::Test {
 
 TEST_F(SimplexGaussianQuadratureTest, Linear2D) {
   // Linear Gaussian quadrature only needs 1 quadrature point.
-  EXPECT_EQ(linear_2d_quadrature_.num_quadrature_points(), 1);
+  EXPECT_EQ(linear_2d_quadrature_.num_quadrature_points, 1);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
-  double numerical_integral =
+  const double numerical_integral =
       Integrate(linear_2d_quadrature_, LinearTestFunction2D::Eval);
-  EXPECT_NEAR(LinearTestFunction2D::EvalAnalyticalIntegralOverUnitTriangle(),
-              numerical_integral, std::numeric_limits<double>::epsilon());
+  EXPECT_DOUBLE_EQ(
+      LinearTestFunction2D::EvalAnalyticalIntegralOverUnitTriangle(),
+      numerical_integral);
 }
 
 TEST_F(SimplexGaussianQuadratureTest, Linear3D) {
   // Linear Gaussian quadrature only needs 1 quadrature point.
-  EXPECT_EQ(linear_3d_quadrature_.num_quadrature_points(), 1);
+  EXPECT_EQ(linear_3d_quadrature_.num_quadrature_points, 1);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
-  double numerical_integral =
+  const double numerical_integral =
       Integrate(linear_3d_quadrature_, LinearTestFunction3D::Eval);
-  EXPECT_NEAR(LinearTestFunction3D::EvalAnalyticalIntegralOverUnitTet(),
-              numerical_integral, std::numeric_limits<double>::epsilon());
+  EXPECT_DOUBLE_EQ(LinearTestFunction3D::EvalAnalyticalIntegralOverUnitTet(),
+                   numerical_integral);
 }
 
 TEST_F(SimplexGaussianQuadratureTest, Quadratic2D) {
   // Quadratic Gaussian quadrature needs 3 quadrature point.
-  EXPECT_EQ(quadratic_2d_quadrature_.num_quadrature_points(), 3);
+  EXPECT_EQ(quadratic_2d_quadrature_.num_quadrature_points, 3);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
-  double numerical_integral =
+  const double numerical_integral =
       Integrate(quadratic_2d_quadrature_, QuadraticTestFunction2D::Eval);
-  EXPECT_NEAR(QuadraticTestFunction2D::EvalAnalyticalIntegralOverUnitTriangle(),
-              numerical_integral, std::numeric_limits<double>::epsilon());
+  EXPECT_DOUBLE_EQ(
+      QuadraticTestFunction2D::EvalAnalyticalIntegralOverUnitTriangle(),
+      numerical_integral);
 }
 
 TEST_F(SimplexGaussianQuadratureTest, Quadratic3D) {
   // Quadratic Gaussian quadrature needs 3 quadrature point.
-  EXPECT_EQ(quadratic_3d_quadrature_.num_quadrature_points(), 4);
+  EXPECT_EQ(quadratic_3d_quadrature_.num_quadrature_points, 4);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
-  double numerical_integral =
+  const double numerical_integral =
       Integrate(quadratic_3d_quadrature_, QuadraticTestFunction3D::Eval);
-  EXPECT_NEAR(QuadraticTestFunction3D::EvalAnalyticalIntegralOverUnitTet(),
-              numerical_integral, std::numeric_limits<double>::epsilon());
+  EXPECT_DOUBLE_EQ(QuadraticTestFunction3D::EvalAnalyticalIntegralOverUnitTet(),
+                   numerical_integral);
 }
 
 TEST_F(SimplexGaussianQuadratureTest, Cubic2D) {
   // Cubic Gaussian quadrature needs 4 quadrature point.
-  EXPECT_EQ(cubic_2d_quadrature_.num_quadrature_points(), 4);
+  EXPECT_EQ(cubic_2d_quadrature_.num_quadrature_points, 4);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
-  double numerical_integral =
+  const double numerical_integral =
       Integrate(cubic_2d_quadrature_, CubicTestFunction2D::Eval);
-  EXPECT_NEAR(CubicTestFunction2D::EvalAnalyticalIntegralOverUnitTriangle(),
-              numerical_integral, std::numeric_limits<double>::epsilon());
+  EXPECT_DOUBLE_EQ(
+      CubicTestFunction2D::EvalAnalyticalIntegralOverUnitTriangle(),
+      numerical_integral);
 }
 
 TEST_F(SimplexGaussianQuadratureTest, Cubic3D) {
   // Cubic Gaussian quadrature needs 5 quadrature point.
-  EXPECT_EQ(cubic_3d_quadrature_.num_quadrature_points(), 5);
+  EXPECT_EQ(cubic_3d_quadrature_.num_quadrature_points, 5);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
-  double numerical_integral =
+  const double numerical_integral =
       Integrate(cubic_3d_quadrature_, CubicTestFunction3D::Eval);
-  EXPECT_NEAR(CubicTestFunction3D::EvalAnalyticalIntegralOverUnitTet(),
-              numerical_integral, std::numeric_limits<double>::epsilon());
+  EXPECT_DOUBLE_EQ(CubicTestFunction3D::EvalAnalyticalIntegralOverUnitTet(),
+                   numerical_integral);
 }
+
 }  // namespace
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

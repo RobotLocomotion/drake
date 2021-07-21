@@ -116,6 +116,23 @@ drake_cc_library(
     hdrs = ["deformable_contact_data.h"],
     deps = [
         ":deformable_rigid_contact_pair",
+        ":reference_deformable_geometry",
+    ],
+)
+
+drake_cc_library(
+    name = "reference_deformable_geometry",
+    srcs = [
+        "reference_deformable_geometry.cc",
+    ],
+    hdrs = [
+        "reference_deformable_geometry.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:mesh_field",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -136,9 +153,10 @@ drake_cc_library(
         ":fem_model_base",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
+        ":mesh_utilities",
         "//common:essential",
         "//geometry/proximity:volume_mesh",
+        "//multibody/fem:simplex_gaussian_quadrature",
         "//multibody/plant",
     ],
 )
@@ -179,6 +197,7 @@ drake_cc_library(
     srcs = ["deformable_visualizer.cc"],
     hdrs = ["deformable_visualizer.h"],
     deps = [
+        ":reference_deformable_geometry",
         "//common:essential",
         "//geometry/proximity:sorted_triplet",
         "//geometry/proximity:volume_mesh",
@@ -254,9 +273,9 @@ drake_cc_library(
         ":constitutive_model",
         ":fem_element",
         ":isoparametric_element",
-        ":quadrature",
         "//common:essential",
         "//common:unused",
+        "//multibody/fem:quadrature",
     ],
 )
 
@@ -453,8 +472,10 @@ drake_cc_library(
         "mesh_utilities.h",
     ],
     deps = [
+        ":reference_deformable_geometry",
         "//common:default_scalars",
         "//common:essential",
+        "//geometry:scene_graph",
         "//geometry/proximity:make_box_mesh",
         "//geometry/proximity:volume_mesh",
         "//math:geometric_transform",
@@ -468,17 +489,6 @@ drake_cc_library(
     ],
     deps = [
         ":state_updater",
-    ],
-)
-
-drake_cc_library(
-    name = "quadrature",
-    hdrs = [
-        "quadrature.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
     ],
 )
 
@@ -524,16 +534,6 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "simplex_gaussian_quadrature",
-    hdrs = [
-        "simplex_gaussian_quadrature.h",
-    ],
-    deps = [
-        ":quadrature",
     ],
 )
 
@@ -662,9 +662,9 @@ drake_cc_googletest(
         ":dynamic_elasticity_element",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
@@ -675,10 +675,10 @@ drake_cc_googletest(
         ":dynamic_elasticity_model",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
@@ -698,10 +698,10 @@ drake_cc_googletest(
         ":elasticity_element",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
@@ -720,7 +720,6 @@ drake_cc_googletest(
         ":fem_solver",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
         ":static_elasticity_element",
         ":static_elasticity_model",
         ":zeroth_order_state_updater",
@@ -728,6 +727,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
@@ -817,22 +817,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simplex_gaussian_quadrature_test",
-    deps = [
-        ":simplex_gaussian_quadrature",
-    ],
-)
-
-drake_cc_googletest(
     name = "static_elasticity_element_test",
     deps = [
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
         ":static_elasticity_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
@@ -841,12 +834,12 @@ drake_cc_googletest(
     deps = [
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
         ":static_elasticity_element",
         ":static_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 
@@ -857,11 +850,11 @@ drake_cc_googletest(
         ":linear_constitutive_model",
         ":linear_simplex_element",
         ":mesh_utilities",
-        ":simplex_gaussian_quadrature",
         ":static_elasticity_element",
         ":static_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
+        "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
 

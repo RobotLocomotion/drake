@@ -1,12 +1,12 @@
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/dynamic_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/dynamic_elasticity_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -15,7 +15,7 @@ namespace fem {
 
 template <typename T>
 SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
-    const geometry::VolumeMesh<T>& mesh, std::string name,
+    internal::ReferenceDeformableGeometry<T> geometry, std::string name,
     const DeformableBodyConfig<T>& config,
     geometry::ProximityProperties proximity_props) {
   /* Throw if name is not unique. */
@@ -30,14 +30,15 @@ SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
   switch (config.material_model()) {
     case MaterialModel::kLinear:
       RegisterDeformableBodyHelper<LinearConstitutiveModel>(
-          mesh, std::move(name), config);
+          geometry.mesh(), std::move(name), config);
       break;
     case MaterialModel::kCorotated:
-      RegisterDeformableBodyHelper<CorotatedModel>(mesh, std::move(name),
-                                                   config);
+      RegisterDeformableBodyHelper<CorotatedModel>(geometry.mesh(),
+                                                   std::move(name), config);
       break;
   }
   proximity_properties_.emplace_back(std::move(proximity_props));
+  reference_configuration_geometries_.emplace_back(std::move(geometry));
   return body_index;
 }
 
@@ -82,8 +83,8 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
   constexpr int kSpatialDimension = 3;
   constexpr int kQuadratureOrder = 1;
   using QuadratureType =
-      SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-  constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+      internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  constexpr int kNumQuads = QuadratureType::num_quadrature_points;
   using IsoparametricElementType =
       LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
   using ConstitutiveModelType = Model<T, kNumQuads>;
@@ -119,7 +120,6 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
   model_discrete_states_.emplace_back(discrete_state);
 
   fem_models_.emplace_back(std::move(fem_model));
-  reference_configuration_meshes_.emplace_back(mesh);
   names_.emplace_back(std::move(name));
 }
 

@@ -1,9 +1,12 @@
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/query_object.h"
+#include "drake/geometry/scene_graph.h"
 
 namespace drake {
 namespace multibody {
@@ -85,7 +88,7 @@ std::vector<VolumeElement> GenerateDiamondCubicElements(
 }
 
 template <typename T>
-VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
+internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
     const Box& box, double resolution_hint,
     const math::RigidTransform<T>& X_WB) {
   DRAKE_DEMAND(resolution_hint > 0.);
@@ -96,9 +99,33 @@ VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
       1 + static_cast<int>(ceil(box.depth() / resolution_hint)),
       1 + static_cast<int>(ceil(box.height() / resolution_hint))};
 
-  // Initially generate vertices in box's frame B.
+  /* Initially generate vertices in box's frame B. */
   std::vector<VolumeVertex<T>> vertices =
       geometry::internal::GenerateVertices<T>(box, num_vertices);
+
+  // TODO(xuchenhan-tri): This is an expedient but expensive way to calculate
+  //  the signed distance of the vertices. When moving out of dev/, come up with
+  //  a better solution.
+  /* Generate the vertex distances to the shape. */
+  geometry::SceneGraph<T> scene_graph;
+  const auto& source_id = scene_graph.RegisterSource();
+  const auto& geometry_id = scene_graph.RegisterGeometry(
+      source_id, scene_graph.world_frame_id(),
+      std::make_unique<geometry::GeometryInstance>(math::RigidTransformd(),
+                                                   box.Clone(), "box"));
+  scene_graph.AssignRole(source_id, geometry_id,
+                         geometry::ProximityProperties());
+  const auto& context = scene_graph.CreateDefaultContext();
+  const auto& query_object =
+      scene_graph.get_query_output_port()
+          .template Eval<geometry::QueryObject<T>>(*context);
+  std::vector<T> signed_distances;
+  for (const VolumeVertex<T>& vertex : vertices) {
+    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex.r_MV());
+    DRAKE_DEMAND(d.size() == 1);
+    signed_distances.emplace_back(d[0].distance);
+  }
+
   for (VolumeVertex<T>& vertex : vertices) {
     // Transform to World frame.
     vertex = VolumeVertex<T>(X_WB * vertex.r_MV());
@@ -106,12 +133,16 @@ VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
 
   std::vector<VolumeElement> elements =
       GenerateDiamondCubicElements(num_vertices);
-  return VolumeMesh<T>(std::move(elements), std::move(vertices));
+  auto mesh =
+      std::make_unique<VolumeMesh<T>>(std::move(elements), std::move(vertices));
+  auto mesh_field = std::make_unique<geometry::VolumeMeshFieldLinear<T, T>>(
+      "Approximated signed distance", std::move(signed_distances), mesh.get(),
+      false);
+  return {std::move(mesh), std::move(mesh_field)};
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &MakeDiamondCubicBoxVolumeMesh<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&MakeDiamondCubicBoxDeformableGeometry<T>))
 
 }  // namespace fem
 }  // namespace multibody

@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
+#include "drake/multibody/fixed_fem/dev/reference_deformable_geometry.h"
 
 namespace drake {
 namespace multibody {
@@ -18,11 +19,11 @@ class DeformableContactData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableContactData)
   /* Constructs the DeformableContactData for a deformable body given all
-   deformable-rigid contact pairs involving the deformable body and the volume
-   mesh representing the deformable body geometry. */
+   deformable-rigid contact pairs involving the deformable body and the
+   deformable geometry at reference configuration. */
   DeformableContactData(
       std::vector<DeformableRigidContactPair<T>> contact_pairs,
-      const geometry::VolumeMesh<T>& deformable_mesh);
+      const ReferenceDeformableGeometry<T>& deformable_geometry);
 
   /* A 2D anologue of a deformable mesh D in contact with a rigid body R. The
    deformable mesh has 6 vertices with indexes v0-v5. Vertices v1, v2, and v5
@@ -69,6 +70,24 @@ class DeformableContactData {
     return permuted_vertex_indexes_;
   }
 
+  /* Returns a vector of *approximations* of signed distances at all contact
+   points in the i-th contact pair. The approximate signed distance values have
+   the following properties:
+
+   1. Contact points on the surface of the deformable body will report with zero
+   distances.
+   2. The signed distance values for all contact points are non-positive.
+
+   These properties are subject to the correctness of the
+   ReferenceDeformableGeometry's signed distance field and the definition of the
+   contact points in the DeformableRigidContactPair.
+
+   @pre 0 <= i < num_contact_pairs(). */
+  const std::vector<T>& signed_distances(int i) const {
+    DRAKE_DEMAND(0 <= i && i < num_contact_pairs());
+    return signed_distances_[i];
+  }
+
   /* Returns the number of vertices of the deformable body that participate in
    contact. */
   int num_vertices_in_contact() const { return num_vertices_in_contact_; }
@@ -97,6 +116,9 @@ class DeformableContactData {
 
   /* All contact pairs involving the deformable body of interest. */
   std::vector<DeformableRigidContactPair<T>> contact_pairs_{};
+  /* signed_distances_[i][j] gives an *approximate* signed distance for the j-th
+   contact point in the i-th contact pair. */
+  std::vector<std::vector<T>> signed_distances_{};
   /* Maps vertex indexes to "permuted vertex indexes". See the getter method for
    more info. */
   std::vector<int> permuted_vertex_indexes_{};
