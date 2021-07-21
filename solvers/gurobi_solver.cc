@@ -1008,12 +1008,16 @@ void GurobiSolver::DoSolve(
   }
   for (const auto& it : merged_options.GetOptionsInt(id())) {
     if (!error) {
-      error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+      if (it.first != "GRBcomputeIIS") {
+        error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+      }
     }
   }
   for (const auto& it : merged_options.GetOptionsStr(id())) {
     if (!error) {
-      error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+      if (it.first != "GRBwrite") {
+        error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+      }
     }
   }
 
@@ -1053,6 +1057,45 @@ void GurobiSolver::DoSolve(
 
   if (!error) {
     error = GRBoptimize(model);
+  }
+
+  if (!error) {
+    const auto& int_options = merged_options.GetOptionsInt(id());
+    auto it = int_options.find("GRBcomputeIIS");
+    if (it != int_options.end()) {
+      if (it->second == 0) {
+        // Do nothing if GRBcomputeIIS=0
+      } else if (it->second == 1) {
+        int optimstatus = 0;
+        GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
+        if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
+          // Only compute IIS when the problem is infeasible.
+          error = GRBcomputeIIS(model);
+        }
+      } else {
+        drake::log()->warn(
+            fmt::format("GurobiSolver(): option GRBcomputeIIS should be either "
+                        "0 or 1, but is incorrectly set to {}",
+                        it->second));
+      }
+    }
+  }
+  if (!error) {
+    const auto& str_options = merged_options.GetOptionsStr(id());
+    auto it = str_options.find("GRBwrite");
+    if (it != str_options.end()) {
+      if (it->second != "") {
+        error = GRBwrite(model, it->second.c_str());
+        if (error) {
+          throw std::runtime_error(
+              fmt::format("GurobiSolver(): setting GRBwrite to {}, this is not "
+                          "supported. Check "
+                          "https://www.gurobi.com/documentation/9.1/refman/"
+                          "py_model_write.html for more details.",
+                          it->second));
+        }
+      }
+    }
   }
 
   SolutionResult solution_result = SolutionResult::kUnknownError;
