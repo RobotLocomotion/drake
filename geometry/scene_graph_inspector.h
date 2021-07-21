@@ -165,11 +165,13 @@ class SceneGraphInspector {
   }
 
   /** Returns all pairs of geometries that are candidates for collision (in no
-   particular order). See SceneGraph::ExcludeCollisionsBetween() or
-   SceneGraph::ExcludeCollisionsWithin() for information on why a particular
-   pair may _not_ be a candidate. For candidate pair (A, B), the candidate is
-   always guaranteed to be reported in a fixed order (i.e., always (A, B) and
-   _never_ (B, A)). This is the same ordering as would be returned by, e.g.,
+   particular order). See CollisionFilterDeclaration and
+   CollisionFilterManager::Apply() for information on why a particular pair may
+   _not_ be a candidate.
+
+   For candidate pair (A, B), the candidate is always guaranteed to be reported
+   in a fixed order (i.e., always (A, B) and _never_ (B, A)). This is the same
+   ordering as would be returned by, e.g.,
    QueryObject::ComputePointPairPenetration().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates()
       const {

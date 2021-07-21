@@ -51,6 +51,11 @@ GTEST_TEST(PointTest, BasicTest) {
 
   // Test IsBounded (which is trivially true for Point).
   EXPECT_TRUE(P.IsBounded());
+
+  // Test set_x().
+  const Vector3d p2_W{6.2, -.23, -8.2};
+  P.set_x(p2_W);
+  EXPECT_TRUE(CompareMatrices(p2_W, P.x()));
 }
 
 GTEST_TEST(PointTest, FromSceneGraphTest) {

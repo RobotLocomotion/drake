@@ -54,9 +54,16 @@ struct RegionOfAttractionOptions {
  * {x | V(x)<=1} containing the fixed-point in @p context represents the region
  * of attraction.
  *
- * Note: There are more numerical techniques that we know how to apply here.
- * Do report an issue if you discover a system for which this code does not
- * perform well.
+ * @pre For the given @p system and @p context, any required input ports on @p
+ * system must be "defined", i.e., connected to other systems in a larger
+ * diagram or holding fixed values; see System::FixInputPortsFrom for possible
+ * caveats. Analyzing a closed-loop system would typically be accomplished by
+ * having both the plant and the controller in a diagram (which then has no
+ * input ports), and passing the diagram into this method as @p system.
+ *
+ * Note: There are more numerical recipes for region of attraction analysis that
+ * could extend the current implementation. Do report an issue if you discover a
+ * system for which this code does not perform well.
  *
  * @ingroup analysis
  */

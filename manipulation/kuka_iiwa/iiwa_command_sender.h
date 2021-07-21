@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -33,11 +32,12 @@ namespace kuka_iiwa {
 /// @endsystem
 ///
 /// @see `lcmt_iiwa_command.lcm` for additional documentation.
-class IiwaCommandSender : public systems::LeafSystem<double> {
+class IiwaCommandSender final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandSender)
 
   explicit IiwaCommandSender(int num_joints = kIiwaArmNumJoints);
+  ~IiwaCommandSender() final;
 
   /// @name Named accessors for this System's input and output ports.
   //@{

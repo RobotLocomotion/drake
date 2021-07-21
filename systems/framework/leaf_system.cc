@@ -330,10 +330,8 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
   // this storage is responsible for ensuring that no stale data is used.
   scratch_cache_index_ =
       this->DeclareCacheEntry(
-          // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
           "scratch", ValueProducer(
-              MakeAllocateCallback(Scratch<T>{}),
-              &ValueProducer::NoopCalc),
+              Scratch<T>{}, &ValueProducer::NoopCalc),
           {this->nothing_ticket()}).cache_index();
 
   per_step_events_.set_system_id(this->get_system_id());
@@ -690,9 +688,15 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     typename LeafOutputPort<T>::AllocCallback alloc_function,
     typename LeafOutputPort<T>::CalcCallback calc_function,
     std::set<DependencyTicket> prerequisites_of_calc) {
+  auto calc = [captured_calc = std::move(calc_function)](
+      const ContextBase& context_base, AbstractValue* result) {
+    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+    return captured_calc(context, result);
+  };
   auto& port = CreateAbstractLeafOutputPort(
-      NextOutputPortName(std::move(name)), std::move(alloc_function),
-      std::move(calc_function), std::move(prerequisites_of_calc));
+      NextOutputPortName(std::move(name)),
+      ValueProducer(std::move(alloc_function), std::move(calc)),
+      std::move(prerequisites_of_calc));
   return port;
 }
 
@@ -959,7 +963,7 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
 
     // The abstract value must be a Value<BasicVector<T>>, even if the
     // underlying object is a more-derived vector type.
-    auto value = dynamic_cast<Value<BasicVector<T>>*>(abstract);
+    auto* value = abstract->maybe_get_mutable_value<BasicVector<T>>();
 
     // TODO(sherm1) Make this error message more informative by capturing
     // system and port index info.
@@ -970,7 +974,7 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
           NiceTypeName::Get<Value<BasicVector<T>>>(),
           abstract->GetNiceTypeName()));
     }
-    vector_calculator(context, &value->get_mutable_value());
+    vector_calculator(context, value);
   };
 
   // The allocator function is identical between output port and cache.
@@ -984,20 +988,10 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateAbstractLeafOutputPort(
     std::string name,
-    typename LeafOutputPort<T>::AllocCallback allocator,
-    typename LeafOutputPort<T>::CalcCallback calculator,
+    ValueProducer producer,
     std::set<DependencyTicket> calc_prerequisites) {
-  // Construct a suitable type-erased cache calculator from the given
-  // type-T calculator function.
-  auto cache_calc_function = [calculator](
-      const ContextBase& context_base, AbstractValue* result) {
-    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
-    return calculator(context, result);
-  };
-
   return CreateCachedLeafOutputPort(
-      std::move(name), std::nullopt /* size */,
-      ValueProducer(std::move(allocator), std::move(cache_calc_function)),
+      std::move(name), std::nullopt /* size */, std::move(producer),
       std::move(calc_prerequisites));
 }
 

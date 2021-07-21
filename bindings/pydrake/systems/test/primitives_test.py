@@ -53,6 +53,7 @@ from pydrake.systems.primitives import (
     StateInterpolatorWithDiscreteDerivative_,
     SymbolicVectorSystem, SymbolicVectorSystem_,
     TrajectoryAffineSystem, TrajectoryAffineSystem_,
+    TrajectoryLinearSystem, TrajectoryLinearSystem_,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
@@ -100,6 +101,8 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
         self._check_instantiations(TrajectoryAffineSystem_,
+                                   supports_symbolic=False)
+        self._check_instantiations(TrajectoryLinearSystem_,
                                    supports_symbolic=False)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
@@ -278,6 +281,16 @@ class TestGeneral(unittest.TestCase):
         system.SetRandomContext(context, generator)
         self.assertNotEqual(
             context.get_discrete_state_vector().CopyToVector()[1], x0[1])
+
+        system = TrajectoryLinearSystem(
+            A=PiecewisePolynomial(A),
+            B=PiecewisePolynomial(B),
+            C=PiecewisePolynomial(C),
+            D=PiecewisePolynomial(D),
+            time_period=0.1)
+        self.assertEqual(system.time_period(), .1)
+        system.configure_default_state(x0=np.array([1, 2]))
+        system.configure_random_state(covariance=np.eye(2))
 
     def test_linear_system_zero_size(self):
         # Explicitly test #12633.

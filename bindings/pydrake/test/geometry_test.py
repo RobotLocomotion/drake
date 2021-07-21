@@ -757,10 +757,29 @@ class TestGeometry(unittest.TestCase):
         sg_context = sg.CreateDefaultContext()
         geometries = mut.GeometrySet()
 
-        sg.ExcludeCollisionsBetween(geometries, geometries)
-        sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
-        sg.ExcludeCollisionsWithin(geometries)
-        sg.ExcludeCollisionsWithin(sg_context, geometries)
+        # Mutate SceneGraph model
+        dut = sg.collision_filter_manager()
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeBetween(
+                geometries, geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+
+        # Mutate context data
+        dut = sg.collision_filter_manager(sg_context)
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeBetween(
+                geometries, geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+
+        # TODO(2021-11-01) Remove these with deprecation resolution.
+        # Legacy API
+        with catch_drake_warnings(expected_count=4):
+            sg.ExcludeCollisionsBetween(geometries, geometries)
+            sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
+            sg.ExcludeCollisionsWithin(geometries)
+            sg.ExcludeCollisionsWithin(sg_context, geometries)
 
     @numpy_compare.check_nonsymbolic_types
     def test_value_instantiations(self, T):
@@ -906,10 +925,13 @@ class TestGeometry(unittest.TestCase):
         t = prog.NewContinuousVariables(1, "t")
 
         # Test Point.
-        p = [11.1, 12.2, 13.3]
+        p = np.array([11.1, 12.2, 13.3])
         point = mut.optimization.Point(p)
         self.assertEqual(point.ambient_dimension(), 3)
         np.testing.assert_array_equal(point.x(), p)
+        point.set_x(x=2*p)
+        np.testing.assert_array_equal(point.x(), 2*p)
+        point.set_x(x=p)
 
         # Test HPolyhedron.
         hpoly = mut.optimization.HPolyhedron(A=A, b=b)

@@ -62,6 +62,8 @@ class SolverInterface {
   /// If the @p prog has set an option for a solver, and @p solver_options
   /// contains a different value for the same option on the same solver, then @p
   /// solver_options takes priority.
+  /// Derived implementations of this interface may elect to throw
+  /// std::exception for badly formed programs.
   virtual void Solve(const MathematicalProgram& prog,
                      const std::optional<Eigen::VectorXd>& initial_guess,
                      const std::optional<SolverOptions>& solver_options,

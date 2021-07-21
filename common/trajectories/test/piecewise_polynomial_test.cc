@@ -265,7 +265,7 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
           breaks, samples, true),
-      std::runtime_error, "Times must be in increasing order.");
+      "Times must be in increasing order.");
 }
 
 GTEST_TEST(testPiecewisePolynomial, AllTests) {
@@ -300,7 +300,7 @@ GTEST_TEST(testPiecewisePolynomial, VectorValueTest) {
 
   PiecewisePolynomial<double> mat(Eigen::Matrix3d::Identity());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      mat.vector_values(times), std::runtime_error,
+      mat.vector_values(times),
       "This method only supports vector-valued trajectories.");
 }
 

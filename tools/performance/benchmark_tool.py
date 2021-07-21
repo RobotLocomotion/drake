@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tool to help with controlled benchmark experiments.
 
 Subcommands:
@@ -19,7 +18,7 @@ conduct_experiment:
   It is possible to customize the bazel build and run steps by using
   "--extra-build-args=" (a.k.a. "-b=") options:
 
-    benchmark_tool conduct_experiment \\
+    python3 -B benchmark_tool.py conduct_experiment \\
       -b=--copt=-mtune=haswell \\
       -b=--copt=-g \\
       [TARGET] [OUTPUT-DIR]
@@ -160,7 +159,6 @@ def copy_results(args):
     src = os.path.join(WORKSPACE, 'bazel-testlogs',
                        target_to_path_fragment(args.target),
                        'test.outputs')
-    shutil.rmtree(args.output_dir, ignore_errors=True)
     shutil.copytree(src, args.output_dir)
 
 
@@ -182,7 +180,7 @@ def main():
         parser.add_argument(
             'output_dir', metavar='OUTPUT-DIR',
             help='output directory for benchmark data;'
-            ' any existing contents will be erased.')
+            ' it must not already exist.')
 
     parser_conduct_experiment = subparsers.add_parser(
         'conduct_experiment',
@@ -205,6 +203,13 @@ def main():
     parser_copy_results.set_defaults(func=copy_results)
 
     args = parser.parse_args()
+
+    # Fail fast if the output directory is an empty string or already exists.
+    assert args.output_dir, \
+        "OUTPUT-DIR must not be 0-length."
+    assert not os.path.exists(args.output_dir), \
+        "OUTPUT-DIR must not already exist."
+
     args.func(args)
 
 

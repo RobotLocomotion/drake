@@ -4,6 +4,8 @@
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/point.h"
 
 namespace drake {
 namespace geometry {
@@ -13,57 +15,15 @@ namespace {
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-class MutablePoint final : public ConvexSet {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MutablePoint)
-
-  explicit MutablePoint(const Eigen::Ref<const Eigen::VectorXd>& x)
-      : ConvexSet(&ConvexSetCloner<MutablePoint>, x.size()), x_{x} {}
-  ~MutablePoint() final {}
-
-  const Eigen::VectorXd& x() const { return x_; }
-  Eigen::VectorXd& x() { return x_; }
-
- private:
-  // These are unused, and (effectively) unimplemented.
-  bool DoIsBounded() const final { return true; }
-
-  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final {
-      return is_approx_equal_abstol(x, x_, tol);
-  }
-
-  void DoAddPointInSetConstraints(
-      solvers::MathematicalProgram*,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final {
-    throw std::runtime_error("Not implemented");
-  }
-
-  std::vector<solvers::Binding<solvers::Constraint>>
-  DoAddPointInNonnegativeScalingConstraints(
-      solvers::MathematicalProgram* prog,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-      const symbolic::Variable& t) const final {
-    throw std::runtime_error("Not implemented");
-  }
-
-  std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
-      const final {
-    throw std::runtime_error("Not implemented");
-  }
-
-  Eigen::VectorXd x_;
-};
-
 GTEST_TEST(ConvexSetsTest, BasicTest) {
   ConvexSets sets;
 
   const ConvexSet& a =
-      *sets.emplace_back(MutablePoint(Vector2d{1., 2.}));
+      *sets.emplace_back(Point(Vector2d{1., 2.}));
   const Vector3d b_point{3., 4., 5.};
-  std::unique_ptr<MutablePoint> b_original =
-      std::make_unique<MutablePoint>(b_point);
-  MutablePoint* b_pointer = b_original.get();
+  std::unique_ptr<Point> b_original =
+      std::make_unique<Point>(b_point);
+  Point* b_pointer = b_original.get();
   const ConvexSet& b = *sets.emplace_back(std::move(b_original));
 
   EXPECT_EQ(a.ambient_dimension(), 2);
@@ -90,8 +50,36 @@ GTEST_TEST(ConvexSetsTest, BasicTest) {
   EXPECT_TRUE(moved[1]->PointInSet(b_point));
   const Vector3d new_point{6., 7., 8.};
   EXPECT_FALSE(moved[1]->PointInSet(new_point));
-  b_pointer->x() = new_point;
+  b_pointer->set_x(new_point);
   EXPECT_TRUE(moved[1]->PointInSet(new_point));
+}
+
+
+GTEST_TEST(ConvexSetTest, IntersectsWithTest) {
+/* Test that IntersectsWith() yields correct results for the following
+arrangement of boxes:
+     5                ┏━━━━━━━━━┓
+                      ┃      C  ┃
+     4      ┏━━━━━━━━━┃━━━━┓    ┃
+            ┃         ┃    ┃    ┃
+     3      ┃         ┗━━━━━━━━━┛
+            ┃      B       ┃
+     2 ┏━━━━┃━━━━┓         ┃
+       ┃    ┃    ┃         ┃
+     1 ┃    ┗━━━━━━━━━━━━━━┛
+       ┃  A      ┃
+     0 ┗━━━━━━━━━┛
+       0    1    2    3    4    5
+*/
+  HPolyhedron set_A = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(2, 2));
+  HPolyhedron set_B = HPolyhedron::MakeBox(Vector2d(1, 1), Vector2d(4, 4));
+  HPolyhedron set_C = HPolyhedron::MakeBox(Vector2d(3, 3), Vector2d(5, 5));
+  EXPECT_TRUE(set_A.IntersectsWith(set_B));
+  EXPECT_TRUE(set_B.IntersectsWith(set_A));
+  EXPECT_TRUE(set_B.IntersectsWith(set_C));
+  EXPECT_TRUE(set_C.IntersectsWith(set_B));
+  EXPECT_FALSE(set_A.IntersectsWith(set_C));
+  EXPECT_FALSE(set_C.IntersectsWith(set_A));
 }
 }  // namespace
 

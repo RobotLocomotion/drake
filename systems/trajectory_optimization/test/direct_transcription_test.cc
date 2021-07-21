@@ -292,8 +292,6 @@ void SolvePendulumTrajectory(bool continuous_time) {
       std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
   multibody::Parser parser(pendulum.get());
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
-  pendulum->WeldFrames(pendulum->world_frame(),
-                       pendulum->GetFrameByName("base"));
   pendulum->Finalize();
 
   // Create the DirectTranscription object, and specify which input port

@@ -7,7 +7,7 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   if (this->get_data_type() != kVectorValued)
     return;  // Nothing we can check for an abstract port.
 
-  auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
+  const auto* const proposed_vec = proposed.maybe_get_value<BasicVector<T>>();
   if (proposed_vec == nullptr) {
     throw std::logic_error(
         fmt::format("OutputPort::Allocate(): expected BasicVector output type "

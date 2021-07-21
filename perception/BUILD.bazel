@@ -96,6 +96,7 @@ drake_cc_googletest(
     name = "point_cloud_to_lcm_test",
     deps = [
         ":point_cloud_to_lcm",
+        "//common:bit_cast",
         "//common/test_utilities:limit_malloc",
     ],
 )

@@ -14,6 +14,8 @@ IiwaCommandSender::IiwaCommandSender(int num_joints)
       "lcmt_iiwa_command", &IiwaCommandSender::CalcOutput);
 }
 
+IiwaCommandSender::~IiwaCommandSender() = default;
+
 using InPort = systems::InputPort<double>;
 const InPort& IiwaCommandSender::get_position_input_port() const {
   return LeafSystem<double>::get_input_port(0);

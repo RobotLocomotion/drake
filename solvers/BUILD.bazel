@@ -778,6 +778,7 @@ drake_cc_library(
     ] + select({
         "//tools:with_mosek": [
             "//common:scoped_singleton",
+            "//common:scope_exit",
             "//math:quadratic_form",
             "@mosek",
         ],
@@ -941,6 +942,7 @@ drake_cc_library(
         "//common:essential",
     ] + select({
         "//conditions:default": [
+            "//common:scope_exit",
             "//math:eigen_sparse_triplet",
             "@scs//:scsdir",
         ],
@@ -1373,6 +1375,7 @@ drake_cc_googletest(
         ":sos_examples",
         "//common:filesystem",
         "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
