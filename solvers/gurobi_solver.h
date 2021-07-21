@@ -55,6 +55,28 @@ class GurobiSolver final : public SolverBase {
   GurobiSolver();
   ~GurobiSolver() final;
 
+  /**
+   * Writes the optimization model to a file.
+   * Refer to
+   * https://www.gurobi.com/documentation/9.1/refman/py_model_write.html for
+   * more details, such as all supported file extensions.
+   * @param file_name The name of the file to which Gurobi write the model,
+   * including the file extension. file_name="" means don't write to file.
+   */
+  void write_to_file(const std::string& file_name) { write_file_ = file_name; }
+
+  /**
+   * Tells Gurobi to compute an Irreducible Inconsistent Subsystem (IIS) when
+   * the problem is infeasible.
+   * Refer to
+   * https://www.gurobi.com/documentation/9.1/refman/py_model_computeiis.html
+   * for more details. Often this method is called together with
+   * write_to_file("OUTPUTFILE.ilp") to write the IIS to a file with extension
+   * "ilp".
+   * @param iis_flag Set to true so that when the problem is infeasible
+   */
+  void compute_iis(bool iis_flag) { iis_flag_ = iis_flag; }
+
   /// Contains info returned to a user function that handles
   /// a Node or Solution callback.
   /// @see MipNodeCallbackFunction
@@ -184,6 +206,9 @@ class GurobiSolver final : public SolverBase {
   // or NULL if no callback has been supplied.
   MipNodeCallbackFunction mip_node_callback_;
   MipSolCallbackFunction mip_sol_callback_;
+
+  std::string write_file_{""};
+  bool iis_flag_{false};
 };
 
 }  // end namespace solvers

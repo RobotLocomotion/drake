@@ -2,6 +2,8 @@ import unittest
 import numpy as np
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
+from pydrake.common import temp_directory
+import os
 
 
 class TestMathematicalProgram(unittest.TestCase):
@@ -44,3 +46,26 @@ class TestMathematicalProgram(unittest.TestCase):
         with GurobiSolver.AcquireLicense() as license:
             self.assertTrue(license.is_valid())
         self.assertFalse(license.is_valid())
+
+    def test_write_to_file(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 1)
+        prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1])
+        solver = GurobiSolver()
+        file_name = temp_directory() + "/gurobi.mps"
+        solver.write_to_file(file_name=file_name)
+        result = solver.Solve(prog)
+        self.assertTrue(os.path.exists(file_name))
+
+    def test_compute_iis(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddBoundingBoxConstraint(1, np.inf, x)
+        prog.AddLinearConstraint(x[0] + x[1] == 1)
+        solver = GurobiSolver()
+        ilp_file_name = temp_directory() + "/gurobi.ilp"
+        solver.write_to_file(file_name=ilp_file_name)
+        solver.compute_iis(iis_flag=True)
+        result = solver.Solve(prog)
+        self.assertTrue(os.path.exists(ilp_file_name))

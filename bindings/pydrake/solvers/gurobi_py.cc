@@ -23,7 +23,11 @@ PYBIND11_MODULE(gurobi, m) {
   py::class_<GurobiSolver, SolverInterface> cls(
       m, "GurobiSolver", doc.GurobiSolver.doc);
   cls.def(py::init<>(), doc.GurobiSolver.ctor.doc)
-      .def_static("id", &GurobiSolver::id, doc.GurobiSolver.id.doc);
+      .def_static("id", &GurobiSolver::id, doc.GurobiSolver.id.doc)
+      .def("write_to_file", &GurobiSolver::write_to_file, py::arg("file_name"),
+          doc.GurobiSolver.write_to_file.doc)
+      .def("compute_iis", &GurobiSolver::compute_iis, py::arg("iis_flag"),
+          doc.GurobiSolver.compute_iis.doc);
   pysolvers::BindAcquireLicense(&cls, doc.GurobiSolver);
 
   py::class_<GurobiSolverDetails>(

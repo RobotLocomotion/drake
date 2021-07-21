@@ -1054,6 +1054,17 @@ void GurobiSolver::DoSolve(
   if (!error) {
     error = GRBoptimize(model);
   }
+  if (!error && iis_flag_) {
+    int optimstatus = 0;
+    GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
+    if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
+      // Only compute IIS when the problem is infeasible.
+      error = GRBcomputeIIS(model);
+    }
+  }
+  if (!error && write_file_ != "") {
+    error = GRBwrite(model, write_file_.c_str());
+  }
 
   SolutionResult solution_result = SolutionResult::kUnknownError;
 
