@@ -58,7 +58,7 @@ GCC_FLAGS = CXX_FLAGS + [
     "-Werror=non-virtual-dtor",
     "-Werror=return-local-addr",
     "-Werror=unused-but-set-parameter",
-    # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
+    # This was turned on via -Wextra, but is too strict to have as an error.
     "-Wno-missing-field-initializers",
 ]
 
