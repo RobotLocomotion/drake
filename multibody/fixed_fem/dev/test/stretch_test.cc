@@ -101,7 +101,7 @@ class StretchTest : public ::testing::Test {
       if (std::abs(std::abs(q(int{y_dof_index})) - std::abs(kLy / 2)) <= kTol) {
         bc->AddBoundaryCondition(y_dof_index,
                                  Vector1<T>(
-                                   kStretchFactor * q(int{y_dof_index})));
+                                     kStretchFactor * q(int{y_dof_index})));
       }
       /* No translation in the xz-plane. */
       if (std::abs(q(int{z_dof_index})) <= kTol) {

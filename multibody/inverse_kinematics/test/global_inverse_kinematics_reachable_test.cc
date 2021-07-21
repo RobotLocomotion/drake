@@ -78,7 +78,7 @@ TEST_F(KukaTest, ReachableTest) {
     q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
     // The reconstructed posture should be within the user specified bound.
     EXPECT_NEAR(q_global_ik(
-                int{plant_->GetJointByName("iiwa_joint_2").index()}),
+                    int{plant_->GetJointByName("iiwa_joint_2").index()}),
                 0.5, 1e-3);
     const JointIndex iiwa_joint_3_index =
         plant_->GetJointByName("iiwa_joint_3").index();
