@@ -778,6 +778,7 @@ drake_cc_library(
     ] + select({
         "//tools:with_mosek": [
             "//common:scoped_singleton",
+            "//common:scope_exit",
             "//math:quadratic_form",
             "@mosek",
         ],

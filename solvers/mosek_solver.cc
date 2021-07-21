@@ -13,9 +13,11 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <fmt/format.h>
 #include <mosek.h>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/quadratic_form.h"
@@ -1602,6 +1604,27 @@ MSKrescodee SetDualSolution(
   return rescode;
 }
 
+// Throws a runtime error if the mosek option is set incorrectly.
+template <typename T>
+void ThrowForInvalidOption(MSKrescodee rescode, const std::string& option,
+                           const T& val) {
+  if (rescode != MSK_RES_OK) {
+    const std::string mosek_version =
+        fmt::format("{}.{}", MSK_VERSION_MAJOR, MSK_VERSION_MINOR);
+    throw std::runtime_error(fmt::format(
+        "MosekSolver(): cannot set Mosek option '{option}' to value '{value}', "
+        "response code {code}, check "
+        "https://docs.mosek.com/{version}/capi/response-codes.html for the "
+        "meaning of the response code, check "
+        "https://docs.mosek.com/{version}/capi/param-groups.html for allowable "
+        "values in C++, or "
+        "https://docs.mosek.com/{version}/pythonapi/param-groups.html "
+        "for allowable values in python.",
+        fmt::arg("option", option), fmt::arg("value", val),
+        fmt::arg("code", rescode), fmt::arg("version", mosek_version)));
+  }
+}
+
 }  // anonymous namespace
 
 /*
@@ -1675,7 +1698,6 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // includes both the matrix variables (for psd matrix variables) and
   // non-matrix variables.
   const int num_decision_vars = prog.num_vars();
-  MSKtask_t task = nullptr;
   MSKrescodee rescode{MSK_RES_OK};
 
   if (!license_) {
@@ -1723,25 +1745,33 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
       matrix_variable_entry_to_selection_matrix_id;
 
   // Create the optimization task.
+  // task is initialized as a null pointer, same as in Mosek's documentation
+  // https://docs.mosek.com/9.2/capi/design.html#hello-world-in-mosek
+  MSKtask_t task = nullptr;
   rescode = MSK_maketask(env, 0, num_nonmatrix_vars_in_prog, &task);
+  ScopeExit guard([&task]() { MSK_deletetask(&task); });
 
   // Set the options (parameters).
   for (const auto& double_options : merged_options.GetOptionsDouble(id())) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnadouparam(task, double_options.first.c_str(),
                                   double_options.second);
+      ThrowForInvalidOption(rescode, double_options.first,
+                            double_options.second);
     }
   }
   for (const auto& int_options : merged_options.GetOptionsInt(id())) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnaintparam(task, int_options.first.c_str(),
                                   int_options.second);
+      ThrowForInvalidOption(rescode, int_options.first, int_options.second);
     }
   }
   for (const auto& str_options : merged_options.GetOptionsStr(id())) {
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putnastrparam(task, str_options.first.c_str(),
                                   str_options.second.c_str());
+      ThrowForInvalidOption(rescode, str_options.first, str_options.second);
     }
   }
 
@@ -2042,8 +2072,6 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // is OK. But do not modify result->solution_result_ if rescode is not OK
   // after this line.
   unused(rescode);
-
-  MSK_deletetask(&task);
 }
 
 }  // namespace solvers
