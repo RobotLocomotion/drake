@@ -236,7 +236,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{matrix}
    */
   static PiecewisePolynomial<T> FirstOrderHold(
       const std::vector<T>& breaks,
@@ -250,6 +250,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @pre `samples.cols() == breaks.size()`
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
+   * @pydrake_mkdoc_identifier{vector}
    */
   static PiecewisePolynomial<T> FirstOrderHold(
       const Eigen::Ref<const VectorX<T>>& breaks,
@@ -295,7 +296,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{matrix}
    */
   static PiecewisePolynomial<T> CubicShapePreserving(
       const std::vector<T>& breaks,
@@ -310,6 +311,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @pre `samples.cols() == breaks.size()`.
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
+   * @pydrake_mkdoc_identifier{vector}
    */
   static PiecewisePolynomial<T> CubicShapePreserving(
       const Eigen::Ref<const VectorX<T>>& breaks,
@@ -327,7 +329,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * and `samples` have inconsistent dimensions.
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{4args_matrix}
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const std::vector<T>& breaks,
@@ -343,6 +345,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @pre `samples.cols() == breaks.size()`.
    * @throws std::exception under the conditions specified under
    *         @ref coefficient_construction_methods.
+   * @pydrake_mkdoc_identifier{4args_vector}
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const Eigen::Ref<const VectorX<T>>& breaks,
@@ -358,7 +361,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `samples`. Each segment is fully specified by `samples` and `sample_dot` at
    * both ends. Second derivatives are not continuous.
    *
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{matrix}
    */
   static PiecewisePolynomial<T> CubicHermite(
       const std::vector<T>& breaks,
@@ -372,6 +375,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * variable derivative, respectively.
    *
    * @pre `samples.cols() == samples_dot.cols() == breaks.size()`.
+   * @pydrake_mkdoc_identifier{vector}
    */
   static PiecewisePolynomial<T> CubicHermite(
       const Eigen::Ref<const VectorX<T>>& breaks,
@@ -401,7 +405,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `periodic_end_condition` is `true`, then for two samples, it would
    * produce a straight line (use `FirstOrderHold` for this instead), and if
    * `periodic_end_condition` is `false` the problem is ill-defined.
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{3args_matrix}
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const std::vector<T>& breaks,
@@ -414,6 +418,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * of `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
+   * @pydrake_mkdoc_identifier{3args_vector}
    */
   static PiecewisePolynomial<T> CubicWithContinuousSecondDerivatives(
       const Eigen::Ref<const VectorX<T>>& breaks,
@@ -435,7 +440,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * information.
    * @pre `times` must be monotonically increasing.
    * @pre `samples.size() == times.size()`.
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   * @pydrake_mkdoc_identifier{matrix}
    */
   static PiecewisePolynomial LagrangeInterpolatingPolynomial(
       const std::vector<T>& times, const std::vector<MatrixX<T>>& samples);
@@ -446,6 +451,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * of `samples` represents a sample point.
    *
    * @pre `samples.cols() == times.size()`.
+   * @pydrake_mkdoc_identifier{vector}
    */
   static PiecewisePolynomial<T> LagrangeInterpolatingPolynomial(
       const Eigen::Ref<const VectorX<T>>& times,
