@@ -15,6 +15,30 @@
 namespace drake {
 namespace pydrake {
 
+namespace {
+// For bindings that want a `const vector<VectorX<T>>&` but are bound
+// via a `const vector<vector<T>>&` for overloading priority,
+// this function converts the input.  A numpy matrix is row-major, so a 2x3
+// samples numpy array (unfortunately) turns into a std::vector with 2 elements,
+// each a vector of 3 elements; we'll transpose that.
+template <typename T>
+std::vector<MatrixX<T>> MakeEigenFromRowMajorVectors(
+    const std::vector<std::vector<T>>& in) {
+  if (in.size() == 0) {
+    return std::vector<MatrixX<T>>();
+  }
+  std::vector<MatrixX<T>> vec(in[0].size(), Eigen::VectorXd(in.size()));
+  for (int row = 0; row < static_cast<int>(in.size()); ++row) {
+    DRAKE_THROW_UNLESS(in[row].size() == in[0].size());
+    for (int col = 0; col < static_cast<int>(in[row].size()); ++col) {
+      vec[col](row, 0) = in[row][col];
+    }
+  }
+  return vec;
+}
+
+}  // namespace
+
 PYBIND11_MODULE(trajectories, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::trajectories;
@@ -105,11 +129,24 @@ PYBIND11_MODULE(trajectories, m) {
       .def(py::init<std::vector<Polynomial<T>> const&,
                std::vector<double> const&>(),
           doc.PiecewisePolynomial.ctor.doc_2args_polynomials_breaks)
+      .def_static(
+          "ZeroOrderHold",
+          // This serves the same purpose as the C++ ZeroOrderHold(VectorX<T>,
+          // MatrixX<T>) method.  For 2d numpy arrays, pybind apparently matches
+          // vector<vector<T>> then vector<MatrixX<T>> then MatrixX<T>.
+          [](const std::vector<T>& breaks,
+              const std::vector<std::vector<T>>& samples) {
+            return PiecewisePolynomial<T>::ZeroOrderHold(
+                breaks, MakeEigenFromRowMajorVectors(samples));
+          },
+          py::arg("breaks"), py::arg("samples"),
+          doc.PiecewisePolynomial.ZeroOrderHold.doc_vector)
       .def_static("ZeroOrderHold",
-          py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const MatrixX<T>>&>(
+          py::overload_cast<const std::vector<T>&,
+              const std::vector<MatrixX<T>>&>(
               &PiecewisePolynomial<T>::ZeroOrderHold),
-          doc.PiecewisePolynomial.ZeroOrderHold.doc)
+          py::arg("breaks"), py::arg("samples"),
+          doc.PiecewisePolynomial.ZeroOrderHold.doc_matrix)
       .def_static("FirstOrderHold",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&>(
