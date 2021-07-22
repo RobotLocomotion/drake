@@ -9,6 +9,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -82,11 +83,12 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
  * @param name Name of the Cost / Constraint class.
  */
 template <typename C>
-auto RegisterBinding(py::handle* scope, const string& name) {
+auto RegisterBinding(py::handle* scope) {
   constexpr auto& cls_doc = pydrake_doc.drake.solvers.Binding;
   typedef Binding<C> B;
-  string pyname = "Binding_" + name;
+  const string pyname = TemporaryClassName<B>();
   py::class_<B> binding_cls(*scope, pyname.c_str());
+  AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
@@ -336,7 +338,7 @@ void DefTesting(py::module m) {
   // To test binding casting.
   py::class_<StubEvaluatorBase, EvaluatorBase,
       std::shared_ptr<StubEvaluatorBase>>(m, "StubEvaluatorBase");
-  RegisterBinding<StubEvaluatorBase>(&m, "StubEvaluatorBase")
+  RegisterBinding<StubEvaluatorBase>(&m)  // BR
       .def_static(
           "Make", [](const Eigen::Ref<const VectorXDecisionVariable>& v) {
             return Binding<StubEvaluatorBase>(
@@ -1510,7 +1512,7 @@ void BindEvaluatorsAndBindings(py::module m) {
     bind_eval(symbolic::Variable{}, symbolic::Expression{});
   }
 
-  auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase");
+  auto evaluator_binding = RegisterBinding<EvaluatorBase>(&m);
   DefBindingCastConstructor<EvaluatorBase>(&evaluator_binding);
 
   py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
@@ -1731,21 +1733,17 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
-  auto constraint_binding = RegisterBinding<Constraint>(&m, "Constraint");
+  auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
-  RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
-  RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
-  RegisterBinding<RotatedLorentzConeConstraint>(
-      &m, "RotatedLorentzConeConstraint");
-  RegisterBinding<LinearEqualityConstraint>(&m, "LinearEqualityConstraint");
-  RegisterBinding<BoundingBoxConstraint>(&m, "BoundingBoxConstraint");
-  RegisterBinding<PositiveSemidefiniteConstraint>(
-      &m, "PositiveSemidefiniteConstraint");
-  RegisterBinding<LinearMatrixInequalityConstraint>(
-      &m, "LinearMatrixInequalityConstraint");
-  RegisterBinding<LinearComplementarityConstraint>(
-      &m, "LinearComplementarityConstraint");
-  RegisterBinding<ExponentialConeConstraint>(&m, "ExponentialConeConstraint");
+  RegisterBinding<LinearConstraint>(&m);
+  RegisterBinding<LorentzConeConstraint>(&m);
+  RegisterBinding<RotatedLorentzConeConstraint>(&m);
+  RegisterBinding<LinearEqualityConstraint>(&m);
+  RegisterBinding<BoundingBoxConstraint>(&m);
+  RegisterBinding<PositiveSemidefiniteConstraint>(&m);
+  RegisterBinding<LinearMatrixInequalityConstraint>(&m);
+  RegisterBinding<LinearComplementarityConstraint>(&m);
+  RegisterBinding<ExponentialConeConstraint>(&m);
 
   // Mirror procedure for costs
   py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
@@ -1808,17 +1806,17 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_A"), py::arg("new_b") = 0,
           doc.L2NormCost.UpdateCoefficients.doc);
 
-  auto cost_binding = RegisterBinding<Cost>(&m, "Cost");
+  auto cost_binding = RegisterBinding<Cost>(&m);
   DefBindingCastConstructor<Cost>(&cost_binding);
-  RegisterBinding<LinearCost>(&m, "LinearCost");
-  RegisterBinding<QuadraticCost>(&m, "QuadraticCost");
-  RegisterBinding<L2NormCost>(&m, "L2NormCost");
+  RegisterBinding<LinearCost>(&m);
+  RegisterBinding<QuadraticCost>(&m);
+  RegisterBinding<L2NormCost>(&m);
 
   py::class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(
       m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
-  RegisterBinding<VisualizationCallback>(&m, "VisualizationCallback");
+  RegisterBinding<VisualizationCallback>(&m);
 }  // NOLINT(readability/fn_size)
 
 void BindFreeFunctions(py::module m) {
@@ -1839,7 +1837,7 @@ void BindFreeFunctions(py::module m) {
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
 }
 
-PYBIND11_MODULE(mathematicalprogram, m) {
+PYBIND11_MODULE(_mathematicalprogram, m) {
   m.doc() = R"""(
 Bindings for MathematicalProgram
 
