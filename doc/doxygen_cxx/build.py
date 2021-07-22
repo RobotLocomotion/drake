@@ -101,6 +101,38 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
     return output_filename
 
 
+def _postprocess_doxygen_log(modules, original_lines):
+    """Looks at the log file to see if anything went wrong.
+    Dumps the log to the console iff in verbose mode.
+    """
+    # Throw away useless lines.
+    lines = []
+    ignoring_pameters = False
+    for line in original_lines:
+        if ignoring_pameters:
+            if line.startswith("parameter "):
+                continue
+        ignoring_pameters = False
+        if line.endswith(" are not documented:"):
+            ignoring_pameters = True
+            continue
+        lines.append(line)
+
+    # Print all of the warnings (when requested).
+    if verbose():
+        for line in lines:
+            print("[doxygen] " + line)
+
+    # Check for important warnings iff we're building *all* of the docs.
+    errors = []
+    if not modules:
+        if "unable to resolve reference" in line:
+            errors.append(line)
+    if errors:
+        message = "\n".join(["Important warnings from Doxygen:"] + errors)
+        raise RuntimeError(message)
+
+
 def _build(*, out_dir, temp_dir, modules, quick):
     """Generates into out_dir; writes scratch files into temp_dir.
     As a precondition, both directories must already exist and be empty.
@@ -138,6 +170,14 @@ def _build(*, out_dir, temp_dir, modules, quick):
 
     # Run doxygen.
     check_call([doxygen, doxyfile], cwd=temp_dir)
+
+    # Post-process its log.
+    with open(f"{temp_dir}/doxygen.log", encoding="utf-8") as f:
+        lines = [
+            line.strip().replace(f"{temp_dir}/", "")
+            for line in f.readlines()
+        ]
+    _postprocess_doxygen_log(modules, lines)
 
     # The nominal pages to offer for preview.
     return ["", "classes.html", "modules.html"]
