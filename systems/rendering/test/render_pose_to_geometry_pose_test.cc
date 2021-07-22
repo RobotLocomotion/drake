@@ -5,6 +5,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 namespace rendering {
@@ -50,6 +53,8 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, ToSymbolic) {
     EXPECT_EQ(1, converted.num_output_ports());
   }));
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace rendering

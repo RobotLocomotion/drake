@@ -73,12 +73,17 @@ class SceneGraphTester {
     scene_graph.CalcQueryObject(context, handle);
   }
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2021-12-01 Delete this helper in completing the pose bundle removal.
   template <typename T>
   static void CalcPoseBundle(const SceneGraph<T>& scene_graph,
                              const systems::Context<T>& context,
                              PoseBundle<T>* bundle) {
     return scene_graph.CalcPoseBundle(context, bundle);
   }
+#pragma GCC diagnostic pop
 
   template <typename T>
   static const GeometryState<T>& GetGeometryState(
@@ -591,6 +596,9 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2021-12-01 Delete this entire test in completing the pose bundle removal.
 // Tests the pose vector output port -- specifically, the pose vector should
 // *never* include the world frame.
 GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
@@ -691,6 +699,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     EXPECT_EQ(0, poses.get_num_poses());
   }
 }
+#pragma GCC diagnostic pop
 
 // Tests that exercise the Context-modifying API
 
