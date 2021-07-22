@@ -13,7 +13,7 @@ namespace drake {
 
 /// A type-safe non-negative index class.
 ///
-/// @note This is *purposely* a separate class from @ref geometry::Identifier.
+/// @note This is *purposely* a separate class from Identifier.
 /// For more information, see @ref TypeSafeIndexVsIndentifier "this section".
 ///
 /// This class serves as an upgrade to the standard practice of passing `int`s
