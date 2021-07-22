@@ -17,18 +17,24 @@ namespace rendering {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class PoseVector : public BasicVector<T> {
+class DRAKE_DEPRECATED("2021-12-01",
+                       "PoseVector is no longer in use. Visualizers typically "
+                       "connect to SceneGraph's QueryObject port.")
+PoseVector : public BasicVector<T> {
  public:
   /// Default constructor.
   PoseVector();
   ~PoseVector() override;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Fully-parameterized constructor.
   /// @param rotation the orientation R_WA of frame A in the world frame W.
   /// @param translation the position vector p_WA giving A's origin measured
   /// from W's origin, expressed in W.
   PoseVector(const Eigen::Quaternion<T>& rotation,
              const Eigen::Translation<T, 3>& translation);
+#pragma GCC diagnostic pop
 
   /// Returns the transform X_WA.
   math::RigidTransform<T> get_transform() const;
@@ -48,7 +54,10 @@ class PoseVector : public BasicVector<T> {
   static constexpr int kSize = 7;
 
  protected:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   [[nodiscard]] PoseVector<T>* DoClone() const override;
+#pragma GCC diagnostic pop
 };
 
 }  // namespace rendering

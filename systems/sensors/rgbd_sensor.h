@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -36,7 +37,8 @@ namespace sensors {
  - depth_image_32f
  - depth_image_16u
  - label_image
- - X_WB
+ - X_WB (2021-12-01 deprecated)
+ - body_pose_in_world
  @endsystem
 
  The following text uses terminology and conventions from CameraInfo. Please
@@ -170,10 +172,16 @@ class RgbdSensor final : public LeafSystem<double> {
    */
   const OutputPort<double>& label_image_output_port() const;
 
-  /** Returns the abstract-valued output port that contains a RigidTransform
-    for `X_WB`.
-   */
+  /** Returns the abstract-valued output port that contains a
+   rendering::PoseVector for `X_WB`. */
+  DRAKE_DEPRECATED("2021-12-01",
+                   "Please use the body_pose_in_world_output_port() for a "
+                   "RigidTransform-valued pose.")
   const OutputPort<double>& X_WB_output_port() const;
+
+  /** Returns the abstract-valued output port (containing a RigidTransform)
+   which reports the pose of the body in the world frame (X_WB).  */
+  const OutputPort<double>& body_pose_in_world_output_port() const;
 
  private:
   friend class RgbdSensorTester;
@@ -187,8 +195,13 @@ class RgbdSensor final : public LeafSystem<double> {
                          ImageDepth16U* depth_image) const;
   void CalcLabelImage(const Context<double>& context,
                       ImageLabel16I* label_image) const;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  void CalcX_WB_pose_vector(const Context<double>& context,
+                            rendering::PoseVector<double>* pose_vector) const;
+#pragma GCC diagnostic pop
   void CalcX_WB(const Context<double>& context,
-                rendering::PoseVector<double>* pose_vector) const;
+                math::RigidTransformd* X_WB) const;
 
   // Convert a single channel, float depth image (with depths in meters) to a
   // single channel, unsigned uint16_t depth image (with depths in millimeters).
@@ -206,6 +219,7 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>* depth_image_16U_port_{};
   const OutputPort<double>* label_image_port_{};
   const OutputPort<double>* X_WB_pose_port_{};
+  const OutputPort<double>* body_pose_in_world_output_port_{};
 
   // The identifier for the parent frame `P`.
   const geometry::FrameId parent_frame_id_;
@@ -230,7 +244,8 @@ class RgbdSensor final : public LeafSystem<double> {
  - depth_image_32f
  - depth_image_16u
  - label_image
- - X_WB
+ - X_WB (2021-12-01 deprecated)
+ - body_pose_in_world
  @endsystem
  */
 class RgbdSensorDiscrete final : public systems::Diagram<double> {
@@ -284,8 +299,16 @@ class RgbdSensorDiscrete final : public systems::Diagram<double> {
   }
 
   /** @see RgbdSensor::base_pose_output_port().  */
+  DRAKE_DEPRECATED("2021-12-01",
+                   "Please use the body_pose_in_world_output_port() for a "
+                   "RigidTransform-valued pose.")
   const systems::OutputPort<double>& X_WB_output_port() const {
     return get_output_port(X_WB_output_port_);
+  }
+
+  /** @see RgbdSensor::body_pose_in_world_output_port().  */
+  const OutputPort<double>& body_pose_in_world_output_port() const {
+    return get_output_port(body_pose_in_world_output_port_);
   }
 
  private:
@@ -298,6 +321,7 @@ class RgbdSensorDiscrete final : public systems::Diagram<double> {
   int output_port_depth_image_16U_{-1};
   int output_port_label_image_{-1};
   int X_WB_output_port_{-1};
+  int body_pose_in_world_output_port_{-1};
 };
 
 }  // namespace sensors

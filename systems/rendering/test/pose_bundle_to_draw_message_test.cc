@@ -10,6 +10,9 @@ namespace systems {
 namespace rendering {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   PoseBundle<double> bundle(2);
   math::RigidTransformd foo_pose{Eigen::Vector3d{123, 0, 0}};
@@ -65,6 +68,8 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Stateless) {
   auto context = converter.AllocateContext();
   EXPECT_TRUE(context->is_stateless());
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace rendering

@@ -5,6 +5,9 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 namespace rendering {
@@ -80,3 +83,5 @@ void PoseBundle<T>::set_model_instance_id(int index, int id) {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::rendering::PoseBundle)
+
+#pragma GCC diagnostic pop

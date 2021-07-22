@@ -209,6 +209,7 @@ drake_cc_library(
     deps = [
         ":camera_info",
         ":image",
+        "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:scene_graph",
         "//geometry/render:render_engine",
