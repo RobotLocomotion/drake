@@ -260,7 +260,7 @@ internal::DeformableContactData<double> MakeDeformableContactData(
     DeformableContactSurface<double> contact_surface,
     internal::ReferenceDeformableGeometry<double> deformable_geometry) {
   const geometry::GeometryId dummy_rigid_id;
-  const SoftBodyIndex dummy_deformable_id;
+  const DeformableBodyIndex dummy_deformable_id;
   const double dummy_stiffness = 0;
   const double dummy_dissipation = 0;
   const double dummy_friction = 0;

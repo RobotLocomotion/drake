@@ -19,7 +19,7 @@ struct DeformableRigidContactPair {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableRigidContactPair)
   DeformableRigidContactPair(DeformableContactSurface<T> contact_surface_in,
                              geometry::GeometryId rigid_id_in,
-                             SoftBodyIndex deformable_id_in, const T& k,
+                             DeformableBodyIndex deformable_id_in, const T& k,
                              const T& d, const T& mu)
       : contact_surface(std::move(contact_surface_in)),
         rigid_id(rigid_id_in),
@@ -42,10 +42,10 @@ struct DeformableRigidContactPair {
 
   DeformableContactSurface<T> contact_surface;
   geometry::GeometryId rigid_id;  // The id of the rigid geometry in contact.
-  SoftBodyIndex deformable_id;    // The id of deformable body in contact.
-  T stiffness;                    // Combined stiffness at the contact point.
-  T dissipation;                  // Combined dissipation at the contact point.
-  T friction;                     // Combined friction at the contact point.
+  DeformableBodyIndex deformable_id;  // The id of deformable body in contact.
+  T stiffness;    // Combined stiffness at the contact point.
+  T dissipation;  // Combined dissipation at the contact point.
+  T friction;     // Combined friction at the contact point.
   /* The rotation matrix mapping world frame quantities into contact frames at
    each contact point. The i-th contact point has its own contact frame Cᵢ,
    where R_CᵢW = R_CWs[i]. The basis vector Cᵢz is along the contact surface's
