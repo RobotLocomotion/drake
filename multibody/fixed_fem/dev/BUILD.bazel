@@ -40,7 +40,8 @@ drake_cc_library(
         "constitutive_model.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
+        ":deformation_gradient_data",
+        ":fem_indexes",
         "//common:essential",
     ],
 )
@@ -60,7 +61,7 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":corotated_model_cache_entry",
+        ":corotated_model_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
@@ -68,12 +69,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "corotated_model_cache_entry",
+    name = "corotated_model_data",
     hdrs = [
-        "corotated_model_cache_entry.h",
+        "corotated_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
+        ":deformation_gradient_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
@@ -117,6 +118,20 @@ drake_cc_library(
     deps = [
         ":deformable_rigid_contact_pair",
         ":reference_deformable_geometry",
+    ],
+)
+
+drake_cc_library(
+    name = "deformation_gradient_data",
+    srcs = [
+        "deformation_gradient_data.cc",
+    ],
+    hdrs = [
+        "deformation_gradient_data.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 
@@ -206,17 +221,6 @@ drake_cc_library(
         "//lcm:drake_lcm",
         "//lcmtypes:experimental_deformable_mesh",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "deformation_gradient_cache_entry",
-    hdrs = [
-        "deformation_gradient_cache_entry.h",
-    ],
-    deps = [
-        ":fem_indexes",
-        "//common:essential",
     ],
 )
 
@@ -419,20 +423,22 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":linear_constitutive_model_cache_entry",
+        ":linear_constitutive_model_data",
         "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "linear_constitutive_model_cache_entry",
+    name = "linear_constitutive_model_data",
+    srcs = [
+        "linear_constitutive_model_data.cc",
+    ],
     hdrs = [
-        "linear_constitutive_model_cache_entry.h",
+        "linear_constitutive_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
-        "//common:default_scalars",
+        ":deformation_gradient_data",
         "//common:essential",
     ],
 )
@@ -659,6 +665,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformation_gradient_data_test",
+    deps = [
+        ":deformation_gradient_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "dirichlet_boundary_condition_test",
     deps = [
         ":dirichlet_boundary_condition",
@@ -789,10 +804,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "linear_constitutive_model_cache_entry_test",
+    name = "linear_constitutive_model_data_test",
     deps = [
-        ":linear_constitutive_model_cache_entry",
-        "//common/test_utilities:expect_throws_message",
+        ":linear_constitutive_model_data",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

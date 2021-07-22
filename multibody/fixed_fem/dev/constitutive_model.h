@@ -3,17 +3,20 @@
 #include <array>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/deformation_gradient_cache_entry.h"
+#include "drake/multibody/fixed_fem/dev/deformation_gradient_data.h"
+#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
-/** A constitutive model relates the strain to the stress of the material and
+namespace internal {
+
+/* A constitutive model relates the strain to the stress of the material and
  governs the material response under deformation. This constitutive relationship
  is defined through a hyperelastic potential energy, which increases with
  non-rigid deformation from the initial state.
 
- %ConstitutiveModel serves as the interface base class for all hyperelastic
+ ConstitutiveModel serves as the interface base class for all hyperelastic
  constitutive models. Since constitutive models are usually evaluated in
  computationally intensive inner loops of the simulation, the overhead caused by
  virtual methods may be significant. Therefore, this class uses a CRTP pattern
@@ -24,7 +27,7 @@ namespace fem {
  traits class that declares the compile time quantities and type declarations
  that this base class requires.
  @tparam DerivedConstitutiveModel The concrete constitutive model that inherits
- from %ConstitutiveModel through CRTP.
+ from ConstitutiveModel through CRTP.
  @tparam DerivedTraits The traits class associated with the
  DerivedConstitutiveModel. */
 template <class DerivedConstitutiveModel, class DerivedTraits>
@@ -39,44 +42,41 @@ class ConstitutiveModel {
 
   ~ConstitutiveModel() = default;
 
-  /** The number of locations at which the constitutive relationship is
+  /* The number of locations at which the constitutive relationship is
    evaluated. */
   static constexpr int num_locations() { return DerivedTraits::kNumLocations; }
 
-  /** @name "Calc" Methods
+  /* @name "Calc" Methods
    Methods for calculating the energy density and its derivatives given the
-   cache entry required for these calculations. The constitutive model expects
-   that the input cache entries are up-to-date. FemElement is
-   responsible for updating these cache entries. ConstitutiveModel will
-   not and cannot verify the cache entries provided are up-to-date.
-   @{ */
+   data required for these calculations. The constitutive model expects
+   that the input data are up-to-date. FemElement is responsible for updating
+   these data. ConstitutiveModel will not and cannot verify the data provided
+   are up-to-date. */
 
-  /** Calculates the energy density in reference configuration, in unit J/m³,
-   given the model cache entry.
+  /* Calculates the energy density in reference configuration, in unit J/m³,
+   given the model data.
    @pre `Psi != nullptr`. */
   void CalcElasticEnergyDensity(
-      const typename DerivedTraits::DeformationGradientCacheEntryType&
-          cache_entry,
+      const typename DerivedTraits::DeformationGradientDataType& data,
       std::array<T, num_locations()>* Psi) const {
     DRAKE_ASSERT(Psi != nullptr);
     static_cast<const DerivedConstitutiveModel*>(this)
-        ->DoCalcElasticEnergyDensity(cache_entry, Psi);
+        ->DoCalcElasticEnergyDensity(data, Psi);
   }
 
-  /** Calculates the First Piola stress, in unit Pa, given the model cache
-   entry.
+  /* Calculates the First Piola stress, in unit Pa, given the deformation
+   gradient data.
    @pre `P != nullptr`. */
   void CalcFirstPiolaStress(
-      const typename DerivedTraits::DeformationGradientCacheEntryType&
-          cache_entry,
+      const typename DerivedTraits::DeformationGradientDataType& data,
       std::array<Matrix3<T>, num_locations()>* P) const {
     DRAKE_ASSERT(P != nullptr);
     static_cast<const DerivedConstitutiveModel*>(this)->DoCalcFirstPiolaStress(
-        cache_entry, P);
+        data, P);
   }
 
-  /** Calculates the derivative of First Piola stress with respect to the
-   deformation gradient, given the model cache entry. The stress derivative
+  /* Calculates the derivative of First Piola stress with respect to the
+   deformation gradient, given the model data. The stress derivative
    dPᵢⱼ/dFₖₗ is a 4-th order tensor that is flattened to a 9-by-9 matrix. The
    9-by-9 matrix is organized into 3-by-3 blocks of 3-by-3 submatrices. The
    ik-th entry in the jl-th block corresponds to the value dPᵢⱼ/dFₖₗ. Let A
@@ -99,27 +99,17 @@ class ConstitutiveModel {
                    -------------------------------------
   @pre `dPdF != nullptr`. */
   void CalcFirstPiolaStressDerivative(
-      const typename DerivedTraits::DeformationGradientCacheEntryType&
-          cache_entry,
+      const typename DerivedTraits::DeformationGradientDataType& data,
       std::array<Eigen::Matrix<T, 9, 9>, num_locations()>* dPdF) const {
     DRAKE_ASSERT(dPdF != nullptr);
     static_cast<const DerivedConstitutiveModel*>(this)
-        ->DoCalcFirstPiolaStressDerivative(cache_entry, dPdF);
-  }
-  /** @} */
-
-  /** Creates a DeformationGradientCacheEntry that is compatible
-   with this %ConstitutiveModel. */
-  typename DerivedTraits::DeformationGradientCacheEntryType
-  MakeDeformationGradientCacheEntry(ElementIndex element_index) const {
-    return typename DerivedTraits::DeformationGradientCacheEntryType(
-        element_index);
+        ->DoCalcFirstPiolaStressDerivative(data, dPdF);
   }
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstitutiveModel);
 
-  /** The base class constructor are made protected to prevent explicit
+  /* The base class constructor are made protected to prevent explicit
    construction of a base class object. Concrete instances should be obtained
    through the constructors of the derived constitutive models. */
   ConstitutiveModel() = default;
@@ -131,6 +121,8 @@ struct is_constitutive_model {
       std::is_base_of_v<ConstitutiveModel<Model, typename Model::Traits>,
                         Model>;
 };
+
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

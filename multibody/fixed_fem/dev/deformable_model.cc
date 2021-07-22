@@ -14,7 +14,7 @@ namespace multibody {
 namespace fem {
 
 template <typename T>
-SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
+DeformableBodyIndex DeformableModel<T>::RegisterDeformableBody(
     internal::ReferenceDeformableGeometry<T> geometry, std::string name,
     const DeformableBodyConfig<T>& config,
     geometry::ProximityProperties proximity_props) {
@@ -26,15 +26,15 @@ SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
           name));
     }
   }
-  SoftBodyIndex body_index(num_bodies());
+  DeformableBodyIndex body_index(num_bodies());
   switch (config.material_model()) {
     case MaterialModel::kLinear:
-      RegisterDeformableBodyHelper<LinearConstitutiveModel>(
+      RegisterDeformableBodyHelper<internal::LinearConstitutiveModel>(
           geometry.mesh(), std::move(name), config);
       break;
     case MaterialModel::kCorotated:
-      RegisterDeformableBodyHelper<CorotatedModel>(geometry.mesh(),
-                                                   std::move(name), config);
+      RegisterDeformableBodyHelper<internal::CorotatedModel>(
+          geometry.mesh(), std::move(name), config);
       break;
   }
   proximity_properties_.emplace_back(std::move(proximity_props));
@@ -43,7 +43,7 @@ SoftBodyIndex DeformableModel<T>::RegisterDeformableBody(
 }
 
 template <typename T>
-void DeformableModel<T>::SetWallBoundaryCondition(SoftBodyIndex body_id,
+void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyIndex body_id,
                                                   const Vector3<T>& p_WQ,
                                                   const Vector3<T>& n_W,
                                                   double distance_tolerance) {
@@ -89,12 +89,13 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
       internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
                                      kNumQuads>;
   using ConstitutiveModelType = Model<T, kNumQuads>;
-  static_assert(std::is_base_of_v<
-                    ConstitutiveModel<ConstitutiveModelType,
+  static_assert(
+      std::is_base_of_v<
+          internal::ConstitutiveModel<ConstitutiveModelType,
                                       typename ConstitutiveModelType::Traits>,
-                    ConstitutiveModelType>,
-                "The template parameter 'Model' must be derived from "
-                "ConstitutiveModel.");
+          ConstitutiveModelType>,
+      "The template parameter 'Model' must be derived from "
+      "ConstitutiveModel.");
   using ElementType =
       DynamicElasticityElement<IsoparametricElementType, QuadratureType,
                                ConstitutiveModelType>;
