@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/rigid_transform.h"
@@ -31,7 +32,10 @@ namespace rendering {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class PoseBundle {
+class DRAKE_DEPRECATED("2021-12-01",
+                       "PoseBundle is no longer in use. Visualizers typically "
+                       "connect to SceneGraph's QueryObject port.")
+PoseBundle {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
 
@@ -42,8 +46,11 @@ class PoseBundle {
   const math::RigidTransform<T>& get_transform(int index) const;
   void set_transform(int index, const math::RigidTransform<T>& pose);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const FrameVelocity<T>& get_velocity(int index) const;
   void set_velocity(int index, const FrameVelocity<T>& velocity);
+#pragma GCC diagnostic pop
 
   const std::string& get_name(int index) const;
   void set_name(int index, const std::string& name);
@@ -53,7 +60,11 @@ class PoseBundle {
 
  private:
   std::vector<math::RigidTransform<T>> poses_;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::vector<FrameVelocity<T>> velocities_;
+#pragma GCC diagnostic pop
+
   std::vector<std::string> names_;
   std::vector<int> ids_;
 };

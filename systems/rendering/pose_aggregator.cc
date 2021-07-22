@@ -8,6 +8,9 @@
 
 using std::to_string;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 namespace rendering {
@@ -194,3 +197,5 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::rendering::PoseAggregator)
+
+#pragma GCC diagnostic pop

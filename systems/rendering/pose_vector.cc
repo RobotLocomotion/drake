@@ -2,6 +2,9 @@
 
 #include "drake/common/default_scalars.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 namespace rendering {
@@ -71,3 +74,5 @@ PoseVector<T>* PoseVector<T>::DoClone() const {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::rendering::PoseVector)
+
+#pragma GCC diagnostic pop

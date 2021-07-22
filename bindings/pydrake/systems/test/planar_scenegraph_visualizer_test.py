@@ -246,8 +246,10 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         self.assertTrue(cart_pole.geometry_source_is_registered())
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                        visualizer.get_input_port(0))
+        # scene_graph.get_pose_bundle_output_port() is deprecated.
+        with catch_drake_warnings(expected_count=1):
+            builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                            visualizer.get_input_port(0))
 
         diagram = builder.Build()
 
@@ -288,8 +290,10 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         kuka.GetFrameByName("iiwa_link_6", iiwa)
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                        visualizer.get_input_port(0))
+        # scene_graph.get_pose_bundle_output_port() is deprecated.
+        with catch_drake_warnings(expected_count=1):
+            builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                            visualizer.get_input_port(0))
 
         diagram = builder.Build()
 
@@ -338,8 +342,10 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         mbp.Finalize()
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                        visualizer.get_input_port(0))
+        # scene_graph.get_pose_bundle_output_port() is deprecated.
+        with catch_drake_warnings(expected_count=1):
+            builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                            visualizer.get_input_port(0))
 
         diagram = builder.Build()
 
@@ -430,12 +436,14 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         # Confirm that arguments are passed through.
         self.assertEqual(vis_query_object.ax.get_xlim(), (0.3, 1.2))
 
-        # The visualizer will connect to the provided pose bundle port and
-        # calling draw will generate a warning.
-        vis_pose_bundle = ConnectPlanarSceneGraphVisualizer(
-            builder=builder,
-            scene_graph=scene_graph,
-            output_port=scene_graph.get_pose_bundle_output_port())
+        # scene_graph.get_pose_bundle_output_port() is deprecated.
+        with catch_drake_warnings(expected_count=1):
+            # The visualizer will connect to the provided pose bundle port and
+            # calling draw will generate a warning.
+            vis_pose_bundle = ConnectPlanarSceneGraphVisualizer(
+                builder=builder,
+                scene_graph=scene_graph,
+                output_port=scene_graph.get_pose_bundle_output_port())
         vis_pose_bundle.set_name("vis_pose_bundle")
         self.assertIsInstance(vis_pose_bundle, PlanarSceneGraphVisualizer)
 

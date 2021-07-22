@@ -125,9 +125,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._T_VW = T_VW
 
         # (2021-11-01) Remove at end of deprecation period.
-        # Pose bundle (from SceneGraph) input port.
-        self._pose_bundle_port = self.DeclareAbstractInputPort(
-            "lcm_visualization", AbstractValue.Make(PoseBundle(0)))
+        # Pose bundle (from SceneGraph).
+        # Note: we're suppressing the deprecation warning we'd get in
+        # instantiating a PoseBundle.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            self._pose_bundle_port = self.DeclareAbstractInputPort(
+                "lcm_visualization", AbstractValue.Make(PoseBundle(0)))
         self._warned_pose_bundle_input_port_connected = False
         # End of deprecation block.
 

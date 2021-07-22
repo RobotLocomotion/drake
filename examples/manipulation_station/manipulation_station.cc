@@ -737,9 +737,11 @@ void ManipulationStation<T>::Finalize(
     }
   }
 
-  // TODO(#10482).  Deprecate the pose_bundle output port.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
+#pragma GCC diagnostic pop
   builder.ExportOutput(scene_graph_->get_query_output_port(), "query_object");
 
   builder.ExportOutput(scene_graph_->get_query_output_port(),
