@@ -347,6 +347,32 @@ class DeformableRigidManager final
   contact_solvers::internal::BlockSparseMatrix<T> CalcContactTangentMatrix(
       const systems::Context<T>& context) const;
 
+  /* Eval version of CalcFreeMotionRigidVelocities(). */
+  const VectorX<T>& EvalFreeMotionRigidVelocities(
+      const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(free_motion_rigid_velocities_cache_index_)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  /* Calculates the free motion velocities for the rigid dofs. */
+  void CalcFreeMotionRigidVelocities(const systems::Context<T>& context,
+                                     VectorX<T>* v_star) const;
+
+  /* Eval version of CalcParticipatingFreeMotionVelocities(). */
+  const VectorX<T>& EvalParticipatingFreeMotionVelocities(
+      const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(participating_free_motion_velocities_cache_index_)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  /* Calculates the free motion velocities (v_star) used by the contact solver.
+   The number and the order of the velocities are the same as the columns of the
+   contact tangent matrix (see CalcContactTangentMatrix()). */
+  void CalcParticipatingFreeMotionVelocities(const systems::Context<T>& context,
+                                             VectorX<T>* v_star) const;
+
   /* Given the GeometryId of a rigid collision geometry, returns the body frame
    of the collision geometry.
    @pre The collision geometry with the given `id` is already registered with
@@ -370,6 +396,10 @@ class DeformableRigidManager final
   systems::CacheIndex deformable_contact_data_cache_index_;
   /* Cached tangent matrix for contact. */
   systems::CacheIndex contact_tangent_matrix_cache_index_;
+  /* Cached free motion velocities for rigid dofs. */
+  systems::CacheIndex free_motion_rigid_velocities_cache_index_;
+  /* Cached participating velocities for contact. */
+  systems::CacheIndex participating_free_motion_velocities_cache_index_;
   /* Solvers for all deformable bodies. */
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
