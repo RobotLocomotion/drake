@@ -85,7 +85,7 @@ int DoMain() {
   nonlinear_bar_config.set_material_model(MaterialModel::kCorotated);
   const internal::ReferenceDeformableGeometry<double> nonlinear_bar_geometry =
       MakeDiamondCubicBoxDeformableGeometry<double>(box, dx, translation_left);
-  const SoftBodyIndex nonlinear_bar_body_index =
+  const DeformableBodyIndex nonlinear_bar_body_index =
       deformable_model->RegisterDeformableBody(
           nonlinear_bar_geometry, "Corotated", nonlinear_bar_config,
           dummy_proximity_props);
@@ -97,7 +97,7 @@ int DoMain() {
       Vector3<double>(0, 0.5, 0));
   const internal::ReferenceDeformableGeometry<double> linear_bar_geometry =
       MakeDiamondCubicBoxDeformableGeometry<double>(box, dx, translation_right);
-  const SoftBodyIndex linear_bar_body_index =
+  const DeformableBodyIndex linear_bar_body_index =
       deformable_model->RegisterDeformableBody(linear_bar_geometry, "Linear",
                                                linear_bar_config,
                                                dummy_proximity_props);
