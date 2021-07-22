@@ -19,7 +19,7 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.planar_scenegraph_visualizer import \
-    PlanarSceneGraphVisualizer
+    ConnectPlanarSceneGraphVisualizer
 
 
 def main():
@@ -78,19 +78,17 @@ def main():
 
         station.Finalize()
 
-        DrakeVisualizer.AddToBuilder(builder,
-                                     station.GetOutputPort("query_object"))
+        geometry_query_port = station.GetOutputPort("geometry_query")
+        DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
         if args.meshcat:
             meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=station.GetOutputPort("geometry_query"),
+                builder, output_port=geometry_query_port,
                 zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
         if args.setup == 'planar':
-            pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-                station.get_scene_graph()))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            pyplot_visualizer.get_input_port(0))
+            pyplot_visualizer = ConnectPlanarSceneGraphVisualizer(
+                builder, station.get_scene_graph(), geometry_query_port)
 
     teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                             length=800))

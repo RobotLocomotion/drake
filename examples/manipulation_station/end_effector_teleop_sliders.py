@@ -33,7 +33,7 @@ from pydrake.systems.meshcat_visualizer import (
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
-    PlanarSceneGraphVisualizer
+    ConnectPlanarSceneGraphVisualizer
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
@@ -257,21 +257,20 @@ def main():
         # If using meshcat, don't render the cameras, since RgbdCamera
         # rendering only works with drake-visualizer. Without this check,
         # running this code in a docker container produces libGL errors.
+        geometry_query_port = station.GetOutputPort("geometry_query")
         if args.meshcat:
             meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=station.GetOutputPort("geometry_query"),
+                builder, output_port=geometry_query_port,
                 zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
 
         elif args.setup == 'planar':
-            pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-                station.get_scene_graph()))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            pyplot_visualizer.get_input_port(0))
+            ConnectPlanarSceneGraphVisualizer(
+                builder, station.get_scene_graph(), geometry_query_port)
+
         else:
-            DrakeVisualizer.AddToBuilder(builder,
-                                         station.GetOutputPort("query_object"))
+            DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
             image_to_lcm_image_array = builder.AddSystem(
                 ImageToLcmImageArrayT())
             image_to_lcm_image_array.set_name("converter")
