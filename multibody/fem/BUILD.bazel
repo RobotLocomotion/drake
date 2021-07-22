@@ -15,8 +15,49 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fixed_fem:__subpackages__"],
     deps = [
+        ":deformation_gradient_data",
+        ":fem_indexes",
+        ":linear_constitutive_model_data",
         ":quadrature",
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "deformation_gradient_data",
+    srcs = [
+        "deformation_gradient_data.cc",
+    ],
+    hdrs = [
+        "deformation_gradient_data.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_indexes",
+    hdrs = [
+        "fem_indexes.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model_data",
+    srcs = [
+        "linear_constitutive_model_data.cc",
+    ],
+    hdrs = [
+        "linear_constitutive_model_data.h",
+    ],
+    deps = [
+        ":deformation_gradient_data",
+        "//common:essential",
     ],
 )
 
@@ -44,6 +85,14 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_data_test",
+    deps = [
+        ":linear_constitutive_model_data",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

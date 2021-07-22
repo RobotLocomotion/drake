@@ -7,11 +7,13 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
-#include "drake/multibody/fixed_fem/dev/corotated_model_cache_entry.h"
+#include "drake/multibody/fixed_fem/dev/corotated_model_data.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
+namespace internal {
+
 /* Forward declare the model to be referred to in the traits class. */
 template <typename T, int num_locations>
 class CorotatedModel;
@@ -21,8 +23,8 @@ template <typename T, int num_locations>
 struct CorotatedModelTraits {
   using Scalar = T;
   using ModelType = CorotatedModel<T, num_locations>;
-  using DeformationGradientCacheEntryType =
-      CorotatedModelCacheEntry<T, num_locations>;
+  using DeformationGradientDataType =
+      CorotatedModelData<T, num_locations>;
   static constexpr int kNumLocations = num_locations;
 };
 
@@ -40,8 +42,8 @@ class CorotatedModel final
  public:
   using Traits = CorotatedModelTraits<T, num_locations>;
   using ModelType = typename Traits::ModelType;
-  using DeformationGradientCacheEntryType =
-      typename Traits::DeformationGradientCacheEntryType;
+  using DeformationGradientDataType =
+      typename Traits::DeformationGradientDataType;
   using Base = ConstitutiveModel<ModelType, Traits>;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModel)
@@ -74,26 +76,25 @@ class CorotatedModel final
   /* Implements the interface ConstitutiveModel::CalcElasticEnergyDensity() in
    the CRTP base class. */
   void DoCalcElasticEnergyDensity(
-      const CorotatedModelCacheEntry<T, num_locations>& cache_entry,
+      const CorotatedModelData<T, num_locations>& data,
       std::array<T, num_locations>* Psi) const {
     for (int i = 0; i < num_locations; ++i) {
-      const T& Jm1 = cache_entry.Jm1()[i];
-      const Matrix3<T>& F = cache_entry.deformation_gradient()[i];
-      const Matrix3<T>& R = cache_entry.R()[i];
+      const T& Jm1 = data.Jm1()[i];
+      const Matrix3<T>& F = data.deformation_gradient()[i];
+      const Matrix3<T>& R = data.R()[i];
       (*Psi)[i] = mu_ * (F - R).squaredNorm() + 0.5 * lambda_ * Jm1 * Jm1;
     }
   }
 
   /* Implements the interface ConstitutiveModel::CalcFirstPiolaStress()
    in the CRTP base class. */
-  void DoCalcFirstPiolaStress(
-      const DeformationGradientCacheEntryType& cache_entry,
-      std::array<Matrix3<T>, num_locations>* P) const {
+  void DoCalcFirstPiolaStress(const DeformationGradientDataType& data,
+                              std::array<Matrix3<T>, num_locations>* P) const {
     for (int i = 0; i < num_locations; ++i) {
-      const T& Jm1 = cache_entry.Jm1()[i];
-      const Matrix3<T>& F = cache_entry.deformation_gradient()[i];
-      const Matrix3<T>& R = cache_entry.R()[i];
-      const Matrix3<T>& JFinvT = cache_entry.JFinvT()[i];
+      const T& Jm1 = data.Jm1()[i];
+      const Matrix3<T>& F = data.deformation_gradient()[i];
+      const Matrix3<T>& R = data.R()[i];
+      const Matrix3<T>& JFinvT = data.JFinvT()[i];
       (*P)[i].noalias() = 2.0 * mu_ * (F - R) + lambda_ * Jm1 * JFinvT;
     }
   }
@@ -102,14 +103,14 @@ class CorotatedModel final
    ConstitutiveModel::CalcFirstPiolaStressDerivative() in the CRTP base class.
   */
   void DoCalcFirstPiolaStressDerivative(
-      const DeformationGradientCacheEntryType& cache_entry,
+      const DeformationGradientDataType& data,
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
     for (int i = 0; i < num_locations; ++i) {
-      const T& Jm1 = cache_entry.Jm1()[i];
-      const Matrix3<T>& F = cache_entry.deformation_gradient()[i];
-      const Matrix3<T>& R = cache_entry.R()[i];
-      const Matrix3<T>& S = cache_entry.S()[i];
-      const Matrix3<T>& JFinvT = cache_entry.JFinvT()[i];
+      const T& Jm1 = data.Jm1()[i];
+      const Matrix3<T>& F = data.deformation_gradient()[i];
+      const Matrix3<T>& R = data.R()[i];
+      const Matrix3<T>& S = data.S()[i];
+      const Matrix3<T>& JFinvT = data.JFinvT()[i];
       const Vector<T, 3 * 3>& flat_JFinvT =
           Eigen::Map<const Vector<T, 3 * 3>>(JFinvT.data(), 3 * 3);
       auto& local_dPdF = (*dPdF)[i];
@@ -130,6 +131,8 @@ class CorotatedModel final
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
 };
+
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

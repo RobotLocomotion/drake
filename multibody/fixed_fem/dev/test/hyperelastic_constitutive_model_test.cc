@@ -10,6 +10,7 @@
 namespace drake {
 namespace multibody {
 namespace fem {
+namespace internal {
 namespace {
 const ElementIndex kDummyElementIndex(0);
 constexpr int kNumQuads = 1;
@@ -75,9 +76,9 @@ CorotatedModel. */
 template <class Model>
 void TestUndeformedState() {
   const Model model(100.0, 0.25);
-  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
+  typename Model::Traits::DeformationGradientDataType cache_entry;
   const std::array<Matrix3<double>, kNumQuads> F{Matrix3<double>::Identity()};
-  cache_entry.UpdateCacheEntry(F);
+  cache_entry.UpdateData(F);
   // At the undeformed state, the energy density should be zero.
   const std::array<double, kNumQuads> analytic_energy_density{0};
   // At the undeformed state, the stress should be zero.
@@ -99,11 +100,11 @@ CorotatedModel. */
 template <class Model>
 void TestPIsDerivativeOfPsi() {
   const Model model(100.0, 0.3);
-  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
+  typename Model::Traits::DeformationGradientDataType cache_entry;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   // P should be derivative of Psi.
-  cache_entry.UpdateCacheEntry(deformation_gradients);
+  cache_entry.UpdateData(deformation_gradients);
   std::array<AutoDiffXd, kNumQuads> energy;
   model.CalcElasticEnergyDensity(cache_entry, &energy);
   std::array<Matrix3<AutoDiffXd>, kNumQuads> P;
@@ -122,10 +123,10 @@ CorotatedModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP() {
   const Model model(100.0, 0.3);
-  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
+  typename Model::Traits::DeformationGradientDataType cache_entry;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
-  cache_entry.UpdateCacheEntry(deformation_gradients);
+  cache_entry.UpdateData(deformation_gradients);
   std::array<Matrix3<AutoDiffXd>, kNumQuads> P;
   model.CalcFirstPiolaStress(cache_entry, &P);
   std::array<Eigen::Matrix<AutoDiffXd, 9, 9>, kNumQuads> dPdF;
@@ -168,6 +169,7 @@ GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
   TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, kNumQuads>>();
 }
 }  // namespace
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -3,33 +3,35 @@
 #include <array>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/deformation_gradient_cache_entry.h"
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
+#include "drake/multibody/fem/deformation_gradient_data.h"
+#include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
-/** Cache entry for the CorotatedModel constitutive model. See CorotatedModel
- for how the cache entry is used. See DeformationGradientCacheEntry for more
+namespace internal {
+
+/* Cache entry for the CorotatedModel constitutive model. See CorotatedModel
+ for how the cache entry is used. See DeformationGradientData for more
  about cached quantities for constitutive models.
  @tparam_nonsymbolic_scalar T.
  @tparam num_locations Number of locations at which the cached quantities are
  evaluated. */
 template <typename T, int num_locations>
-class CorotatedModelCacheEntry
-    : public DeformationGradientCacheEntry<
-          CorotatedModelCacheEntry<T, num_locations>> {
+class CorotatedModelData
+    : public DeformationGradientData<
+          CorotatedModelData<T, num_locations>> {
  public:
   using Base =
-      DeformationGradientCacheEntry<CorotatedModelCacheEntry<T, num_locations>>;
+      DeformationGradientData<CorotatedModelData<T, num_locations>>;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModelCacheEntry);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModelData);
 
-  ~CorotatedModelCacheEntry() = default;
+  ~CorotatedModelData() = default;
 
-  /** Constructs a %CorotatedModelCacheEntry with no deformation. */
-  CorotatedModelCacheEntry() {
+  /* Constructs a %CorotatedModelData with no deformation. */
+  CorotatedModelData() {
     std::fill(R_.begin(), R_.end(), Matrix3<T>::Identity());
     std::fill(S_.begin(), S_.end(), Matrix3<T>::Identity());
     std::fill(Jm1_.begin(), Jm1_.end(), 0);
@@ -49,10 +51,10 @@ class CorotatedModelCacheEntry
  private:
   friend Base;
 
-  /* Implements the interface DeformationGradientCacheEntry::UpdateCacheEntry().
+  /* Implements the interface DeformationGradientData::UpdateData().
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element. */
-  void DoUpdateCacheEntry(const std::array<Matrix3<T>, num_locations>& F) {
+  void DoUpdateData(const std::array<Matrix3<T>, num_locations>& F) {
     for (int i = 0; i < num_locations; ++i) {
       Matrix3<T>& local_R = R_[i];
       Matrix3<T>& local_S = S_[i];
@@ -72,6 +74,8 @@ class CorotatedModelCacheEntry
   /* The cofactor matrix of F, or JF⁻ᵀ. */
   std::array<Matrix3<T>, num_locations> JFinvT_;
 };
+
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

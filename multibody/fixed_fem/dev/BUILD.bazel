@@ -40,8 +40,9 @@ drake_cc_library(
         "constitutive_model.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
+        "//multibody/fem:fem_indexes",
     ],
 )
 
@@ -60,7 +61,7 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":corotated_model_cache_entry",
+        ":corotated_model_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
@@ -68,15 +69,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "corotated_model_cache_entry",
+    name = "corotated_model_data",
     hdrs = [
-        "corotated_model_cache_entry.h",
+        "corotated_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 
@@ -166,9 +167,9 @@ drake_cc_library(
     hdrs = ["deformable_rigid_contact_pair.h"],
     deps = [
         ":deformable_contact",
-        ":fem_indexes",
         "//geometry:geometry_ids",
         "//math:geometric_transform",
+        "//multibody/fem:fem_indexes",
     ],
 )
 
@@ -210,24 +211,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "deformation_gradient_cache_entry",
-    hdrs = [
-        "deformation_gradient_cache_entry.h",
-    ],
-    deps = [
-        ":fem_indexes",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "dirichlet_boundary_condition",
     hdrs = [
         "dirichlet_boundary_condition.h",
     ],
     deps = [
-        ":fem_indexes",
         "//common:essential",
+        "//multibody/fem:fem_indexes",
     ],
 )
 
@@ -298,8 +288,8 @@ drake_cc_library(
         "element_cache_entry.h",
     ],
     deps = [
-        ":fem_indexes",
         "//common:essential",
+        "//multibody/fem:fem_indexes",
     ],
 )
 
@@ -315,28 +305,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "fem_indexes",
-    hdrs = [
-        "fem_indexes.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//common:type_safe_index",
-    ],
-)
-
-drake_cc_library(
     name = "fem_model",
     hdrs = [
         "fem_model.h",
     ],
     deps = [
         ":fem_element",
-        ":fem_indexes",
         ":fem_model_base",
         ":fem_state",
         "//common:essential",
         "//common:unused",
+        "//multibody/fem:fem_indexes",
     ],
 )
 
@@ -416,21 +395,9 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":linear_constitutive_model_cache_entry",
         "//common:default_scalars",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_constitutive_model_cache_entry",
-    hdrs = [
-        "linear_constitutive_model_cache_entry.h",
-    ],
-    deps = [
-        ":deformation_gradient_cache_entry",
-        "//common:default_scalars",
-        "//common:essential",
+        "//multibody/fem:linear_constitutive_model_data",
     ],
 )
 
@@ -777,14 +744,6 @@ drake_cc_googletest(
         ":isoparametric_element",
         ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_constitutive_model_cache_entry_test",
-    deps = [
-        ":linear_constitutive_model_cache_entry",
         "//common/test_utilities:expect_throws_message",
     ],
 )

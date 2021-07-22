@@ -4,8 +4,8 @@
 
 #include "drake/geometry/geometry_ids.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/deformable_contact.h"
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 
 namespace drake {
 namespace multibody {
@@ -19,7 +19,7 @@ struct DeformableRigidContactPair {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformableRigidContactPair)
   DeformableRigidContactPair(DeformableContactSurface<T> contact_surface_in,
                              geometry::GeometryId rigid_id_in,
-                             SoftBodyIndex deformable_id_in, const T& k,
+                             DeformableBodyIndex deformable_id_in, const T& k,
                              const T& d, const T& mu)
       : contact_surface(std::move(contact_surface_in)),
         rigid_id(rigid_id_in),
@@ -42,7 +42,7 @@ struct DeformableRigidContactPair {
 
   DeformableContactSurface<T> contact_surface;
   geometry::GeometryId rigid_id;  // The id of the rigid geometry in contact.
-  SoftBodyIndex deformable_id;    // The id of deformable body in contact.
+  DeformableBodyIndex deformable_id;    // The id of deformable body in contact.
   T stiffness;                    // Combined stiffness at the contact point.
   T dissipation;                  // Combined dissipation at the contact point.
   T friction;                     // Combined friction at the contact point.

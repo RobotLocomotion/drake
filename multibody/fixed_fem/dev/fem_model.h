@@ -11,8 +11,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_model_base.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 

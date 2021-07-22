@@ -25,7 +25,7 @@ using QuadratureType =
 constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
-using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
+using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
 using ElementType =
     DynamicElasticityElement<IsoparametricElementType, QuadratureType,
                              ConstitutiveModelType>;
