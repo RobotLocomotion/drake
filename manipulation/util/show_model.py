@@ -62,7 +62,7 @@ from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.planar_scenegraph_visualizer import (
-    PlanarSceneGraphVisualizer,
+    ConnectPlanarSceneGraphVisualizer,
 )
 
 
@@ -136,7 +136,7 @@ def add_visualizers_argparse_arguments(args_parser):
 
 def parse_visualizers(args_parser, args):
     """
-    Parses argparse arguments for visualizers, returning update_visulization
+    Parses argparse arguments for visualizers, returning update_visualization
     and connect_visualizers.
     """
 
@@ -166,9 +166,7 @@ def parse_visualizers(args_parser, args):
 
         # Connect to PyPlot.
         if args.pyplot:
-            pyplot = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-            builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                            pyplot.get_input_port(0))
+            pyplot = ConnectPlanarSceneGraphVisualizer(builder, scene_graph)
 
     return update_visualization, connect_visualizers
 

@@ -28,7 +28,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         self.assertTrue(cart_pole.geometry_source_is_registered())
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
+        builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_input_port(0))
 
         diagram = builder.Build()
@@ -69,7 +69,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         kuka.GetFrameByName("iiwa_link_6", iiwa)
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
+        builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_input_port(0))
 
         diagram = builder.Build()
@@ -118,7 +118,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         mbp.Finalize()
 
         visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
+        builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_input_port(0))
 
         diagram = builder.Build()
@@ -210,7 +210,7 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         vis2 = ConnectPlanarSceneGraphVisualizer(
             builder=builder,
             scene_graph=scene_graph,
-            output_port=scene_graph.get_pose_bundle_output_port())
+            output_port=scene_graph.get_query_output_port())
         vis2.set_name("vis2")
         self.assertIsInstance(vis2, PlanarSceneGraphVisualizer)
 
