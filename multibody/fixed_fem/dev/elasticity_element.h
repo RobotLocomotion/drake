@@ -37,7 +37,7 @@ struct ElasticityElementTraits {
       "Quadrature<T, NaturalDim, NumLocations>, where NaturalDim can "
       "be 1, 2 or 3.");
   static_assert(
-      is_constitutive_model<ConstitutiveModelType>::value,
+      internal::is_constitutive_model<ConstitutiveModelType>::value,
       "The ConstitutiveModelType template parameter must be a derived "
       "class of ConstitutiveModel");
   /* Check that the scalar types are compatible. */
@@ -78,8 +78,8 @@ struct ElasticityElementTraits {
   // TODO(xuchenhan-tri): Enforce the constraint mentioned above with
   //  static_assert with easy-to-parse error messages.
   struct Data {
-    typename ConstitutiveModelType::Traits::DeformationGradientCacheEntryType
-        deformation_gradient_cache_entry;
+    typename ConstitutiveModelType::Traits::DeformationGradientDataType
+        deformation_gradient_data;
     /* The elastic energy density evaluated at quadrature points. */
     std::array<T, kNumQuadraturePoints> Psi;
     /* The first Piola stress evaluated at quadrature points. */
@@ -389,16 +389,13 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   typename Traits::Data DoComputeData(
       const FemState<DerivedElement>& state) const {
     typename Traits::Data data;
-    data.deformation_gradient_cache_entry.mutable_deformation_gradient() =
-        CalcDeformationGradient(state);
-    data.deformation_gradient_cache_entry.UpdateCacheEntry(
-        data.deformation_gradient_cache_entry.deformation_gradient());
-    constitutive_model_.CalcElasticEnergyDensity(
-        data.deformation_gradient_cache_entry, &data.Psi);
-    constitutive_model_.CalcFirstPiolaStress(
-        data.deformation_gradient_cache_entry, &data.P);
+    data.deformation_gradient_data.UpdateData(CalcDeformationGradient(state));
+    constitutive_model_.CalcElasticEnergyDensity(data.deformation_gradient_data,
+                                                 &data.Psi);
+    constitutive_model_.CalcFirstPiolaStress(data.deformation_gradient_data,
+                                             &data.P);
     constitutive_model_.CalcFirstPiolaStressDerivative(
-        data.deformation_gradient_cache_entry, &data.dPdF);
+        data.deformation_gradient_data, &data.dPdF);
     return data;
   }
 

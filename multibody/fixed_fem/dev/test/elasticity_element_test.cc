@@ -23,7 +23,8 @@ static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     internal::LinearSimplexElement<AutoDiffXd, kNaturalDimension,
                                    kSpatialDimension, kNumQuads>;
-using ConstitutiveModelType = LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
+using ConstitutiveModelType =
+    internal::LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
 
 /* The traits for the DummyElasticityElement. `kOdeOrder` is set to zero to
  avoid states irrelevant to the tests. */
