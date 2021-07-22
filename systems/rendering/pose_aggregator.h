@@ -18,7 +18,10 @@ namespace internal { struct PoseAggregatorInputRecord; }
 /// A container with references to the input port for the pose input, and a
 /// reference to the input port for the velocity input.
 template <typename T>
-struct PoseVelocityInputPorts {
+struct DRAKE_DEPRECATED("2021-12-01",
+                       "PoseVelocityInputPorts is no longer in use. Visualizers"
+                       " typically connect to SceneGraph's QueryObject port.")
+PoseVelocityInputPorts {
   const InputPort<T>& pose_input_port;
   const InputPort<T>& velocity_input_port;
 };
@@ -74,16 +77,22 @@ struct PoseVelocityInputPorts {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class PoseAggregator : public LeafSystem<T> {
+class DRAKE_DEPRECATED("2021-12-01",
+                       "PoseAggregator is no longer in use. Visualizers "
+                       "typically connect to SceneGraph's QueryObject port.")
+PoseAggregator : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
 
   /// Constructs a default aggregator (with no inputs).
   PoseAggregator();
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit PoseAggregator(const PoseAggregator<U>&);
+#pragma GCC diagnostic pop
 
   ~PoseAggregator() override;
 
@@ -97,8 +106,11 @@ class PoseAggregator : public LeafSystem<T> {
   /// @p model_instance_id.
   ///
   /// @return Input ports for pose and velocity.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   PoseVelocityInputPorts<T>
   AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
+#pragma GCC diagnostic pop
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.
   const InputPort<T>& AddBundleInput(const std::string& bundle_name,
@@ -111,8 +123,11 @@ class PoseAggregator : public LeafSystem<T> {
   // Aggregates the input poses into the output PoseBundle, in the order
   // the input ports were added. Aborts if any inputs have an unexpected
   // dimension.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CalcPoseBundle(const Context<T>& context,
                       PoseBundle<T>* output) const;
+#pragma GCC diagnostic pop
 
   using InputRecord = internal::PoseAggregatorInputRecord;
 

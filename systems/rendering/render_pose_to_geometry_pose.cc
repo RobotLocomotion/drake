@@ -19,7 +19,10 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
     : LeafSystem<T>(SystemTypeTag<RenderPoseToGeometryPose>{}),
       source_id_(source_id),
       frame_id_(frame_id) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   using Input = PoseVector<T>;
+#pragma GCC diagnostic pop
   using Output = geometry::FramePoseVector<T>;
   this->DeclareVectorInputPort(kUseDefaultName, Input{});
   this->DeclareAbstractOutputPort(

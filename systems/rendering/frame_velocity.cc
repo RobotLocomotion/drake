@@ -2,9 +2,13 @@
 
 #include "drake/common/default_scalars.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 namespace rendering {
+
 
 template <typename T>
 FrameVelocity<T>::FrameVelocity()
@@ -64,9 +68,12 @@ FrameVelocity<T>* FrameVelocity<T>::DoClone() const {
   return new FrameVelocity<T>();
 }
 
+
 }  // namespace rendering
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::rendering::FrameVelocity)
+
+#pragma GCC diagnostic pop

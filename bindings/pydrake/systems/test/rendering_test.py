@@ -13,6 +13,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import SceneGraph
 from pydrake.math import RigidTransform
@@ -36,8 +37,10 @@ def normalized(x):
 
 
 class TestRendering(unittest.TestCase):
+    # 2021-12-01 deprecation. Remove the whole test.
     def test_pose_vector(self):
-        value = PoseVector()
+        with catch_drake_warnings(expected_count=1):
+            value = PoseVector()
         self.assertTrue(isinstance(value, BasicVector))
         self.assertTrue(isinstance(copy.copy(value), PoseVector))
         self.assertTrue(isinstance(value.Clone(), PoseVector))
@@ -64,7 +67,9 @@ class TestRendering(unittest.TestCase):
         vector_actual = value.get_value()
         self.assertTrue(np.allclose(vector_actual, vector_expected))
         # - Fully-parameterized constructor.
-        value1 = PoseVector(rotation=q, translation=p)
+
+        with catch_drake_warnings(expected_count=1):
+            value1 = PoseVector(rotation=q, translation=p)
         self.assertTrue(np.allclose(
             value1.get_transform().GetAsMatrix4(), X_expected.GetAsMatrix4()))
         # Test mutation via RigidTransform
@@ -75,8 +80,10 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(np.allclose(
             value.get_transform().GetAsMatrix4(), X2_expected.GetAsMatrix4()))
 
+    # 2021-12-01 deprecation. Remove the whole test.
     def test_frame_velocity(self):
-        frame_velocity = FrameVelocity()
+        with catch_drake_warnings(expected_count=1):
+            frame_velocity = FrameVelocity()
         self.assertTrue(isinstance(frame_velocity, BasicVector))
         self.assertTrue(isinstance(copy.copy(frame_velocity), FrameVelocity))
         self.assertTrue(isinstance(frame_velocity.Clone(), FrameVelocity))
@@ -102,15 +109,18 @@ class TestRendering(unittest.TestCase):
         velocity_actual = frame_velocity.get_value()
         self.assertTrue(np.allclose(velocity_actual, velocity_expected))
         # - Fully-parameterized constructor.
-        frame_velocity1 = FrameVelocity(SpatialVelocity(w=w, v=v))
+        with catch_drake_warnings(expected_count=1):
+            frame_velocity1 = FrameVelocity(SpatialVelocity(w=w, v=v))
         self.assertTrue(np.allclose(
             frame_velocity1.get_velocity().rotational(), w))
         self.assertTrue(np.allclose(
             frame_velocity1.get_velocity().translational(), v))
 
+    # 2021-12-01 deprecation. Remove the whole test.
     def test_pose_bundle(self):
         num_poses = 7
-        bundle = PoseBundle(num_poses)
+        with catch_drake_warnings(expected_count=1):
+            bundle = PoseBundle(num_poses)
         # - Accessors.
         self.assertEqual(bundle.get_num_poses(), num_poses)
         self.assertTrue(isinstance(bundle.get_transform(0), RigidTransform))
@@ -125,7 +135,9 @@ class TestRendering(unittest.TestCase):
                          == pose.GetAsMatrix34()).all())
         w = [0.1, 0.3, 0.5]
         v = [0., 1., 2.]
-        frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
+
+        with catch_drake_warnings(expected_count=1):
+            frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
         bundle.set_velocity(kIndex, frame_velocity)
         vel_actual = bundle.get_velocity(kIndex).get_velocity()
         self.assertTrue(np.allclose(vel_actual.rotational(), w))
@@ -137,8 +149,10 @@ class TestRendering(unittest.TestCase):
         bundle.set_model_instance_id(kIndex, instance_id)
         self.assertEqual(bundle.get_model_instance_id(kIndex), instance_id)
 
+    # 2021-12-01 deprecation. Remove the whole test.
     def test_pose_aggregator(self):
-        aggregator = PoseAggregator()
+        with catch_drake_warnings(expected_count=1):
+            aggregator = PoseAggregator()
         # - Set-up.
         instance_id1 = 5  # Supply a random instance id.
         port1 = aggregator.AddSingleInput("pose_only", instance_id1)
@@ -147,13 +161,15 @@ class TestRendering(unittest.TestCase):
         instance_id2 = 42  # Supply another random, but unique, id.
         ports2 = aggregator.AddSinglePoseAndVelocityInput(
             "pose_and_velocity", instance_id2)
-        self.assertEqual(ports2.pose_input_port.get_data_type(),
-                         PortDataType.kVectorValued)
-        self.assertEqual(ports2.pose_input_port.size(), PoseVector.kSize)
-        self.assertEqual(ports2.velocity_input_port.get_data_type(),
-                         PortDataType.kVectorValued)
-        self.assertEqual(ports2.velocity_input_port.size(),
-                         FrameVelocity.kSize)
+
+        with catch_drake_warnings(expected_count=4):
+            self.assertEqual(ports2.pose_input_port.get_data_type(),
+                             PortDataType.kVectorValued)
+            self.assertEqual(ports2.pose_input_port.size(), PoseVector.kSize)
+            self.assertEqual(ports2.velocity_input_port.get_data_type(),
+                             PortDataType.kVectorValued)
+            self.assertEqual(ports2.velocity_input_port.size(),
+                             FrameVelocity.kSize)
         num_poses = 1
         port3 = aggregator.AddBundleInput("pose_bundle", num_poses)
         self.assertEqual(port3.get_data_type(), PortDataType.kAbstractValued)
@@ -165,18 +181,26 @@ class TestRendering(unittest.TestCase):
         output = aggregator.AllocateOutput()
 
         p1 = [0, 1, 2]
-        pose1 = PoseVector()
+
+        with catch_drake_warnings(expected_count=1):
+            pose1 = PoseVector()
         pose1.set_translation(p1)
         p2 = [5, 7, 9]
-        pose2 = PoseVector()
+
+        with catch_drake_warnings(expected_count=1):
+            pose2 = PoseVector()
         pose2.set_translation(p2)
         w = [0.3, 0.4, 0.5]
         v = [0.5, 0.6, 0.7]
-        velocity = FrameVelocity()
+
+        with catch_drake_warnings(expected_count=1):
+            velocity = FrameVelocity()
         velocity.set_velocity(SpatialVelocity(w=w, v=v))
         p3 = [50, 70, 90]
         q3 = Quaternion(wxyz=normalized([0.1, 0.3, 0.7, 0.9]))
-        bundle = PoseBundle(num_poses)
+
+        with catch_drake_warnings(expected_count=1):
+            bundle = PoseBundle(num_poses)
         bundle.set_transform(0, RigidTransform(quaternion=q3, p=p3))
         bundle_value = AbstractValue.Make(bundle)
 

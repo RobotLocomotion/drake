@@ -28,6 +28,7 @@ drake_cc_library(
     name = "pose_aggregator",
     srcs = ["pose_aggregator.cc"],
     hdrs = ["pose_aggregator.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":pose_bundle",
         ":pose_vector",
