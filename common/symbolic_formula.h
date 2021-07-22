@@ -1332,14 +1332,21 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
 }  // namespace internal
 
 namespace numext {
-// not_equal_strict was only added in Eigen 3.3.5. Since the current minimum
-// Eigen version used by drake is 3.3.4, a version check is needed.
+
+// Provides specializations for equal_strict and not_equal_strict with
+// Expression. As of Eigen 3.4.0, these are called at least as part of
+// triangular vector solve (though they could also potentially come up
+// elsewhere). The default template relies on an implicit conversion to
+// bool but our bool operator is explicit, so we need to specialize.
+// These functions were only added in Eigen 3.3.5, but the minimum
+// Eigen version used by drake is 3.3.4, so a version check is needed.
 #if EIGEN_VERSION_AT_LEAST(3, 3, 5)
-/// Provides specialization for not_equal_strict with Expression.
-/// As of Eigen 3.4.0, this is called at least as part of triangular vector
-/// solve (though it could also potentially come up elsewhere). The default
-/// template relies on an implicit conversion to bool but our bool operator
-/// is explicit, so we need to specialize.
+template <>
+EIGEN_STRONG_INLINE bool equal_strict(
+    const drake::symbolic::Expression& x,
+    const drake::symbolic::Expression& y) {
+  return static_cast<bool>(x == y);
+}
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& x,
