@@ -1350,6 +1350,9 @@ template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& x,
     const drake::symbolic::Expression& y) {
+  // Ignore unbound variables when comparing Expression to 0.0.
+  if (is_zero(x)) { return !is_zero(y); }
+  if (is_zero(y)) { return !is_zero(x); }
   return static_cast<bool>(x != y);
 }
 #endif
