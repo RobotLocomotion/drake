@@ -11,6 +11,9 @@ namespace rendering {
 
 using math::RigidTransform;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 template <typename T>
 PoseBundle<T>::PoseBundle(int num_poses)
     : poses_(num_poses),
@@ -73,6 +76,7 @@ void PoseBundle<T>::set_model_instance_id(int index, int id) {
   DRAKE_DEMAND(id >= 0);
   ids_[index] = id;
 }
+#pragma GCC diagnostic pop
 
 }  // namespace rendering
 }  // namespace systems

@@ -303,7 +303,12 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.depth_image_32F_output_port().get_name(), "depth_image_32f");
   EXPECT_EQ(sensor.depth_image_16U_output_port().get_name(), "depth_image_16u");
   EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(sensor.X_WB_output_port().get_name(), "X_WB");
+#pragma GCC diagnostic pop
+  EXPECT_EQ(sensor.body_pose_in_world_output_port().get_name(),
+            "body_pose_in_world");
 }
 
 // Tests that the anchored camera reports the correct parent frame and has the
@@ -475,7 +480,12 @@ GTEST_TEST(RgbdSensorDiscrete, Construction) {
   EXPECT_EQ(sensor.depth_image_32F_output_port().get_name(), "depth_image_32f");
   EXPECT_EQ(sensor.depth_image_16U_output_port().get_name(), "depth_image_16u");
   EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(sensor.X_WB_output_port().get_name(), "X_WB");
+#pragma GCC diagnostic pop
+  EXPECT_EQ(sensor.body_pose_in_world_output_port().get_name(),
+            "body_pose_in_world");
 
   // Confirm that the period was passed into the ZOH correctly. If the ZOH
   // reports the expected period, we rely on it to do the right thing.

@@ -65,8 +65,10 @@ class TestGeometry(unittest.TestCase):
                                           name="sphere3"))
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
-        self.assertIsInstance(
-            scene_graph.get_pose_bundle_output_port(), OutputPort)
+
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(
+                scene_graph.get_pose_bundle_output_port(), OutputPort)
         self.assertIsInstance(
             scene_graph.get_query_output_port(), OutputPort)
 

@@ -74,16 +74,20 @@ struct PoseVelocityInputPorts {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class PoseAggregator : public LeafSystem<T> {
+class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.")
+PoseAggregator : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
 
   /// Constructs a default aggregator (with no inputs).
   PoseAggregator();
 
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit PoseAggregator(const PoseAggregator<U>&);
+// #pragma GCC diagnostic pop
 
   ~PoseAggregator() override;
 

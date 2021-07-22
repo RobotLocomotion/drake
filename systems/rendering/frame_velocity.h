@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -18,7 +19,10 @@ namespace rendering {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class FrameVelocity final : public BasicVector<T> {
+class DRAKE_DEPRECATED("2021-12-01",
+                       "FrameVelocity is no longer in use. Visualizers "
+                       "typically connect to SceneGraph's QueryObject port.")
+FrameVelocity final : public BasicVector<T> {
  public:
   /// Default constructor.
   FrameVelocity();

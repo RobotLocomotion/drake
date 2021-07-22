@@ -86,7 +86,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                  use_random_colors=False,
                  substitute_collocated_mesh_files=True,
                  ax=None,
-                 show=None):
+                 show=None,
+                 need_pose_bundle=True,
+                 ):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -125,10 +127,14 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._T_VW = T_VW
 
         # (2021-11-01) Remove at end of deprecation period.
-        # Pose bundle (from SceneGraph) input port.
-        self._pose_bundle_port = self.DeclareAbstractInputPort(
-            "lcm_visualization", AbstractValue.Make(PoseBundle(0)))
-        self._warned_pose_bundle_input_port_connected = False
+        # Pose bundle (from SceneGraph) input port (and the secret
+        # need_pose_bundle flag).
+        if need_pose_bundle:
+            self._pose_bundle_port = self.DeclareAbstractInputPort(
+                "lcm_visualization", AbstractValue.Make(PoseBundle(0)))
+            self._warned_pose_bundle_input_port_connected = False
+        else:
+            self._pose_bundle_port = None
         # End of deprecation block.
 
         self._geometry_query_input_port = self.DeclareAbstractInputPort(
@@ -391,7 +397,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
     def draw(self, context):
         """Overrides base with the implementation."""
-        if self._pose_bundle_port.HasValue(context):
+        if self._pose_bundle_port and self._pose_bundle_port.HasValue(context):
             self._draw_deprecated(context)
         else:
             self._draw(context)
@@ -476,8 +482,16 @@ def ConnectPlanarSceneGraphVisualizer(builder,
     Returns:
         The newly created PlanarSceneGraphVisualizer object.
     """
-    visualizer = builder.AddSystem(
-        PlanarSceneGraphVisualizer(scene_graph, **kwargs))
+    # While PoseBundle is deprecated, we can use this method to create a
+    # visualizer that doesn't even have a pose bundle port. This should be safe
+    # as it also handles the connection.
+    # It's necessary to do this because calls to this function in jupyter
+    # notebooks can't be guarded with deprecation warnings.
+    use_pose_bundle = output_port and isinstance(
+        output_port.Allocate().get_value(), PoseBundle)
+
+    visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph,
+        need_pose_bundle=use_pose_bundle, **kwargs))
 
     if output_port and isinstance(output_port.Allocate().get_value(),
                                   PoseBundle):

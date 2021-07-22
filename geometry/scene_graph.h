@@ -336,6 +336,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Returns the output port which produces the PoseBundle for LCM
    communication to drake visualizer.  */
+  DRAKE_DEPRECATED("2021-12-01",
+                   "PoseBundle is no longer in use. Visualizers typically "
+                   "connect to SceneGraph's QueryObject port.")
   const systems::OutputPort<T>& get_pose_bundle_output_port() const {
     return systems::System<T>::get_output_port(bundle_port_index_);
   }
@@ -969,8 +972,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // Aggregates the input poses into the output PoseBundle, in the same order as
   // was used in allocation. Aborts if any inputs have a _different_ size than
   // expected.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CalcPoseBundle(const systems::Context<T>& context,
                       systems::rendering::PoseBundle<T>* output) const;
+#pragma GCC diagnostic pop
 
   // Collects all of the *dynamic* frames that have geometries with the given
   // role.

@@ -27,6 +27,9 @@ namespace {
 const int kNumBundlePoses = 2;
 const int kNumSinglePoses = 2;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 class PoseAggregatorTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -222,6 +225,8 @@ GTEST_TEST(PoseBundleTest, Symbolic) {
   const symbolic::Expression& x = msv[0];
   EXPECT_TRUE(x.EqualTo(0.0));
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace rendering

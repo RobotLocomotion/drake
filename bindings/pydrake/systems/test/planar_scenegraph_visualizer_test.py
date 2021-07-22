@@ -28,7 +28,12 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         cart_pole.Finalize()
         self.assertTrue(cart_pole.geometry_source_is_registered())
 
-        visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
+        # During transition period, planar scene graph is constructing a
+        # deprecated PoseBundle instance. For the 2021-12-01 deprecation date
+        # we can remove this "catch warning" guard.
+        with catch_drake_warnings(expected_count=1):
+            visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                scene_graph))
         builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_geometry_query_input_port())
 
@@ -69,7 +74,12 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         kuka.GetFrameByName("iiwa_link_7", iiwa)
         kuka.GetFrameByName("iiwa_link_6", iiwa)
 
-        visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
+        # During transition period, planar scene graph is constructing a
+        # deprecated PoseBundle instance. For the 2021-12-01 deprecation date
+        # we can remove this "catch warning" guard.
+        with catch_drake_warnings(expected_count=1):
+            visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                scene_graph))
         builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_geometry_query_input_port())
 
@@ -118,7 +128,12 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
             CoulombFriction(0.9, 0.8))
         mbp.Finalize()
 
-        visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
+        # During transition period, planar scene graph is constructing a
+        # deprecated PoseBundle instance. For the 2021-12-01 deprecation date
+        # we can remove this "catch warning" guard.
+        with catch_drake_warnings(expected_count=1):
+            visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                scene_graph))
         builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_geometry_query_input_port())
 
@@ -163,32 +178,54 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
             "drake/manipulation/models/iiwa_description/meshes/visual/"
             "link_0.obj")
         scene_graph = scene_graph_with_mesh(mesh_name)
-        PlanarSceneGraphVisualizer(scene_graph)
+        # During transition period, planar scene graph is constructing a
+        # deprecated PoseBundle instance. For the 2021-12-01 deprecation date
+        # we can remove this "catch warning" guard.
+        with catch_drake_warnings(expected_count=1):
+            PlanarSceneGraphVisualizer(scene_graph)
 
         # This should load correctly, too, by substituting the .obj.
         mesh_name_wrong_ext = os.path.splitext(mesh_name)[0] + ".STL"
         scene_graph = scene_graph_with_mesh(mesh_name_wrong_ext)
-        PlanarSceneGraphVisualizer(scene_graph)
+        # During transition period, planar scene graph is constructing a
+        # deprecated PoseBundle instance. For the 2021-12-01 deprecation date
+        # we can remove this "catch warning" guard.
+        with catch_drake_warnings(expected_count=1):
+            PlanarSceneGraphVisualizer(scene_graph)
 
         # This should report that the file does not exist:
         with self.assertRaises(FileNotFoundError):
-            PlanarSceneGraphVisualizer(
-                scene_graph, substitute_collocated_mesh_files=False)
+            # During transition period, planar scene graph is constructing a
+            # deprecated PoseBundle instance. For the 2021-12-01 deprecation
+            # date we can remove this "catch warning" guard.
+            with catch_drake_warnings(expected_count=1):
+                PlanarSceneGraphVisualizer(
+                    scene_graph, substitute_collocated_mesh_files=False)
 
         # This should report that the file does not exist.
         scene_graph = scene_graph_with_mesh("garbage.obj")
         with self.assertRaises(FileNotFoundError):
-            PlanarSceneGraphVisualizer(scene_graph)
+           # Construction creates a PoseBundle.
+            with catch_drake_warnings(expected_count=1):
+                PlanarSceneGraphVisualizer(scene_graph)
 
         # This should report that the extension was wrong and no .obj was
         # found.
         scene_graph = scene_graph_with_mesh("garbage.STL")
         with self.assertRaises(RuntimeError):
-            PlanarSceneGraphVisualizer(scene_graph)
+            # During transition period, planar scene graph is constructing a
+            # deprecated PoseBundle instance. For the 2021-12-01 deprecation
+            # date we can remove this "catch warning" guard.
+            with catch_drake_warnings(expected_count=1):
+                PlanarSceneGraphVisualizer(scene_graph)
 
         # This should load correctly and yield a very large patch.
         scene_graph = scene_graph_with_mesh(mesh_name, 1e3)
-        visualizer = PlanarSceneGraphVisualizer(scene_graph)
+        # During transition period, planar scene graph is constructing a
+        # deprecated PoseBundle instance. For the 2021-12-01 deprecation date
+        # we can remove this "catch warning" guard.
+        with catch_drake_warnings(expected_count=1):
+            visualizer = PlanarSceneGraphVisualizer(scene_graph)
         _, _, width, height = visualizer.ax.dataLim.bounds
         self.assertTrue(width > 10.0)
         self.assertTrue(height > 10.0)
@@ -245,9 +282,12 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         cart_pole.Finalize()
         self.assertTrue(cart_pole.geometry_source_is_registered())
 
-        visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                        visualizer.get_input_port(0))
+        # Construction creates a PoseBundle and we access pose bundle port.
+        with catch_drake_warnings(expected_count=2):
+            visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                scene_graph))
+            builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                            visualizer.get_input_port(0))
 
         diagram = builder.Build()
 
@@ -287,9 +327,12 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         kuka.GetFrameByName("iiwa_link_7", iiwa)
         kuka.GetFrameByName("iiwa_link_6", iiwa)
 
-        visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                        visualizer.get_input_port(0))
+        # Construction creates a PoseBundle and we access pose bundle port.
+        with catch_drake_warnings(expected_count=2):
+            visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                scene_graph))
+            builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                            visualizer.get_input_port(0))
 
         diagram = builder.Build()
 
@@ -337,9 +380,12 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
             CoulombFriction(0.9, 0.8))
         mbp.Finalize()
 
-        visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
-        builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                        visualizer.get_input_port(0))
+        # Construction creates a PoseBundle and we access pose bundle port.
+        with catch_drake_warnings(expected_count=2):
+            visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                scene_graph))
+            builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                            visualizer.get_input_port(0))
 
         diagram = builder.Build()
 
@@ -383,32 +429,44 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
             "drake/manipulation/models/iiwa_description/meshes/visual/"
             "link_0.obj")
         scene_graph = scene_graph_with_mesh(mesh_name)
-        PlanarSceneGraphVisualizer(scene_graph)
+        # Constructor builds PoseBundle-valued port.
+        with catch_drake_warnings(expected_count=1):
+            PlanarSceneGraphVisualizer(scene_graph)
 
         # This should load correctly, too, by substituting the .obj.
         mesh_name_wrong_ext = os.path.splitext(mesh_name)[0] + ".STL"
         scene_graph = scene_graph_with_mesh(mesh_name_wrong_ext)
-        PlanarSceneGraphVisualizer(scene_graph)
+        # Constructor builds PoseBundle-valued port.
+        with catch_drake_warnings(expected_count=1):
+            PlanarSceneGraphVisualizer(scene_graph)
 
         # This should report that the file does not exist:
         with self.assertRaises(FileNotFoundError):
-            PlanarSceneGraphVisualizer(
-                scene_graph, substitute_collocated_mesh_files=False)
+            # Constructor builds PoseBundle-valued port.
+            with catch_drake_warnings(expected_count=1):
+                PlanarSceneGraphVisualizer(
+                    scene_graph, substitute_collocated_mesh_files=False)
 
         # This should report that the file does not exist.
         scene_graph = scene_graph_with_mesh("garbage.obj")
         with self.assertRaises(FileNotFoundError):
-            PlanarSceneGraphVisualizer(scene_graph)
+            # Constructor builds PoseBundle-valued port.
+            with catch_drake_warnings(expected_count=1):
+                PlanarSceneGraphVisualizer(scene_graph)
 
         # This should report that the extension was wrong and no .obj was
         # found.
         scene_graph = scene_graph_with_mesh("garbage.STL")
         with self.assertRaises(RuntimeError):
-            PlanarSceneGraphVisualizer(scene_graph)
+            # Constructor builds PoseBundle-valued port.
+            with catch_drake_warnings(expected_count=1):
+                PlanarSceneGraphVisualizer(scene_graph)
 
         # This should load correctly and yield a very large patch.
         scene_graph = scene_graph_with_mesh(mesh_name, 1e3)
-        visualizer = PlanarSceneGraphVisualizer(scene_graph)
+        # Constructor builds PoseBundle-valued port.
+        with catch_drake_warnings(expected_count=1):
+            visualizer = PlanarSceneGraphVisualizer(scene_graph)
         _, _, width, height = visualizer.ax.dataLim.bounds
         self.assertTrue(width > 10.0)
         self.assertTrue(height > 10.0)
@@ -422,20 +480,20 @@ class TestPlanarSceneGraphVisualizerDeprecated(unittest.TestCase):
         Parser(plant=cart_pole).AddModelFromFile(file_name)
         cart_pole.Finalize()
 
-        # The visualizer will connect to query object and calling draw will not
-        # spawn any deprecation warnings.
         vis_query_object = ConnectPlanarSceneGraphVisualizer(
             builder=builder, scene_graph=scene_graph, xlim=[0.3, 1.2])
         self.assertIsInstance(vis_query_object, PlanarSceneGraphVisualizer)
         # Confirm that arguments are passed through.
         self.assertEqual(vis_query_object.ax.get_xlim(), (0.3, 1.2))
 
-        # The visualizer will connect to the provided pose bundle port and
-        # calling draw will generate a warning.
-        vis_pose_bundle = ConnectPlanarSceneGraphVisualizer(
-            builder=builder,
-            scene_graph=scene_graph,
-            output_port=scene_graph.get_pose_bundle_output_port())
+        # Construction creates a PoseBundle and accesses deprecated port.
+        with catch_drake_warnings(expected_count=2):
+            # The visualizer will connect to the provided pose bundle port and
+            # calling draw will generate a warning.
+            vis_pose_bundle = ConnectPlanarSceneGraphVisualizer(
+                builder=builder,
+                scene_graph=scene_graph,
+                output_port=scene_graph.get_pose_bundle_output_port())
         vis_pose_bundle.set_name("vis_pose_bundle")
         self.assertIsInstance(vis_pose_bundle, PlanarSceneGraphVisualizer)
 

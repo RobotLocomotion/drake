@@ -9,6 +9,12 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
+// TODO(SeanCurtis-TRI) Move this out of systems/rendering into a more
+//  reasonable location so we can delete the rendering directory. It is used
+//  by applications that use sliders to control MBP positions and then directly
+//  input that to SceneGraph as poses. geometry_inspector.py and multibody
+//  examples (jupyter widgets). manipulation/util seems to be a reasonable
+//  location.
 /**
  * A direct-feedthrough system that converts a vector of joint positions
  * directly to a geometry::FramePoseVector<T> to behave like a

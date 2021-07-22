@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/rigid_transform.h"
@@ -31,7 +32,10 @@ namespace rendering {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class PoseBundle {
+class DRAKE_DEPRECATED("2021-12-01",
+                       "PoseBundle is no longer in use. Visualizers typically "
+                       "connect to SceneGraph's QueryObject port.")
+PoseBundle {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseBundle)
 

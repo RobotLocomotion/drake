@@ -10,6 +10,9 @@ namespace systems {
 namespace rendering {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 // Tests the fully-parameterized FrameVelocity.
 GTEST_TEST(FrameVelocity, FullyParameterizedCtor) {
   Vector6<double> data;
@@ -69,6 +72,8 @@ GTEST_TEST(FrameVelocityTest, Clone) {
   ASSERT_NE(nullptr, typed_clone);
   ASSERT_EQ(data, clone->get_value());
 }
+
+#pragma GCC diagnostic pop
 
 };  // namespace
 }  // namespace rendering

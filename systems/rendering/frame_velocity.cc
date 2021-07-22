@@ -6,6 +6,9 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 template <typename T>
 FrameVelocity<T>::FrameVelocity()
     : FrameVelocity<T>::FrameVelocity(
@@ -63,6 +66,8 @@ template <typename T>
 FrameVelocity<T>* FrameVelocity<T>::DoClone() const {
   return new FrameVelocity<T>();
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace rendering
 }  // namespace systems
