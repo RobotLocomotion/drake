@@ -71,7 +71,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    of type CoulombFriction<double>.
    @throw std::exception if `name` is not distinct from names of all previously
    registered bodies. */
-  SoftBodyIndex RegisterDeformableBody(
+  DeformableBodyIndex RegisterDeformableBody(
       internal::ReferenceDeformableGeometry<T> geometry, std::string name,
       const DeformableBodyConfig<T>& config,
       geometry::ProximityProperties proximity_props);
@@ -82,8 +82,8 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
    `p_WQ` and outward normal `n_W` will be set with a wall boundary condition.
    @pre n_W.norm() > 1e-10.
    @throw std::exception if body_id >= num_bodies(). */
-  void SetWallBoundaryCondition(SoftBodyIndex body_id, const Vector3<T>& p_WQ,
-                                const Vector3<T>& n_W,
+  void SetWallBoundaryCondition(DeformableBodyIndex body_id,
+                                const Vector3<T>& p_WQ, const Vector3<T>& n_W,
                                 double distance_tolerance = 1e-6);
 
   /** Returns the number of deformable bodies registered. */
@@ -91,7 +91,7 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
 
   /** Returns the FEM model of the selected deformable body. Each deformable
    body is modeled as an individual FEM model. */
-  const FemModelBase<T>& fem_model(SoftBodyIndex body_index) const {
+  const FemModelBase<T>& fem_model(DeformableBodyIndex body_index) const {
     DRAKE_DEMAND(body_index < num_bodies());
     return *fem_models_[body_index];
   }
