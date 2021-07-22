@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
+#include "drake/multibody/fem/fem_indexes.h"
 
 namespace drake {
 namespace multibody {

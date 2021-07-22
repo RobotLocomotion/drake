@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
+#include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 
 namespace drake {
