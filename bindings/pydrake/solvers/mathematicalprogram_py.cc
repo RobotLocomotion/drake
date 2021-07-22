@@ -1844,6 +1844,9 @@ Bindings for MathematicalProgram
 If you are formulating constraints using symbolic formulas, please review the
 top-level documentation for :py:mod:`pydrake.math`.
 )""";
+  // N.B. Only necessary for forwarding module for deprecation, to ensure
+  // docstrings from pybind11 use the corerct module spelling.
+  m.attr("__name__") = "pydrake.solvers.mathematicalprogram";
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");

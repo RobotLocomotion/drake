@@ -1,5 +1,5 @@
 from pydrake.solvers import mathematicalprogram as mp
-import pydrake.solvers._mathematicalprogram._testing as mp_testing
+import pydrake.solvers.mathematicalprogram._testing as mp_testing
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.scs import ScsSolver
