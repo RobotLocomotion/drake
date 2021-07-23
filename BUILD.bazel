@@ -16,6 +16,7 @@ exports_files([
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
+    "package.xml",
 ])
 
 # Drake's top-level module; all drake_py_stuff rules add this to deps.
