@@ -44,6 +44,8 @@ bool is_non_negative_integer(double v);
  */
 class ExpressionCell {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionCell)
+
   /** Returns expression kind. */
   [[nodiscard]] ExpressionKind get_kind() const { return kind_; }
 
@@ -97,19 +99,7 @@ class ExpressionCell {
   /** Outputs string representation of expression into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
-  /** Move-assigns (DELETED). */
-  ExpressionCell& operator=(ExpressionCell&& e) = delete;
-
-  /** Copy-assigns (DELETED). */
-  ExpressionCell& operator=(const ExpressionCell& e) = delete;
-
  protected:
-  /** Default constructor. */
-  ExpressionCell() = default;
-  /** Move-constructs an ExpressionCell from an rvalue. */
-  ExpressionCell(ExpressionCell&& e) = default;
-  /** Copy-constructs an ExpressionCell from an lvalue. */
-  ExpressionCell(const ExpressionCell& e) = default;
   /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded.
    */
   ExpressionCell(ExpressionKind k, bool is_poly, bool is_expanded);
@@ -133,20 +123,7 @@ class UnaryExpressionCell : public ExpressionCell {
   /** Returns the argument. */
   [[nodiscard]] const Expression& get_argument() const { return e_; }
 
-  /** Default constructor (DELETED). */
-  UnaryExpressionCell() = delete;
-
-  /** Move-assigns (DELETED). */
-  UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
-
-  /** Copy-assigns (DELETED). */
-  UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
-
  protected:
-  /** Move-constructs from an rvalue. */
-  UnaryExpressionCell(UnaryExpressionCell&& e) = default;
-  /** Copy-constructs from an lvalue. */
-  UnaryExpressionCell(const UnaryExpressionCell& e) = default;
   /** Constructs UnaryExpressionCell of kind @p k with @p e, @p is_poly, and @p
    * is_expanded. */
   UnaryExpressionCell(ExpressionKind k, Expression e, bool is_poly,
@@ -172,20 +149,7 @@ class BinaryExpressionCell : public ExpressionCell {
   /** Returns the second argument. */
   [[nodiscard]] const Expression& get_second_argument() const { return e2_; }
 
-  /** Default constructor (DELETED). */
-  BinaryExpressionCell() = delete;
-
-  /** Move-assigns (DELETED). */
-  BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
-
-  /** Copy-assigns (DELETED). */
-  BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
-
  protected:
-  /** Move-constructs from an rvalue. */
-  BinaryExpressionCell(BinaryExpressionCell&& e) = default;
-  /** Copy-constructs from an lvalue. */
-  BinaryExpressionCell(const BinaryExpressionCell& e) = default;
   /** Constructs BinaryExpressionCell of kind @p k with @p e1, @p e2,
    * @p is_poly, and @p is_expanded.
    */
@@ -406,7 +370,7 @@ class ExpressionMulFactory {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExpressionMulFactory)
 
-  /** Default constructor. It constructs. */
+  /** Default constructor. */
   ExpressionMulFactory() = default;
 
   /** Constructs ExpressionMulFactory with @p constant and @p
