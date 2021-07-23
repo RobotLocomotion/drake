@@ -158,7 +158,7 @@ drake_cc_binary(
         "//examples/acrobot:spong_controller",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
-        "//systems/primitives:signal_logger",
+        "//systems/primitives:vector_log_sink",
         "@yaml_cpp",
     ],
 )
@@ -225,7 +225,7 @@ drake_cc_binary(
         "//systems/estimators:kalman_filter",
         "//systems/framework:diagram",
         "//systems/primitives:linear_system",
-        "//systems/primitives:signal_logger",
+        "//systems/primitives:vector_log_sink",
         "//systems/sensors:rotary_encoders",
         "@gflags",
     ],

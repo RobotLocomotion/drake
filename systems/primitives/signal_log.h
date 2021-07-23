@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -15,7 +16,7 @@ namespace systems {
  @tparam_default_scalar
  */
 template <typename T>
-class SignalLog {
+class DRAKE_DEPRECATED("2021-12-01", "Use VectorLog instead.") SignalLog {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLog)
 

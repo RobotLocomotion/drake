@@ -120,7 +120,8 @@ class TestGeneral(unittest.TestCase):
         source = builder.AddSystem(ConstantVectorSource_[T]([kValue]))
         kSize = 1
         integrator = builder.AddSystem(Integrator_[T](kSize))
-        logger_per_step = builder.AddSystem(SignalLogger_[T](kSize))
+        with catch_drake_warnings(expected_count=1):
+            logger_per_step = builder.AddSystem(SignalLogger_[T](kSize))
         builder.Connect(source.get_output_port(0),
                         integrator.get_input_port(0))
         builder.Connect(integrator.get_output_port(0),
@@ -128,16 +129,19 @@ class TestGeneral(unittest.TestCase):
 
         # Add a redundant logger via the helper method.
         if T == float:
-            logger_per_step_2 = LogOutput(
-                integrator.get_output_port(0), builder
-            )
+            with catch_drake_warnings(expected_count=1):
+                logger_per_step_2 = LogOutput(
+                    integrator.get_output_port(0), builder
+                )
         else:
-            logger_per_step_2 = LogOutput[T](
-                integrator.get_output_port(0), builder
-            )
+            with catch_drake_warnings(expected_count=1):
+                logger_per_step_2 = LogOutput[T](
+                    integrator.get_output_port(0), builder
+                )
 
         # Add a periodic logger
-        logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
+        with catch_drake_warnings(expected_count=1):
+            logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
         kPeriod = 0.1
         logger_periodic.set_publish_period(kPeriod)
         builder.Connect(integrator.get_output_port(0),
@@ -162,12 +166,14 @@ class TestGeneral(unittest.TestCase):
         # Verify outputs of the periodic logger
         t = logger_periodic.sample_times()
         x = logger_periodic.data()
-        # Should log exactly once every kPeriod, up to and including kTime.
+        # Should log exactly once every kPeriod, up to and including
+        # kTime.
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
         logger_per_step.reset()
 
-        # Verify that t and x retain their values after systems are deleted.
+        # Verify that t and x retain their values after systems are
+        # deleted.
         t_copy = t.copy()
         x_copy = x.copy()
         del builder

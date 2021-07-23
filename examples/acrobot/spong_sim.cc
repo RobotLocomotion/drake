@@ -12,7 +12,7 @@
 #include "drake/examples/acrobot/spong_controller.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 using drake::examples::acrobot::AcrobotParams;
 using drake::examples::acrobot::AcrobotPlant;
@@ -97,8 +97,8 @@ std::string Simulate(const YAML::Node& scenario_node) {
 
   builder.Connect(plant->get_output_port(0), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), plant->get_input_port(0));
-  auto state_logger = LogOutput(plant->get_output_port(0), &builder);
-  state_logger->set_publish_period(scenario.tape_period);
+  auto state_logger = LogVectorOutput(plant->get_output_port(0), &builder,
+                                      scenario.tape_period);
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
@@ -120,7 +120,7 @@ std::string Simulate(const YAML::Node& scenario_node) {
   simulator.AdvanceTo(scenario.t_final);
 
   Output output;
-  output.x_tape = state_logger->data();
+  output.x_tape = state_logger->FindLog(context).data();
   drake::yaml::YamlWriteArchive writer;
   writer.Accept(output);
   // The EmitString call below saves a document like so:

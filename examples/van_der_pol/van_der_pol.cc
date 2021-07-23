@@ -5,7 +5,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system_constraint.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 namespace drake {
 namespace examples {
@@ -41,7 +41,7 @@ Eigen::Matrix2Xd VanDerPolOscillator<T>::CalcLimitCycle() {
   systems::DiagramBuilder<double> builder;
 
   auto vdp = builder.AddSystem<VanDerPolOscillator<double>>();
-  auto logger = LogOutput(vdp->get_full_state_output_port(), &builder);
+  auto logger = LogVectorOutput(vdp->get_full_state_output_port(), &builder);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -56,7 +56,7 @@ Eigen::Matrix2Xd VanDerPolOscillator<T>::CalcLimitCycle() {
   // simulation results) of the cycle for μ=1.
   simulator.AdvanceTo(6.667);
 
-  return logger->data();
+  return logger->FindLog(simulator.get_context()).data();
 }
 
 // q̈ + μ(q² - 1)q̇ + q = 0
