@@ -7,7 +7,7 @@ import numpy as np
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     Context, DiagramBuilder, PortDataType, VectorSystem, kUseDefaultName)
-from pydrake.systems.primitives import SignalLogger
+from pydrake.systems.primitives import VectorLogSink
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 from pydrake.trajectories import PiecewisePolynomial
 
@@ -73,7 +73,7 @@ class TestPyplotVisualizer(unittest.TestCase):
     def test_simple_visualizer(self):
         builder = DiagramBuilder()
         system = builder.AddSystem(SimpleContinuousTimeSystem())
-        logger = builder.AddSystem(SignalLogger(1))
+        logger = builder.AddSystem(VectorLogSink(1))
         builder.Connect(system.get_output_port(0), logger.get_input_port(0))
         visualizer = builder.AddSystem(TestVisualizer(1))
         builder.Connect(system.get_output_port(0),
@@ -86,7 +86,7 @@ class TestPyplotVisualizer(unittest.TestCase):
         simulator = Simulator(diagram, context)
         simulator.AdvanceTo(.1)
 
-        ani = visualizer.animate(logger, repeat=True)
+        ani = visualizer.animate(logger.FindLog(context), repeat=True)
         self.assertIsInstance(ani, animation.FuncAnimation)
 
     def test_trajectory(self):

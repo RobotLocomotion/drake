@@ -17,7 +17,7 @@ from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
-from pydrake.systems.primitives import ConstantVectorSource, LogOutput
+from pydrake.systems.primitives import ConstantVectorSource
 
 
 # TODO(eric.cousieau): Move this to more generic code when another piece of
