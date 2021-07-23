@@ -9,7 +9,7 @@
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/random_source.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 #include "drake/systems/sensors/gen/beam_model_params.h"
 
 namespace drake {
@@ -76,7 +76,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   builder.Connect(w_uniform->get_output_port(0),
                   beam_model->get_uniform_random_input_port());
 
-  auto logger = LogOutput(beam_model->get_output_port(0), &builder);
+  auto logger = LogVectorOutput(beam_model->get_output_port(0), &builder);
 
   auto diagram = builder.Build();
 
@@ -129,7 +129,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   simulator.Initialize();
   simulator.AdvanceTo(50);
 
-  const auto& x = logger->data();
+  const auto& x = logger->FindLog(simulator.get_context()).data();
 
   const int N = x.size();
 

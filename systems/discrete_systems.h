@@ -4,8 +4,6 @@ namespace systems {
 
 // If you modify this example, be sure to update the matching unit test in
 // systems/analysis/test/simulator_test.cc.
-// TODO(sherm1) When PR #10132 lands, beautify this example and use SignalLogger
-// for output rather than std::cout.
 
 /** @addtogroup discrete_systems
 @brief This page describes discrete systems modeled by difference equations
@@ -84,8 +82,8 @@ The following code fragment can be used to step this system forward:
   // samples the Sn output port exactly at the update times.
   DiagramBuilder<double> builder;
   auto example = builder.AddSystem<ExampleDiscreteSystem>();
-  auto logger = LogOutput(example->GetOutputPort("Sn"), &builder);
-  logger->set_publish_period(ExampleDiscreteSystem::kPeriod);
+  auto logger = LogVectorOutput(example->GetOutputPort("Sn"), &builder,
+                                ExampleDiscreteSystem::kPeriod);
   auto diagram = builder.Build();
 
   // Create a Simulator and use it to advance time until t=3*h.
@@ -93,9 +91,10 @@ The following code fragment can be used to step this system forward:
   simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
 
   // Print out the contents of the log.
-  for (int n = 0; n < logger->sample_times().size(); ++n) {
-    const double t = logger->sample_times()[n];
-    std::cout << n << ": " << logger->data()(0, n)
+  const auto& log = logger.FindLog(simulator.get_context());
+  for (int n = 0; n < log.sample_times().size(); ++n) {
+    const double t = log.sample_times()[n];
+    std::cout << n << ": " << log.data()(0, n)
         << " (" << t << ")\n";
   }
 @endcode
