@@ -2286,119 +2286,113 @@ GTEST_TEST(GraphvizTest, Ports) {
   EXPECT_THAT(dot, ::testing::HasSubstr("{{<u0>u0|<u1>u1} | {<y0>y0}}"));
 }
 
-// This system schedules two simultaneous publish events with
-// GetPerStepEvents(). Both events have abstract data, but of different types.
-// Both events have different custom handler callbacks. And DoPublish() is also
-// overridden.
-class TestTriggerSystem : public LeafSystem<double> {
+// This class serves as the mechanism by which we confirm that LeafSystem's
+// implementation of DispatchPublishHandler() actually calls DoPublish() and,
+// furthermore, the per-event dispatch implemented in DoPublish is completely
+// replaced by an overridden implementation.
+//
+// The system has to be able to detect when its DoPublish() is called but also
+// has to allow us to detect the difference between the built-in LeafSystem
+// publish event dispatching and the overridden behavior.
+// We do this in the following way:
+//
+//   1. We create a system that overrides DoPublish().
+//     a. The system can be configured to run in one of two modes:
+//        i. Ignore publish events.
+//        ii. Use default publication dispatch.
+//        iii. In either mode, we increment a counter that will allow us to
+//             recognize that our DoPublish override got exercised.
+//     b. The system declares one force publish event.
+//        i. The force event allows us to test both APIs
+//           System::Publish(context) and System::Publish(context, events). As
+//           all other trigger types exercise the two apis, we'll ignore other
+//           trigger types.
+//        ii. The event handler increments a counter allowing us to recognize
+//            when the *event* has been handled.
+//   2. We instantiate the system and evaluate the force events on it.
+//      i. In the "default" mode, we should see DoPublish() and the event
+//         handler invoked. This allows us to observe the "default" behavior and
+//         see that it changes.
+//      ii. In the "ignore events" mode, we expect DoPublish() to be called but
+//         not the event handler - we'll have completely supplanted the
+//         LeafSystem::DoPublish implementation).
+class DoPublishOverrideSystem : public LeafSystem<double> {
  public:
-  TestTriggerSystem() {}
+  /* Constructs the system to *default* event handling -- events will *not*
+   be ignored. */
+  DoPublishOverrideSystem() : LeafSystem<double>() {
+    DeclareForcedPublishEvent(&DoPublishOverrideSystem::HandleEvent);
+  }
 
+  bool ignore_events() const { return ignore_events_; }
+  void set_ignore_events(bool ignore_events) { ignore_events_ = ignore_events; }
+  int do_publish_count() const { return do_publish_count_; }
+  int event_handle_count() const { return event_handle_count_; }
+
+  EventStatus HandleEvent(const Context<double>&) const {
+    ++event_handle_count_;
+    return EventStatus::Succeeded();
+  }
+
+  // We need public access to the event collection to call
+  // Publish(context, events).
+  const EventCollection<PublishEvent<double>>&
+  get_forced_publish_events_collection() const {
+    return get_forced_publish_events();
+  }
+
+ private:
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
-    for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() == TriggerType::kForced)
-        continue;
-
-      // Call custom callback handler.
-      event->handle(*this, context);
-    }
-
-    publish_count_++;
+    ++do_publish_count_;
+    if (!ignore_events_) LeafSystem<double>::DoPublish(context, events);
   }
 
-  void DoGetPerStepEvents(
-      const Context<double>& context,
-      CompositeEventCollection<double>* events) const override {
-    {
-      PublishEvent<double> event(
-          std::bind(&TestTriggerSystem::StringCallback, this,
-              std::placeholders::_1, std::placeholders::_2,
-              std::make_shared<const std::string>("hello")));
-      event.AddToComposite(TriggerType::kPerStep, events);
-    }
+  // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
+  bool ignore_events_{false};
 
-    {
-      PublishEvent<double> event(
-          std::bind(&TestTriggerSystem::IntCallback, this,
-              std::placeholders::_1, std::placeholders::_2, 42));
-      event.AddToComposite(TriggerType::kPerStep, events);
-    }
-  }
+  // These mutable system members are an anti-pattern only acceptable as part of
+  // a unit test.
 
-  const std::vector<std::string>& get_string_data() const {
-    return string_data_;
-  }
+  // The number of times DoPublish() has been called on this instance.
+  mutable int do_publish_count_{0};
 
-  const std::vector<int>& get_int_data() const { return int_data_; }
-
-  int get_publish_count() const { return publish_count_; }
-
- private:
-  // Pass data by a shared_ptr<const stuff>.
-  void StringCallback(const Context<double>&, const PublishEvent<double>&,
-      std::shared_ptr<const std::string> data) const {
-    string_data_.push_back(*data);
-  }
-
-  // Pass data by value.
-  void IntCallback(const Context<double>&, const PublishEvent<double>&,
-      int data) const {
-    int_data_.push_back(data);
-  }
-
-  // Stores data copied from the abstract values in handled events.
-  mutable std::vector<std::string> string_data_;
-  mutable std::vector<int> int_data_;
-  mutable int publish_count_{0};
+  // The number of times the force publish event handler has been called on this
+  // instance.
+  mutable int event_handle_count_{0};
 };
 
-class TriggerTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    context_ = dut_.CreateDefaultContext();
-    info_ = dut_.AllocateCompositeEventCollection();
-    leaf_info_ =
-        dynamic_cast<const LeafCompositeEventCollection<double>*>(info_.get());
-    DRAKE_DEMAND(leaf_info_ != nullptr);
-  }
+GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
+  DoPublishOverrideSystem system;
+  std::unique_ptr<Context<double>> context = system.CreateDefaultContext();
+  const EventCollection<PublishEvent<double>>& events =
+      system.get_forced_publish_events_collection();
 
-  TestTriggerSystem dut_;
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<CompositeEventCollection<double>> info_;
-  const LeafCompositeEventCollection<double>* leaf_info_;
-};
+  // First test default behaviors - DoPublish gets called and event handler
+  // get called.
+  ASSERT_FALSE(system.ignore_events());
+  ASSERT_EQ(system.do_publish_count(), 0);
+  ASSERT_EQ(system.event_handle_count(), 0);
 
-// After handling of the events, int_data_ should be {42},
-// string_data_ should be {"hello"}.
-// Then forces a Publish() call on dut_, which should only increase
-// publish_count_ without changing any of the data_ vectors.
-TEST_F(TriggerTest, AbstractTrigger) {
-  // Schedules two publish events.
-  dut_.GetPerStepEvents(*context_, info_.get());
-  const auto& events = leaf_info_->get_publish_events().get_events();
-  EXPECT_EQ(events.size(), 2);
+  system.Publish(*context);
+  EXPECT_EQ(system.do_publish_count(), 1);
+  EXPECT_EQ(system.event_handle_count(), 1);
+  system.Publish(*context, events);
+  EXPECT_EQ(system.do_publish_count(), 2);
+  EXPECT_EQ(system.event_handle_count(), 2);
 
-  // Calls handler.
-  dut_.Publish(*context_, info_->get_publish_events());
+  // Now ignore default behaviors. This confirms *our* DoPublish completely
+  // supplants the default behavior.
+  system.set_ignore_events(true);
+  ASSERT_TRUE(system.ignore_events());
 
-  // Checks string_data_ in dut.
-  const auto& string_data = dut_.get_string_data();
-  EXPECT_EQ(string_data.size(), 1);
-  EXPECT_EQ(string_data.front(), "hello");
-
-  // Checks int_data_ in dut.
-  const auto& int_data = dut_.get_int_data();
-  EXPECT_EQ(int_data.size(), 1);
-  EXPECT_EQ(int_data.front(), 42);
-
-  // Now force a publish call, this should only increment the counter, without
-  // touching any of the x_data_ in dut.
-  dut_.Publish(*context_);
-  EXPECT_EQ(dut_.get_publish_count(), 2);
-  EXPECT_EQ(string_data.size(), 1);
-  EXPECT_EQ(int_data.size(), 1);
+  system.Publish(*context);
+  EXPECT_EQ(system.do_publish_count(), 3);
+  EXPECT_EQ(system.event_handle_count(), 2);
+  system.Publish(*context, events);
+  EXPECT_EQ(system.do_publish_count(), 4);
+  EXPECT_EQ(system.event_handle_count(), 2);
 }
 
 // The custom context type for the CustomContextSystem.

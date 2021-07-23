@@ -11,7 +11,12 @@ import numpy as np
 
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import JointIndex
-from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
+from pydrake.systems.framework import (
+    BasicVector,
+    LeafSystem,
+    PublishEvent,
+    VectorSystem,
+)
 
 
 class JointSliders(VectorSystem):
@@ -80,7 +85,8 @@ class JointSliders(VectorSystem):
             self.window = window
 
         # Schedule window updates in either case (new or existing window):
-        self.DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicEvent(update_period_sec, 0.0,
+                                  PublishEvent(self._update))
 
         self._slider = []
         self._slider_position_start = []
@@ -140,7 +146,7 @@ class JointSliders(VectorSystem):
         for i in range(len(self._slider)):
             self._slider[i].set(q[i])
 
-    def DoPublish(self, context, event):
+    def _update(self, unused_context, unused_event):
         self.window.update_idletasks()
         self.window.update()
 
@@ -190,7 +196,8 @@ class SchunkWsgButtons(LeafSystem):
             self.window = window
 
         # Schedule window updates in either case (new or existing window):
-        self.DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicEvent(update_period_sec, 0.0,
+                                  PublishEvent(self._update))
 
         self._open_button = tk.Button(self.window,
                                       text="Open Gripper (spacebar)",
@@ -232,7 +239,7 @@ class SchunkWsgButtons(LeafSystem):
         else:
             self.open()
 
-    def DoPublish(self, context, event):
+    def _update(self, unused_context, unused_event):
         self.window.update_idletasks()
         self.window.update()
 

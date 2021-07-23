@@ -16,14 +16,14 @@ from ipywidgets import FloatSlider, Layout, Widget
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.common.value import AbstractValue
-from pydrake.systems.framework import BasicVector, LeafSystem
+from pydrake.systems.framework import BasicVector, LeafSystem, PublishEvent
 from pydrake.math import RigidTransform, RollPitchYaw
 
 
 class PoseSliders(LeafSystem):
     """
     Provides a set of ipywidget sliders (to be used in a Jupyter notebook) with
-    on one slider for each of roll, pitch, yaw, x, y, and z.  This can be used,
+    one slider for each of roll, pitch, yaw, x, y, and z.  This can be used,
     for instance, as an interface to teleoperate the end-effector of a robot.
 
     .. pydrake_system::
@@ -67,7 +67,8 @@ class PoseSliders(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicEvent(0.01, 0.0,
+                                  PublishEvent(self._process_event_queue))
 
         self._roll = FloatSlider(min=min_range.roll,
                                  max=max_range.roll,
@@ -157,7 +158,7 @@ class PoseSliders(LeafSystem):
         self._y.value = xyz[1]
         self._z.value = xyz[2]
 
-    def DoPublish(self, context, event):
+    def _process_event_queue(self, context, event):
         """
         Allows the ipython kernel to process the event queue.
         """
@@ -213,9 +214,10 @@ class WidgetSystem(LeafSystem):
                 partial(self.DoCalcOutput, port_index=i))
             port.disable_caching_by_default()
 
-        self.DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicEvent(update_period_sec, 0.0,
+                                  PublishEvent(self._process_event_queue))
 
-    def DoPublish(self, context, event):
+    def _process_event_queue(self, unused_context, unused_event):
         """
         Allows the ipython kernel to process the event queue.
         """

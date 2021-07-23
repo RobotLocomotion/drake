@@ -13,7 +13,7 @@ from IPython.display import display
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.multibody.tree import JointIndex
-from pydrake.systems.framework import BasicVector, VectorSystem
+from pydrake.systems.framework import BasicVector, PublishEvent, VectorSystem
 
 
 class JointSliders(VectorSystem):
@@ -65,7 +65,8 @@ class JointSliders(VectorSystem):
         resolution = _reshape(resolution, robot.num_positions())
 
         # Schedule window updates in either case (new or existing window):
-        self.DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicEvent(update_period_sec, 0.0,
+                                  PublishEvent(self._process_event_queue))
 
         self._slider = []
         self._slider_position_start = []
@@ -127,7 +128,7 @@ class JointSliders(VectorSystem):
         for i in range(len(self._slider)):
             self._slider[i].value = q[i]
 
-    def DoPublish(self, context, event):
+    def _process_event_queue(self, unused_context, unused_event):
         process_ipywidget_events()
 
     def DoCalcVectorOutput(self, context, unused, unused2, output):
