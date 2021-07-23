@@ -315,13 +315,15 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
 // contact types (as appropriate).
 class ContactModelTest : public ::testing::Test {
  protected:
-  void Configure(ContactModel model, bool connect_scene_graph = true) {
+  void Configure(ContactModel model, bool connect_scene_graph,
+                 double time_step) {
     systems::DiagramBuilder<double> builder;
     if (connect_scene_graph) {
       std::tie(plant_, scene_graph_) =
-          AddMultibodyPlantSceneGraph(&builder, 0.0);
+          AddMultibodyPlantSceneGraph(&builder, time_step);
     } else {
-      plant_ = builder.AddSystem(std::make_unique<MultibodyPlant<double>>(0.0));
+      plant_ = builder.AddSystem(
+          std::make_unique<MultibodyPlant<double>>(time_step));
       scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
       plant_->RegisterAsSourceForSceneGraph(scene_graph_);
     }
@@ -471,7 +473,10 @@ class ContactModelTest : public ::testing::Test {
 };
 
 TEST_F(ContactModelTest, PointPairContact) {
-  this->Configure(ContactModel::kPointContactOnly);
+  const bool connect_scene_graph = true;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kPointContactOnly, connect_scene_graph,
+                  time_step);
   const ContactResults<double>& contact_results = GetContactResults();
   ASSERT_EQ(contact_results.num_point_pair_contacts(), 2);
   ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 0);
@@ -495,38 +500,53 @@ TEST_F(ContactModelTest, PointPairContact) {
 }
 
 TEST_F(ContactModelTest, HydroelasticOnly) {
-  this->Configure(ContactModel::kHydroelasticsOnly);
+  const bool connect_scene_graph = true;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kHydroelasticsOnly, connect_scene_graph,
+                  time_step);
   // Rigid-rigid contact precludes successful evaluation.
   DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(), std::logic_error,
                               "Requested contact between two rigid objects .+");
 }
 
 TEST_F(ContactModelTest, HydroelasitcWithFallback) {
-  this->Configure(ContactModel::kHydroelasticWithFallback);
-  const ContactResults<double>& contact_results = GetContactResults();
-  EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
-  EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  const bool connect_scene_graph = true;
+  // Use zero time_step to select continuous system and non-zero to select
+  // discrete system.
+  for (const double time_step : {0.0, 5.0e-3}) {
+    SCOPED_TRACE(fmt::format("time_step = ", time_step));
+    this->Configure(ContactModel::kHydroelasticWithFallback,
+                    connect_scene_graph, time_step);
+    const ContactResults<double>& contact_results = GetContactResults();
+    EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
+    EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
 
-  std::vector<SpatialForce<double>> F_BBo_W_array_expected =
-      this->SpatialForceFromContactResults(contact_results);
+    if (time_step == 0.0) {
+      std::vector<SpatialForce<double>> F_BBo_W_array_expected =
+          this->SpatialForceFromContactResults(contact_results);
 
-  const std::vector<SpatialForce<double>>& F_BBo_W_array =
-      MultibodyPlantTester::EvalSpatialContactForcesContinuous(*plant_,
-                                                               *plant_context_);
-  EXPECT_EQ(F_BBo_W_array.size(), plant_->num_bodies());
-  // Note: We're skipping the _world_ body; EvalSpatialContactForcesContinuous()
-  // reports zero spatial force for the world body. (This ultimately comes from
-  // the implementation of MBP::CalcAndAddContactForcesByPenaltyMethod().)
-  for (int b = 1; b < plant_->num_bodies(); ++b) {
-    // Confirm that we don't trivially have matching zero-magnitude forces.
-    EXPECT_GT(F_BBo_W_array[b].get_coeffs().norm(), 0);
-    EXPECT_TRUE(CompareMatrices(F_BBo_W_array[b].get_coeffs(),
-                                F_BBo_W_array_expected[b].get_coeffs()));
+      const std::vector<SpatialForce<double>>& F_BBo_W_array =
+          MultibodyPlantTester::EvalSpatialContactForcesContinuous(*plant_,
+                                                                   *plant_context_);
+      EXPECT_EQ(F_BBo_W_array.size(), plant_->num_bodies());
+      // Note: We're skipping the _world_ body; EvalSpatialContactForcesContinuous()
+      // reports zero spatial force for the world body. (This ultimately comes from
+      // the implementation of MBP::CalcAndAddContactForcesByPenaltyMethod().)
+      for (int b = 1; b < plant_->num_bodies(); ++b) {
+        // Confirm that we don't trivially have matching zero-magnitude forces.
+        EXPECT_GT(F_BBo_W_array[b].get_coeffs().norm(), 0);
+        EXPECT_TRUE(CompareMatrices(F_BBo_W_array[b].get_coeffs(),
+                                    F_BBo_W_array_expected[b].get_coeffs()));
+      }
+    }
   }
 }
 
 TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
-  this->Configure(ContactModel::kHydroelasticWithFallback, false);
+  const bool do_not_connect_scene_graph = false;
+  const double time_step = 0.0;  // 0.0 to select continuous system.
+  this->Configure(ContactModel::kHydroelasticWithFallback,
+                  do_not_connect_scene_graph, time_step);
 
   // Plant was not connected to the SceneGraph in a diagram, so its input port
   // should be invalid.
