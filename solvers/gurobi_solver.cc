@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -1006,14 +1007,32 @@ void GurobiSolver::DoSolve(
       error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
     }
   }
+  bool compute_iis = false;
   for (const auto& it : merged_options.GetOptionsInt(id())) {
     if (!error) {
-      error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+      if (it.first == "GRBcomputeIIS") {
+        compute_iis = static_cast<bool>(it.second);
+        if (!(it.second == 0 || it.second == 1)) {
+          throw std::runtime_error(fmt::format(
+              "GurobiSolver(): option GRBcomputeIIS should be either "
+              "0 or 1, but is incorrectly set to {}",
+              it.second));
+        }
+      } else {
+        error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+      }
     }
   }
+  std::optional<std::string> grb_write;
   for (const auto& it : merged_options.GetOptionsStr(id())) {
     if (!error) {
-      error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+      if (it.first == "GRBwrite") {
+        if (it.second != "") {
+          grb_write = it.second;
+        }
+      } else {
+        error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+      }
     }
   }
 
@@ -1053,6 +1072,32 @@ void GurobiSolver::DoSolve(
 
   if (!error) {
     error = GRBoptimize(model);
+  }
+
+  if (!error) {
+    if (compute_iis) {
+      int optimstatus = 0;
+      GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
+      if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
+        // Only compute IIS when the problem is infeasible.
+        error = GRBcomputeIIS(model);
+      }
+    }
+  }
+  if (!error) {
+    if (grb_write.has_value()) {
+      error = GRBwrite(model, grb_write.value().c_str());
+      if (error) {
+        const std::string gurobi_version =
+            fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+        throw std::runtime_error(
+            fmt::format("GurobiSolver(): setting GRBwrite to {}, this is not "
+                        "supported. Check "
+                        "https://www.gurobi.com/documentation/{}/refman/"
+                        "py_model_write.html for more details.",
+                        grb_write.value(), gurobi_version));
+      }
+    }
   }
 
   SolutionResult solution_result = SolutionResult::kUnknownError;
