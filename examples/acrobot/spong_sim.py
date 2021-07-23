@@ -12,7 +12,7 @@ from pydrake.examples.acrobot import (
 )
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.primitives import LogOutput
+from pydrake.systems.primitives import LogVectorOutput
 
 from drake.examples.acrobot.acrobot_io import load_scenario, save_output
 
@@ -28,8 +28,8 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 
     builder.Connect(plant.get_output_port(0), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), plant.get_input_port(0))
-    state_logger = LogOutput(plant.get_output_port(0), builder)
-    state_logger.set_publish_period(tape_period)
+    state_logger = LogVectorOutput(plant.get_output_port(0), builder,
+                                   tape_period)
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
@@ -44,7 +44,7 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 
     simulator.AdvanceTo(t_final)
 
-    x_tape = state_logger.data()
+    x_tape = state_logger.FindLog(context).data()
     return x_tape
 
 
