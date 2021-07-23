@@ -1360,6 +1360,13 @@ class TestMathematicalProgram(unittest.TestCase):
                 binding_cls_old_spelling = getattr(mp, old_spelling)
             self.assertIs(binding_cls, binding_cls_old_spelling)
 
+    def test_get_program_type(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+        self.assertEqual(mp.GetProgramType(prog), mp.ProgramType.kQP)
+
 
 class DummySolverInterface(SolverInterface):
 
