@@ -8,8 +8,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
-#include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/trajectory_source.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 namespace drake {
 namespace systems {
@@ -49,35 +49,36 @@ void RunFirstOrderHold(const bool suppress_initial_transient) {
             suppress_initial_transient);
 
   builder.Connect(ppsource->get_output_port(), deriv->get_input_port());
-  auto log = LogOutput(deriv->get_output_port(), &builder);
   // Evaluate the outputs at a distinct sampling interval.
-  log->set_publish_period(time_step / 3.267);
+  auto logger = LogVectorOutput(deriv->get_output_port(), &builder,
+                                time_step / 3.267);
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
+  const auto& log = logger->FindLog(simulator.get_context());
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
   simulator.AdvanceTo(kDuration);
 
-  for (int i = 0; i < log->sample_times().size(); i++) {
-    if (log->sample_times()(i) == 0.0) {
+  for (int i = 0; i < log.sample_times().size(); i++) {
+    if (log.sample_times()(i) == 0.0) {
       // The initial outputs should be zero (due to the zero initial
       // conditions).
-      EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
-    } else if (log->sample_times()(i) <= time_step) {
+      EXPECT_TRUE(CompareMatrices(log.data().col(i), Vector2d(0., 0.)));
+    } else if (log.sample_times()(i) <= time_step) {
       if (!suppress_initial_transient) {
         // The outputs should jump for one timestep because u(0) is non-zero.
         EXPECT_TRUE(CompareMatrices(
-            log->data().col(i), Vector2d(4. / time_step, 5. / time_step),
+            log.data().col(i), Vector2d(4. / time_step, 5. / time_step),
             1e-12));
       } else {
         // The outputs should remain zero until there two input samples.
-        EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
+        EXPECT_TRUE(CompareMatrices(log.data().col(i), Vector2d(0., 0.)));
       }
     } else {
       // Once time has advanced, outputs should have the steady-state
       // derivatives.
-      EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(2, 3), 1e-12));
+      EXPECT_TRUE(CompareMatrices(log.data().col(i), Vector2d(2, 3), 1e-12));
     }
   }
 }
