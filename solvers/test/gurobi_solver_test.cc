@@ -389,6 +389,63 @@ GTEST_TEST(GurobiTest, LogFile) {
   }
 }
 
+GTEST_TEST(GurobiTest, WriteModel) {
+  // Test writing Gurobi model to a file.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 1);
+  prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1]);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    const std::string model_file = temp_directory() + "/gurobi_model.mps";
+    SolverOptions options;
+    options.SetOption(solver.id(), "GRBwrite", "");
+    // Setting GRBwrite to "" and make sure calling Solve doesn't cause error.
+    solver.Solve(prog, {}, options);
+    options.SetOption(solver.id(), "GRBwrite", model_file);
+    EXPECT_FALSE(filesystem::exists({model_file}));
+    const auto result = solver.Solve(prog, {}, options);
+    EXPECT_TRUE(filesystem::exists({model_file}));
+    options.SetOption(solver.id(), "GRBwrite", "foo.wrong_extension");
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options),
+                                ".* setting GRBwrite to foo.wrong_extension.*");
+  }
+}
+
+GTEST_TEST(GurobiTest, ComputeIIS) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x[0] + x[1] == 2);
+  prog.AddLinearConstraint(x[0] - x[1] == 0);
+  auto bb_con = prog.AddBoundingBoxConstraint(2, 10, x[0]);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    SolverOptions options;
+    options.SetOption(solver.id(), "GRBcomputeIIS", 1);
+    const std::string ilp_file = temp_directory() + "/gurobi_model.ilp";
+    options.SetOption(solver.id(), "GRBwrite", ilp_file);
+    EXPECT_FALSE(filesystem::exists({ilp_file}));
+    auto result = solver.Solve(prog, {}, options);
+    EXPECT_TRUE(filesystem::exists({ilp_file}));
+    // Set GRBcomputeIIS to a wrong value.
+    options.SetOption(solver.id(), "GRBcomputeIIS", 100);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        solver.Solve(prog, {}, options),
+        ".*option GRBcomputeIIS should be either 0 or 1.*");
+    // Reset GRBcomputeIIS to the right value.
+    options.SetOption(solver.id(), "GRBcomputeIIS", 1);
+
+    // Now remove bb_con. The problem should be feasible.
+    prog.RemoveConstraint(bb_con);
+    options.SetOption(solver.id(), "GRBwrite", "");
+    result = solver.Solve(prog, {}, options);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector2d(1, 1)));
+  }
+}
+
 GTEST_TEST(GurobiTest, SolutionPool) {
   // For mixed-integer program, Gurobi can find a pool of suboptimal solutions.
   MathematicalProgram prog;
