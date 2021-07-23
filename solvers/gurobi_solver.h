@@ -45,6 +45,21 @@ struct GurobiSolverDetails {
 /// The GRB_LICENSE_FILE environment variable controls whether or not
 /// SolverInterface::enabled() returns true.  If it is set to any non-empty
 /// value, then the solver is enabled; otherwise, the solver is not enabled.
+///
+/// Gurobi solver supports options/parameters listed in
+/// https://www.gurobi.com/documentation/9.1/refman/parameters.html. On top of
+/// these options, we provide the following additional options
+/// 1. "GRBwrite", set to a file name so that Gurobi solver will write the
+///    optimization model to this file, check
+///    https://www.gurobi.com/documentation/9.1/refman/py_model_write.html for
+///    more details, such as all supported file extensions. Set this option to
+///    "" if you don't want to write to file. Default is not to write to a file.
+/// 2. "GRBcomputeIIS", set to 1 to compute an Irreducible Inconsistent
+///    Subsystem (IIS) when the problem is infeasible. Refer to
+///    https://www.gurobi.com/documentation/9.1/refman/py_model_computeiis.html
+///    for more details. Often this method is called together with
+///    setting GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
+///    "ilp". Default is not to compute IIS.
 class GurobiSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
