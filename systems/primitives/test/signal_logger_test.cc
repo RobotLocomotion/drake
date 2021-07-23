@@ -1,3 +1,6 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include "drake/systems/primitives/signal_logger.h"
 
 #include <cmath>
@@ -165,6 +168,8 @@ GTEST_TEST(TestSignalLogger, DiagramToAutoDiff) {
   auto diagram = builder.Build();
   EXPECT_TRUE(is_autodiffxd_convertible(*diagram));
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace systems

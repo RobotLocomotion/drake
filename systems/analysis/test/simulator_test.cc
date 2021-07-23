@@ -27,7 +27,7 @@
 #include "drake/systems/framework/event.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -1080,8 +1080,8 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
   // samples the Sn output port exactly at the update times.
   DiagramBuilder<double> builder;
   auto example = builder.AddSystem<ExampleDiscreteSystem>();
-  auto logger = LogOutput(example->GetOutputPort("Sn"), &builder);
-  logger->set_publish_period(ExampleDiscreteSystem::kPeriod);
+  auto logger = LogVectorOutput(example->GetOutputPort("Sn"), &builder,
+                                ExampleDiscreteSystem::kPeriod);
   auto diagram = builder.Build();
 
   // Create a Simulator and use it to advance time until t=3*h.
@@ -1091,9 +1091,10 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
   testing::internal::CaptureStdout();  // Not in example.
 
   // Print out the contents of the log.
-  for (int n = 0; n < logger->sample_times().size(); ++n) {
-    const double t = logger->sample_times()[n];
-    std::cout << n << ": " << logger->data()(0, n)
+  const auto& log = logger->FindLog(simulator.get_context());
+  for (int n = 0; n < log.sample_times().size(); ++n) {
+    const double t = log.sample_times()[n];
+    std::cout << n << ": " << log.data()(0, n)
               << " (" << t << ")\n";
   }
 
@@ -1152,8 +1153,7 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   // Build the diagram.
   DiagramBuilder<double> builder;
   auto sinusoidal_system = builder.AddSystem<SinusoidalDelayHybridSystem>();
-  auto logger = builder.AddSystem<SignalLogger<double>>(1 /* input size */);
-  logger->set_publish_period(h);
+  auto logger = builder.AddSystem<VectorLogSink<double>>(1 /* input size */, h);
   builder.Connect(*sinusoidal_system, *logger);
   auto diagram = builder.Build();
 
@@ -1179,8 +1179,9 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   // y₂         2    t = 2 h              sin(f h)
   // y₃         3    t = 3 h              sin(f 2 h)
   // ...
-  const VectorX<double> times = logger->sample_times();
-  const MatrixX<double> data = logger->data();
+  const auto& log = logger->FindLog(simulator.get_context());
+  const VectorX<double> times = log.sample_times();
+  const MatrixX<double> data = log.data();
 
   ASSERT_EQ(times.size(), std::round(t_final/h) + 1);
   ASSERT_EQ(data.rows(), 1);
@@ -1788,8 +1789,8 @@ GTEST_TEST(SimulatorTest, Issue10443) {
 
   // Add a periodic logger.
   const int kFrequency = 10;  // 10 cycles per second.
-  auto& periodic_logger = *builder.AddSystem<SignalLogger<double>>(kSize);
-  periodic_logger.set_publish_period(1.0 / kFrequency);
+  auto& periodic_logger = *builder.AddSystem<VectorLogSink<double>>(
+      kSize, 1.0 / kFrequency);
   builder.Connect(integrator.get_output_port(),
       periodic_logger.get_input_port());
 
@@ -1812,7 +1813,7 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   // Should log exactly once every kPeriod, up to and including
   // kTime.
   Eigen::VectorBlock<const VectorX<double>> t_periodic =
-      periodic_logger.sample_times();
+      periodic_logger.FindLog(simulator.get_context()).sample_times();
   EXPECT_EQ(t_periodic.size(), kTime * kFrequency + 1);
 }
 
