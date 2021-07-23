@@ -78,7 +78,7 @@
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </tr>
- * <tr><td> <a href="https://github.com/cvxgrp/scs">
+ * <tr><td>△ <a href="https://github.com/cvxgrp/scs">
  *    SCS</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
@@ -93,8 +93,8 @@
  *    <td></td>
  *    <td></td>
  *    <td></td>
- * </tr>
- * <tr><td> <a href="https://github.com/oxfordcontrol/osqp">
+ * </tr> 
+ * <tr><td>△ <a href="https://github.com/oxfordcontrol/osqp">
  *    OSQP</a></td>
  *    <td></td>
  *    <td align="center">&diams;</td>
@@ -110,7 +110,39 @@
  *     <td align="center">&diams;</td>
  *     <td align="center">&diams;</td>
  * </tr>
+ * <tr><td>† &Dagger; ▢
+ *   <a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
+ *    SNOPT</a></td>
+ *     <td align="center">&diams;</td>
+ *     <td align="center">&diams;</td>
+ *     <td></td>
+ *     <td></td>
+ *     <td></td>
+ * </tr>
+ * <tr><td>▢
+ *   <a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td>
+ *     <td align="center">&diams;</td>
+ *     <td align="center">&diams;</td>
+ *     <td></td>
+ *     <td></td>
+ *     <td></td>
+ * </tr>
  * </table>
+ *
+ * † indicates that this is a commercial solver which requires a license
+ * (note that some have free licenses for academics).
+ *
+ * △ These solvers are not accurate. They implement ADMM algorithm, which
+ * converges quickly to a low-accuracy solution, and requires many iterations to
+ * achieve high accuracy.
+ *
+ * &Dagger; Note that <a href="https://drake.mit.edu/from_binary.html">Drake's
+ * pre-compiled binary releases</a> provide SNOPT.
+ *
+ * ▢ These solvers can solve the convex problems, but are not good at it. They
+ * treat the convex problems as general nonlinear optimization problems, which
+ * can lose the nice guarantee from convex optimization (global convergence,
+ * global optimality, etc).
  *
  * <b>Mixed-Integer Convex Optimization</b>
  *
@@ -122,14 +154,14 @@
  *   <td>MISOCP</a></td>
  *   <td>MISDP</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="https://www.gurobi.com/products/gurobi-optimizer">
+ * <tr><td>† <a href="https://www.gurobi.com/products/gurobi-optimizer">
  *    Gurobi</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td></td>
  *  </tr>
- * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
+ * <tr><td>† <a href="https://www.mosek.com/products/mosek">
  *    Mosek</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
@@ -160,7 +192,7 @@
  *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
  *     SMT</a></td>
  * </tr>
- * <tr><td>&dagger; &Dagger;
+ * <tr><td>† &Dagger;
  *   <a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
  *    SNOPT</a></td></tr>
  *    <td align="center">&diams;</td>
@@ -187,10 +219,5 @@
  * </tr>
  * </table>
  *
- * &dagger; indicates that this is a commercial solver which requires a license
- * (note that some have free licenses for academics).
- *
- * &Dagger; Note that <a href="https://drake.mit.edu/from_binary.html">Drake's
- * pre-compiled binary releases</a> provide SNOPT.
  * @}
  */
