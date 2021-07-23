@@ -19,6 +19,9 @@ namespace drake {
 namespace systems {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 // Log the output of a simple linear system (with a known solution).
 GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   using std::exp;
@@ -165,6 +168,8 @@ GTEST_TEST(TestSignalLogger, DiagramToAutoDiff) {
   auto diagram = builder.Build();
   EXPECT_TRUE(is_autodiffxd_convertible(*diagram));
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace systems

@@ -2,6 +2,9 @@
 
 #include "drake/common/default_scalars.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 
@@ -92,3 +95,5 @@ EventStatus SignalLogger<T>::WriteToLog(const Context<T>& context) const {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::SignalLogger)
+
+#pragma GCC diagnostic pop
