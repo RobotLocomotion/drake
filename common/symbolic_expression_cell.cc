@@ -29,7 +29,7 @@ using std::domain_error;
 using std::endl;
 using std::equal;
 using std::lexicographical_compare;
-using std::make_shared;
+using std::make_unique;
 using std::map;
 using std::numeric_limits;
 using std::ostream;
@@ -374,48 +374,6 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
 
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
-ExpressionConstant::ExpressionConstant(const double v)
-    : ExpressionCell{ExpressionKind::Constant, true, true}, v_{v} {
-  DRAKE_ASSERT(!std::isnan(v));
-}
-
-void ExpressionConstant::HashAppendDetail(DelegatingHasher* hasher) const {
-  using drake::hash_append;
-  hash_append(*hasher, v_);
-}
-
-Variables ExpressionConstant::GetVariables() const { return Variables{}; }
-
-bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
-  // Expression::EqualTo guarantees the following assertion.
-  DRAKE_ASSERT(get_kind() == e.get_kind());
-  return v_ == static_cast<const ExpressionConstant&>(e).v_;
-}
-
-bool ExpressionConstant::Less(const ExpressionCell& e) const {
-  // Expression::Less guarantees the following assertion.
-  DRAKE_ASSERT(get_kind() == e.get_kind());
-  return v_ < static_cast<const ExpressionConstant&>(e).v_;
-}
-
-double ExpressionConstant::Evaluate(const Environment&) const {
-  DRAKE_DEMAND(!std::isnan(v_));
-  return v_;
-}
-
-Expression ExpressionConstant::Expand() const { return Expression{v_}; }
-
-Expression ExpressionConstant::Substitute(const Substitution&) const {
-  DRAKE_DEMAND(!std::isnan(v_));
-  return Expression{v_};
-}
-
-Expression ExpressionConstant::Differentiate(const Variable&) const {
-  return Expression::Zero();
-}
-
-ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
-
 ExpressionNaN::ExpressionNaN()
     : ExpressionCell{ExpressionKind::NaN, false, false} {}
 
@@ -665,7 +623,7 @@ Expression ExpressionAddFactory::GetExpression() const {
     const auto it(expr_to_coeff_map_.cbegin());
     return it->first * it->second;
   }
-  return Expression{make_shared<ExpressionAdd>(constant_, expr_to_coeff_map_)};
+  return Expression{make_unique<ExpressionAdd>(constant_, expr_to_coeff_map_)};
 }
 
 void ExpressionAddFactory::AddConstant(const double constant) {
@@ -958,7 +916,7 @@ Expression ExpressionMulFactory::GetExpression() const {
     return pow(it->first, it->second);
   }
   return Expression{
-      make_shared<ExpressionMul>(constant_, base_to_exponent_map_)};
+      make_unique<ExpressionMul>(constant_, base_to_exponent_map_)};
 }
 
 void ExpressionMulFactory::AddConstant(const double constant) {
@@ -2077,16 +2035,6 @@ bool is_if_then_else(const ExpressionCell& c) {
 }
 bool is_uninterpreted_function(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::UninterpretedFunction;
-}
-
-const ExpressionConstant& to_constant(const Expression& e) {
-  DRAKE_ASSERT(is_constant(e));
-  return static_cast<const ExpressionConstant&>(e.cell());
-}
-
-ExpressionConstant& to_constant(Expression* const e) {
-  DRAKE_ASSERT(e && is_constant(*e));
-  return static_cast<ExpressionConstant&>(e->mutable_cell());
 }
 
 const ExpressionVar& to_variable(const Expression& e) {
