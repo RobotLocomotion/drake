@@ -5,7 +5,7 @@ import numpy as np
 from warnings import warn
 
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
-from pydrake.systems.primitives import SignalLogger
+from pydrake.systems.primitives import VectorLog
 from pydrake.trajectories import Trajectory
 
 
@@ -116,7 +116,7 @@ class PyPlotVisualizer(LeafSystem):
     def animate(self, log, resample=True, **kwargs):
         """
         Args:
-            log: A reference to a pydrake.systems.primitives.SignalLogger
+            log: A reference to a pydrake.systems.primitives.VectorLog
                 or a pydrake.trajectories.Trajectory that contains the plant
                 state after running a simulation.
             resample: Whether we should do a resampling operation to make the
@@ -125,7 +125,7 @@ class PyPlotVisualizer(LeafSystem):
                 matches the sample timestep of the log.
             Additional kwargs are passed through to FuncAnimation.
         """
-        if isinstance(log, SignalLogger):
+        if isinstance(log, VectorLog):
             t = log.sample_times()
             x = log.data()
 

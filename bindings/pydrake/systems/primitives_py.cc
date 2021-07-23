@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
@@ -230,10 +231,14 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("min_value"), py::arg("max_value"),
             doc.Saturation.ctor.doc_2args);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
-        m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
-        .def(py::init<int, int>(), py::arg("input_size"),
-            py::arg("batch_allocation_size") = 1000, doc.SignalLogger.ctor.doc)
+        m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc_deprecated)
+        .def(py_init_deprecated<SignalLogger<T>, int, int>(
+                 doc.SignalLogger.doc_deprecated),
+            py::arg("input_size"), py::arg("batch_allocation_size") = 1000,
+            doc.SignalLogger.ctor.doc)
         .def("set_publish_period", &SignalLogger<T>::set_publish_period,
             py::arg("period"), doc.SignalLogger.set_publish_period.doc)
         .def("set_forced_publish_only",
@@ -256,12 +261,14 @@ PYBIND11_MODULE(primitives, m) {
             return_value_policy_for_scalar_type<T>(), doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
-    AddTemplateFunction(m, "LogOutput", &LogOutput<T>, GetPyParam<T>(),
-        py::arg("src"), py::arg("builder"),
+    AddTemplateFunction(m, "LogOutput",
+        WrapDeprecated(doc.LogOutput.doc_deprecated, &LogOutput<T>),
+        GetPyParam<T>(), py::arg("src"), py::arg("builder"),
         // Keep alive, ownership: `return` keeps `builder` alive.
         py::keep_alive<0, 2>(),
         // See #11531 for why `py_rvp::reference` is needed.
-        py_rvp::reference, doc.LogOutput.doc);
+        py_rvp::reference, doc.LogOutput.doc_deprecated);
+#pragma GCC diagnostic pop
 
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
@@ -616,7 +623,7 @@ PYBIND11_MODULE(primitives, m) {
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

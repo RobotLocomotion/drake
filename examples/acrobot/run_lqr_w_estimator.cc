@@ -13,7 +13,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 #include "drake/systems/sensors/rotary_encoders.h"
 
 namespace drake {
@@ -95,9 +95,10 @@ int do_main() {
   builder.Connect(controller->get_output_port(), observer->get_input_port(1));
 
   // Log the true state and the estimated state.
-  auto x_logger = LogOutput(acrobot_w_encoder->get_output_port(1), &builder);
+  auto x_logger = LogVectorOutput(acrobot_w_encoder->get_output_port(1),
+                                  &builder);
   x_logger->set_name("x_logger");
-  auto xhat_logger = LogOutput(observer->get_output_port(0), &builder);
+  auto xhat_logger = LogVectorOutput(observer->get_output_port(0), &builder);
   xhat_logger->set_name("xhat_logger");
 
   // Build the system/simulator.
@@ -131,22 +132,23 @@ int do_main() {
   simulator.AdvanceTo(FLAGS_simulation_sec);
 
   // Plot the results (launch call_python_client to see the plots).
+  const auto& x_log = x_logger->FindLog(simulator.get_context());
+  const auto& xhat_log = xhat_logger->FindLog(simulator.get_context());
   using common::CallPython;
   using common::ToPythonTuple;
   CallPython("figure", 1);
   CallPython("clf");
-  CallPython("plot", x_logger->sample_times(),
-             (x_logger->data().row(0).array() - M_PI)
+  CallPython("plot", x_log.sample_times(),
+             (x_log.data().row(0).array() - M_PI)
                  .matrix().transpose());
-  CallPython("plot", x_logger->sample_times(),
-             x_logger->data().row(1).transpose());
+  CallPython("plot", x_log.sample_times(), x_log.data().row(1).transpose());
   CallPython("legend", ToPythonTuple("theta1 - PI", "theta2"));
   CallPython("axis", "tight");
 
   CallPython("figure", 2);
   CallPython("clf");
-  CallPython("plot", x_logger->sample_times(),
-             (x_logger->data().array() - xhat_logger->data().array())
+  CallPython("plot", x_log.sample_times(),
+             (x_log.data().array() - xhat_log.data().array())
                  .matrix().transpose());
   CallPython("ylabel", "error");
   CallPython("legend", ToPythonTuple("theta1", "theta2", "theta1dot",
