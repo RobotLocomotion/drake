@@ -11,7 +11,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 namespace drake {
 namespace systems {
@@ -29,7 +29,7 @@ void CheckStatistics(
 
   auto source = builder.AddSystem(std::move(random_source_system));
   source->set_name("source");
-  auto logger = LogOutput(source->get_output_port(0), &builder);
+  auto logger = LogVectorOutput(source->get_output_port(0), &builder);
   logger->set_name("logger");
 
   auto diagram = builder.Build();
@@ -44,7 +44,7 @@ void CheckStatistics(
   simulator.Initialize();
   simulator.AdvanceTo(20);
 
-  const auto& x = logger->data();
+  const auto& x = logger->FindLog(simulator.get_context()).data();
 
   const int N = x.size();
 
@@ -257,20 +257,21 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
   const double kSampleTime = 0.0025;
   const auto* random1 = builder.AddSystem<RandomSourced>(
       RandomDistribution::kGaussian, kSize, kSampleTime);
-  const auto* log1 = LogOutput(random1->get_output_port(0), &builder);
+  const auto* log1 = LogVectorOutput(random1->get_output_port(0), &builder);
 
   const auto* random2 = builder.AddSystem<RandomSourced>(
       RandomDistribution::kGaussian, kSize, kSampleTime);
-  const auto* log2 = LogOutput(random2->get_output_port(0), &builder);
+  const auto* log2 = LogVectorOutput(random2->get_output_port(0), &builder);
 
   const auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
+  const auto& context = simulator.get_context();
   simulator.Initialize();
   simulator.AdvanceTo(20);
 
-  const auto& x1 = log1->data();
-  const auto& x2 = log2->data();
+  const auto& x1 = log1->FindLog(context).data();
+  const auto& x2 = log2->FindLog(context).data();
 
   EXPECT_EQ(x1.size(), x2.size());
   const int N = static_cast<int>(x1.size()) / 2;

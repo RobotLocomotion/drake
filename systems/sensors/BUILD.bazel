@@ -259,7 +259,7 @@ drake_cc_googletest(
         "//systems/framework/test_utilities",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:random_source",
-        "//systems/primitives:signal_logger",
+        "//systems/primitives:vector_log_sink",
     ],
 )
 

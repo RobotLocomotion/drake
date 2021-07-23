@@ -25,7 +25,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
         "//systems/framework:system_constraint",
         "//systems/framework:vector",
-        "//systems/primitives:signal_logger",
+        "//systems/primitives:vector_log_sink",
     ],
 )
 

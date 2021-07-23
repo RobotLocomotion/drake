@@ -3,7 +3,7 @@
 #include "drake/examples/fibonacci/fibonacci_difference_equation.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 
 DEFINE_int32(steps, 10, "Length of Fibonacci sequence to generate.");
 
@@ -23,8 +23,8 @@ int main(int argc, char* argv[]) {
   // samples the Fibonacci output port exactly at the update times.
   systems::DiagramBuilder<double> builder;
   auto fibonacci = builder.AddSystem<FibonacciDifferenceEquation>();
-  auto logger = LogOutput(fibonacci->GetOutputPort("Fn"), &builder);
-  logger->set_publish_period(FibonacciDifferenceEquation::kPeriod);
+  auto logger = LogVectorOutput(fibonacci->GetOutputPort("Fn"), &builder,
+                                FibonacciDifferenceEquation::kPeriod);
   auto diagram = builder.Build();
 
   // Create a Simulator and use it to advance time until t=steps*h.
@@ -32,9 +32,10 @@ int main(int argc, char* argv[]) {
   simulator.AdvanceTo(FLAGS_steps * FibonacciDifferenceEquation::kPeriod);
 
   // Print out the contents of the log.
-  for (int n = 0; n < logger->sample_times().size(); ++n) {
-    const double t = logger->sample_times()[n];
-    std::cout << n << ": " << logger->data()(0, n)
+  const auto& log = logger->FindLog(simulator.get_context());
+  for (int n = 0; n < log.sample_times().size(); ++n) {
+    const double t = log.sample_times()[n];
+    std::cout << n << ": " << log.data()(0, n)
               << " (t=" << t << ")\n";
   }
 

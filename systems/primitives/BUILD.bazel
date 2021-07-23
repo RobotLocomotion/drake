@@ -438,8 +438,8 @@ drake_cc_googletest(
     name = "discrete_derivative_test",
     deps = [
         ":discrete_derivative",
-        ":signal_logger",
         ":trajectory_source",
+        ":vector_log_sink",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
         "//systems/analysis:simulator",
@@ -602,7 +602,7 @@ drake_cc_googletest(
     deps = [
         ":constant_vector_source",
         ":random_source",
-        ":signal_logger",
+        ":vector_log_sink",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
         "//systems/framework/test_utilities",
