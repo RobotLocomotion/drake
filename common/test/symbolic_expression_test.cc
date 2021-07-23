@@ -881,6 +881,8 @@ TEST_F(SymbolicExpressionTest, UnaryPlus) {
   EXPECT_PRED2(ExprEqual, Expression(var_x_), +var_x_);
 }
 
+// TODO(jwnimmer-tri) These tests should probably live in symbolic_formula_test.
+//
 // Confirm that Eigen::numext::{not_,}equal_strict are appropriately
 // specialized for Expression.
 // We only need a limited set of cases because if the specialization doesn't
@@ -891,11 +893,27 @@ TEST_F(SymbolicExpressionTest, UnaryPlus) {
 TEST_F(SymbolicExpressionTest, EigenEqualStrict) {
   EXPECT_TRUE(Eigen::numext::equal_strict(c3_, c3_));
   EXPECT_FALSE(Eigen::numext::equal_strict(c3_, c4_));
+
+  // Check our special-case zero handling.
+  EXPECT_TRUE(Eigen::numext::equal_strict(zero_, zero_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(zero_, one_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(one_, zero_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(zero_, x_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(x_, zero_));
+  EXPECT_THROW(Eigen::numext::equal_strict(x_, y_), std::exception);
 }
 
 TEST_F(SymbolicExpressionTest, EigenNotEqualStrict) {
   EXPECT_TRUE(Eigen::numext::not_equal_strict(c3_, c4_));
   EXPECT_FALSE(Eigen::numext::not_equal_strict(c3_, c3_));
+
+  // Check our special-case zero handling.
+  EXPECT_FALSE(Eigen::numext::not_equal_strict(zero_, zero_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(zero_, one_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(one_, zero_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(zero_, x_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(x_, zero_));
+  EXPECT_THROW(Eigen::numext::not_equal_strict(x_, y_), std::exception);
 }
 #endif
 

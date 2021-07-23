@@ -1338,6 +1338,15 @@ namespace numext {
 // triangular vector solve (though they could also potentially come up
 // elsewhere). The default template relies on an implicit conversion to
 // bool but our bool operator is explicit, so we need to specialize.
+//
+// Furthermore, various Eigen algorithms will use "short-circuit when zero"
+// guards as an optimization to skip expensive computation if it can show
+// that the end result will remain unchanged. If our Expression has any
+// unbound variables during that guard, we will throw instead of skipping
+// the optimizaton. Therefore, we tweak these guards to special-case the
+// result when either of the operands is a literal zero, with no throwing
+// even if the other operand has unbound variables.
+//
 // These functions were only added in Eigen 3.3.5, but the minimum
 // Eigen version used by drake is 3.3.4, so a version check is needed.
 #if EIGEN_VERSION_AT_LEAST(3, 3, 5)
@@ -1345,13 +1354,15 @@ template <>
 EIGEN_STRONG_INLINE bool equal_strict(
     const drake::symbolic::Expression& x,
     const drake::symbolic::Expression& y) {
+  if (is_zero(x)) { return is_zero(y); }
+  if (is_zero(y)) { return is_zero(x); }
   return static_cast<bool>(x == y);
 }
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& x,
     const drake::symbolic::Expression& y) {
-  return static_cast<bool>(x != y);
+  return !Eigen::numext::equal_strict(x, y);
 }
 #endif
 
