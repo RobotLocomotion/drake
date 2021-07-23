@@ -1359,12 +1359,6 @@ EIGEN_STRONG_INLINE bool equal_strict(
   return static_cast<bool>(x == y);
 }
 template <>
-EIGEN_STRONG_INLINE bool equal_strict(
-    const drake::symbolic::Expression& x,
-    const drake::symbolic::Expression& y) {
-  return static_cast<bool>(x == y);
-}
-template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& x,
     const drake::symbolic::Expression& y) {
