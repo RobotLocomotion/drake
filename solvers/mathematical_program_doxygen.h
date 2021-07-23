@@ -15,7 +15,8 @@
  * nonlinear programming, etc). Drake will call suitable solvers for each
  * category of optimization problem.
  *
- * Drake wraps a number of commercial solvers (+ a few custom solvers) to
+ * Drake wraps a number of open source and commercial solvers
+ * (+ a few custom solvers) to
  * provide a common interface for convex optimization, mixed-integer convex
  * optimization, and other non-convex mathematical programs.
  *
@@ -29,7 +30,8 @@
  *
  * Our solver coverage still has many gaps, but is under active development.
  *
- * <b>Closed-form solutions</b>
+ * <h2>Closed-form solutions</h2>
+ *
  * When the mathematical problem is formulated as the following linear system
  * <pre>
  * find x
@@ -47,7 +49,7 @@
  * then @ref drake::solvers::EqualityConstrainedQPSolver
  * "EqualityConstraintQPSolver" provides efficient closed form solution.
  *
- * <b>Convex Optimization</b>
+ * <h2>Convex Optimization</h2>
  *
  * <table>
  * <tr>
@@ -62,89 +64,89 @@
  *   <td><a href="https://en.wikipedia.org/wiki/Sum-of-squares_optimization">
  *     SOS</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="https://www.gurobi.com/products/gurobi-optimizer">
- *    Gurobi</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
+ * <tr><td><a href="https://www.gurobi.com/products/gurobi-optimizer">
+ *    Gurobi</a> †</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  *    <td></td>
  *  </tr>
- * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
- *    Mosek</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- * </tr>
- * <tr><td>△ <a href="https://github.com/cvxgrp/scs">
- *    SCS</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
+ * <tr><td><a href="https://www.mosek.com/products/mosek">
+ *    Mosek</a> †</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
  * </tr>
  * <tr><td> <a href="https://github.com/coin-or/Clp">
  *    CLP</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
- * </tr> 
- * <tr><td>△ <a href="https://github.com/oxfordcontrol/osqp">
- *    OSQP</a></td>
- *    <td></td>
- *    <td align="center">&diams;</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
  * </tr>
  * <tr><td> <a href="https://github.com/coin-or/Csdp">
  *     CSDP</a></td>
- *     <td align="center">&diams;</td>
+ *     <td align="center">♦</td>
  *     <td></td>
- *     <td align="center">&diams;</td>
- *     <td align="center">&diams;</td>
- *     <td align="center">&diams;</td>
+ *     <td align="center">♦</td>
+ *     <td align="center">♦</td>
+ *     <td align="center">♦</td>
  * </tr>
- * <tr><td>† &Dagger; ▢
- *   <a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
- *    SNOPT</a></td>
- *     <td align="center">&diams;</td>
- *     <td align="center">&diams;</td>
+ * <tr><td><a href="https://github.com/cvxgrp/scs">
+ *    SCS</a></td>
+ *    <td align="center">△</td>
+ *    <td align="center">△</td>
+ *    <td align="center">△</td>
+ *    <td align="center">△</td>
+ *    <td align="center">△</td>
+ * </tr>
+ * <tr><td><a href="https://github.com/oxfordcontrol/osqp">
+ *    OSQP</a></td>
+ *    <td></td>
+ *    <td align="center">△</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
+ * <tr><td><a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
+ *    SNOPT</a> † ‡</td>
+ *     <td align="center">▢</td>
+ *     <td align="center">▢</td>
  *     <td></td>
  *     <td></td>
  *     <td></td>
  * </tr>
- * <tr><td>▢
- *   <a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td>
- *     <td align="center">&diams;</td>
- *     <td align="center">&diams;</td>
+ * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td>
+ *     <td align="center">▢</td>
+ *     <td align="center">▢</td>
  *     <td></td>
  *     <td></td>
  *     <td></td>
  * </tr>
  * </table>
  *
- * † indicates that this is a commercial solver which requires a license
+ * † This is a commercial solver which requires a license
  * (note that some have free licenses for academics).
+ *
+ * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's
+ * pre-compiled binary releases</a> provide SNOPT for anyone to use.
+ *
+ * ♦ A preferred solver for the given category.
  *
  * △ These solvers are not accurate. They implement ADMM algorithm, which
  * converges quickly to a low-accuracy solution, and requires many iterations to
  * achieve high accuracy.
- *
- * &Dagger; Note that <a href="https://drake.mit.edu/from_binary.html">Drake's
- * pre-compiled binary releases</a> provide SNOPT.
  *
  * ▢ These solvers can solve the convex problems, but are not good at it. They
  * treat the convex problems as general nonlinear optimization problems, which
  * can lose the nice guarantee from convex optimization (global convergence,
  * global optimality, etc).
  *
- * <b>Mixed-Integer Convex Optimization</b>
+ * <h2>Mixed-Integer Convex Optimization</h2>
  *
  * <table>
  * <tr>
@@ -154,33 +156,39 @@
  *   <td>MISOCP</a></td>
  *   <td>MISDP</a></td>
  * </tr>
- * <tr><td>† <a href="https://www.gurobi.com/products/gurobi-optimizer">
- *    Gurobi</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
+ * <tr><td><a href="https://www.gurobi.com/products/gurobi-optimizer">
+ *    Gurobi</a> †</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  *  </tr>
- * <tr><td>† <a href="https://www.mosek.com/products/mosek">
- *    Mosek</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
+ * <tr><td><a href="https://www.mosek.com/products/mosek">
+ *    Mosek</a> †</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  * </tr>
- * <tr><td> &loz;
+ * <tr><td>
  * @ref drake::solvers::MixedIntegerBranchAndBound "naive branch-and-bound"
  * </td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
+ *    <td align="center">◊</td>
+ *    <td align="center">◊</td>
+ *    <td align="center">◊</td>
+ *    <td align="center">◊</td>
  * </table>
- * &loz; We implement only the basic branch-and-bound algorithm, without cutting
- * planes nor advanced branching heuristics. Its usefulness is likely restricted
- * to small-sized problems with dozens of binary variables.
  *
- * <b>Nonconvex Programming</b>
+ * † This is a commercial solver which requires a license
+ * (note that some have free licenses for academics).
+ *
+ * ♦ A preferred solver for the given category.
+ *
+ * ◊ The naive solver's usefulness is likely restricted to small-sized problems
+ * with dozens of binary variables. We implement only the basic branch-and-bound
+ * algorithm, without cutting planes nor advanced branching heuristics.
+ *
+ * <h2>Nonconvex Programming</h2>
  *
  * <table>
  * <tr>
@@ -192,32 +200,39 @@
  *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
  *     SMT</a></td>
  * </tr>
- * <tr><td>† &Dagger;
- *   <a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
- *    SNOPT</a></td></tr>
- *    <td align="center">&diams;</td>
+ * <tr><td><a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
+ *    SNOPT</a> † ‡</td></tr>
+ *    <td align="center">♦</td>
  *    <td></td>
  *    <td></td>
  * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td></tr>
- *    <td align="center">&diams;</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  *    <td></td>
  * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
  *    NLopt</a></td></tr>
- *    <td align="center">&diams;</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  *    <td></td>
  * <tr><td><a href="https://github.com/PositronicsLab/Moby">
  *    Moby LCP</a></td>
  *    <td></td>
- *    <td align="center">&diams;</td>
+ *    <td align="center">♦</td>
  *    <td></td>
  * <tr><td><a href="https://dreal.github.io/">dReal</a></td>
  *    <td></td>
  *    <td></td>
- *    <td align="center">&diams;</td>
+ *    <td align="center">♦</td>
  * </tr>
  * </table>
+ *
+ * † This is a commercial solver which requires a license
+ * (note that some have free licenses for academics).
+ *
+ * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's
+ * pre-compiled binary releases</a> provide SNOPT for anyone to use.
+ *
+ * ♦ A preferred solver for the given category.
  *
  * @}
  */
