@@ -526,12 +526,13 @@ TEST_F(ContactModelTest, HydroelasitcWithFallback) {
           this->SpatialForceFromContactResults(contact_results);
 
       const std::vector<SpatialForce<double>>& F_BBo_W_array =
-          MultibodyPlantTester::EvalSpatialContactForcesContinuous(*plant_,
-                                                                   *plant_context_);
+          MultibodyPlantTester::EvalSpatialContactForcesContinuous(
+              *plant_, *plant_context_);
       EXPECT_EQ(F_BBo_W_array.size(), plant_->num_bodies());
-      // Note: We're skipping the _world_ body; EvalSpatialContactForcesContinuous()
-      // reports zero spatial force for the world body. (This ultimately comes from
-      // the implementation of MBP::CalcAndAddContactForcesByPenaltyMethod().)
+      // Note: We're skipping the _world_ body;
+      // EvalSpatialContactForcesContinuous() reports zero spatial force for the
+      // world body. (This ultimately comes from the implementation of
+      // MBP::CalcAndAddContactForcesByPenaltyMethod().)
       for (int b = 1; b < plant_->num_bodies(); ++b) {
         // Confirm that we don't trivially have matching zero-magnitude forces.
         EXPECT_GT(F_BBo_W_array[b].get_coeffs().norm(), 0);
