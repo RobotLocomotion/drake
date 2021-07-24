@@ -64,6 +64,7 @@ def expose_all_files(
     @param sub_dirs
         Any directories that are not packages.
     """
+    print("The expose_all_files.bzl macro is deprecated and will be removed from Drake on or after 2021-11-01.")  # noqa
 
     # @note It'd be nice if this could respect *ignore files, but meh.
     # Also, it'd be **super** nice if Bazel did not let `**` globs leak into
