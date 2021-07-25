@@ -46,6 +46,7 @@ std::ostream& EvaluatorBase::DoDisplay(
   for (int i = 0; i < vars_rows; ++i) {
     os << " " << vars(i).get_name();
   }
+  os << "\n";
 
   return os;
 }
