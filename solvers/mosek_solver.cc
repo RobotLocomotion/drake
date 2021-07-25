@@ -1920,7 +1920,6 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // MSK_linkfiletotaskstream. Otherwise we might create the log file but cannot
   // close it.
   if (print_to_console && print_to_file) {
-    MSK_deletetask(&task);
     throw std::runtime_error(
         "MosekSolver::Solve(): cannot print to both the console and the log "
         "file.");
