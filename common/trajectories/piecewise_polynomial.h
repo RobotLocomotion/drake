@@ -515,7 +515,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *          over, the polynomial will silently be evaluated at the closest
    *          point to t. For example, `value(-1)` will return `value(0)` for a
    *          polynomial defined over [0, 1].
-   * @warning See warning in @ref polynomial_construction_warning.
+   * @warning See warning in the @ref polynomial_warning "constructor overview"
+   *          above.
    */
   MatrixX<T> value(const T& t) const override {
       const int derivative_order = 0;

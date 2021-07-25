@@ -275,7 +275,7 @@ class ConstraintSolver {
   // @{
   /// Computes the base time-discretization of the system using the problem
   /// data, resulting in the `MM` and `qq` described in
-  /// @ref velocity-level-MLCPs; if `MM` and `qq` are modified no further, the
+  /// @ref Velocity-level-MLCPs; if `MM` and `qq` are modified no further, the
   /// LCP corresponds to an impact problem (i.e., the multibody dynamics problem
   /// would not be discretized). The data output (`mlcp_to_lcp_data`, `MM`, and
   /// `qq`) can be updated using a particular time step in

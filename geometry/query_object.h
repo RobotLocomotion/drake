@@ -174,9 +174,9 @@ class QueryObject {
 
    These queries detect _collisions_ between geometry. Two geometries collide
    if they overlap each other and are not explicitly excluded through
-   @ref collision_filter_concepts "collision filtering". These algorithms find
-   those colliding cases, characterize them, and report the essential
-   characteristics of that collision.
+   @ref scene_graph_collision_filter_manager "collision filtering".
+   These algorithms find those colliding cases, characterize them, and report
+   the essential characteristics of that collision.
 
    For two colliding geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and

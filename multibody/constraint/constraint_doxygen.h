@@ -318,6 +318,14 @@ constraint problem data</h4>
     "ConstraintVelProblemData")
 */
 
+/** @defgroup discretization A stable discretization strategy
+@ingroup constraint_overview
+
+To be written. Refer to
+https://github.com/RobotLocomotion/drake/pull/7055
+for a preview.
+*/
+
 /** @defgroup constraint_references References
  @ingroup constraint_overview
 
