@@ -962,6 +962,9 @@ class ExpressionConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
+
  private:
   VectorX<symbolic::Expression> expressions_{0};
   MatrixX<symbolic::Expression> derivatives_{0, 0};
