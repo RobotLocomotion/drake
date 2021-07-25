@@ -4,8 +4,10 @@
 #include <optional>
 #include <vector>
 
+#include "drake/common/symbolic.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace geometry {
@@ -32,6 +34,12 @@ struct IrisOptions {
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
   between iterations is less that this threshold. */
   double termination_threshold{2e-2};  // from rdeits/iris-distro.
+
+  /** For IRIS in configuration space, we retreat by this margin from each
+  C-space obstacle in order to avoid the possibility of requiring an infinite
+  number of faces to approximate a curved boundary.  TODO: clarify the units.
+  */
+  double configuration_space_margin{1e-2};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -84,6 +92,36 @@ the current implementation of the IRIS algorithm.
 ConvexSets MakeIrisObstacles(
     const QueryObject<double>& query_object,
     std::optional<FrameId> reference_frame = std::nullopt);
+
+/** A variation of the Iris (Iterative Region Inflation by Semidefinite
+programming) algorithm which finds collision-free regions in the *configuration
+space* of @p plant.  @see Iris for details on the original algorithm.
+The possibility of this configuration-space variant was suggested in the
+original IRIS paper, but substantial new ideas have been employed here to
+address the non-convexity of configuration-space obstacles; these will be
+documented in a forth-coming publication.
+
+@param plant describes the kinematics of configuration space.
+@param scene_graph describes the geometry; it must be connected to @p plant in a
+systems::Diagram.
+@param root_context is a context of the systems::Diagram containing the
+systems::Context for both @p plant and @p scene_graph.
+@param sample is a vector of size plant.num_positions() representing the initial
+IRIS seed configuration.
+@param options provides additional configuration options.
+
+Note: This initial implementation **does not** yet provide a rigorous guarantee
+that the returned region is collision free.  The certification step will be
+contributed in a follow-up PR.
+
+@ingroup geometry_optimization
+*/
+HPolyhedron IrisInConfigurationSpace(
+    const multibody::MultibodyPlant<double>& plant,
+    const SceneGraph<double>& scene_graph,
+    const systems::Context<double>& root_context,
+    const Eigen::Ref<const Eigen::VectorXd>& sample,
+    const IrisOptions& options = IrisOptions());
 
 }  // namespace optimization
 }  // namespace geometry
