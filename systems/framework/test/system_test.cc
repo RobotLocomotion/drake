@@ -648,6 +648,10 @@ class ValueIOTestSystem : public TestSystemBase<T> {
 
   ~ValueIOTestSystem() override {}
 
+  const InputPort<T>& AddAbstractInputPort() {
+    return this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
+  }
+
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const override {
     if (input_port.get_index() == 0) {
@@ -879,6 +883,34 @@ TEST_F(SystemIOTest, TransmogrifyAndFix) {
   EXPECT_NE(fixed_vec, nullptr);
   EXPECT_EQ(2, fixed_vec->GetAtIndex(0).value());
   EXPECT_EQ(0, fixed_vec->GetAtIndex(0).derivatives().size());
+}
+
+// Confirm that FixInputPortsFrom does *not* convert type-dependent abstract
+// input ports.
+// TODO(5454) Once transmogrification of scalar-dependent abstract values is
+// implemented, this test and the corresponding @throws documentation on
+// System::FixInputPortsFrom can simply be removed (as we no longer have to
+// track this undesirable behavior) .
+TEST_F(SystemIOTest, FixFromTypeDependentAbstractInput) {
+  // Adds an abstract input port with type BasicVector<T>.
+  const auto& typed_input = test_sys_.AddAbstractInputPort();
+
+  // Confirm that the type is indeed BasicVector<double>.
+  std::unique_ptr<AbstractValue> input_value =
+      test_sys_.AllocateInputAbstract(typed_input);
+  DRAKE_EXPECT_NO_THROW(input_value->get_value<BasicVector<double>>());
+
+  const auto context = test_sys_.CreateDefaultContext();
+  typed_input.FixValue(context.get(),
+                       BasicVector<double>(Eigen::VectorXd::Zero(1)));
+
+  ValueIOTestSystem<AutoDiffXd> autodiff_system;
+  autodiff_system.AddAbstractInputPort();
+  auto autodiff_context = autodiff_system.CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(autodiff_system.FixInputPortsFrom(
+                                  test_sys_, *context, autodiff_context.get()),
+                              ".*System::FixInputPortTypeCheck.*");
 }
 
 // This class implements various computational methods so we can check that
