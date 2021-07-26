@@ -415,14 +415,8 @@ std::string MaybeWriteCsdpParams(const SolverOptions& options) {
   std::string all_csdp_params;
 
   // Map the common options into CSDP's conventions.
-  const auto& common_options = options.common_solver_options();
-  auto iter = common_options.find(CommonSolverOption::kPrintToConsole);
-  if (iter != common_options.end()) {
-    const int option_value = std::get<int>(iter->second);
-    DRAKE_DEMAND((option_value == 0) || (option_value == 1));
-    if (option_value) {
-      all_csdp_params += "printlevel=1\n";
-    }
+  if (options.get_print_to_console()) {
+    all_csdp_params += "printlevel=1\n";
   }
 
   // TODO(jwnimmer-tri) We could pass through the other named options here,
