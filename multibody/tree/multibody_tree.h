@@ -2391,8 +2391,11 @@ class MultibodyTree {
   Eigen::VectorBlock<VectorX<T>> get_mutable_discrete_state_vector(
       systems::State<T>* state) const;
 
-  Eigen::VectorBlock<VectorX<T>> extract_qv_from_continuous(
+  Eigen::VectorBlock<VectorX<T>> extract_mutable_qv_from_continuous(
       systems::VectorBase<T>* continuous_qvz) const;
+
+  Eigen::VectorBlock<const VectorX<T>> extract_qv_from_continuous(
+      const systems::VectorBase<T>& continuous_qvz) const;
 
   const Joint<T>& GetJointByNameImpl(
       std::string_view, std::optional<ModelInstanceIndex>) const;
