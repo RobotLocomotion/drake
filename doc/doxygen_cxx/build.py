@@ -15,7 +15,7 @@ from drake.doc.defs import check_call, main, symlink_input, verbose
 
 
 def _symlink_headers(*, drake_workspace, temp_dir, modules):
-    """Prepare the input and output folders.  We will copy the requested input
+    """Prepare the input and output folders. We will copy the requested input
     file(s) into a temporary scratch directory, so that Doxygen doesn't scan
     the drake_workspace directly (which is extremely slow).
     """
@@ -101,6 +101,72 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
     return output_filename
 
 
+def _is_important_warning(line):
+    """Returns true iff the given line of Doxygen output should be promoted to
+    a build error.
+    """
+    # Check for broken links.
+    if "unable to resolve reference" in line:
+        # Maybe the code specifically wanted to have a broken link.
+        if "MODULE_NOT_WRITTEN_YET" in line:
+            return False
+        # For now, don't error on broken function signatures; only error on the
+        # more important links such as section cross-references.  An example:
+        # ... unable to resolve ... `AssignRole(SourceId,...)' for ref ...
+        if "(" in line:
+            return False
+        # TODO(#14107) Remove this if-clause once the issue is resolved.
+        if "multibody_plant" in line and "df_contact_material" in line:
+            return False
+        # Broken link.
+        return True
+
+    # All good.
+    return False
+
+
+def _postprocess_doxygen_log(original_lines, check_for_errors):
+    """If check_for_errors is true, then looks for any important warnings and
+    fails-fast if any were found. When in verbose mode, also dumps the log to
+    the console.
+    """
+    # Throw away useless lines.
+    #
+    # Specifically, we remove stanzas that looks like this:
+    #
+    #  The following parameters of DiscardZeroGradient(...) are not documented:
+    #  parameter 'auto_diff_matrix'
+    #
+    # The pattern to remove will be the "are not documented" line, followed by
+    # some list of one or more parameter names.
+    lines = []
+    is_ignoring_parameters = False
+    for line in original_lines:
+        if is_ignoring_parameters:
+            if line.startswith("parameter "):
+                continue
+        is_ignoring_parameters = False
+        if line.endswith(" are not documented:"):
+            is_ignoring_parameters = True
+            continue
+        lines.append(line)
+
+    # Print all of the warnings (when requested).
+    if verbose():
+        for line in lines:
+            print("[doxygen] " + line)
+
+    # Check for important warnings (when requested).
+    errors = []
+    if check_for_errors:
+        for line in lines:
+            if _is_important_warning(line):
+                errors.append(line.replace("warning:", "error:"))
+    if errors:
+        message = "\n".join(["Problems found by Doxygen:"] + sorted(errors))
+        raise RuntimeError(message)
+
+
 def _build(*, out_dir, temp_dir, modules, quick):
     """Generates into out_dir; writes scratch files into temp_dir.
     As a precondition, both directories must already exist and be empty.
@@ -138,6 +204,18 @@ def _build(*, out_dir, temp_dir, modules, quick):
 
     # Run doxygen.
     check_call([doxygen, doxyfile], cwd=temp_dir)
+
+    # Post-process its log, and check for errors. If we are building only a
+    # subset of the docs, we are likely to encounter errors due to the missing
+    # sections, so we'll only enable the promotion of warnings to errors when
+    # we're building all of the C++ documentation.
+    check_for_errors = (len(modules) == 0)
+    with open(f"{temp_dir}/doxygen.log", encoding="utf-8") as f:
+        lines = [
+            line.strip().replace(f"{temp_dir}/", "")
+            for line in f.readlines()
+        ]
+    _postprocess_doxygen_log(lines, check_for_errors)
 
     # The nominal pages to offer for preview.
     return ["", "classes.html", "modules.html"]
