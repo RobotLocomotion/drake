@@ -2391,8 +2391,33 @@ class MultibodyTree {
   Eigen::VectorBlock<VectorX<T>> get_mutable_discrete_state_vector(
       systems::State<T>* state) const;
 
-  Eigen::VectorBlock<VectorX<T>> extract_qv_from_continuous(
+  Eigen::VectorBlock<const VectorX<T>> extract_qv_from_continuous(
+      const systems::VectorBase<T>& continuous_qvz) const;
+
+  Eigen::VectorBlock<VectorX<T>> extract_mutable_qv_from_continuous(
       systems::VectorBase<T>* continuous_qvz) const;
+
+
+  // Given a VectorBlock and (start, length) segment specification relative
+  // to that block, return a new block representing that segment relative to
+  // the original nested expression.
+
+  static Eigen::VectorBlock<const VectorX<T>> make_block_segment(
+      const Eigen::VectorBlock<const VectorX<T>>& block, int start,
+      int length) {
+    DRAKE_ASSERT(start >= 0 && length >= 0);
+    DRAKE_ASSERT(start + length <= block.rows());
+    return block.nestedExpression().segment(block.startRow() + start, length);
+  }
+
+  static Eigen::VectorBlock<VectorX<T>> make_mutable_block_segment(
+      Eigen::VectorBlock<VectorX<T>>* block, int start, int length) {
+    DRAKE_ASSERT(block != nullptr);
+    DRAKE_ASSERT(start >= 0 && length >= 0);
+    DRAKE_ASSERT(start + length <= block->rows());
+    return block->nestedExpression().segment(block->startRow() + start, length);
+  }
+
 
   const Joint<T>& GetJointByNameImpl(
       std::string_view, std::optional<ModelInstanceIndex>) const;

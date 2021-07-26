@@ -491,44 +491,34 @@ Eigen::VectorBlock<const VectorX<T>> MultibodyTree<T>::get_state_vector(
   if (is_state_discrete()) {
     return get_discrete_state_vector(context);
   }
-
-  // State is continuous. This might have x = [q, v, z] -- we only
-  // want q and v.
-  const int num_qv = num_positions() + num_velocities();
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
-  const systems::BasicVector<T>& continuous_state_vector =
-      dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state().get_vector());
-  DRAKE_ASSERT(continuous_state_vector.size() >= num_qv);
-  Eigen::VectorBlock<const VectorX<T>> x =
-      continuous_state_vector.get_value();
-  return x.nestedExpression().head(num_qv);
+  const systems::VectorBase<T>& continuous_qvz_base =
+      context.get_continuous_state().get_vector();
+  return extract_qv_from_continuous(continuous_qvz_base);
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> MultibodyTree<T>::get_positions(
     const systems::Context<T>& context) const {
   Eigen::VectorBlock<const VectorX<T>> qv = get_state_vector(context);
-  return qv.nestedExpression().head(num_positions());
+  return make_block_segment(qv, 0, num_positions());
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> MultibodyTree<T>::get_velocities(
     const systems::Context<T>& context) const {
   Eigen::VectorBlock<const VectorX<T>> qv = get_state_vector(context);
-  return qv.nestedExpression().tail(num_velocities());
+  return make_block_segment(qv, num_positions(), num_velocities());
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_state_vector(
     systems::Context<T>* context) const {
   if (is_state_discrete()) {
-    return get_mutable_discrete_state_vector(&*context);
+    return get_mutable_discrete_state_vector(context);
   }
-  systems::VectorBase<T>& continuous_qvz =
+  systems::VectorBase<T>& continuous_qvz_base =
       context->get_mutable_continuous_state().get_mutable_vector();
-  return extract_qv_from_continuous(&continuous_qvz);
+  return extract_mutable_qv_from_continuous(&continuous_qvz_base);
 }
 
 template <typename T>
@@ -537,9 +527,9 @@ Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_state_vector(
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(&*state);
   }
-  systems::VectorBase<T>& continuous_qvz =
+  systems::VectorBase<T>& continuous_qvz_base =
       state->get_mutable_continuous_state().get_mutable_vector();
-  return extract_qv_from_continuous(&continuous_qvz);
+  return extract_mutable_qv_from_continuous(&continuous_qvz_base);
 }
 
 // Must be implemented carefully to avoid invalidating more cache entries than
@@ -550,28 +540,28 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_positions(
     systems::Context<T>* context) const {
   Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*context);
-  return qv.nestedExpression().head(num_positions());
+  return make_mutable_block_segment(&qv, num_positions(), num_velocities());
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_velocities(
     systems::Context<T>* context) const {
   Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*context);
-  return qv.nestedExpression().tail(num_velocities());
+  return make_mutable_block_segment(&qv, num_positions(), num_velocities());
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_positions(
     systems::State<T>* state) const {
   Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*state);
-  return qv.nestedExpression().head(num_positions());
+  return make_mutable_block_segment(&qv, num_positions(), num_velocities());;
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_velocities(
     systems::State<T>* state) const {
   Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*state);
-  return qv.nestedExpression().tail(num_velocities());
+  return make_mutable_block_segment(&qv, num_positions(), num_velocities());
 }
 
 template <typename T>
@@ -618,23 +608,47 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
   return discrete_state_vector.get_mutable_value();
 }
 
-// State is continuous. This might have x = [q, v, z] -- we only
-// want q and v.
+// State is continuous. This might have x = [q, v, z] -- we only want q and v.
+//
+// These next two private methods are used only in the above implementations for
+// digging continuous State out of a Context, which results in a VectorBase.
+// Profiling showed that it is too expensive to do a dynamic_cast for simple
+// state access, which is VERY frequent. However a static_cast is safe here as
+// long as the supplied VectorBase comes from the State in a LeafContext,
+// because LeafContext continuous state variables are BasicVectors.
+// MultibodyPlant's user-accessible API validates the user-provided Context
+// prior to calling down to MultibodyTree, so we don't have to guard against
+// a DiagramContext way down here.
+
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::extract_qv_from_continuous(
-    systems::VectorBase<T>* continuous_qvz) const {
-  DRAKE_ASSERT(continuous_qvz != nullptr);
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::extract_qv_from_continuous(
+    const systems::VectorBase<T>& continuous_qvz_base) const {
   DRAKE_ASSERT(!is_state_discrete());
   const int num_qv = num_positions() + num_velocities();
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
-  systems::BasicVector<T>& continuous_state_vector =
-      dynamic_cast<systems::BasicVector<T>&>(*continuous_qvz);
-  DRAKE_ASSERT(continuous_state_vector.size() >= num_qv);
-  Eigen::VectorBlock<VectorX<T>> x =
-      continuous_state_vector.get_mutable_value();
-  return x.nestedExpression().head(num_qv);
+  // See note above regarding static_cast.
+  const systems::BasicVector<T>& continuous_qvz =
+      static_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
+  DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
+  Eigen::VectorBlock<const VectorX<T>> qvz = continuous_qvz.get_value();
+  return make_block_segment(qvz, 0, num_qv);
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::extract_mutable_qv_from_continuous(
+    systems::VectorBase<T>* continuous_qvz_base) const {
+  DRAKE_ASSERT(continuous_qvz_base != nullptr);
+  DRAKE_ASSERT(!is_state_discrete());
+  const int num_qv = num_positions() + num_velocities();
+
+  // See note above regarding static_cast.
+  systems::BasicVector<T>& continuous_qvz =
+      static_cast<systems::BasicVector<T>&>(*continuous_qvz_base);
+  DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
+  Eigen::VectorBlock<VectorX<T>> qvz = continuous_qvz.get_mutable_value();
+  return make_mutable_block_segment(&qvz, 0, num_qv);
 }
 
 }  // namespace internal
