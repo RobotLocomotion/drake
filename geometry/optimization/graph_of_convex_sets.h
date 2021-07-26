@@ -227,15 +227,47 @@ class GraphOfConvexSets {
   empty then a default name will be provided. */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
+  /** Returns the VertexIds of the vertices stored in the graph.  Note that the
+  order of the elements is not guaranteed. */
+  std::unordered_set<VertexId> VertexIds() const;
+
+  /** Returns pointers to the edges stored in the graph.  Note that the order of
+  the elements is not guaranteed. */
+  std::unordered_set<Edge*> Edges() const;
+
   // TODO(russt): std::string GetGraphvizString(const
   // std::optional<solvers::MathematicalProgramResult>& = std::nullopt) const;
 
-  // TODO(russt): Most all of the interesting work will happen in this method.
-  // The only reason that it is not included in this initial PR is that we have
-  // separated it for code review.
-  //
-  // solvers::MathematicalProgramResult SolveShortestPath(const Vertex& source,
-  // const Vertex& target, bool convex_relaxation = false);
+  // TODO(russt): Consider adding optional<Solver> argument.
+  /** Formulates and solves the mixed-integer convex formulation of the
+  shortest path problem on the graph, as discussed in detail in
+
+  "Shortest Paths in Graphs of Convex Sets" by Tobia Marcucci, Jack
+  Umenberger, Pablo A. Parrilo, Russ Tedrake. https://arxiv.org/abs/2101.11565
+
+  @param source specifies the source set.  The solver will choose any point in
+  that set; to start at a particular continuous state consider adding a Point
+  set to the graph and using that as the source.
+  @param target specifies the target set.  The solver will choose any point in
+  that set.
+  @param convex_relaxation will solve the relaxed version of the problem.  As
+  discussed in the paper, we know that this relaxation cannot solve the original
+  NP-hard problem for all instances, but there are also many instances for which
+  the convex relaxation is tight.
+
+  @throws std::exception if any of the costs or constraints in the graph are
+  incompatible with the shortest path formulation or otherwise unsupported.
+  All costs must be non-negative (for all values of the continuous variables).
+  */
+  solvers::MathematicalProgramResult SolveShortestPath(
+      const VertexId& source_id, const VertexId& target_id,
+      bool convex_relaxation = false) const;
+
+  /** Convenience overload that takes const reference arguments for source and
+  target. */
+  solvers::MathematicalProgramResult SolveShortestPath(
+      const Vertex& source, const Vertex& target,
+      bool convex_relaxation = false) const;
 
  private:
   std::unordered_map<VertexId, std::unique_ptr<Vertex>> vertices_{};
