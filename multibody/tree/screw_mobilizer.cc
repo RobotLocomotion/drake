@@ -28,7 +28,7 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation(
   using std::abs;
   DRAKE_THROW_UNLESS(abs(screw_pitch_) > kEpsilon ||
                      abs(translation) < kEpsilon);
-  auto q = this->get_mutable_positions(&*context);
+  auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
   q[0] = get_screw_rotation_from_translation(translation, screw_pitch_);
   return *this;
@@ -45,7 +45,7 @@ T ScrewMobilizer<T>::get_angle(
 template <typename T>
 const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angle(
     systems::Context<T>* context, const T& angle) const {
-  auto q = this->get_mutable_positions(&*context);
+  auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
   q[0] = angle;
   return *this;
@@ -67,7 +67,7 @@ const ScrewMobilizer<T>& ScrewMobilizer<T>::set_translation_rate(
   using std::abs;
   DRAKE_THROW_UNLESS(abs(screw_pitch_) > kEpsilon || abs(vz) < kEpsilon);
 
-  auto v = this->get_mutable_velocities(&*context);
+  auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = get_screw_rotation_from_translation(vz, screw_pitch_);
   return *this;
@@ -84,7 +84,7 @@ T ScrewMobilizer<T>::get_angular_rate(
 template <typename T>
 const ScrewMobilizer<T>& ScrewMobilizer<T>::set_angular_rate(
     systems::Context<T>* context, const T& theta_dot) const {
-  auto v = this->get_mutable_velocities(&*context);
+  auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = theta_dot;
   return *this;
