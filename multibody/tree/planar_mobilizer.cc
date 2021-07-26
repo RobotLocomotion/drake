@@ -22,7 +22,7 @@ template <typename T>
 const PlanarMobilizer<T>& PlanarMobilizer<T>::set_translations(
     systems::Context<T>* context,
     const Eigen::Ref<const Vector2<T>>& translations) const {
-  auto q = this->get_mutable_positions(&*context);
+  auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
   q.head(2) = translations;
   return *this;
@@ -39,7 +39,7 @@ const T& PlanarMobilizer<T>::get_angle(
 template <typename T>
 const PlanarMobilizer<T>& PlanarMobilizer<T>::set_angle(
     systems::Context<T>* context, const T& angle) const {
-  auto q = this->get_mutable_positions(&*context);
+  auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
   q[2] = angle;
   return *this;
@@ -57,7 +57,7 @@ template <typename T>
 const PlanarMobilizer<T>& PlanarMobilizer<T>::set_translation_rates(
     systems::Context<T>* context,
     const Eigen::Ref<const Vector2<T>>& v_FM_F) const {
-  auto v = this->get_mutable_velocities(&*context);
+  auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
   v.head(2) = v_FM_F;
   return *this;
@@ -74,7 +74,7 @@ const T& PlanarMobilizer<T>::get_angular_rate(
 template <typename T>
 const PlanarMobilizer<T>& PlanarMobilizer<T>::set_angular_rate(
     systems::Context<T>* context, const T& theta_dot) const {
-  auto v = this->get_mutable_velocities(&*context);
+  auto v = this->GetMutableVelocities(context);
   DRAKE_ASSERT(v.size() == kNv);
   v[2] = theta_dot;
   return *this;

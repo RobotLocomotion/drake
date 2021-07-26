@@ -42,10 +42,10 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
              0, 0;
   }
 
-  const FeatherstoneMobilizer<T>& set_angles(
+  const FeatherstoneMobilizer<T>& SetAngles(
       systems::Context<T>* context,
       const Vector2<T>& angles) const {
-    auto q = this->get_mutable_positions(&*context);
+    auto q = this->GetMutablePositions(context);
     DRAKE_ASSERT(q.size() == kNq);
     q = angles;
     return *this;
@@ -306,7 +306,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   // State of the mobilizer connecting the box and cylinder.
   Vector2<double> q_BC;
   q_BC << M_PI_4, 0.2;
-  BC_mobilizer.set_angles(context.get(), q_BC);
+  BC_mobilizer.SetAngles(context.get(), q_BC);
 
   // Update cache.
   PositionKinematicsCache<double> pc(tree.get_topology());
