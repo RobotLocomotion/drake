@@ -272,7 +272,7 @@ class RevoluteJoint final : public Joint<T> {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau_mob =
+    Eigen::Ref<VectorX<T>> tau_mob =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
