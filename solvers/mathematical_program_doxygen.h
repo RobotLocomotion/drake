@@ -16,9 +16,9 @@
  * category of optimization problem.
  *
  * Drake wraps a number of open source and commercial solvers
- * (+ a few custom solvers) to
- * provide a common interface for convex optimization, mixed-integer convex
- * optimization, and other non-convex mathematical programs.
+ * (+ a few custom solvers) to provide a common interface for convex
+ * optimization, mixed-integer convex optimization, and other non-convex
+ * mathematical programs.
  *
  * The MathematicalProgram class handles the coordination of decision variables,
  * objectives, and constraints.  The @ref drake::solvers::Solve() "Solve()"
@@ -127,13 +127,22 @@
  *     <td></td>
  *     <td></td>
  * </tr>
+ * <tr><td>
+ *   <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLopt</a></td>
+ *     <td align="center">▢</td>
+ *     <td align="center">▢</td>
+ *     <td></td>
+ *     <td></td>
+ *     <td></td>
+ * </tr>
  * </table>
  *
  * † This is a commercial solver which requires a license
  * (note that some have free licenses for academics).
  *
- * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's
- * pre-compiled binary releases</a> provide SNOPT for anyone to use.
+ * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's pre-compiled
+ * binary releases</a> incorporate a private build of SNOPT that does not
+ * require a license when invoked via Drake's SnoptSolver wrapper class.
  *
  * ♦ A preferred solver for the given category.
  *
@@ -142,9 +151,7 @@
  * achieve high accuracy.
  *
  * ▢ These solvers can solve the convex problems, but are not good at it. They
- * treat the convex problems as general nonlinear optimization problems, which
- * can lose the nice guarantee from convex optimization (global convergence,
- * global optimality, etc).
+ * treat the convex problems as general nonlinear optimization problems.
  *
  * <h2>Mixed-Integer Convex Optimization</h2>
  *
@@ -229,8 +236,9 @@
  * † This is a commercial solver which requires a license
  * (note that some have free licenses for academics).
  *
- * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's
- * pre-compiled binary releases</a> provide SNOPT for anyone to use.
+ * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's pre-compiled
+ * binary releases</a> incorporate a private build of SNOPT that does not
+ * require a license when invoked via Drake's SnoptSolver wrapper class.
  *
  * ♦ A preferred solver for the given category.
  *
