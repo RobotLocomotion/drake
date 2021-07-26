@@ -25,8 +25,8 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 PackageMap::PackageMap() {
-  std::string drake_pkg = FindResourceOrThrow("drake/package.xml");
-  AddPackageXml(drake_pkg);
+  std::string drake_package_xml = FindResourceOrThrow("drake/package.xml");
+  AddPackageXml(drake_package_xml);
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path) {

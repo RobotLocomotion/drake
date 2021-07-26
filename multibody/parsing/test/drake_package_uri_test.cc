@@ -9,7 +9,7 @@ If you wish to visualize this mesh, in its own terminal run:
 In a new terminal, run example to visualize model:
 
  $ bazel run \
-   //multibody/parsing:drake_pkg_uri_test -- \
+   //multibody/parsing:drake_package_uri_test -- \
    --visualize=true --visualize_sec=1
 
 */
@@ -51,7 +51,7 @@ class ParseTest : public testing::TestWithParam<std::string> {};
 TEST_P(ParseTest, ParsesSdfAndVisualizes) {
   const std::string object_name = GetParam();
   const std::string filename = FindResourceOrThrow(fmt::format(
-      "drake/multibody/parsing/test/drake_pkg_uri_test/{}",
+      "drake/multibody/parsing/test/drake_package_uri_test/{}",
       object_name));
 
   DiagramBuilder<double> builder;
