@@ -127,6 +127,14 @@
  *     <td></td>
  *     <td></td>
  * </tr>
+ * <tr><td>
+ *   <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLopt</a></td>
+ *     <td align="center">▢</td>
+ *     <td align="center">▢</td>
+ *     <td></td>
+ *     <td></td>
+ *     <td></td>
+ * </tr>
  * </table>
  *
  * † This is a commercial solver which requires a license
