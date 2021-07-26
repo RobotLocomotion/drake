@@ -292,9 +292,10 @@ class QuadraticConstraint : public Constraint {
     This constraint is differentiable everywhere, but z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 is
  non-convex. The default is to use the first formulation. For more information
  and visualization, please refer to
- https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
- *
- * @ingroup solver_evaluators
+ https://www.epfl.ch/labs/disopt/wp-content/uploads/2018/09/7.pdf
+ and https://docs.mosek.com/modeling-cookbook/cqo.html (Fig 3.1)
+
+ @ingroup solver_evaluators
  */
 class LorentzConeConstraint : public Constraint {
  public:
@@ -370,7 +371,7 @@ class LorentzConeConstraint : public Constraint {
  * z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁²
  * <-->
  * For more information and visualization, please refer to
- * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
+ * https://docs.mosek.com/modeling-cookbook/cqo.html (Fig 3.1)
  *
  * @ingroup solver_evaluators
  */
@@ -961,6 +962,9 @@ class ExpressionConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
+
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
 
  private:
   VectorX<symbolic::Expression> expressions_{0};

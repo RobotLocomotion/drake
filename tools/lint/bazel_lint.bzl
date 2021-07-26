@@ -73,8 +73,6 @@ def bazel_lint(
 
     _bazel_lint(
         name = name,
-        # This this serves as the original of "bazel_lint_files" in
-        # `_patterns_map` in `//tools/external_data:expose_all_files.bzl`.
         files = native.glob([
             "*.bzl",
             "*.BUILD",

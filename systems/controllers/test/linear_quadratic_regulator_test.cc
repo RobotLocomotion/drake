@@ -12,8 +12,10 @@ namespace controllers {
 namespace {
 
 GTEST_TEST(TestLQR, TestException) {
-  Eigen::Matrix2d A = Eigen::Matrix2d::Zero();
-  Eigen::Vector2d B = Eigen::Vector2d::Zero();
+  // A double integrator
+  Eigen::Matrix2d A;
+  A << 0, 1, 0, 0;
+  const Eigen::Vector2d B(0, 1);
 
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Eigen::Matrix<double, 1, 1> R = Eigen::MatrixXd::Identity(1, 1);

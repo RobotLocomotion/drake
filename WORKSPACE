@@ -9,12 +9,6 @@ load("//tools/workspace:default.bzl", "add_default_workspace")
 
 add_default_workspace()
 
-# These are test repositories only needed for local testing of `external_data`,
-# and should not be needed for downstream projects.
-load("@drake//tools/external_data/test:external_data_workspace_test.bzl", "add_external_data_test_repositories")  # noqa
-
-add_external_data_test_repositories(__workspace_dir__)
-
 # Add some special heuristic logic for using CLion with Drake.
 load("//tools/clion:repository.bzl", "drake_clion_environment")
 

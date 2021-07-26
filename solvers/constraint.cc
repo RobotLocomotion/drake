@@ -509,6 +509,11 @@ void ExpressionConstraint::DoEval(
   }
 }
 
+std::ostream& ExpressionConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "ExpressionConstraint", vars, false);
+}
+
 ExponentialConeConstraint::ExponentialConeConstraint(
     const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
     const Eigen::Ref<const Eigen::Vector3d>& b)

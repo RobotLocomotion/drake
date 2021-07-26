@@ -26,7 +26,7 @@ from pydrake.manipulation.planner import (
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
-                                       LeafSystem)
+                                       LeafSystem, PublishEvent)
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer, MeshcatVisualizer)
@@ -54,7 +54,7 @@ class EndEffectorTeleop(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicEvent(0.01, 0.0, PublishEvent(self._update_window))
         self.planar = planar
 
         self.window = tk.Tk()
@@ -166,7 +166,7 @@ class EndEffectorTeleop(LeafSystem):
             self.y.set(xyz[1])
         self.z.set(xyz[2])
 
-    def DoPublish(self, context, event):
+    def _update_window(self, context, event):
         self.window.update_idletasks()
         self.window.update()
 

@@ -1143,7 +1143,10 @@ class System : public SystemBase {
   in @p other_context, as evaluated by @p other_system.
   @throws std::exception unless `other_context` and `target_context` both
   have the same shape as this System, and the `other_system`. Ignores
-  disconnected inputs. */
+  disconnected inputs.
+  @throws std::exception if `this` system's scalar type T != double and
+  `other_system` has any abstract input ports whose contained type depends on
+  scalar type. */
   void FixInputPortsFrom(const System<double>& other_system,
                          const Context<double>& other_context,
                          Context<T>* target_context) const;

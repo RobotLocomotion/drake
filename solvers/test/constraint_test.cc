@@ -102,7 +102,7 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
   std::ostringstream os;
   constraint1.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
-  EXPECT_EQ(fmt::format("{}", os.str()),
+  EXPECT_EQ(os.str(),
             "QuadraticConstraint\n"
             "0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + 0.5 * pow(x(1), 2)) "
             "<= 1\n");
@@ -438,6 +438,13 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
   ASSERT_EQ(expressions.size(), 2);
   EXPECT_TRUE(e[0].EqualTo(expressions[0]));
   EXPECT_TRUE(e[1].EqualTo(expressions[1]));
+
+  std::ostringstream os;
+  constraint.Display(os, vars);
+  EXPECT_EQ(os.str(),
+            "ExpressionConstraint\n"
+            "0 <= (1 + pow(x0, 2)) <= 2\n"
+            "0 <= (x2 + pow(x1, 2)) <= 2\n");
 
   const Vector3d x{.2, .4, .6};
   VectorXd y;

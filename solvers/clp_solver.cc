@@ -295,15 +295,9 @@ void ParseModelExceptLinearConstraints(
 }
 
 int ChooseLogLevel(const SolverOptions& options) {
-  const auto& common_options = options.common_solver_options();
-  auto iter = common_options.find(CommonSolverOption::kPrintToConsole);
-  if (iter != common_options.end()) {
-    const int option_value = std::get<int>(iter->second);
-    DRAKE_DEMAND((option_value == 0) || (option_value == 1));
-    if (option_value) {
-      // Documented as "factorizations plus a bit more" in ClpModel.hpp.
-      return 3;
-    }
+  if (options.get_print_to_console()) {
+    // Documented as "factorizations plus a bit more" in ClpModel.hpp.
+    return 3;
   }
   return 0;
 }

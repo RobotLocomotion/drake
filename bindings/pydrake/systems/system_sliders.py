@@ -5,7 +5,7 @@ except ImportError:
 
 import numpy as np
 
-from pydrake.systems.framework import VectorSystem
+from pydrake.systems.framework import (PublishEvent, VectorSystem)
 
 
 class SystemSliders(VectorSystem):
@@ -46,7 +46,7 @@ class SystemSliders(VectorSystem):
                          that specifies the discretization that the slider will
                          be rounded to. Use -1 (the default) to disable any
                          rounding. For example, a resolution of 0.1 will round
-                         to the neareset 0.1. See class documentation for more
+                         to the nearest 0.1. See class documentation for more
                          details.
             length:      The length of the sliders in pixels.
             update_period_sec: Specifies how often the window update() method
@@ -105,7 +105,8 @@ class SystemSliders(VectorSystem):
         resolution = input_to_vector(resolution, "resolution")
 
         # Schedule window updates in either case (new or existing window):
-        self.DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicEvent(update_period_sec, 0.0,
+                                  PublishEvent(self._update_window))
 
         self._sliders = []
 
@@ -141,7 +142,7 @@ class SystemSliders(VectorSystem):
     # be better to add a discrete state vector that gets updated values
     # from the sliders (and handles the slider update at that time) and
     # update that in in a DiscreteUpdate.
-    def DoPublish(self, context, event):
+    def _update_window(self, context, event):
         # GUI functionality is not automatically tested
         # Must manually test this function to ensure updates run properly
         self.window.update_idletasks()
