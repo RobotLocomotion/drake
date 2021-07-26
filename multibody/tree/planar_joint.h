@@ -267,7 +267,7 @@ class PlanarJoint final : public Joint<T> {
                        const T& joint_tau,
                        MultibodyForces<T>* forces) const final {
     DRAKE_DEMAND(joint_dof < 3);
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau_mob =
+    Eigen::Ref<VectorX<T>> tau_mob =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
@@ -279,7 +279,7 @@ class PlanarJoint final : public Joint<T> {
   /// viscous law `f = -d⋅v`, with d the damping coefficient (see damping()).
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const final {
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau =
+    Eigen::Ref<VectorX<T>> tau =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector2<T>& v_translation = get_translational_velocity(context);

@@ -201,7 +201,7 @@ class BallRpyJoint final : public Joint<T> {
   /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()).
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> t_BMo_F =
+    Eigen::Ref<VectorX<T>> t_BMo_F =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector3<T>& w_FM = get_angular_velocity(context);
