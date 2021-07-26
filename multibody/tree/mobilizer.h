@@ -514,11 +514,12 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // the entire MultibodyTree model.
   // @pre @p q_array is of size MultibodyTree::num_positions().
   Eigen::Ref<const VectorX<T>> get_positions_from_array(
-      const Eigen::Ref<const VectorX<T>>& q_array) const {
+      EigenPtr<const VectorX<T>> q_array) const {
+    DRAKE_DEMAND(q_array != nullptr);
     DRAKE_DEMAND(
-        q_array.size() == this->get_parent_tree().num_positions());
-    return q_array.segment(topology_.positions_start,
-                           topology_.num_positions);
+        q_array->size() == this->get_parent_tree().num_positions());
+    return q_array->segment(topology_.positions_start,
+                            topology_.num_positions);
   }
 
   // Mutable version of get_positions_from_array().
@@ -536,11 +537,12 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // the entire MultibodyTree model.
   // @pre @p v_array is of size MultibodyTree::num_velocities().
   Eigen::Ref<const VectorX<T>>
-  get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v_array) const {
+  get_velocities_from_array(EigenPtr<const VectorX<T>> v_array) const {
+    DRAKE_DEMAND(v_array != nullptr);
     DRAKE_DEMAND(
-        v_array.size() == this->get_parent_tree().num_velocities());
-    return v_array.segment(topology_.velocities_start_in_v,
-                           topology_.num_velocities);
+        v_array->size() == this->get_parent_tree().num_velocities());
+    return v_array->segment(topology_.velocities_start_in_v,
+                            topology_.num_velocities);
   }
 
   // Mutable version of get_velocities_from_array().
@@ -559,7 +561,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // This method aborts if the input array is not of size
   // MultibodyTree::num_velocities().
   Eigen::Ref<const VectorX<T>> get_accelerations_from_array(
-      const Eigen::Ref<const VectorX<T>>& vdot_array) const {
+      EigenPtr<const VectorX<T>> vdot_array) const {
     return get_velocities_from_array(vdot_array);
   }
 
@@ -575,7 +577,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // This method aborts if the input array is not of size
   // MultibodyTree::num_velocities().
   Eigen::Ref<const VectorX<T>> get_generalized_forces_from_array(
-      const Eigen::Ref<const VectorX<T>>& tau_array) const {
+      EigenPtr<const VectorX<T>> tau_array) const {
     return get_velocities_from_array(tau_array);
   }
 

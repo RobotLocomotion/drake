@@ -1279,7 +1279,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
       if (tau_applied_size != 0) {
         tau_applied_mobilizer =
             node.get_mobilizer().get_generalized_forces_from_array(
-                tau_applied_array);
+                &tau_applied_array);
       }
       if (Fapplied_size != 0) {
         Fapplied_Bo_W = Fapplied_Bo_W_array[body_node_index];
@@ -1341,7 +1341,7 @@ void MultibodyTree<T>::MapQDotToVelocity(
 
   VectorUpTo6<T> v_mobilizer;
   for (const auto& mobilizer : owned_mobilizers_) {
-    const auto qdot_mobilizer = mobilizer->get_positions_from_array(qdot);
+    const auto qdot_mobilizer = mobilizer->get_positions_from_array(&qdot);
     v_mobilizer.resize(mobilizer->num_velocities());
     mobilizer->MapQDotToVelocity(context, qdot_mobilizer, &v_mobilizer);
     mobilizer->get_mutable_velocities_from_array(v) = v_mobilizer;
@@ -1361,7 +1361,7 @@ void MultibodyTree<T>::MapVelocityToQDot(
   // qdot_mobilizer is a dynamic sized vector of max size equal to seven.
   Eigen::Matrix<T, Eigen::Dynamic, 1, 0, kMaxQdot, 1> qdot_mobilizer;
   for (const auto& mobilizer : owned_mobilizers_) {
-    const auto v_mobilizer = mobilizer->get_velocities_from_array(v);
+    const auto v_mobilizer = mobilizer->get_velocities_from_array(&v);
     DRAKE_DEMAND(mobilizer->num_positions() <= kMaxQdot);
     qdot_mobilizer.resize(mobilizer->num_positions());
     mobilizer->MapVelocityToQDot(context, v_mobilizer, &qdot_mobilizer);
@@ -2884,7 +2884,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
       // Get generalized force and body force for this node.
       Eigen::Ref<const VectorX<T>> tau_applied =
           node.get_mobilizer().get_generalized_forces_from_array(
-              generalized_forces);
+              &generalized_forces);
       const SpatialForce<T>& Fapplied_Bo_W = body_forces[body_node_index];
 
       // Get references to the hinge matrix and force bias for this node.

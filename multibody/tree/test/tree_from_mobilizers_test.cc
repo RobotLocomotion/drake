@@ -1034,13 +1034,13 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
           &vdot)(0) = -1.0;
       elbow_mobilizer_->get_mutable_accelerations_from_array(&vdot)(0) = 2.0;
       EXPECT_EQ(
-          shoulder_mobilizer_->get_accelerations_from_array(vdot).size(), 1);
+          shoulder_mobilizer_->get_accelerations_from_array(&vdot).size(), 1);
       EXPECT_EQ(
-          shoulder_mobilizer_->get_accelerations_from_array(vdot)(0), -1.0);
+          shoulder_mobilizer_->get_accelerations_from_array(&vdot)(0), -1.0);
       EXPECT_EQ(
-          elbow_mobilizer_->get_accelerations_from_array(vdot).size(), 1);
+          elbow_mobilizer_->get_accelerations_from_array(&vdot).size(), 1);
       EXPECT_EQ(
-          elbow_mobilizer_->get_accelerations_from_array(vdot)(0), 2.0);
+          elbow_mobilizer_->get_accelerations_from_array(&vdot)(0), 2.0);
 
       tree().CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 

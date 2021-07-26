@@ -55,7 +55,7 @@ VectorX<T> ModelInstance<T>::GetPositionsFromArray(
   for (const Mobilizer<T>* mobilizer : mobilizers_) {
     const int mobilizer_positions = mobilizer->num_positions();
     positions.segment(position_offset, mobilizer_positions) =
-        mobilizer->get_positions_from_array(q_array);
+        mobilizer->get_positions_from_array(&q_array);
     position_offset += mobilizer_positions;
     DRAKE_DEMAND(position_offset <= positions.size());
   }
@@ -91,7 +91,7 @@ VectorX<T> ModelInstance<T>::GetVelocitiesFromArray(
   for (const Mobilizer<T>* mobilizer : mobilizers_) {
     const int mobilizer_velocities = mobilizer->num_velocities();
     velocities.segment(velocity_offset, mobilizer_velocities) =
-        mobilizer->get_velocities_from_array(v_array);
+        mobilizer->get_velocities_from_array(&v_array);
     velocity_offset += mobilizer_velocities;
     DRAKE_DEMAND(velocity_offset <= velocities.size());
   }
