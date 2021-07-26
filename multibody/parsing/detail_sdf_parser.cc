@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <set>
@@ -821,6 +822,97 @@ bool AreWelded(
   return false;
 }
 
+void RegisterCollisionFilterGroup(
+    ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant, sdf::ElementPtr node,
+    std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
+    std::set<SortedPair<std::string>>* collision_filter_pairs) {
+  DRAKE_DEMAND(plant.geometry_source_is_registered());
+
+  const bool drake_ignore = node->Get<bool>("ignore");
+  if (drake_ignore == true) {
+    return;
+  }
+
+  if (!node->HasAttribute("name")) {
+    throw std::runtime_error("ERROR: group tag is missing name attribute.");
+  }
+  const std::string group_name =
+        node->GetAttribute("name")->GetAsString();
+
+  geometry::GeometrySet collision_filter_geometry_set;
+  for (sdf::ElementPtr member_node =
+            node->GetElement("drake:member");
+            member_node;
+            member_node = member_node->GetNextElement("drake:member")) {
+    if (!member_node->HasAttribute("link")) {
+      throw std::runtime_error(
+          fmt::format("'{}':'{}': Collision filter group '{}' provides a "
+                      "member tag without specifying the \"link\" attribute.",
+                      __FILE__, __func__, group_name.c_str()));
+    }
+    const std::string body_name =
+        member_node->GetAttribute("link")->GetAsString();
+
+    const auto& body = plant.GetBodyByName(body_name.c_str(), model_instance);
+    collision_filter_geometry_set.Add(
+        plant.GetBodyFrameIdOrThrow(body.index()));
+  }
+  collision_filter_groups->insert({group_name, collision_filter_geometry_set});
+
+  for (sdf::ElementPtr ignore_node =
+            node->GetElement("drake:ignored_collision_filter_group");
+            ignore_node;
+            ignore_node = ignore_node->GetNextElement(
+                  "drake:ignored_collision_filter_group")) {
+    if (!ignore_node->HasAttribute("name")) {
+      throw std::runtime_error(fmt::format(
+          "'{}':'{}': Collision filter group provides a tag specifying a "
+          "group to ignore without specifying the \"name\" attribute.",
+          __FILE__, __func__));
+    }
+    const std::string target_name =
+        ignore_node->GetAttribute("name")->GetAsString();
+
+    // These two group names are allowed to be identical, which means the bodies
+    // inside this collision filter group should be collision excluded among
+    // each other.
+    collision_filter_pairs->insert({group_name.c_str(), target_name.c_str()});
+  }
+}
+
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
+                               sdf::Model model,
+                               MultibodyPlant<double>* plant) {
+  DRAKE_DEMAND(plant->geometry_source_is_registered());
+  std::map<std::string, geometry::GeometrySet> collision_filter_groups;
+  std::set<SortedPair<std::string>> collision_filter_pairs;
+
+  if (model.Element()->HasElement("drake:collision_filter_group")) {
+    for (sdf::ElementPtr group_node =
+             model.Element()->GetElement("drake:collision_filter_group");
+         group_node; group_node =
+            group_node->GetNextElement("drake:collision_filter_group")) {
+      RegisterCollisionFilterGroup(model_instance, *plant, group_node,
+                                 &collision_filter_groups,
+                                 &collision_filter_pairs);
+    }
+  }
+
+  for (const auto& collision_filter_pair : collision_filter_pairs) {
+    const auto collision_filter_group_a =
+        collision_filter_groups.find(collision_filter_pair.first());
+    DRAKE_DEMAND(collision_filter_group_a != collision_filter_groups.end());
+    const auto collision_filter_group_b =
+        collision_filter_groups.find(collision_filter_pair.second());
+    DRAKE_DEMAND(collision_filter_group_b != collision_filter_groups.end());
+
+    plant->ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
+        {collision_filter_group_a->first, collision_filter_group_a->second},
+        {collision_filter_group_b->first, collision_filter_group_b->second});
+  }
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
@@ -953,6 +1045,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                 joint_name, A, B, link_info.X_WL));
       }
     }
+  }
+
+  drake::log()->trace("sdf_parser: Add collision filter groups");
+  // Parses the collision filter groups only if the scene graph is registered.
+  if (plant->geometry_source_is_registered()) {
+    ParseCollisionFilterGroup(model_instance, model, plant);
   }
 
   return added_model_instances;

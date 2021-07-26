@@ -1862,6 +1862,70 @@ GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
   EXPECT_EQ(GetModelFrameByName(*plant, "a::c").body().index(),
             plant->GetBodyByName("f").index());
 }
+
+GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+      "sdf_parser_test/collision_filter_group_parsing_test.sdf");
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_sdf_filename);
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
+
+  // Get geometry ids for all the bodies.
+  const geometry::SceneGraphInspector<double>& inspector =
+      scene_graph.model_inspector();
+  const auto geometry_id_link1 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link1").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link1_sphere");
+  const auto geometry_id_link2 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link2").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link2_sphere");
+  const auto geometry_id_link3 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link3").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link3_sphere");
+  const auto geometry_id_link4 = inspector.GetGeometryIdByName(
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("link4").index()),
+      geometry::Role::kProximity,
+      "collision_filter_group_parsing_test::link4_sphere");
+
+  // Make sure the plant is not finalized such that the adjacent joint filter
+  // has not taken into effect yet. This guarantees that the collision filtering
+  // is applied due to the collision filter group parsing.
+  ASSERT_FALSE(plant.is_finalized());
+
+  // We have four geometries and six possible pairs, each with a particular
+  // disposition.
+  // (1, 2) - unfiltered
+  // (1, 3) - filtered by group_link_3 ignores group_link_14
+  // (1, 4) - filtered by group_link_14 ignores itself
+  // (2, 3) - filtered by group_link_2 ignores group_link_3
+  // (2, 4) - unfiltered (although declared in an *ignored* self-filtering
+  // group_link_24).
+  // (3, 4) - filtered by group_link_3 ignores group_link_14
+  EXPECT_FALSE(
+      inspector.CollisionFiltered(geometry_id_link1, geometry_id_link2));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link1, geometry_id_link3));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link1, geometry_id_link4));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link2, geometry_id_link3));
+  EXPECT_FALSE(
+      inspector.CollisionFiltered(geometry_id_link2, geometry_id_link4));
+  EXPECT_TRUE(
+      inspector.CollisionFiltered(geometry_id_link3, geometry_id_link4));
+
+  // Make sure we can add the model a second time.
+  AddModelFromSdfFile(
+      full_sdf_filename, "model2", package_map, &plant, &scene_graph);
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
