@@ -971,9 +971,8 @@ class MultibodyTree {
   // `v` the vector of generalized velocities.
   // @note This method returns a reference to existing data, exhibits constant
   //       i.e., O(1) time complexity, and runs very quickly.
-  // @throws std::exception if the `context` does not correspond to the context
-  // for a multibody model.
-  Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
+  // @pre `context` is a valid multibody system Context.
+  Eigen::VectorBlock<const VectorX<T>> get_positions_and_velocities(
       const systems::Context<T>& context) const;
 
   // Returns a Eigen vector containing the multibody state `x = [q; v]`
@@ -987,23 +986,22 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
-  // Returns a mutable Eigen vector containing the vector `[q; v]`
-  // of the model with `q` the vector of generalized positions and `v` the
-  // vector of generalized velocities.
-  // @throws std::exception if the `context` is nullptr or if it does not
-  // correspond to the context for a multibody model.
+  // From a mutable State, returns a mutable Eigen vector containing the vector
+  // `[q; v]` of the model with `q` the vector of generalized positions and `v`
+  // the vector of generalized velocities.
   // @note This method returns a reference to existing data, exhibits constant
-  //       i.e., O(1) time complexity, and runs very quickly.
-  // @pre `state` must be the systems::State<T> owned by the `context`.
-  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-  const systems::Context<T>& context, systems::State<T>* state) const;
+  //       i.e., O(1) time complexity, and runs very quickly. It does not cause
+  //       cache invalidation so be careful!
+  // @pre `state` must be a systems::State<T> owned by the containing
+  //      MultibodyTreeSystem (or MultibodyPlant).
+  Eigen::VectorBlock<VectorX<T>> get_mutable_positions_and_velocities(
+      systems::State<T>* state) const;
 
-  // See GetMutablePositionsAndVelocities(context, state) above.
+  // This is a mutable-Context version of
+  // `get_mutable_positions_and_velocities()`; see above.
+  // @note Invalidates all q- or v-dependent cache entries.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-  systems::Context<T>* context) const {
-    return GetMutablePositionsAndVelocities(*context,
-                                            &context->get_mutable_state());
-  }
+      systems::Context<T>* context) const;
 
   // Sets `context` to store the vector `[q; v]`
   // with `q` the vector of generalized positions and `v` the vector
@@ -2215,22 +2213,6 @@ class MultibodyTree {
     return tree_system_->is_discrete();
   }
 
-  // Returns a const reference to the kinematic state vector stored in the
-  // given Context as an `Eigen::VectorBlock<const VectorX<T>>`. This will
-  // consist only of q and v partitions in that order.
-  Eigen::VectorBlock<const VectorX<T>> get_state_vector(
-      const systems::Context<T>& context) const;
-
-  // This is a mutable-Context version of `get_state_vector()`.
-  // @note Invalidates all q- or v-dependent cache entries.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
-      systems::Context<T>* context) const;
-
-  // This is a mutable-State version of `get_state_vector()`.
-  // @note This does not cause cache invalidation.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
-      systems::State<T>* state) const;
-
   // Returns a const reference to the position state vector q stored in the
   // given Context as an `Eigen::VectorBlock<const VectorX<T>>`.
   Eigen::VectorBlock<const VectorX<T>> get_positions(
@@ -2239,15 +2221,15 @@ class MultibodyTree {
   // This is a mutable-Context version of `get_positions()`.
   // @note Invalidates all q-dependent cache entries. (May also invalidate
   //       v-dependent cache entries.)
-  Eigen::VectorBlock<VectorX<T>> get_mutable_positions(
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       systems::Context<T>* context) const;
 
   // This is a mutable-State version of `get_positions()`.
-  // @note This does not cause cache invalidation.
+  // @note This does not cause cache invalidation so is very fast.
   Eigen::VectorBlock<VectorX<T>> get_mutable_positions(
       systems::State<T>* state) const;
 
-  // Returns a const reference to the velcoity state vector v stored in the
+  // Returns a const reference to the velocity state vector v stored in the
   // given Context as an `Eigen::VectorBlock<const VectorX<T>>`.
   Eigen::VectorBlock<const VectorX<T>> get_velocities(
       const systems::Context<T>& context) const;
@@ -2255,74 +2237,70 @@ class MultibodyTree {
   // This is a mutable-Context version of `get_velocities()`.
   // @note Invalidates all v-dependent cache entries. (May also invalidate
   //       q-dependent cache entries.)
-  Eigen::VectorBlock<VectorX<T>> get_mutable_velocities(
+  Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       systems::Context<T>* context) const;
 
   // This is a mutable-State version of `get_velocities()`.
-  // @note This does not cause cache invalidation.
+  // @note This does not cause cache invalidation so is very fast.
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities(
       systems::State<T>* state) const;
 
-  // Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  // Returns a const fixed-size Eigen::VectorBlock of `length` elements
   // referencing a segment in the state vector with its first element
   // at `start`.
-  template <int count>
-  Eigen::VectorBlock<const VectorX<T>, count> get_state_segment(
+  template <int length>
+  Eigen::VectorBlock<const VectorX<T>, length> get_state_segment(
       const systems::Context<T>& context, int start) const {
-    // (Comments here apply to similar methods below too.)
-    // We know that context is a LeafContext and therefore the
-    // continuous state vector must be a BasicVector.
-    // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
-    // PR #6049 gets merged.
-    Eigen::VectorBlock<const VectorX<T>> x = get_state_vector(context);
-    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
-    // state is a BasicVector.
-    // If we do return xc.segment() directly, we would instead get a
-    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
-    return x.nestedExpression().template segment<count>(start);
+    Eigen::VectorBlock<const VectorX<T>> qv =
+        get_positions_and_velocities(context);
+    return make_block_segment<length>(qv, start);
   }
 
   // This is a mutable-Context version of `get_state_segment<count>(start)`.
   // @note Invalidates all q- or v-dependent cache entries.
-  template <int count>
-  Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(
+  template <int length>
+  Eigen::VectorBlock<VectorX<T>, length> GetMutableStateSegment(
       systems::Context<T>* context, int start) const {
-    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(context);
-    return x.nestedExpression().template segment<count>(start);
+    Eigen::VectorBlock<VectorX<T>> qv =
+        GetMutablePositionsAndVelocities(context);
+    return make_mutable_block_segment<length>(&qv, start);
   }
 
   // This is a mutable-State version of `get_state_segment<count>(start)`.
-  // @note This does not cause cache invalidation.
-  template <int count>
-  Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(
+  // @note This does not cause cache invalidation so is very fast.
+  template <int length>
+  Eigen::VectorBlock<VectorX<T>, length> get_mutable_state_segment(
       systems::State<T>* state, int start) const {
-    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(&*state);
-    return x.nestedExpression().template segment<count>(start);
+    Eigen::VectorBlock<VectorX<T>> qv =
+        get_mutable_positions_and_velocities(state);
+    return make_mutable_block_segment<length>(&qv, start);
   }
 
-  // Returns a const fixed-size Eigen::VectorBlock of `count` elements
-  // referencing a segment in the Context's state vector with its first element
-  // at `start`.
+  // Returns a const Eigen::VectorBlock of `length` elements referencing a
+  // segment in the Context's state vector with its first element at `start`.
   Eigen::VectorBlock<const VectorX<T>> get_state_segment(
-      const systems::Context<T>& context, int start, int count) const {
-    Eigen::VectorBlock<const VectorX<T>> x = get_state_vector(context);
-    return x.nestedExpression().segment(start, count);
+      const systems::Context<T>& context, int start, int length) const {
+    Eigen::VectorBlock<const VectorX<T>> qv =
+        get_positions_and_velocities(context);
+    return make_block_segment(qv, start, length);
   }
 
-  // This is a mutable-Context version of `get_state_segment(start, count)`.
+  // This is a mutable-Context version of `get_state_segment(start, length)`.
   // @note Invalidates all q- or v-dependent cache entries.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
-      systems::Context<T>* context, int start, int count) const {
-    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(context);
-    return x.nestedExpression().segment(start, count);
+  Eigen::VectorBlock<VectorX<T>> GetMutableStateSegment(
+      systems::Context<T>* context, int start, int length) const {
+    Eigen::VectorBlock<VectorX<T>> qv =
+        GetMutablePositionsAndVelocities(context);
+    return make_mutable_block_segment(&qv, start, length);
   }
 
-  // This is a mutable-State version of `get_state_segment(start, count)`.
+  // This is a mutable-State version of `get_state_segment(start, length)`.
   // @note This does not cause cache invalidation.
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
-      systems::State<T>* state, int start, int count) const {
-    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(&*state);
-    return x.nestedExpression().segment(start, count);
+      systems::State<T>* state, int start, int length) const {
+    Eigen::VectorBlock<VectorX<T>> qv =
+        get_mutable_positions_and_velocities(state);
+    return make_mutable_block_segment(&qv, start, length);
   }
   //@}
 
@@ -2391,11 +2369,57 @@ class MultibodyTree {
   Eigen::VectorBlock<VectorX<T>> get_mutable_discrete_state_vector(
       systems::State<T>* state) const;
 
-  Eigen::VectorBlock<VectorX<T>> extract_qv_from_continuous(
+  Eigen::VectorBlock<const VectorX<T>> extract_qv_from_continuous(
+      const systems::VectorBase<T>& continuous_qvz) const;
+
+  Eigen::VectorBlock<VectorX<T>> extract_mutable_qv_from_continuous(
       systems::VectorBase<T>* continuous_qvz) const;
+
+
+  // Given a VectorBlock and (start, length) segment specification relative
+  // to that block, return a new block representing that segment relative to
+  // the original nested expression.
+
+  static Eigen::VectorBlock<const VectorX<T>> make_block_segment(
+      const Eigen::VectorBlock<const VectorX<T>>& block, int start,
+      int length) {
+    DRAKE_ASSERT(start >= 0 && length >= 0);
+    DRAKE_ASSERT(start + length <= block.rows());
+    return block.nestedExpression().segment(block.startRow() + start, length);
+  }
+
+  static Eigen::VectorBlock<VectorX<T>> make_mutable_block_segment(
+      Eigen::VectorBlock<VectorX<T>>* block, int start, int length) {
+    DRAKE_ASSERT(block != nullptr);
+    DRAKE_ASSERT(start >= 0 && length >= 0);
+    DRAKE_ASSERT(start + length <= block->rows());
+    return block->nestedExpression().segment(block->startRow() + start, length);
+  }
+
+  // Templatized versions of the above where the return type is a fixed-length
+  // VectorBlock of the given VectorX.
+  template <int length>
+  static Eigen::VectorBlock<const VectorX<T>, length> make_block_segment(
+      const Eigen::VectorBlock<const VectorX<T>>& block, int start) {
+    DRAKE_ASSERT(start >= 0);
+    DRAKE_ASSERT(start + length <= block.rows());
+    return block.nestedExpression().template segment<length>(block.startRow() +
+                                                             start);
+  }
+
+  template <int length>
+  static Eigen::VectorBlock<VectorX<T>, length> make_mutable_block_segment(
+      Eigen::VectorBlock<VectorX<T>>* block, int start) {
+    DRAKE_ASSERT(block != nullptr);
+    DRAKE_ASSERT(start >= 0);
+    DRAKE_ASSERT(start + length <= block->rows());
+    return block->nestedExpression().template segment<length>(
+        block->startRow() + start);
+  }
 
   const Joint<T>& GetJointByNameImpl(
       std::string_view, std::optional<ModelInstanceIndex>) const;
+
   [[noreturn]] void ThrowJointSubtypeMismatch(
       const Joint<T>&, std::string_view) const;
 

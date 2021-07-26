@@ -1747,7 +1747,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// variables `[q; v]`, where `q` is the vector of generalized positions and
   /// `v` is the vector of generalized velocities. The state resides in a
   /// @ref systems::Context "Context" that is supplied
-  /// as the first argument to every method.
+  /// as the first argument to every method. Note that the returned state
+  /// vectors for the full system are live references into the Context,
+  /// not independent copies.
   ///
   /// There are also utilities for accessing and mutating portions of state
   /// or actuation arrays corresponding to just a single model instance.
@@ -1763,7 +1765,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
-    return internal_tree().GetPositionsAndVelocities(context);
+    return internal_tree().get_positions_and_velocities(context);
   }
 
   /// Returns the vector `[q; v]`
@@ -1830,12 +1832,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// correspond to the context for a multibody model.
   Eigen::VectorBlock<const VectorX<T>> GetPositions(
       const systems::Context<T>& context) const {
-    // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetPositionsAndVelocities() as a VectorX<T> so that we can
-    // call head() on it.
     this->ValidateContext(context);
-    return GetPositionsAndVelocities(context).nestedExpression().head(
-        num_positions());
+    return internal_tree().get_positions(context);
   }
 
   /// Returns an vector containing the generalized positions (`q`) for the
@@ -1849,32 +1847,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance) const {
     this->ValidateContext(context);
     return internal_tree().GetPositionsFromArray(
-        model_instance, GetPositions(context));
+        model_instance, internal_tree().get_positions(context));
   }
 
   /// (Advanced) Returns a mutable vector reference containing the vector
   /// of generalized positions (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
-  /// @warning You should use SetPositions() instead of this method
-  ///          unless you are fully aware of the possible interactions with the
-  ///          caching mechanism (see @ref dangerous_get_mutable).
+  /// @warning Cache invalidation will occur when this is called but not
+  ///          if you subsequently write through the returned object. You
+  ///          should use SetPositions() instead unless you are fully aware
+  ///          of the possible interactions with the caching mechanism (see
+  ///          @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       systems::Context<T>* context) const {
-    // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
-    // we can call head() on it.
     this->ValidateContext(context);
-    return internal_tree().GetMutablePositionsAndVelocities(context)
-        .nestedExpression().head(num_positions());
+    return internal_tree().GetMutablePositions(context);
   }
 
   /// (Advanced) Returns a mutable vector reference containing the vector
   /// of generalized positions (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
-  ///       i.e., O(1) time complexity, and runs very quickly.
+  ///       i.e., O(1) time complexity, and runs very quickly. No cache
+  ///       invalidation occurs.
   /// @warning You should use SetPositions() instead of this method
   ///          unless you are fully aware of the possible interactions with the
   ///          caching mechanism (see @ref dangerous_get_mutable).
@@ -1885,13 +1882,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context, systems::State<T>* state) const {
     this->ValidateContext(context);
     DRAKE_ASSERT_VOID(CheckValidState(state));
-    // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
-    // we can call head() on it.
-    return internal_tree()
-        .GetMutablePositionsAndVelocities(context, state)
-        .nestedExpression()
-        .head(num_positions());
+    return internal_tree().get_mutable_positions(state);
   }
 
   /// Sets all generalized positions from the given vector.
@@ -1939,12 +1930,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///       i.e., O(1) time complexity, and runs very quickly.
   Eigen::VectorBlock<const VectorX<T>> GetVelocities(
       const systems::Context<T>& context) const {
-    // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetPositionsAndVelocities() as a VectorX<T> so that we can
-    // call tail() on it.
     this->ValidateContext(context);
-    return GetPositionsAndVelocities(context).nestedExpression().tail(
-        num_velocities());
+    return internal_tree().get_velocities(context);
   }
 
   /// Returns a vector containing the generalized velocities (`v`) for
@@ -1958,13 +1945,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance) const {
     this->ValidateContext(context);
     return internal_tree().GetVelocitiesFromArray(
-        model_instance, GetVelocities(context));
+        model_instance, internal_tree().get_velocities(context));
   }
 
   /// (Advanced) Returns a mutable vector reference containing the vector
   /// of generalized velocities (**see warning**).
   /// @note This method returns a reference to existing data, exhibits constant
-  ///       i.e., O(1) time complexity, and runs very quickly.
+  ///       i.e., O(1) time complexity, and runs very quickly. No cache
+  ///       invalidation occurs.
   /// @warning You should use SetVelocities() instead of this method
   ///          unless you are fully aware of the possible interactions with the
   ///          caching mechanism (see @ref dangerous_get_mutable).
@@ -1975,20 +1963,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context, systems::State<T>* state) const {
     this->ValidateContext(context);
     DRAKE_ASSERT_VOID(CheckValidState(state));
-    // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
-    // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
-    // we can call tail() on it.
-    return internal_tree()
-        .GetMutablePositionsAndVelocities(context, state)
-        .nestedExpression()
-        .tail(num_velocities());
+    return internal_tree().get_mutable_velocities(state);
   }
 
   /// See GetMutableVelocities() method above.
+  /// @warning Cache invalidation will occur when this is called but not
+  ///          if you subsequently write through the returned object. You
+  ///          should use SetVelocities() instead unless you are fully aware
+  ///          of the possible interactions with the caching mechanism (see
+  ///          @ref dangerous_get_mutable).
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       systems::Context<T>* context) const {
     this->ValidateContext(context);
-    return GetMutableVelocities(*context, &context->get_mutable_state());
+    return internal_tree().GetMutableVelocities(context);
   }
 
   /// Sets all generalized velocities from the given vector.

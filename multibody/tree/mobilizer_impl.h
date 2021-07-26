@@ -177,8 +177,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::Context<T>* context) const {
-    return this->get_parent_tree().template get_mutable_state_segment<kNq>(
-        &*context, this->get_positions_start());
+    return this->get_parent_tree().template GetMutableStateSegment<kNq>(
+        context, this->get_positions_start());
   }
 
   // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
@@ -187,7 +187,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNq>(
-        &*state, this->get_positions_start());
+        state, this->get_positions_start());
   }
 
   // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
@@ -196,7 +196,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNv>(
-        &*state, this->get_velocities_start());
+        state, this->get_velocities_start());
   }
 
   // Helper to return a const fixed-size Eigen::VectorBlock referencing the
@@ -211,8 +211,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::Context<T>* context) const {
-    return this->get_parent_tree().template get_mutable_state_segment<kNv>(
-        &*context, this->get_velocities_start());
+    return this->get_parent_tree().template GetMutableStateSegment<kNv>(
+        context, this->get_velocities_start());
   }
   //@}
 
