@@ -55,7 +55,6 @@ class SlidingBoxTest : public ::testing::Test {
     // Create a context for this system:
     std::unique_ptr<Context<double>> diagram_context =
         diagram->CreateDefaultContext();
-    diagram_context->EnableCaching();
     diagram->SetDefaultContext(diagram_context.get());
     Context<double>& plant_context =
         diagram->GetMutableSubsystemContext(plant, diagram_context.get());
@@ -149,7 +148,6 @@ class SlidingBoxTest : public ::testing::Test {
         diagram2->GetSubsystemByName("plant"));
     std::unique_ptr<Context<double>> diagram_context2 =
         diagram2->CreateDefaultContext();
-    diagram_context2->EnableCaching();
     Context<double>& plant_context2 =
         diagram2->GetMutableSubsystemContext(plant2, diagram_context2.get());
     plant2.get_actuation_input_port().FixValue(&plant_context2, applied_force_);
