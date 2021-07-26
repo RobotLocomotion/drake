@@ -344,12 +344,8 @@ void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
 
   auto qdot_residual = residual->head(nq);
   // N(q)⋅v
-  internal_tree().MapVelocityToQDot(context,
-                                    internal_tree()
-                                        .GetPositionsAndVelocities(context)
-                                        .nestedExpression()
-                                        .tail(nv),
-                                    &qdot_residual);
+  internal_tree().MapVelocityToQDot(
+      context, internal_tree().get_velocities(context), &qdot_residual);
   // q̇_proposed - N(q)⋅v
   qdot_residual = qvdot_proposed.head(nq) - qdot_residual;
   // InverseDynamics(context, v_proposed)
