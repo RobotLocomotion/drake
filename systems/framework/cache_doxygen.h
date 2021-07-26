@@ -39,6 +39,9 @@ out of date as prerequisites change is also frequent (at least once per step),
 and potentially expensive, so must be efficient; the implementation goes to
 great lengths to minimize the cost of that operation.
 
+Caching is enabled by default in Drake. Methods are provided for disabling and
+otherwise manipulating cache entries. See ContextBase for more information.
+
 @anchor cache_design_goals
 <h2>Design Constraints and Goals</h2>
 
