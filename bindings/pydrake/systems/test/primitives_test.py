@@ -41,6 +41,7 @@ from pydrake.systems.primitives import (
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
     LogOutput,
+    LogVectorOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
@@ -55,6 +56,7 @@ from pydrake.systems.primitives import (
     TrajectoryAffineSystem, TrajectoryAffineSystem_,
     TrajectoryLinearSystem, TrajectoryLinearSystem_,
     TrajectorySource,
+    VectorLogSink, VectorLogSink_,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
 )
@@ -104,6 +106,7 @@ class TestGeneral(unittest.TestCase):
                                    supports_symbolic=False)
         self._check_instantiations(TrajectoryLinearSystem_,
                                    supports_symbolic=False)
+        self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -666,3 +669,84 @@ class TestGeneral(unittest.TestCase):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
             num_positions=5, time_step=0.4, suppress_initial_transient=True)
         self.assertTrue(state_interpolator.suppress_initial_transient())
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_vector_log_sink(self, T):
+        # Log the output of a simple diagram containing a constant
+        # source and an integrator.
+        builder = DiagramBuilder_[T]()
+        kValue = T(2.4)
+        source = builder.AddSystem(ConstantVectorSource_[T]([kValue]))
+        kSize = 1
+        integrator = builder.AddSystem(Integrator_[T](kSize))
+        logger_per_step = builder.AddSystem(VectorLogSink_[T](kSize))
+        builder.Connect(source.get_output_port(0),
+                        integrator.get_input_port(0))
+        builder.Connect(integrator.get_output_port(0),
+                        logger_per_step.get_input_port(0))
+
+        # Add a redundant logger via the helper method.
+        if T == float:
+            logger_per_step_2 = LogVectorOutput(
+                integrator.get_output_port(0), builder
+            )
+        else:
+            logger_per_step_2 = LogVectorOutput[T](
+                integrator.get_output_port(0), builder
+            )
+
+        # Add a periodic logger
+        logger_periodic = builder.AddSystem(VectorLogSink_[T](kSize))
+        kPeriod = 0.1
+        logger_periodic.SetPublishPeriod(kPeriod)
+        builder.Connect(integrator.get_output_port(0),
+                        logger_periodic.get_input_port(0))
+
+        # Build and run a simulator. Note that the context is owned by this
+        # scope, not the simulator.
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        simulator = Simulator_[T](diagram, context)
+        kTime = 1.
+        simulator.AdvanceTo(kTime)
+
+        # Verify outputs of the every-step logger
+        log_per_step = logger_per_step.FindLog(simulator.get_context())
+        t = log_per_step.sample_times()
+        x = log_per_step.data()
+
+        self.assertTrue(t.shape[0] > 2)
+        self.assertTrue(t.shape[0] == x.shape[1])
+        numpy_compare.assert_allclose(
+            t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
+        )
+        log_per_step_2 = logger_per_step_2.FindLog(simulator.get_context())
+        numpy_compare.assert_equal(x, log_per_step_2.data())
+
+        # Verify outputs of the periodic logger
+        log_periodic = logger_periodic.FindLog(simulator.get_context())
+        t = log_periodic.sample_times()
+        x = log_periodic.data()
+        # Should log exactly once every kPeriod, up to and including
+        # kTime.
+        self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
+
+        logger_per_step.FindMutableLog(simulator.get_context()).Clear()
+
+        # Verify that t and x retain their values after systems are
+        # deleted.
+        t_copy = t.copy()
+        x_copy = x.copy()
+        del builder
+        del integrator
+        del logger_periodic
+        del logger_per_step
+        del logger_per_step_2
+        del diagram
+        # The simulator did not own the context, so it will remain.
+        del simulator
+        del source
+        gc.collect()
+        # Since t and x refer to context-owned data, all is well.
+        self.assertTrue((t == t_copy).all())
+        self.assertTrue((x == x_copy).all())
