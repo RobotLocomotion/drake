@@ -567,9 +567,7 @@ namespace {
 // Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, int>* solver_options_int,
-    const std::unordered_map<CommonSolverOption,
-                             std::variant<double, int, std::string>>&
-        common_options,
+    const bool print_to_console,
     SCS_SETTINGS* scs_settings) {
   auto it = solver_options_int->find("max_iters");
   if (it != solver_options_int->end()) {
@@ -588,15 +586,7 @@ void SetScsSettings(
     solver_options_int->erase(it);
   } else {
     // The common option has the second highest priority.
-    auto it_common = common_options.find(CommonSolverOption::kPrintToConsole);
-    if (it_common != common_options.end()) {
-      const int print_to_console_val = std::get<int>(it_common->second);
-      DRAKE_DEMAND(print_to_console_val == 0 || print_to_console_val == 1);
-      scs_settings->verbose = print_to_console_val;
-    } else {
-      // Default to no print.
-      scs_settings->verbose = 0;
-    }
+    scs_settings->verbose = print_to_console ? 1 : 0;
   }
   it = solver_options_int->find("warm_start");
   if (it != solver_options_int->end()) {
@@ -773,7 +763,7 @@ void ScsSolver::DoSolve(
   std::unordered_map<std::string, double> input_solver_options_double =
       merged_options.GetOptionsDouble(id());
   SetScsSettings(&input_solver_options_int,
-                 merged_options.common_solver_options(),
+                 merged_options.get_print_to_console(),
                  scs_problem_data->stgs);
   SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
 

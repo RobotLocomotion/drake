@@ -489,8 +489,7 @@ void BindSolverInterfaceAndFlags(py::module m) {
           py::arg("solver_id"), py::arg("solver_option"),
           py::arg("option_value"), doc.SolverOptions.SetOption.doc_str_option)
       .def("SetOption",
-          py::overload_cast<CommonSolverOption,
-              const std::variant<double, int, std::string>&>(
+          py::overload_cast<CommonSolverOption, SolverOptions::OptionValue>(
               &SolverOptions::SetOption),
           py::arg("key"), py::arg("value"),
           doc.SolverOptions.SetOption.doc_common_option)
@@ -506,7 +505,11 @@ void BindSolverInterfaceAndFlags(py::module m) {
           },
           py::arg("solver_id"), doc.SolverOptions.GetOptionsDouble.doc)
       .def("common_solver_options", &SolverOptions::common_solver_options,
-          doc.SolverOptions.common_solver_options.doc);
+          doc.SolverOptions.common_solver_options.doc)
+      .def("get_print_file_name", &SolverOptions::get_print_file_name,
+          doc.SolverOptions.get_print_file_name.doc)
+      .def("get_print_to_console", &SolverOptions::get_print_to_console,
+          doc.SolverOptions.get_print_to_console.doc);
 
   py::enum_<CommonSolverOption>(
       m, "CommonSolverOption", doc.CommonSolverOption.doc)
