@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":trajectory_affine_system",
         ":trajectory_linear_system",
         ":trajectory_source",
+        ":vector_log",
         ":wrap_to_system",
         ":zero_order_hold",
     ],
@@ -308,6 +309,17 @@ drake_cc_library(
     deps = [
         "//common/trajectories:trajectory",
         "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "vector_log",
+    srcs = ["vector_log.cc"],
+    hdrs = ["vector_log.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:reset_after_move",
     ],
 )
 
@@ -641,6 +653,21 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "vector_log_limit_malloc_test",
+    deps = [
+        ":vector_log",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "vector_log_test",
+    deps = [
+        ":vector_log",
     ],
 )
 
