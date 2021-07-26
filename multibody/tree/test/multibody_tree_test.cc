@@ -559,6 +559,90 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToSymbolic) {
   VerifyModelBasics(*dut);
 }
 
+TEST_F(KukaIiwaModelTests, StateAccess) {
+  ASSERT_EQ(tree().num_positions(), 7);
+  ASSERT_EQ(tree().num_velocities(), 7);
+  ASSERT_EQ(tree().num_states(), 14);
+
+  const Eigen::VectorXd qv_values = (Eigen::VectorXd(14)
+      << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14).finished();
+
+  // Check whole-state access.
+  tree().GetMutablePositionsAndVelocities(context_.get()) = qv_values;
+  EXPECT_EQ(tree().get_positions_and_velocities(*context_), qv_values);
+
+  // Verify that position and velocity access works when whole state was set.
+  tree().get_mutable_positions_and_velocities(&context_->get_mutable_state()) =
+      2 * qv_values;
+  EXPECT_EQ(tree().get_positions_and_velocities(*context_), 2 * qv_values);
+  EXPECT_EQ(tree().get_positions(*context_), 2 * qv_values.segment(0, 7));
+  EXPECT_EQ(tree().get_velocities(*context_), 2 * qv_values.segment(7, 7));
+
+  // Check that position-only access works and that velocity doesn't change.
+  tree().GetMutablePositions(context_.get()) = qv_values.segment(0, 7);
+  EXPECT_EQ(tree().get_positions(*context_), qv_values.segment(0, 7));
+  EXPECT_EQ(tree().get_velocities(*context_), 2 * qv_values.segment(7, 7));
+  tree().get_mutable_positions(&context_->get_mutable_state()) =
+      3 * qv_values.segment(0, 7);
+  EXPECT_EQ(tree().get_positions(*context_), 3 * qv_values.segment(0, 7));
+  EXPECT_EQ(tree().get_velocities(*context_), 2 * qv_values.segment(7, 7));
+
+  // Check that velocity-only access works and that position doesn't change.
+  tree().GetMutableVelocities(context_.get()) = qv_values.segment(7, 7);
+  EXPECT_EQ(tree().get_velocities(*context_), qv_values.segment(7, 7));
+  EXPECT_EQ(tree().get_positions(*context_), 3 * qv_values.segment(0, 7));
+  tree().get_mutable_velocities(&context_->get_mutable_state()) =
+      5 * qv_values.segment(7, 7);
+  EXPECT_EQ(tree().get_velocities(*context_), 5 * qv_values.segment(7, 7));
+  EXPECT_EQ(tree().get_positions(*context_), 3 * qv_values.segment(0, 7));
+
+  // Check that setting position and velocity separately sets the whole state.
+  tree().GetMutablePositions(context_.get()) = 7 * qv_values.segment(0, 7);
+  tree().GetMutableVelocities(context_.get()) = 7 * qv_values.segment(7, 7);
+  EXPECT_EQ(tree().get_positions_and_velocities(*context_), 7 * qv_values);
+
+  // Test that the state segment methods work.
+  tree().GetMutablePositionsAndVelocities(context_.get()) = qv_values;
+  EXPECT_EQ(tree().get_state_segment<3>(*context_, 5),
+      qv_values.segment(5, 3));
+  EXPECT_EQ(tree().get_state_segment(*context_, 5, 4),
+      qv_values.segment(5, 4));
+
+  // There are four segment-mutating methods. We'll use each
+  // to make the same change, then verify with this lambda.
+  const auto check_segments = [&]() {
+    EXPECT_EQ(tree().get_positions_and_velocities(*context_).segment(8, 3),
+              Vector3d(-1, -2, -3));
+    // Nothing else should have changed.
+    EXPECT_EQ(tree().get_positions_and_velocities(*context_).segment(0, 8),
+              qv_values.segment(0, 8));
+    EXPECT_EQ(tree().get_positions_and_velocities(*context_).segment(11, 3),
+              qv_values.segment(11, 3));
+  };
+
+  // Templatized mutable-Context method.
+  tree().GetMutablePositionsAndVelocities(context_.get()) = qv_values;
+  tree().GetMutableStateSegment<3>(context_.get(), 8) << -1, -2, -3;
+  check_segments();
+
+  // Templatized mutable-State method.
+  tree().GetMutablePositionsAndVelocities(context_.get()) = qv_values;
+  tree().get_mutable_state_segment<3>(&context_->get_mutable_state(), 8) << -1,
+      -2, -3;
+  check_segments();
+
+  // Runtime mutable-Context method.
+  tree().GetMutablePositionsAndVelocities(context_.get()) = qv_values;
+  tree().GetMutableStateSegment(context_.get(), 8, 3) << -1, -2, -3;
+  check_segments();
+
+  // Runtime mutable-State method.
+  tree().GetMutablePositionsAndVelocities(context_.get()) = qv_values;
+  tree().get_mutable_state_segment(&context_->get_mutable_state(), 8, 3) << -1,
+      -2, -3;
+  check_segments();
+}
+
 // This test helps verify MultibodyTree::CalcJacobianTranslationalVelocity()
 // with two methods to calculate Jv_WEo_W, which is Eo's (end effector origin's)
 // translational velocity Jacobian with respect to v (generalized velocities)
