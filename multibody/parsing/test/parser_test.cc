@@ -213,7 +213,7 @@ GTEST_TEST(FileParserTest, FindDrakePackageWhenAdding) {
       EXPECT_NO_THROW(add_func(FindResourceOrThrow(file_name), &parser));
 
       // Now we explicitly confirm the package map has been modified.
-      EXPECT_EQ(parser.package_map().size(), orig_package_size+1);
+      EXPECT_EQ(parser.package_map().size(), orig_package_size + 1);
       EXPECT_TRUE(parser.package_map().Contains("box_model"));
     }
   }
