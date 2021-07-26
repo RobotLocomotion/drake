@@ -486,60 +486,55 @@ void MultibodyTree<T>::CloneActuatorAndAdd(
 }
 
 template <typename T>
-Eigen::VectorBlock<const VectorX<T>> MultibodyTree<T>::get_state_vector(
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::get_positions_and_velocities(
     const systems::Context<T>& context) const {
   if (is_state_discrete()) {
     return get_discrete_state_vector(context);
   }
-
-  // State is continuous. This might have x = [q, v, z] -- we only
-  // want q and v.
-  const int num_qv = num_positions() + num_velocities();
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
-  const systems::BasicVector<T>& continuous_state_vector =
-      dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state().get_vector());
-  DRAKE_ASSERT(continuous_state_vector.size() >= num_qv);
-  Eigen::VectorBlock<const VectorX<T>> x =
-      continuous_state_vector.get_value();
-  return x.nestedExpression().head(num_qv);
+  const systems::VectorBase<T>& continuous_qvz_base =
+      context.get_continuous_state().get_vector();
+  return extract_qv_from_continuous(continuous_qvz_base);
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> MultibodyTree<T>::get_positions(
     const systems::Context<T>& context) const {
-  Eigen::VectorBlock<const VectorX<T>> qv = get_state_vector(context);
-  return qv.nestedExpression().head(num_positions());
+  Eigen::VectorBlock<const VectorX<T>> qv =
+      get_positions_and_velocities(context);
+  return make_block_segment(qv, 0, num_positions());
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> MultibodyTree<T>::get_velocities(
     const systems::Context<T>& context) const {
-  Eigen::VectorBlock<const VectorX<T>> qv = get_state_vector(context);
-  return qv.nestedExpression().tail(num_velocities());
+  Eigen::VectorBlock<const VectorX<T>> qv =
+      get_positions_and_velocities(context);
+  return make_block_segment(qv, num_positions(), num_velocities());
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_state_vector(
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::GetMutablePositionsAndVelocities(
     systems::Context<T>* context) const {
   if (is_state_discrete()) {
-    return get_mutable_discrete_state_vector(&*context);
+    return get_mutable_discrete_state_vector(context);
   }
-  systems::VectorBase<T>& continuous_qvz =
+  systems::VectorBase<T>& continuous_qvz_base =
       context->get_mutable_continuous_state().get_mutable_vector();
-  return extract_qv_from_continuous(&continuous_qvz);
+  return extract_mutable_qv_from_continuous(&continuous_qvz_base);
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_state_vector(
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::get_mutable_positions_and_velocities(
     systems::State<T>* state) const {
   if (is_state_discrete()) {
-    return get_mutable_discrete_state_vector(&*state);
+    return get_mutable_discrete_state_vector(state);
   }
-  systems::VectorBase<T>& continuous_qvz =
+  systems::VectorBase<T>& continuous_qvz_base =
       state->get_mutable_continuous_state().get_mutable_vector();
-  return extract_qv_from_continuous(&continuous_qvz);
+  return extract_mutable_qv_from_continuous(&continuous_qvz_base);
 }
 
 // Must be implemented carefully to avoid invalidating more cache entries than
@@ -547,31 +542,33 @@ Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_state_vector(
 // TODO(sherm1) Currently we can only get q and v together so have no way to
 // invalidate just q-dependent or v-dependent cache entries.
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_positions(
+Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::GetMutablePositions(
     systems::Context<T>* context) const {
-  Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*context);
-  return qv.nestedExpression().head(num_positions());
+  Eigen::VectorBlock<VectorX<T>> qv = GetMutablePositionsAndVelocities(context);
+  return make_mutable_block_segment(&qv, 0, num_positions());
 }
 
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_velocities(
+Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::GetMutableVelocities(
     systems::Context<T>* context) const {
-  Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*context);
-  return qv.nestedExpression().tail(num_velocities());
+  Eigen::VectorBlock<VectorX<T>> qv = GetMutablePositionsAndVelocities(context);
+  return make_mutable_block_segment(&qv, num_positions(), num_velocities());
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_positions(
     systems::State<T>* state) const {
-  Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*state);
-  return qv.nestedExpression().head(num_positions());
+  Eigen::VectorBlock<VectorX<T>> qv =
+      get_mutable_positions_and_velocities(state);
+  return make_mutable_block_segment(&qv, 0, num_positions());
 }
 
 template <typename T>
 Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::get_mutable_velocities(
     systems::State<T>* state) const {
-  Eigen::VectorBlock<VectorX<T>> qv = get_mutable_state_vector(&*state);
-  return qv.nestedExpression().tail(num_velocities());
+  Eigen::VectorBlock<VectorX<T>> qv =
+      get_mutable_positions_and_velocities(state);
+  return make_mutable_block_segment(&qv, num_positions(), num_velocities());
 }
 
 template <typename T>
@@ -618,23 +615,39 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
   return discrete_state_vector.get_mutable_value();
 }
 
-// State is continuous. This might have x = [q, v, z] -- we only
-// want q and v.
+// State is continuous. This might have x = [q, v, z] -- we only want q and v.
+
 template <typename T>
-Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::extract_qv_from_continuous(
-    systems::VectorBase<T>* continuous_qvz) const {
-  DRAKE_ASSERT(continuous_qvz != nullptr);
+Eigen::VectorBlock<const VectorX<T>>
+MultibodyTree<T>::extract_qv_from_continuous(
+    const systems::VectorBase<T>& continuous_qvz_base) const {
   DRAKE_ASSERT(!is_state_discrete());
   const int num_qv = num_positions() + num_velocities();
 
   // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
   //              static_cast in Release builds.
-  systems::BasicVector<T>& continuous_state_vector =
-      dynamic_cast<systems::BasicVector<T>&>(*continuous_qvz);
-  DRAKE_ASSERT(continuous_state_vector.size() >= num_qv);
-  Eigen::VectorBlock<VectorX<T>> x =
-      continuous_state_vector.get_mutable_value();
-  return x.nestedExpression().head(num_qv);
+  const systems::BasicVector<T>& continuous_qvz =
+      dynamic_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
+  DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
+  Eigen::VectorBlock<const VectorX<T>> qvz = continuous_qvz.get_value();
+  return make_block_segment(qvz, 0, num_qv);
+}
+
+template <typename T>
+Eigen::VectorBlock<VectorX<T>>
+MultibodyTree<T>::extract_mutable_qv_from_continuous(
+    systems::VectorBase<T>* continuous_qvz_base) const {
+  DRAKE_ASSERT(continuous_qvz_base != nullptr);
+  DRAKE_ASSERT(!is_state_discrete());
+  const int num_qv = num_positions() + num_velocities();
+
+  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
+  //              static_cast in Release builds.
+  systems::BasicVector<T>& continuous_qvz =
+      dynamic_cast<systems::BasicVector<T>&>(*continuous_qvz_base);
+  DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
+  Eigen::VectorBlock<VectorX<T>> qvz = continuous_qvz.get_mutable_value();
+  return make_mutable_block_segment(&qvz, 0, num_qv);
 }
 
 }  // namespace internal
