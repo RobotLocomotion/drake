@@ -24,9 +24,11 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-PackageMap::PackageMap() {
-  std::string drake_package_xml = FindResourceOrThrow("drake/package.xml");
-  AddPackageXml(drake_package_xml);
+PackageMap::PackageMap()
+    : PackageMap{"drake/package.xml"} {}
+
+PackageMap PackageMap::MakeEmpty() {
+  return PackageMap({});
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
@@ -229,6 +231,13 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
 
   // Search the directory containing the model_file and "upstream".
   PopulateUpstreamToDrakeHelper(model_dir, drake_path);
+}
+
+PackageMap::PackageMap(std::initializer_list<std::string> init) {
+  for (const auto entry : init) {
+    std::string package_xml = FindResourceOrThrow(entry);
+    AddPackageXml(package_xml);
+  }
 }
 
 void PackageMap::CrawlForPackages(const string& path) {

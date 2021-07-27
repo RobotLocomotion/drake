@@ -78,8 +78,7 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   };
 
   // Add packages + paths.
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
 
   for (const auto& [package, path] : expected_packages) {
     package_map.Add(package, path);
@@ -137,24 +136,21 @@ GTEST_TEST(PackageMapTest, TestAddMap) {
   };
 
   // Populate package maps.
-  PackageMap package_map_1;
-  package_map_1.Remove("drake");
+  PackageMap package_map_1 = PackageMap::MakeEmpty();
   for (const auto& [package, path] : expected_packages_1) {
     package_map_1.Add(package, path);
   }
 
   VerifyMatch(package_map_1, expected_packages_1);
 
-  PackageMap package_map_2;
-  package_map_2.Remove("drake");
+  PackageMap package_map_2 = PackageMap::MakeEmpty();
   for (const auto& [package, path] : expected_packages_2) {
     package_map_2.Add(package, path);
   }
 
   VerifyMatch(package_map_2, expected_packages_2);
 
-  PackageMap package_map_conflicting;
-  package_map_conflicting.Remove("drake");
+  PackageMap package_map_conflicting = PackageMap::MakeEmpty();
   for (const auto& [package, path] : expected_packages_conflicting) {
     package_map_conflicting.Add(package, path);
   }
@@ -180,8 +176,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
       "package_map_test_packages/package_map_test_package_a/package.xml");
   const string xml_dirname =
       filesystem::path(xml_filename).parent_path().string();
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
   package_map.AddPackageXml(xml_filename);
 
   map<string, string> expected_packages = {
@@ -207,8 +202,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
 // Tests that PackageMap can be populated by crawling down a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   const string root_path = GetTestDataRoot();
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
   package_map.PopulateFromFolder(root_path);
   VerifyMatchWithTestDataRoot(package_map);
 }
@@ -217,8 +211,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
 // tree when it is provided a path with extraneous trailing slashes.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
   const string root_path = GetTestDataRoot();
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
   package_map.PopulateFromFolder(root_path + "///////");
   VerifyMatchWithTestDataRoot(package_map);
 }
@@ -231,8 +224,7 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
       "package_map_test_packages/package_map_test_package_a/"
       "sdf/test_model.sdf");
 
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
   package_map.PopulateUpstreamToDrake(sdf_file_name);
 
   map<string, string> expected_packages = {
@@ -248,8 +240,7 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 
 // Tests that PackageMap can be populated from an env var.
 GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
 
   // Test a null environment.
   package_map.PopulateFromEnvironment("FOOBAR");
@@ -279,8 +270,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
     {"my_package", "package_bar"}
   };
 
-  PackageMap package_map;
-  package_map.Remove("drake");
+  PackageMap package_map = PackageMap::MakeEmpty();
   for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }

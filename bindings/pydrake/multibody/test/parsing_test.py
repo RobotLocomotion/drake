@@ -26,10 +26,8 @@ from pydrake.multibody.plant import (
 class TestParsing(unittest.TestCase):
 
     def test_package_map(self):
-        dut = PackageMap()
-        dut.Remove(package_name="drake")
-        dut2 = PackageMap()
-        dut2.Remove(package_name="drake")
+        dut = PackageMap.MakeEmpty()
+        dut2 = PackageMap.MakeEmpty()
         tmpdir = os.environ.get('TEST_TMPDIR')
         model = FindResourceOrThrow(
             "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
