@@ -1020,7 +1020,7 @@ void SolveWithGivenOptions(
     const std::unordered_map<std::string, std::string>& snopt_options_string,
     const std::unordered_map<std::string, int>& snopt_options_int,
     const std::unordered_map<std::string, double>& snopt_options_double,
-    MathematicalProgramResult* result) {
+    const std::string& print_file_common, MathematicalProgramResult* result) {
   SnoptSolverDetails& solver_details =
       result->SetSolverDetailsType<SnoptSolverDetails>();
 
@@ -1029,6 +1029,9 @@ void SolveWithGivenOptions(
   const auto & scale_map = prog.GetVariableScaling();
 
   std::string print_file_name;
+  if (print_file_common != "") {
+    print_file_name = print_file_common;
+  }
   const auto print_file_it = snopt_options_string.find("Print file");
   if (print_file_it != snopt_options_string.end()) {
     print_file_name = print_file_it->second;
@@ -1317,7 +1320,7 @@ void SnoptSolver::DoSolve(
 
   SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
                         int_options, merged_options.GetOptionsDouble(id()),
-                        result);
+                        merged_options.get_print_file_name(), result);
 }
 
 bool SnoptSolver::is_bounded_lp_broken() { return true; }
