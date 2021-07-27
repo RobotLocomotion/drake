@@ -41,6 +41,7 @@ alias(
 # that in below in the final :install target.
 install(
     name = "all_install_targets_except_bazel",
+    data = ["package.xml"],
     docs = ["LICENSE.TXT"],
     visibility = ["//tools/install/bazel:__pkg__"],
     deps = [
