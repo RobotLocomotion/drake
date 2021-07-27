@@ -79,7 +79,6 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
 
   // Add packages + paths.
   PackageMap package_map = PackageMap::MakeEmpty();
-
   for (const auto& [package, path] : expected_packages) {
     package_map.Add(package, path);
   }
