@@ -925,6 +925,7 @@ drake_cc_googletest(
     name = "mesh_intersection_test",
     deps = [
         ":mesh_intersection",
+        ":mesh_to_vtk",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:autodiff",

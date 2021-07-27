@@ -13,6 +13,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -713,6 +714,80 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
   // clang-format on
   EXPECT_EQ(7, polygon_M.size());
   EXPECT_TRUE(CompareConvexPolygon(expect_heptagon_M, polygon_M));
+}
+
+GTEST_TEST(MeshIntersectionTest, HeptagonContactSurface) {
+  unique_ptr<VolumeMesh<double>> volume_M;
+  {
+    const int element_data[4] = {0, 1, 2, 3};
+    std::vector<VolumeElement> elements{VolumeElement(element_data)};
+    // clang-format off
+    const Vector3d vertex_data[4] = {
+        { 2,  0,  2},
+        {-2,  0,  2},
+        { 0,  2, -2},
+        { 0, -2, -2}
+    };
+    // clang-format on
+    std::vector<VolumeVertex<double>> vertices;
+    for (auto& vertex : vertex_data) {
+      vertices.emplace_back(vertex);
+    }
+    volume_M = std::make_unique<VolumeMesh<double>>(std::move(elements),
+                                                    std::move(vertices));
+  }
+  auto bvh_volume_M = make_unique<Bvh<Obb, VolumeMesh<double>>>(*volume_M);
+  auto field_M = make_unique<VolumeMeshFieldLinear<double, double>>(
+      "pressure(Pa)", vector<double>({3e5, 2e5, 1e5, 0}), volume_M.get());
+
+  unique_ptr<SurfaceMesh<double>> surface_N;
+  {
+    const int face_data[3] = {0, 1, 2};
+    std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
+    // clang-format off
+    const Vector3d vertex_data[3] = {
+        {1.5,   1.5, 0.},
+        {-1.5,  0.,  0.},
+        {0.,   -1.5, 0.}};
+    // clang-format on
+    std::vector<SurfaceVertex<double>> vertices;
+    for (auto& vertex : vertex_data) {
+      vertices.emplace_back(vertex);
+    }
+    surface_N = std::make_unique<SurfaceMesh<double>>(std::move(faces),
+                                                      std::move(vertices));
+  }
+  auto bvh_surface_N = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*surface_N);
+
+  WriteVolumeMeshFieldLinearToVtk("tetrahedron_pressure.vtk", *field_M,
+                                  "Linear Pressure Field in Tetrahedron");
+  WriteSurfaceMeshToVtk("triangle_surface.vtk", *surface_N,
+                        "One-Triangle Mesh");
+  {
+    auto contact_MN = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+        GeometryId::get_new_id(), *field_M, *bvh_volume_M,
+        RigidTransformd::Identity(), GeometryId::get_new_id(), *surface_N,
+        *bvh_surface_N, RigidTransformd::Identity(),
+        ContactPolygonRepresentation::kCentroidSubdivision);
+    ASSERT_NE(contact_MN.get(), nullptr);
+    EXPECT_EQ(contact_MN->mesh_W().num_faces(), 7);
+    WriteSurfaceMeshFieldLinearToVtk(
+        "heptagon_contact_surface.vtk", contact_MN->e_MN(),
+        "Pressure Distribution on Contact Surface");
+  }
+  {
+    auto contact_MN = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+        GeometryId::get_new_id(), *field_M, *bvh_volume_M,
+        RigidTransformd::Identity(), GeometryId::get_new_id(), *surface_N,
+        *bvh_surface_N, RigidTransformd::Identity(),
+        ContactPolygonRepresentation::kSingleTriangle);
+
+    ASSERT_NE(contact_MN.get(), nullptr);
+    EXPECT_EQ(contact_MN->mesh_W().num_faces(), 1);
+    WriteSurfaceMeshFieldLinearToVtk(
+        "triangle_contact_surface.vtk", contact_MN->e_MN(),
+        "Pressure Distribution on Contact Surface");
+  }
 }
 
 GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
