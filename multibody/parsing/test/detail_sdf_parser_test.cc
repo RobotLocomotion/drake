@@ -1862,6 +1862,60 @@ GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
   EXPECT_EQ(GetModelFrameByName(*plant, "a::c").body().index(),
             plant->GetBodyByName("f").index());
 }
+
+// Verify that frames can be used for //joint/parent and //joint/child
+GTEST_TEST(SdfParser, FramesAsJointParentOrChild) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "frames_as_joint_parent_or_child.sdf");
+  MultibodyPlant<double> plant(0.0);
+
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model"));
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  const RigidTransformd X_CJc_expected = RigidTransformd::Identity();
+  const RigidTransformd X_PJp_expected(RollPitchYawd(0, 0, 0),
+                                       Vector3d(3, 3, 3));
+
+  // Frames attached to links in the same model
+  {
+    const auto& joint = plant.GetJointByName("J1");
+    const auto& frame_P = plant.GetFrameByName("L1_offset");
+    const auto& frame_C = plant.GetFrameByName("L2_offset");
+
+    const RigidTransformd X_PJp =
+        joint.frame_on_parent().CalcPose(*context, frame_P);
+    EXPECT_TRUE(CompareMatrices(X_PJp_expected.GetAsMatrix4(),
+                                X_PJp.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_CJc =
+        joint.frame_on_child().CalcPose(*context, frame_C);
+    EXPECT_TRUE(CompareMatrices(X_CJc_expected.GetAsMatrix4(),
+                                X_CJc.GetAsMatrix4(), kEps));
+  }
+  // Frames attached to links in the other (nested) models
+  {
+    const auto& joint = plant.GetJointByName("J2");
+
+    const auto& frame_P = plant.GetFrameByName("M1_base_link_offset");
+    const auto& frame_C = plant.GetFrameByName("M2_base_link_offset");
+
+    const RigidTransformd X_PJp =
+        joint.frame_on_parent().CalcPose(*context, frame_P);
+    EXPECT_TRUE(CompareMatrices(X_PJp_expected.GetAsMatrix4(),
+                                X_PJp.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_CJc =
+        joint.frame_on_child().CalcPose(*context, frame_C);
+    EXPECT_TRUE(CompareMatrices(X_CJc_expected.GetAsMatrix4(),
+                                X_CJc.GetAsMatrix4(), kEps));
+  }
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
