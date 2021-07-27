@@ -94,8 +94,8 @@ class PackageMap final {
 
  private:
   // A constructor that initializes a map by parsing a list of package.xml
-  // files.
-  PackageMap(std::initializer_list<std::string> init);
+  // file paths.
+  PackageMap(std::initializer_list<std::string> manifest_paths);
 
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
