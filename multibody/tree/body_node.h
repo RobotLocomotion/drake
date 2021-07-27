@@ -1599,19 +1599,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // Returns an Eigen expression of the vector of generalized accelerations
   // for this node's inboard mobilizer from the vector of generalized
   // accelerations for the entire model.
-  Eigen::VectorBlock<const VectorX<T>> get_accelerations(
-      AccelerationKinematicsCache<T>* ac) const {
-    const VectorX<T>& vdot = ac->get_vdot();
-    return get_velocities_from_array(vdot);
-  }
-
-  // Mutable version of get_accelerations_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_accelerations(
+  Eigen::Ref<VectorX<T>> get_mutable_accelerations(
       AccelerationKinematicsCache<T>* ac) const {
     VectorX<T>& vdot = ac->get_mutable_vdot();
     return get_mutable_velocities_from_array(&vdot);
   }
-
 
   // =========================================================================
   // ArticulatedBodyInertiaCache Accessors and Mutators.
@@ -1750,14 +1742,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // tree. Useful for the implementation of operator forms where the generalized
   // velocity (or time derivatives of the generalized velocities) is an argument
   // to the operator.
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v) const {
-    return v.segment(topology_.mobilizer_velocities_start_in_v,
-                     topology_.num_mobilizer_velocities);
-  }
-
-  // Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
+  Eigen::Ref<VectorX<T>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v) const {
     DRAKE_ASSERT(v != nullptr);
     return v->segment(topology_.mobilizer_velocities_start_in_v,
@@ -1767,14 +1752,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // Helper to get an Eigen expression of the vector of generalized forces
   // from a vector of generalized forces for the entire parent multibody
   // tree.
-  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
-      const VectorX<T>& tau) const {
-    return get_velocities_from_array(tau);
-  }
-
-  // Mutable version of get_generalized_forces_from_array()
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_generalized_forces_from_array(
+  Eigen::Ref<VectorX<T>> get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau) const {
     DRAKE_ASSERT(tau != nullptr);
     return get_mutable_velocities_from_array(tau);
