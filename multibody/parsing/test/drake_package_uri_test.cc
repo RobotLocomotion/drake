@@ -10,7 +10,7 @@ In a new terminal, run example to visualize model:
 
  $ bazel run \
    //multibody/parsing:drake_package_uri_test -- \
-   --visualize=true --visualize_sec=1
+   --visualize_sec=1
 
 */
 
@@ -29,8 +29,6 @@ In a new terminal, run example to visualize model:
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-DEFINE_bool(
-    visualize, false, "Publish model to Drake Visualizer.");
 DEFINE_double(
     visualize_sec, 0., "Amount of time to pause between each model to "
     "visualize in Drake Visualizer.");
@@ -65,21 +63,19 @@ TEST_P(ParseTest, ParsesSdfAndVisualizes) {
   // Ensure there was exactly one model instance added for the new model.
   EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);
 
-  // Visualize via publishing, if requested.
-  if (FLAGS_visualize || FLAGS_visualize_sec > 0.0) {
-    DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-    plant.Finalize();
-    auto diagram = builder.Build();
-    drake::log()->info("Visualize: {}", object_name);
-    Simulator<double> simulator(*diagram);
-    simulator.Initialize();
-    diagram->Publish(simulator.get_context());
-    if (FLAGS_visualize_sec > 0.0) {
-      drake::log()->info("Pausing for {} sec...", FLAGS_visualize_sec);
-      std::this_thread::sleep_for(
-          std::chrono::milliseconds(
-              static_cast<int>(1000 * FLAGS_visualize_sec)));
-    }
+  // Visualize via publishing.
+  DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
+  plant.Finalize();
+  auto diagram = builder.Build();
+  drake::log()->info("Visualize: {}", object_name);
+  Simulator<double> simulator(*diagram);
+  simulator.Initialize();
+  diagram->Publish(simulator.get_context());
+  if (FLAGS_visualize_sec > 0.0) {
+    drake::log()->info("Pausing for {} sec...", FLAGS_visualize_sec);
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(
+            static_cast<int>(1000 * FLAGS_visualize_sec)));
   }
 }
 
