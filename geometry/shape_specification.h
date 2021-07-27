@@ -249,12 +249,16 @@ class HalfSpace final : public Shape {
                                                const Vector3<double>& p_FB);
 };
 
-// TODO(DamrongGuoy): Update documentation when the level of support for
-//  meshes extends to more collision and rendering.
-/** Limited support for meshes. Meshes are supported in Rendering and
- Illustration roles. For Proximity role, Meshes are supported in
- ComputeContactSurfaces() query only. No other proximity queries are supported.
- */
+// TODO(DamrongGuoy): Update documentation when mesh is fully supported (i.e.,
+// doesn't require equivocation here).
+/** Definition of a general (possibly non-convex) triangular surface mesh.
+ Meshes can be used for illustration and perception roles, but have limited
+ proximity support. See the documentation of QueryObject's proximity queries to
+ see how meshes are used in each type of proximity query.
+
+ The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
+ loading it in SceneGraph it can be scaled around the origin of C by a given
+ `scale` amount. */
 class Mesh final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
@@ -276,7 +280,11 @@ class Mesh final : public Shape {
   double scale_;
 };
 
-/** Support for convex shapes. */
+/** Definition of a *convex* surface mesh.
+
+ The mesh is defined in a canonical frame C, implicit in the file parsed. Upon
+ loading it in SceneGraph it can be scaled around the origin of C by a given
+ `scale` amount. */
 class Convex final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
