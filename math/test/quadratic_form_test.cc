@@ -10,6 +10,9 @@
 namespace drake {
 namespace math {
 namespace {
+
+const double kDefaultZeroTol = 2E-15;
+
 void CheckDecomposePSDmatrixIntoXtransposeTimesX(
     const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol,
     double check_tol = 1E-14) {
@@ -23,12 +26,12 @@ void CheckDecomposePSDmatrixIntoXtransposeTimesX(
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test0) {
   CheckDecomposePSDmatrixIntoXtransposeTimesX(Eigen::Matrix3d::Identity(),
-                                              1E-15);
+                                              kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test1) {
   const Eigen::Matrix3d Y = Eigen::Vector3d(1, 4, 0).asDiagonal();
-  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, 1E-15);
+  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test2) {
@@ -38,7 +41,7 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test2) {
        1, 1, 0,
        0, 0, 0;
   // clang-format on
-  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, 1E-15);
+  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test3) {
@@ -48,7 +51,7 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test3) {
        2, 4, 0,
        0, 0, 9;
   // clang-format on
-  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, 1E-15);
+  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test4) {
@@ -59,7 +62,7 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test4) {
        2, 4, -6,
        -3, -6, 9;
   // clang-format on
-  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, 1E-15);
+  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y, kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test5) {
@@ -74,7 +77,7 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, Test5) {
         0, 1, -1,
         0, -1, 1;
   // clang-format on
-  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y1 + Y2, 1E-15);
+  CheckDecomposePSDmatrixIntoXtransposeTimesX(Y1 + Y2, kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, negativeY) {
@@ -156,7 +159,7 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test1) {
   Q << 1, 2, 2, 4;
   Eigen::Vector2d b(2, 4);
   double c = 2;
-  CheckDecomposePositiveQuadraticForm(Q, b, c, 1E-15);
+  CheckDecomposePositiveQuadraticForm(Q, b, c, kDefaultZeroTol);
 }
 
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test2) {
@@ -215,7 +218,7 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test6) {
   Eigen::Vector3d b(2, 4, -1);
   double c = 1;
   // tolerance has to be non-negative.
-  EXPECT_THROW(DecomposePositiveQuadraticForm(Q, b, c, -1E-15),
+  EXPECT_THROW(DecomposePositiveQuadraticForm(Q, b, c, -kDefaultZeroTol),
                std::runtime_error);
 }
 
