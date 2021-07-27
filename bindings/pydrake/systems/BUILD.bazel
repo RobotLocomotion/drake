@@ -544,6 +544,7 @@ drake_py_unittest(
         ":framework_py",
         ":planar_scenegraph_visualizer_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
     ],
 )
