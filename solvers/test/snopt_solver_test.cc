@@ -139,15 +139,39 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
   const auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
-  // This is to verify we can set the print out file.
-  const std::string print_file = temp_directory() + "/snopt.out";
-  std::cout << print_file << std::endl;
+  // This is to verify we can set the print out file through solver specific
+  // option.
+  std::string print_file = temp_directory() + "/snopt.out";
   EXPECT_FALSE(filesystem::exists({print_file}));
-  prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
+  SolverOptions solver_options1;
+  solver_options1.SetOption(SnoptSolver::id(), "Print file", print_file);
   const SnoptSolver solver;
-  auto result = solver.Solve(prog, {}, {});
+  auto result = solver.Solve(prog, {}, solver_options1);
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(filesystem::exists({print_file}));
+
+  // This is to verify we can set the print out file through CommonSolverOption.
+  std::string print_file_common = temp_directory() + "/snopt_common.out";
+  EXPECT_FALSE(filesystem::exists({print_file_common}));
+  SolverOptions solver_options2;
+  solver_options2.SetOption(CommonSolverOption::kPrintFileName,
+                            print_file_common);
+  result = solver.Solve(prog, {}, solver_options2);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(filesystem::exists({print_file_common}));
+
+  // Now set the solver option with both CommonSolverOption and solver specific
+  // option. The solver specific option should win.
+  print_file_common = temp_directory() + "/snopt_common2.out";
+  print_file = temp_directory() + "/snopt2.out";
+  solver_options2.SetOption(solver.id(), "Print file", print_file);
+  solver_options2.SetOption(CommonSolverOption::kPrintFileName,
+                            print_file_common);
+  EXPECT_FALSE(filesystem::exists({print_file_common}));
+  EXPECT_FALSE(filesystem::exists({print_file}));
+  solver.Solve(prog, {}, solver_options2);
+  EXPECT_TRUE(filesystem::exists({print_file}));
+  EXPECT_FALSE(filesystem::exists({print_file_common}));
 }
 
 GTEST_TEST(SnoptTest, TestStringOption) {
