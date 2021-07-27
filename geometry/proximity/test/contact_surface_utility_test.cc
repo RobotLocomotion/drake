@@ -575,6 +575,31 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle) {
   }
 }
 
+// Tests AddPolygonToMeshDataAsOneTriangle() for the special case of a
+// polygon that is already a triangle, i.e. a 3-gon. It should add that
+// triangle exactly without calculating a different representative triangle.
+GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_3Gon) {
+  // A triangle is a special case of a polygon. Values of the coordinates
+  // are less relevant to this test.
+  const vector<Vector3d> polygon_F{Vector3d::Zero(), 2 * Vector3d::UnitX(),
+                                   3 * Vector3d::UnitY()};
+  const Vector3d nhat_F = Vector3d::UnitZ();
+
+  vector<SurfaceFace> faces;
+  vector<SurfaceVertex<double>> vertices_F;
+  AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
+                                            &vertices_F);
+  ASSERT_EQ(faces.size(), 1);
+  EXPECT_EQ(faces[0].vertex(0), SurfaceVertexIndex(0));
+  EXPECT_EQ(faces[0].vertex(1), SurfaceVertexIndex(1));
+  EXPECT_EQ(faces[0].vertex(2), SurfaceVertexIndex(2));
+
+  ASSERT_EQ(vertices_F.size(), 3);
+  EXPECT_EQ(vertices_F[0].r_MV(), polygon_F[0]);
+  EXPECT_EQ(vertices_F[1].r_MV(), polygon_F[1]);
+  EXPECT_EQ(vertices_F[2].r_MV(), polygon_F[2]);
+}
+
 // Tests AddPolygonToMeshDataAsOneTriangle() with AutoDiffXd. It's only a
 // smoke test. We only check that it compiles, and derivatives propagate to a
 // coordinate of a vertex.
