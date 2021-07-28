@@ -460,31 +460,24 @@ class ThreeBoxes : public ::testing::Test {
   Substitution subs_on_off_{};
 };
 
-// Ipopt fails to solve QuadraticCost and friends above, complaining that the
-// problem has "Too few degrees of freedom"; in other words that it has
-// redundant constraints.  Of course that's true (since the sets were just
-// Points), but that should be ok.  Gurobi, Mosek, and Snopt all solve it just
-// fine.  This test confirms that Ipopt can solve shortest path problems for us
-// when they are not my trivially over-constrained unit test.
+// Ipopt fails to solve the QuadraticCost and L2NormCost tests above (both of
+// which use Lorentz cone constraints), complaining that the problem has "Too
+// few degrees of freedom"; in other words that it has redundant constraints. Of
+// course that is true (since the sets were just Points), but Gurobi, Mosek, and
+// Snopt all solve it just fine.  This test confirms that Ipopt can solve
+// shortest path problems with the QuadraticCost when the points are changed to
+// a boxes.
 //
-// Ipopt will be used in some of the build configurations in CI, even
+// Adding a similar test corresponding to the L2NormCost test caused
+// "IPOPT terminated after exceeding the maximum iteration limit" on mac CI
+// (despite passing on the developer's mac).  The unfortunate conclusion is that
+// IPOPT doesn't deal very well with our LorentzConeConstraints.
+//
+// Note: Ipopt will be used in some of the build configurations in CI, even
 // though I cannot (yet) request it specifically here.
 TEST_F(ThreeBoxes, IpoptTest) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
-  ASSERT_TRUE(result.is_success());
-}
-
-// See IpoptTest.  This covers the other case that failed for ThreePoints.
-TEST_F(ThreeBoxes, IpoptTest2) {
-  // |xu - xv|₂
-  Matrix<double, 2, 4> A;
-  A.leftCols(2) = Matrix2d::Identity();
-  A.rightCols(2) = -Matrix2d::Identity();
-  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
-  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
-  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
   auto result = g_.SolveShortestPath(*source_, *target_, true);
   ASSERT_TRUE(result.is_success());
 }
