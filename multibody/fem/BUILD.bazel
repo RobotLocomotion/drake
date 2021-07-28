@@ -15,8 +15,37 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fixed_fem:__subpackages__"],
     deps = [
+        ":isoparametric_element",
+        ":linear_simplex_element",
         ":quadrature",
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "isoparametric_element",
+    srcs = [
+        "isoparametric_element.cc",
+    ],
+    hdrs = [
+        "isoparametric_element.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_simplex_element",
+    srcs = [
+        "linear_simplex_element.cc",
+    ],
+    hdrs = [
+        "linear_simplex_element.h",
+    ],
+    deps = [
+        ":isoparametric_element",
+        "//common:default_scalars",
     ],
 )
 
@@ -44,6 +73,24 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "isoparametric_element_test",
+    deps = [
+        ":isoparametric_element",
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_simplex_element_test",
+    deps = [
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
