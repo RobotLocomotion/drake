@@ -5,11 +5,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/fem/isoparametric_element.h"
 #include "drake/multibody/fem/quadrature.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
-#include "drake/multibody/fixed_fem/dev/isoparametric_element.h"
 
 namespace drake {
 namespace multibody {

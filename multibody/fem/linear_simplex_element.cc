@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
 
 #include "drake/common/default_scalars.h"
 
@@ -98,8 +98,7 @@ typename LinearSimplexElement<T, natural_dimension_at_compile_time,
       Sq(a) = locations[q](a - 1);
     }
     /* S₀ = 1−ξ₀ − ... − ξₙ₋₂. */
-    Sq(0) = 0;
-    Sq(0) = 1 - Sq.sum();
+    Sq(0) = 1 - Sq.template tail<num_nodes - 1>().sum();
     S[q] = std::move(Sq);
   }
   return S;

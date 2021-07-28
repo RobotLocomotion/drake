@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
 
 #include <memory>
 

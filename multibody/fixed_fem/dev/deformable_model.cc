@@ -1,12 +1,12 @@
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 
+#include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/dynamic_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/dynamic_elasticity_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
