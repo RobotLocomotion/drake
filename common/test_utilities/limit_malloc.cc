@@ -197,7 +197,7 @@ void Monitor::ObserveAllocation() {
   // tools/dynamic_analysis/dump_limit_malloc_stacks
   const auto break_env = std::getenv("DRAKE_LIMIT_MALLOC_NONFATAL_BREAKPOINT");
   // Use the action if the environment variable is defined and not empty.
-  if (!!break_env && *break_env != '\0') {
+  if ((break_env != nullptr) && (*break_env != '\0')) {
     ::raise(SIGTRAP);
     return;
   }
