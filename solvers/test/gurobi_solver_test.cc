@@ -378,15 +378,57 @@ GTEST_TEST(GurobiTest, LogFile) {
   prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1]);
   prog.AddBoundingBoxConstraint(0, 1, x);
   prog.AddLinearEqualityConstraint(x[0] + x[1] + 2 * x[2] == 1);
+  prog.NewBinaryVariables<2>();
 
   GurobiSolver solver;
   if (solver.available()) {
-    SolverOptions solver_options;
-    const std::string log_file = temp_directory() + "/gurobi.log";
-    EXPECT_FALSE(filesystem::exists({log_file}));
-    solver_options.SetOption(solver.id(), "LogFile", log_file);
-    const auto result = solver.Solve(prog, {}, solver_options);
-    EXPECT_TRUE(filesystem::exists({log_file}));
+    {
+      SolverOptions solver_options;
+      const std::string log_file = temp_directory() + "/gurobi.log";
+      EXPECT_FALSE(filesystem::exists({log_file}));
+      solver_options.SetOption(solver.id(), "LogFile", log_file);
+      auto result = solver.Solve(prog, {}, solver_options);
+      EXPECT_TRUE(filesystem::exists({log_file}));
+    }
+
+    // Set log file through CommonSolverOptions.
+    {
+      SolverOptions solver_options;
+      const std::string log_file_common =
+          temp_directory() + "/gurobi_common.log";
+      EXPECT_FALSE(filesystem::exists({log_file_common}));
+      solver_options.SetOption(CommonSolverOption::kPrintFileName,
+                               log_file_common);
+      solver.Solve(prog, {}, solver_options);
+      EXPECT_TRUE(filesystem::exists({log_file_common}));
+    }
+
+    // Also set to log to console. We can't test the console output but this
+    // test verifies no error thrown.
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+      solver_options.SetOption(CommonSolverOption::kPrintFileName, "");
+      auto result = solver.Solve(prog, {}, solver_options);
+      EXPECT_TRUE(result.is_success());
+    }
+
+    // Set the option through both CommonSolverOption and solver-specific
+    // option. The common solver option should win.
+    {
+      SolverOptions solver_options;
+      const std::string log_file_common =
+          temp_directory() + "/gurobi_common2.log";
+      solver_options.SetOption(CommonSolverOption::kPrintFileName,
+                               log_file_common);
+      const std::string log_file = temp_directory() + "/gurobi2.log";
+      solver_options.SetOption(solver.id(), "LogFile", log_file);
+      EXPECT_FALSE(filesystem::exists({log_file}));
+      EXPECT_FALSE(filesystem::exists({log_file_common}));
+      auto result = solver.Solve(prog, {}, solver_options);
+      EXPECT_TRUE(filesystem::exists({log_file}));
+      EXPECT_FALSE(filesystem::exists({log_file_common}));
+    }
   }
 }
 
