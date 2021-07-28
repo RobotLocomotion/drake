@@ -88,6 +88,26 @@ namespace internal {
 // Report an assertion failure; will either Abort(...) or throw.
 [[noreturn]] void AssertionFailed(const char* condition, const char* func,
                                   const char* file, int line);
+
+// Positive-case SFINAE.
+template <class T>
+std::true_type bool_convertible_helper(
+    decltype((
+        // Use this expression for simple SFINAE.
+        static_cast<bool>(std::declval<T>()),
+        // Use this to anchor positive-case input argument.
+        int{})));
+
+// Negative-case SFINAE.
+template <class T>
+std::false_type bool_convertible_helper(...);
+
+// N.B. This is a bit more flexible than `std::is_convertible_v<T, bool>()`,
+// e.g. for types such as `std::unique_ptr<>` and `std::function<>`.
+template <class T>
+inline constexpr bool bool_convertible_v =
+    decltype(bool_convertible_helper<T>(int{}))::value;
+
 }  // namespace internal
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
@@ -97,9 +117,10 @@ namespace assert {
 // require special handling.
 template <typename Condition>
 struct ConditionTraits {
-  static constexpr bool is_valid = std::is_convertible_v<Condition, bool>;
+  static constexpr bool is_valid =
+      drake::internal::bool_convertible_v<Condition>;
   static bool Evaluate(const Condition& value) {
-    return value;
+    return static_cast<bool>(value);
   }
 };
 }  // namespace assert
