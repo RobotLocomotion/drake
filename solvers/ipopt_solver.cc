@@ -748,8 +748,12 @@ void SetIpoptOptions(const MathematicalProgram& prog,
   SetIpoptOptionsHelper<std::string>("hessian_approximation", "limited-memory",
                                      &merged_solver_options);
   // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
-  // useful for debugging.
-  SetIpoptOptionsHelper<int>("print_level", 2, &merged_solver_options);
+  // useful for debugging. Otherwise, we default to printing nothing. The user
+  // can always select an arbitrary print level, by setting the ipopt value
+  // directly in the solver options.
+  int common_print_level = merged_solver_options.get_print_to_console() ? 4 : 0;
+  SetIpoptOptionsHelper<int>("print_level", common_print_level,
+                             &merged_solver_options);
 
   const auto& ipopt_options_double =
       merged_solver_options.GetOptionsDouble(IpoptSolver::id());
