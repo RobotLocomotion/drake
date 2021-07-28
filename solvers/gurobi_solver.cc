@@ -771,7 +771,19 @@ void AddSecondOrderConeVariables(
 }
 
 template <typename T>
-void ThrowForInvalidOption(int error, const std::string& option, const T& val) {
+void SetOptionOrThrow(GRBenv* model_env, const std::string& option,
+                      const T& val) {
+  static_assert(std::is_same_v<T, int> || std::is_same_v<T, double> ||
+                    std::is_same_v<T, std::string>,
+                "Option values must be int, double, or string");
+  int error = 0;
+  if constexpr (std::is_same_v<T, int>) {
+    error = GRBsetintparam(model_env, option.c_str(), val);
+  } else if constexpr (std::is_same_v<T, double>) {
+    error = GRBsetdblparam(model_env, option.c_str(), val);
+  } else if constexpr (std::is_same_v<T, std::string>) {
+    error = GRBsetstrparam(model_env, option.c_str(), val.c_str());
+  }
   if (error) {
     const std::string gurobi_version =
         fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
@@ -1026,18 +1038,22 @@ void GurobiSolver::DoSolve(
   GRBenv* model_env = GRBgetenv(model);
   DRAKE_DEMAND(model_env);
 
-  // Corresponds to no console or file logging (this is the default, which
-  // can be overridden by parameters set in the MathematicalProgram).
+  // Handle common solver options before gurobi-specific options stored in
+  // merged_options, so that gurobi-specific options can overwrite common solver
+  // options.
+  // Gurobi creates a new log file every time we set "LogFile" parameter through
+  // GRBsetstrparam(). So in order to avoid creating log files repeatedly, we
+  // store the log file name in @p log_file variable, and only call
+  // GRBsetstrparam(model_env, "LogFile", log_file) for once.
+  std::string log_file = merged_options.get_print_file_name();
   if (!error) {
-    error = GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
-    // Setting GRB_INT_PAR_OUTPUTFLAG=0 should never cause error.
-    DRAKE_DEMAND(!error);
+    SetOptionOrThrow(model_env, "LogToConsole",
+                     static_cast<int>(merged_options.get_print_to_console()));
   }
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
-      error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
-      ThrowForInvalidOption(error, it.first, it.second);
+      SetOptionOrThrow(model_env, it.first, it.second);
     }
   }
   bool compute_iis = false;
@@ -1052,8 +1068,7 @@ void GurobiSolver::DoSolve(
               it.second));
         }
       } else {
-        error = GRBsetintparam(model_env, it.first.c_str(), it.second);
-        ThrowForInvalidOption(error, it.first, it.second);
+        SetOptionOrThrow(model_env, it.first, it.second);
       }
     }
   }
@@ -1064,12 +1079,14 @@ void GurobiSolver::DoSolve(
         if (it.second != "") {
           grb_write = it.second;
         }
+      } else if (it.first == "LogFile") {
+        log_file = it.second;
       } else {
-        error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
-        ThrowForInvalidOption(error, it.first, it.second);
+        SetOptionOrThrow(model_env, it.first, it.second);
       }
     }
   }
+  SetOptionOrThrow(model_env, "LogFile", log_file);
 
   for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     if (!error && !std::isnan(initial_guess(i))) {
