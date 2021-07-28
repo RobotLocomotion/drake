@@ -50,7 +50,7 @@ namespace multibody {
 /// See CalcContactFrictionFromSurfaceProperties(), which implements this law.
 /// More complex combination laws could also be a function of other parameters
 /// such as the mechanical properties of the interacting surfaces or even their
-/// roughnesses. For instance, if the the rubber surface above has metal studs
+/// roughnesses. For instance, if the rubber surface above has metal studs
 /// (somehow making the surface "rougher"), it will definitely have a better
 /// grip on an ice surface. Therefore this new variable should be taken into
 /// account in the combination law. Notice that in this example, this new

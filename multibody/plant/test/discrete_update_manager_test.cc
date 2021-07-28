@@ -206,7 +206,7 @@ TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
                       dummy_discrete_state() +
                           2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
                       std::numeric_limits<double>::epsilon()));
-  /* Verifies that the cache value is twice the the addition state value. */
+  /* Verifies that the cache value is twice the addition state value. */
   const VectorXd& cache_value =
       dummy_manager_->EvalCacheEntry(simulator.get_context());
   EXPECT_TRUE(CompareMatrices(2.0 * final_additional_state, cache_value,

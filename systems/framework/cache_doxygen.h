@@ -501,7 +501,7 @@ The arrow direction reads as "subscribes to (up)", i.e., "depends on":
 - Folder-shaped nodes denote a Diagram tracker.
 - Oval-shaped nodes denote a System tracker (the same for both LeafSystem or
   Diagram).
-- \b Black arrows are per the "Subscribes to" column in the the "Predefined
+- \b Black arrows are per the "Subscribes to" column in the "Predefined
   dependency tickets" table.
   - <span style="color:green">\b Green</span> arrows are per the input_port(i)
     row in the same table.  Unlike black arrows which are always subscribed,

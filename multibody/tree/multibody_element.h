@@ -88,7 +88,7 @@ class MultibodyElement {
   /// Declares MultibodyTreeSystem Parameters at MultibodyTreeSystem::Finalize()
   /// time. NVI to the virtual method DoDeclareParameters().
   /// @param[in] tree_system A mutable copy of the parent MultibodyTreeSystem.
-  /// @pre 'tree_system' must be the same as the the parent tree system (what's
+  /// @pre 'tree_system' must be the same as the parent tree system (what's
   /// returned from GetParentTreeSystem()).
   void DeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) {
     DRAKE_DEMAND(tree_system == &GetParentTreeSystem());

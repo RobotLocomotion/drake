@@ -271,7 +271,7 @@ GTEST_TEST(SpatialInertia, Shift) {
   // Then re-express in frame W.
   M_BBcm_W.ReExpressInPlace(R_WB);
 
-  // Vector from Bcm to the the top of the cylinder Btop.
+  // Vector from Bcm to the top of the cylinder Btop.
   Vector3d p_BcmBtop_W(0, length / 2.0, 0);
 
   // Computes spatial inertia about Btop, still expressed in W.

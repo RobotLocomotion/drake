@@ -62,7 +62,7 @@ namespace geometry {
                hₘₙ(Q) = eₘ(Q) - eₙ(Q).
 
   It follows that the gradient vector field ∇hₘₙ on 𝕄 ∩ ℕ equals the difference
-  between the the gradient vector fields ∇eₘ and ∇eₙ:
+  between the gradient vector fields ∇eₘ and ∇eₙ:
 
                ∇hₘₙ : 𝕄 ∩ ℕ → ℝ³,
                ∇hₘₙ(Q) = ∇eₘ(Q) - ∇eₙ(Q).

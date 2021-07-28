@@ -391,10 +391,10 @@ class SliceTetWithPlaneTest : public ::testing::Test {
           //  - its "weight" (i.e., interpolation between V0 and V1) is in the
           //    interval [0, 1].
 
-          // We can implicitly test colinearity (and part of the the weight
-          // value) by comparing the vector V0S with V0V1. A negative dot
-          // product indicates that S *cannot* lie between V0 and V1 (colinear
-          // or not) and a positive value equal to |V0S| * |V0V1| indicates
+          // We can implicitly test colinearity (and part of the weight value)
+          // by comparing the vector V0S with V0V1. A negative dot product
+          // indicates that S *cannot* lie between V0 and V1 (colinear or not)
+          // and a positive value equal to |V0S| * |V0V1| indicates
           // colinearity.
           if (std::abs(p_V0V1_F.dot(p_V0S_F) - d_V0V1 * d_V0S) > kEps) continue;
           // Define weight w such that: S = w * V0 + (1 - w) * V1.
@@ -523,7 +523,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
       3. Every non-centroid (perimeter) vertex lies on an edge of the
          indicated tet.
       4. The shared vertex is properly the centroid of the polygon formed
-         by the the perimeter vertices.
+         by the perimeter vertices.
       5. The reported pressure at a perimeter vertex is a linear combination
          of its edge vertex values just like the vertex position is -- using
          the same weight. */

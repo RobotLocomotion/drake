@@ -250,7 +250,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
 ///
 /// The addition of two spatial velocities has a clear physical meaning but
 /// can only be performed if the operands meet strict conditions. In addition
-/// the the usual requirement of common expressed-in frames, both spatial
+/// the usual requirement of common expressed-in frames, both spatial
 /// velocities must be for frames with the same origin point. The general idea
 /// is that if frame A has a spatial velocity with respect to M, and frame B
 /// has a spatial velocity with respect to A, we want to "compose" them so that
@@ -292,7 +292,7 @@ inline SpatialVelocity<T> operator+(
 /// Mathematically, operator-(v1, v2) is equivalent ot operator+(v1, -v2).
 ///
 /// Physically, the subtraction operation allow us to compute the relative
-/// velocity between two frames. As an example, consider having the the spatial
+/// velocity between two frames. As an example, consider having the spatial
 /// velocities `V_MA` and `V_MB` of two frames A and B respectively measured in
 /// the same frame M. The velocity of B in A can be obtained as: <pre>
 ///   V_AB_E = V_MB_E - V_MAb_E = V_AB_E = V_MB_E - V_MA_E.Shift(p_AB_E)

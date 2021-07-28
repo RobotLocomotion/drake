@@ -920,7 +920,7 @@ void GurobiSolver::DoSolve(
       xupp[idx] = std::min(upper_bound(k), xupp[idx]);
     }
   }
-  // bb_con_dual_indices[constraint] returns the the pair (lower_dual_indices,
+  // bb_con_dual_indices[constraint] returns the pair (lower_dual_indices,
   // upper_dual_indices), where lower_dual_indices are the indices of the dual
   // variables associated with the lower bound side (x >= lower) of the bounding
   // box constraint; upper_dual_indices are the indices of the dual variables

@@ -130,8 +130,8 @@ class InputPort final : public InputPortBase {
                          owns this port.
   @param[in]     value   The fixed value for this port. Must be convertible
                          to the input port's data type.
-  @returns a reference to the the FixedInputPortValue object in the Context
-           that contains this port's value.
+  @returns a reference to the FixedInputPortValue object in the Context that
+           contains this port's value.
 
   @pre `context` is compatible with the System that owns this %InputPort.
   @pre `value` is compatible with this %InputPort's data type. */

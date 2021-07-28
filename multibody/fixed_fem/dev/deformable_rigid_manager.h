@@ -275,7 +275,7 @@ class DeformableRigidManager final
                                 | RD1     D1       |
                                 | RD2        D2    |
                                 | RD3           D3 |
-   where "RR" represents the rigid-rigid block, "RDi" represents the the
+   where "RR" represents the rigid-rigid block, "RDi" represents the
    rigid-deformable block with respect to the rigid dofs for the i-th deformable
    body, and "Di" represents the rigid-deformable block with respect to the
    deformable dofs for the i-th deformable body.

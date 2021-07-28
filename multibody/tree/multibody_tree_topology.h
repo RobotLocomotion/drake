@@ -158,12 +158,12 @@ struct MobilizerTopology {
   // Default construction to invalid configuration.
   MobilizerTopology() {}
 
-  // Constructs a %MobilizerTopology by specifying the the index
-  // `mobilizer_index` for `this` new topology, the indexes to the inboard and
-  // outboard frames the Mobilizer will connect, given by `in_frame` and
-  // `out_frame` respectively, and similarly the inboard and outboard bodies
-  // being connected, given by `in_body` and `out_body`, respectively.
-  // The constructed topology will correspond to that of a Mobilizer with
+  // Constructs a %MobilizerTopology by specifying the index `mobilizer_index`
+  // for `this` new topology, the indexes to the inboard and outboard frames
+  // the Mobilizer will connect, given by `in_frame` and `out_frame`
+  // respectively, and similarly the inboard and outboard bodies being
+  // connected, given by `in_body` and `out_body`, respectively.  The
+  // constructed topology will correspond to that of a Mobilizer with
   // `num_positions_in` generalized positions and `num_velocities_in`
   // generalized velocities.
   MobilizerTopology(

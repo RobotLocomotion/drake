@@ -31,8 +31,7 @@ namespace systems {
 ///   On input, a valid pointer to a Simulator. On output the
 ///   integrator for `simulator` is reset according to the gflags declared in
 ///   this file.
-/// @returns  A reference to the the newly created integrator owned by
-/// `simulator`.
+/// @returns A reference to the newly created integrator owned by `simulator`.
 IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
 
 /// Makes a new simulator according to the gflags declared in this file.

@@ -167,7 +167,7 @@ class ValueToAbstractValue {
   }
 
   // This is instantiated if ValueType has a copy constructor. If it is also
-  // cloneable, this method still gets invoked; we prefer use of the the copy
+  // cloneable, this method still gets invoked; we prefer use of the copy
   // constructor.
   template <typename ValueType, typename = CopyReturnType<ValueType>>
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType& value, int,

@@ -382,7 +382,7 @@ typename IntegratorBase<T>::StepResult
   // should return kReachedBoundaryTime (followed in rapid succession by
   // AdvanceTo(.) return).
 
-  // By default, the target time is that of the the next discrete update event.
+  // By default, the target time is that of the next discrete update event.
   StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
   T target_time = update_time;
 

@@ -1496,7 +1496,7 @@ class IntegratorBase {
 
     // Allow this update to *replace* the final segment if the start_time of
     // this step is earlier than the current end_time of the dense output and
-    // matches the start_time of the the final segment of the dense output.
+    // matches the start_time of the final segment of the dense output.
     // This happens, for instance, when the Simulator is doing WitnessFunction
     // isolation; it routinely back up the integration and try the same step
     // multiple times.  Note: we intentionally check for equality between

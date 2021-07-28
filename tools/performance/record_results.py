@@ -1,6 +1,6 @@
 """Run a google benchmark program, with restricted processor affinity to
 mitigate variance of measurements. Collect environment information and store it
-alongside the the benchmark results.
+alongside the benchmark results.
 """
 
 # TODO(rpoyner-tri) find a robust way of recording source code version

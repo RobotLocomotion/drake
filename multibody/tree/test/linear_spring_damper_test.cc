@@ -106,8 +106,8 @@ GTEST_TEST(LinearSpringDamper, BadParameters) {
   EXPECT_NO_THROW(plant.AddForceElement<LinearSpringDamper>(
       bodyA, p_AP, bodyB, p_BQ, free_length, stiffness, damping));
 
-  // Verify the the constructor for the spring-damper throws if either the
-  // rest length, stiffness or damping are negative numbers.
+  // Verify the constructor for the spring-damper throws if either the rest
+  // length, stiffness or damping are negative numbers.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddForceElement<LinearSpringDamper>(bodyA, p_AP, bodyB, p_BQ,
                                                 -1.0 /* negative rest length */,

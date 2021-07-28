@@ -1108,8 +1108,8 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
 // to one of the 6 faces, the 12 edges, and the 8 vertices of the box.
 // First we call GenDistanceTestDataBoxBoundary() to generate test data for
 // query points on the box boundary. Then, we move the query point along the
-// gradient vector by a unit distance.  In each case, the the nearest point to
-// Q on ∂G stays the same, the signed distance becomes +1, and the gradient
+// gradient vector by a unit distance.  In each case, the nearest point to Q
+// on ∂G stays the same, the signed distance becomes +1, and the gradient
 // vector stays the same.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
