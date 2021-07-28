@@ -19,8 +19,8 @@ Code that needs custom copy or move functions should not use these macros.
 /** DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN deletes the special member functions for
 copy-construction, copy-assignment, move-construction, and move-assignment.
 Drake's Doxygen is customized to render the deletions in detail, with
-appropriate comments.  Invoke this this macro in the public section of the
-class declaration, e.g.:
+appropriate comments.  Invoke this macro in the public section of the class
+declaration, e.g.:
 <pre>
 class Foo {
  public:
@@ -43,8 +43,8 @@ copy-assignment defaults are well-formed.  Note that the defaulted move
 functions could conceivably still be ill-formed, in which case they will
 effectively not be declared or used -- but because the copy constructor exists
 the type will still be MoveConstructible.  Drake's Doxygen is customized to
-render the functions in detail, with appropriate comments.  Invoke this this
-macro in the public section of the class declaration, e.g.:
+render the functions in detail, with appropriate comments.  Invoke this macro
+in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
