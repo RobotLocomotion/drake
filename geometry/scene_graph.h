@@ -209,9 +209,9 @@ class QueryObject;
  model.
 
  @note In this initial version, the only methods with the Context-modifying
- variant are those methods that _do not_ change the the semantics of the input
- or output ports. Modifications that make such changes must be coordinated
- across systems.
+ variant are those methods that _do not_ change the semantics of the input or
+ output ports. Modifications that make such changes must be coordinated across
+ systems.
  <!-- TODO(SeanCurtis-TRI): Add context-modifying variants of all methods. -->
 
 @section  scene_graph_versioning Detecting changes
