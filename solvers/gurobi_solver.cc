@@ -1029,9 +1029,25 @@ void GurobiSolver::DoSolve(
   // Corresponds to no console or file logging (this is the default, which
   // can be overridden by parameters set in the MathematicalProgram).
   if (!error) {
-    error = GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
-    // Setting GRB_INT_PAR_OUTPUTFLAG=0 should never cause error.
+    error = GRBsetstrparam(model_env, "LogFile", "");
+    // Setting LogFile="" should never cause error.
     DRAKE_DEMAND(!error);
+    error = GRBsetintparam(model_env, "LogToConsole", 0);
+    // Setting LogToConsol=0 should never cause error.
+    DRAKE_DEMAND(!error);
+  }
+
+  if (!error) {
+    const std::string log_file = merged_options.get_print_file_name();
+    error = GRBsetstrparam(model_env, "LogFile", log_file.c_str());
+    ThrowForInvalidOption(error, "LogFile", log_file);
+  }
+
+  if (!error) {
+    error = GRBsetintparam(model_env, "LogToConsole",
+                           merged_options.get_print_to_console());
+    ThrowForInvalidOption(error, "LogToConsole",
+                          merged_options.get_print_to_console());
   }
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
