@@ -88,6 +88,19 @@ namespace internal {
 // Report an assertion failure; will either Abort(...) or throw.
 [[noreturn]] void AssertionFailed(const char* condition, const char* func,
                                   const char* file, int line);
+
+template <class T>
+std::true_type bool_convertible_helper(decltype(!!std::declval<T>()));
+
+template <class T>
+std::false_type bool_convertible_helper(...);
+
+template <class T>
+using bool_convertible_type = decltype(bool_convertible_helper<T>(bool{}));
+
+template <class T>
+inline constexpr bool bool_convertible_v = bool_convertible_type<T>::value;
+
 }  // namespace internal
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
@@ -97,7 +110,8 @@ namespace assert {
 // require special handling.
 template <typename Condition>
 struct ConditionTraits {
-  static constexpr bool is_valid = std::is_convertible_v<Condition, bool>;
+  static constexpr bool is_valid =
+      drake::internal::bool_convertible_v<Condition>;
   static bool Evaluate(const Condition& value) {
     return value;
   }

@@ -1,5 +1,7 @@
 #include "drake/common/drake_assert.h"
 
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -35,11 +37,27 @@ GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
       "condition 'false' failed");
 }
 
+struct NotBoolConvertible {};
 struct BoolConvertible { operator bool() const { return true; } };
+
+using drake::internal::bool_convertible_v;
+
+GTEST_TEST(DrakeAssertDeathTest, BoolConvertible) {
+  static_assert(bool_convertible_v<BoolConvertible>, "");
+  static_assert(!bool_convertible_v<NotBoolConvertible>, "");
+  static_assert(bool_convertible_v<std::unique_ptr<int>>, "");
+  static_assert(bool_convertible_v<std::function<void()>>, "");
+}
+
 GTEST_TEST(DrakeAssertDeathTest, AssertSyntaxTest) {
   // These should compile.
   DRAKE_ASSERT((2 + 2) == 4);
   DRAKE_ASSERT(BoolConvertible());
+  // Test additional complex types.
+  auto nonempty_ptr = std::make_unique<int>(10);
+  DRAKE_ASSERT(nonempty_ptr);
+  std::function<void()> nonempty_function = []() {};
+  DRAKE_ASSERT(nonempty_function);
 }
 
 GTEST_TEST(DrakeAssertDeathTest, AssertFalseTest) {
