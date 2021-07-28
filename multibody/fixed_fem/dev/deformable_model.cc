@@ -86,7 +86,8 @@ void DeformableModel<T>::RegisterDeformableBodyHelper(
       internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
   constexpr int kNumQuads = QuadratureType::num_quadrature_points;
   using IsoparametricElementType =
-      LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
+      internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                     kNumQuads>;
   using ConstitutiveModelType = Model<T, kNumQuads>;
   static_assert(std::is_base_of_v<
                     ConstitutiveModel<ConstitutiveModelType,

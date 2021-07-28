@@ -9,125 +9,123 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-/** The number of nodes of 1D simplices (segments) is 2. The number of nodes of
+namespace internal {
+
+/* The number of nodes of 1D simplices (segments) is 2. The number of nodes of
  2D simplices (triangles) is 3. The number of nodes of 3D simplices
  (tetrahedron) is 4. */
-template <int NaturalDimension>
+template <int natural_dimension>
 constexpr int num_linear_simplex_element_nodes() {
-  return NaturalDimension + 1;
+  return natural_dimension + 1;
 }
 
-/** Traits for LinearSimplexElement. */
-template <typename T, int NaturalDimension, int SpatialDimension,
-          int NumSampleLocations>
+/* Traits for LinearSimplexElement. */
+template <typename T, int natural_dimension_at_compile_time,
+          int spatial_dimension_at_compile_time,
+          int num_sample_locations_at_compile_time>
 struct LinearSimplexElementTraits {
   using Scalar = T;
-  static constexpr int kNaturalDimension = NaturalDimension;
-  static constexpr int kSpatialDimension = SpatialDimension;
-  static constexpr int kNumSampleLocations = NumSampleLocations;
-  static constexpr int kNumNodes =
-      num_linear_simplex_element_nodes<NaturalDimension>();
+  static constexpr int natural_dimension = natural_dimension_at_compile_time;
+  static constexpr int spatial_dimension = spatial_dimension_at_compile_time;
+  static constexpr int num_sample_locations =
+      num_sample_locations_at_compile_time;
+  static constexpr int num_nodes =
+      num_linear_simplex_element_nodes<natural_dimension>();
 };
 
-/** A concrete IsoparametricElement for linear simplex elements
+/* A concrete IsoparametricElement for linear simplex elements
  (segments, triangles and tetrahedrons). In parent domain, the simplex's node
  are laid out in the following way: the 0-th node is placed at the origin and
- the i-th node for 1 <= i <= NaturalDimension is placed at the point whose i-th
+ the i-th node for 1 <= i <= natural_dimension is placed at the point whose i-th
  coordinate is 1 and all other coordinates are 0.
- @tparam NaturalDimension The dimension of the parent domain.
- @tparam SpatialDimension The dimension of the spatial domain.
- @tparam NumSampleLocations The number of locations to evaluate interpolations
- and other calculations are performed. */
-template <typename T, int NaturalDimension, int SpatialDimension,
-          int NumSampleLocations>
+ @tparam natural_dimension_at_compile_time    The dimension of the parent
+                                              domain.
+ @tparam spatial_dimension_at_compile_time    The dimension of the spatial
+                                              domain.
+ @tparam num_sample_locations_at_compile_time The number of locations to
+                                              evaluate interpolations and
+                                              other calculations are performed.
+ */
+template <typename T, int natural_dimension_at_compile_time,
+          int spatial_dimension_at_compile_time,
+          int num_sample_locations_at_compile_time>
 class LinearSimplexElement
     : public IsoparametricElement<
-          LinearSimplexElement<T, NaturalDimension, SpatialDimension,
-                               NumSampleLocations>,
-          LinearSimplexElementTraits<T, NaturalDimension, SpatialDimension,
-                                     NumSampleLocations>> {
+          LinearSimplexElement<T, natural_dimension_at_compile_time,
+                               spatial_dimension_at_compile_time,
+                               num_sample_locations_at_compile_time>,
+          LinearSimplexElementTraits<T, natural_dimension_at_compile_time,
+                                     spatial_dimension_at_compile_time,
+                                     num_sample_locations_at_compile_time>> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearSimplexElement);
 
-  static_assert(1 <= NaturalDimension && NaturalDimension <= 3,
-                "Only 1, 2 and 3 dimensional manifolds are supported.");
-  static_assert(1 <= SpatialDimension && SpatialDimension <= 3,
-                "Only 1, 2 and 3 spatial dimensions are supported.");
-  static_assert(NaturalDimension <= SpatialDimension,
-                "NaturalDimension must be smaller than or equal to the "
-                "SpatialDimension.");
-  using ElementType =
-      LinearSimplexElement<T, NaturalDimension, SpatialDimension,
-                           NumSampleLocations>;
+  using Element = LinearSimplexElement<T, natural_dimension_at_compile_time,
+                                       spatial_dimension_at_compile_time,
+                                       num_sample_locations_at_compile_time>;
   using Traits =
-      LinearSimplexElementTraits<T, NaturalDimension, SpatialDimension,
-                                 NumSampleLocations>;
-  using Base = IsoparametricElement<ElementType, Traits>;
+      LinearSimplexElementTraits<T, natural_dimension_at_compile_time,
+                                 spatial_dimension_at_compile_time,
+                                 num_sample_locations_at_compile_time>;
+  using Base = IsoparametricElement<Element, Traits>;
   using Base::natural_dimension;
   using Base::num_nodes;
-  using LocationsType = typename Base::LocationsType;
+  using Base::num_sample_locations;
+  using Base::spatial_dimension;
+  using VectorNumNodes = typename Base::VectorNumNodes;
+  using GradientInParentCoordinates =
+      typename Base::GradientInParentCoordinates;
+  using GradientInSpatialCoordinates =
+      typename Base::GradientInSpatialCoordinates;
+  using JacobianMatrix = typename Base::JacobianMatrix;
+  using PseudoinverseJacobianMatrix =
+      typename Base::PseudoinverseJacobianMatrix;
 
   template <typename U>
-  using ArrayType = typename Base::template ArrayType<U>;
+  using ArrayNumSamples = typename Base::template ArrayNumSamples<U>;
 
-  using JacobianMatrix = typename Base::JacobianMatrix;
+  static_assert(1 <= natural_dimension && natural_dimension <= 3,
+                "Only 1, 2 and 3 dimensional manifolds are supported.");
+  static_assert(1 <= spatial_dimension && spatial_dimension <= 3,
+                "Only 1, 2 and 3 spatial dimensions are supported.");
+  static_assert(natural_dimension <= spatial_dimension,
+                "natural_dimension must be smaller than or equal to the "
+                "spatial_dimension.");
 
-  /** Constructs a linear simplex isoparametric element and precomputes the
+  /* Constructs a linear simplex isoparametric element and precomputes the
    shape functions as well as their gradients. */
-  explicit LinearSimplexElement(LocationsType locations)
-      : Base(std::move(locations)),
-        S_(GetShapeFunctionsHelper()),
-        dSdxi_(GetGradientInParentCoordinatesHelper()) {}
+  explicit LinearSimplexElement(
+      const ArrayNumSamples<Vector<double, natural_dimension>>& locations)
+      : Base(locations, CalcShapeFunctions(locations),
+             CalcGradientInParentCoordinates()) {}
 
-  /** Implements Base::GetShapeFunctions(). */
-  const ArrayType<Vector<T, num_nodes()>>& GetShapeFunctions() const {
-    return S_;
-  }
+  /* Implements Base::CalcGradientInSpatialCoordinates(). */
+  ArrayNumSamples<GradientInSpatialCoordinates>
+  CalcGradientInSpatialCoordinates(
+      const Eigen::Ref<const Eigen::Matrix<T, spatial_dimension, num_nodes>>&
+          xa) const;
 
-  /** Implements Base::GetGradientInParentCoordinates(). */
-  const ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>>&
-  GetGradientInParentCoordinates() const {
-    return dSdxi_;
-  }
+  /* Implements Base::CalcJacobian(). */
+  ArrayNumSamples<JacobianMatrix> CalcJacobian(
+      const Eigen::Ref<const Eigen::Matrix<T, spatial_dimension, num_nodes>>&
+          xa) const;
+
+  /* Implements Base::CalcJacobianPseudoinverse(). */
+  ArrayNumSamples<PseudoinverseJacobianMatrix> CalcJacobianPseudoinverse(
+      const ArrayNumSamples<JacobianMatrix>& jacobian) const;
 
  private:
   /* Precomputes the shape functions. */
-  ArrayType<Vector<T, num_nodes()>> GetShapeFunctionsHelper() const {
-    ArrayType<Vector<T, num_nodes()>> S;
-    const LocationsType& locations = this->locations();
-    for (int q = 0; q < this->num_sample_locations(); ++q) {
-      Vector<T, num_nodes()> Sq;
-      // Sₐ = ξₐ₋₁ for a = 1, ..., NumNodes - 1
-      for (int a = 1; a < num_nodes(); ++a) {
-        Sq(a) = locations[q](a - 1);
-      }
-      // S₀ = 1−ξ₀ − ... − ξₙ₋₂
-      Sq(0) = 0;
-      Sq(0) = 1 - Sq.sum();
-      S[q] = Sq;
-    }
-    return S;
-  }
+  ArrayNumSamples<VectorNumNodes> CalcShapeFunctions(
+      const ArrayNumSamples<Vector<double, natural_dimension>>& locations)
+      const;
 
   /* Precomputes the shape function gradients in parent coordinates. */
-  static const ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>>
-  GetGradientInParentCoordinatesHelper() {
-    Eigen::Matrix<T, num_nodes(), natural_dimension()> dSdxi_q;
-    dSdxi_q.template topRows<1>() =
-        -1.0 * Vector<T, natural_dimension()>::Ones();
-    dSdxi_q.template bottomRows<natural_dimension()>() =
-        Eigen::Matrix<T, natural_dimension(), natural_dimension()>::Identity();
-    ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>> dSdxi;
-    dSdxi.fill(dSdxi_q);
-    return dSdxi;
-  }
-
-  /* Shape functions evaluated at points specified at construction. */
-  ArrayType<Vector<T, num_nodes()>> S_;
-  /* Shape function derivatives evaluated at points specified at construction.
-   */
-  ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>> dSdxi_;
+  static const ArrayNumSamples<GradientInParentCoordinates>
+  CalcGradientInParentCoordinates();
 };
+
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
