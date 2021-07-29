@@ -193,7 +193,7 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
 };
 }  // namespace internal
 
-/** Resize derivatives vector of each element of a matrix to to match the size
+/** Resize derivatives vector of each element of a matrix to match the size
  * of the derivatives vector of a given scalar.
  * \brief If the mat and scalar inputs are AutoDiffScalars, resize the
  * derivatives vector of each element of the matrix mat to match

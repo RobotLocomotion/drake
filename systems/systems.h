@@ -79,7 +79,7 @@
 
 /// @addtogroup manipulation_systems
 /// @{
-/// @brief Systems implementations and related functions that specifically 
+/// @brief Systems implementations and related functions that specifically
 /// support dexterous manipulation capabilities in robotics.
 /// @}
 
@@ -118,7 +118,7 @@
 ///        A matplotlib visualization for planar rigid body systems</a>.</li>
 /// </ul>
 /// @}
-// TODO(russt): Add pointers to / support for for RViz.
+// TODO(russt): Add pointers to / support for RViz.
 
 /// @addtogroup example_systems
 /// @{

@@ -221,8 +221,8 @@ class RollPitchYaw {
   /// More specifically, returns true if `abs(cos_pitch_angle)` is less than an
   /// internally-defined tolerance of gimbal-lock.
   /// @param[in] cos_pitch_angle cosine of the pitch angle, i.e., `cos(p)`.
-  /// @note Pitch-angles close to gimbal-lock can can cause problems with
-  /// numerical precision and numerical integration.
+  /// @note Pitch-angles close to gimbal-lock can cause problems with numerical
+  /// precision and numerical integration.
   static boolean<T> DoesCosPitchAngleViolateGimbalLockTolerance(
       const T& cos_pitch_angle) {
     using std::abs;

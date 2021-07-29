@@ -151,7 +151,7 @@ def installed_headers_for_dep(dep):
     `dep` for a cc_library, such as would be found in the `deps = []` of
     some cc_library, returns the corresponding label for the matching DrakeCc
     provider associated with that library.  The returned label is appropriate
-    to use in the deps of of a `drake_installed_headers()` rule.
+    to use in the deps of a `drake_installed_headers()` rule.
 
     Once our rules are better able to call native rules like native.cc_binary,
     instead of having two labels we would prefer to tack a DrakeCc provider
