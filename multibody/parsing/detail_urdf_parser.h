@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "drake/geometry/scene_graph.h"
@@ -24,6 +25,11 @@ namespace internal {
 // @param model_name
 //   The name given to the newly created instance of this model.  If
 //   empty, the "name" attribute from the model tag will be used.
+// @param parent_model_name
+//   Optional name of parent model. If set, this will be prefixed with the model
+//   name (either `model_name` or from the "name" attribute) using the SDFormat
+//   scope delimiter "::". The prefixed name will used as the name given to the
+//   newly created instance of this model.
 // @param plant
 //   A pointer to a mutable MultibodyPlant object to which the model will be
 //   added.
@@ -34,6 +40,7 @@ namespace internal {
 ModelInstanceIndex AddModelFromUrdf(
     const DataSource& data_source,
     const std::string& model_name,
+    const std::optional<std::string>& parent_model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);

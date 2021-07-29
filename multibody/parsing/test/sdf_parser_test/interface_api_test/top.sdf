@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="top">
+    <link name="torso"/>
+
+    <model name="tactile_sensor">
+      <pose relative_to="arm::gripper::grasp_frame"/>
+      <link name="sensor_link"/>
+    </model>
+
+    <joint name="arm_attach" type="fixed">
+      <parent>torso</parent>
+      <child>arm::mount</child>
+    </joint>
+
+    <include>
+      <pose relative_to="torso">1 0 0 0 0 0</pose>
+      <uri>package://interface_api_test/arm.forced_nesting_sdf</uri>
+      <name>arm</name>
+    </include>
+
+    <include>
+      <pose relative_to="arm">0 2 0 0 0 0</pose>
+      <uri>package://interface_api_test/arm.urdf</uri>
+      <name>extra_arm</name>
+    </include>
+
+    <joint name="extra_arm_attach" type="fixed">
+      <parent>arm::L1</parent>
+      <child>extra_arm::L1</child>
+    </joint>
+
+    <include>
+      <pose>3 0 0 0 0 0</pose>
+      <uri>package://interface_api_test/table_and_mug.forced_nesting_sdf</uri>
+      <name>table_and_mug</name>
+    </include>
+  </model>
+</sdf>
