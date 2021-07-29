@@ -26,7 +26,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
   using IsoparametricElementType =
       internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
                                      kNumQuads>;
-  using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
+  using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
   using ElementType =
       DynamicElasticityElement<IsoparametricElementType, QuadratureType,
                                ConstitutiveModelType>;
