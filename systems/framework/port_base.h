@@ -8,7 +8,7 @@
 namespace drake {
 namespace systems {
 
-/** A PortBase is base class for System ports; users will typically use the the
+/** A PortBase is base class for System ports; users will typically use the
  InputPort<T> or OutputPort<T> types, not this base class. */
 class PortBase {
  public:

@@ -1253,7 +1253,7 @@ class MathematicalProgram {
    * 1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
    * 2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
    *
-   * @param e A symbolic expression of the the decision variables.
+   * @param e A symbolic expression of the decision variables.
    * @param lb A scalar, the lower bound.
    * @param ub A scalar, the upper bound.
    *

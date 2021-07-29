@@ -19,7 +19,7 @@ using systems::OutputPortIndex;
  purpose. This dummy manager declares a single group of discrete state that
  concatenates the state added through `AppendDiscreteState()`. It also declares
  a vector output port that reports this additional state and an abstract output
- port that reports the the same state.
+ port that reports the same state.
  @tparam_nonsymbolic_scalar */
 template <typename T>
 class DummyModel : public PhysicalModel<T> {

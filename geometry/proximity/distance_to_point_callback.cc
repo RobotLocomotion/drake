@@ -269,10 +269,9 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
     const T r = sqrt(xyz(0) * xyz(0) + xyz(1) * xyz(1));
     return Vector2<T>(r, xyz(2));
   };
-  // We compute the the basis vector Br in G's frame. Although a 3D vector, it
-  // is stored implicitly in a 2D vector, because v_GBr(2) must be zero. If
-  // Q is within a tolerance from the center line, v_GBr = <1, 0, 0> by
-  // convention.
+  // We compute the basis vector Br in G's frame. Although a 3D vector, it is
+  // stored implicitly in a 2D vector, because v_GBr(2) must be zero. If Q is
+  // within a tolerance from the center line, v_GBr = <1, 0, 0> by convention.
   const T r_Q = sqrt(p_GQ(0) * p_GQ(0) + p_GQ(1) * p_GQ(1));
   const bool near_center_line =
       (r_Q < DistanceToPointRelativeTolerance(cylinder.radius));
