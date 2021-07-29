@@ -199,7 +199,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._patch_Blist = {}
         self._patch_Blist_colors = {}
 
-        for frame_id in inspector.all_frame_ids():
+        for frame_id in inspector.GetAllFrameIds():
             count = inspector.NumGeometriesForFrameWithRole(frame_id,
                                                             Role.kIllustration)
             if count == 0:
@@ -401,7 +401,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         inspector = query_object.inspector()
 
         view_dir = np.cross(self._T_VW[0, :3], self._T_VW[1, :3])
-        for frame_id in inspector.all_frame_ids():
+        for frame_id in inspector.GetAllFrameIds():
             frame_name = self.frame_name(frame_id, inspector)
             if frame_name not in self._patch_Blist:
                 continue
