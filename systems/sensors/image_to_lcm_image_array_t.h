@@ -8,7 +8,6 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/pixel_types.h"
-#include "drake/systems/sensors/robotlocomotion_compat.h"
 
 namespace drake {
 namespace systems {
