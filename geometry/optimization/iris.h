@@ -42,6 +42,12 @@ struct IrisOptions {
   number of faces to approximate a curved boundary.
   */
   double configuration_space_margin{1e-2};
+
+  /** For IRIS in configuration space, we use IbexSolver to rigorously confirm
+  that regions are collision-free. This step may be computationally
+  demanding, so we allow it to be disabled for a faster algorithm for obtaining
+  regions without the rigorous guarantee. */
+  bool enable_ibex = true;
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
@@ -108,11 +114,9 @@ connected to a SceneGraph in a systems::Diagram.
 @param context is a context of the @p plant.
 @param sample is a vector of size plant.num_positions() representing the initial
 IRIS seed configuration.
-@param options provides additional configuration options.
-
-Note: This initial implementation **does not** yet provide a rigorous guarantee
-that the returned region is collision free.  The certification step will be
-contributed in a follow-up PR.
+@param options provides additional configuration options.  In particular,
+`options.enabled_ibex` may have a significant impact on the runtime of the
+algorithm.
 
 @ingroup geometry_optimization
 */
