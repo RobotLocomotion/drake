@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <variant>
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/detail_common.h"

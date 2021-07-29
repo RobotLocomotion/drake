@@ -1,7 +1,13 @@
 #pragma once
 
+#include <map>
 #include <optional>
+#include <set>
 #include <string>
+#include <variant>
+
+#include <sdf/sdf.hh>
+#include <tinyxml2.h>
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -99,6 +105,47 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
     const std::function<const Frame<double>&(const char*)>& read_frame,
     MultibodyPlant<double>* plant);
+
+// Helper struct that provides the common logic to register
+// a collistion filter group.
+void RegisterCollisionFilterGroup(
+    ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant,
+    std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> group_node,
+    std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
+    std::set<SortedPair<std::string>>* collision_filter_pairs,
+    const std::function< std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement*>(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement*>, const char*)> &next_child_element,
+    const std::function< std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement* > (std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement* >, const char*)> &next_sibbling_element,
+    const std::function<bool(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement* >, const char*)> &has_attribute,
+    const std::function<std::string(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement* >, const char*)> &read_string_attribute,
+    const std::function<bool(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement* >, const char*)> &read_bool_attribute);
+
+// Populates collision filter groups from a reading interface in a URDF/SDF
+// agnostic manner. Through this, the API to specify the collision_filter_group
+// tag in both SDF and URDF can be controlled/modified in a single function.
+void ParseCollisionFilterGroupCommon(
+    ModelInstanceIndex model_instance,
+    std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> model_node,
+    MultibodyPlant<double>* plant,
+    const std::function< std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>
+        (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>, const char*)>
+        &next_child_element,
+    const std::function< std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>
+        (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>, const char*)>
+        &next_sibbling_element,
+    const std::function<bool(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement* >, const char*)> &has_attribute,
+    const std::function<std::string(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement*>, const char*)> &read_string_attribute,
+    const std::function<bool(std::variant<sdf::ElementPtr,
+        tinyxml2::XMLElement*>, const char*)> &read_bool_attribute);
 
 }  // namespace internal
 }  // namespace multibody
