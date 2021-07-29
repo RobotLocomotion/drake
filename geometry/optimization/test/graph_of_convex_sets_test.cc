@@ -482,19 +482,6 @@ TEST_F(ThreeBoxes, IpoptTest) {
   ASSERT_TRUE(result.is_success());
 }
 
-// See IpoptTest.  This covers the L2NormCost case for ThreePoints.
-TEST_F(ThreeBoxes, IpoptTest2) {
-  // |xu - xv|₂
-  Matrix<double, 2, 4> A;
-  A.leftCols(2) = Matrix2d::Identity();
-  A.rightCols(2) = -Matrix2d::Identity();
-  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
-  e_on_->AddCost(solvers::Binding(cost, {e_on_->xu(), e_on_->xv()}));
-  e_off_->AddCost(solvers::Binding(cost, {e_off_->xu(), e_off_->xv()}));
-  auto result = g_.SolveShortestPath(*source_, *target_, true);
-  ASSERT_TRUE(result.is_success());
-}
-
 TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   const Vector2d b{.5, .3};
   e_on_->AddConstraint(e_on_->xv() == b);
