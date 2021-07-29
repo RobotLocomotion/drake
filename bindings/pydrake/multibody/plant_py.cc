@@ -542,7 +542,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
               self->CalcMassMatrixViaInverseDynamics(context, &H);
               return H;
             },
-            py::arg("context"))
+            py::arg("context"), cls_doc.CalcMassMatrixViaInverseDynamics.doc)
+        .def(
+            "CalcMassMatrix",
+            [](const Class* self, const Context<T>& context) {
+              MatrixX<T> H;
+              const int n = self->num_velocities();
+              H.resize(n, n);
+              self->CalcMassMatrix(context, &H);
+              return H;
+            },
+            py::arg("context"), cls_doc.CalcMassMatrix.doc)
         .def(
             "CalcBiasSpatialAcceleration",
             [](const Class* self, const systems::Context<T>& context,
