@@ -49,8 +49,6 @@ class DeformationGradientData<
   /* The number of locations at which the data needs to be evaluated. */
   static constexpr int num_locations = num_locations_at_compile_time;
 
-  ~DeformationGradientData() = default;
-
   /* Updates the data with the given deformation gradients. The deformation
    gradient dependent quantities are also updated with the given `F`.
    @param F The up-to-date deformation gradients evaluated at the prescribed

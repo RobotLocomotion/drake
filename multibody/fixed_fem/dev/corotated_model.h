@@ -59,8 +59,6 @@ class CorotatedModel final
     std::tie(lambda_, mu_) = CalcLameParameters(E_, nu_);
   }
 
-  ~CorotatedModel() = default;
-
   const T& youngs_modulus() const { return E_; }
 
   const T& poisson_ratio() const { return nu_; }
