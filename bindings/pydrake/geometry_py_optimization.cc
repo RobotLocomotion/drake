@@ -205,17 +205,20 @@ void DefineGeometryOptimization(py::module m) {
       .def_readwrite("configuration_space_margin",
           &IrisOptions::configuration_space_margin,
           doc.IrisOptions.configuration_space_margin.doc)
+      .def_readwrite("enable_ibex", &IrisOptions::enable_ibex,
+          doc.IrisOptions.enable_ibex.doc)
       .def("__repr__", [](const IrisOptions& self) {
         return py::str(
             "IrisOptions("
             "require_sample_point_is_contained={}, "
             "iteration_limit={}, "
             "termination_threshold={}, "
-            "configuration_space_margin={}"
+            "configuration_space_margin={}, "
+            "enable_ibex={}"
             ")")
             .format(self.require_sample_point_is_contained,
                 self.iteration_limit, self.termination_threshold,
-                self.configuration_space_margin);
+                self.configuration_space_margin, self.enable_ibex);
       });
 
   m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
@@ -223,6 +226,10 @@ void DefineGeometryOptimization(py::module m) {
 
   m.def("MakeIrisObstacles", &MakeIrisObstacles, py::arg("query_object"),
       py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
+
+  m.def("IrisInConfigurationSpace", &IrisInConfigurationSpace, py::arg("plant"),
+      py::arg("context"), py::arg("sample"), py::arg("options") = IrisOptions(),
+      doc.IrisInConfigurationSpace.doc);
 
   // GraphOfConvexSets
   {
