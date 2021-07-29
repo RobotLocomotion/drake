@@ -15,7 +15,7 @@ def _write_stderr(data):
 
 def gdb_compatible_strings(args):
     """Examine the args and conditionally inject the compiler argument for the
-    benefit of non-GCC compilers to to compile gdb-friendly STL symbols.
+    benefit of non-GCC compilers to compile gdb-friendly STL symbols.
     Modifies the args in place."""
     if 'dbg' in args:
         # Place the compiler argument after the dbg command.

@@ -221,7 +221,7 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
   }
   if (params_.role == Role::kUnassigned) {
     throw std::runtime_error(
-        "DrakeVisualizer cannot be be used for geometries with the "
+        "DrakeVisualizer cannot be used for geometries with the "
         "Role::kUnassigned value. Please choose proximity, perception, or "
         "illustration");
   }

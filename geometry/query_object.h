@@ -635,7 +635,7 @@ class QueryObject {
    box if it lies within a certain tolerance from them.
 
    @note For a box B, if a point p is inside the box, and it is equidistant to
-   to multiple nearest faces, the signed distance function φᵢ(p) at p will have
+   multiple nearest faces, the signed distance function φᵢ(p) at p will have
    an undefined gradient vector. There is a nearest point candidate associated
    with each nearest face. In this case, we arbitrarily pick the point Nᵢ
    associated with one of the nearest faces.  Please note that, due to the

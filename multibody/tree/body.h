@@ -328,7 +328,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
   /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
-  /// applied at body B's origin Bo and expressed in world world frame W.
+  /// applied at body B's origin Bo and expressed in world frame W.
   const SpatialForce<T>& GetForceInWorld(
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {
     DRAKE_THROW_UNLESS(

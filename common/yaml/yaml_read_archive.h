@@ -114,8 +114,8 @@ class YamlReadArchive final {
   }
 
   /// (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
-  /// file associated with this archive.  Most users should should call Accept,
-  /// not Visit.
+  /// file associated with this archive.  Most users should call Accept, not
+  /// Visit.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     this->Visit(nvp, VisitShouldMemorizeType::kYes);

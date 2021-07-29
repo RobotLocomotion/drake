@@ -334,7 +334,7 @@ class SpatialInertia {
   ///                   about point Q, expressed in the same frame E `this`
   ///                   spatial inertia is expressed in.
   /// @returns A reference to `this` spatial inertia for body or composite body
-  ///          S but now computed about about a new point Q.
+  ///          S but now computed about a new point Q.
   SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
     const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
     // The following two lines apply the parallel axis theorem (in place) so
@@ -360,7 +360,7 @@ class SpatialInertia {
   ///                   about point Q, expressed in the same frame E `this`
   ///                   spatial inertia is expressed in.
   /// @retval M_SQ_E    This same spatial inertia for body or composite body S
-  ///                   but computed about about a new point Q.
+  ///                   but computed about a new point Q.
   SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
@@ -385,7 +385,7 @@ class SpatialInertia {
   /// center of mass), read as: <pre>
   ///   Ftot_BBo = M_Bo_W * A_WB + b_Bo
   /// </pre>
-  /// where `Ftot_BBo` is the total spatial force applied on body B at at `Bo`
+  /// where `Ftot_BBo` is the total spatial force applied on body B at `Bo`
   /// that corresponds to the body spatial acceleration `A_WB` and `b_Bo`
   /// contains the velocity dependent gyroscopic terms (see Eq. 2.26, p. 27,
   /// in A. Jain's book).

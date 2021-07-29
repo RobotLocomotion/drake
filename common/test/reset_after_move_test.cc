@@ -157,7 +157,7 @@ GTEST_TEST(DefaultValueTest, Move) {
   EXPECT_EQ(w, 3);
 }
 
-// Make sure that our wrapper is is sufficiently nothrow, e.g., so that it can
+// Make sure that our wrapper is sufficiently nothrow, e.g., so that it can
 // be moved (not copied) when an STL container is resized.
 GTEST_TEST(DefaultValueTest, Nothrow) {
   // Default constructor.

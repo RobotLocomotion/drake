@@ -247,7 +247,7 @@ Please subscribe to the ``drake`` tag by following these instructions:
 Please also monitor for [unanswered StackOverflow posts](https://stackoverflow.com/unanswered/tagged/drake?tab=noanswers)
 once per day. If there are unanswered questions that you are unsure of the
 answer, consider posting on the Slack ``#onramp`` channel to see if someone
-can can look into the question.
+can look into the question.
 
 # Continuous Integration Notes
 

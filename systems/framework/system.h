@@ -1460,7 +1460,7 @@ class System : public SystemBase {
 
   @note The public method has already verified that `proposed_derivatives`
   is compatible with this System and that `residual` is non-null and of the
-  the declared size (as reported by
+  declared size (as reported by
   SystemBase::implicit_time_derivatives_residual_size()). You do not have to
   check those two conditions in your implementation, but if you have additional
   restrictions you should validate that they are also met. */

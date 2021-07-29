@@ -141,7 +141,7 @@ class SystemSliders(VectorSystem):
     # context, which is why we can get away with it. However, it would
     # be better to add a discrete state vector that gets updated values
     # from the sliders (and handles the slider update at that time) and
-    # update that in in a DiscreteUpdate.
+    # update that in a DiscreteUpdate.
     def _update_window(self, context, event):
         # GUI functionality is not automatically tested
         # Must manually test this function to ensure updates run properly

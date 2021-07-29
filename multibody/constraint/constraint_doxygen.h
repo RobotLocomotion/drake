@@ -127,7 +127,7 @@ Algebraic Equation or Differential Complementarity Problem index
 <pre>
 d/dt gₚ(t; q) = ġₚ(t, q; v)
 </pre>
-vs. equations that **must** be posed at at the velocity-level
+vs. equations that **must** be posed at the velocity-level
 (i.e., nonholonomic constraints):<pre>
 gᵥ(t, q; v).
 </pre>

@@ -324,7 +324,7 @@ class ContextBase : public internal::ContextMessageInterface {
   change notifications that propagate down from a DiagramContext (where the
   change is initiated) through all its subcontexts, recursively. Such
   notification sweeps result in the "out of date" flag being set in each of
-  the affected cache entry values. Each of these "Note" methods methods affects
+  the affected cache entry values. Each of these "Note" methods affects
   only the local context, but all have identical signatures so can be passed
   down the context tree to operate on every subcontext. The `change_event`
   argument should be the result of the start_new_change_event() method. */

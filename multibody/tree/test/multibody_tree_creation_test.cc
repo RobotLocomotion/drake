@@ -491,7 +491,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
 }
 
 // Verifies that the clone of a given MultibodyTree model created with
-// MultibodyTree::Clone() has has exactly the same topology as the original
+// MultibodyTree::Clone() has exactly the same topology as the original
 // model.
 TEST_F(TreeTopologyTests, Clone) {
   model_->Finalize();

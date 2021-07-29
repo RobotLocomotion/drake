@@ -13,7 +13,7 @@ def _impl(repo_ctx):
     # TLDR: Use @lapack instead of this repository (@liblapack) in the deps of
     # your target.
     #
-    # On Ubuntu, we will use use pkg-config to find liblapack.so (the vendor of
+    # On Ubuntu, we will use pkg-config to find liblapack.so (the vendor of
     # which is typically chosen by the Ubuntu alternatives system). On macOS,
     # no targets should depend on @liblapack. However, on both macOS and
     # Ubuntu, targets should normally depend on the alias @lapack instead of

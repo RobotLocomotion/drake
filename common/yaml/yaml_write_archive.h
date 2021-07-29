@@ -118,7 +118,7 @@ class YamlWriteArchive final {
   void EraseMatchingMaps(const YamlWriteArchive& other);
 
   /// (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
-  /// object.  Most users should should call Accept, not Visit.
+  /// object.  Most users should call Accept, not Visit.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     // Use int32_t for the final argument to prefer the specialized overload.

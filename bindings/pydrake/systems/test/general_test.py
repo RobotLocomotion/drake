@@ -67,7 +67,7 @@ from pydrake.systems.primitives import (
     ZeroOrderHold,
     )
 
-# TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
+# TODO(eric.cousineau): The scope of this test file and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
 # ensure that the tests reflect this, even if there is some coupling.
 

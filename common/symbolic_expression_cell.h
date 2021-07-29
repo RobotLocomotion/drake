@@ -297,7 +297,7 @@ class ExpressionAddFactory {
 
  private:
   /* Adds constant to this factory.
-   * Adding constant constant into an add factory representing
+   * Adding constant into an add factory representing
    *
    *     c0 + c1 * t1 + ... + cn * tn
    *

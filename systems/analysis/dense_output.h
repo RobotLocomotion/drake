@@ -164,7 +164,7 @@ class DenseOutput {
     }
   }
 
-  // Asserts that the given given time @p t is valid for this dense output.
+  // Asserts that the given time @p t is valid for this dense output.
   // @param func_name Call site name for error message clarity (i.e. __func__).
   // @param t Time to be checked.
   // @throws std::exception if given @p t is not within output's domain
