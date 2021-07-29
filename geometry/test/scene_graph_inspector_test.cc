@@ -1,6 +1,8 @@
 #include "drake/geometry/scene_graph_inspector.h"
 
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -44,7 +46,10 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.num_sources();
 
   inspector.num_frames();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   inspector.all_frame_ids();
+#pragma GCC diagnostic pop
   inspector.num_geometries();
   inspector.GetAllGeometryIds();
   inspector.GetGeometryIds(GeometrySet{});
@@ -117,6 +122,32 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   EXPECT_EQ(geometry_instance_clone->illustration_properties(), nullptr);
   inspector.geometry_version();
 }
+
+// Generally, SceneGraphInspector is a thin wrapper for invoking methods on
+// GeometryState. SceneGraphInspector::GetAllFrameIds() is an exception, it does
+// transformation work and, as such, needs to be functionally tested.
+GTEST_TEST(SceneGraphInspector, AllFrameIds) {
+  SceneGraphInspectorTester tester;
+
+  const SourceId source_id = tester.mutable_state().RegisterNewSource("source");
+
+  // Always includes the world frame.
+  ASSERT_EQ(tester.inspector().GetAllFrameIds().size(), 1);
+
+  // Add a number of frames.
+  const FrameId frame_id_1 =
+      tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame1"));
+  const FrameId frame_id_2 =
+      tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame2"));
+  const FrameId frame_id_3 =
+      tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame3"));
+
+  const std::vector<FrameId> all_frames = tester.inspector().GetAllFrameIds();
+  EXPECT_EQ(std::count(all_frames.begin(), all_frames.end(), frame_id_1), 1);
+  EXPECT_EQ(std::count(all_frames.begin(), all_frames.end(), frame_id_2), 1);
+  EXPECT_EQ(std::count(all_frames.begin(), all_frames.end(), frame_id_3), 1);
+}
+
 
 }  // namespace
 }  // namespace geometry

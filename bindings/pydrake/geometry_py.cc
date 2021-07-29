@@ -390,9 +390,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
          // Scene-graph wide data.
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
-        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
-        .def(
-            "all_frame_ids",
+        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("all_frame_ids",
+        WrapDeprecated(cls_doc.all_frame_ids.doc_deprecated,
             [](Class* self) -> std::vector<FrameId> {
               std::vector<FrameId> frame_ids;
               frame_ids.reserve(self->num_frames());
@@ -400,8 +403,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 frame_ids.push_back(id);
               }
               return frame_ids;
-            },
-            cls_doc.all_frame_ids.doc)
+            }),
+        cls_doc.all_frame_ids.doc_deprecated);
+#pragma GCC diagnostic pop
+
+    cls  // BR
+        .def("GetAllFrameIds", &Class::GetAllFrameIds,
+            cls_doc.GetAllFrameIds.doc)
         .def("world_frame_id", &Class::world_frame_id,
             cls_doc.world_frame_id.doc)
         .def("num_geometries", &Class::num_geometries,
