@@ -1842,13 +1842,19 @@ void def_geometry_optimization(py::module m) {
           doc.IrisOptions.iteration_limit.doc)
       .def_readwrite("termination_threshold",
           &IrisOptions::termination_threshold,
-          doc.IrisOptions.termination_threshold.doc);
+          doc.IrisOptions.termination_threshold.doc)
+      .def_readwrite("enable_ibex", &IrisOptions::enable_ibex,
+          doc.IrisOptions.enable_ibex.doc);
 
   m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
       py::arg("domain"), py::arg("options") = IrisOptions(), doc.Iris.doc);
 
   m.def("MakeIrisObstacles", &MakeIrisObstacles, py::arg("query_object"),
       py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
+
+  m.def("IrisInConfigurationSpace", &IrisInConfigurationSpace, py::arg("plant"),
+      py::arg("context"), py::arg("sample"), py::arg("options") = IrisOptions(),
+      doc.IrisInConfigurationSpace.doc);
 }
 
 // Test-only code.
