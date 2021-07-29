@@ -40,9 +40,9 @@ drake_cc_library(
         "constitutive_model.h",
     ],
     deps = [
-        ":deformation_gradient_data",
         ":fem_indexes",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 
@@ -74,10 +74,10 @@ drake_cc_library(
         "corotated_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 
@@ -118,20 +118,6 @@ drake_cc_library(
     deps = [
         ":deformable_rigid_contact_pair",
         ":reference_deformable_geometry",
-    ],
-)
-
-drake_cc_library(
-    name = "deformation_gradient_data",
-    srcs = [
-        "deformation_gradient_data.cc",
-    ],
-    hdrs = [
-        "deformation_gradient_data.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//common:nice_type_name",
     ],
 )
 
@@ -410,23 +396,9 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":linear_constitutive_model_data",
         "//common:default_scalars",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_constitutive_model_data",
-    srcs = [
-        "linear_constitutive_model_data.cc",
-    ],
-    hdrs = [
-        "linear_constitutive_model_data.h",
-    ],
-    deps = [
-        ":deformation_gradient_data",
-        "//common:essential",
+        "//multibody/fem:linear_constitutive_model_data",
     ],
 )
 
@@ -638,15 +610,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "deformation_gradient_data_test",
-    deps = [
-        ":deformation_gradient_data",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "dirichlet_boundary_condition_test",
     deps = [
         ":dirichlet_boundary_condition",
@@ -763,14 +726,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_constitutive_model_data_test",
-    deps = [
-        ":linear_constitutive_model_data",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

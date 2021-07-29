@@ -15,10 +15,26 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fixed_fem:__subpackages__"],
     deps = [
+        ":deformation_gradient_data",
         ":isoparametric_element",
+        ":linear_constitutive_model_data",
         ":linear_simplex_element",
         ":quadrature",
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "deformation_gradient_data",
+    srcs = [
+        "deformation_gradient_data.cc",
+    ],
+    hdrs = [
+        "deformation_gradient_data.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 
@@ -31,6 +47,20 @@ drake_cc_library(
         "isoparametric_element.h",
     ],
     deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model_data",
+    srcs = [
+        "linear_constitutive_model_data.cc",
+    ],
+    hdrs = [
+        "linear_constitutive_model_data.h",
+    ],
+    deps = [
+        ":deformation_gradient_data",
         "//common:essential",
     ],
 )
@@ -77,12 +107,29 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "deformation_gradient_data_test",
+    deps = [
+        ":deformation_gradient_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "isoparametric_element_test",
     deps = [
         ":isoparametric_element",
         ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_data_test",
+    deps = [
+        ":linear_constitutive_model_data",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

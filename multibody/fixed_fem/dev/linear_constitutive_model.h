@@ -5,9 +5,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/fem/linear_constitutive_model_data.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model_data.h"
 
 namespace drake {
 namespace multibody {
