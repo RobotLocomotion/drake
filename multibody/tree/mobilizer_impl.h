@@ -102,10 +102,10 @@ class MobilizerImpl : public Mobilizer<T> {
     if (!random_state_distribution_) {
       random_state_distribution_.emplace(
           Vector<symbolic::Expression, kNx>::Zero());
-      // Note that that there is no `get_zero_velocity()`, since the zero
-      // velocity is simply zero for all mobilizers.  Setting the velocity
-      // elements of the distribution to zero here therefore maintains the
-      // default behavior for velocity.
+      // Note that there is no `get_zero_velocity()`, since the zero velocity
+      // is simply zero for all mobilizers.  Setting the velocity elements of
+      // the distribution to zero here therefore maintains the default behavior
+      // for velocity.
     }
 
     random_state_distribution_->template head<kNq>() = position;
