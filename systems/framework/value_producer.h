@@ -354,11 +354,12 @@ class ValueProducer final {
 
   /** Overload (5b). Refer to the
   @ref ValueProducer_constructors "Constructor overloads" for details. */
-  template <typename SomeOutput>
+  template <typename SomeOutput,
+      typename = std::enable_if_t<!std::is_convertible_v<
+          SomeOutput, AllocateCallback>>>
   ValueProducer(
-      const SomeOutput& model_value, CalcCallback calc,
-      std::enable_if_t<!std::is_convertible_v<
-          SomeOutput, AllocateCallback>>* = 0)
+      const SomeOutput& model_value,
+      CalcCallback calc)
       : ValueProducer(make_allocate_mode_b(model_value),
                       std::move(calc)) {}
 
