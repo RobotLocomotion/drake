@@ -102,6 +102,29 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "procedural_system_demo",
+    srcs = ["procedural_system_demo.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "-simulation_real_time_rate=0.0",
+    ],
+    deps = [
+        ":quadrotor_geometry",
+        ":quadrotor_plant",
+        "//common:find_resource",
+        "//common:is_approx_equal_abstol",
+        "//geometry:drake_visualizer",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_scope_system",
+        "//systems/primitives:matrix_gain",
+        "//systems/primitives:multiplexer",
+        "@gflags",
+    ],
+)
+
 drake_cc_googletest(
     name = "quadrotor_plant_test",
     deps = [

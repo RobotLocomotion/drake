@@ -36,7 +36,7 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
       g_{9.81}, m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
   // Four inputs -- one for each propellor.
   this->DeclareInputPort("propellor_force", systems::kVectorValued, 4);
-  // State is x ,y , z, roll, pitch, yaw + velocities.
+  // State is x ,y, z, roll, pitch, yaw + velocities.
   auto state_index = this->DeclareContinuousState(12);
   this->DeclareStateOutputPort("state", state_index);
   // TODO(russt): Declare input limits.  R2 has @ 2:1 thrust to weight ratio.
