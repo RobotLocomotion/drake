@@ -93,6 +93,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetShape(geometry_id);
   inspector.GetPoseInParent(geometry_id);
   inspector.GetPoseInFrame(geometry_id);
+  inspector.maybe_get_hydroelastic_mesh(geometry_id);
   inspector.GetProximityProperties(geometry_id);
   inspector.GetIllustrationProperties(geometry_id);
   inspector.GetPerceptionProperties(geometry_id);

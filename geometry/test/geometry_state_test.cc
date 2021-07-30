@@ -3700,6 +3700,93 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                          make_unique<DummyRenderEngine>());
 }
 
+// Test the ability of GeometryState to successfully report geometries with
+// *mesh* hydroelastic representations. We test the following cases:
+//   Case: invalid id.
+//   Case: id doesn't have proximity role.
+//   Case: id has proximity role, but no hydro properties.
+//   Case: id has surface mesh.
+//   Case: id has volume mesh.
+//   Case: id is half space (has hydro representation, but not a mesh)
+GTEST_TEST(GeometryStateHydroTest, GetHydroMesh) {
+  GeometryState<double> geometry_state;
+  const SourceId source_id = geometry_state.RegisterNewSource("hydro_test");
+
+  ProximityProperties rigid_hydro;
+  AddRigidHydroelasticProperties(1.0, &rigid_hydro);
+  ProximityProperties soft_hydro;
+  AddContactMaterial(1e8, 0.0, {}, &soft_hydro);
+  AddSoftHydroelasticProperties(1.0, &soft_hydro);
+
+  // We'll simply affix a number of geometries as anchored with the identity
+  // pose. The other details don't really matter.
+  const RigidTransformd X_WG;
+
+  // Case: invalid id.
+  {
+    const GeometryId id = GeometryId::get_new_id();
+
+    const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
+    EXPECT_EQ(maybe_mesh.index(), 0);
+  }
+
+  // Case: id doesn't have proximity role.
+  {
+    const GeometryId id = geometry_state.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(X_WG, make_unique<Sphere>(1),
+                                                 "no_proximity"));
+
+    const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
+    EXPECT_EQ(maybe_mesh.index(), 0);
+  }
+
+  // Case: id has proximity role, but no hydro properties.
+  {
+    const GeometryId id = geometry_state.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(X_WG, make_unique<Sphere>(1),
+                                                 "no_hydro"));
+    geometry_state.AssignRole(source_id, id, ProximityProperties());
+
+    const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
+    EXPECT_EQ(maybe_mesh.index(), 0);
+  }
+
+  // Case: id has surface mesh.
+  {
+    const GeometryId id = geometry_state.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(X_WG, make_unique<Sphere>(1),
+                                                 "rigid_mesh"));
+    geometry_state.AssignRole(source_id, id, rigid_hydro);
+
+    const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
+    EXPECT_TRUE(std::holds_alternative<const SurfaceMesh<double>*>(maybe_mesh));
+    EXPECT_NE(std::get<const SurfaceMesh<double>*>(maybe_mesh), nullptr);
+  }
+
+  // Case: id has volume mesh.
+  {
+    const GeometryId id = geometry_state.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(X_WG, make_unique<Sphere>(1),
+                                                 "soft_mesh"));
+    geometry_state.AssignRole(source_id, id, soft_hydro);
+
+    const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
+    EXPECT_TRUE(std::holds_alternative<const VolumeMesh<double>*>(maybe_mesh));
+    EXPECT_NE(std::get<const VolumeMesh<double>*>(maybe_mesh), nullptr);
+  }
+
+  // Case: id is half space (has hydro representation, but not a mesh)
+  {
+    const GeometryId id = geometry_state.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(X_WG, make_unique<HalfSpace>(),
+                                                 "no_hydro_mesh"));
+    geometry_state.AssignRole(source_id, id, rigid_hydro);
+
+    const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
+    EXPECT_TRUE(std::holds_alternative<std::monostate>(maybe_mesh));
+  }
+}
+
 // The framework for testing the removal of roles, generally, parameterized on
 // the role type.
 class RemoveRoleTests : public GeometryStateTestBase,
