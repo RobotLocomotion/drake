@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -29,6 +30,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
@@ -997,6 +999,39 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
   }
+
+  // VolumeMesh
+  {
+    using Class = VolumeMesh<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "VolumeMesh", param, doc.VolumeMesh.doc);
+    cls  // BR
+        .def(py::init<std::vector<VolumeElement>,
+                 std::vector<VolumeVertex<T>>>(),
+            py::arg("elements"), py::arg("vertices"), doc.VolumeMesh.ctor.doc)
+        .def("vertices", &Class::vertices, py_rvp::reference_internal,
+            doc.VolumeMesh.vertices.doc)
+        .def("tetrahedra", &Class::tetrahedra, py_rvp::reference_internal,
+            doc.VolumeMesh.tetrahedra.doc)
+        .def(
+            "CalcTetrahedronVolume",
+            [](const Class& self, int e) {
+              return self.CalcTetrahedronVolume(VolumeElementIndex(e));
+            },
+            py::arg("e"), doc.VolumeMesh.CalcTetrahedronVolume.doc)
+        .def("CalcVolume", &Class::CalcVolume, doc.VolumeMesh.CalcVolume.doc);
+  }
+
+  // VolumeVertex
+  {
+    using Class = VolumeVertex<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "VolumeVertex", param, doc.VolumeVertex.doc);
+    cls  // BR
+        .def(py::init<const Vector3<T>&>(), py::arg("r_MV"),
+            doc.VolumeVertex.ctor.doc_1args)
+        .def("r_MV", &Class::r_MV, doc.VolumeVertex.r_MV.doc);
+  }
 }  // NOLINT(readability/fn_size)
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -1004,6 +1039,19 @@ void DoScalarIndependentDefinitions(py::module m) {
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc.drake.geometry;
 
+  // All the index types up front, so they'll be available to every other type.
+  {
+    BindTypeSafeIndex<SurfaceVertexIndex>(
+        m, "SurfaceVertexIndex", doc.SurfaceVertexIndex.doc);
+    BindTypeSafeIndex<SurfaceFaceIndex>(
+        m, "SurfaceFaceIndex", doc.SurfaceFaceIndex.doc);
+    BindTypeSafeIndex<VolumeVertexIndex>(
+        m, "VolumeVertexIndex", doc.VolumeVertexIndex.doc);
+    BindTypeSafeIndex<VolumeElementIndex>(
+        m, "VolumeElementIndex", doc.VolumeElementIndex.doc);
+  }
+
+  // Rgba
   {
     using Class = Rgba;
     constexpr auto& cls_doc = doc.Rgba;
@@ -1389,6 +1437,57 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls.def(py::init(), doc.PerceptionProperties.ctor.doc)
         .def(py::init<const PerceptionProperties&>(), py::arg("other"),
             "Creates a copy of the properties");
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // SurfaceFace
+  {
+    using Class = SurfaceFace;
+    constexpr auto& cls_doc = doc.SurfaceFace;
+    py::class_<Class> cls(m, "SurfaceFace", cls_doc.doc);
+    cls  // BR
+        .def(py::init([](int v0, int v1, int v2) {
+          return SurfaceFace(SurfaceVertexIndex(v0), SurfaceVertexIndex(v1),
+              SurfaceVertexIndex(v2));
+        }),
+            py::arg("v0"), py::arg("v1"), py::arg("v2"), cls_doc.ctor.doc_3args)
+        // TODO(SeanCurtis-TRI): The value of this binding is maintaining valid
+        //  spellings across C++ and python. However, it's an incredibly
+        //  verbose spelling. The parameters are dynamically typed in python
+        //  anyways. So, might as well just pass ints and be done with it.
+        .def(py::init<SurfaceVertexIndex, SurfaceVertexIndex,
+                 SurfaceVertexIndex>(),
+            py::arg("v0"), py::arg("v1"), py::arg("v2"), cls_doc.ctor.doc_3args)
+        // TODO(SeanCurtis-TRI): Bind tuple/list of ints as constructor
+        //  parameter.
+        .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // VolumeElement
+  {
+    using Class = VolumeElement;
+    constexpr auto& cls_doc = doc.VolumeElement;
+    py::class_<Class> cls(m, "VolumeElement", cls_doc.doc);
+    cls  // BR
+        .def(py::init([](int v0, int v1, int v2, int v3) {
+          return VolumeElement(VolumeVertexIndex(v0), VolumeVertexIndex(v1),
+              VolumeVertexIndex(v2), VolumeVertexIndex(v3));
+        }),
+            py::arg("v0"), py::arg("v1"), py::arg("v2"), py::arg("v3"),
+            cls_doc.ctor.doc_4args)
+        // TODO(SeanCurtis-TRI): Does this binding provide any value? The
+        //  parameter are dynamically typed in python anyways. So, might as well
+        //  just pass ints and be done with it.
+        .def(py::init<VolumeVertexIndex, VolumeVertexIndex, VolumeVertexIndex,
+                 VolumeVertexIndex>(),
+            py::arg("v0"), py::arg("v1"), py::arg("v2"), py::arg("v3"),
+            cls_doc.ctor.doc_4args)
+        // TODO(SeanCurtis-TRI): The value of this binding is maintaining valid
+        //  spellings across C++ and python. However, it's an incredibly
+        //  verbose spelling. The parameters are dynamically typed in python
+        //  anyways. So, might as well just pass ints and be done with it.
+        .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
