@@ -11,6 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
+#include "drake/geometry/proximity/field_intersection.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
@@ -134,6 +135,31 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
   }
 }
 
+// TODO(DamrongGuoy): Take care of exceptions to soft half spaces in a better
+//  way.
+
+/* Computes ContactSurface using the algorithm appropriate to the Shape types
+ represented by the given `soft` geometries.
+ @pre None of the geometries are half spaces. */
+template <typename T>
+std::unique_ptr<ContactSurface<T>> DispatchSoftSoftCalculation(
+    const SoftGeometry& soft0_F, const math::RigidTransform<T>& X_WF,
+    GeometryId id0, const SoftGeometry& soft1_G,
+    const math::RigidTransform<T>& X_WG, GeometryId id1,
+    ContactPolygonRepresentation representation) {
+  DRAKE_DEMAND(!soft0_F.is_half_space() && !soft1_G.is_half_space());
+
+  const VolumeMeshFieldLinear<double, double>& field0_F =
+      soft0_F.pressure_field();
+  const Bvh<Obb, VolumeMesh<double>>& bvh0_F = soft0_F.bvh();
+  const VolumeMeshFieldLinear<double, double>& field1_G =
+      soft1_G.pressure_field();
+  const Bvh<Obb, VolumeMesh<double>>& bvh1_G = soft1_G.bvh();
+
+  return ComputeContactSurfaceFromCompliantVolumes(
+      id0, field0_F, bvh0_F, X_WF, id1, field1_G, bvh1_G, X_WG, representation);
+}
+
 /* Calculates the contact surface (if it exists) between two potentially
  colliding geometries.
 
@@ -163,6 +189,25 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
     return CalcContactSurfaceResult::kUnsupported;
   }
   if (type_A == type_B) {
+    // TODO(DamrongGuoy): Come up with an easier logic to follow.
+    if (type_A == HydroelasticType::kSoft) {
+      const GeometryId id0 = encoding_a.id();
+      const GeometryId id1 = encoding_b.id();
+      const SoftGeometry& soft0 = data->geometries.soft_geometry(id0);
+      const SoftGeometry& soft1 = data->geometries.soft_geometry(id1);
+      if (soft0.is_half_space() || soft1.is_half_space()) {
+        return CalcContactSurfaceResult::kSameCompliance;
+      }
+      std::unique_ptr<ContactSurface<T>> surface = DispatchSoftSoftCalculation(
+          soft0, data->X_WGs.at(id0), id0, soft1, data->X_WGs.at(id1), id1,
+          data->polygon_representation);
+
+      if (surface != nullptr) {
+        DRAKE_DEMAND(surface->id_M() < surface->id_N());
+        data->surfaces.emplace_back(std::move(*surface));
+      }
+      return CalcContactSurfaceResult::kCalculated;
+    }
     return CalcContactSurfaceResult::kSameCompliance;
   }
 
