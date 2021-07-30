@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":deformable_volume_mesh",
         ":distance_to_point_callback",
         ":distance_to_shape_callback",
+        ":field_intersection",
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
         ":hydroelastic_internal",
@@ -196,6 +197,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "field_intersection",
+    srcs = ["field_intersection.cc"],
+    hdrs = ["field_intersection.h"],
+    deps = [
+        ":bvh",
+        ":contact_surface_utility",
+        ":mesh_field",
+        ":mesh_intersection",
+        ":mesh_plane_intersection",
+        ":posed_half_space",
+        "//common:default_scalars",
+        "//geometry/query_results:contact_surface",
+    ],
+)
+
+drake_cc_library(
     name = "find_collision_candidates_callback",
     srcs = ["find_collision_candidates_callback.cc"],
     hdrs = ["find_collision_candidates_callback.h"],
@@ -225,6 +242,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter",
+        ":field_intersection",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
@@ -776,6 +794,28 @@ drake_cc_googletest(
         ":distance_to_shape_callback",
         "//common:temp_directory",
         "//geometry:proximity_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "field_intersection_test",
+    deps = [
+        ":contact_surface_utility",
+        ":field_intersection",
+        ":make_box_field",
+        ":make_box_mesh",
+        ":make_cylinder_field",
+        ":make_cylinder_mesh",
+        ":make_sphere_field",
+        ":make_sphere_mesh",
+        ":mesh_intersection",
+        ":mesh_to_vtk",
+        ":surface_mesh",
+        ":volume_to_surface_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
         "//math:geometric_transform",
     ],
 )
