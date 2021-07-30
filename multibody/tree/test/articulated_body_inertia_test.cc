@@ -179,7 +179,7 @@ GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
   H2 << 1.2, -2.3, 3.4, 0.0, -5.0, 2.1;
 
   // Ensure that the results of multiplying by H transpose and H on the left and
-  // right are the same as operating directly on the the matrix.
+  // right are the same as operating directly on the matrix.
   EXPECT_TRUE((H2.transpose() * P_matrix * H2).isApprox(
       H2.transpose() * P * H2, kEpsilon));
 }

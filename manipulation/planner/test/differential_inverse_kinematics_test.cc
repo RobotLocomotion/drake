@@ -50,7 +50,6 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     plant_->Finalize();
     owned_context_ = plant_->CreateDefaultContext();
     context_ = owned_context_.get();
-    DRAKE_THROW_UNLESS(context_);
 
     // Configure the Diff IK.
     params_ = std::make_unique<DifferentialInverseKinematicsParameters>(

@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/isoparametric_element.h"
+#include "drake/multibody/fem/isoparametric_element.h"
 
 #include <limits>
 
@@ -6,7 +6,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
 
 namespace drake {
 namespace multibody {

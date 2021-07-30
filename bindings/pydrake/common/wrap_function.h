@@ -40,7 +40,7 @@ auto infer_function_info(Return (*func)(Args...)) {
 // Infers `function_info<>` from a mutable method pointer.
 template <typename Return, typename Class, typename... Args>
 auto infer_function_info(Return (Class::*method)(Args...)) {
-  auto func = [method](Class* self, Args... args) {
+  auto func = [method](Class* self, Args... args) -> Return {
     return (self->*method)(std::forward<Args>(args)...);
   };
   return make_function_info<Return, Class*, Args...>(func);
@@ -49,7 +49,7 @@ auto infer_function_info(Return (Class::*method)(Args...)) {
 // Infers `function_info<>` from a const method pointer.
 template <typename Return, typename Class, typename... Args>
 auto infer_function_info(Return (Class::*method)(Args...) const) {
-  auto func = [method](const Class* self, Args... args) {
+  auto func = [method](const Class* self, Args... args) -> Return {
     return (self->*method)(std::forward<Args>(args)...);
   };
   return make_function_info<Return, const Class*, Args...>(func);

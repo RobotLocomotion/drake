@@ -43,7 +43,7 @@ Drake is obtaining that software.
 Most third-party software used by Drake will be incorporated via files named
 `//tools/workspace/foo:repository.bzl` where `foo` is the name of the software
 (`boost`, `eigen`, `vtk`, etc.).  Consult that file to check which download or
-installation helper is used; find the helper in the the list below to continue.
+installation helper is used; find the helper in the list below to continue.
 
 Drake maintainers can use the bazel-bin/tools/workspace/new_release tool to
 report any out-of-date externals.
