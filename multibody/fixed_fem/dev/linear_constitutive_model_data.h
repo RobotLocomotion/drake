@@ -26,8 +26,6 @@ class LinearConstitutiveModelData
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModelData);
 
-  ~LinearConstitutiveModelData() = default;
-
   /* Constructs a LinearConstitutiveModelData with zero strain. */
   LinearConstitutiveModelData() {
     strain_.fill(Matrix3<T>::Zero());

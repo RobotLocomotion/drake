@@ -28,8 +28,6 @@ class CorotatedModelData
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModelData);
 
-  ~CorotatedModelData() = default;
-
   /* Constructs a CorotatedModelData with no deformation. */
   CorotatedModelData() {
     std::fill(R_.begin(), R_.end(), Matrix3<T>::Identity());
