@@ -2009,19 +2009,23 @@ TEST_F(ProximityEngineHydroWithFallback,
   vector<ContactSurface<double>> surfaces1;
   vector<PenetrationAsPointPair<double>> points1;
   engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces1, &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
+  const size_t num_point_contacts = 2;
+  const size_t num_patch_contacts = N_ - 2;
+  ASSERT_EQ(surfaces1.size(), num_patch_contacts);
+  ASSERT_EQ(points1.size(), num_point_contacts);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
   engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces2, &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
+  ASSERT_EQ(surfaces2.size(), num_patch_contacts);
+  ASSERT_EQ(points2.size(), num_point_contacts);
 
-  for (size_t i = 0; i < N_ / 2; ++i) {
+  for (size_t i = 0; i < num_patch_contacts; ++i) {
     EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
     EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+  }
+  for (size_t i = 0; i < num_point_contacts; ++i) {
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
     EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
@@ -2034,20 +2038,24 @@ TEST_F(ProximityEngineHydroWithFallback,
   vector<PenetrationAsPointPair<double>> points1;
   engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces1,
                                                       &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
+  const size_t num_point_contacts = 2;
+  const size_t num_patch_contacts = N_ - 2;
+  ASSERT_EQ(surfaces1.size(), num_patch_contacts);
+  ASSERT_EQ(points1.size(), num_point_contacts);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
   engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces2,
                                                       &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
+  ASSERT_EQ(surfaces2.size(), num_patch_contacts);
+  ASSERT_EQ(points2.size(), num_point_contacts);
 
-  for (size_t i = 0; i < N_ / 2; ++i) {
+  for (size_t i = 0; i < num_patch_contacts; ++i) {
     EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
     EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+  }
+  for (size_t i = 0; i < num_point_contacts; ++i) {
     EXPECT_EQ(points1[i].id_A, points2[i].id_A);
     EXPECT_EQ(points1[i].id_B, points2[i].id_B);
   }
