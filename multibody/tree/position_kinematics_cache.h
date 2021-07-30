@@ -49,8 +49,9 @@ class PositionKinematicsCache {
   // node @p body_node_index) as measured and expressed in the world frame W.
   // @param[in] body_node_index The unique index for the computational
   //                            BodyNode object associated with body B.
-  // @returns `X_WB` the pose of the the body frame B measured and
-  //                 expressed in the world frame W.
+
+  // @returns `X_WB` the pose of the body frame B measured and expressed in
+  //                 the world frame W.
   const RigidTransform<T>& get_X_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
@@ -75,7 +76,7 @@ class PositionKinematicsCache {
   // as measured and expressed in its parent body frame P.
   // @param[in] body_node_id The unique identifier for the computational
   //                         BodyNode object associated with body B.
-  // @returns `X_PB` a const reference to the pose of the the body frame B
+  // @returns `X_PB` a const reference to the pose of the body frame B
   //                 measured and expressed in the parent body frame P.
   const RigidTransform<T>& get_X_PB(BodyNodeIndex body_node_id) const {
     DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);

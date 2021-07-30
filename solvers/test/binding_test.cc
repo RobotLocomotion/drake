@@ -196,7 +196,7 @@ TEST_F(TestBinding, TestEvaluator) {
   EXPECT_EQ(binding.GetNumElements(), 3);
   EXPECT_EQ(fmt::format("{}", binding),
             "DummyEvaluator described as 'dummy' with 3 decision variables "
-            "x1 x2 x3");
+            "x1 x2 x3\n");
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding.variables()(i), x(i));
   }

@@ -17,9 +17,13 @@
 namespace drake {
 namespace systems {
 
-/// DiagramBuilder is a factory class for Diagram. It is single
-/// use: after calling Build or BuildInto, DiagramBuilder gives up ownership
-/// of the constituent systems, and should therefore be discarded.
+/// DiagramBuilder is a factory class for Diagram.
+///
+/// It is single use: after calling Build or BuildInto, DiagramBuilder gives up
+/// ownership of the constituent systems, and should therefore be discarded.
+///
+/// When a Diagram (or DiagramBuilder) that owns systems is destroyed, the
+/// systems will be destroyed in the reverse of the order they were added.
 ///
 /// A system must be added to the DiagramBuilder with AddSystem or
 /// AddNamedSystem before it can be wired up in any way. Every system must have

@@ -867,7 +867,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
     };
     engine.collision_filter().Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
-        extract_ids);
+        extract_ids, false /* is_permanent */);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
         std::runtime_error,
@@ -1108,8 +1108,8 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
 // to one of the 6 faces, the 12 edges, and the 8 vertices of the box.
 // First we call GenDistanceTestDataBoxBoundary() to generate test data for
 // query points on the box boundary. Then, we move the query point along the
-// gradient vector by a unit distance.  In each case, the the nearest point to
-// Q on ∂G stays the same, the signed distance becomes +1, and the gradient
+// gradient vector by a unit distance.  In each case, the nearest point to Q
+// on ∂G stays the same, the signed distance becomes +1, and the gradient
 // vector stays the same.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
@@ -2407,7 +2407,7 @@ TEST_F(SimplePenetrationTest, WithCollisionFilters) {
   };
   engine_.collision_filter().Apply(CollisionFilterDeclaration().ExcludeWithin(
                                        GeometrySet{origin_id, collide_id}),
-                                   extract_ids);
+                                   extract_ids, false /* is_permanent */);
 
   EXPECT_FALSE(
       engine_.collision_filter().CanCollideWith(origin_id, collide_id));

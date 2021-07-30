@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="table_and_mug">
+    <include>
+      <uri>package://interface_api_test/table.sdf</uri>
+      <name>table</name>
+    </include>
+    <include>
+      <uri>package://interface_api_test/mug.sdf</uri>
+      <name>mug</name>
+      <placement_frame>top</placement_frame>
+      <pose relative_to="table::top">0 0 0 1.5707963267948966 0 0</pose>
+    </include>
+    <frame name="table_top_alias" attached_to="table::top"/>
+    <frame name="mug_top_alias" attached_to="mug::top"/>
+    <joint name="j1" type="fixed">
+      <parent>table_top_alias</parent>
+      <child>mug_top_alias</child>
+    </joint>
+
+    <frame name="test_joint_frame" attached_to="j1"/>
+  </model>
+</sdf>
+

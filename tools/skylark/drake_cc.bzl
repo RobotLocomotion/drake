@@ -148,7 +148,7 @@ def _prune_private_hdrs(srcs):
 
 def installed_headers_for_dep(dep):
     """Convert a cc_library label to a DrakeCc provider label.  Given a label
-    `dep` for a cc_library, such as would be found in the the `deps = []` of
+    `dep` for a cc_library, such as would be found in the `deps = []` of
     some cc_library, returns the corresponding label for the matching DrakeCc
     provider associated with that library.  The returned label is appropriate
     to use in the deps of of a `drake_installed_headers()` rule.

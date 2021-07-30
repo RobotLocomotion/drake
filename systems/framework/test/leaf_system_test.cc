@@ -1516,12 +1516,15 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
         });
     unused(port);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     // Output port 3 is declared with a commonly-used signature taking
     // methods for both allocator and calculator for an abstract port.
     port = &DeclareAbstractOutputPort(
         kUseDefaultName, &DeclaredNonModelOutputSystem::MakeString,
         &DeclaredNonModelOutputSystem::CalcString);
     unused(port);
+#pragma GCC diagnostic pop
 
     // Output port 4 uses a default-constructed bare struct which should be
     // value-initialized.

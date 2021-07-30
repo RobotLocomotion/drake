@@ -1,12 +1,15 @@
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+
 namespace drake {
 namespace multibody {
 namespace fem {
+namespace internal {
 namespace {
 
 constexpr int kNumQuads = 2;
@@ -76,6 +79,19 @@ TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative2D) {
     EXPECT_EQ(dSdxi[q].col(0), x_deriv);
     EXPECT_EQ(dSdxi[q].col(1), y_deriv);
   }
+  // Verify that when the mapping from the parent domain to the spatial domain
+  // is the identity, the gradient in spatial coordinates is the same as the
+  // gradient in parent coordinates.
+  Eigen::Matrix<double, 2, 3> xa;
+  // clang-format off
+  xa << 0, 1, 0,
+        0, 0, 1;
+  // clang-format on
+  const auto dSdX = tri_.CalcGradientInSpatialCoordinates(xa);
+  for (int q = 0; q < kNumQuads; ++q) {
+    EXPECT_TRUE(CompareMatrices(dSdX[q], dSdxi[q],
+                                std::numeric_limits<double>::epsilon()));
+  }
 }
 
 TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative3D) {
@@ -97,9 +113,24 @@ TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative3D) {
     EXPECT_EQ(dSdxi[q].col(1), y_deriv);
     EXPECT_EQ(dSdxi[q].col(2), z_deriv);
   }
+  // Verify that when the mapping from the parent domain to the spatial domain
+  // is the identity, the gradient in spatial coordinates is the same as the
+  // gradient in parent coordinates.
+  Eigen::Matrix<double, 3, 4> xa;
+  // clang-format off
+  xa << 0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1;
+  // clang-format on
+  const auto dSdX = tet_.CalcGradientInSpatialCoordinates(xa);
+  for (int q = 0; q < kNumQuads; ++q) {
+    EXPECT_TRUE(CompareMatrices(dSdX[q], dSdxi[q],
+                                std::numeric_limits<double>::epsilon()));
+  }
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

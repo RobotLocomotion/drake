@@ -1,5 +1,6 @@
 #include "drake/solvers/constraint.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
@@ -14,6 +15,8 @@ using Eigen::VectorXd;
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using ::testing::HasSubstr;
+using ::testing::Not;
 
 namespace drake {
 
@@ -102,7 +105,7 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
   std::ostringstream os;
   constraint1.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
-  EXPECT_EQ(fmt::format("{}", os.str()),
+  EXPECT_EQ(os.str(),
             "QuadraticConstraint\n"
             "0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + 0.5 * pow(x(1), 2)) "
             "<= 1\n");
@@ -155,6 +158,13 @@ void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   EXPECT_TRUE(CompareMatrices(y1, y_expected, 1e-12));
   EXPECT_TRUE(CompareMatrices(y2, y_expected, 1e-12));
 
+  std::ostringstream os;
+  cnstr1.Display(
+      os, symbolic::MakeVectorContinuousVariable(cnstr1.num_vars(), "x"));
+  EXPECT_THAT(os.str(), HasSubstr("LorentzConeConstraint\n"));
+  EXPECT_THAT(os.str(), HasSubstr("pow"));
+  EXPECT_THAT(os.str(), HasSubstr("sqrt"));
+
   Eigen::MatrixXd dx_test(x_test.rows(), 2);
   dx_test.col(0) = Eigen::VectorXd::LinSpaced(x_test.rows(), 0, 1);
   dx_test.col(1) = Eigen::VectorXd::LinSpaced(x_test.rows(), 1, 2);
@@ -200,6 +210,13 @@ void TestLorentzConeEvalNonconvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   bool is_in_cone_expected = (y(0) >= 0) & (y(1) >= 0);
   EXPECT_EQ(is_in_cone, is_in_cone_expected);
   EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
+
+  std::ostringstream os;
+  cnstr.Display(
+      os, symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
+  EXPECT_THAT(os.str(), HasSubstr("LorentzConeConstraint\n"));
+  EXPECT_THAT(os.str(), HasSubstr("pow"));
+  EXPECT_THAT(os.str(), Not(HasSubstr("sqrt")));
 
   auto tx = drake::math::initializeAutoDiff(x_test);
   AutoDiffVecXd x_taylor = tx;
@@ -248,6 +265,12 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 
   EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
+
+  std::ostringstream os;
+  cnstr.Display(
+      os, symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
+  EXPECT_THAT(os.str(), HasSubstr("RotatedLorentzConeConstraint\n"));
+  EXPECT_THAT(os.str(), HasSubstr("pow"));
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{
@@ -438,6 +461,13 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
   ASSERT_EQ(expressions.size(), 2);
   EXPECT_TRUE(e[0].EqualTo(expressions[0]));
   EXPECT_TRUE(e[1].EqualTo(expressions[1]));
+
+  std::ostringstream os;
+  constraint.Display(os, vars);
+  EXPECT_EQ(os.str(),
+            "ExpressionConstraint\n"
+            "0 <= (1 + pow(x0, 2)) <= 2\n"
+            "0 <= (x2 + pow(x1, 2)) <= 2\n");
 
   const Vector3d x{.2, .4, .6};
   VectorXd y;

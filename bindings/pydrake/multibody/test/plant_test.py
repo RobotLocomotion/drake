@@ -1802,6 +1802,7 @@ class TestPlant(unittest.TestCase):
         plant.SetPositions(context, [0.1, 0.2])
 
         M = plant.CalcMassMatrixViaInverseDynamics(context)
+        M = plant.CalcMassMatrix(context)
         Cv = plant.CalcBiasTerm(context)
 
         self.assertTrue(M.shape == (2, 2))

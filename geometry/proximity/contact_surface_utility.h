@@ -132,7 +132,8 @@ constexpr double kMinimumPolygonArea = 1e-13;
  introduced into `vertices`.
 
  The exact choice of the representative triangle is arbitrary subject to the
- constraints in the previous paragraph.
+ constraints in the previous paragraph. If the polygon is already a triangle,
+ we will add that original triangle in the output.
 
  In debug builds, this function will do _expensive_ validation of its
  parameters.

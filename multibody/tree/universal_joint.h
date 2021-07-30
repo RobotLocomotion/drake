@@ -189,7 +189,7 @@ class UniversalJoint final : public Joint<T> {
                        const T& joint_tau,
                        MultibodyForces<T>* forces) const override {
     DRAKE_DEMAND(joint_dof < 2);
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau_mob =
+    Eigen::Ref<VectorX<T>> tau_mob =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
@@ -201,7 +201,7 @@ class UniversalJoint final : public Joint<T> {
   /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()).
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau =
+    Eigen::Ref<VectorX<T>> tau =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector2<T>& theta_dot = get_angular_rates(context);

@@ -48,6 +48,8 @@ class GeometryState;
 
    - `∀ (gᵢ, gⱼ) ∈ C`, both gᵢ and gⱼ must be registered with SceneGraph; you
      can't inject arbitrary ids. Attempting to do so will result in an error.
+   - No pairs in `Aₚ × Aₚ`, `Fₚ`, or `Iₚ` can ever be added to C. Excluding
+     those pairs is a SceneGraph invariant. Attempts to do so will be ignored.
 
  The current configuration of C depends on the sequence of filter declarations
  that have been applied in the manager. Changing the order can change the end
@@ -85,10 +87,14 @@ class CollisionFilterManager {
      - Referencing an invalid id (FrameId or GeometryId): throws.
      - Declaring a filtered pair that is already filtered: no discernible
        change.
+     - Attempts to "allow" collision between a pair that is strictly excluded
+       (e.g., between two anchored geometries) will be ignored.
 
    @throws std::exception if the `declaration` references invalid ids. */
   void Apply(const CollisionFilterDeclaration& declaration) {
-    filter_->Apply(declaration, extract_ids_);
+    /* Modifications made via this API are by the user. Only the internals can
+     make "permanent" declarations. */
+    filter_->Apply(declaration, extract_ids_, false /* is_permanent */);
   }
 
   // TODO(SeanCurtis-TRI) SceneGraphInspector includes the method

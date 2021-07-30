@@ -2,6 +2,7 @@
 
 #include <map>
 #include <sstream>
+#include <utility>
 
 #include "fmt/format.h"
 #include "fmt/ostream.h"
@@ -15,6 +16,10 @@ namespace solvers {
 // MapMap[SolverId][string] => T.
 template <typename T>
 using MapMap = std::unordered_map<SolverId, std::unordered_map<std::string, T>>;
+
+// A shorthand for our member field type.
+using CommonMap =
+    std::unordered_map<CommonSolverOption, SolverOptions::OptionValue>;
 
 void SolverOptions::SetOption(const SolverId& solver_id,
                               const std::string& solver_option,
@@ -34,9 +39,7 @@ void SolverOptions::SetOption(const SolverId& solver_id,
   solver_options_str_[solver_id][solver_option] = option_value;
 }
 
-void SolverOptions::SetOption(
-    CommonSolverOption key,
-    const std::variant<double, int, std::string>& value) {
+void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
   switch (key) {
     case CommonSolverOption::kPrintToConsole: {
       if (!std::holds_alternative<int>(value)) {
@@ -48,7 +51,7 @@ void SolverOptions::SetOption(
         throw std::runtime_error(
             fmt::format("{} expects value either 0 or 1", key));
       }
-      common_solver_options_[key] = value;
+      common_solver_options_[key] = std::move(value);
       return;
     }
     case CommonSolverOption::kPrintFileName: {
@@ -57,7 +60,7 @@ void SolverOptions::SetOption(
             "SolverOptions::SetOption support {} only with std::string value.",
             key));
       }
-      common_solver_options_[key] = value;
+      common_solver_options_[key] = std::move(value);
       return;
     }
   }
@@ -91,6 +94,27 @@ SolverOptions::GetOptionsStr(const SolverId& solver_id) const {
   return GetOptionsHelper(solver_id, solver_options_str_);
 }
 
+std::string SolverOptions::get_print_file_name() const {
+  // N.B. SetOption sanity checks the value; we don't need to re-check here.
+  std::string result;
+  auto iter = common_solver_options_.find(CommonSolverOption::kPrintFileName);
+  if (iter != common_solver_options_.end()) {
+    result = std::get<std::string>(iter->second);
+  }
+  return result;
+}
+
+bool SolverOptions::get_print_to_console() const {
+  // N.B. SetOption sanity checks the value; we don't need to re-check here.
+  bool result = false;
+  auto iter = common_solver_options_.find(CommonSolverOption::kPrintToConsole);
+  if (iter != common_solver_options_.end()) {
+    const int value = std::get<int>(iter->second);
+    result = static_cast<bool>(value);
+  }
+  return result;
+}
+
 std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
   std::unordered_set<SolverId> result;
   for (const auto& pair : solver_options_double_) { result.insert(pair.first); }
@@ -112,11 +136,7 @@ void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
   }
 }
 
-void MergeHelper(
-    const std::unordered_map<CommonSolverOption,
-                             std::variant<double, int, std::string>>& other,
-    std::unordered_map<CommonSolverOption,
-                       std::variant<double, int, std::string>>* self) {
+void MergeHelper(const CommonMap& other, CommonMap* self) {
   for (const auto& other_keyval : other) {
     // This is a no-op when the key already exists.
     self->insert(other_keyval);

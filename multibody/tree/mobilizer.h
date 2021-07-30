@@ -45,7 +45,7 @@ template<typename T> class BodyNode;
 //     X_BP /* pose of pin frame P in body frame B */);
 // // The mobilizer connects the world frame and the pin frame effectively
 // // adding the single degree of freedom describing this system. In this
-// // regard, the the role of a mobilizer is equivalent but conceptually
+// // regard, the role of a mobilizer is equivalent but conceptually
 // // different than a set of constraints that effectively remove all degrees
 // // of freedom but the one permitting rotation about the z-axis.
 // const RevoluteMobilizer<double>& revolute_mobilizer =
@@ -513,8 +513,8 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // for `this` mobilizer from a vector `q_array` of generalized positions for
   // the entire MultibodyTree model.
   // @pre @p q_array is of size MultibodyTree::num_positions().
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
+  Eigen::Ref<const VectorX<T>> get_positions_from_array(
+      const Eigen::Ref<const VectorX<T>>& q_array) const {
     DRAKE_DEMAND(
         q_array.size() == this->get_parent_tree().num_positions());
     return q_array.segment(topology_.positions_start,
@@ -522,7 +522,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   }
 
   // Mutable version of get_positions_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_positions_from_array(
+  Eigen::Ref<VectorX<T>> get_mutable_positions_from_array(
       EigenPtr<VectorX<T>> q_array) const {
     DRAKE_DEMAND(q_array != nullptr);
     DRAKE_DEMAND(
@@ -535,7 +535,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // for `this` mobilizer from a vector `v_array` of generalized velocities for
   // the entire MultibodyTree model.
   // @pre @p v_array is of size MultibodyTree::num_velocities().
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  Eigen::Ref<const VectorX<T>>
   get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v_array) const {
     DRAKE_DEMAND(
         v_array.size() == this->get_parent_tree().num_velocities());
@@ -544,7 +544,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   }
 
   // Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
+  Eigen::Ref<VectorX<T>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v_array) const {
     DRAKE_DEMAND(v_array != nullptr);
     DRAKE_DEMAND(
@@ -558,15 +558,13 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // generalized accelerations for the entire MultibodyTree model.
   // This method aborts if the input array is not of size
   // MultibodyTree::num_velocities().
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_accelerations_from_array(
+  Eigen::Ref<const VectorX<T>> get_accelerations_from_array(
       const Eigen::Ref<const VectorX<T>>& vdot_array) const {
     return get_velocities_from_array(vdot_array);
   }
 
   // Mutable version of get_accelerations_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_accelerations_from_array(
+  Eigen::Ref<VectorX<T>> get_mutable_accelerations_from_array(
       EigenPtr<VectorX<T>> vdot_array) const {
     return get_mutable_velocities_from_array(vdot_array);
   }
@@ -576,15 +574,13 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   // entire MultibodyTree model.
   // This method aborts if the input array is not of size
   // MultibodyTree::num_velocities().
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_generalized_forces_from_array(
+  Eigen::Ref<const VectorX<T>> get_generalized_forces_from_array(
       const Eigen::Ref<const VectorX<T>>& tau_array) const {
     return get_velocities_from_array(tau_array);
   }
 
   // Mutable version of get_generalized_forces_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_generalized_forces_from_array(
+  Eigen::Ref<VectorX<T>> get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau_array) const {
     return get_mutable_velocities_from_array(tau_array);
   }

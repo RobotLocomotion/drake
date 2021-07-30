@@ -189,8 +189,8 @@ class GeometrySet {
    std::vector<GeometryId> geometry_ids{g_2, g_3, g_4};
    group.Add(geometry_ids);
 
-   // This is valid, but redundant; the the ids in those vectors have already
-   // been added.
+   // This is valid, but redundant; the ids in those vectors have already been
+   // added.
    group.Add(geometry_ids, frame_ids);
 
    // Mismatched iterable types.

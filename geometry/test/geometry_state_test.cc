@@ -3331,6 +3331,79 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   }
 }
 
+// A special case of "respecting the ("renderer", "accepting")" test. When the
+// render engine(s) is(are) added *after* geometry is rendered, the geometries
+// should still only be assigned to render engines which are declared
+// "acceptable".
+TEST_F(GeometryStateTest, PostHocRenderEngineRespectAcceptingRenderer) {
+  // Geometries, by default, have no roles assigned.
+  SetUpSingleSourceTree();
+
+  // By construction, geometry_state_ has a render engine registered: named
+  // kDummyRenderName. We'll ignore it for this test. Instead, we'll create a
+  // new render engine with a new name and add it after the fact. Some of the
+  // geometries will accept it, some won't.
+  const string second_name = "second_renderer";
+
+  enum AcceptState { kAccept, kReject, kEmpty, kNoStatement };
+
+  // Instantiate properties. If `second_accepts` is true, the accepting renderer
+  // will be the new renderer named `second_name`. Otherwise, it will be
+  // accepted by a fake name associated with no renderer.
+  auto make_properties = [&second_name](AcceptState acceptance) {
+    PerceptionProperties properties =
+        DummyRenderEngine().accepting_properties();
+
+    properties.AddProperty("phong", "diffuse",
+                           Vector4<double>{0.8, 0.8, 0.8, 1.0});
+    properties.AddProperty("label", "id", RenderLabel::kDontCare);
+    switch (acceptance) {
+      case kAccept:
+        properties.AddProperty("renderer", "accepting",
+                               set<string>{second_name});
+        break;
+      case kReject:
+        properties.AddProperty("renderer", "accepting", set<string>{"invalid"});
+        break;
+      case kEmpty:
+        properties.AddProperty("renderer", "accepting", set<string>{});
+        break;
+      case kNoStatement:
+        // Do nothing.
+        break;
+    }
+    return properties;
+  };
+
+  // We'll assign the perception role to four geometries:
+  //   - The first explicitly declares the new renderer as accepting.
+  //   - The second explicitly declares an alternate renderer, excluding the
+  //     new renderer.
+  //   - The third declares an empty set of accepting renderers, equivalent
+  //     to saying nothing. It is accepted by every renderer.
+  //   - The fourth says nothing. It is accepted by every render.
+  // Therefore, the new renderer should register three of the four geometries.
+  geometry_state_.AssignRole(source_id_, geometries_[0],
+                             make_properties(kAccept));
+  geometry_state_.AssignRole(source_id_, geometries_[1],
+                             make_properties(kReject));
+  geometry_state_.AssignRole(source_id_, geometries_[2],
+                             make_properties(kEmpty));
+  geometry_state_.AssignRole(source_id_, geometries_[3],
+                             make_properties(kNoStatement));
+
+
+  // We should already have a renderer with the name: kDummyRenderName. Add a
+  // new renderer.
+  auto second_renderer_owned = make_unique<DummyRenderEngine>();
+  const DummyRenderEngine& second_renderer = *second_renderer_owned.get();
+
+  geometry_state_.AddRenderer(second_name, move(second_renderer_owned));
+  ASSERT_TRUE(geometry_state_.HasRenderer(second_name));
+
+  EXPECT_EQ(second_renderer.num_registered(), 3);
+}
+
 TEST_F(GeometryStateTest, GetRenderEngine) {
   const render::RenderEngine& engine =
       gs_tester_.GetRenderEngineOrThrow(kDummyRenderName);
@@ -3589,7 +3662,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   // Add the perception property back on geometries_[1].
   PerceptionProperties perception_properties(base_perception_properties);
   perception_properties.AddProperty("renderer", "accepting",
-                                    set<string>{kDummyRenderName});
+                                    set<string>{kDummyRenderName, "second"});
   geometry_state_.AssignRole(source_id_, geometries_[1], perception_properties,
                              RoleAssign::kNew);
 

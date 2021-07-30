@@ -281,20 +281,20 @@ class QuadraticConstraint : public Constraint {
  In case the user wants to enforce this constraint through general nonlinear
  optimization, we provide three different formulations on the Lorentz cone
  constraint
- 1. g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
+ 1. [kConvex] g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
     This formulation is not differentiable at z₁=...=zₙ₋₁=0
- 2. g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
+ 2. [kConvexSmooth] g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
     but the gradient of g(z) is approximated as
     ∂g(z)/∂z = [1, -z₁/sqrt(z₁² + ... zₙ₋₁² + ε), ...,
  -zₙ₋₁/sqrt(z₁²+...+zₙ₋₁²+ε)] where ε is a small positive number.
- 3. z₀²-(z₁²+...+zₙ₋₁²) ≥ 0
+ 3. [kNonconvex] z₀²-(z₁²+...+zₙ₋₁²) ≥ 0
     z₀ ≥ 0
     This constraint is differentiable everywhere, but z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 is
- non-convex. The default is to use the first formulation. For more information
- and visualization, please refer to
- https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
- *
- * @ingroup solver_evaluators
+ non-convex. For more information and visualization, please refer to
+ https://www.epfl.ch/labs/disopt/wp-content/uploads/2018/09/7.pdf
+ and https://docs.mosek.com/modeling-cookbook/cqo.html (Fig 3.1)
+
+ @ingroup solver_evaluators
  */
 class LorentzConeConstraint : public Constraint {
  public:
@@ -346,6 +346,9 @@ class LorentzConeConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
+
   const Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
   // using AutoDiffXd, and return the gradient as a dense matrix.
@@ -370,7 +373,7 @@ class LorentzConeConstraint : public Constraint {
  * z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁²
  * <-->
  * For more information and visualization, please refer to
- * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
+ * https://docs.mosek.com/modeling-cookbook/cqo.html (Fig 3.1)
  *
  * @ingroup solver_evaluators
  */
@@ -414,6 +417,9 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
+
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
 
   const Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
@@ -961,6 +967,9 @@ class ExpressionConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
+
+  std::ostream& DoDisplay(std::ostream&,
+                          const VectorX<symbolic::Variable>&) const override;
 
  private:
   VectorX<symbolic::Expression> expressions_{0};

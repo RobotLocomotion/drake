@@ -159,19 +159,20 @@ class DeformableRigidManager final
 
   /* Eval version of CalcFemStateBase(). */
   const FemStateBase<T>& EvalFemStateBase(const systems::Context<T>& context,
-                                          SoftBodyIndex id) const {
+                                          DeformableBodyIndex id) const {
     return this->plant()
         .get_cache_entry(fem_state_cache_indexes_[id])
         .template Eval<FemStateBase<T>>(context);
   }
 
   /* Calculates the FEM state of the deformable body with index `id`. */
-  void CalcFemStateBase(const systems::Context<T>& context, SoftBodyIndex id,
+  void CalcFemStateBase(const systems::Context<T>& context,
+                        DeformableBodyIndex id,
                         FemStateBase<T>* fem_state) const;
 
   /* Eval version of CalcFreeMotionFemStateBase(). */
   const FemStateBase<T>& EvalFreeMotionFemStateBase(
-      const systems::Context<T>& context, SoftBodyIndex id) const {
+      const systems::Context<T>& context, DeformableBodyIndex id) const {
     return this->plant()
         .get_cache_entry(free_motion_cache_indexes_[id])
         .template Eval<FemStateBase<T>>(context);
@@ -181,12 +182,12 @@ class DeformableRigidManager final
    * `id`.
    */
   void CalcFreeMotionFemStateBase(const systems::Context<T>& context,
-                                  SoftBodyIndex id,
+                                  DeformableBodyIndex id,
                                   FemStateBase<T>* fem_state_star) const;
 
   /* Eval version of CalcFreeMotionTangentMatrix(). */
   const Eigen::SparseMatrix<T>& EvalFreeMotionTangentMatrix(
-      const systems::Context<T>& context, SoftBodyIndex index) const {
+      const systems::Context<T>& context, DeformableBodyIndex index) const {
     return this->plant()
         .get_cache_entry(tangent_matrix_cache_indexes_[index])
         .template Eval<Eigen::SparseMatrix<T>>(context);
@@ -195,13 +196,13 @@ class DeformableRigidManager final
   /* Calculates the tangent matrix of the deformable body with the given `index`
    at free motion state. */
   void CalcFreeMotionTangentMatrix(
-      const systems::Context<T>& context, SoftBodyIndex index,
+      const systems::Context<T>& context, DeformableBodyIndex index,
       Eigen::SparseMatrix<T>* tangent_matrix) const;
 
   /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
   const internal::SchurComplement<T>&
   EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
-                                             SoftBodyIndex index) const {
+                                             DeformableBodyIndex index) const {
     return this->plant()
         .get_cache_entry(tangent_matrix_schur_complement_cache_indexes_[index])
         .template Eval<internal::SchurComplement<T>>(context);
@@ -214,7 +215,7 @@ class DeformableRigidManager final
    contact. The returned Schur complement provides information on
    M/D = A - BD⁻¹Bᵀ, which is guaranteed to be symmetric positive definite. */
   void CalcFreeMotionTangentMatrixSchurComplement(
-      const systems::Context<T>& context, SoftBodyIndex index,
+      const systems::Context<T>& context, DeformableBodyIndex index,
       internal::SchurComplement<T>* schur_complement) const;
 
   // TODO(xuchenhan-tri): Remove this method when SceneGraph takes control of
@@ -236,13 +237,13 @@ class DeformableRigidManager final
    rigid body identified by `rigid_id` and the deformable body identified by
    `deformable_id`. */
   internal::DeformableRigidContactPair<T> CalcDeformableRigidContactPair(
-      geometry::GeometryId rigid_id, SoftBodyIndex deformable_id) const;
+      geometry::GeometryId rigid_id, DeformableBodyIndex deformable_id) const;
 
   /* Calculates and returns the DeformableContactData that contains information
    about all deformable-rigid contacts associated with the deformable body
    identified by `deformable_id`. */
   internal::DeformableContactData<T> CalcDeformableContactData(
-      SoftBodyIndex deformable_id) const;
+      DeformableBodyIndex deformable_id) const;
 
   /* Eval version of CalcDeformableRigidContact(). */
   const std::vector<internal::DeformableContactData<T>>&
@@ -275,7 +276,7 @@ class DeformableRigidManager final
                                 | RD1     D1       |
                                 | RD2        D2    |
                                 | RD3           D3 |
-   where "RR" represents the rigid-rigid block, "RDi" represents the the
+   where "RR" represents the rigid-rigid block, "RDi" represents the
    rigid-deformable block with respect to the rigid dofs for the i-th deformable
    body, and "Di" represents the rigid-deformable block with respect to the
    deformable dofs for the i-th deformable body.

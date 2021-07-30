@@ -5,10 +5,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
 
 namespace drake {
 namespace multibody {
@@ -21,9 +21,10 @@ using QuadratureType =
     internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
 static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    LinearSimplexElement<AutoDiffXd, kNaturalDimension, kSpatialDimension,
-                         kNumQuads>;
-using ConstitutiveModelType = LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
+    internal::LinearSimplexElement<AutoDiffXd, kNaturalDimension,
+                                   kSpatialDimension, kNumQuads>;
+using ConstitutiveModelType =
+    internal::LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
 
 /* The traits for the DummyElasticityElement. `kOdeOrder` is set to zero to
  avoid states irrelevant to the tests. */

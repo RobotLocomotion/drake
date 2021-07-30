@@ -992,6 +992,10 @@ void DoScalarIndependentDefinitions(py::module m) {
 
     py::class_<Class>(m, "CollisionFilterDeclaration", cls_doc.doc)
         .def(py::init(), cls_doc.ctor.doc)
+        .def("AllowBetween", &Class::AllowBetween, py::arg("set_A"),
+            py::arg("set_B"), py_rvp::reference, cls_doc.AllowBetween.doc)
+        .def("AllowWithin", &Class::AllowWithin, py::arg("geometry_set"),
+            py_rvp::reference, cls_doc.AllowWithin.doc)
         .def("ExcludeBetween", &Class::ExcludeBetween, py::arg("set_A"),
             py::arg("set_B"), py_rvp::reference, cls_doc.ExcludeBetween.doc)
         .def("ExcludeWithin", &Class::ExcludeWithin, py::arg("geometry_set"),
