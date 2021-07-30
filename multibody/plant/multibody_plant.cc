@@ -2061,7 +2061,20 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             // information (the volumetric side).
             const bool M_is_soft = s.HasGradE_M();
             const bool N_is_soft = s.HasGradE_N();
-            DRAKE_DEMAND(M_is_soft ^ N_is_soft);
+
+            // TODO(DamrongGuoy): Ask amcastro-tri to update the calculation
+            //  for two-side gradients from compliant-compliant hydroelastic
+            //  contact surface.
+            if (M_is_soft == N_is_soft) {
+              // For same compliance type, allow compliant-compliant contact
+              // only. Quit if rigid-rigid contact reaches here.
+              DRAKE_DEMAND(M_is_soft && N_is_soft);
+              static const logging::Warn log_once(
+                  "MultibodyPlant<T>::CalcDiscreteContactPairs()\n"
+                  "The compliant-compliant hydroelastic contact model is not "
+                  "ready yet.\n"
+                  "Force and moment might be incorrect.");
+            }
 
             // Pressure gradient always points into the soft geometry by
             // construction.
