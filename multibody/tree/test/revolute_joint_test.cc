@@ -47,7 +47,7 @@ class RevoluteJointTest : public ::testing::Test {
         Vector3d::UnitZ(), kPositionLowerLimit, kPositionUpperLimit, kDamping);
     mutable_joint1_ = dynamic_cast<RevoluteJoint<double>*>(
         &model->get_mutable_joint(joint1_->index()));
-    DRAKE_DEMAND(mutable_joint1_);
+    DRAKE_DEMAND(mutable_joint1_ != nullptr);
     mutable_joint1_->set_velocity_limits(
         Vector1<double>::Constant(kVelocityLowerLimit),
         Vector1<double>::Constant(kVelocityUpperLimit));

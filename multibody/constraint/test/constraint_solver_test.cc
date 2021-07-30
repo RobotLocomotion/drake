@@ -279,7 +279,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   void SolveDiscretizationProblem(
       const ConstraintVelProblemData<double>& problem_data, double dt,
       VectorX<double>* cf) {
-    DRAKE_DEMAND(cf);
+    DRAKE_DEMAND(cf != nullptr);
 
     VectorX<double> qq, a;
     MatrixX<double> MM;

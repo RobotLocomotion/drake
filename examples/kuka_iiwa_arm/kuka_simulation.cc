@@ -160,7 +160,7 @@ int DoMain() {
   if (FLAGS_torque_control) {
     KukaTorqueController<double>* torque_controller =
         dynamic_cast<KukaTorqueController<double>*>(controller);
-    DRAKE_DEMAND(torque_controller);
+    DRAKE_DEMAND(torque_controller != nullptr);
     builder.Connect(command_receiver->get_commanded_torque_output_port(),
                     torque_controller->get_input_port_commanded_torque());
   }

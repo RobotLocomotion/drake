@@ -205,8 +205,8 @@ void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
     s << "<root>";
     return;
   }
-  DRAKE_DEMAND(debug_visit_name_);
-  DRAKE_DEMAND(debug_visit_type_);
+  DRAKE_DEMAND(debug_visit_name_ != nullptr);
+  DRAKE_DEMAND(debug_visit_type_ != nullptr);
   fmt::print(s, "{} {}",
              drake::NiceTypeName::Get(*debug_visit_type_),
              debug_visit_name_);

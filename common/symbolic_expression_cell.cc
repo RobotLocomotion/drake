@@ -233,7 +233,7 @@ UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k, Expression e,
     : ExpressionCell{k, is_poly, is_expanded}, e_{std::move(e)} {}
 
 void UnaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, e_);
 }
@@ -270,7 +270,7 @@ BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
       e2_{std::move(e2)} {}
 
 void BinaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, e1_);
   hash_append(*hasher, e2_);
@@ -320,7 +320,7 @@ ExpressionVar::ExpressionVar(Variable v)
 }
 
 void ExpressionVar::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, var_);
 }

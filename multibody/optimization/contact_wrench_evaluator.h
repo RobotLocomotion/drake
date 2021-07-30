@@ -110,8 +110,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
         context_(context),
         geometry_id_pair_{geometry_id_pair},
         num_lambda_{num_lambda} {
-    DRAKE_DEMAND(plant);
-    DRAKE_DEMAND(context);
+    DRAKE_DEMAND(plant != nullptr);
+    DRAKE_DEMAND(context != nullptr);
     DRAKE_DEMAND(num_lambda >= 0);
   }
 

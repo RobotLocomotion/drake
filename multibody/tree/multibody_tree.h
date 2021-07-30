@@ -725,13 +725,13 @@ class MultibodyTree {
 
   // An accessor to the current gravity field.
   const UniformGravityFieldElement<T>& gravity_field() const {
-    DRAKE_ASSERT(gravity_field_);
+    DRAKE_ASSERT(gravity_field_ != nullptr);
     return *gravity_field_;
   }
 
   // A mutable accessor to the current gravity field.
   UniformGravityFieldElement<T>& mutable_gravity_field() {
-    DRAKE_ASSERT(gravity_field_);
+    DRAKE_ASSERT(gravity_field_ != nullptr);
     return *gravity_field_;
   }
 
@@ -2137,7 +2137,7 @@ class MultibodyTree {
     tree_clone->gravity_field_ =
         dynamic_cast<UniformGravityFieldElement<ToScalar>*>(
             tree_clone->owned_force_elements_[0].get());
-    DRAKE_DEMAND(tree_clone->gravity_field_);
+    DRAKE_DEMAND(tree_clone->gravity_field_ != nullptr);
 
     // Since Joint<T> objects are implemented from basic element objects like
     // Body, Mobilizer, ForceElement and Constraint, they are cloned last so

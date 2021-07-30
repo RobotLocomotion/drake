@@ -169,7 +169,7 @@ class DependencyTracker {
   // This is for validating that this tracker is associated with the right
   // cache entry. Don't use this during runtime invalidation.
   const CacheEntryValue* cache_entry_value() const {
-    DRAKE_DEMAND(cache_value_);
+    DRAKE_DEMAND(cache_value_ != nullptr);
     if (!has_associated_cache_entry_)
       return nullptr;  // cache_value_ actually points to a dummy entry.
     return cache_value_;

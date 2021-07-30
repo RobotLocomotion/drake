@@ -35,7 +35,7 @@ InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
       owned_context_(nullptr),
       context_(plant_context),
       q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
-  DRAKE_DEMAND(plant_context);
+  DRAKE_DEMAND(plant_context != nullptr);
   if (with_joint_limits) {
     prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
                                     plant.GetPositionUpperLimits(), q_);

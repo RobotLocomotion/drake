@@ -11,8 +11,8 @@ CallbackData::CallbackData(const CollisionFilter* collision_filter_in,
                            std::vector<SortedPair<GeometryId>>* pairs_in)
     : collision_filter(*collision_filter_in),
       pairs(*pairs_in) {
-  DRAKE_DEMAND(collision_filter_in);
-  DRAKE_DEMAND(pairs_in);
+  DRAKE_DEMAND(collision_filter_in != nullptr);
+  DRAKE_DEMAND(pairs_in != nullptr);
 }
 
 bool Callback(fcl::CollisionObjectd* object_A_ptr,

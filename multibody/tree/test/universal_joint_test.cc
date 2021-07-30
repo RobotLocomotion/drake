@@ -46,7 +46,7 @@ class UniversalJointTest : public ::testing::Test {
                                               std::nullopt, kDamping);
     mutable_joint_ = dynamic_cast<UniversalJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));
-    DRAKE_DEMAND(mutable_joint_);
+    DRAKE_DEMAND(mutable_joint_ != nullptr);
     mutable_joint_->set_position_limits(
         Vector2d::Constant(kPositionLowerLimit),
         Vector2d::Constant(kPositionUpperLimit));

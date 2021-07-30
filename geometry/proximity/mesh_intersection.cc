@@ -302,9 +302,9 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
-  DRAKE_DEMAND(surface_MN_M);
-  DRAKE_DEMAND(e_MN);
-  DRAKE_DEMAND(grad_eM_Ms);
+  DRAKE_DEMAND(surface_MN_M != nullptr);
+  DRAKE_DEMAND(e_MN != nullptr);
+  DRAKE_DEMAND(grad_eM_Ms != nullptr);
   grad_eM_Ms->clear();
 
   std::vector<SurfaceFace> surface_faces;

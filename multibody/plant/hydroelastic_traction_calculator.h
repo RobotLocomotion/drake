@@ -44,7 +44,7 @@ class HydroelasticTractionCalculator {
             X_WA(X_WA_in), X_WB(X_WB_in), V_WA(V_WA_in), V_WB(V_WB_in),
             surface(*surface_in),
             p_WC(surface_in->mesh_W().centroid()) {
-      DRAKE_DEMAND(surface_in);
+      DRAKE_DEMAND(surface_in != nullptr);
     }
 
     // The pose of Body A (the body that Geometry `surface.M_id()` in the

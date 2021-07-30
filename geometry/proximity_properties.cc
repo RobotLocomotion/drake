@@ -86,14 +86,14 @@ void AddContactMaterial(
 
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties) {
-  DRAKE_DEMAND(properties);
+  DRAKE_DEMAND(properties != nullptr);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddRigidHydroelasticProperties(properties);
 }
 
 void AddRigidHydroelasticProperties(ProximityProperties* properties) {
-  DRAKE_DEMAND(properties);
+  DRAKE_DEMAND(properties != nullptr);
   // The bare minimum of defining a rigid geometry is to declare its compliance
   // type. Downstream consumers (ProximityEngine) will determine if this is
   // sufficient.
@@ -103,14 +103,14 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties) {
 
 void AddSoftHydroelasticProperties(double resolution_hint,
                                    ProximityProperties* properties) {
-  DRAKE_DEMAND(properties);
+  DRAKE_DEMAND(properties != nullptr);
   properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
                           resolution_hint);
   AddSoftHydroelasticProperties(properties);
 }
 
 void AddSoftHydroelasticProperties(ProximityProperties* properties) {
-  DRAKE_DEMAND(properties);
+  DRAKE_DEMAND(properties != nullptr);
   // The bare minimum of defining a soft geometry is to declare its compliance
   // type. Downstream consumers (ProximityEngine) will determine if this is
   // sufficient.
@@ -120,7 +120,7 @@ void AddSoftHydroelasticProperties(ProximityProperties* properties) {
 
 void AddSoftHydroelasticPropertiesForHalfSpace(
     double slab_thickness, ProximityProperties* properties) {
-  DRAKE_DEMAND(properties);
+  DRAKE_DEMAND(properties != nullptr);
   properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
                           slab_thickness);
   AddSoftHydroelasticProperties(properties);

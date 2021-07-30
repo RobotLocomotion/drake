@@ -31,7 +31,7 @@ UrdfMaterial AddMaterialToMaterialMap(const std::string& material_name,
                                       UrdfMaterial material,
                                       bool abort_if_name_clash,
                                       MaterialMap* materials) {
-  DRAKE_DEMAND(materials);
+  DRAKE_DEMAND(materials != nullptr);
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
   if (material_iter != materials->end()) {

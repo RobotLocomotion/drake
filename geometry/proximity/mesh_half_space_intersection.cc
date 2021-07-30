@@ -129,10 +129,10 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   // TODO(SeanCurtis-TRI): This needs to support the "backface" culling that is
   //  implemented in mesh-mesh intersection. See the
   //  IsFaceNormalAlongPressureGradient() function in mesh_intersection.h.
-  DRAKE_DEMAND(new_vertices_W);
-  DRAKE_DEMAND(new_faces);
-  DRAKE_DEMAND(vertices_to_newly_created_vertices);
-  DRAKE_DEMAND(edges_to_newly_created_vertices);
+  DRAKE_DEMAND(new_vertices_W != nullptr);
+  DRAKE_DEMAND(new_faces != nullptr);
+  DRAKE_DEMAND(vertices_to_newly_created_vertices != nullptr);
+  DRAKE_DEMAND(edges_to_newly_created_vertices != nullptr);
 
   const std::vector<SurfaceVertex<double>>& vertices_F = mesh_F.vertices();
   const SurfaceFace& triangle = mesh_F.element(tri_index);

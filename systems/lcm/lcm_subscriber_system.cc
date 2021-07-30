@@ -29,7 +29,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
       serializer_(std::move(serializer)),
       magic_number_{kMagic} {
   DRAKE_DEMAND(serializer_ != nullptr);
-  DRAKE_DEMAND(lcm);
+  DRAKE_DEMAND(lcm != nullptr);
 
   subscription_ = lcm->Subscribe(
       channel_, [this](const void* buffer, int size) {

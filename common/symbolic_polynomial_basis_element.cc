@@ -152,8 +152,8 @@ symbolic::Expression PolynomialBasisElement::ToExpression() const {
 void PolynomialBasisElement::DoEvaluatePartial(
     const Environment& env, double* coeff,
     std::map<Variable, int>* new_basis_element) const {
-  DRAKE_ASSERT(coeff);
-  DRAKE_ASSERT(new_basis_element);
+  DRAKE_ASSERT(coeff != nullptr);
+  DRAKE_ASSERT(new_basis_element != nullptr);
   DRAKE_ASSERT(new_basis_element->empty());
   *coeff = 1;
   for (const auto& [var, degree] : var_to_degree_map_) {

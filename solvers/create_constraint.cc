@@ -233,8 +233,8 @@ namespace {
 //
 void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
                double* const c) {
-  DRAKE_ASSERT(e);
-  DRAKE_ASSERT(c);
+  DRAKE_ASSERT(e != nullptr);
+  DRAKE_ASSERT(c != nullptr);
   double c1 = 0;
   double c2 = 0;
   const Expression e1_expanded{e1.Expand()};

@@ -90,7 +90,7 @@ void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
     systems::DiscreteValues<double>* discrete_state) const {
   unused(events);
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_DEMAND(input);
+  DRAKE_DEMAND(input != nullptr);
   const math::RigidTransformd& X_WE_desired =
       input->get_value<math::RigidTransformd>();
   const math::RigidTransform<double> X_WE = ForwardKinematics(context);

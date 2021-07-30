@@ -45,13 +45,13 @@ class MultibodySimDriver {
 
   // @pre BuildModel() must have been called.
   const MultibodyPlant<double>& plant() const {
-    DRAKE_DEMAND(plant_);
+    DRAKE_DEMAND(plant_ != nullptr);
     return *plant_;
   }
 
   // @pre BuildModel() must have been called.
   MultibodyPlant<double>& mutable_plant() {
-    DRAKE_DEMAND(plant_);
+    DRAKE_DEMAND(plant_ != nullptr);
     return *plant_;
   }
 

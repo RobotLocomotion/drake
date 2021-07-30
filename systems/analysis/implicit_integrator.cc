@@ -339,7 +339,7 @@ void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
         typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
-  DRAKE_DEMAND(iteration_matrix);
+  DRAKE_DEMAND(iteration_matrix != nullptr);
 
   // Return immediately if full-Newton is not in use.
   if (!get_use_full_newton()) return;

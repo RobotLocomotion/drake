@@ -152,7 +152,7 @@ void ParseBody(const multibody::PackageMap& package_map,
          collision_node = collision_node->NextSiblingElement("collision")) {
       geometry::GeometryInstance geometry_instance =
           ParseCollision(body_name, package_map, root_dir, collision_node);
-      DRAKE_DEMAND(geometry_instance.proximity_properties());
+      DRAKE_DEMAND(geometry_instance.proximity_properties() != nullptr);
       plant->RegisterCollisionGeometry(
           body, geometry_instance.pose(), geometry_instance.shape(),
           geometry_instance.name(),
@@ -818,7 +818,7 @@ ModelInstanceIndex AddModelFromUrdf(
           full_path, xml_doc.ErrorName()));
     }
   } else {
-    DRAKE_DEMAND(data_source.file_contents);
+    DRAKE_DEMAND(data_source.file_contents != nullptr);
     xml_doc.Parse(data_source.file_contents->c_str());
     if (xml_doc.ErrorID()) {
       throw std::runtime_error(fmt::format(

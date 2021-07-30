@@ -390,8 +390,8 @@ template <class T>
 bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie) {
   using std::abs;
-  DRAKE_ASSERT(xtplus_ie);
-  DRAKE_ASSERT(xtplus_hie);
+  DRAKE_ASSERT(xtplus_ie != nullptr);
+  DRAKE_ASSERT(xtplus_hie != nullptr);
 
   // Compute the derivative at time and state (t0, x(t0)). NOTE: the derivative
   // is calculated at this point (early on in the integration process) in order

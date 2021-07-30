@@ -40,7 +40,7 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
     const VectorX<double>& q_current,
     std::vector<Eigen::VectorXd>* q_sol_out) {
-  DRAKE_DEMAND(q_sol_out);
+  DRAKE_DEMAND(q_sol_out != nullptr);
   int num_steps = static_cast<int>(waypoints.size());
 
   VectorX<double> q0 = q_current;
@@ -154,7 +154,7 @@ bool ConstraintRelaxingIk::SolveIk(
     const VectorX<double>& q0,
     const Vector3<double>& pos_tol, double rot_tol,
     VectorX<double>* q_res) {
-  DRAKE_DEMAND(q_res);
+  DRAKE_DEMAND(q_res != nullptr);
 
   multibody::InverseKinematics ik(plant_);
 

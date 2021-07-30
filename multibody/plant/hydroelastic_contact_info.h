@@ -75,7 +75,7 @@ class HydroelasticContactInfo {
       : contact_surface_(contact_surface),
         F_Ac_W_(F_Ac_W),
         quadrature_point_data_(std::move(quadrature_point_data)) {
-    DRAKE_DEMAND(contact_surface);
+    DRAKE_DEMAND(contact_surface != nullptr);
   }
 
   /** This constructor takes ownership of `contact_surface` via a
@@ -91,8 +91,7 @@ class HydroelasticContactInfo {
         F_Ac_W_(F_Ac_W),
         quadrature_point_data_(std::move(quadrature_point_data)) {
     DRAKE_DEMAND(std::get<std::unique_ptr<geometry::ContactSurface<T>>>(
-                     contact_surface_)
-                     .get());
+                     contact_surface_) != nullptr);
   }
   // @}
 

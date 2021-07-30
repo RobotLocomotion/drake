@@ -1893,7 +1893,7 @@ void MultibodyPlant<T>::CalcContactSurfaces(
     const drake::systems::Context<T>& context,
     std::vector<ContactSurface<T>>* contact_surfaces) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(contact_surfaces);
+  DRAKE_DEMAND(contact_surfaces != nullptr);
 
   const auto& query_object = EvalGeometryQueryInput(context);
 
@@ -2404,7 +2404,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
     const Context<T>& context, VectorX<T>* tau_contact) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(tau_contact);
+  DRAKE_DEMAND(tau_contact != nullptr);
   DRAKE_DEMAND(tau_contact->size() == num_velocities());
   DRAKE_DEMAND(!is_discrete());
   const int nv = this->num_velocities();
@@ -2445,7 +2445,7 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   this->ValidateContext(context);
-  DRAKE_DEMAND(F_BBo_W_array);
+  DRAKE_DEMAND(F_BBo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   DRAKE_DEMAND(!is_discrete());
 

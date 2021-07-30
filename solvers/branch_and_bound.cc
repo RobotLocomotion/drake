@@ -95,7 +95,7 @@ SolutionResult SolveProgramWithSolver(const MathematicalProgram& prog,
                                       const SolverId& solver_id,
                                       MathematicalProgramResult* result) {
   std::unique_ptr<SolverInterface> solver = MakeSolver(solver_id);
-  DRAKE_ASSERT(solver.get());
+  DRAKE_ASSERT(solver != nullptr);
   solver->Solve(prog, {}, {}, result);
   return result->get_solution_result();
 }

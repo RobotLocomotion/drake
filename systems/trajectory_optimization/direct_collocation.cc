@@ -210,7 +210,7 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
     const solvers::MathematicalProgramResult& result) const {
-  DRAKE_DEMAND(input_port_);
+  DRAKE_DEMAND(input_port_ != nullptr);
   Eigen::VectorXd times = GetSampleTimes(result);
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> inputs(N());

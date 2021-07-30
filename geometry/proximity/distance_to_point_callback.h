@@ -55,9 +55,9 @@ struct CallbackData {
         p_WQ_W(p_WQ_W_in),
         X_WGs(*X_WGs_in),
         distances(*distances_in) {
-    DRAKE_DEMAND(query_in);
-    DRAKE_DEMAND(X_WGs_in);
-    DRAKE_DEMAND(distances_in);
+    DRAKE_DEMAND(query_in != nullptr);
+    DRAKE_DEMAND(X_WGs_in != nullptr);
+    DRAKE_DEMAND(distances_in != nullptr);
   }
 
   /* The query fcl object.  */

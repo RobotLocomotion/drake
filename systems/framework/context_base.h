@@ -740,7 +740,7 @@ class SystemBaseContextBaseAttorney {
   // SystemBase should invoke this when ContextBase has been successfully
   // initialized.
   static void mark_context_base_initialized(ContextBase* context) {
-    DRAKE_DEMAND(context);
+    DRAKE_DEMAND(context != nullptr);
     DRAKE_DEMAND(!context->is_context_base_initialized_);
     context->is_context_base_initialized_ = true;
   }
