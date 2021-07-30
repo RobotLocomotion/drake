@@ -2140,17 +2140,64 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
             // information (the volumetric side).
             const bool M_is_soft = s.HasGradE_M();
             const bool N_is_soft = s.HasGradE_N();
-            DRAKE_DEMAND(M_is_soft ^ N_is_soft);
 
+            // TODO(DamrongGuoy): Ask amcastro-tri to update the calculation
+            //  for two-side gradients from compliant-compliant hydroelastic
+            //  contact surface.
+            if (M_is_soft == N_is_soft) {
+              // For same compliance type, allow compliant-compliant contact
+              // only. Quit if rigid-rigid contact reaches here.
+              DRAKE_DEMAND(M_is_soft && N_is_soft);
+              static const logging::Warn log_once(
+                  "MultibodyPlant<T>::CalcDiscreteContactPairs()\n"
+                  "The compliant-compliant hydroelastic contact model is not "
+                  "ready yet.\n"
+                  "Force and moment might be incorrect.");
+            }
+
+            // N.B. Here we use zero-gradients for rigid bodies; however,
+            // mathematically they should be infinity-gradients.
+            const Vector3<T>& gradE_M_W =
+                M_is_soft ? s.EvaluateGradE_M_W(face) : Vector3<T>::Zero();
+            const Vector3<T>& gradE_N_W =
+                N_is_soft ? s.EvaluateGradE_N_W(face) : Vector3<T>::Zero();
+
+            // For soft_M vs. rigid_N or rigid_M vs. soft_N contact.
             // Pressure gradient always points into the soft geometry by
             // construction.
-            const Vector3<T>& grad_pres_W = M_is_soft
-                                                ? s.EvaluateGradE_M_W(face)
-                                                : s.EvaluateGradE_N_W(face);
+            // const Vector3<T>& grad_pres_W = M_is_soft
+            //                                    ? s.EvaluateGradE_M_W(face)
+            //                                    : s.EvaluateGradE_N_W(face);
 
             // From ContactSurface's documentation: The normal of each face is
             // guaranteed to point "out of" N and "into" M.
             const Vector3<T>& nhat_W = mesh_W.face_normal(face);
+
+            // Normal pressure gradients (Pascal/meter) from each body.
+            const T gM = gradE_M_W.dot(nhat_W);
+            const T gN = gradE_N_W.dot(nhat_W);
+            // Effective pressure gradient g (Pascal/meter) from the two bodies.
+            T g = 0;
+            // TODO(DamrongGuoy): Unify the if-else branches. Perhaps using
+            //  the infinity gradients will do it. I'm not sure how
+            //  AutoDiffXd will like it though.
+            using std::abs;
+            if (gM == 0) {
+              g = -gN;
+            } else if (gN == 0) {
+              g = gM;
+            } else if (abs(gM - gN) > 1.0e-14) {
+              g = gM * gN / (gM - gN);
+            } else {
+              continue;
+            }
+
+            // Prevent the pointwise contact stiffness k (Pascal*meter) from
+            // being non-positive. k = gA and f_{n,e} = (-k\phi)_+.
+            if (g <= 0) {
+              continue;
+            }
+
             for (int qp = 0; qp < num_quad_points; ++qp) {
               const Vector3<T> barycentric(xi[qp](0), xi[qp](1),
                                            1.0 - xi[qp](0) - xi[qp](1));
@@ -2160,10 +2207,11 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
               // Force contribution by this quadrature point.
               const T fn0 = wq[qp] * Ae * p0;
 
+              // For soft_M vs. rigid_N or rigid_M vs. soft_N contact.
               // Since the normal always points into M, regardless of which body
               // is soft, we must take into account the change of sign when body
               // N is soft and M is rigid.
-              const T sign = M_is_soft ? 1.0 : -1.0;
+              // const T sign = M_is_soft ? 1.0 : -1.0;
 
               // In order to provide some intuition, and though not entirely
               // complete, here we document the first order idea that leads to
@@ -2196,7 +2244,11 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
               // does not stretch nor shrink). For triangles close to the
               // boundary of the contact surface, this is only a first order
               // approximation.
-              const T k = sign * wq[qp] * Ae * grad_pres_W.dot(nhat_W);
+
+              // For compliant-compliant contact.
+              const T k = wq[qp] * Ae * g;
+              // For rigid_M vs. soft_N or soft_M vs. rigid_N contact.
+              // const T k = sign * wq[qp] * Ae * grad_pres_W.dot(nhat_W);
 
               // N.B. The normal is guaranteed to point into M. However, when M
               // is soft, the gradient is not guaranteed to be in the direction
