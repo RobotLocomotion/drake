@@ -81,10 +81,6 @@ class PointShapeAutoDiffSignedDistanceTester {
         GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
 
     SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_EQ(result.is_grad_W_unique, is_grad_W_unique);
-#pragma GCC diagnostic pop
     if (std::abs(result.distance.value() - expected_distance) > tolerance_) {
       error = true;
       failure << "The difference between expected distance and tested distance "
@@ -203,7 +199,7 @@ GTEST_TEST(DistanceToPoint, Box) {
           // The query point lies on the vertex of the box.
           EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero(),
                                   false /* not inside the box */,
-                                  false /* not well defined */));
+                                  false /* gradient ill defined */));
         }
       }
     }
@@ -227,7 +223,7 @@ GTEST_TEST(DistanceToPoint, Box) {
         // The query point lies on the edge of the box.
         EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero(),
                                 false /* not inside the box */,
-                                false /* not well defined */));
+                                false /* gradient ill defined */));
 
         // A query point *inside* the box would not be nearest the edge.
       }
@@ -316,7 +312,7 @@ GTEST_TEST(DistanceToPoint, Capsule) {
     {
       const Vector3d p_NQ_G = -capsule.radius * vhat_NQ_G;
       EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G, true /* is inside */,
-                              false /* ill defined */));
+                              false /* gradient ill defined */));
     }
   }
 }
@@ -499,7 +495,8 @@ GTEST_TEST(DistanceToPoint, Sphere) {
 
   // Case: point lies at origin of the sphere.
   EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
-                          true /* is inside */, false /* ill defined */));
+                          true /* is inside */,
+                          false /* gradient ill defined */));
 }
 
 // TODO(SeanCurtis-TRI): Point-to-cylinder with AutoDiff has been "disabled".
