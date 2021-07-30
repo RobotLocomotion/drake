@@ -29,7 +29,7 @@ PackageMap::PackageMap()
     : PackageMap{FindResourceOrThrow("drake/package.xml")} {}
 
 PackageMap PackageMap::MakeEmpty() {
-  return PackageMap({});
+  return PackageMap(std::initializer_list<std::string>());
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
