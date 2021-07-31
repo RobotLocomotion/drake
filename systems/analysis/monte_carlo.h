@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -147,7 +148,9 @@ struct RandomSimulationResult {
 // threads, ...).
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    double final_time, int num_samples, RandomGenerator* generator = nullptr);
+    double final_time, int num_samples, RandomGenerator* generator = nullptr,
+    int num_parallel_executions =
+        static_cast<int>(std::thread::hardware_concurrency()));
 
 }  // namespace analysis
 }  // namespace systems
