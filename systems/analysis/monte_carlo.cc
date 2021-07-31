@@ -81,11 +81,12 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
               int sample_num) {
         // This is equivalent to the work performed by RandomSimulation, just
         // with access to the RandomGenerator protected via mutex.
-        RandomSimulationResult result(*generator);
         std::unique_ptr<Simulator<double>> simulator;
+        std::unique_ptr<RandomSimulationResult> result;
 
         {
           std::lock_guard<std::mutex> lock(generator_mutex);
+          result = std::make_unique<RandomSimulationResult>(*generator);
           simulator = make_simulator(generator);
 
           const System<double>& system = simulator->get_system();
@@ -94,10 +95,10 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
 
         simulator->AdvanceTo(final_time);
 
-        result.output =
+        result->output =
             output(simulator->get_system(), simulator->get_context());
 
-        return std::make_pair(sample_num, result);
+        return std::make_pair(sample_num, *result);
       };
 
       active_operations.emplace_back(std::async(
