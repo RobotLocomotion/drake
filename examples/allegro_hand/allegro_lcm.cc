@@ -21,18 +21,20 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints,
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
       Value<lcmt_allegro_command>{});
-  state_output_port_ = this->DeclareVectorOutputPort(
-      systems::kUseDefaultName,
-      systems::BasicVector<double>(num_joints_ * 2),
-      [this](const Context<double>& c, BasicVector<double>* o) {
-        this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
-      }).get_index();
-  torque_output_port_ = this->DeclareVectorOutputPort(
-      systems::kUseDefaultName,
-      systems::BasicVector<double>(num_joints_),
-      [this](const Context<double>& c, BasicVector<double>* o) {
-        this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
-      }).get_index();
+  state_output_port_ =
+      this->DeclareVectorOutputPort(
+              systems::kUseDefaultName, num_joints_ * 2,
+              [this](const Context<double>& c, BasicVector<double>* o) {
+                this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
+              })
+          .get_index();
+  torque_output_port_ =
+      this->DeclareVectorOutputPort(
+              systems::kUseDefaultName, num_joints_,
+              [this](const Context<double>& c, BasicVector<double>* o) {
+                this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
+              })
+          .get_index();
   this->DeclarePeriodicDiscreteUpdate(lcm_period_);
   // State + torque
   this->DeclareDiscreteState(num_joints_ * 3);

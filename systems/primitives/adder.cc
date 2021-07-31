@@ -13,8 +13,7 @@ Adder<T>::Adder(int num_inputs, int size)
     this->DeclareInputPort(kUseDefaultName, kVectorValued, size);
   }
 
-  this->DeclareVectorOutputPort("sum", BasicVector<T>(size),
-                                &Adder<T>::CalcSum);
+  this->DeclareVectorOutputPort("sum", size, &Adder<T>::CalcSum);
 }
 
 template <typename T>

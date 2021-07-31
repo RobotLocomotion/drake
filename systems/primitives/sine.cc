@@ -40,17 +40,17 @@ Sine<T>::Sine(const Eigen::VectorXd& amplitudes,
     this->DeclareInputPort(kUseDefaultName, kVectorValued, amplitudes.size());
   }
   value_output_port_index_ =
-      this->DeclareVectorOutputPort(
-          kUseDefaultName, BasicVector<T>(amplitudes.size()),
-          &Sine::CalcValueOutput).get_index();
+      this->DeclareVectorOutputPort(kUseDefaultName, amplitudes.size(),
+                                    &Sine::CalcValueOutput)
+          .get_index();
   first_derivative_output_port_index_ =
-      this->DeclareVectorOutputPort(
-          kUseDefaultName, BasicVector<T>(amplitudes.size()),
-          &Sine::CalcFirstDerivativeOutput).get_index();
+      this->DeclareVectorOutputPort(kUseDefaultName, amplitudes.size(),
+                                    &Sine::CalcFirstDerivativeOutput)
+          .get_index();
   second_derivative_output_port_index_ =
-      this->DeclareVectorOutputPort(
-          kUseDefaultName, BasicVector<T>(amplitudes.size()),
-          &Sine::CalcSecondDerivativeOutput).get_index();
+      this->DeclareVectorOutputPort(kUseDefaultName, amplitudes.size(),
+                                    &Sine::CalcSecondDerivativeOutput)
+          .get_index();
 }
 
 template <typename T>

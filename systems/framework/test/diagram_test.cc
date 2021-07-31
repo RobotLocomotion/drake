@@ -1587,8 +1587,7 @@ class Reduce : public LeafSystem<double> {
     feedthrough_input_ = input0.get_index();
     sink_input_ = this->DeclareInputPort(
         kUseDefaultName, kVectorValued, 1).get_index();
-    this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<double>(1),
-                                  &Reduce::CalcFeedthrough,
+    this->DeclareVectorOutputPort(kUseDefaultName, 1, &Reduce::CalcFeedthrough,
                                   {input0.ticket()});
   }
 

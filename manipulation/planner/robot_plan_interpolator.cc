@@ -79,14 +79,12 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   const int num_pv = plant_.num_positions() + plant_.num_velocities();
 
   state_output_port_ =
-      this->DeclareVectorOutputPort("state",
-              systems::BasicVector<double>(num_pv),
-              &RobotPlanInterpolator::OutputState)
+      this->DeclareVectorOutputPort("state", num_pv,
+                                    &RobotPlanInterpolator::OutputState)
           .get_index();
   acceleration_output_port_ =
-      this->DeclareVectorOutputPort("acceleration",
-              systems::BasicVector<double>(plant_.num_velocities()),
-              &RobotPlanInterpolator::OutputAccel)
+      this->DeclareVectorOutputPort("acceleration", plant_.num_velocities(),
+                                    &RobotPlanInterpolator::OutputAccel)
           .get_index();
 
   // This corresponds to the actual plan.

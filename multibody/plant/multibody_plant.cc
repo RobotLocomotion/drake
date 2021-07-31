@@ -2633,16 +2633,17 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     instance_actuation_ports_[model_instance_index] =
         this->DeclareVectorInputPort(
                 GetModelInstanceName(model_instance_index) + "_actuation",
-                systems::BasicVector<T>(instance_num_dofs))
+                instance_num_dofs)
             .get_index();
   }
 
   if (num_actuated_instances == 1) actuated_instance_ = last_actuated_instance;
 
   // Declare the generalized force input port.
-  applied_generalized_force_input_port_ = this->DeclareVectorInputPort(
-      "applied_generalized_force",
-      systems::BasicVector<T>(num_velocities())).get_index();
+  applied_generalized_force_input_port_ =
+      this->DeclareVectorInputPort("applied_generalized_force",
+                                   num_velocities())
+          .get_index();
 
   // Declare applied spatial force input force port.
   applied_spatial_force_input_port_ = this->DeclareAbstractInputPort(
@@ -2653,8 +2654,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // TODO(sherm1) Rename this port to just "state" when #12214 is resolved so
   //              we can deprecate the old port name.
   state_output_port_ =
-      this->DeclareVectorOutputPort("continuous_state",
-                                    BasicVector<T>(num_multibody_states()),
+      this->DeclareVectorOutputPort("continuous_state", num_multibody_states(),
                                     &MultibodyPlant::CopyMultibodyStateOut,
                                     {this->all_state_ticket()})
           .get_index();
@@ -2694,7 +2694,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // vdot (length is nv).
   generalized_acceleration_output_port_ =
       this->DeclareVectorOutputPort(
-              "generalized_acceleration", BasicVector<T>(num_velocities()),
+              "generalized_acceleration", num_velocities(),
               [this](const systems::Context<T>& context,
                      systems::BasicVector<T>* result) {
                 result->SetFromVector(
@@ -2717,11 +2717,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     //              so we can deprecate the old port names.
     instance_state_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-                instance_name + "_continuous_state",
-                BasicVector<T>(instance_num_states),
-                [this, model_instance_index](
-                    const systems::Context<T>& context,
-                    systems::BasicVector<T>* result) {
+                instance_name + "_continuous_state", instance_num_states,
+                [this, model_instance_index](const systems::Context<T>& context,
+                                             systems::BasicVector<T>* result) {
                   this->CopyMultibodyStateOut(model_instance_index, context,
                                                result);
                 },
@@ -2733,7 +2731,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     instance_generalized_acceleration_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
                 instance_name + "_generalized_acceleration",
-                BasicVector<T>(instance_num_velocities),
+                instance_num_velocities,
                 [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
                   const auto& vdot =
@@ -2767,7 +2765,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           this->DeclareVectorOutputPort(
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
-                  BasicVector<T>(instance_num_velocities), calc,
+                  instance_num_velocities, calc,
                   {contact_solver_results_cache_entry.ticket()})
               .get_index();
     } else {
@@ -2785,7 +2783,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           this->DeclareVectorOutputPort(
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
-                  BasicVector<T>(instance_num_velocities), calc,
+                  instance_num_velocities, calc,
                   {generalized_contact_forces_continuous_cache_entry.ticket()})
               .get_index();
     }

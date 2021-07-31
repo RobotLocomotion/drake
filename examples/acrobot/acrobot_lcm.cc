@@ -57,7 +57,7 @@ void AcrobotCommandSender::OutputCommand(const Context<double>& context,
 AcrobotCommandReceiver::AcrobotCommandReceiver() {
   this->DeclareAbstractInputPort("lcmt_acrobot_u",
                                  Value<lcmt_acrobot_u>());
-  this->DeclareVectorOutputPort("elbow_torque", systems::BasicVector<double>(1),
+  this->DeclareVectorOutputPort("elbow_torque", 1,
                                 &AcrobotCommandReceiver::OutputCommandAsVector);
 }
 

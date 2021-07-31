@@ -40,7 +40,7 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
       {all_input_ports_ticket(), numeric_parameter_ticket(arm_param), });
 
   DeclareVectorOutputPort(
-      "state", BasicVector<double>((num_joints + num_fingers) * 2),
+      "state", (num_joints + num_fingers) * 2,
       [this](const Context<double>& context, BasicVector<double>* output) {
         output->SetFromVector(this->input_state(context));
       });

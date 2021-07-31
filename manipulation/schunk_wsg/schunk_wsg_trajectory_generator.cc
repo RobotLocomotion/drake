@@ -15,23 +15,20 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
                                                            int position_index)
     : position_index_(position_index),
       desired_position_input_port_(
-          this->DeclareVectorInputPort(
-              "desired_position", BasicVector<double>(1)).get_index()),
+          this->DeclareVectorInputPort("desired_position", 1).get_index()),
       force_limit_input_port_(
-          this->DeclareVectorInputPort(
-              "force_limit", BasicVector<double>(1)).get_index()),
+          this->DeclareVectorInputPort("force_limit", 1).get_index()),
       state_input_port_(
-          this->DeclareInputPort(
-              systems::kUseDefaultName, systems::kVectorValued, input_size)
-                  .get_index()),
-      target_output_port_(
-          this->DeclareVectorOutputPort(
-              systems::kUseDefaultName, BasicVector<double>(2),
-              &SchunkWsgTrajectoryGenerator::OutputTarget).get_index()),
-      max_force_output_port_(
-          this->DeclareVectorOutputPort(
-              systems::kUseDefaultName, BasicVector<double>(1),
-              &SchunkWsgTrajectoryGenerator::OutputForce).get_index()) {
+          this->DeclareVectorInputPort(systems::kUseDefaultName, input_size)
+              .get_index()),
+      target_output_port_(this->DeclareVectorOutputPort(
+                                  systems::kUseDefaultName, 2,
+                                  &SchunkWsgTrajectoryGenerator::OutputTarget)
+                              .get_index()),
+      max_force_output_port_(this->DeclareVectorOutputPort(
+                                     systems::kUseDefaultName, 1,
+                                     &SchunkWsgTrajectoryGenerator::OutputForce)
+                                 .get_index()) {
   this->DeclareDiscreteState(
       SchunkWsgTrajectoryGeneratorStateVector<double>());
   // The update period below matches the polling rate from

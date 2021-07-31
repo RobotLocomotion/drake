@@ -169,10 +169,9 @@ class GeneralizedForceToActuationOrdering : public systems::LeafSystem<double> {
   explicit GeneralizedForceToActuationOrdering(
       const MultibodyPlant<double>& plant)
       : Binv_(plant.MakeActuationMatrix().inverse()) {
-    this->DeclareVectorInputPort(
-        "tau", systems::BasicVector<double>(plant.num_actuators()));
+    this->DeclareVectorInputPort("tau", plant.num_actuators());
     this->DeclareVectorOutputPort(
-        "u", systems::BasicVector<double>(plant.num_actuators()),
+        "u", plant.num_actuators(),
         &GeneralizedForceToActuationOrdering::remap_output);
   }
 
@@ -208,8 +207,7 @@ class ForceSensorEvaluator : public systems::LeafSystem<double> {
             "spatial_forces_in",
             Value<std::vector<multibody::SpatialForce<double>>>())
         .get_index();
-    this->DeclareVectorOutputPort("force_sensors_out",
-                                  systems::BasicVector<double>(num_sensors * 2),
+    this->DeclareVectorOutputPort("force_sensors_out", num_sensors * 2,
                                   &ForceSensorEvaluator::CalcOutput)
         .get_index();
   }

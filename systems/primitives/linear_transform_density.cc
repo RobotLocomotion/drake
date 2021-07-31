@@ -23,13 +23,12 @@ LinearTransformDensity<T>::LinearTransformDensity(
       this->DeclareInputPort("b", kVectorValued, output_size_).get_index();
 
   w_out_port_id_ =
-      this->DeclareVectorOutputPort("w_out", BasicVector<T>(output_size_),
+      this->DeclareVectorOutputPort("w_out", output_size_,
                                     &LinearTransformDensity<T>::CalcOutput)
           .get_index();
   w_out_density_port_id_ =
       this->DeclareVectorOutputPort(
-              "w_out_density", BasicVector<T>(1),
-              &LinearTransformDensity<T>::CalcOutputDensity)
+              "w_out_density", 1, &LinearTransformDensity<T>::CalcOutputDensity)
           .get_index();
 }
 

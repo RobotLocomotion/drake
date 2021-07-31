@@ -54,8 +54,9 @@ class DifferentialIK(LeafSystem):
                               PortDataType.kVectorValued, 6)
 
         # Provide the output as desired positions.
-        self.DeclareVectorOutputPort("joint_position_desired", BasicVector(
-            robot.num_positions()), self.CopyPositionOut)
+        self.DeclareVectorOutputPort("joint_position_desired",
+                                     robot.num_positions(),
+                                     self.CopyPositionOut)
 
     def SetPositions(self, context, q):
         context.get_mutable_discrete_state(0).SetFromVector(q)

@@ -14,7 +14,7 @@ class TranslatorSystem final : public LeafSystem<double> {
 
   explicit TranslatorSystem(int size)
       : size_(size) {
-    this->DeclareVectorInputPort("input", BasicVector<double>(size));
+    this->DeclareVectorInputPort("input", size);
     this->DeclareAbstractOutputPort("output", &TranslatorSystem::CalcOutput);
   }
 

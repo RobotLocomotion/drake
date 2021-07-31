@@ -14,24 +14,20 @@ JacoStatusReceiver::JacoStatusReceiver(int num_joints, int num_fingers)
       num_fingers_(num_fingers) {
   this->DeclareAbstractInputPort(
       "lcmt_jaco_status", Value<lcmt_jaco_status>{});
+  this->DeclareVectorOutputPort("state", (num_joints_ + num_fingers_) * 2,
+                                &JacoStatusReceiver::CalcStateOutput);
   this->DeclareVectorOutputPort(
-      "state", BasicVector<double>((num_joints_ + num_fingers_) * 2),
-      &JacoStatusReceiver::CalcStateOutput);
+      "torque", num_joints_ + num_fingers_,
+      &JacoStatusReceiver::CalcLcmOutput<&lcmt_jaco_status::joint_torque,
+                                         &lcmt_jaco_status::finger_torque>);
+  this->DeclareVectorOutputPort("torque_external", num_joints_ + num_fingers_,
+                                &JacoStatusReceiver::CalcLcmOutput<
+                                    &lcmt_jaco_status::joint_torque_external,
+                                    &lcmt_jaco_status::finger_torque_external>);
   this->DeclareVectorOutputPort(
-      "torque", BasicVector<double>(num_joints_ + num_fingers_),
-      &JacoStatusReceiver::CalcLcmOutput<
-      &lcmt_jaco_status::joint_torque,
-      &lcmt_jaco_status::finger_torque>);
-  this->DeclareVectorOutputPort(
-      "torque_external", BasicVector<double>(num_joints_ + num_fingers_),
-      &JacoStatusReceiver::CalcLcmOutput<
-      &lcmt_jaco_status::joint_torque_external,
-      &lcmt_jaco_status::finger_torque_external>);
-  this->DeclareVectorOutputPort(
-      "current", BasicVector<double>(num_joints_ + num_fingers_),
-      &JacoStatusReceiver::CalcLcmOutput<
-      &lcmt_jaco_status::joint_current,
-      &lcmt_jaco_status::finger_current>);
+      "current", num_joints_ + num_fingers_,
+      &JacoStatusReceiver::CalcLcmOutput<&lcmt_jaco_status::joint_current,
+                                         &lcmt_jaco_status::finger_current>);
 }
 
 using OutPort = systems::OutputPort<double>;

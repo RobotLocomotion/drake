@@ -60,13 +60,12 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
-      this->DeclareVectorOutputPort("control",
-                                    BasicVector<T>(output_projection_.rows()),
+      this->DeclareVectorOutputPort("control", output_projection_.rows(),
                                     &PidController<T>::CalcControl)
           .get_index();
 
   input_index_state_ =
-      this->DeclareInputPort("estimated_state", kVectorValued, num_full_state_)
+      this->DeclareVectorInputPort("estimated_state", num_full_state_)
           .get_index();
 
   input_index_desired_state_ =

@@ -53,7 +53,7 @@ Rod2dGeometry::Rod2dGeometry(double radius, double length,
   scene_graph->AssignRole(source_id_, geometry, illus_props);
 
   // Only uses the qs of the state (x, y, θ).
-  this->DeclareVectorInputPort("state", systems::BasicVector<double>(6));
+  this->DeclareVectorInputPort("state", 6);
   this->DeclareAbstractOutputPort("geometry_pose",
                                   &Rod2dGeometry::OutputGeometryPose);
 }

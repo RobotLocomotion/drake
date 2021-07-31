@@ -18,8 +18,7 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   auto state_index = this->DeclareContinuousState(1, 1, 0);
 
   // First output, y₁ = q, for interesting estimation problems.
-  this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                systems::BasicVector<T>(1),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName, 1,
                                 &VanDerPolOscillator::CopyPositionToOutput);
 
   // Second output, y₂ = [q,q̇]', for e.g. visualizing the full state.

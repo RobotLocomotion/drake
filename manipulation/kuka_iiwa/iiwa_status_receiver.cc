@@ -14,29 +14,26 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
   this->DeclareAbstractInputPort(
       "lcmt_iiwa_status", Value<lcmt_iiwa_status>{});
   this->DeclareVectorOutputPort(
-      "position_commanded", BasicVector<double>(num_joints_),
+      "position_commanded", num_joints_,
       &IiwaStatusReceiver::CalcLcmOutput<
-        &lcmt_iiwa_status::joint_position_commanded>);
+          &lcmt_iiwa_status::joint_position_commanded>);
   this->DeclareVectorOutputPort(
-      "position_measured", BasicVector<double>(num_joints_),
+      "position_measured", num_joints_,
       &IiwaStatusReceiver::CalcLcmOutput<
-        &lcmt_iiwa_status::joint_position_measured>);
+          &lcmt_iiwa_status::joint_position_measured>);
   this->DeclareVectorOutputPort(
-      "velocity_estimated", BasicVector<double>(num_joints_),
+      "velocity_estimated", num_joints_,
       &IiwaStatusReceiver::CalcLcmOutput<
-        &lcmt_iiwa_status::joint_velocity_estimated>);
-  this->DeclareVectorOutputPort(
-      "torque_commanded", BasicVector<double>(num_joints_),
-      &IiwaStatusReceiver::CalcLcmOutput<
-        &lcmt_iiwa_status::joint_torque_commanded>);
-  this->DeclareVectorOutputPort(
-      "torque_measured", BasicVector<double>(num_joints_),
-      &IiwaStatusReceiver::CalcLcmOutput<
-        &lcmt_iiwa_status::joint_torque_measured>);
-  this->DeclareVectorOutputPort(
-      "torque_external", BasicVector<double>(num_joints_),
-      &IiwaStatusReceiver::CalcLcmOutput<
-        &lcmt_iiwa_status::joint_torque_external>);
+          &lcmt_iiwa_status::joint_velocity_estimated>);
+  this->DeclareVectorOutputPort("torque_commanded", num_joints_,
+                                &IiwaStatusReceiver::CalcLcmOutput<
+                                    &lcmt_iiwa_status::joint_torque_commanded>);
+  this->DeclareVectorOutputPort("torque_measured", num_joints_,
+                                &IiwaStatusReceiver::CalcLcmOutput<
+                                    &lcmt_iiwa_status::joint_torque_measured>);
+  this->DeclareVectorOutputPort("torque_external", num_joints_,
+                                &IiwaStatusReceiver::CalcLcmOutput<
+                                    &lcmt_iiwa_status::joint_torque_external>);
 }
 
 IiwaStatusReceiver::~IiwaStatusReceiver() = default;

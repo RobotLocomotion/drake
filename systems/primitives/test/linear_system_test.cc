@@ -394,7 +394,7 @@ class EmptyStateSystemWithMixedInputs final : public LeafSystem<T> {
   EmptyStateSystemWithMixedInputs()
       : LeafSystem<T>(SystemTypeTag<EmptyStateSystemWithMixedInputs>{}) {
     this->DeclareVectorInputPort(
-        kUseDefaultName, BasicVector<T>(1) /* scalar input */);
+        kUseDefaultName, 1 /* scalar input */);
     this->DeclareAbstractInputPort(
         "dummy", Value<std::vector<double>>() /* Arbitrary data type */);
   }
@@ -725,10 +725,8 @@ class MimoSystem final : public LeafSystem<T> {
     } else {
       this->DeclareContinuousState(2);
     }
-    this->DeclareVectorOutputPort(
-        kUseDefaultName, BasicVector<T>(1), &MimoSystem::CalcOutput0);
-    this->DeclareVectorOutputPort(
-        kUseDefaultName, BasicVector<T>(3), &MimoSystem::CalcOutput1);
+    this->DeclareVectorOutputPort(kUseDefaultName, 1, &MimoSystem::CalcOutput0);
+    this->DeclareVectorOutputPort(kUseDefaultName, 3, &MimoSystem::CalcOutput1);
 
     A_ << 1, 2, 3, 4;
     B0_ << 5, 6;

@@ -26,8 +26,7 @@ RimlessWheel<T>::RimlessWheel()
                                 &RimlessWheel::MinimalStateOut);
 
   // The floating-base (RPY) state of the system (useful for visualization).
-  this->DeclareVectorOutputPort(systems::kUseDefaultName,
-                                systems::BasicVector<T>(12),
+  this->DeclareVectorOutputPort(systems::kUseDefaultName, 12,
                                 &RimlessWheel::FloatingBaseStateOut);
 
   this->DeclareNumericParameter(RimlessWheelParams<T>());

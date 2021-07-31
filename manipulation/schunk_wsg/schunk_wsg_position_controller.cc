@@ -29,23 +29,20 @@ SchunkWsgPdController::SchunkWsgPdController(double kp_command,
   DRAKE_DEMAND(kd_constraint >= 0);
 
   desired_state_input_port_ =
-      this->DeclareVectorInputPort("desired_state", BasicVector<double>(2))
-          .get_index();
+      this->DeclareVectorInputPort("desired_state", 2).get_index();
   force_limit_input_port_ =
-      this->DeclareVectorInputPort("force_limit", BasicVector<double>(1))
-          .get_index();
+      this->DeclareVectorInputPort("force_limit", 1).get_index();
   state_input_port_ =
-      this->DeclareVectorInputPort("state", BasicVector<double>(2 * kNumJoints))
-          .get_index();
+      this->DeclareVectorInputPort("state", 2 * kNumJoints).get_index();
 
   generalized_force_output_port_ =
       this->DeclareVectorOutputPort(
-              "generalized_force", BasicVector<double>(kNumJoints),
+              "generalized_force", kNumJoints,
               &SchunkWsgPdController::CalcGeneralizedForceOutput)
           .get_index();
 
   grip_force_output_port_ =
-      this->DeclareVectorOutputPort("grip_force", BasicVector<double>(1),
+      this->DeclareVectorOutputPort("grip_force", 1,
                                     &SchunkWsgPdController::CalcGripForceOutput)
           .get_index();
 

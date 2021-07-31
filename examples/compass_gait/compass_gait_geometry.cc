@@ -57,8 +57,7 @@ CompassGaitGeometry::CompassGaitGeometry(
 
   // Note: the floating-base state output from CompassGait uses RPY (12
   // dims) + 2 for the position/velocity of the right leg.
-  this->DeclareVectorInputPort("floating_base_state",
-                               systems::BasicVector<double>(14));
+  this->DeclareVectorInputPort("floating_base_state", 14);
   this->DeclareAbstractOutputPort("geometry_pose",
                                   &CompassGaitGeometry::OutputGeometryPose);
 

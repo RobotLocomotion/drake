@@ -45,13 +45,11 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
        position_measured_or_zero_->ticket()});
 
   commanded_position_output_ = &DeclareVectorOutputPort(
-      "position", BasicVector<double>(num_joints),
-      &IiwaCommandReceiver::CalcPositionOutput,
+      "position", num_joints, &IiwaCommandReceiver::CalcPositionOutput,
       {defaulted_command_->ticket()});
 
   commanded_torque_output_ = &DeclareVectorOutputPort(
-      "torque", BasicVector<double>(num_joints),
-      &IiwaCommandReceiver::CalcTorqueOutput,
+      "torque", num_joints, &IiwaCommandReceiver::CalcTorqueOutput,
       {defaulted_command_->ticket()});
 }
 

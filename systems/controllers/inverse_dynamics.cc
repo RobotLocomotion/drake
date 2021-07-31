@@ -23,7 +23,7 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
       this->DeclareInputPort(kUseDefaultName, kVectorValued, q_dim_ + v_dim_)
           .get_index();
   output_port_index_force_ =
-      this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(v_dim_),
+      this->DeclareVectorOutputPort(kUseDefaultName, v_dim_,
                                     &InverseDynamics<T>::CalcOutputForce)
           .get_index();
 

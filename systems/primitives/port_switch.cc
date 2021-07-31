@@ -42,7 +42,7 @@ PortSwitch<T>::PortSwitch(
     DRAKE_DEMAND(model_value_autodiff_ == nullptr);
     DRAKE_DEMAND(model_value_symbolic_ == nullptr);
 
-    this->DeclareVectorOutputPort("value", BasicVector<T>(vector_size_),
+    this->DeclareVectorOutputPort("value", vector_size_,
                                   &PortSwitch<T>::CopyVectorOut);
   } else {
     DRAKE_DEMAND(model_value_double_ != nullptr);

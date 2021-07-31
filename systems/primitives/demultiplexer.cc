@@ -27,7 +27,7 @@ Demultiplexer<T>::Demultiplexer(const std::vector<int>& output_ports_sizes)
     // Require no zero size output port.
     DRAKE_THROW_UNLESS(output_port_size >= 1);
     this->DeclareVectorOutputPort(
-        systems::kUseDefaultName, BasicVector<T>(output_port_size),
+        systems::kUseDefaultName, output_port_size,
         [this, i](const Context<T>& context, BasicVector<T>* vector) {
           this->CopyToOutput(context, OutputPortIndex(i), vector);
         });

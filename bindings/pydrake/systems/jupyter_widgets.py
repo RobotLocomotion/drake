@@ -16,7 +16,7 @@ from ipywidgets import FloatSlider, Layout, Widget
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.common.value import AbstractValue
-from pydrake.systems.framework import BasicVector, LeafSystem, PublishEvent
+from pydrake.systems.framework import LeafSystem, PublishEvent
 from pydrake.math import RigidTransform, RollPitchYaw
 
 
@@ -210,7 +210,7 @@ class WidgetSystem(LeafSystem):
                 display(w)
             port = self.DeclareVectorOutputPort(
                 f"widget_group_{i}",
-                BasicVector(len(widget_iterable)),
+                len(widget_iterable),
                 partial(self.DoCalcOutput, port_index=i))
             port.disable_caching_by_default()
 
