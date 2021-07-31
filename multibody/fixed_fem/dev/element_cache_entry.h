@@ -25,8 +25,6 @@ class ElementCacheEntry {
   /* Constructs a new %ElementCacheEntry with default initialized data. */
   ElementCacheEntry() {}
 
-  ~ElementCacheEntry() = default;
-
   ElementData& mutable_element_data() { return element_data_; }
 
   const ElementData& element_data() const { return element_data_; }

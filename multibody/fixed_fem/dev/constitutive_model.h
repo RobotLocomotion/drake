@@ -40,8 +40,6 @@ class ConstitutiveModel {
   using Traits = DerivedTraits;
   using T = typename Traits::Scalar;
 
-  ~ConstitutiveModel() = default;
-
   /* The number of locations at which the constitutive relationship is
    evaluated. */
   static constexpr int num_locations() { return DerivedTraits::kNumLocations; }
