@@ -27,7 +27,7 @@ Accelerometer<T>::Accelerometer(const multibody::BodyIndex& body_index,
       gravity_vector_(gravity_vector) {
   // Declare measurement output port.
   measurement_output_port_ = &this->DeclareVectorOutputPort(
-      "measurement", BasicVector<T>(3), &Accelerometer<T>::CalcOutput);
+      "measurement", 3, &Accelerometer<T>::CalcOutput);
 
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
       "body_poses", Value<std::vector<RigidTransform<T>>>());

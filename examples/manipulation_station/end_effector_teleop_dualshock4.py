@@ -21,8 +21,7 @@ from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (BasicVector, DiagramBuilder,
-                                       LeafSystem)
+from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter
@@ -161,11 +160,9 @@ class TeleopDualShock4Manager:
 class DualShock4Teleop(LeafSystem):
     def __init__(self, joystick):
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
-                                     self.DoCalcOutput)
-        self.DeclareVectorOutputPort("position", BasicVector(1),
-                                     self.CalcPositionOutput)
-        self.DeclareVectorOutputPort("force_limit", BasicVector(1),
+        self.DeclareVectorOutputPort("rpy_xyz", 6, self.DoCalcOutput)
+        self.DeclareVectorOutputPort("position", 1, self.CalcPositionOutput)
+        self.DeclareVectorOutputPort("force_limit", 1,
                                      self.CalcForceLimitOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger

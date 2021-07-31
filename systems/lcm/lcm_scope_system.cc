@@ -26,7 +26,7 @@ void Convert(
 
 LcmScopeSystem::LcmScopeSystem(int size) {
   const InputPort<double>& input_port = this->DeclareVectorInputPort(
-      "input", BasicVector<double>(size));
+      "input", size);
   this->DeclareAbstractOutputPort(
       "output",
       []() { return std::make_unique<Value<lcmt_scope>>(lcmt_scope{}); },

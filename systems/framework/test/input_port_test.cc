@@ -154,11 +154,9 @@ GTEST_TEST(InputPortTest, AbstractTest) {
 struct SystemWithInputPorts final : public LeafSystem<double> {
  public:
   SystemWithInputPorts()
-      : basic_vec_port{DeclareVectorInputPort("basic_vec_port",
-                                              BasicVector<double>(3))},
+      : basic_vec_port{DeclareVectorInputPort("basic_vec_port", 3)},
         derived_vec_port{DeclareVectorInputPort(
-            "derived_vec_port",
-            MyVector3d(Eigen::Vector3d(1., 2., 3.)))},
+            "derived_vec_port", MyVector3d(Eigen::Vector3d(1., 2., 3.)))},
         int_port{DeclareAbstractInputPort("int_port", Value<int>(5))},
         double_port{
             DeclareAbstractInputPort("double_port", Value<double>(1.25))},

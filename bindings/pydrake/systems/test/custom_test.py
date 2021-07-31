@@ -60,8 +60,8 @@ class CustomAdder(LeafSystem):
         LeafSystem.__init__(self)
         for i in range(num_inputs):
             self.DeclareVectorInputPort(
-                "input{}".format(i), BasicVector(size))
-        self.DeclareVectorOutputPort("sum", BasicVector(size), self._calc_sum)
+                "input{}".format(i), size)
+        self.DeclareVectorOutputPort("sum", size, self._calc_sum)
 
     def _calc_sum(self, context, sum_data):
         # @note This will NOT work if the scalar type is AutoDiff or symbolic,

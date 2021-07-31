@@ -22,9 +22,8 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step,
   DRAKE_DEMAND(n_ > 0);
   DRAKE_DEMAND(time_step_ > 0.0);
 
-  this->DeclareVectorInputPort("u", systems::BasicVector<T>(n_));
-  this->DeclareVectorOutputPort("dudt", systems::BasicVector<T>(n_),
-                                &DiscreteDerivative<T>::CalcOutput,
+  this->DeclareVectorInputPort("u", n_);
+  this->DeclareVectorOutputPort("dudt", n_, &DiscreteDerivative<T>::CalcOutput,
                                 {this->xd_ticket()});
   this->DeclareDiscreteState(n_);  // u[n]
   this->DeclareDiscreteState(n_);  // u[n-1]

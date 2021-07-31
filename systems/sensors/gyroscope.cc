@@ -22,7 +22,7 @@ Gyroscope<T>::Gyroscope(const multibody::BodyIndex& body_index,
       X_BS_(X_BS) {
   // Declare measurement output port.
   measurement_output_port_ = &this->DeclareVectorOutputPort(
-      "measurement", BasicVector<T>(3), &Gyroscope<T>::CalcOutput);
+      "measurement", 3, &Gyroscope<T>::CalcOutput);
 
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
       "body_poses", Value<std::vector<RigidTransform<T>>>());

@@ -20,11 +20,10 @@ using systems::Context;
 SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                                                    double initial_force)
     : initial_position_(initial_position), initial_force_(initial_force) {
-  this->DeclareVectorOutputPort("position", BasicVector<double>(1),
+  this->DeclareVectorOutputPort("position", 1,
                                 &SchunkWsgCommandReceiver::CalcPositionOutput);
   this->DeclareVectorOutputPort(
-      "force_limit", BasicVector<double>(1),
-      &SchunkWsgCommandReceiver::CalcForceLimitOutput);
+      "force_limit", 1, &SchunkWsgCommandReceiver::CalcForceLimitOutput);
 
   lcmt_schunk_wsg_command uninitialized_message{};
   this->DeclareAbstractInputPort(
@@ -66,13 +65,10 @@ void SchunkWsgCommandReceiver::CalcForceLimitOutput(
 }
 
 SchunkWsgCommandSender::SchunkWsgCommandSender(double default_force_limit)
-    : position_input_port_(this->DeclareVectorInputPort(
-                                   "position", systems::BasicVector<double>(1))
-                               .get_index()),
+    : position_input_port_(
+          this->DeclareVectorInputPort("position", 1).get_index()),
       force_limit_input_port_(
-          this->DeclareVectorInputPort("force_limit",
-                                       systems::BasicVector<double>(1))
-              .get_index()),
+          this->DeclareVectorInputPort("force_limit", 1).get_index()),
       default_force_limit_(default_force_limit) {
   this->DeclareAbstractOutputPort("lcmt_schunk_wsg_command",
                                   &SchunkWsgCommandSender::CalcCommandOutput);
@@ -93,14 +89,14 @@ void SchunkWsgCommandSender::CalcCommandOutput(
 }
 
 SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
-    : state_output_port_(this->DeclareVectorOutputPort(
-                                 "state", systems::BasicVector<double>(2),
-                                 &SchunkWsgStatusReceiver::CopyStateOut)
-                             .get_index()),
-      force_output_port_(this->DeclareVectorOutputPort(
-                                 "force", systems::BasicVector<double>(1),
-                                 &SchunkWsgStatusReceiver::CopyForceOut)
-                             .get_index()) {
+    : state_output_port_(
+          this->DeclareVectorOutputPort("state", 2,
+                                        &SchunkWsgStatusReceiver::CopyStateOut)
+              .get_index()),
+      force_output_port_(
+          this->DeclareVectorOutputPort("force", 1,
+                                        &SchunkWsgStatusReceiver::CopyForceOut)
+              .get_index()) {
   this->DeclareAbstractInputPort("lcmt_schunk_wsg_status",
                                  Value<lcmt_schunk_wsg_status>());
 }

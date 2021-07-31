@@ -33,7 +33,7 @@ DifferentialInverseKinematicsIntegrator::
   }
 
   this->DeclareVectorOutputPort(
-      "joint_positions", systems::BasicVector<double>(robot.num_positions()),
+      "joint_positions", robot.num_positions(),
       &DifferentialInverseKinematicsIntegrator::CopyPositionsOut,
       {all_state_ticket()});
 
