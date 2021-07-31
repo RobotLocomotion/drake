@@ -573,7 +573,17 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py_rvp::reference_internal, py::arg("name"),
             py::arg("model_vector"), py::arg("random_type") = std::nullopt,
-            doc.LeafSystem.DeclareVectorInputPort.doc)
+            doc.LeafSystem.DeclareVectorInputPort.doc_3args_model_vector)
+        .def(
+            "DeclareVectorInputPort",
+            [](PyLeafSystem* self, std::string name, int size,
+                std::optional<RandomDistribution> random_type)
+                -> InputPort<T>& {
+              return self->DeclareVectorInputPort(name, size, random_type);
+            },
+            py_rvp::reference_internal, py::arg("name"), py::arg("size"),
+            py::arg("random_type") = std::nullopt,
+            doc.LeafSystem.DeclareVectorInputPort.doc_3args_size)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
                 [](PyLeafSystem* self, const std::string& name,
@@ -586,15 +596,28 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
-            doc.LeafSystem.DeclareVectorOutputPort
-                .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc);
+            doc.LeafSystem.DeclareVectorOutputPort.doc_4args_model_vector)
+        .def("DeclareVectorOutputPort",
+            WrapCallbacks(
+                [](PyLeafSystem* self, const std::string& name, int size,
+                    CalcVectorCallback calc,
+                    const std::set<DependencyTicket>& prerequisites_of_calc)
+                    -> const OutputPort<T>& {
+                  return self->DeclareVectorOutputPort(
+                      name, size, calc, prerequisites_of_calc);
+                }),
+            py_rvp::reference_internal, py::arg("name"), py::arg("size"),
+            py::arg("calc"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.LeafSystem.DeclareVectorOutputPort.doc_4args_size);
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     leaf_system_cls  // BR
         .def("DeclareVectorOutputPort",
             WrapDeprecated(
-                doc.LeafSystem.DeclareVectorOutputPort
-                    .doc_deprecated_deprecated_3args_constBasicVectorSubtype_voidMySystemconstContextBasicVectorSubtypeconst_stdset,
+                doc.LeafSystem.DeclareVectorOutputPort.doc_deprecated,
                 WrapCallbacks(
                     [](PyLeafSystem* self, const BasicVector<T>& arg1,
                         CalcVectorCallback arg2) -> const OutputPort<T>* {
@@ -604,8 +627,7 @@ Note: The above is for the C++ documentation. For Python, use
                       return &self->DeclareVectorOutputPort(arg1, arg2);
                     })),
             py_rvp::reference_internal,
-            doc.LeafSystem.DeclareVectorOutputPort
-                .doc_deprecated_deprecated_3args_constBasicVectorSubtype_voidMySystemconstContextBasicVectorSubtypeconst_stdset);
+            doc.LeafSystem.DeclareVectorOutputPort.doc_deprecated);
 #pragma GCC diagnostic pop
     leaf_system_cls  // BR
         .def("DeclareStateOutputPort",
