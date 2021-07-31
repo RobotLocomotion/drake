@@ -210,6 +210,7 @@ class TestCustom(unittest.TestCase):
         dut.DeclareAbstractState(AbstractValue.Make(1))
         dut.DeclareDiscreteState(1)
         dut.DeclareVectorInputPort("u0", BasicVector(1))
+        self.assertEqual(dut.DeclareVectorInputPort("u1", 2).size(), 2)
         dut.DeclareNumericParameter(BasicVector(1))
         for func, arg in [
                 (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
@@ -284,6 +285,11 @@ class TestCustom(unittest.TestCase):
                 self.DeclareVectorOutputPort(
                     "noop", BasicVector(1), noop,
                     prerequisites_of_calc=set([self.nothing_ticket()]))
+                self.DeclareVectorOutputPort("noop2",
+                                             1,
+                                             noop,
+                                             prerequisites_of_calc=set(
+                                                 [self.nothing_ticket()]))
                 self.witness = self.MakeWitnessFunction(
                     "witness", WitnessFunctionDirection.kCrossesZero,
                     self._witness)
