@@ -107,6 +107,16 @@ TEST_F(ChooseBestSolverTest, EqualityConstrainedQPSolver) {
   CheckBestSolver(EqualityConstrainedQPSolver::id());
 }
 
+TEST_F(ChooseBestSolverTest, LPsolver) {
+  prog_.AddLinearEqualityConstraint(x_(0) + 3 * x_(1) == 3);
+  CheckBestSolver(LinearSystemSolver::id());
+  prog_.AddLinearConstraint(x_(0) + 2 * x_(1) >= 1);
+  prog_.AddLinearCost(x_(0) + x_(1));
+  CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(), clp_solver_.get(),
+                   snopt_solver_.get(), ipopt_solver_.get(),
+                   nlopt_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+}
+
 TEST_F(ChooseBestSolverTest, QPsolver) {
   prog_.AddLinearConstraint(x_(0) + x_(1) >= 1);
   prog_.AddQuadraticCost(x_(0) * x_(0));

@@ -19,6 +19,11 @@ namespace solvers {
 SolverId ChooseBestSolver(const MathematicalProgram& prog);
 
 /**
+ * Choose the best linear programming solver.
+ */
+SolverId ChooseBestLPSolver(const MathematicalProgram& prog);
+
+/**
  * Returns the set of solvers known to ChooseBestSolver.
  */
 const std::set<SolverId>& GetKnownSolvers();
