@@ -41,8 +41,6 @@ load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
-load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
-load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
 load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
 load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
@@ -178,10 +176,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:
         lcm_repository(name = "lcm", mirrors = mirrors)
-    if "lcmtypes_bot2_core" not in excludes:
-        lcmtypes_bot2_core_repository(name = "lcmtypes_bot2_core", mirrors = mirrors)  # noqa
-    if "lcmtypes_robotlocomotion" not in excludes:
-        lcmtypes_robotlocomotion_repository(name = "lcmtypes_robotlocomotion", mirrors = mirrors)  # noqa
     if "libblas" not in excludes:
         libblas_repository(name = "libblas")
     if "libjpeg" not in excludes:
