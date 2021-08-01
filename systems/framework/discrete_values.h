@@ -144,7 +144,7 @@ class DiscreteValues {
 
   /// Returns the entire vector for the _only_ group as a mutable
   /// Eigen::VectorBlock, which allows mutation of the values, but does not
-  /// allow resizing the vector itself.
+  /// allow resize() to be called on the vector.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     ThrowUnlessExactlyOneGroup();
     return get_mutable_vector(0).get_mutable_value();
@@ -155,29 +155,29 @@ class DiscreteValues {
   /// Returns a const reference to the vector holding data for the indicated
   /// group.
   const BasicVector<T>& get_vector(int index) const {
-    DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
+    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
     return *data_[index];
   }
 
   /// Returns a mutable reference to the vector holding data for the indicated
   /// group.
   BasicVector<T>& get_mutable_vector(int index) {
-    DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
+    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
     return *data_[index];
   }
 
   /// Returns the entire vector as a const Eigen::VectorBlock for the indicated
   /// group.
   Eigen::VectorBlock<const VectorX<T>> get_value(int index) const {
-    DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
+    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
     return data_[index]->get_value();
   }
 
   /// Returns the entire vector for the indicated group as a mutable
   /// Eigen::VectorBlock, which allows mutation of the values, but does not
-  /// allow resizing the vector itself.
+  /// allow resize() to be called on the vector.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value(int index) {
-    DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
+    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
     return data_[index]->get_mutable_value();
   }
 
