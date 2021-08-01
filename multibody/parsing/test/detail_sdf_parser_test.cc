@@ -1109,17 +1109,16 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       R"([\s\S]*XML Attribute\[bad_attribute\] in element\[model\] not )"
       R"(defined in SDF.[\s\S]*)");
 
-  // TODO(#15018): This currently only emits a Drake-log deprecation warning.
-  // We should handle this more directly in the future, ideally via
-  // libsdformat's policies.
-  ParseTestString(R"""(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
 <model name='model_with_too_many_top_level_elements'>
   <link name='a'/>
 </model>
 <model name='two_models_too_many'>
   <link name='b'/>
 </model>
-)""");
+)"""),
+    ".*has 2 models and 0 worlds.*");
 
   // TODO(#15018): Have this be a printed warning, and then make this an error.
   ParseTestString(R"""(
