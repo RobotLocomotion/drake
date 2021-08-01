@@ -72,7 +72,7 @@ void IiwaCommandReceiver::LatchInitialPosition(
     DiscreteValues<double>* result) const {
   const auto& bool_index = latched_position_measured_is_set_;
   const auto& value_index = latched_position_measured_;
-  result->get_mutable_vector(bool_index).get_mutable_value()[0] = 1.0;
+  result->get_mutable_value(bool_index)[0] = 1.0;
   result->get_mutable_vector(value_index).SetFrom(
       position_measured_or_zero_->Eval<BasicVector<double>>(context));
 }

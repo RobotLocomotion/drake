@@ -241,7 +241,7 @@ void ClothSpringModel<T>::UpdateDiscreteState(
 
   // Write v_hat + dv into the velocity at the next time step.
   Eigen::VectorBlock<VectorX<T>> next_state_values =
-      next_states->get_mutable_vector().get_mutable_value();
+      next_states->get_mutable_value();
   auto next_q = next_state_values.head(3 * num_particles_);
   auto next_v = next_state_values.tail(3 * num_particles_);
   next_v = v_hat + dv;

@@ -48,8 +48,7 @@ void ZeroOrderHold<T>::LatchInputVectorToState(
     DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());
   const auto& input = this->get_input_port().Eval(context);
-  BasicVector<T>& state_value = discrete_state->get_mutable_vector(0);
-  state_value.SetFromVector(input);
+  discrete_state->set_value(0, input);
 }
 
 template <typename T>

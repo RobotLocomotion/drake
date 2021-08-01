@@ -58,8 +58,8 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
     using std::pow;
-    discrete_state->get_mutable_vector(0).SetAtIndex(
-        0, pow(context.get_discrete_state(0).GetAtIndex(0), 3.0));
+    (*discrete_state)[0] =
+        pow(context.get_discrete_state(0).GetAtIndex(0), 3.0);
   }
 
   const double timestep_{0.0};
@@ -89,9 +89,8 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
-    discrete_state->get_mutable_vector(0).SetAtIndex(
-        0, context.get_numeric_parameter(0).GetAtIndex(0) *
-               context.get_discrete_state(0).GetAtIndex(0));
+    (*discrete_state)[0] = context.get_numeric_parameter(0).GetAtIndex(0) *
+                           context.get_discrete_state(0).GetAtIndex(0);
   }
 };
 

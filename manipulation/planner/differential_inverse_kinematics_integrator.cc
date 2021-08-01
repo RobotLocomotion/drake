@@ -112,10 +112,10 @@ void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
           "Differential IK could not find a solution at time {}.",
           context.get_time());
     }
-    discrete_state->get_mutable_vector(0).SetFromVector(positions);
+    discrete_state->set_value(0, positions);
   } else {
-    discrete_state->get_mutable_vector(0).SetFromVector(
-        positions + time_step_ * result.joint_velocities.value());
+    discrete_state->set_value(
+        0, positions + time_step_ * result.joint_velocities.value());
   }
 
   if (this->num_discrete_state_groups() > 1) {

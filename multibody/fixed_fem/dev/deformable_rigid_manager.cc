@@ -328,8 +328,7 @@ void DeformableRigidManager<T>::DoCalcDiscreteValues(
 
   VectorX<T> x_next(this->plant().num_multibody_states());
   x_next << q_next, v_next;
-  updates->get_mutable_vector(this->multibody_state_index())
-      .SetFromVector(x_next);
+  updates->set_value(this->multibody_state_index(), x_next);
 
   /* Evaluates the deformable free-motion states. */
   const std::vector<systems::DiscreteStateIndex>& discrete_state_indexes =
@@ -343,10 +342,8 @@ void DeformableRigidManager<T>::DoCalcDiscreteValues(
     // TODO(xuchenhan-tri): This assumes no deformable-rigid contact exists.
     //  Modify this to include the effect of contact.
     /* Copy new state to output variable. */
-    systems::BasicVector<T>& next_discrete_state =
-        updates->get_mutable_vector(discrete_state_indexes[deformable_body_id]);
     Eigen::VectorBlock<VectorX<T>> next_discrete_value =
-        next_discrete_state.get_mutable_value();
+        updates->get_mutable_value(discrete_state_indexes[deformable_body_id]);
     next_discrete_value.head(num_dofs) = state_star.q();
     next_discrete_value.segment(num_dofs, num_dofs) = state_star.qdot();
     next_discrete_value.tail(num_dofs) = state_star.qddot();

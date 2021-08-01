@@ -79,7 +79,7 @@ void DiscreteTimeDelay<T>::SaveInputVectorToBuffer(
   // copy operation.
   const auto& input = this->get_input_port().Eval(context);
   Eigen::VectorBlock<VectorX<T>> updated_state_value =
-      discrete_state->get_mutable_vector(0).get_mutable_value();
+      discrete_state->get_mutable_value(0);
   Eigen::VectorBlock<const VectorX<T>> old_state_value =
       context.get_discrete_state(0).get_value();
   updated_state_value.head((delay_buffer_size_ - 1) * vector_size_) =

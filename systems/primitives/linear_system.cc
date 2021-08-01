@@ -183,7 +183,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
           autodiff_system->AllocateDiscreteVariables();
       autodiff_system->CalcDiscreteVariableUpdates(*autodiff_context,
                                                    autodiff_x1.get());
-      auto autodiff_x1_vec = autodiff_x1->get_vector().CopyToVector();
+      auto autodiff_x1_vec = autodiff_x1->get_value();
 
       const Eigen::MatrixXd AB =
           math::autoDiffToGradientMatrix(autodiff_x1_vec);

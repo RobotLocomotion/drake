@@ -143,13 +143,11 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
   void DoCalcDiscreteValues(const Context<T>& context,
                             DiscreteValues<T>* updates) const final {
     auto multibody_data =
-        updates->get_mutable_vector(this->multibody_state_index())
-            .get_mutable_value();
+        updates->get_mutable_value(this->multibody_state_index());
     multibody_data += VectorX<T>::Ones(multibody_data.size());
     if (additional_state_index_.is_valid()) {
       auto additional_data =
-          updates->get_mutable_vector(additional_state_index_)
-              .get_mutable_value();
+          updates->get_mutable_value(additional_state_index_);
       additional_data += 2.0 * VectorX<T>::Ones(additional_data.size());
     }
   }

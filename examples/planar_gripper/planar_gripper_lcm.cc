@@ -58,8 +58,7 @@ systems::EventStatus GripperCommandDecoder::UpdateDiscreteState(
 
   // If we're using a default constructed message (haven't received
   // a command yet), keep using the initial state.
-  BasicVector<double>& state = discrete_state->get_mutable_vector(0);
-  auto state_value = state.get_mutable_value();
+  auto state_value = discrete_state->get_mutable_value(0);
   auto positions = state_value.head(num_joints_);
   auto velocities = state_value.segment(num_joints_, num_joints_);
   auto torques = state_value.tail(num_joints_);
@@ -161,9 +160,7 @@ systems::EventStatus GripperStatusDecoder::UpdateDiscreteState(
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->get_value<lcmt_planar_gripper_status>();
 
-  BasicVector<double>& state = discrete_state->get_mutable_vector(0);
-
-  auto state_value = state.get_mutable_value();
+  auto state_value = discrete_state->get_mutable_value(0);
   auto positions = state_value.head(num_joints_);
   auto velocities = state_value.segment(num_joints_, num_joints_);
   auto tip_forces = state_value.tail(num_fingers_ * 2);

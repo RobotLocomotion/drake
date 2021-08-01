@@ -26,8 +26,7 @@ systems::EventStatus PlanarManipulandStatusDecoder::UpdateDiscreteState(
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->get_value<lcmt_planar_manipuland_status>();
 
-  systems::BasicVector<double>& state = discrete_state->get_mutable_vector(0);
-  auto state_value = state.get_mutable_value();
+  auto state_value = discrete_state->get_mutable_value(0);
 
   state_value(0) = status.position[0];
   state_value(1) = status.position[1];

@@ -114,8 +114,7 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
     using std::pow;
     const T& x1 = context.get_discrete_state(0).get_value()[0];
     const T& u = this->get_input_port(0).Eval(context)[0];
-    next_state->get_mutable_vector(0).SetAtIndex(0, u);
-    next_state->get_mutable_vector(0).SetAtIndex(1, pow(x1, 3.));
+    next_state->set_value(0, Vector2<T>{u, pow(x1, 3.)});
   }
 
   void OutputState(const systems::Context<T>& context,
