@@ -72,7 +72,7 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
 
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
-      /* Shoulder inboard frame Si IS the the world frame W. */
+      /* Shoulder inboard frame Si IS the world frame W. */
       plant->world_body(), std::nullopt,
       /* Shoulder outboard frame So IS frame L1. */
       link1, std::nullopt,

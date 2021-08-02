@@ -181,6 +181,51 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
   }
 }
 
+/* Tests the solver's processing of the verbosity options. With multiple ways
+ to request verbosity (common options and solver-specific options), we simply
+ apply a smoke test that none of the means causes runtime errors. Note, we
+ don't test the case where we configure the mathematical program itself; that
+ is resolved in SolverBase. We only need to test the options passed into
+ Solve(). The possible configurations are:
+    - No verbosity set at all (this is implicitly tested in all other tests).
+    - Common option explicitly set (on & off)
+    - Solver option explicitly set (on & off)
+    - Both options explicitly set (with all permutations of (on, on), etc.) */
+GTEST_TEST(OsqpSolverTest, SolverOptionsVerbosity) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) <= 3);
+  prog.AddLinearConstraint(4 * x(0) - 2 * x(1) >= -3);
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1) + 2 * x(0) * x(1));
+
+  OsqpSolver osqp_solver;
+
+  if (osqp_solver.is_available()) {
+    // Setting common options.
+    for (int print_to_console : {0, 1}) {
+      SolverOptions options;
+      options.SetOption(CommonSolverOption::kPrintToConsole, print_to_console);
+      osqp_solver.Solve(prog, {}, options);
+    }
+    // Setting solver options.
+    for (int print_to_console : {0, 1}) {
+      SolverOptions options;
+      options.SetOption(OsqpSolver::id(), "verbose", print_to_console);
+      osqp_solver.Solve(prog, {}, options);
+    }
+    // Setting both.
+    for (int common_print_to_console : {0, 1}) {
+      for (int solver_print_to_console : {0, 1}) {
+        SolverOptions options;
+        options.SetOption(CommonSolverOption::kPrintToConsole,
+                          common_print_to_console);
+        options.SetOption(OsqpSolver::id(), "verbose", solver_print_to_console);
+        osqp_solver.Solve(prog, {}, options);
+      }
+    }
+  }
+}
+
 GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
   // Intentionally create a slightly big problem to get a longer solve time.
   int n_x = 200;

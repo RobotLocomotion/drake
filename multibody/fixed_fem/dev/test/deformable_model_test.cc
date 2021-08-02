@@ -106,11 +106,11 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
  that registering a body with an existing name throws an exception. */
 TEST_F(DeformableModelTest, RegisterDeformableBodyUniqueNameRequirement) {
   EXPECT_EQ(AddDeformableBox(deformable_model_.get(), "box1"),
-            SoftBodyIndex(0));
+            DeformableBodyIndex(0));
   /* The returned body index should be the same as the number of deformable
    bodies in the system before the new one is added. */
   EXPECT_EQ(AddDeformableBox(deformable_model_.get(), "box2"),
-            SoftBodyIndex(1));
+            DeformableBodyIndex(1));
   EXPECT_EQ(deformable_model_->num_bodies(), 2);
   DRAKE_EXPECT_THROWS_MESSAGE(AddDeformableBox(deformable_model_.get(), "box1"),
                               "RegisterDeformableBody\\(\\): A body with name "

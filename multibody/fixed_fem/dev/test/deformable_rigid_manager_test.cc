@@ -166,7 +166,7 @@ class DeformableRigidManagerTest : public ::testing::Test {
   /* Fowards the call to
    DeformableRigidManager<double>::CalcDeformableRigidContactPair(). */
   internal::DeformableRigidContactPair<double> CalcDeformableRigidContactPair(
-      GeometryId rigid_id, SoftBodyIndex deformable_id) const {
+      GeometryId rigid_id, DeformableBodyIndex deformable_id) const {
     return deformable_rigid_manager_->CalcDeformableRigidContactPair(
         rigid_id, deformable_id);
   }
@@ -436,7 +436,7 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
   SetCollisionObjectPoseInWorld(rigid_ids[0], X_DR);
   /* Calculates the contact pair between the only rigid geometry and the only
    deformable geometry. */
-  const SoftBodyIndex deformable_id(0);
+  const DeformableBodyIndex deformable_id(0);
   const internal::DeformableRigidContactPair<double> contact_pair =
       CalcDeformableRigidContactPair(rigid_ids[0], deformable_id);
   /* Verifies that the geometry ids are as expected. */
@@ -620,7 +620,7 @@ class DeformableRigidContactDataTest : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
   const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
-  SoftBodyIndex A_;
+  DeformableBodyIndex A_;
   BodyIndex B_;
   BodyIndex C_;
   BodyIndex D_;
@@ -1047,7 +1047,7 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
    free motion tangent matrix of the deformable body with the given `index` as a
    dense matrix. */
   MatrixXd CalcFreeMotionTangentMatrix(const Context<double>& context,
-                                       SoftBodyIndex index) const {
+                                       DeformableBodyIndex index) const {
     const Eigen::SparseMatrix<double> tangent_matrix_sparse =
         deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context, index);
     return MatrixXd(tangent_matrix_sparse);
@@ -1057,7 +1057,8 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
    and returns the Schur complement of the tangent matrix of the deformable body
    with the given `index` as a dense matrix. */
   const MatrixXd& EvalFreeMotionTangentMatrixSchurComplement(
-      const systems::Context<double>& context, SoftBodyIndex index) const {
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
     const internal::SchurComplement<double>& schur_complement =
         deformable_rigid_manager_->EvalFreeMotionTangentMatrixSchurComplement(
             context, index);
@@ -1067,8 +1068,8 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
   const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
-  SoftBodyIndex A_;
-  SoftBodyIndex B_;
+  DeformableBodyIndex A_;
+  DeformableBodyIndex B_;
   BodyIndex C_;
   GeometryId collision_geometry_C_;
   std::unique_ptr<systems::Diagram<double>> diagram_{nullptr};

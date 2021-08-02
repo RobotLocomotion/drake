@@ -234,8 +234,10 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
                                        &(settings->polish), 1);
   SetOsqpSolverSetting(options_int, "polish_refine_iter",
                        &(settings->polish_refine_iter));
+  // The fallback value for console verbosity is the value set by drake options.
+  int verbose_console = solver_options.get_print_to_console() != 0;
   SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
-                                       &(settings->verbose), 0);
+                                       &(settings->verbose), verbose_console);
   SetOsqpSolverSetting(options_int, "scaled_termination",
                        &(settings->scaled_termination));
   SetOsqpSolverSetting(options_int, "check_termination",

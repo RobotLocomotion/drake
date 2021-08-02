@@ -24,8 +24,8 @@ using Eigen::Vector3d;
 template <typename T>
 void WeldGripperFrames(MultibodyPlant<T>* plant) {
   // The finger base links are all welded a fixed distance from the gripper
-  // frame's origin (Go), lying on the the gripper frame's Y-Z plane. We denote
-  // The gripper frame's Y and Z axes as Gy and Gz.
+  // frame's origin (Go), lying on the gripper frame's Y-Z plane. We denote the
+  // gripper frame's Y and Z axes as Gy and Gz.
   const double kGripperOriginToBaseDistance = 0.201;
   const double kFinger1Angle = M_PI / 3.0;
   const double kFinger2Angle = -M_PI / 3.0;

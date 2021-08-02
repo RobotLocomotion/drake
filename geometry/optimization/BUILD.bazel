@@ -61,6 +61,10 @@ drake_cc_library(
     hdrs = ["iris.h"],
     deps = [
         ":convex_set",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:ipopt_solver",
+        "//solvers:snopt_solver",
     ],
 )
 
@@ -116,6 +120,8 @@ drake_cc_googletest(
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing:parser",
+        "//systems/framework:diagram_builder",
     ],
 )
 

@@ -152,8 +152,8 @@ class PendulumTests : public ::testing::Test {
         UnitInertia<double>::StraightLine(link2_Ic_, Vector3d::UnitY());
     // Spatial inertia about L's center of mass Lcm.
     SpatialInertia<double> M_Lcm(link2_mass_, link2_com_L, G_Lcm);
-    // Since L's frame origin Lo is not at the the lower link's center of mass
-    // Lcm, we must shift M_Lcm to obtain M_Lo.
+    // Since L's frame origin Lo is not at the lower link's center of mass Lcm,
+    // we must shift M_Lcm to obtain M_Lo.
     const Vector3d p_LoLcm(0.0, -half_link2_length_, 0.0);
     SpatialInertia<double> M_L = M_Lcm.Shift(-p_LoLcm);
 

@@ -4,7 +4,6 @@
 
 #include "drake/lcmt_image.hpp"
 #include "drake/systems/sensors/pixel_types.h"
-#include "drake/systems/sensors/robotlocomotion_compat.h"
 
 namespace drake {
 namespace systems {

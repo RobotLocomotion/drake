@@ -356,7 +356,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  // Checks to make sure the the feasibility routine
+  // Checks to make sure the feasibility routine
   // executes correctly and with false positives.
   void FeasibilitySanityCheck() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);

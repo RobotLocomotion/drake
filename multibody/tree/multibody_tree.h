@@ -1492,7 +1492,7 @@ class MultibodyTree {
   // @param[out] A_WB_array
   //   A pointer to a valid, non nullptr, vector of spatial accelerations
   //   containing the spatial acceleration `A_WB` for each body. It must be of
-  //   size equal to the number of bodies. This method will abort if the the
+  //   size equal to the number of bodies. This method will abort if the
   //   pointer is null or if `A_WB_array` is not of size `num_bodies()`.
   //   On output, entries will be ordered by BodyNodeIndex.
   //   To access the acceleration `A_WB` of given body B in this array, use the
@@ -1503,7 +1503,7 @@ class MultibodyTree {
   //   to its inboard mobilizer reaction forces on body B applied at the origin
   //   `Mo` of the inboard mobilizer, expressed in the world frame W.
   //   It must be of size equal to the number of bodies in the MultibodyTree.
-  //   This method will abort if the the pointer is null or if `F_BMo_W_array`
+  //   This method will abort if the pointer is null or if `F_BMo_W_array`
   //   is not of size `num_bodies()`.
   //   On output, entries will be ordered by BodyNodeIndex.
   //   To access a mobilizer's reaction force on given body B in this array,

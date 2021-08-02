@@ -40,7 +40,8 @@ drake_cc_library(
         "constitutive_model.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
+        ":deformation_gradient_data",
+        ":fem_indexes",
         "//common:essential",
     ],
 )
@@ -60,7 +61,7 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":corotated_model_cache_entry",
+        ":corotated_model_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
@@ -68,12 +69,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "corotated_model_cache_entry",
+    name = "corotated_model_data",
     hdrs = [
-        "corotated_model_cache_entry.h",
+        "corotated_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
+        ":deformation_gradient_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
@@ -121,6 +122,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformation_gradient_data",
+    srcs = [
+        "deformation_gradient_data.cc",
+    ],
+    hdrs = [
+        "deformation_gradient_data.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "reference_deformable_geometry",
     srcs = [
         "reference_deformable_geometry.cc",
@@ -152,10 +167,10 @@ drake_cc_library(
         ":dynamic_elasticity_model",
         ":fem_model_base",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":mesh_utilities",
         "//common:essential",
         "//geometry/proximity:volume_mesh",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
         "//multibody/plant",
     ],
@@ -206,17 +221,6 @@ drake_cc_library(
         "//lcm:drake_lcm",
         "//lcmtypes:experimental_deformable_mesh",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "deformation_gradient_cache_entry",
-    hdrs = [
-        "deformation_gradient_cache_entry.h",
-    ],
-    deps = [
-        ":fem_indexes",
-        "//common:essential",
     ],
 )
 
@@ -274,9 +278,9 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":fem_element",
-        ":isoparametric_element",
         "//common:essential",
         "//common:unused",
+        "//multibody/fem:isoparametric_element",
         "//multibody/fem:quadrature",
     ],
 )
@@ -399,16 +403,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "isoparametric_element",
-    hdrs = [
-        "isoparametric_element.h",
-    ],
-    deps = [
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "linear_constitutive_model",
     hdrs = [
         "linear_constitutive_model.h",
@@ -416,31 +410,23 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":linear_constitutive_model_cache_entry",
+        ":linear_constitutive_model_data",
         "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "linear_constitutive_model_cache_entry",
+    name = "linear_constitutive_model_data",
+    srcs = [
+        "linear_constitutive_model_data.cc",
+    ],
     hdrs = [
-        "linear_constitutive_model_cache_entry.h",
+        "linear_constitutive_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_cache_entry",
-        "//common:default_scalars",
+        ":deformation_gradient_data",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_simplex_element",
-    hdrs = [
-        "linear_simplex_element.h",
-    ],
-    deps = [
-        ":isoparametric_element",
     ],
 )
 
@@ -652,6 +638,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformation_gradient_data_test",
+    deps = [
+        ":deformation_gradient_data",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "dirichlet_boundary_condition_test",
     deps = [
         ":dirichlet_boundary_condition",
@@ -678,9 +673,9 @@ drake_cc_googletest(
     deps = [
         ":dynamic_elasticity_element",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -691,10 +686,10 @@ drake_cc_googletest(
         ":dynamic_elasticity_element",
         ":dynamic_elasticity_model",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -714,10 +709,10 @@ drake_cc_googletest(
     deps = [
         ":elasticity_element",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -736,7 +731,6 @@ drake_cc_googletest(
         ":eigen_conjugate_gradient_solver",
         ":fem_solver",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":static_elasticity_element",
         ":static_elasticity_model",
         ":zeroth_order_state_updater",
@@ -744,6 +738,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -772,27 +767,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "isoparametric_element_test",
+    name = "linear_constitutive_model_data_test",
     deps = [
-        ":isoparametric_element",
-        ":linear_simplex_element",
+        ":linear_constitutive_model_data",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_constitutive_model_cache_entry_test",
-    deps = [
-        ":linear_constitutive_model_cache_entry",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_simplex_element_test",
-    deps = [
-        ":linear_simplex_element",
     ],
 )
 
@@ -845,11 +823,11 @@ drake_cc_googletest(
     name = "static_elasticity_element_test",
     deps = [
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":static_elasticity_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -858,12 +836,12 @@ drake_cc_googletest(
     name = "static_elasticity_model_test",
     deps = [
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":static_elasticity_element",
         ":static_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )
@@ -873,12 +851,12 @@ drake_cc_googletest(
     deps = [
         ":fem_solver",
         ":linear_constitutive_model",
-        ":linear_simplex_element",
         ":mesh_utilities",
         ":static_elasticity_element",
         ":static_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
+        "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
     ],
 )

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <string>
 #include <unordered_map>
 
@@ -28,6 +29,20 @@ class MapKeyRange {
   class ConstIterator {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstIterator)
+
+    /* In order to be able to instantiate an std::vector from a MapKeyRange,
+     e.g.,
+
+        std::vector<K> values(range.begin(), range.end());
+
+     we need to define the following member types to enable
+     std::iterator_traits. Curiously, it isn't required for doing the same for
+     e.g., std::set. */
+    using difference_type = int;
+    using value_type = K;
+    using pointer = const K*;
+    using reference = const K&;
+    using iterator_category = std::input_iterator_tag;
 
     const K& operator*() const { return itr_->first; }
     const ConstIterator& operator++() {

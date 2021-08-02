@@ -53,7 +53,7 @@ class TestFindRunfilesSubprocess(unittest.TestCase):
         #
         # If instead only bazel-out/k8-opt/bin/common/find_runfiles_test exists
         # (and it will always exist, because it is a data dependency of this
-        # python test), then the the subprocess's AcceptanceTest case fails.
+        # python test), then the subprocess's AcceptanceTest case fails.
         #
         # Either way, should report that its using argv0 and not segfault.
         self.assertIn("FindRunfile mechanism = argv0", output)
