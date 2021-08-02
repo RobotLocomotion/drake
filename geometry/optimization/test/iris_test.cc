@@ -3,6 +3,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
@@ -187,10 +191,23 @@ TEST_F(SceneGraphTester, MakeIrisObstacles) {
   EXPECT_EQ(obstacles.size(), 1);
   EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[0].get()), nullptr);
 
+  RegisterAnchoredShape(Cylinder(2., 3.),
+                        RigidTransformd(Vector3d{-1., -2., -3}));
+  RegisterAnchoredShape(HalfSpace(), RigidTransformd(Vector3d{-4., -5., -6.}));
   RegisterAnchoredShape(Box(1., 2., 3.), RigidTransformd(Vector3d{4., 5., 6.}));
+  RegisterAnchoredShape(Capsule(1.2, 0.4),
+                        RigidTransformd(Vector3d{-4.2, -5.3, -6.5}));
+  RegisterAnchoredShape(Ellipsoid(.5, 0.4, .7),
+                        RigidTransformd(Vector3d{4.2, 5.3, 6.5}));
   query = UpdateContextAndGetQueryObject();
   obstacles = MakeIrisObstacles(query);
-  EXPECT_EQ(obstacles.size(), 2);
+  EXPECT_EQ(obstacles.size(), 6);
+  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[0].get()), nullptr);
+  EXPECT_NE(dynamic_cast<const CartesianProduct*>(obstacles[1].get()), nullptr);
+  EXPECT_NE(dynamic_cast<const HPolyhedron*>(obstacles[2].get()), nullptr);
+  EXPECT_NE(dynamic_cast<const HPolyhedron*>(obstacles[3].get()), nullptr);
+  EXPECT_NE(dynamic_cast<const MinkowskiSum*>(obstacles[4].get()), nullptr);
+  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[5].get()), nullptr);
 }
 
 /* A SceneGraph 3D version of the multiple boxes test.  Viewed from the
