@@ -1,11 +1,16 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
+
+// TODO(xuchenhan-tri): Move implementations to .cc file.
+
 /* Some of the following methods involve calculations about a 4th order tensor
 (call it A) of dimension 3*3*3*3. We follow the following convention to flatten
 the 4th order tensor into 9*9 matrices that are organized as follows:
@@ -173,6 +178,32 @@ void AddScaledCofactorMatrixDerivative(
   (*scaled_dCdM)(3, 8) += -A(1, 0);
   (*scaled_dCdM)(4, 8) += A(0, 0);
 }
+
+/* Given a size 3N vector with block structure with size 3 block entries Bᵢ
+ where i ∈ V = {0, ..., N-1} and a permutation P on V, this method builds the
+ permuted vector with size 3 block entries C's such that Cₚ₍ᵢ₎ = Bᵢ.
+ For example, suppose the input `v` is given by
+       a a a b b b c c c
+and the input `block_permutation` is {1, 2, 0}, then the result of the
+permutation will be:
+       c c c a a a b b b
+@param[in] v                  The original block vector to be permuted.
+@param[in] block_permutation  block_permutation[i] gives the index of the
+                              permuted block whose original index is `i`.
+@pre v.size() % 3 == 0.
+@pre block_permutation is a permutation of {0, 1, ..., v.size()/3-1}. */
+template <typename T>
+VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
+                              const std::vector<int>& block_permutation) {
+  DRAKE_DEMAND(static_cast<int>(block_permutation.size() * 3) == v.size());
+  VectorX<T> permuted_v(v.size());
+  for (int i = 0; i < static_cast<int>(block_permutation.size()); ++i) {
+    permuted_v.template segment<3>(3 * block_permutation[i]) =
+        v.template segment<3>(3 * i);
+  }
+  return permuted_v;
+}
+
 }  // namespace internal
 }  // namespace fem
 }  // namespace multibody
