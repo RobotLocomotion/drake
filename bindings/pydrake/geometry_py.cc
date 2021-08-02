@@ -22,6 +22,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer.h"
+#include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/iris.h"
@@ -1684,6 +1685,31 @@ void def_geometry_optimization(py::module m) {
         .def(py::init([](const ConvexSet& s) {
           return copyable_unique_ptr<ConvexSet>(s);
         }));
+  }
+
+  {
+    const auto& cls_doc = doc.CartesianProduct;
+    py::class_<CartesianProduct, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
+        .def(py::init<const ConvexSets&>(), py::arg("sets"),
+            cls_doc.ctor.doc_1args_sets)
+        .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
+            py::arg("setB"), cls_doc.ctor.doc_2args_setA_setB)
+        .def(py::init<const ConvexSets&,
+                 const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("sets"), py::arg("A"), py::arg("b"),
+            cls_doc.ctor.doc_3args_sets_A_b)
+        .def(py::init<const QueryObject<double>&, GeometryId,
+                 std::optional<FrameId>>(),
+            py::arg("query_object"), py::arg("geometry_id"),
+            py::arg("reference_frame") = std::nullopt,
+            cls_doc.ctor.doc_3args_query_object_geometry_id_reference_frame)
+        .def("num_factors", &CartesianProduct::num_factors,
+            cls_doc.num_factors.doc)
+        .def("factor", &CartesianProduct::factor, py_rvp::reference_internal,
+            py::arg("index"), cls_doc.factor.doc);
+    py::implicitly_convertible<CartesianProduct,
+        copyable_unique_ptr<ConvexSet>>();
   }
 
   {
