@@ -992,6 +992,15 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_equal(e_ball3.A(), A)
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
 
+        # Test MinkowskiSum.
+        sum = mut.optimization.MinkowskiSum(setA=point, setB=hpoly)
+        self.assertEqual(sum.ambient_dimension(), 3)
+        self.assertEqual(sum.num_terms(), 2)
+        sum2 = mut.optimization.MinkowskiSum(sets=[point, hpoly])
+        self.assertEqual(sum2.ambient_dimension(), 3)
+        self.assertEqual(sum2.num_terms(), 2)
+        self.assertIsInstance(sum2.term(0), mut.optimization.Point)
+
         # Test VPolytope.
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.optimization.VPolytope(vertices=vertices)
@@ -1024,6 +1033,12 @@ class TestGeometry(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Sphere(1.), name="sphere"))
+        capsule_geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id,
+            frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform(),
+                                          shape=mut.Capsule(1., 1.0),
+                                          name="capsule"))
         context = scene_graph.CreateDefaultContext()
         pose_vector = mut.FramePoseVector()
         pose_vector.set_value(frame_id, RigidTransform())
@@ -1038,6 +1053,10 @@ class TestGeometry(unittest.TestCase):
             query_object=query_object, geometry_id=sphere_geometry_id,
             reference_frame=scene_graph.world_frame_id())
         self.assertEqual(E.ambient_dimension(), 3)
+        S = mut.optimization.MinkowskiSum(
+            query_object=query_object, geometry_id=capsule_geometry_id,
+            reference_frame=scene_graph.world_frame_id())
+        self.assertEqual(S.ambient_dimension(), 3)
         P = mut.optimization.Point(
             query_object=query_object, geometry_id=sphere_geometry_id,
             reference_frame=scene_graph.world_frame_id(),
