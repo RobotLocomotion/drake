@@ -596,9 +596,10 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> qplus = q + vplus * dt_;
 
   // Set the new discrete state.
-  systems::BasicVector<T>& new_state = discrete_state->get_mutable_vector(0);
-  new_state.get_mutable_value().segment(0, 3) = qplus;
-  new_state.get_mutable_value().segment(3, 3) = vplus;
+  Eigen::VectorBlock<VectorX<T>> new_state =
+      discrete_state->get_mutable_value(0);
+  new_state.segment(0, 3) = qplus;
+  new_state.segment(3, 3) = vplus;
 }
 
 // Computes the impulses such that the vertical velocity at the contact point

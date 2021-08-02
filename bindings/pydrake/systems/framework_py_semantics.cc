@@ -842,6 +842,10 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("size", &DiscreteValues<T>::size, doc.DiscreteValues.size.doc)
         .def("get_data", &DiscreteValues<T>::get_data,
             py_rvp::reference_internal, doc.DiscreteValues.get_data.doc)
+        .def("set_value",
+            overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
+                &DiscreteValues<T>::set_value),
+            py::arg("value"), doc.DiscreteValues.set_value.doc_1args)
         .def("get_vector",
             overload_cast_explicit<const BasicVector<T>&, int>(
                 &DiscreteValues<T>::get_vector),
@@ -852,6 +856,22 @@ void DefineFrameworkPySemantics(py::module m) {
                 &DiscreteValues<T>::get_mutable_vector),
             py_rvp::reference_internal, py::arg("index") = 0,
             doc.DiscreteValues.get_mutable_vector.doc_1args)
+        .def("set_value",
+            overload_cast_explicit<void, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &DiscreteValues<T>::set_value),
+            py::arg("index"), py::arg("value"),
+            doc.DiscreteValues.set_value.doc_2args)
+        .def("get_value",
+            overload_cast_explicit<Eigen::VectorBlock<const VectorX<T>>, int>(
+                &DiscreteValues<T>::get_value),
+            py_rvp::reference_internal, py::arg("index") = 0,
+            doc.DiscreteValues.get_value.doc_1args)
+        .def("get_mutable_value",
+            overload_cast_explicit<Eigen::VectorBlock<VectorX<T>>, int>(
+                &DiscreteValues<T>::get_mutable_value),
+            py_rvp::reference_internal, py::arg("index") = 0,
+            doc.DiscreteValues.get_mutable_value.doc_1args)
         .def(
             "SetFrom",
             [](DiscreteValues<T>* self, const DiscreteValues<double>& other) {

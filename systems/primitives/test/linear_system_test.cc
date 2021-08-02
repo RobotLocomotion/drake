@@ -769,8 +769,7 @@ class MimoSystem final : public LeafSystem<T> {
     Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
-    discrete_state->get_mutable_vector(0).SetFromVector(A_ * x + B0_ * u0 +
-                                                        B1_ * u1);
+    discrete_state->set_value(0, A_ * x + B0_ * u0 + B1_ * u1);
   }
 
   void CalcOutput0(const Context<T>& context, BasicVector<T>* output) const {
