@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -107,10 +108,15 @@ struct RandomSimulationResult {
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)
       : generator_snapshot(generator), output(value) {}
-
   const RandomGenerator generator_snapshot;
   double output{};
 };
+
+/**
+ * Returns the number of concurrent threads supported by the hardware,
+ * equivalent to calling std::thread::hardware_concurrency().
+ */
+int GetHardwareConcurrency();
 
 /**
  * Generate samples of a scalar random variable output by running many
@@ -139,18 +145,24 @@ struct RandomSimulationResult {
  * future call to MonteCarloSimulation, you should make repeated uses of the
  * same RandomGenerator object.
  *
+ * @param num_parallel_executions Specify number of parallel executions to use
+ * while performing `num_samples` simulations. If not provided, uses the result
+ * of GetHardwareConcurrency to determine the number of parallel executions.
+ *
  * @returns a list of RandomSimulationResult's.
  *
  * @ingroup analysis
  */
 // TODO(russt): Consider generalizing this with options (e.g. setting the
-// number of simulators, number of samples per simulator, number of parallel
-// threads, ...).
+// number of simulators, number of samples per simulator, ...).
+// TODO(calderpg-tri): Consider adding check to determine if the system built by
+// make_simulator contains Python elements; if it does not, then it can be
+// safely simulated in parallel even if MonteCarloSimulation is called via
+// pydrake. In the interim, bindings can only use num_parallel_executions=1.
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator = nullptr,
-    int num_parallel_executions =
-        static_cast<int>(std::thread::hardware_concurrency()));
+    const std::optional<int>& num_parallel_executions = {});
 
 }  // namespace analysis
 }  // namespace systems

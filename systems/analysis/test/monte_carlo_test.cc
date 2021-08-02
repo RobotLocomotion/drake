@@ -140,13 +140,42 @@ GTEST_TEST(RandomSimulationTest, WithRandomInputs) {
   CheckConsistentReplay(make_simulator, &GetScalarOutput, final_time);
 }
 
-GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
+GTEST_TEST(MonteCarloSimulationSerialTest, BasicTest) {
   const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
     auto system = std::make_unique<RandomContextSystem>();
     return std::make_unique<Simulator<double>>(std::move(system));
   };
   const double final_time = 0.1;
   const int num_samples = 10;
+  const auto results = MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples, nullptr, {1});
+
+  EXPECT_EQ(results.size(), num_samples);
+
+  // Check that the results were all different.
+  std::unordered_set<double> outputs;
+  for (const auto& result : results) {
+    outputs.emplace(result.output);
+  }
+  EXPECT_EQ(outputs.size(), results.size());
+
+  // Confirm that we can reproduce all of the results using RandomSimulation.
+  // Walk through the results in reverse, just for good measure.
+  for (auto it = results.rbegin(); it != results.rend(); ++it) {
+    RandomGenerator generator(it->generator_snapshot);
+    EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
+                               &generator),
+              it->output);
+  }
+}
+
+GTEST_TEST(MonteCarloSimulationParallelTest, BasicTest) {
+  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
+    auto system = std::make_unique<RandomContextSystem>();
+    return std::make_unique<Simulator<double>>(std::move(system));
+  };
+  const double final_time = 0.1;
+  const int num_samples = 100;
   const auto results = MonteCarloSimulation(make_simulator, &GetScalarOutput,
                                             final_time, num_samples);
 
