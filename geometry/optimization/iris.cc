@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/geometry/optimization/convex_set.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -143,6 +144,12 @@ class IrisConvexSetMaker final : public ShapeReifier {
     // programming" instance from CVXGEN that exploited the VPolytope
     // representation.  So we may wish to revisit this.
     set = std::make_unique<HPolyhedron>(query_, geom_id_, reference_frame_);
+  }
+
+  void ImplementGeometry(const Capsule&, void* data) {
+    DRAKE_DEMAND(geom_id_.is_valid());
+    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+    set = std::make_unique<MinkowskiSum>(query_, geom_id_, reference_frame_);
   }
 
   void ImplementGeometry(const Ellipsoid&, void* data) {
