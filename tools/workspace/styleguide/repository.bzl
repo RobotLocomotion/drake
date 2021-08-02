@@ -8,8 +8,8 @@ def styleguide_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/styleguide",
-        commit = "5e805ebc3bb58d4ea16db52e608f3ed9876d5a1b",
-        sha256 = "913849b0450be8138c1d7df8bc8d945df7ee291e711e32a2aa05e09931df9431",  # noqa
+        commit = "15afd9aa83a9f25964add3d45f57aed7c2484142",
+        sha256 = "b0451c92c453ca7844a26516eb2fb27beebd86e2afb31c4a2b5e2487d2fd1d6c",  # noqa
         build_file = "@drake//tools/workspace/styleguide:package.BUILD.bazel",
         mirrors = mirrors,
     )
