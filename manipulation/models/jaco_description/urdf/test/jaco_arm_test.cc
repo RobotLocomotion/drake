@@ -1,3 +1,4 @@
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,11 @@ struct TestCase {
   int num_actuators{};
   int num_bodies{};
 };
+
+std::ostream& operator<<(std::ostream& os, const TestCase& self) {
+  os << self.urdf << "," << self.num_actuators << "," << self.num_bodies;
+  return os;
+}
 
 class JacoArmParamsTest
     : public ::testing::TestWithParam<TestCase> {};
