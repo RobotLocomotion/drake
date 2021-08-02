@@ -37,7 +37,6 @@ drake_cc_package_library(
         ":lcm_image_traits",
         ":optitrack_sender",
         ":rgbd_sensor",
-        ":robotlocomotion_compat",
         ":rotary_encoders",
     ],
 )
@@ -114,21 +113,6 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) This header assists with the deprecation of the
-# @lcmtypes_robotlocomotion repository; remove it on or after 2021-08-01.
-drake_cc_library(
-    name = "robotlocomotion_compat",
-    hdrs = ["robotlocomotion_compat.h"],
-    deps = [
-        "//common:essential",
-        "//lcmtypes:header",
-        "//lcmtypes:image",
-        "//lcmtypes:image_array",
-        "//lcmtypes:point",
-        "//lcmtypes:quaternion",
-    ],
-)
-
 drake_cc_library(
     name = "lcm_image_traits",
     srcs = [
@@ -139,7 +123,6 @@ drake_cc_library(
     ],
     deps = [
         ":image",
-        ":robotlocomotion_compat",
         "//lcmtypes:image",
     ],
 )
@@ -154,7 +137,6 @@ drake_cc_library(
     ],
     deps = [
         ":lcm_image_traits",
-        ":robotlocomotion_compat",
         "//common:essential",
         "//lcmtypes:image_array",
         "//systems/framework",
@@ -362,19 +344,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "lcm_image_array_to_images_test",
-    data = glob([
-        "test/*.jpg",
-        "test/*.png",
-    ]),
-    deps = [
-        ":lcm_image_array_to_images",
-        "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "lcm_image_array_to_images_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
     data = glob([
         "test/*.jpg",
         "test/*.png",

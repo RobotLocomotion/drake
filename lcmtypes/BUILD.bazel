@@ -348,10 +348,6 @@ install(
         ":install_drake_cc_headers",
         "//tools/workspace/optitrack_driver:install",
         "@lcm//:install",
-        # N.B. The lcmtypes_bot2_core is deprecated and will be removed.
-        "@lcmtypes_bot2_core//:install",
-        # N.B. The lcmtypes_robotlocomotion is deprecated and will be removed.
-        "@lcmtypes_robotlocomotion//:install",
     ],
 )
 
