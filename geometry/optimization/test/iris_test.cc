@@ -3,6 +3,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
@@ -176,7 +180,7 @@ class SceneGraphTester : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> context_;
 };
 
-TEST_F(SceneGraphTester, MakeIrisObstacles) {
+TEST_F(SceneGraphTester, MakeSphere) {
   auto query = UpdateContextAndGetQueryObject();
   auto obstacles = MakeIrisObstacles(query);
   EXPECT_EQ(obstacles.size(), 0);
@@ -187,10 +191,53 @@ TEST_F(SceneGraphTester, MakeIrisObstacles) {
   EXPECT_EQ(obstacles.size(), 1);
   EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[0].get()), nullptr);
 
-  RegisterAnchoredShape(Box(1., 2., 3.), RigidTransformd(Vector3d{4., 5., 6.}));
+  // Confirm that I can have multiple obstacles.
+  RegisterAnchoredShape(Sphere(1.), RigidTransformd(Vector3d{1., 2., 3.}));
   query = UpdateContextAndGetQueryObject();
   obstacles = MakeIrisObstacles(query);
   EXPECT_EQ(obstacles.size(), 2);
+}
+
+TEST_F(SceneGraphTester, MakeCylinder) {
+  RegisterAnchoredShape(Cylinder(1., 2.),
+                        RigidTransformd(Vector3d{1., 2., 3.}));
+  auto query = UpdateContextAndGetQueryObject();
+  auto obstacles = MakeIrisObstacles(query);
+  EXPECT_EQ(obstacles.size(), 1);
+  EXPECT_NE(dynamic_cast<const CartesianProduct*>(obstacles[0].get()), nullptr);
+}
+
+TEST_F(SceneGraphTester, MakeHalfSpace) {
+  RegisterAnchoredShape(HalfSpace(), RigidTransformd(Vector3d{1., 2., 3.}));
+  auto query = UpdateContextAndGetQueryObject();
+  auto obstacles = MakeIrisObstacles(query);
+  EXPECT_EQ(obstacles.size(), 1);
+  EXPECT_NE(dynamic_cast<const HPolyhedron*>(obstacles[0].get()), nullptr);
+}
+
+TEST_F(SceneGraphTester, MakeBox) {
+  RegisterAnchoredShape(Box(1., 2., 3.), RigidTransformd(Vector3d{1., 2., 3.}));
+  auto query = UpdateContextAndGetQueryObject();
+  auto obstacles = MakeIrisObstacles(query);
+  EXPECT_EQ(obstacles.size(), 1);
+  EXPECT_NE(dynamic_cast<const HPolyhedron*>(obstacles[0].get()), nullptr);
+}
+
+TEST_F(SceneGraphTester, MakeCapsule) {
+  RegisterAnchoredShape(Capsule(1., 2.), RigidTransformd(Vector3d{1., 2., 3.}));
+  auto query = UpdateContextAndGetQueryObject();
+  auto obstacles = MakeIrisObstacles(query);
+  EXPECT_EQ(obstacles.size(), 1);
+  EXPECT_NE(dynamic_cast<const MinkowskiSum*>(obstacles[0].get()), nullptr);
+}
+
+TEST_F(SceneGraphTester, MakeEllipsoid) {
+  RegisterAnchoredShape(Ellipsoid(1., 2., 3.),
+                        RigidTransformd(Vector3d{1., 2., 3.}));
+  auto query = UpdateContextAndGetQueryObject();
+  auto obstacles = MakeIrisObstacles(query);
+  EXPECT_EQ(obstacles.size(), 1);
+  EXPECT_NE(dynamic_cast<const Hyperellipsoid*>(obstacles[0].get()), nullptr);
 }
 
 /* A SceneGraph 3D version of the multiple boxes test.  Viewed from the

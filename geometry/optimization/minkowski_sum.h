@@ -14,7 +14,7 @@ namespace optimization {
 
 /** A convex set that represents the Minkowski sum of multiple sets:
 S = X₁ ⨁ X₂ ⨁ ... ⨁ Xₙ =
-    {x₁ + x₂ + ... + xₙ | x₁ ∈ X₁, x₂ ∈ X, ..., xₙ ∈ Xₙ}
+    {x₁ + x₂ + ... + xₙ | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈ Xₙ}
 
 @ingroup geometry_optimization
 */
