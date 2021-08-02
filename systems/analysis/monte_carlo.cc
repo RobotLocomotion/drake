@@ -59,7 +59,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
   }
 
   // Storage for active parallel simulation operations.
-  std::list<std::future<std::pair<int, double>>> active_operations;
+  std::list<std::future<int>> active_operations;
   // Keep track of how many simulations have been dispatched already.
   int simulations_dispatched = 0;
 
@@ -69,9 +69,8 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     for (auto itr = active_operations.begin();
          itr != active_operations.end();) {
       if (IsFutureReady(*itr)) {
-        auto result = itr->get();
-        drake::log()->info("Simulation {} completed", result.first);
-        simulation_results.at(result.first).output = result.second;
+        const int sample_num = itr->get();
+        drake::log()->debug("Simulation {} completed", sample_num);
         // Erase returns iterator to the next node in the list.
         itr = active_operations.erase(itr);
       } else {
@@ -88,14 +87,14 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
               int sample_num) {
         auto& simulator = *simulators.at(sample_num);
         simulator.AdvanceTo(final_time);
-        const double output_val =
+        simulation_results.at(sample_num).output =
             output(simulator.get_system(), simulator.get_context());
-        return std::make_pair(sample_num, output_val);
+        return sample_num;
       };
 
       active_operations.emplace_back(std::async(
           std::launch::async, perform_simulation, simulations_dispatched));
-      drake::log()->info("Simulation {} dispatched", simulations_dispatched);
+      drake::log()->debug("Simulation {} dispatched", simulations_dispatched);
       simulations_dispatched += 1;
     }
 
