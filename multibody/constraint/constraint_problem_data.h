@@ -413,7 +413,7 @@ struct ConstraintVelProblemData {
   /// along the nr vectors that span the contact tangents at the nc
   /// point contacts (these nc * nr vectors are denoted nnr for brevity). For
   /// contact problems in two dimensions, nr will be one and nnr would equal nc.
-  /// For a friction pyramid at each point contact in in three dimensions, nr
+  /// For a friction pyramid at each point contact in three dimensions, nr
   /// would be two and nnr would equation 2nc. While the definition of the
   /// dimension of the Jacobian matrix above indicates that every one of the nc
   /// contacts uses the same "nr", the code imposes no such requirement.

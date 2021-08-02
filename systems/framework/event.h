@@ -496,7 +496,7 @@ class Event {
    * Adds a clone of `this` event to the event collection `events`, with
    * the given trigger type. If `this` event has an unknown trigger type, then
    * any trigger type is acceptable. Otherwise the given trigger type must
-   * match match the trigger type stored in `this` event.
+   * match the trigger type stored in `this` event.
    * @pre `trigger_type` must match the current trigger type unless that is
    *      unknown.
    * @pre `events` must not be null.
