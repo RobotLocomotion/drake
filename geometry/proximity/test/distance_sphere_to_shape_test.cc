@@ -467,47 +467,6 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   EXPECT_EQ(Vector3d(1, 0, 0), result.nhat_BA_W);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Confirms that `is_nhat_BA_W_unique` is passed from point_distance to
-// shape_distance correctly. It is a pass through from DistanceToPoint() to
-// SphereShapeDistance(). We use Sphere-Box as a representative sample and
-// test two cases when `is_nhat_BA_W_unique` is true and is false.
-GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
-  // Sphere
-  CollisionObjectd sphere(make_shared<Sphered>(1));
-  const GeometryId sphere_id = GeometryId::get_new_id();
-  EncodedData(sphere_id, true).write_to(&sphere);
-
-  // Box [-1,1]x[-1,1]x[-1,1].
-  CollisionObjectd box(make_shared<Boxd>(2, 2, 2));
-  const GeometryId box_id = GeometryId::get_new_id();
-  EncodedData(box_id, true).write_to(&box);
-  const RigidTransformd X_WB(RigidTransformd::Identity());
-
-  const fcl::DistanceRequestd request{};
-
-  // Tests when `is_nhat_BA_W_unique` is true.
-  {
-    // The center of the sphere is outside the box.
-    const RigidTransformd X_WS(Vector3d{3, 3, 3});
-    SignedDistancePair<double> result;
-    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
-                                       &result);
-    EXPECT_EQ(true, result.is_nhat_BA_W_unique);
-  }
-  // Tests when `is_nhat_BA_W_unique` is false.
-  {
-    // The center of the sphere is at a corner of the box.
-    const RigidTransformd X_WS(Vector3d{1, 1, 1});
-    SignedDistancePair<double> result;
-    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
-                                       &result);
-    EXPECT_EQ(false, result.is_nhat_BA_W_unique);
-  }
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 class CallbackScalarSupport : public ::testing::Test {
  public:
