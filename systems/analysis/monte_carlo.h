@@ -108,6 +108,7 @@ struct RandomSimulationResult {
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)
       : generator_snapshot(generator), output(value) {}
+
   const RandomGenerator generator_snapshot;
   double output{};
 };
