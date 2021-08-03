@@ -341,7 +341,7 @@ TEST_F(ThreePoints, QuadraticCost2) {
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
 }
 
 TEST_F(ThreePoints, QuadraticCost3) {
@@ -363,7 +363,7 @@ TEST_F(ThreePoints, QuadraticCost3) {
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), cost.Evaluate(env), 1e-5);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 4e-6);
 }
 
 TEST_F(ThreePoints, QuadraticCost4) {
