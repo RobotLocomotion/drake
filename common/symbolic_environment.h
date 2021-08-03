@@ -39,18 +39,18 @@ namespace symbolic {
  * \endcode
  *
  * Note that it is not allowed to have a dummy variable in an environment. It
- * throws std::runtime_error for the attempts to create an environment with a
+ * throws std::exception for the attempts to create an environment with a
  * dummy variable, to insert a dummy variable to an existing environment, or to
  * take a reference to a value mapped to a dummy variable. See the following
  * examples.
  *
  * \code{.cpp}
  *   Variable    var_dummy{};           // OK to have a dummy variable
- *   Environment e1{var_dummy};         // throws std::runtime_error exception
- *   Environment e2{{var_dummy, 1.0}};  // throws std::runtime_error exception
+ *   Environment e1{var_dummy};         // throws exception
+ *   Environment e2{{var_dummy, 1.0}};  // throws exception
  *   Environment e{};
- *   e.insert(var_dummy, 1.0);          // throws std::runtime_error exception
- *   e[var_dummy] = 3.0;                // throws std::runtime_error exception
+ *   e.insert(var_dummy, 1.0);          // throws exception
+ *   e[var_dummy] = 3.0;                // throws exception
  * \endcode
  *
  */
@@ -72,7 +72,7 @@ class Environment {
   /** List constructor. Constructs an environment from a list of (Variable *
    * double).
    *
-   * @throws std::runtime_error if @p init include a dummy variable or a NaN
+   * @throws std::exception if @p init include a dummy variable or a NaN
    * value.
    */
   Environment(std::initializer_list<value_type> init);
@@ -80,14 +80,14 @@ class Environment {
   /** List constructor. Constructs an environment from a list of
    * Variable. Initializes the variables with 0.0.
    *
-   * @throws std::runtime_error if @p vars include a dummy variable.
+   * @throws std::exception if @p vars include a dummy variable.
    */
   Environment(std::initializer_list<key_type> vars);
 
   /** Constructs an environment from @p m (of `map` type, which is
    * `std::unordered_map`).
    *
-   * @throws std::runtime_error if @p m include a dummy variable or a NaN value.
+   * @throws std::exception if @p m include a dummy variable or a NaN value.
    */
   explicit Environment(map m);
 
@@ -111,7 +111,7 @@ class Environment {
    * elements, inserts each pair (keys(i, j), elements(i, j)) into the
    * environment.
    *
-   * @throw std::runtime_error if the size of @p keys is different from the size
+   * @throws std::exception if the size of @p keys is different from the size
    * of @p elements.
    */
   void insert(const Eigen::Ref<const MatrixX<key_type>>& keys,

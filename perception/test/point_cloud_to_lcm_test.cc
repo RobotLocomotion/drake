@@ -1,14 +1,17 @@
 #include "drake/perception/point_cloud_to_lcm.h"
 
+#include <array>
 #include <limits>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/bit_cast.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/lcmt_point_cloud.hpp"
 #include "drake/perception/point_cloud.h"
 
 using drake::Vector3;
+using drake::internal::bit_cast;
 using Eigen::Vector3f;
 
 namespace drake {
@@ -57,10 +60,7 @@ std::vector<lcmt_point_cloud_field> MakeExpectedFields(int num_fields) {
 }
 
 float PackRgb(uint8_t r, uint8_t g, uint8_t b) {
-  const uint8_t rgb0[4] = { r, g, b, 0 };
-  float result{};
-  std::memcpy(&result, rgb0, 4);
-  return result;
+  return bit_cast<float>(std::array<uint8_t, 4>{ r, g, b, 0 });
 }
 
 class PointCloudToLcmTest : public testing::Test {

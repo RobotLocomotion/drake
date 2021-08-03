@@ -1049,7 +1049,7 @@ using RotationMatrixd = RotationMatrix<double>;
 /// @param[in] angle_lb the lower bound of the rotation angle θ.
 /// @param[in] angle_ub the upper bound of the rotation angle θ.
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
-/// @throws std::runtime_error if axis is the zero vector or
+/// @throws std::exception if axis is the zero vector or
 ///         if angle_lb > angle_ub.
 /// @note This method is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.

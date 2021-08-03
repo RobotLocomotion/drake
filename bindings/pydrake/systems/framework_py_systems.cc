@@ -85,6 +85,7 @@ struct Impl {
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
     using Base::DeclarePerStepEvent;
+    using Base::DeclareStateOutputPort;
     using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
     using Base::MakeWitnessFunction;
@@ -607,6 +608,22 @@ Note: The above is for the C++ documentation. For Python, use
                 .doc_deprecated_deprecated_3args_constBasicVectorSubtype_voidMySystemconstContextBasicVectorSubtypeconst_stdset);
 #pragma GCC diagnostic pop
     leaf_system_cls  // BR
+        .def("DeclareStateOutputPort",
+            py::overload_cast<std::variant<std::string, UseDefaultName>,
+                ContinuousStateIndex>(
+                &LeafSystemPublic::DeclareStateOutputPort),
+            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            doc.LeafSystem.DeclareStateOutputPort.doc_continuous)
+        .def("DeclareStateOutputPort",
+            py::overload_cast<std::variant<std::string, UseDefaultName>,
+                DiscreteStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
+            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            doc.LeafSystem.DeclareStateOutputPort.doc_discrete)
+        .def("DeclareStateOutputPort",
+            py::overload_cast<std::variant<std::string, UseDefaultName>,
+                AbstractStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
+            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            doc.LeafSystem.DeclareStateOutputPort.doc_abstract)
         .def(
             "DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {

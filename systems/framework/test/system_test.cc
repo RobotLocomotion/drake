@@ -178,8 +178,7 @@ class TestSystem : public TestSystemBase<double> {
     // Create an abstract output port with dummy alloc and calc.
     CacheEntry& cache_entry = this->DeclareCacheEntry(
         "null output port", ValueProducer(
-             internal::AbstractValueCloner(0),
-             &ValueProducer::NoopCalc));
+             0, &ValueProducer::NoopCalc));
     // TODO(sherm1) Use implicit_cast when available (from abseil). Several
     // places in this test.
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
@@ -626,13 +625,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         this->assign_next_dependency_ticket(),
         kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
-            "absport",
-            // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
-            ValueProducer(
-                []() { return AbstractValue::Make<std::string>(); },
-                [this](const ContextBase& context, AbstractValue* output) {
-                  this->CalcStringOutput(context, output);
-                }))));
+            "absport", &ValueIOTestSystem::CalcStringOutput)));
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
@@ -647,18 +640,17 @@ class ValueIOTestSystem : public TestSystemBase<T> {
         this->assign_next_dependency_ticket(),
         kVectorValued, 1 /* size */,
         &this->DeclareCacheEntry(
-            "vecport",
-            // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
-            ValueProducer(
-                internal::AbstractValueCloner(BasicVector<T>(1)),
-                [this](const ContextBase& context, AbstractValue* output) {
-                  this->CalcVectorOutput(context, output);
-                }))));
+            "vecport", BasicVector<T>(1),
+            &ValueIOTestSystem::CalcVectorOutput)));
 
     this->set_name("ValueIOTestSystem");
   }
 
   ~ValueIOTestSystem() override {}
+
+  const InputPort<T>& AddAbstractInputPort() {
+    return this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
+  }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const override {
@@ -682,21 +674,18 @@ class ValueIOTestSystem : public TestSystemBase<T> {
 
   // Appends "output" to input(0) for output(0).
   void CalcStringOutput(const ContextBase& context,
-                        AbstractValue* output) const {
+                        std::string* output) const {
     const std::string* str_in =
         this->template EvalInputValue<std::string>(context, 0);
-
-    std::string& str_out = output->template get_mutable_value<std::string>();
-    str_out = *str_in + "output";
+    *output = *str_in + "output";
   }
 
   // Sets output(1) = 2 * input(1).
   void CalcVectorOutput(const ContextBase& context_base,
-                        AbstractValue* output) const {
+                        BasicVector<T>* output) const {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
-    auto& vec_out = output->template get_mutable_value<BasicVector<T>>();
-    vec_out.get_mutable_value() = 2 * vec_in->get_value();
+    output->get_mutable_value() = 2 * vec_in->get_value();
   }
 };
 
@@ -896,6 +885,34 @@ TEST_F(SystemIOTest, TransmogrifyAndFix) {
   EXPECT_EQ(0, fixed_vec->GetAtIndex(0).derivatives().size());
 }
 
+// Confirm that FixInputPortsFrom does *not* convert type-dependent abstract
+// input ports.
+// TODO(5454) Once transmogrification of scalar-dependent abstract values is
+// implemented, this test and the corresponding @throws documentation on
+// System::FixInputPortsFrom can simply be removed (as we no longer have to
+// track this undesirable behavior) .
+TEST_F(SystemIOTest, FixFromTypeDependentAbstractInput) {
+  // Adds an abstract input port with type BasicVector<T>.
+  const auto& typed_input = test_sys_.AddAbstractInputPort();
+
+  // Confirm that the type is indeed BasicVector<double>.
+  std::unique_ptr<AbstractValue> input_value =
+      test_sys_.AllocateInputAbstract(typed_input);
+  DRAKE_EXPECT_NO_THROW(input_value->get_value<BasicVector<double>>());
+
+  const auto context = test_sys_.CreateDefaultContext();
+  typed_input.FixValue(context.get(),
+                       BasicVector<double>(Eigen::VectorXd::Zero(1)));
+
+  ValueIOTestSystem<AutoDiffXd> autodiff_system;
+  autodiff_system.AddAbstractInputPort();
+  auto autodiff_context = autodiff_system.CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(autodiff_system.FixInputPortsFrom(
+                                  test_sys_, *context, autodiff_context.get()),
+                              ".*System::FixInputPortTypeCheck.*");
+}
+
 // This class implements various computational methods so we can check that
 // they get invoked properly. The particular results don't mean anything.
 // As above, lots of painful bookkeeping here that is normally buried by
@@ -904,7 +921,16 @@ class ComputationTestSystem final : public TestSystemBase<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ComputationTestSystem)
 
-  ComputationTestSystem() {}
+  ComputationTestSystem() {
+    DeclareInputPort("u0", kVectorValued, 1);
+  }
+
+  // Just u0.
+  std::unique_ptr<AbstractValue> DoAllocateInput(
+      const InputPort<double>& input_port) const final {
+    DRAKE_DEMAND(input_port.get_index() == 0);
+    return std::make_unique<Value<BasicVector<double>>>(1);
+  }
 
   // One q, one v, one z.
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
@@ -1019,6 +1045,7 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 4.);
   test_sys_.ExpectCount(1, 1, 1, 1, 1);
 
+
   // Each of the Calc methods should cause computation.
   auto derivatives = test_sys_.AllocateTimeDerivatives();
   test_sys_.CalcTimeDerivatives(*context_, derivatives.get());
@@ -1042,22 +1069,35 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -4.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);
   test_sys_.ExpectCount(3, 2, 2, 2, 2);  // Above is just one evaluation.
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
-  test_sys_.ExpectCount(3, 2, 2, 2, 3);
-  // TODO(sherm1) Verify that other methods don't depend on time.
+  test_sys_.ExpectCount(3, 2, 2, 2, 3);  // Only pnc depends on time.
+
+  // Modify an input. Derivatives are recomputed, but PE, KE, PC are not.
+  const Eigen::VectorXd u0 = Eigen::VectorXd::Constant(1, 0.0);
+  test_sys_.get_input_port(0).FixValue(context_.get(), u0);
+  EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[0], -2.);
+  test_sys_.ExpectCount(4, 2, 2, 2, 3);
+  EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
+  EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
+  EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
+  EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);
+  test_sys_.ExpectCount(4, 2, 2, 2, 4);  // Only pnc depends on input.
 
   // This should mark all state variables as changed and force recomputation.
   context_->get_mutable_state();
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);  // Again.
-  test_sys_.ExpectCount(4, 2, 2, 2, 3);
+  test_sys_.ExpectCount(5, 2, 2, 2, 4);
   EXPECT_EQ(test_sys_.EvalPotentialEnergy(*context_), 1.);
-  test_sys_.ExpectCount(4, 3, 2, 2, 3);
+  test_sys_.ExpectCount(5, 3, 2, 2, 4);
   EXPECT_EQ(test_sys_.EvalKineticEnergy(*context_), 2.);
-  test_sys_.ExpectCount(4, 3, 3, 2, 3);
+  test_sys_.ExpectCount(5, 3, 3, 2, 4);
   EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
-  test_sys_.ExpectCount(4, 3, 3, 3, 3);
+  test_sys_.ExpectCount(5, 3, 3, 3, 4);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);  // Again.
-  test_sys_.ExpectCount(4, 3, 3, 3, 4);
+  test_sys_.ExpectCount(5, 3, 3, 3, 5);
 
   // Check that the reported time derivatives cache entry is the right one.
   context_->SetTime(3.);  // Invalidate.

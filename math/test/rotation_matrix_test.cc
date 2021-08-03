@@ -944,10 +944,10 @@ class RotationMatrixConversionTests : public ::testing::Test {
     const int kSweepSize = 6;
 
     // Set up a variety of general tests for quaternions.
-    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
-    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qw = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
     for (int i = 0; i < qw.size(); ++i) {
       for (int j = 0; j < qx.size(); ++j) {
         for (int k = 0; k < qy.size(); ++k) {
@@ -1175,20 +1175,20 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   if (kDrakeAssertIsArmed) {
     // Verify vector with NaN throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
+        Vector3<double>(NAN, 1, NAN), axis_index),
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ nan 1.* nan[^]+ is not less than or equal to .+");
 
     // Verify vector with infinity throws an exception.
     constexpr double kInfinity = std::numeric_limits<double>::infinity();
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(kInfinity, 1, 0), axis_index), std::exception,
+        Vector3<double>(kInfinity, 1, 0), axis_index),
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ inf 1.* 0[^]+ is not less than or equal to .+");
 
     // Verify non-unit vector throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(1, 2, 3), axis_index), std::exception,
+        Vector3<double>(1, 2, 3), axis_index),
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ 1.* 2.* 3.*[^]+ is not less than or equal to .+");
 
@@ -1201,7 +1201,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
     // We conservatively make tol_sqrt = 8 * √(kEpsilon) to ensure it throws.
     double tol_sqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-         Vector3<double>(1, 0, tol_sqrt), axis_index), std::exception,
+         Vector3<double>(1, 0, tol_sqrt), axis_index),
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ is not less than or equal to .+");
 
@@ -1224,8 +1224,8 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic,
                                                               axis_index),
-      std::exception, "RotationMatrix::MakeFromOneUnitVector.* "
-                      "cannot be used with a symbolic type.");
+      "RotationMatrix::MakeFromOneUnitVector.* "
+      "cannot be used with a symbolic type.");
 }
 
 // Verify that the "basic" method MakeFromOneVector() throws an exception in
@@ -1237,7 +1237,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
 
   // Verify vector with NaN throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
-      Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
+      Vector3<double>(NAN, 1, NAN), axis_index),
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
       "[^]+ nan 1.* nan[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
@@ -1245,7 +1245,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   // Verify vector with infinity throws an exception.
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
-      Vector3<double>(kInfinity, 1, 0), axis_index), std::exception,
+      Vector3<double>(kInfinity, 1, 0), axis_index),
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
       "[^]+ inf 1.* 0[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
@@ -1255,7 +1255,6 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   const Vector3<double> too_small_vector(1.0E-10 - kTolerance, 0, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(too_small_vector, axis_index),
-      std::exception,
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
       "[^]+ If you are confident that v's direction is meaningful, pass "
       "v.normalized.. in place of v.");
@@ -1276,8 +1275,8 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(v_symbolic,
                                                               axis_index),
-      std::exception, "RotationMatrix::MakeFromOneUnitVector.* "
-                      "cannot be used with a symbolic type.");
+      "RotationMatrix::MakeFromOneUnitVector.* "
+      "cannot be used with a symbolic type.");
 }
 
 }  // namespace

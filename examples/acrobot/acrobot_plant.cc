@@ -20,12 +20,11 @@ namespace acrobot {
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant()
     : systems::LeafSystem<T>(systems::SystemTypeTag<AcrobotPlant>{}) {
-  this->DeclareVectorInputPort("elbow_torque", AcrobotInput<T>());
-  this->DeclareVectorOutputPort("acrobot_state", AcrobotState<T>(),
-                                &AcrobotPlant::CopyStateOut);
-  this->DeclareContinuousState(AcrobotState<T>(), 2 /* num_q */, 2 /* num_v */,
-                               0 /* num_z */);
   this->DeclareNumericParameter(AcrobotParams<T>());
+  this->DeclareVectorInputPort("elbow_torque", AcrobotInput<T>());
+  auto state_index = this->DeclareContinuousState(
+      AcrobotState<T>(), 2 /* num_q */, 2 /* num_v */, 0 /* num_z */);
+  this->DeclareStateOutputPort("acrobot_state", state_index);
 }
 
 template <typename T>
@@ -50,14 +49,6 @@ parameters) const {
   // current (Amps), in order to simplify the implementation of torque
   // constraint on motors. Therefore, some of the numbers here have incorrect
   // units.
-}
-
-template <typename T>
-void AcrobotPlant<T>::CopyStateOut(const systems::Context<T>& context,
-                                  AcrobotState<T>* output) const {
-  output->set_value(dynamic_cast<const AcrobotState<T>&>(
-                        context.get_continuous_state_vector())
-                        .get_value());
 }
 
 template <typename T>

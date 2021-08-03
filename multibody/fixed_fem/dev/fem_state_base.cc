@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 template <typename T>
 void FemStateBase<T>::SetQ(const Eigen::Ref<const VectorX<T>>& value) {
   DRAKE_THROW_UNLESS(value.size() == q_.size());
@@ -36,17 +36,17 @@ void FemStateBase<T>::ApplyBoundaryCondition(
   bc.VerifyBcIndexes(this->num_generalized_positions());
   /* Write the BC to the mutable state. */
   for (const auto& [dof_index, boundary_state] : bcs) {
-    q_(dof_index) = boundary_state(0);
+    q_(int{dof_index}) = boundary_state(0);
     if (ode_order() >= 1) {
-      qdot_(dof_index) = boundary_state(1);
+      qdot_(int{dof_index}) = boundary_state(1);
     }
     if (ode_order() == 2) {
-      qddot_(dof_index) = boundary_state(2);
+      qddot_(int{dof_index}) = boundary_state(2);
     }
   }
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemStateBase);
+    class ::drake::multibody::fem::FemStateBase);

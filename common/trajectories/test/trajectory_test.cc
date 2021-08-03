@@ -40,13 +40,13 @@ GTEST_TEST(TrajectoryTest, EvalDerivativesTest) {
   EXPECT_TRUE(traj_yes_deriv.has_derivative());
   DRAKE_EXPECT_THROWS_MESSAGE(
       traj_yes_deriv.EvalDerivative(traj_yes_deriv.start_time()),
-      std::logic_error, ".* must implement .*");
+      ".* must implement .*");
 
   TrajectoryTester traj_no_deriv(false);
   EXPECT_FALSE(traj_no_deriv.has_derivative());
   DRAKE_EXPECT_THROWS_MESSAGE(
       traj_no_deriv.EvalDerivative(traj_no_deriv.start_time()),
-      std::logic_error, ".* does not support .*");
+      ".* does not support .*");
 }
 
 GTEST_TEST(TrajectoryTest, MakeDerivativesTest) {
@@ -54,13 +54,13 @@ GTEST_TEST(TrajectoryTest, MakeDerivativesTest) {
   EXPECT_TRUE(traj_yes_deriv.has_derivative());
   DRAKE_EXPECT_THROWS_MESSAGE(
       traj_yes_deriv.MakeDerivative(),
-      std::logic_error, ".* must implement .*");
+      ".* must implement .*");
 
   TrajectoryTester traj_no_deriv(false);
   EXPECT_FALSE(traj_no_deriv.has_derivative());
   DRAKE_EXPECT_THROWS_MESSAGE(
       traj_no_deriv.MakeDerivative(),
-      std::logic_error, ".* does not support .*");
+      ".* does not support .*");
 }
 
 template <typename T>

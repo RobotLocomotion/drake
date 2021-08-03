@@ -15,12 +15,13 @@
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
+#include "drake/multibody/fixed_fem/dev/schur_complement.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** %DeformableRigidManager implements the interface in DiscreteUpdateManager
  and performs discrete update for deformable and rigid bodies with a two-way
  coupling scheme.
@@ -99,6 +100,7 @@ class DeformableRigidManager final
 
   friend class DeformableRigidManagerTest;
   friend class DeformableRigidContactDataTest;
+  friend class DeformableRigidDynamicsDataTest;
 
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd() and
   //  the corresponding is_cloneable methods.
@@ -155,22 +157,66 @@ class DeformableRigidManager final
   void DoCalcDiscreteValues(const systems::Context<T>& context,
                             systems::DiscreteValues<T>* updates) const final;
 
-  /* Evaluates the FEM state of the deformable body with index `id`. */
+  /* Eval version of CalcFemStateBase(). */
   const FemStateBase<T>& EvalFemStateBase(const systems::Context<T>& context,
-                                          SoftBodyIndex id) const {
+                                          DeformableBodyIndex id) const {
     return this->plant()
         .get_cache_entry(fem_state_cache_indexes_[id])
         .template Eval<FemStateBase<T>>(context);
   }
 
-  /* Evaluates the free motion FEM state of the deformable body with index `id`.
-   */
+  /* Calculates the FEM state of the deformable body with index `id`. */
+  void CalcFemStateBase(const systems::Context<T>& context,
+                        DeformableBodyIndex id,
+                        FemStateBase<T>* fem_state) const;
+
+  /* Eval version of CalcFreeMotionFemStateBase(). */
   const FemStateBase<T>& EvalFreeMotionFemStateBase(
-      const systems::Context<T>& context, SoftBodyIndex id) const {
+      const systems::Context<T>& context, DeformableBodyIndex id) const {
     return this->plant()
         .get_cache_entry(free_motion_cache_indexes_[id])
         .template Eval<FemStateBase<T>>(context);
   }
+
+  /* Calculates the free motion FEM state of the deformable body with index
+   * `id`.
+   */
+  void CalcFreeMotionFemStateBase(const systems::Context<T>& context,
+                                  DeformableBodyIndex id,
+                                  FemStateBase<T>* fem_state_star) const;
+
+  /* Eval version of CalcFreeMotionTangentMatrix(). */
+  const Eigen::SparseMatrix<T>& EvalFreeMotionTangentMatrix(
+      const systems::Context<T>& context, DeformableBodyIndex index) const {
+    return this->plant()
+        .get_cache_entry(tangent_matrix_cache_indexes_[index])
+        .template Eval<Eigen::SparseMatrix<T>>(context);
+  }
+
+  /* Calculates the tangent matrix of the deformable body with the given `index`
+   at free motion state. */
+  void CalcFreeMotionTangentMatrix(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
+  const internal::SchurComplement<T>&
+  EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
+                                             DeformableBodyIndex index) const {
+    return this->plant()
+        .get_cache_entry(tangent_matrix_schur_complement_cache_indexes_[index])
+        .template Eval<internal::SchurComplement<T>>(context);
+  }
+
+  /* Calculates the Schur complement of the tangent matrix of the deformable
+   body with the given `index`. More specifically, the tangent matrix of the
+   deformable body is permuted to take the form M = [A, B; Bᵀ, D] where block A
+   corresponds to dofs in contact and block D corresponds to dofs not in
+   contact. The returned Schur complement provides information on
+   M/D = A - BD⁻¹Bᵀ, which is guaranteed to be symmetric positive definite. */
+  void CalcFreeMotionTangentMatrixSchurComplement(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      internal::SchurComplement<T>* schur_complement) const;
 
   // TODO(xuchenhan-tri): Remove this method when SceneGraph takes control of
   //  all geometries. SceneGraph should be responsible for obtaining the most
@@ -191,13 +237,22 @@ class DeformableRigidManager final
    rigid body identified by `rigid_id` and the deformable body identified by
    `deformable_id`. */
   internal::DeformableRigidContactPair<T> CalcDeformableRigidContactPair(
-      geometry::GeometryId rigid_id, SoftBodyIndex deformable_id) const;
+      geometry::GeometryId rigid_id, DeformableBodyIndex deformable_id) const;
 
   /* Calculates and returns the DeformableContactData that contains information
    about all deformable-rigid contacts associated with the deformable body
    identified by `deformable_id`. */
   internal::DeformableContactData<T> CalcDeformableContactData(
-      SoftBodyIndex deformable_id) const;
+      DeformableBodyIndex deformable_id) const;
+
+  /* Eval version of CalcDeformableRigidContact(). */
+  const std::vector<internal::DeformableContactData<T>>&
+  EvalDeformableRigidContact(const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(deformable_contact_data_cache_index_)
+        .template Eval<std::vector<internal::DeformableContactData<T>>>(
+            context);
+  }
 
   // TODO(xuchenhan-tri): Skip empty contact data altogether.
   /* Calculates all deforamble-rigid contacts and returns a vector of
@@ -206,17 +261,9 @@ class DeformableRigidManager final
    deformable body is not in contact with any rigid body, then the i-th entry
    (data[i]) in the return value will have `data[i].num_contact_points() == 0`.
   */
-  std::vector<internal::DeformableContactData<T>> CalcDeformableRigidContact(
-      const systems::Context<T>& context) const;
-
-  /* Eval version of the method CalcDeformableRigidContact(). */
-  const std::vector<internal::DeformableContactData<T>>&
-  EvalDeformableRigidContact(const systems::Context<T>& context) const {
-    return this->plant()
-        .get_cache_entry(deformable_contact_data_cache_index_)
-        .template Eval<std::vector<internal::DeformableContactData<T>>>(
-            context);
-  }
+  void CalcDeformableRigidContact(
+      const systems::Context<T>& context,
+      std::vector<internal::DeformableContactData<T>>* result) const;
 
   // TODO(xuchenhan-tri): Modify the description of the contact jacobian when
   //  sparsity for rigid dofs are exploited.
@@ -229,7 +276,7 @@ class DeformableRigidManager final
                                 | RD1     D1       |
                                 | RD2        D2    |
                                 | RD3           D3 |
-   where "RR" represents the rigid-rigid block, "RDi" represents the the
+   where "RR" represents the rigid-rigid block, "RDi" represents the
    rigid-deformable block with respect to the rigid dofs for the i-th deformable
    body, and "Di" represents the rigid-deformable block with respect to the
    deformable dofs for the i-th deformable body.
@@ -285,6 +332,22 @@ class DeformableRigidManager final
   void CalcContactPointData(const systems::Context<T>& context,
                             ContactPointData* contact_point_data) const;
 
+  /* Eval version of CalcContactTangentMatrix(). */
+  const contact_solvers::internal::BlockSparseMatrix<T>&
+  EvalContactTangentMatrix(const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(contact_tangent_matrix_cache_index_)
+        .template Eval<contact_solvers::internal::BlockSparseMatrix<T>>(
+            context);
+  }
+
+  /* Calculates the tangent matrix used by the contact solver. The number and
+   order of columns of the calculated tangent matrix is the same as the contact
+   Jacobian matrix (see CalcContactJacobian()). The result is guaranteed to be
+   symmetric positive definite. */
+  contact_solvers::internal::BlockSparseMatrix<T> CalcContactTangentMatrix(
+      const systems::Context<T>& context) const;
+
   /* Given the GeometryId of a rigid collision geometry, returns the body frame
    of the collision geometry.
    @pre The collision geometry with the given `id` is already registered with
@@ -301,8 +364,13 @@ class DeformableRigidManager final
   /* Cached FEM state quantities. */
   std::vector<systems::CacheIndex> fem_state_cache_indexes_;
   std::vector<systems::CacheIndex> free_motion_cache_indexes_;
+  std::vector<systems::CacheIndex> tangent_matrix_cache_indexes_;
+  std::vector<systems::CacheIndex>
+      tangent_matrix_schur_complement_cache_indexes_;
   /* Cached contact query results. */
   systems::CacheIndex deformable_contact_data_cache_index_;
+  /* Cached tangent matrix for contact. */
+  systems::CacheIndex contact_tangent_matrix_cache_index_;
   /* Solvers for all deformable bodies. */
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
@@ -314,8 +382,8 @@ class DeformableRigidManager final
       deformable_meshes_;
   mutable internal::CollisionObjects<T> collision_objects_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::DeformableRigidManager)
+    class ::drake::multibody::fem::DeformableRigidManager)

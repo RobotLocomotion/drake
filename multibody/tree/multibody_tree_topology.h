@@ -158,12 +158,12 @@ struct MobilizerTopology {
   // Default construction to invalid configuration.
   MobilizerTopology() {}
 
-  // Constructs a %MobilizerTopology by specifying the the index
-  // `mobilizer_index` for `this` new topology, the indexes to the inboard and
-  // outboard frames the Mobilizer will connect, given by `in_frame` and
-  // `out_frame` respectively, and similarly the inboard and outboard bodies
-  // being connected, given by `in_body` and `out_body`, respectively.
-  // The constructed topology will correspond to that of a Mobilizer with
+  // Constructs a %MobilizerTopology by specifying the index `mobilizer_index`
+  // for `this` new topology, the indexes to the inboard and outboard frames
+  // the Mobilizer will connect, given by `in_frame` and `out_frame`
+  // respectively, and similarly the inboard and outboard bodies being
+  // connected, given by `in_body` and `out_body`, respectively.  The
+  // constructed topology will correspond to that of a Mobilizer with
   // `num_positions_in` generalized positions and `num_velocities_in`
   // generalized velocities.
   MobilizerTopology(
@@ -544,7 +544,7 @@ class MultibodyTreeTopology {
   // The BodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   // values.
   //
-  // @throws std::logic_error if Finalize() was already called on `this`
+  // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
   // @returns a std::pair<BodyIndex, FrameIndex> containing the indexes
@@ -564,7 +564,7 @@ class MultibodyTreeTopology {
   // Creates and adds a new FrameTopology, associated with the given
   // body_index, to this MultibodyTreeTopology.
   //
-  // @throws std::logic_error if Finalize() was already called on `this`
+  // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
   // @returns The FrameIndex assigned to the new FrameTopology.
@@ -584,13 +584,13 @@ class MultibodyTreeTopology {
   // `out_frame`, respectively. The created topology will correspond to that of
   // a Mobilizer with `num_positions` and `num_velocities`.
   //
-  // @throws std::runtime_error if either `in_frame` or `out_frame` do not
+  // @throws std::exception if either `in_frame` or `out_frame` do not
   // index frame topologies in `this` %MultibodyTreeTopology.
-  // @throws std::runtime_error if `in_frame == out_frame`.
-  // @throws std::runtime_error if `in_frame` and `out_frame` already are
+  // @throws std::exception if `in_frame == out_frame`.
+  // @throws std::exception if `in_frame` and `out_frame` already are
   // connected by another mobilizer. More than one mobilizer between two frames
   // is not allowed.
-  // @throws std::logic_error if Finalize() was already called on `this`
+  // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
   // @returns The MobilizerIndex assigned to the new MobilizerTopology.
@@ -664,7 +664,7 @@ class MultibodyTreeTopology {
   // Creates and adds a new ForceElementTopology, associated with the given
   // force_index, to this MultibodyTreeTopology.
   //
-  // @throws std::logic_error if Finalize() was already called on `this`
+  // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
   // @returns The ForceElementIndex assigned to the new ForceElementTopology.
@@ -685,7 +685,7 @@ class MultibodyTreeTopology {
   // @param[in] num_dofs
   //   The number of joint dofs actuated by this actuator.
   //
-  // @throws std::logic_error if Finalize() was already called on `this`
+  // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
   // @returns The JointActuatorIndex assigned to the new JointActuatorTopology.
@@ -723,7 +723,7 @@ class MultibodyTreeTopology {
   // meaning it is up-to-date after this call.
   // No more multibody tree elements can be added after a call to Finalize().
   //
-  // @throws std::logic_error If users attempt to call this method on an
+  // @throws std::exception If users attempt to call this method on an
   //         already finalized topology.
   // @see is_valid()
   void Finalize() {

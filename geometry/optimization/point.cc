@@ -24,7 +24,7 @@ Point::Point(const Eigen::Ref<const Eigen::VectorXd>& x)
     : ConvexSet(&ConvexSetCloner<Point>, x.size()), x_{x} {}
 
 Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
-             std::optional<FrameId> expressed_in,
+             std::optional<FrameId> reference_frame,
              double maximum_allowable_radius)
     : ConvexSet(&ConvexSetCloner<Point>, 3) {
   double radius = -1.0;
@@ -36,9 +36,9 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
                     geometry_id, radius, maximum_allowable_radius));
   }
 
-  const RigidTransformd X_WE = expressed_in
-                                   ? query_object.GetPoseInWorld(*expressed_in)
-                                   : RigidTransformd::Identity();
+  const RigidTransformd X_WE =
+      reference_frame ? query_object.GetPoseInWorld(*reference_frame)
+                      : RigidTransformd::Identity();
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
   x_ = X_EG.translation();
@@ -46,12 +46,17 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
 
 Point::~Point() = default;
 
+void Point::set_x(const Eigen::Ref<const Eigen::VectorXd>& x) {
+  DRAKE_DEMAND(x.size() == x_.size());
+  x_ = x;
+}
+
 bool Point::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
 }
 
-void Point::DoAddPointInSetConstraint(
+void Point::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
   prog->AddBoundingBoxConstraint(x_, x_, x);

@@ -55,7 +55,7 @@ class DenseResidual {
    * @param[in] xbar   Outer loop variable
    * @param[in] sigma  Regularization strength > 0
    *
-   * Throws a runtime_error if problem data isn't linked, sigma isn't positive,
+   * Throws an exception if problem data isn't linked, sigma isn't positive,
    * or if x and xbar aren't the same size.
    */
   void InnerResidual(const DenseVariable& x, const DenseVariable& xbar,
@@ -69,7 +69,7 @@ class DenseResidual {
    *
    * @param[in] x Evaluation point.
    *
-   * Throws a runtime_error if problem data isn't linked.
+   * Throws an exception if problem data isn't linked.
    */
   void NaturalResidual(const DenseVariable& x);
 
@@ -81,7 +81,7 @@ class DenseResidual {
    *
    * @param[in] x Evaluation point.
    *
-   * Throws a runtime_error if problem data isn't linked.
+   * Throws an exception if problem data isn't linked.
    */
   void PenalizedNaturalResidual(const DenseVariable& x);
 

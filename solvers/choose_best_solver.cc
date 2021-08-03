@@ -1,5 +1,9 @@
 #include "drake/solvers/choose_best_solver.h"
 
+#include <array>
+#include <string>
+#include <unordered_map>
+
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
@@ -17,6 +21,72 @@
 namespace drake {
 namespace solvers {
 namespace {
+
+// A collection of function pointers to the static member functions that are
+// twins to the SolverInterface virtual member functions.  These pointers are
+// useful when we want to interrogate solvers without constructing them.
+class StaticSolverInterface {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StaticSolverInterface)
+
+  template <typename SomeSolver>
+  static constexpr StaticSolverInterface Make() {
+    StaticSolverInterface result;
+    result.id_ = &SomeSolver::id;
+    result.is_available_ = &SomeSolver::is_available;
+    result.is_enabled_ = &SomeSolver::is_enabled;
+    result.make_ = &MakeAndUpcast<SomeSolver>;
+    return result;
+  }
+
+  SolverId id() const { return (*id_)(); }
+  bool is_available() const { return (*is_available_)(); }
+  bool is_enabled() const { return (*is_enabled_)(); }
+  std::unique_ptr<SolverInterface> Make() const { return (*make_)(); }
+
+ private:
+  StaticSolverInterface() = default;
+
+  // A helper function that combines make_unique with an upcast.
+  template <typename SomeSolver>
+  static std::unique_ptr<SolverInterface> MakeAndUpcast() {
+    return std::make_unique<SomeSolver>();
+  }
+
+  SolverId(*id_)() = nullptr;
+  bool(*is_available_)() = nullptr;
+  bool(*is_enabled_)() = nullptr;
+  std::unique_ptr<SolverInterface>(*make_)() = nullptr;
+};
+
+// The list of all solvers compiled in Drake.
+constexpr std::array<StaticSolverInterface, 12> kKnownSolvers{
+    StaticSolverInterface::Make<ClpSolver>(),
+    StaticSolverInterface::Make<CsdpSolver>(),
+    StaticSolverInterface::Make<EqualityConstrainedQPSolver>(),
+    StaticSolverInterface::Make<GurobiSolver>(),
+    StaticSolverInterface::Make<IpoptSolver>(),
+    StaticSolverInterface::Make<LinearSystemSolver>(),
+    StaticSolverInterface::Make<MobyLCPSolver<double>>(),
+    StaticSolverInterface::Make<MosekSolver>(),
+    StaticSolverInterface::Make<NloptSolver>(),
+    StaticSolverInterface::Make<OsqpSolver>(),
+    StaticSolverInterface::Make<ScsSolver>(),
+    StaticSolverInterface::Make<SnoptSolver>()};
+
+// The list of all solvers compiled in Drake, indexed by SolverId.
+using KnownSolversMap = std::unordered_map<
+    SolverId, const StaticSolverInterface*>;
+const KnownSolversMap& GetKnownSolversMap() {
+  static const never_destroyed<KnownSolversMap> result{[]() {
+    KnownSolversMap prototype;
+    for (const auto& solver : kKnownSolvers) {
+      prototype.emplace(solver.id(), &solver);
+    }
+    return prototype;
+  }()};
+  return result.access();
+}
 
 template <typename SomeSolver>
 bool IsMatch(const MathematicalProgram& prog) {
@@ -65,51 +135,44 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
 }
 
 const std::set<SolverId>& GetKnownSolvers() {
-  static const never_destroyed<std::set<SolverId>> result{std::set<SolverId>{
-      LinearSystemSolver::id(),
-      EqualityConstrainedQPSolver::id(),
-      MosekSolver::id(),
-      GurobiSolver::id(),
-      ClpSolver::id(),
-      OsqpSolver::id(),
-      MobyLcpSolverId::id(),
-      SnoptSolver::id(),
-      IpoptSolver::id(),
-      NloptSolver::id(),
-      CsdpSolver::id(),
-      ScsSolver::id(),
-  }};
+  static const never_destroyed<std::set<SolverId>> result{[]() {
+    std::set<SolverId> prototype;
+    for (const auto& solver : kKnownSolvers) {
+      prototype.insert(solver.id());
+    }
+    return prototype;
+  }()};
   return result.access();
 }
 
 std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id) {
-  if (id == LinearSystemSolver::id()) {
-    return std::make_unique<LinearSystemSolver>();
-  } else if (id == EqualityConstrainedQPSolver::id()) {
-    return std::make_unique<EqualityConstrainedQPSolver>();
-  } else if (id == MosekSolver::id()) {
-    return std::make_unique<MosekSolver>();
-  } else if (id == GurobiSolver::id()) {
-    return std::make_unique<GurobiSolver>();
-  } else if (id == ClpSolver::id()) {
-    return std::make_unique<ClpSolver>();
-  } else if (id == OsqpSolver::id()) {
-    return std::make_unique<OsqpSolver>();
-  } else if (id == MobyLcpSolverId::id()) {
-    return std::make_unique<MobyLCPSolver<double>>();
-  } else if (id == SnoptSolver::id()) {
-    return std::make_unique<SnoptSolver>();
-  } else if (id == IpoptSolver::id()) {
-    return std::make_unique<IpoptSolver>();
-  } else if (id == NloptSolver::id()) {
-    return std::make_unique<NloptSolver>();
-  } else if (id == CsdpSolver::id()) {
-    return std::make_unique<CsdpSolver>();
-  } else if (id == ScsSolver::id()) {
-    return std::make_unique<ScsSolver>();
-  } else {
-    throw std::invalid_argument("MakeSolver: no matching solver " + id.name());
+  const auto& map = GetKnownSolversMap();
+  auto iter = map.find(id);
+  if (iter != map.end()) {
+    const StaticSolverInterface& solver = *(iter->second);
+    return solver.Make();
   }
+  throw std::invalid_argument("MakeSolver: no matching solver " + id.name());
+}
+
+std::unique_ptr<SolverInterface> MakeFirstAvailableSolver(
+    const std::vector<SolverId>& solver_ids) {
+  const auto& map = GetKnownSolversMap();
+  for (const auto& solver_id : solver_ids) {
+    auto iter = map.find(solver_id);
+    if (iter != map.end()) {
+      const StaticSolverInterface& solver = *(iter->second);
+      if (solver.is_available() && solver.is_enabled()) {
+        return solver.Make();
+      }
+    }
+  }
+  std::string solver_names = "";
+  for (const auto solver_id : solver_ids) {
+    solver_names.append(solver_id.name() + " ");
+  }
+  throw std::runtime_error("MakeFirstAvailableSolver(): none of the solvers " +
+                           solver_names + "is available and enabled.");
 }
 
 }  // namespace solvers

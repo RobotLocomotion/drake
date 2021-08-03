@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_deprecated.h"
+#include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
@@ -208,12 +209,15 @@ class QueryObject;
  model.
 
  @note In this initial version, the only methods with the Context-modifying
- variant are those methods that _do not_ change the the semantics of the input
- or output ports. Modifications that make such changes must be coordinated
- across systems.
+ variant are those methods that _do not_ change the semantics of the input or
+ output ports. Modifications that make such changes must be coordinated across
+ systems.
  <!-- TODO(SeanCurtis-TRI): Add context-modifying variants of all methods. -->
 
 @section  scene_graph_versioning Detecting changes
+
+ <!-- TODO(SeanCurtis-TRI) All references to APIs that modify versions should
+  have cross links back to this section.  -->
 
  The geometry data associated with %SceneGraph is coarsely versioned. Consumers
  of the geometry can query for the version of the data and recognize if the
@@ -317,7 +321,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param name          The optional name of the source. If none is provided
                         (or the empty string) a default name will be defined by
                         SceneGraph's logic.
-   @throws std::logic_error if the name is not unique.  */
+   @throws std::exception if the name is not unique.  */
   SourceId RegisterSource(const std::string& name = "");
 
   /** Reports if the given source id is registered.
@@ -327,7 +331,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Given a valid source `id`, returns a _pose_ input port associated
    with that `id`. This port is used to communicate _pose_ data for registered
    frames.
-   @throws std::logic_error if the source_id is _not_ recognized.  */
+   @throws std::exception if the source_id is _not_ recognized.  */
   const systems::InputPort<T>& get_source_pose_port(SourceId id) const;
 
   /** Returns the output port which produces the PoseBundle for LCM
@@ -393,10 +397,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param source_id     The id for the source registering the frame.
    @param frame         The frame to register.
    @returns A unique identifier for the added frame.
-   @throws std::logic_error  if a) the `source_id` does _not_ map to a
-                             registered source, or
-                             b) `frame` has an id that has already been
-                             registered.  */
+   @throws std::exception  if a) the `source_id` does _not_ map to a
+                           registered source, or
+                           b) `frame` has an id that has already been
+                           registered.  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame F for this source. This hangs frame F on another
@@ -411,12 +415,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param parent_id    The id of the parent frame P.
    @param frame        The frame to register.
    @returns A unique identifier for the added frame.
-   @throws std::logic_error  if a) the `source_id` does _not_ map to a
-                             registered source,
-                             b) the `parent_id` does _not_ map to a known
-                             frame or does not belong to the source, or
-                             c) `frame` has an id that has already been
-                             registered.  */
+   @throws std::exception  if a) the `source_id` does _not_ map to a
+                           registered source,
+                           b) the `parent_id` does _not_ map to a known
+                           frame or does not belong to the source, or
+                           c) `frame` has an id that has already been
+                           registered.  */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
@@ -437,12 +441,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param frame_id    The id for the frame F to hang the geometry on.
    @param geometry    The geometry G to affix to frame F.
    @return A unique identifier for the added geometry.
-   @throws std::logic_error  if a) the `source_id` does _not_ map to a
-                             registered source,
-                             b) the `frame_id` doesn't belong to the source,
-                             c) the `geometry` is equal to `nullptr`, or
-                             d) the geometry's name doesn't satisfy the
-                             requirements outlined in GeometryInstance.  */
+   @throws std::exception  if a) the `source_id` does _not_ map to a
+                           registered source,
+                           b) the `frame_id` doesn't belong to the source,
+                           c) the `geometry` is equal to `nullptr`, or
+                           d) the geometry's name doesn't satisfy the
+                           requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -471,12 +475,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param geometry_id  The id for the parent geometry P.
    @param geometry     The geometry G to add.
    @return A unique identifier for the added geometry.
-   @throws std::logic_error if a) the `source_id` does _not_ map to a registered
-                            source,
-                            b) the `geometry_id` doesn't belong to the source,
-                            c) the `geometry` is equal to `nullptr`, or
-                            d) the geometry's name doesn't satisfy the
-                            requirements outlined in GeometryInstance.  */
+   @throws std::exception if a) the `source_id` does _not_ map to a registered
+                          source,
+                          b) the `geometry_id` doesn't belong to the source,
+                          c) the `geometry` is equal to `nullptr`, or
+                          d) the geometry's name doesn't satisfy the
+                          requirements outlined in GeometryInstance.  */
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -502,10 +506,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param source_id     The id for the source registering the frame.
    @param geometry      The anchored geometry G to add to the world.
    @return A unique identifier for the added geometry.
-   @throws std::logic_error  if a) the `source_id` does _not_ map to a
-                             registered source or
-                             b) the geometry's name doesn't satisfy the
-                             requirements outlined in GeometryInstance.  */
+   @throws std::exception  if a) the `source_id` does _not_ map to a
+                           registered source or
+                           b) the geometry's name doesn't satisfy the
+                           requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
@@ -521,12 +525,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param source_id   The identifier for the owner geometry source.
    @param geometry_id The identifier of the geometry to remove (can be dynamic
                       or anchored).
-   @throws std::logic_error  if a) the `source_id` does _not_ map to a
-                             registered source,
-                             b) the `geometry_id` does not map to a valid
-                             geometry, or
-                             c) the `geometry_id` maps to a geometry that does
-                             not belong to the indicated source.  */
+   @throws std::exception  if a) the `source_id` does _not_ map to a
+                           registered source,
+                           b) the `geometry_id` does not map to a valid
+                           geometry, or
+                           c) the `geometry_id` maps to a geometry that does
+                           not belong to the indicated source.  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
   /** systems::Context-modifying variant of RemoveGeometry(). Rather than
@@ -566,7 +570,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @param name      The unique name of the renderer.
    @param renderer  The `renderer` to add.
-   @throws std::logic_error if the name is not unique.  */
+   @throws std::exception if the name is not unique.  */
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
@@ -751,12 +755,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    on the role being removed from the geometry (see @ref
    scene_graph_versioning).
    @returns The number of geometries affected by the removed role.
-   @throws std::logic_error if a) `source_id` does not map to a registered
-                            source,
-                            b) `frame_id` does not map to a registered frame,
-                            c) `frame_id` does not belong to `source_id`
-                            (unless `frame_id` is the world frame id), or
-                            d) the context has already been allocated.  */
+   @throws std::exception if a) `source_id` does not map to a registered
+                          source,
+                          b) `frame_id` does not map to a registered frame,
+                          c) `frame_id` does not belong to `source_id`
+                          (unless `frame_id` is the world frame id), or
+                          d) the context has already been allocated.  */
   int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
 
   /** systems::Context-modifying variant of
@@ -772,12 +776,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
    scene_graph_versioning).
    @returns One if the geometry had the role removed and zero if the geometry
             did not have the role assigned in the first place.
-   @throws std::logic_error if a) `source_id` does not map to a registered
-                            source,
-                            b) `geometry_id` does not map to a registered
-                            geometry,
-                            c) `geometry_id` does not belong to `source_id`, or
-                            d) the context has already been allocated.
+   @throws std::exception if a) `source_id` does not map to a registered
+                          source,
+                          b) `geometry_id` does not map to a registered
+                          geometry,
+                          c) `geometry_id` does not belong to `source_id`, or
+                          d) the context has already been allocated.
    @pydrake_mkdoc_identifier{geometry_direct}  */
   int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
 
@@ -799,9 +803,46 @@ class SceneGraph final : public systems::LeafSystem<T> {
   const SceneGraphInspector<T>& model_inspector() const;
 
   /** @name         Collision filtering
+   @anchor scene_graph_collision_filter_manager
+
+   Control over "collision filtering" is handled by the CollisionFilterManager.
+   %SceneGraph provides access to the manager. As with other geometry data,
+   collision filters can be configured in %SceneGraph's *model* or in the copy
+   stored in a particular Context. These methods provide access to the manager
+   for the data stored in either location.
+
+   Generally, it should be considered a bad practice to hang onto the instance
+   of CollisionFilterManager returned by collision_filter_manager(). It is not
+   immediately clear whether a particular CollisionFilterManager instance
+   refers to the %SceneGraph model or the Context data and persisting the
+   reference may lead to confusion. Keeping the reference for the duration of
+   a function is appropriate, but allowing it to persist outside of the scope
+   of acquisition is dangerous. Acquiring a new CollisionFilterManager is *very*
+   cheap, so feel free to discard and reacquire.
+
+   Simply acquiring an instance of CollisionFilterManager will advance the
+   @ref scene_graph_versioning "proximity version" for the related geometry
+   data (model or context).  */
+  //@{
+
+  /** Returns the collision filter manager for this %SceneGraph instance's
+   *model*. */
+  CollisionFilterManager collision_filter_manager();
+
+  /** Returns the collision filter manager for data stored in `context`. The
+   context must remain alive for at least as long as the returned manager.  */
+  CollisionFilterManager collision_filter_manager(
+      systems::Context<T>* context) const;
+  //@}
+
+  // TODO(2021-11-01) Remove this entire group when completing deprecation of
+  //  the methods below.
+  /** @name         Collision filtering (Deprecated)
    @anchor scene_graph_collision_filtering
-   The interface for limiting the scope of penetration queries (i.e., "filtering
-   collisions").
+   The *legacy* interface for limiting the scope of penetration queries (i.e.,
+   "filtering collisions").
+
+   Please use the @ref scene_graph_collision_filter_manager "new API" instead.
 
    The scene graph consists of the set of geometry
    `G = D ⋃ A = {g₀, g₁, ..., gₙ}`, where D is the set of dynamic geometry and
@@ -851,13 +892,21 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.
 
-   @throws std::logic_error if the set includes ids that don't exist in the
-                            scene graph.  */
+   @throws std::exception if the set includes ids that don't exist in the
+                          scene graph.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager().Apply() "
+      "instead")
   void ExcludeCollisionsWithin(const GeometrySet& set);
 
   /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager(context).Apply() "
+      "instead")
   void ExcludeCollisionsWithin(systems::Context<T>* context,
                                const GeometrySet& set) const;
 
@@ -871,14 +920,22 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.
 
-   @throws std::logic_error if the groups include ids that don't exist in the
-                            scene graph.  */
+   @throws std::exception if the groups include ids that don't exist in the
+                          scene graph.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager().Apply() "
+      "instead")
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
   /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
+  DRAKE_DEPRECATED(
+      "2021-11-01",
+      "Please call collision_filter_manager(context).Apply()"
+      " instead")
   void ExcludeCollisionsBetween(systems::Context<T>* context,
                                 const GeometrySet& setA,
                                 const GeometrySet& setB) const;

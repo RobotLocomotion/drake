@@ -22,7 +22,6 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
-using internal::GeometryStateCollisionFilterAttorney;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
@@ -37,6 +36,7 @@ using std::set;
 using std::string;
 using std::swap;
 using std::to_string;
+using std::unordered_set;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -122,8 +122,7 @@ GeometryState<T>::GeometryState()
   // As an arbitrary design choice, we'll say the world frame is its own parent.
   frames_[world] = InternalFrame(self_source_, world, "world",
                                  InternalFrame::world_frame_group(),
-                                 FrameIndex(0), world,
-                                 InternalFrame::world_frame_clique());
+                                 FrameIndex(0), world);
   frame_index_to_id_map_.push_back(world);
   X_WF_.push_back(RigidTransform<T>::Identity());
   X_PF_.push_back(RigidTransform<T>::Identity());
@@ -133,13 +132,9 @@ GeometryState<T>::GeometryState()
 }
 
 template <typename T>
-std::unordered_set<GeometryId> GeometryState<T>::GetGeometryIds(
+unordered_set<GeometryId> GeometryState<T>::GetGeometryIds(
       const GeometrySet& geometry_set, const std::optional<Role>& role) const {
-  std::unordered_set<GeometryId> ids;
-  // We don't need to distinguish between anchored and dynamic ids; we'll simply
-  // accumulate them all into the same set -- so we pass ids twice.
-  CollectIds(geometry_set, &ids, &ids, role);
-  return ids;
+  return CollectIds(geometry_set, role);
 }
 
 template <typename T>
@@ -429,9 +424,8 @@ bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
   const internal::InternalGeometry* geometry2 = GetGeometry(id2);
   if (geometry1 != nullptr && geometry2 != nullptr) {
     if (geometry1->has_proximity_role() && geometry2->has_proximity_role()) {
-      return geometry_engine_->CollisionFiltered(
-          geometry1->id(), geometry1->is_dynamic(),
-          geometry2->id(), geometry2->is_dynamic());
+      return !geometry_engine_->collision_filter().CanCollideWith(
+          geometry1->id(), geometry2->id());
     }
     if (geometry1->has_proximity_role()) {
       throw std::logic_error(base_message + to_string(id2) +
@@ -539,11 +533,9 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   X_WF_.emplace_back(RigidTransform<T>::Identity());
   frame_index_to_id_map_.push_back(frame_id);
   f_set.insert(frame_id);
-  int clique = GeometryStateCollisionFilterAttorney::get_next_clique(
-      geometry_engine_.get_mutable());
   frames_.emplace(frame_id, InternalFrame(source_id, frame_id, frame.name(),
                                           frame.frame_group(), index,
-                                          parent_id, clique));
+                                          parent_id));
   return frame_id;
 }
 
@@ -702,7 +694,15 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
 
   geometry_version_.modify_proximity();
   switch (assign) {
-    case RoleAssign::kNew:
+    case RoleAssign::kNew: {
+      // The set of geometries G such that I need to introduce filtered pairs
+      // (geometry_id, gᵢ) ∀ gᵢ ∈ G. Generally, it consists of those proximity
+      // geometries affixed to the same frame as geometry_id (that frame would
+      // be the world frame for anchored geometry). To that end, we'll blindly
+      // add the id for the geometry's frame to the set. Worst case, there are
+      // no other geometries affixed to that frame -- attempting to apply
+      // filters in that case would be a harmless act.
+      GeometrySet ids_for_filtering;
       geometry.SetRole(std::move(properties));
       if (geometry.is_dynamic()) {
         // Pass the geometry to the engine.
@@ -711,57 +711,24 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                              geometry_id,
                                              *geometry.proximity_properties());
 
-        InternalFrame& frame = frames_[geometry.frame_id()];
-
-        int child_count = static_cast<int>(frame.child_geometries().size());
-        if (child_count > 1) {
-          // Having multiple children is _necessary_ but not _sufficient_ to
-          // require collision filtering. Only if there are multiple children
-          // with the proximity role do we engage filtering.
-          // TODO(SeanCurtis-TRI): Perhaps refactor this logic into its own
-          //  method?
-          std::vector<GeometryId> proximity_geometries;
-          proximity_geometries.reserve(child_count);
-          for (GeometryId child_id : frame.child_geometries()) {
-            if (geometries_[child_id].has_proximity_role()) {
-              proximity_geometries.push_back(child_id);
-            }
-          }
-          const int proximity_count =
-              static_cast<int>(proximity_geometries.size());
-
-          if (proximity_count > 1) {
-            // Filter collisions between geometries affixed to the same frame.
-            // We only add a clique to a frame's geometries when there are
-            // *multiple* child geometries.
-            ProximityEngine<T>& engine = *geometry_engine_.get_mutable();
-            if (proximity_count > 2) {
-              // Assume all previous geometries have already had the clique
-              // assigned.
-              GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
-                  &engine, geometry_id, frame.clique());
-            } else {  // proximity_count == 2.
-              // This geometry tips us over to the point where we need to assign
-              // the clique to the new (and previous) geometries.
-              // NOTE: this is an optimization based on the clunky nature of the
-              // current collision filtering -- we're benefited in limiting the
-              // number of cliques assigned to a geometry.
-              for (GeometryId child_id : proximity_geometries) {
-                GeometryStateCollisionFilterAttorney::
-                    set_dynamic_geometry_clique(&engine, child_id,
-                                                frame.clique());
-              }
-            }
-          }
-        }
+        ids_for_filtering.Add(geometry.frame_id());
       } else {
-        // If it's not dynamic, it must be anchored. No clique madness required;
-        // anchored geometries are not tested against each other by the process.
         geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
                                               geometry_id,
                                               *geometry.proximity_properties());
+        ids_for_filtering.Add(InternalFrame::world_frame_id());
       }
-      break;
+
+      // Apply collision filter between geometry id and any geometries that have
+      // been identifiied. If none have been identified, this makes no changes.
+      geometry_engine_->collision_filter().Apply(
+          CollisionFilterDeclaration().ExcludeBetween(GeometrySet(geometry_id),
+                                                      ids_for_filtering),
+          [this](const GeometrySet& set) {
+            return this->CollectIds(set, Role::kProximity);
+          },
+          true /* is_permanent */);
+    } break;
     case RoleAssign::kReplace:
       // Give the engine a chance to compare properties before and after.
       geometry_engine_->UpdateRepresentationForNewProperties(geometry,
@@ -928,42 +895,6 @@ int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
 }
 
 template <typename T>
-void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
-  // There is no work to be done if:
-  //   1. the set contains a single frame and no geometries -- geometries *on*
-  //      that single frame have already been handled, or
-  //   2. there are no frames and a single geometry.
-  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
-      (set.num_frames() == 0 && set.num_geometries() == 1)) {
-    return;
-  }
-
-  std::unordered_set<GeometryId> dynamic;
-  std::unordered_set<GeometryId> anchored;
-  CollectIds(set, &dynamic, &anchored, Role::kProximity);
-
-  geometry_version_.modify_proximity();
-
-  geometry_engine_->ExcludeCollisionsWithin(dynamic, anchored);
-}
-
-template <typename T>
-void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
-                                                const GeometrySet& setB) {
-  std::unordered_set<GeometryId> dynamic1;
-  std::unordered_set<GeometryId> anchored1;
-  CollectIds(setA, &dynamic1, &anchored1, Role::kProximity);
-  std::unordered_set<GeometryId> dynamic2;
-  std::unordered_set<GeometryId> anchored2;
-  CollectIds(setB, &dynamic2, &anchored2, Role::kProximity);
-
-  geometry_version_.modify_proximity();
-
-  geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
-                                             anchored2);
-}
-
-template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
   if (render_engines_.count(name) > 0) {
@@ -975,13 +906,22 @@ void GeometryState<T>::AddRenderer(
   bool accepted = false;
   for (auto& id_geo_pair : geometries_) {
     InternalGeometry& geometry = id_geo_pair.second;
+    // To add this geometry to the renderer, it must:
+    //   1. Have perception role and
+    //   2. Be an acceptable renderer -- it is acceptable if the geometry hasn't
+    //      declared *any* acceptable renderers or if this renderer's name has
+    //      been explicitly included in its acceptable set.
     if (geometry.has_perception_role()) {
-      const GeometryId id = id_geo_pair.first;
       const PerceptionProperties* properties = geometry.perception_properties();
       DRAKE_DEMAND(properties != nullptr);
-      accepted |= render_engine->RegisterVisual(
-                     id, geometry.shape(), *properties,
-                     RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
+      auto accepting_renderers = properties->GetPropertyOrDefault(
+          "renderer", "accepting", set<string>{});
+      if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
+        const GeometryId id = id_geo_pair.first;
+        accepted |= render_engine->RegisterVisual(
+            id, geometry.shape(), *properties, RigidTransformd(geometry.X_FG()),
+            geometry.is_dynamic());
+      }
     }
   }
   // Increment version number if any geometry is registered to the new
@@ -1049,18 +989,15 @@ std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
 }
 
 template <typename T>
-void GeometryState<T>::CollectIds(const GeometrySet& geometry_set,
-                                  std::unordered_set<GeometryId>* dynamic,
-                                  std::unordered_set<GeometryId>* anchored,
-                                  const std::optional<Role>& role) const {
-  std::unordered_set<GeometryId>* target;
+unordered_set<GeometryId> GeometryState<T>::CollectIds(
+    const GeometrySet& geometry_set, std::optional<Role> role) const {
+  unordered_set<GeometryId> resultant_ids;
   for (auto frame_id : geometry_set.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
-    target = frame.is_world() ? anchored : dynamic;
     for (auto geometry_id : frame.child_geometries()) {
       const InternalGeometry& geometry = geometries_.at(geometry_id);
       if (!role.has_value() || geometry.has_role(*role)) {
-        target->insert(geometry_id);
+        resultant_ids.insert(geometry_id);
       }
     }
   }
@@ -1074,13 +1011,10 @@ void GeometryState<T>::CollectIds(const GeometrySet& geometry_set,
           to_string(geometry_id));
     }
     if (!role.has_value() || geometry->has_role(*role)) {
-      if (geometry->is_dynamic()) {
-        dynamic->insert(geometry_id);
-      } else {
-        anchored->insert(geometry_id);
-      }
+      resultant_ids.insert(geometry_id);
     }
   }
+  return resultant_ids;
 }
 
 template <typename T>

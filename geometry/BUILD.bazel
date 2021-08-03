@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":collision_filter_declaration",
+        ":collision_filter_manager",
         ":drake_visualizer",
         ":frame_kinematics",
         ":geometry_frame",
@@ -72,6 +73,18 @@ drake_cc_library(
     deps = [
         ":geometry_set",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_filter_manager",
+    srcs = ["collision_filter_manager.cc"],
+    hdrs = ["collision_filter_manager.h"],
+    deps = [
+        ":collision_filter_declaration",
+        ":geometry_ids",
+        ":geometry_set",
+        "//geometry/proximity:collision_filter",
     ],
 )
 
@@ -190,6 +203,7 @@ drake_cc_library(
     srcs = ["geometry_state.cc"],
     hdrs = ["geometry_state.h"],
     deps = [
+        ":collision_filter_manager",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
@@ -330,6 +344,15 @@ drake_cc_googletest(
     deps = [
         ":collision_filter_declaration",
         ":geometry_ids",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_filter_manager_test",
+    deps = [
+        ":collision_filter_manager",
+        ":scene_graph",
+        "//common/test_utilities:expect_no_throw",
     ],
 )
 

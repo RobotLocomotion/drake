@@ -11,12 +11,11 @@ namespace pendulum {
 template <typename T>
 PendulumPlant<T>::PendulumPlant()
     : systems::LeafSystem<T>(systems::SystemTypeTag<PendulumPlant>{}) {
-  this->DeclareVectorInputPort("tau", PendulumInput<T>());
-  this->DeclareVectorOutputPort("state", &PendulumPlant::CopyStateOut,
-                                {this->all_state_ticket()});
-  this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
-                               0 /* num_z */);
   this->DeclareNumericParameter(PendulumParams<T>());
+  this->DeclareVectorInputPort("tau", PendulumInput<T>());
+  auto state_index = this->DeclareContinuousState(
+      PendulumState<T>(), 1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
+  this->DeclareStateOutputPort("state", state_index);
 }
 
 template <typename T>
@@ -30,12 +29,6 @@ template <typename T>
 const systems::OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
   DRAKE_DEMAND(systems::LeafSystem<T>::num_output_ports() == 1);
   return systems::LeafSystem<T>::get_output_port(0);
-}
-
-template <typename T>
-void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
-                                    PendulumState<T>* output) const {
-  *output = get_state(context);
 }
 
 template <typename T>

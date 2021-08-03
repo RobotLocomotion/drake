@@ -168,7 +168,7 @@ class Transform {
   bool IsDeterministic() const;
 
   /// If this is deterministic, retrieves its value.
-  /// @throws exception if this is not fully deterministic.
+  /// @throws std::exception if this is not fully deterministic.
   math::RigidTransformd GetDeterministicValue() const;
 
   /// Returns the symbolic form of this rotation.  If this is deterministic,

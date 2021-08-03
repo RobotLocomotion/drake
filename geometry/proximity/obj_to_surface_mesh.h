@@ -24,7 +24,7 @@ namespace geometry {
  @param on_warning
      An optional callback that will receive warning message(s) encountered
      while reading the mesh.  When not provided, drake::log() will be used.
- @throws std::runtime_error if `filename` doesn't have a valid file path, or the
+ @throws std::exception if `filename` doesn't have a valid file path, or the
      file has no faces.
  @return surface mesh
  */

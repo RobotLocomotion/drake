@@ -330,10 +330,8 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
   // this storage is responsible for ensuring that no stale data is used.
   scratch_cache_index_ =
       this->DeclareCacheEntry(
-          // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
           "scratch", ValueProducer(
-              MakeAllocateCallback(Scratch<T>{}),
-              &ValueProducer::NoopCalc),
+              Scratch<T>{}, &ValueProducer::NoopCalc),
           {this->nothing_ticket()}).cache_index();
 
   per_step_events_.set_system_id(this->get_system_id());
@@ -546,27 +544,30 @@ void LeafSystem<T>::DeclarePeriodicUnrestrictedUpdate(
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(int num_state_variables) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
+    int num_state_variables) {
   const int num_q = 0, num_v = 0;
-  DeclareContinuousState(num_q, num_v, num_state_variables);
+  return DeclareContinuousState(num_q, num_v, num_state_variables);
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(int num_q, int num_v, int num_z) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
+    int num_q, int num_v, int num_z) {
   const int n = num_q + num_v + num_z;
-  DeclareContinuousState(BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v,
-                         num_z);
+  return DeclareContinuousState(
+      BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v, num_z);
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(const BasicVector<T>& model_vector) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
+    const BasicVector<T>& model_vector) {
   const int num_q = 0, num_v = 0;
   const int num_z = model_vector.size();
-  DeclareContinuousState(model_vector, num_q, num_v, num_z);
+  return DeclareContinuousState(model_vector, num_q, num_v, num_z);
 }
 
 template <typename T>
-void LeafSystem<T>::DeclareContinuousState(
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
     const BasicVector<T>& model_vector, int num_q, int num_v, int num_z) {
   DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
   model_continuous_state_vector_ = model_vector.Clone();
@@ -585,6 +586,8 @@ void LeafSystem<T>::DeclareContinuousState(
         const ContinuousState<T>& state = context.get_continuous_state();
         return state.get_vector();
       });
+
+  return ContinuousStateIndex(0);
 }
 
 template <typename T>
@@ -685,13 +688,67 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     typename LeafOutputPort<T>::AllocCallback alloc_function,
     typename LeafOutputPort<T>::CalcCallback calc_function,
     std::set<DependencyTicket> prerequisites_of_calc) {
+  auto calc = [captured_calc = std::move(calc_function)](
+      const ContextBase& context_base, AbstractValue* result) {
+    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+    return captured_calc(context, result);
+  };
   auto& port = CreateAbstractLeafOutputPort(
-      NextOutputPortName(std::move(name)), std::move(alloc_function),
-      std::move(calc_function), std::move(prerequisites_of_calc));
+      NextOutputPortName(std::move(name)),
+      ValueProducer(std::move(alloc_function), std::move(calc)),
+      std::move(prerequisites_of_calc));
   return port;
 }
 
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    ContinuousStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  DRAKE_THROW_UNLESS(state_index == 0);
+  return DeclareVectorOutputPort(
+      std::move(name), *model_continuous_state_vector_,
+      [](const Context<T>& context, BasicVector<T>* output) {
+        output->SetFrom(context.get_continuous_state_vector());
+      },
+      {this->xc_ticket()});
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    DiscreteStateIndex state_index) {
+  // DiscreteValues::get_vector already bounds checks the index, so we don't
+  // need to guard it here.
+  return DeclareVectorOutputPort(
+      std::move(name), this->model_discrete_state_.get_vector(state_index),
+      [state_index](const Context<T>& context, BasicVector<T>* output) {
+        output->SetFrom(context.get_discrete_state(state_index));
+      },
+      {this->discrete_state_ticket(state_index)});
+}
+
+template <typename T>
+LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
+    std::variant<std::string, UseDefaultName> name,
+    AbstractStateIndex state_index) {
+  DRAKE_THROW_UNLESS(state_index.is_valid());
+  DRAKE_THROW_UNLESS(state_index >= 0);
+  DRAKE_THROW_UNLESS(state_index < this->model_abstract_states_.size());
+  return DeclareAbstractOutputPort(
+      std::move(name),
+      [this, state_index]() {
+        return this->model_abstract_states_.CloneModel(state_index);
+      },
+      [state_index](const Context<T>& context, AbstractValue* output) {
+        output->SetFrom(context.get_abstract_state().get_value(state_index));
+      },
+      {this->abstract_state_ticket(state_index)});
+}
+
 // (This function is deprecated.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     const BasicVector<T>& model_vector,
@@ -701,8 +758,11 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
                                  std::move(vector_calc_function),
                                  std::move(prerequisites_of_calc));
 }
+#pragma GCC diagnostic pop
 
 // (This function is deprecated.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     typename LeafOutputPort<T>::AllocCallback alloc_function,
@@ -712,6 +772,7 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
                                    std::move(calc_function),
                                    std::move(prerequisites_of_calc));
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
@@ -904,11 +965,16 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
   // BasicVector<T> calculator function.
   auto cache_calc_function = [vector_calculator](
       const ContextBase& context_base, AbstractValue* abstract) {
-    auto& context = dynamic_cast<const Context<T>&>(context_base);
+    // Profiling revealed that it is too expensive to do a dynamic_cast here.
+    // A static_cast is safe as long as this is invoked only by methods that
+    // validate the SystemId, so that we know this Context is ours. As of this
+    // writing, only OutputPort::Eval and OutputPort::Calc invoke this and
+    // they do so safely.
+    auto& context = static_cast<const Context<T>&>(context_base);
 
     // The abstract value must be a Value<BasicVector<T>>, even if the
     // underlying object is a more-derived vector type.
-    auto value = dynamic_cast<Value<BasicVector<T>>*>(abstract);
+    auto* value = abstract->maybe_get_mutable_value<BasicVector<T>>();
 
     // TODO(sherm1) Make this error message more informative by capturing
     // system and port index info.
@@ -919,7 +985,7 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
           NiceTypeName::Get<Value<BasicVector<T>>>(),
           abstract->GetNiceTypeName()));
     }
-    vector_calculator(context, &value->get_mutable_value());
+    vector_calculator(context, value);
   };
 
   // The allocator function is identical between output port and cache.
@@ -933,20 +999,10 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateAbstractLeafOutputPort(
     std::string name,
-    typename LeafOutputPort<T>::AllocCallback allocator,
-    typename LeafOutputPort<T>::CalcCallback calculator,
+    ValueProducer producer,
     std::set<DependencyTicket> calc_prerequisites) {
-  // Construct a suitable type-erased cache calculator from the given
-  // type-T calculator function.
-  auto cache_calc_function = [calculator](
-      const ContextBase& context_base, AbstractValue* result) {
-    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
-    return calculator(context, result);
-  };
-
   return CreateCachedLeafOutputPort(
-      std::move(name), std::nullopt /* size */,
-      ValueProducer(std::move(allocator), std::move(cache_calc_function)),
+      std::move(name), std::nullopt /* size */, std::move(producer),
       std::move(calc_prerequisites));
 }
 

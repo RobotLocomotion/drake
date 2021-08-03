@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
@@ -75,6 +76,19 @@ class ConvexSet : public ShapeReifier {
   rank(A)`. */
   int ambient_dimension() const { return ambient_dimension_; }
 
+  /** Returns true iff the intersection between `this` and `other` is non-empty.
+  @throws std::exception if the ambient dimension of `other` is not the same as
+  that of `this`.
+   */
+  bool IntersectsWith(const ConvexSet& other) const;
+
+  /** Returns true iff the set is bounded, e.g. there exists an element-wise
+   * finite lower and upper bound for the set.  Note: for some derived classes,
+   * this check is trivial, but for others it can require solving an (typically
+   * small) optimization problem.  Check the derived class documentation for any
+   * notes. */
+  bool IsBounded() const { return DoIsBounded(); }
+
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
@@ -86,11 +100,11 @@ class ConvexSet : public ShapeReifier {
   // dependent.
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set. */
-  void AddPointInSetConstraint(
+  void AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
     DRAKE_DEMAND(vars.size() == ambient_dimension());
-    return DoAddPointInSetConstraint(prog, vars);
+    return DoAddPointInSetConstraints(prog, vars);
   }
 
   /** Let S be this convex set.  When S is bounded, this method adds the convex
@@ -146,10 +160,12 @@ class ConvexSet : public ShapeReifier {
             int ambient_dimension);
 
   // Non-virtual interface implementations.
+  virtual bool DoIsBounded() const = 0;
+
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 
-  virtual void DoAddPointInSetConstraint(
+  virtual void DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 
@@ -176,6 +192,10 @@ std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
   const auto& typed_other = static_cast<const Derived&>(other);
   return std::make_unique<Derived>(typed_other);
 }
+
+/** Provides the recommended container for passing a collection of ConvexSet
+instances. */
+typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
 
 }  // namespace optimization
 }  // namespace geometry

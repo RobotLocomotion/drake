@@ -39,13 +39,13 @@ class BsplineBasis final {
 
   /** Constructs a B-spline basis with the specified `order` and `knots`.
   @pre `knots` is sorted in non-descending order.
-  @throws std::invalid_argument if knots.size() < 2 * order. */
+  @throws std::exception if knots.size() < 2 * order. */
   BsplineBasis(int order, std::vector<T> knots);
 
   /** Constructs a B-spline basis with the specified `order`,
   `num_basis_functions`, `initial_parameter_value`, `final_parameter_value`,
   and an auto-generated knot vector of the specified `type`.
-  @throws std::invalid_argument if num_basis_functions < order
+  @throws std::exception if num_basis_functions < order
   @pre initial_parameter_value ≤ final_parameter_value */
   BsplineBasis(int order, int num_basis_functions,
                KnotVectorType type = KnotVectorType::kClampedUniform,

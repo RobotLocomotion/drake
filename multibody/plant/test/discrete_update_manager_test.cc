@@ -99,23 +99,13 @@ class DummyDiscreteUpdateManager : public DiscreteUpdateManager<T> {
 
   /* Declares a cache entry that stores twice the additional state value. */
   void DeclareCacheEntries() final {
-    // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
-    cache_index_ =
-        this->DeclareCacheEntry(
-                "Twice the additional_state value",
-                systems::ValueProducer(
-                    systems::internal::AbstractValueCloner(
-                        VectorXd(kNumAdditionalDofs)),
-                    [this](const ContextBase& context_base,
-                           AbstractValue* cache_value) {
-                      const auto& context =
-                          dynamic_cast<const Context<T>&>(context_base);
-                      VectorX<T>& data =
-                          cache_value->get_mutable_value<VectorX<T>>();
-                      this->CalcTwiceState(context, &data);
-                    }),
-                {systems::System<double>::xd_ticket()})
-            .cache_index();
+    cache_index_ = this->DeclareCacheEntry(
+                           "Twice the additional_state value",
+                           systems::ValueProducer(
+                               this, VectorX<T>(kNumAdditionalDofs),
+                               &DummyDiscreteUpdateManager::CalcTwiceState),
+                           {systems::System<double>::xd_ticket()})
+                       .cache_index();
   }
 
   void CalcTwiceState(const Context<T>& context, VectorX<T>* data) const {
@@ -216,7 +206,7 @@ TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
                       dummy_discrete_state() +
                           2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
                       std::numeric_limits<double>::epsilon()));
-  /* Verifies that the cache value is twice the the addition state value. */
+  /* Verifies that the cache value is twice the addition state value. */
   const VectorXd& cache_value =
       dummy_manager_->EvalCacheEntry(simulator.get_context());
   EXPECT_TRUE(CompareMatrices(2.0 * final_additional_state, cache_value,

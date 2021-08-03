@@ -66,7 +66,7 @@ void TestSineSystem(const Sine<T>& sine_system,
       ASSERT_EQ(1, sine_system.num_input_ports());
       ASSERT_EQ(1, context->num_input_ports());
 
-      // Confirm the the size of the input port matches the size of the sample
+      // Confirm the size of the input port matches the size of the sample
       // inputs (i.e., each column in the input_vectors matrix represents a
       // sampling instant. The number of rows in input_vectors should match the
       // size of the input port).
@@ -235,7 +235,7 @@ GTEST_TEST(SineTest, BadSizeTest) {
   Eigen::Vector3d kPhase(1.9, 2.0, 2.1);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Sine<double>(kAmp, kFreq, kPhase, true),
-      std::exception, ".*amplitudes.*==.*phases.*");
+      ".*amplitudes.*==.*phases.*");
 }
 
 GTEST_TEST(SineTest, SineAccessorTest) {

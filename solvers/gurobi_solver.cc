@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -768,6 +769,36 @@ void AddSecondOrderConeVariables(
     }
   }
 }
+
+template <typename T>
+void ThrowForInvalidOption(int error, const std::string& option, const T& val) {
+  if (error) {
+    const std::string gurobi_version =
+        fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+    if (error == GRB_ERROR_UNKNOWN_PARAMETER) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): '{}' is an unknown parameter in Gurobi, check "
+          "https://www.gurobi.com/documentation/{}/refman/parameters.html for "
+          "allowable parameters",
+          option, gurobi_version));
+    } else if (error == GRB_ERROR_VALUE_OUT_OF_RANGE) {
+      throw std::runtime_error(fmt::format(
+          "GurobiSolver(): '{}' is outside the parameter {}'s valid range", val,
+          option));
+    }
+    // The error message for Setting a Gurobi option should be either
+    // GRB_ERROR_UNKNOWN_PARAMETER or GRB_ERROR_VALUE_OF_OF_RANGE. But just in
+    // case I missed something, I added this throw to capture any other possible
+    // error message. This is untested because I don't know how to trigger an
+    // unknown error.
+    throw std::runtime_error(
+        fmt::format("GurobiSolver(): error code {}, cannot set option '{}' to "
+                    "value '{}', check "
+                    "https://www.gurobi.com/documentation/{}/refman/"
+                    "parameters.html for all allowable options and values.",
+                    error, option, val, gurobi_version));
+  }
+}
 }  // anonymous namespace
 
 bool GurobiSolver::is_available() { return true; }
@@ -889,7 +920,7 @@ void GurobiSolver::DoSolve(
       xupp[idx] = std::min(upper_bound(k), xupp[idx]);
     }
   }
-  // bb_con_dual_indices[constraint] returns the the pair (lower_dual_indices,
+  // bb_con_dual_indices[constraint] returns the pair (lower_dual_indices,
   // upper_dual_indices), where lower_dual_indices are the indices of the dual
   // variables associated with the lower bound side (x >= lower) of the bounding
   // box constraint; upper_dual_indices are the indices of the dual variables
@@ -999,21 +1030,44 @@ void GurobiSolver::DoSolve(
   // can be overridden by parameters set in the MathematicalProgram).
   if (!error) {
     error = GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
+    // Setting GRB_INT_PAR_OUTPUTFLAG=0 should never cause error.
+    DRAKE_DEMAND(!error);
   }
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
       error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
+      ThrowForInvalidOption(error, it.first, it.second);
     }
   }
+  bool compute_iis = false;
   for (const auto& it : merged_options.GetOptionsInt(id())) {
     if (!error) {
-      error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+      if (it.first == "GRBcomputeIIS") {
+        compute_iis = static_cast<bool>(it.second);
+        if (!(it.second == 0 || it.second == 1)) {
+          throw std::runtime_error(fmt::format(
+              "GurobiSolver(): option GRBcomputeIIS should be either "
+              "0 or 1, but is incorrectly set to {}",
+              it.second));
+        }
+      } else {
+        error = GRBsetintparam(model_env, it.first.c_str(), it.second);
+        ThrowForInvalidOption(error, it.first, it.second);
+      }
     }
   }
+  std::optional<std::string> grb_write;
   for (const auto& it : merged_options.GetOptionsStr(id())) {
     if (!error) {
-      error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+      if (it.first == "GRBwrite") {
+        if (it.second != "") {
+          grb_write = it.second;
+        }
+      } else {
+        error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+        ThrowForInvalidOption(error, it.first, it.second);
+      }
     }
   }
 
@@ -1053,6 +1107,32 @@ void GurobiSolver::DoSolve(
 
   if (!error) {
     error = GRBoptimize(model);
+  }
+
+  if (!error) {
+    if (compute_iis) {
+      int optimstatus = 0;
+      GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
+      if (optimstatus == GRB_INF_OR_UNBD || optimstatus == GRB_INFEASIBLE) {
+        // Only compute IIS when the problem is infeasible.
+        error = GRBcomputeIIS(model);
+      }
+    }
+  }
+  if (!error) {
+    if (grb_write.has_value()) {
+      error = GRBwrite(model, grb_write.value().c_str());
+      if (error) {
+        const std::string gurobi_version =
+            fmt::format("{}.{}", GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+        throw std::runtime_error(
+            fmt::format("GurobiSolver(): setting GRBwrite to {}, this is not "
+                        "supported. Check "
+                        "https://www.gurobi.com/documentation/{}/refman/"
+                        "py_model_write.html for more details.",
+                        grb_write.value(), gurobi_version));
+      }
+    }
   }
 
   SolutionResult solution_result = SolutionResult::kUnknownError;

@@ -10,12 +10,13 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/fem_state_base.h"
+#include "drake/multibody/fixed_fem/dev/state_updater.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
-/** %FemModel calculates the components of the discretized FEM equations.
+/** %FemModelBase calculates the components of the discretized FEM equations.
  Suppose the PDE at hand is of the form
 
      F(z, ∇z, ...) = 0.
@@ -42,16 +43,15 @@ namespace fixed_fem {
  z₂, ..., zₙ are solved for with a linear or nonlinear solver, and the solution
  z is interpolated from these nodal values.
 
- %FemModel calculates various components of the system of linear or nonlinear
- equations that supports solving the system. For example, CalcResidual()
- calculates the value of G evaluated at the current state and
- CalcTangentMatrix() calculates ∇G at the current state.
- @tparam_nonsymbolic_scalar T. */
+ %FemModelBase calculates various components of the system of linear or
+ nonlinear equations that supports solving the system. For example,
+ CalcResidual() calculates the value of G evaluated at the given state and
+ CalcTangentMatrix() calculates ∇G at the given state.
+ @tparam_nonsymbolic_scalar. */
 template <typename T>
 class FemModelBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemModelBase);
-  FemModelBase() = default;
   virtual ~FemModelBase() = default;
 
   /** The order of the ODE problem associated with `this` %FemModel. */
@@ -98,13 +98,18 @@ class FemModelBase {
   void CalcTangentMatrix(const FemStateBase<T>& state,
                          Eigen::SparseMatrix<T>* tangent_matrix) const;
 
-  /** Sets the sparsity pattern for the tangent matrix of this %FemModel.
-   @param[out] tangent_matrix    The tangent matrix of this %FemModel. Its size
-   and sparsity pattern will be set so that it will be ready to be passed into
-   CalcTangentMatrix().
+  /** Sets the sparsity pattern for the tangent matrix of this %FemModelBase.
+   @param[out] tangent_matrix    The tangent matrix of this %FemModelBase. Its
+   size and sparsity pattern will be set so that it will be ready to be passed
+   into CalcTangentMatrix().
    @pre `tangent_matrix` must not be the null pointer. */
   void SetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  /** Extracts the unknown variable from the given FEM `state`.
+   @throw std::exception if the type of concrete FemState for `state` is not
+   compatible with the concrete FemModel for `this` model. */
+  const VectorX<T>& GetUnknowns(const FemStateBase<T>& state) const;
 
   /** Updates the FemStateBase `state` given the change in the unknown variable
    `dz`.
@@ -115,26 +120,26 @@ class FemModelBase {
   void UpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
                                        FemStateBase<T>* state) const;
 
-  /** For a dynamic FEM model, calculates the state at the next time step given
-   the state at the previous time step and the highest order state at the next
-   time step. If `this` %FemModel is static (ode_order() == 0), throw an
-   exception.
+  /** For a dynamic FEM model, calculates the state at the next time step
+   given the state at the previous time step and the unknown variable. If
+   `this` %FemModelBase is static (ode_order() == 0), throw an exception.
    @param[in] prev_state The state at the previous time step.
-   @param[in] highest_order_state The highest order state at the next time step.
+   @param[in] unknown_variable The unknown variable of the FEM model.
    @param[out] next_state The state at the next time step.
    @pre next_state != nullptr.
    @pre next_state->num_generalized_positions() ==
    prev_state.num_generalized_positions().
-   @pre next_state->num_generalized_positions() == highest_order_state.size().
+   @pre next_state->num_generalized_positions() == unknown_variable.size().
    @throw std::exception if the type of concrete FemState in `prev_state` or
-   `next_state` is not compatible with the concrete FemModel in `this` model.
+   `next_state` is not compatible with the concrete FemModel in `this`
+   model.
    @throw std::exception if ode_order() == 0. */
   void AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
-                          const VectorX<T>& highest_order_state,
+                          const VectorX<T>& unknown_variable,
                           FemStateBase<T>* next_state) const;
 
-  /* Apply boundary condition set for this %FemModel to the input `state`. No-op
-   if no boundary condition is set.
+  /* Apply boundary condition set for this %FemModelBase to the input `state`.
+   No-op if no boundary condition is set.
    @pre state != nullptr. */
   void ApplyBoundaryCondition(FemStateBase<T>* state) const;
 
@@ -145,13 +150,17 @@ class FemModelBase {
     dirichlet_bc_ = std::move(dirichlet_bc);
   }
 
-  /** (Internal use only) Throws std::logic_error to report a mismatch between
+  /** (Internal use only) Throws std::exception to report a mismatch between
   the concrete types of `this` FemModelBase and the FemStateBase that was
   passed to API method `func`. */
   virtual void ThrowIfModelStateIncompatible(
       const char* func, const FemStateBase<T>& state_base) const = 0;
 
  protected:
+  explicit FemModelBase(
+      std::unique_ptr<internal::StateUpdater<T>> state_updater)
+      : state_updater_(std::move(state_updater)) {}
+
   /** Derived classes must override this method to provide an implementation for
     the NVI MakeFemStateBase(). */
   virtual std::unique_ptr<FemStateBase<T>> DoMakeFemStateBase() const = 0;
@@ -174,30 +183,24 @@ class FemModelBase {
   virtual void DoSetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const = 0;
 
-  /** Derived classes must override this method to provide an implementation for
-   the NVI UpdateStateFromChangeInUnknowns(). The input `state` is
-   guaranteed to be compatible with `this` FEM model. */
-  virtual void DoUpdateStateFromChangeInUnknowns(
-      const VectorX<T>& dz, FemStateBase<T>* state) const = 0;
-
-  /** Derived classes must override this method to provide an implementation for
-   the NVI AdvanceOneTimeStep(). The input `prev_state` and `next_state` are
-   guaranteed to be compatible with `this` FEM model. The size of `prev_state`,
-   `highest_order_state`, and `next_state` are guaranteed to be compatible. */
-  virtual void DoAdvanceOneTimeStep(const FemStateBase<T>& prev_state,
-                                    const VectorX<T>& highest_order_state,
-                                    FemStateBase<T>* next_state) const = 0;
-
+  /** Derived classes must invoke this method to update the number of nodes in
+   the model when they add more nodes to the FEM model. */
   void increment_num_nodes(int num_new_nodes) { num_nodes_ += num_new_nodes; }
+
+  const internal::StateUpdater<T>& state_updater() const {
+    return *state_updater_;
+  }
 
  private:
   /* The total number of nodes in the system. */
   int num_nodes_{0};
   /* The Dirichlet boundary condition imposed on the model. */
   std::unique_ptr<DirichletBoundaryCondition<T>> dirichlet_bc_;
+  /* The StateUpdater that updates the states for this model. */
+  std::unique_ptr<internal::StateUpdater<T>> state_updater_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemModelBase);
+    class ::drake::multibody::fem::FemModelBase);

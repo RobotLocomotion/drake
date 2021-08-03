@@ -7,9 +7,10 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
-namespace test {
+namespace fem {
+namespace internal {
 namespace {
+using fem::test::DummyElement;
 const double kDt = 1e-4;
 const double kGamma = 0.2;
 const double kBeta = 0.3;
@@ -28,7 +29,7 @@ class NewmarkSchemeTest : public ::testing::Test {
     return Vector4<double>(0.1011, 0.1112, 0.1213, 0.1314);
   }
 
-  NewmarkScheme<FemState<DummyElement<2>>> newmark_scheme_{kDt, kGamma, kBeta};
+  NewmarkScheme<double> newmark_scheme_{kDt, kGamma, kBeta};
 };
 
 TEST_F(NewmarkSchemeTest, Weights) {
@@ -75,7 +76,7 @@ TEST_F(NewmarkSchemeTest, AdvanceOneTimeStep) {
                       kTimeSteps * kTol));
 }
 }  // namespace
-}  // namespace test
-}  // namespace fixed_fem
+}  // namespace internal
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

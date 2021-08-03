@@ -214,6 +214,7 @@ drake_pybind_library(
     cc_deps = [
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//lcmtypes:contact_results_for_viz",
         "//lcmtypes:iiwa",
         "//lcmtypes:image_array",
@@ -543,6 +544,7 @@ drake_py_unittest(
         ":framework_py",
         ":planar_scenegraph_visualizer_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
     ],
 )

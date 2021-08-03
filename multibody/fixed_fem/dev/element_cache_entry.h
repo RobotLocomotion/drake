@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* %ElementCacheEntry provides basic caching capabilities for the
  per-element, state-dependent quantities used in an FEM simulation that are
@@ -25,8 +25,6 @@ class ElementCacheEntry {
   /* Constructs a new %ElementCacheEntry with default initialized data. */
   ElementCacheEntry() {}
 
-  ~ElementCacheEntry() = default;
-
   ElementData& mutable_element_data() { return element_data_; }
 
   const ElementData& element_data() const { return element_data_; }
@@ -40,6 +38,6 @@ class ElementCacheEntry {
   bool is_stale_{true};
 };
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

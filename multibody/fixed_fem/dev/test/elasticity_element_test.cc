@@ -5,25 +5,26 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
 const ElementIndex kZeroIndex(0);
 using QuadratureType =
-    SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-static constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    LinearSimplexElement<AutoDiffXd, kNaturalDimension, kSpatialDimension,
-                         kNumQuads>;
-using ConstitutiveModelType = LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
+    internal::LinearSimplexElement<AutoDiffXd, kNaturalDimension,
+                                   kSpatialDimension, kNumQuads>;
+using ConstitutiveModelType =
+    internal::LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
 
 /* The traits for the DummyElasticityElement. `kOdeOrder` is set to zero to
  avoid states irrelevant to the tests. */
@@ -208,7 +209,7 @@ TEST_F(ElasticityElementTest, UndeformedState) {
     rigid_transformed_X.col(i) = transform * X.col(i);
   }
   state.SetQ(Eigen::Map<Vector<T, kNumDofs>>(rigid_transformed_X.data(),
-                                              rigid_transformed_X.size()));
+                                             rigid_transformed_X.size()));
   VerifyEnergyAndForceAreZero(state);
 }
 
@@ -326,6 +327,6 @@ TEST_F(ElasticityElementTest, Gravity) {
   EXPECT_TRUE(CompareMatrices(expected_gravity_force, gravity_force()));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

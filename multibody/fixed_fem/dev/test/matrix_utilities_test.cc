@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 namespace {
 Matrix3<double> MakeArbitraryMatrix() {
@@ -107,6 +107,6 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
 }
 }  // namespace
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

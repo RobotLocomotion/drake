@@ -15,11 +15,10 @@
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_model_base.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
-#include "drake/multibody/fixed_fem/dev/state_updater.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 /** %FemModel provides a fixed size implementaion of FemModelBase by
  templatizing on the type of FemElement. See FemModelBase for more information
@@ -62,9 +61,8 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemModel);
 
-  explicit FemModel(
-      std::unique_ptr<StateUpdater<FemState<Element>>> state_updater)
-      : state_updater_(std::move(state_updater)) {}
+  explicit FemModel(std::unique_ptr<internal::StateUpdater<T>> state_updater)
+      : FemModelBase<T>(std::move(state_updater)) {}
 
   virtual ~FemModel() = default;
 
@@ -167,7 +165,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     /* Scratch space to store the contribution to the tangent matrix from each
      element. */
     Eigen::Matrix<T, kNumDofs, kNumDofs> element_tangent_matrix;
-    const Vector3<T>& weights = state_updater_->weights();
+    const Vector3<T>& weights = this->state_updater().weights();
     for (ElementIndex e(0); e < num_elements(); ++e) {
       element_tangent_matrix = CalcElementTangentMatrix(state, weights, e);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
@@ -272,27 +270,6 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
            weights[2] * mass_matrix;
   }
 
-  /* Implements FemModelBase::DoUpdateStateFromChangeInUnknowns(). */
-  void DoUpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
-                                         FemStateBase<T>* state) const final {
-    FemState<Element>& mutable_concrete_state =
-        cast_to_mutable_concrete_state(state);
-    state_updater_->UpdateStateFromChangeInUnknowns(dz,
-                                                    &mutable_concrete_state);
-  }
-
-  /* Implements FemModelBase::DoAdvanceOneTimeStep(). */
-  void DoAdvanceOneTimeStep(const FemStateBase<T>& prev_state,
-                            const VectorX<T>& highest_order_state,
-                            FemStateBase<T>* next_state) const final {
-    FemState<Element>& next_state_concrete =
-        cast_to_mutable_concrete_state(next_state);
-    const FemState<Element>& prev_state_concrete =
-        cast_to_concrete_state(prev_state);
-    state_updater_->AdvanceOneTimeStep(prev_state_concrete, highest_order_state,
-                                       &next_state_concrete);
-  }
-
   /* Statically cast the given FemStateBase to the FemState compatible
    with `this` FemModel.
    @pre The given `abstract_state` is compatible with the `this` FemModel. */
@@ -333,9 +310,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
 
   /* FemElements owned by this model. */
   std::vector<Element> elements_{};
-  /* The StateUpdater that updates the states for this model. */
-  std::unique_ptr<StateUpdater<FemState<Element>>> state_updater_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

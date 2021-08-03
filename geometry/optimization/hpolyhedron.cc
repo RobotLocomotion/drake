@@ -16,6 +16,7 @@ namespace geometry {
 namespace optimization {
 
 using Eigen::MatrixXd;
+using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 using math::RigidTransformd;
 using solvers::Binding;
@@ -30,18 +31,22 @@ HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
     : ConvexSet(&ConvexSetCloner<HPolyhedron>, A.cols()), A_{A}, b_{b} {
   DRAKE_DEMAND(A.rows() == b.size());
+  // Note: If necessary, we could support infinite b, either by removing the
+  // corresponding rows of A (since the constraint is vacuous), or checking
+  // this explicitly in all relevant computations (like IsBounded).
+  DRAKE_DEMAND(b.array().isFinite().all());
 }
 
 HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          GeometryId geometry_id,
-                         std::optional<FrameId> expressed_in)
+                         std::optional<FrameId> reference_frame)
     : ConvexSet(&ConvexSetCloner<HPolyhedron>, 3) {
   std::pair<MatrixXd, VectorXd> Ab_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
 
-  const RigidTransformd X_WE = expressed_in
-                                   ? query_object.GetPoseInWorld(*expressed_in)
-                                   : RigidTransformd::Identity();
+  const RigidTransformd X_WE =
+      reference_frame ? query_object.GetPoseInWorld(*reference_frame)
+                      : RigidTransformd::Identity();
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_GE = X_WG.InvertAndCompose(X_WE);
   // A_G*(p_GE + R_GE*p_EE_var) ≤ b_G
@@ -51,7 +56,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
 
 HPolyhedron::~HPolyhedron() = default;
 
-HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
+Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   MathematicalProgram prog;
   const int N = this->ambient_dimension();
   MatrixXDecisionVariable C = prog.NewSymmetricContinuousVariables(N, "C");
@@ -75,10 +80,50 @@ HyperEllipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
     throw std::runtime_error(fmt::format(
         "Solver {} failed to solve the maximum inscribed ellipse problem; it "
         "terminated with SolutionResult {}). Make sure that your polyhedron is "
-        "bounded.",
+        "bounded and has an interior.",
         result.get_solver_id().name(), result.get_solution_result()));
   }
-  return HyperEllipsoid(result.GetSolution(C).inverse(), result.GetSolution(d));
+  return Hyperellipsoid(result.GetSolution(C).inverse(), result.GetSolution(d));
+}
+
+VectorXd HPolyhedron::ChebyshevCenter() const {
+  MathematicalProgram prog;
+  VectorXDecisionVariable x = prog.NewContinuousVariables(ambient_dimension());
+  VectorXDecisionVariable r = prog.NewContinuousVariables<1>("r");
+
+  const double inf = std::numeric_limits<double>::infinity();
+  // max r
+  prog.AddLinearCost(Vector1d(-1.0), 0, r);
+
+  // r ≥ 0.
+  prog.AddBoundingBoxConstraint(0, inf, r);
+
+  // aᵢᵀ x + |aᵢ| r ≤ bᵢ.
+  RowVectorXd a(A_.cols() + 1);
+  for (int i = 0; i < A_.rows(); i++) {
+    a[0] = A_.row(i).norm();
+    a.tail(A_.cols()) = A_.row(i);
+    prog.AddLinearConstraint(a, -inf, b_[i], {r, x});
+  }
+
+  auto result = solvers::Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(fmt::format(
+        "Solver {} failed to solve the Chebyshev center problem; it terminated "
+        "with SolutionResult {}). Make sure that your polyhedron is bounded "
+        "and has an interior.",
+        result.get_solver_id().name(), result.get_solution_result()));
+  }
+  return result.GetSolution(x);
+}
+
+HPolyhedron HPolyhedron::CartesianPower(int n) const {
+  MatrixXd A_power = MatrixXd::Zero(n * A_.rows(), n * A_.cols());
+  for (int i{0}; i < n; ++i) {
+    A_power.block(i * A_.rows(), i * A_.cols(), A_.rows(), A_.cols()) = A_;
+  }
+  VectorXd b_power = b_.replicate(n, 1);
+  return {A_power, b_power};
 }
 
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
@@ -97,13 +142,38 @@ HPolyhedron HPolyhedron::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
+bool HPolyhedron::DoIsBounded() const {
+  if (A_.rows() < A_.cols()) {
+    return false;
+  }
+  Eigen::ColPivHouseholderQR<MatrixXd> qr(A_);
+  if (qr.dimensionOfKernel() > 0) {
+    return false;
+  }
+  // Stiemke's theorem of alternatives says that, given A with ker(A) = {0}, we
+  // either have existence of x ≠ 0 such that Ax ≥ 0 or we have existence of y
+  // > 0 such that y^T A = 0.  Since any y that verifies the second condition
+  // can be arbitrarily scaled, and would still pass the second condition,
+  // instead of asking y > 0, we can equivalently ask y ≥ 1.  So boundedness
+  // corresponds to the following LP being feasible: find y s.t. y ≥ 1, y^T A =
+  // 0.
+  MathematicalProgram prog;
+  auto y = prog.NewContinuousVariables(A_.rows(), "y");
+  prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
+                                y);
+  prog.AddLinearEqualityConstraint(A_.transpose(), VectorXd::Zero(A_.cols()),
+                                   y);
+  auto result = solvers::Solve(prog);
+  return result.is_success();
+}
+
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
   return ((A_ * x).array() <= b_.array() + tol).all();
 }
 
-void HPolyhedron::DoAddPointInSetConstraint(
+void HPolyhedron::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) const {
   prog->AddLinearConstraint(

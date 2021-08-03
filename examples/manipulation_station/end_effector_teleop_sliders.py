@@ -26,14 +26,14 @@ from pydrake.manipulation.planner import (
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
-                                       LeafSystem)
+                                       LeafSystem, PublishEvent)
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
-    PlanarSceneGraphVisualizer
+    ConnectPlanarSceneGraphVisualizer
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
@@ -54,7 +54,7 @@ class EndEffectorTeleop(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicEvent(0.01, 0.0, PublishEvent(self._update_window))
         self.planar = planar
 
         self.window = tk.Tk()
@@ -166,7 +166,7 @@ class EndEffectorTeleop(LeafSystem):
             self.y.set(xyz[1])
         self.z.set(xyz[2])
 
-    def DoPublish(self, context, event):
+    def _update_window(self, context, event):
         self.window.update_idletasks()
         self.window.update()
 
@@ -257,21 +257,20 @@ def main():
         # If using meshcat, don't render the cameras, since RgbdCamera
         # rendering only works with drake-visualizer. Without this check,
         # running this code in a docker container produces libGL errors.
+        geometry_query_port = station.GetOutputPort("geometry_query")
         if args.meshcat:
             meshcat = ConnectMeshcatVisualizer(
-                builder, output_port=station.GetOutputPort("geometry_query"),
+                builder, output_port=geometry_query_port,
                 zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
 
         elif args.setup == 'planar':
-            pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-                station.get_scene_graph()))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            pyplot_visualizer.get_input_port(0))
+            ConnectPlanarSceneGraphVisualizer(
+                builder, station.get_scene_graph(), geometry_query_port)
+
         else:
-            DrakeVisualizer.AddToBuilder(builder,
-                                         station.GetOutputPort("query_object"))
+            DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
             image_to_lcm_image_array = builder.AddSystem(
                 ImageToLcmImageArrayT())
             image_to_lcm_image_array.set_name("converter")

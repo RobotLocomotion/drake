@@ -11,6 +11,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
@@ -138,6 +139,7 @@ class GeometryState {
   const GeometryVersion& geometry_version() const {
       return geometry_version_;
   }
+
   //@}
 
   /** @name          Sources and source-related data  */
@@ -189,7 +191,7 @@ class GeometryState {
   /** Reports the number of child geometries for this frame that have the
    indicated role assigned. This only includes the immediate child geometries of
    *this* frame, and not those of child frames.
-   @throws std::logic_error if the `frame_id` does not map to a valid frame.  */
+   @throws std::exception if the `frame_id` does not map to a valid frame.  */
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIdByName().  */
@@ -359,24 +361,24 @@ class GeometryState {
    `frame_id`, if it has been added to the renderer with the given
    `renderer_name` it is removed from that renderer.
    @return The number of geometries affected by the removal.
-   @throws std::logic_error if a) `source_id` does not map to a registered
-                            source,
-                            b) `frame_id` does not map to a registered frame,
-                            c) `frame_id` does not belong to `source_id` (unless
-                            `frame_id` is the world frame id), or
-                            d) the context has already been allocated.  */
+   @throws std::exception if a) `source_id` does not map to a registered
+                          source,
+                          b) `frame_id` does not map to a registered frame,
+                          c) `frame_id` does not belong to `source_id` (unless
+                          `frame_id` is the world frame id), or
+                          d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          FrameId frame_id);
 
   /** Removes the geometry with the given `geometry_id` from the renderer with
    the given `renderer_name`, _if_ it has previously been added.
    @return The number of geometries affected by the removal (0 or 1).
-   @throws std::logic_error if a) `source_id` does not map to a registered
-                            source,
-                            b) `geometry_id` does not map to a registered
-                            geometry,
-                            c) `geometry_id` does not belong to `source_id`, or
-                            d) the context has already been allocated.  */
+   @throws std::exception if a) `source_id` does not map to a registered
+                          source,
+                          b) `geometry_id` does not map to a registered
+                          geometry,
+                          c) `geometry_id` does not belong to `source_id`, or
+                          d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
   //@}
@@ -396,6 +398,11 @@ class GeometryState {
     return geometry_engine_->ComputeContactSurfaces(X_WGs_);
   }
 
+  /** Implementation of QueryObject::ComputePolygonalContactSurfaces().  */
+  std::vector<ContactSurface<T>> ComputePolygonalContactSurfaces() const {
+    return geometry_engine_->ComputePolygonalContactSurfaces(X_WGs_);
+  }
+
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
@@ -403,6 +410,17 @@ class GeometryState {
     DRAKE_DEMAND(surfaces);
     DRAKE_DEMAND(point_pairs);
     return geometry_engine_->ComputeContactSurfacesWithFallback(
+        X_WGs_, surfaces, point_pairs);
+  }
+
+  /** Implementation of
+   QueryObject::ComputePolygonalContactSurfacesWithFallback().  */
+  void ComputePolygonalContactSurfacesWithFallback(
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+    return geometry_engine_->ComputePolygonalContactSurfacesWithFallback(
         X_WGs_, surfaces, point_pairs);
   }
 
@@ -418,27 +436,16 @@ class GeometryState {
 
   //@}
 
-  /** @name               Proximity filters
+  /** @name        Collision filtering    */
 
-   This interface allows control over which pairs of geometries can even be
-   considered for proximity queries. This affects all queries that depend on
-   geometries with a proximity role.
-
-   See @ref scene_graph_collision_filtering "Scene Graph Collision Filtering"
-   for more details.   */
-  //@{
-
-  // TODO(SeanCurtis-TRI): Rename these functions to reflect the larger role
-  // in proximity queries _or_ change the scope of the filters.
-
-  /** Implementation of SceneGraph::ExcludeCollisionsWithin().  */
-  void ExcludeCollisionsWithin(const GeometrySet& set);
-
-  /** Implementation of SceneGraph::ExcludeCollisionsBetween().  */
-  void ExcludeCollisionsBetween(const GeometrySet& setA,
-                                const GeometrySet& setB);
-
-  //@}
+  /** Implementation of SceneGraph::collision_filter_manager(). */
+  CollisionFilterManager collision_filter_manager() {
+    geometry_version_.modify_proximity();
+    return CollisionFilterManager(
+        &geometry_engine_->collision_filter(), [this](const GeometrySet& set) {
+          return this->CollectIds(set, Role::kProximity);
+        });
+  }
 
   //---------------------------------------------------------------------------
   /** @name                Signed Distance Queries
@@ -585,39 +592,20 @@ class GeometryState {
   template <class U>
   friend class GeometryStateTester;
 
-  // Function to facilitate testing.
-  int peek_next_clique() const {
-    return internal::GeometryStateCollisionFilterAttorney::peek_next_clique(
-        *geometry_engine_);
-  }
-
-  // Defines the full set of geometry ids from the GeometrySet (which may be
-  // defined in terms of geometry ids *and* frame ids). If GeometrySet only
-  // has GeometryIds, it is essentially a copy. Ids that can't be identified
-  // will cause an exception to be thrown.
-  // The ids can be optionally filtered based on role. If `role` is nullopt,
-  // no filtering takes place. Otherwise, just those geometries with the given
-  // role will be returned.
-  // TODO(SeanCurtis-TRI): Because all geometries only have a single id
-  // type, we have two sets of the same id type. The compiler cannot know
-  // that only anchored geometries go into the anchored set and only dynamic go
-  // into the dynamic set. It relies on the correctness of the implementation.
-  // This *could* be worked around: this function could simply provide
-  // _unclassified_ geometry ids. However, the engine needs to know which
-  // are dynamic and which are anchored and currently has no facility to do
-  // so. So, it would have to, essentially, duplicate the data stored in the
-  // InternalGeometry instances to classify the union of these two sets. For
-  // now, we accept the *slightly* dissatisfying artifact of having the same
-  // id type in both sets.
-  void CollectIds(const GeometrySet& geometry_set,
-                  std::unordered_set<GeometryId>* dynamic,
-                  std::unordered_set<GeometryId>* anchored,
-                  const std::optional<Role>& role) const;
+  // Defines the full set of geometry ids implied by the contents of the given
+  // GeometrySet (which may be defined in terms of geometry ids *and* frame
+  // ids). If GeometrySet only has GeometryIds, it is essentially a copy. Ids in
+  // the set that can't be mapped to known geometries or frames will cause an
+  // exception to be thrown. The ids can be optionally filtered based on role.
+  // If `role` is nullopt, no filtering takes place. Otherwise, just those
+  // geometries with the given role will be returned.
+  std::unordered_set<GeometryId> CollectIds(
+      const GeometrySet& geometry_set, std::optional<Role> role) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
   // @pre source_id is a registered source.
-  // @throws std::logic_error  If the ids are invalid as defined by
+  // @throws std::exception  If the ids are invalid as defined by
   // ValidateFrameIds().
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
 
@@ -625,7 +613,7 @@ class GeometryState {
   // registered to the set's source id and that no extra frames are included.
   // @param values The kinematics values (ids and values) to validate.
   // @pre source_id is a registered source.
-  // @throws std::runtime_error if the set is inconsistent with known topology.
+  // @throws std::exception if the set is inconsistent with known topology.
   template <typename ValueType>
   void ValidateFrameIds(SourceId source_id,
                         const FrameKinematicsVector<ValueType>& values) const;
@@ -634,11 +622,11 @@ class GeometryState {
   // _all_ of the state's frames have had their poses updated.
   void FinalizePoseUpdate();
 
-  // Gets the source id for the given frame id. Throws std::logic_error if the
+  // Gets the source id for the given frame id. Throws std::exception if the
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
 
-  // Gets the source id for the given frame id. Throws std::logic_error if the
+  // Gets the source id for the given frame id. Throws std::exception if the
   // geometry belongs to no registered source.
   SourceId get_source_id(GeometryId frame_id) const;
 
@@ -661,7 +649,7 @@ class GeometryState {
   //    frame and, if it exists, its parent geometry.
   //   - RemoveGeometryUnchecked(): This is the recursive call; it's parent
   //    is already slated for removal, so parent references can be left alone.
-  // @throws std::logic_error if `geometry_id` is not in `geometries_`.
+  // @throws std::exception if `geometry_id` is not in `geometries_`.
   void RemoveGeometryUnchecked(GeometryId geometry_id,
                                RemoveGeometryOrigin caller);
 

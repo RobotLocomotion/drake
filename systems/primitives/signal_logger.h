@@ -78,7 +78,7 @@ class SignalLogger final : public LeafSystem<T> {
   /// Sets the publishing period of this system to specify periodic sampling
   /// and disables the default per-step sampling. This method can only be called
   /// once and only if set_forced_publish_only() hasn't been called.
-  /// @throws std::logic_error if called more than once, or if
+  /// @throws std::exception if called more than once, or if
   ///   set_forced_publish_only() has been called.
   /// @pre `period` must be greater than zero.
   void set_publish_period(double period);
@@ -87,7 +87,7 @@ class SignalLogger final : public LeafSystem<T> {
   /// to System::Publish() issued directly or by the Simulator and disables the
   /// default per-step sampling. This method cannot be called if
   /// set_publish_period() has been called.
-  /// @throws std::logic_error if set_publish_period() has been called.
+  /// @throws std::exception if set_publish_period() has been called.
   void set_forced_publish_only();
 
   /// Returns the number of samples taken since construction or last reset().

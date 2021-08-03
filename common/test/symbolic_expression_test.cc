@@ -18,6 +18,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_memcpy_movable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
@@ -881,18 +882,40 @@ TEST_F(SymbolicExpressionTest, UnaryPlus) {
   EXPECT_PRED2(ExprEqual, Expression(var_x_), +var_x_);
 }
 
-// Confirm that Eigen::numext::not_equal_strict is appropriately specialized
-// for Expression.
+// TODO(jwnimmer-tri) These tests should probably live in symbolic_formula_test.
+//
+// Confirm that Eigen::numext::{not_,}equal_strict are appropriately
+// specialized for Expression.
 // We only need a limited set of cases because if the specialization doesn't
 // exist, this would result in a compile error.
 // This function was only introduced in eigen 3.3.5. Therefore, we only want to
 // test if the eigen version is at least that.
 #if EIGEN_VERSION_AT_LEAST(3, 3, 5)
+TEST_F(SymbolicExpressionTest, EigenEqualStrict) {
+  EXPECT_TRUE(Eigen::numext::equal_strict(c3_, c3_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(c3_, c4_));
+
+  // Check our special-case zero handling.
+  EXPECT_TRUE(Eigen::numext::equal_strict(zero_, zero_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(zero_, one_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(one_, zero_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(zero_, x_));
+  EXPECT_FALSE(Eigen::numext::equal_strict(x_, zero_));
+  EXPECT_THROW(Eigen::numext::equal_strict(x_, y_), std::exception);
+}
+
 TEST_F(SymbolicExpressionTest, EigenNotEqualStrict) {
   EXPECT_TRUE(Eigen::numext::not_equal_strict(c3_, c4_));
   EXPECT_FALSE(Eigen::numext::not_equal_strict(c3_, c3_));
-}
 
+  // Check our special-case zero handling.
+  EXPECT_FALSE(Eigen::numext::not_equal_strict(zero_, zero_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(zero_, one_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(one_, zero_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(zero_, x_));
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(x_, zero_));
+  EXPECT_THROW(Eigen::numext::not_equal_strict(x_, y_), std::exception);
+}
 #endif
 
 // Confirm the other Eigen::numext specializations:
@@ -1918,6 +1941,15 @@ TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
   // Computed NaN should still throw.
   const Expression bogus = zero_ / e_nan_;
   EXPECT_THROW(ExtractDoubleOrThrow(bogus), std::exception);
+
+  // Eigen variant.
+  const Vector2<Expression> v1{12.0, 13.0};
+  EXPECT_TRUE(
+      CompareMatrices(ExtractDoubleOrThrow(v1), Eigen::Vector2d{12.0, 13.0}));
+
+  // Computed NaN should still throw through the Eigen variant.
+  const Vector2<Expression> v2{12.0, bogus};
+  EXPECT_THROW(ExtractDoubleOrThrow(v2), std::exception);
 }
 
 TEST_F(SymbolicExpressionTest, Jacobian) {

@@ -74,6 +74,10 @@ class TestSystemsLcm(unittest.TestCase):
         raw = dut.Serialize(value)
         reconstruct = lcmt_quaternion.decode(raw)
         self.assert_lcm_equal(reconstruct, model_message)
+        # Check cloning.
+        cloned_dut = dut.Clone()
+        fresh_value = dut.CreateDefaultValue().get_value()
+        self.assertIsInstance(fresh_value, lcmt_quaternion)
 
     def test_serializer_cpp(self):
         # Tests relevant portions of API.
@@ -81,6 +85,10 @@ class TestSystemsLcm(unittest.TestCase):
         model_value = self._model_value_cpp()
         self.assert_lcm_equal(
             self._cpp_value_to_py_message(model_value), model_message)
+
+    def test_serializer_cpp_clone(self):
+        serializer = mut._Serializer_[lcmt_quaternion]()
+        serializer.Clone().CreateDefaultValue()
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
@@ -192,14 +200,27 @@ class TestSystemsLcm(unittest.TestCase):
         diagram = builder.Build()
         diagram.Publish(diagram.CreateDefaultContext())
 
-    def test_connect_lcm_scope(self):
+    def test_lcm_scope(self):
         builder = DiagramBuilder()
         source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
-        mut.ConnectLcmScope(src=source.get_output_port(0),
-                            channel="TEST_CHANNEL",
-                            builder=builder,
-                            lcm=DrakeLcm(),
-                            publish_period=0.001)
+        scope, publisher = mut.LcmScopeSystem.AddToBuilder(
+            builder=builder,
+            lcm=DrakeLcm(),
+            signal=source.get_output_port(0),
+            channel="TEST_CHANNEL",
+            publish_period=0.001)
+        self.assertIsInstance(scope, mut.LcmScopeSystem)
+        self.assertIsInstance(publisher, mut.LcmPublisherSystem)
+
+    def test_deprecated_connect_lcm_scope(self):
+        builder = DiagramBuilder()
+        source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
+        with catch_drake_warnings(expected_count=1):
+            mut.ConnectLcmScope(src=source.get_output_port(0),
+                                channel="TEST_CHANNEL",
+                                builder=builder,
+                                lcm=DrakeLcm(),
+                                publish_period=0.001)
 
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.

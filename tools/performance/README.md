@@ -8,7 +8,7 @@ analysis of Drake programs.
 Included here are two tools to help with well-controlled benchmark experiments:
 
  * `record_results.py` -- run benchmark under bazel, record context and results
- * `benchmark_tool` -- outside-bazel tool for experiments and data handling
+ * `benchmark_tool.py` -- outside-bazel tool for experiments and data handling
 
 A fully worked example that integrates these two tools is available at
 `drake/examples/multibody/cassie_benchmark`. Some of the history of attempts to

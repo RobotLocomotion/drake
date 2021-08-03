@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":equality_constrained_qp_solver",
         ":evaluator_base",
         ":function",
+        ":get_program_type",
         ":gurobi_qp",
         ":gurobi_solver",
         ":indeterminate",
@@ -226,6 +227,15 @@ drake_cc_library(
     hdrs = ["function.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "get_program_type",
+    srcs = ["get_program_type.cc"],
+    hdrs = ["get_program_type.h"],
+    deps = [
+        ":mathematical_program",
     ],
 )
 
@@ -778,6 +788,7 @@ drake_cc_library(
     ] + select({
         "//tools:with_mosek": [
             "//common:scoped_singleton",
+            "//common:scope_exit",
             "//math:quadratic_form",
             "@mosek",
         ],
@@ -941,6 +952,7 @@ drake_cc_library(
         "//common:essential",
     ] + select({
         "//conditions:default": [
+            "//common:scope_exit",
             "//math:eigen_sparse_triplet",
             "@scs//:scsdir",
         ],
@@ -989,6 +1001,8 @@ drake_cc_library(
         ":mathematical_program",
         ":solver_base",
         ":sdpa_free_format",
+        "//common:filesystem",
+        "//common:scope_exit",
     ] + select({
         "//conditions:default": [
             "@csdp",
@@ -1223,6 +1237,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "get_program_type_test",
+    deps = [
+        ":get_program_type",
+    ],
+)
+
+drake_cc_googletest(
     name = "gurobi_solver_test",
     tags = gurobi_test_tags(),
     use_default_main = False,
@@ -1276,6 +1297,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
     ] + select({
         "//conditions:default": [
@@ -1370,6 +1392,7 @@ drake_cc_googletest(
         ":sos_examples",
         "//common:filesystem",
         "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1567,6 +1590,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
         "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1713,6 +1737,7 @@ drake_cc_googletest(
     deps = [
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1749,6 +1774,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "dreal_solver.h",
     "dreal_solver_common.cc",
     "fast_qp.h",
+    "get_program_type.h",
+    "get_program_type.cc",
     "gurobi_qp.h",
     "gurobi_solver.cc",
     "gurobi_solver.h",

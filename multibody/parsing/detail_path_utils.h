@@ -13,7 +13,7 @@ namespace internal {
 // If @p file_name is a relative path, this method converts it into
 // an absolute path based on the current working directory.
 //
-// @throws std::runtime_error if the file does not exist or if @p
+// @throws std::exception if the file does not exist or if @p
 // file_name is empty.
 std::string GetFullPath(const std::string& file_name);
 

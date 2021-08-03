@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* A generic interface to solve a linear system of equations of the form
  Ax = b, where A ∈ ℝⁿˣⁿ and b ∈ ℝⁿ are given and x ∈ ℝⁿ is the unknown to be
@@ -75,6 +75,6 @@ class LinearSystemSolver {
   const contact_solvers::internal::LinearOperator<T>* A_{nullptr};
 };
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

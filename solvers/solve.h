@@ -6,6 +6,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
@@ -41,6 +42,5 @@ MathematicalProgramResult Solve(
     const Eigen::Ref<const Eigen::VectorXd>& initial_guess);
 
 MathematicalProgramResult Solve(const MathematicalProgram& prog);
-
 }  // namespace solvers
 }  // namespace drake

@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace internal {
 /* Representation of a group of rigid collision objects, consisting of their
  poses in the world, surface meshes, and proximity properties. Collision objects
@@ -169,8 +169,8 @@ class CollisionObjects : public geometry::ShapeReifier {
   std::vector<geometry::GeometryId> geometry_ids_;
 };
 }  // namespace internal
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::fixed_fem::internal::CollisionObjects);
+    class ::drake::multibody::fem::internal::CollisionObjects);

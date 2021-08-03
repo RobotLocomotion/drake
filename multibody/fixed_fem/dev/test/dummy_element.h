@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 /* The traits for the DummyElement. In this case, all of the traits are unique
  values so we can detect that each value is used in the expected context.
@@ -130,6 +130,6 @@ class DummyElement final
   }
 };
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

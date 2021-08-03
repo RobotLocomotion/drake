@@ -18,10 +18,10 @@ namespace internal {
 // element. `<world>` elements (used for instance to specify gravity) are
 // ignored by this method.  A new model instance will be added to @p plant.
 //
-// @throws std::runtime_error if the file is not in accordance with the SDF
+// @throws std::exception if the file is not in accordance with the SDF
 // specification containing a message with a list of errors encountered while
 // parsing the file.
-// @throws std::runtime_error if there is more than one `<model>` element or
+// @throws std::exception if there is more than one `<model>` element or
 // zero of them.
 // @throws std::exception if plant is nullptr or if MultibodyPlant::Finalize()
 // was already called on `plant`.
@@ -39,23 +39,28 @@ namespace internal {
 // @param scene_graph
 //   A pointer to a mutable SceneGraph object used for geometry registration
 //   (either to model visual or contact geometry).  May be nullptr.
+// @param test_sdf_forced_nesting
+//   If true, a custom parser for SDFormat files (but using a different file
+//   extension) will be registered when using libsdformat's Interface API. This
+//   should only be used for testing.
 // @returns The model instance index for the newly added model.
 ModelInstanceIndex AddModelFromSdf(
     const DataSource& data_source,
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    bool test_sdf_forced_nesting = false);
 
 // Parses all `<model>` elements from the SDF file specified by `file_name`
 // and adds them to `plant`. The SDF file can contain multiple `<model>`
 // elements. New model instances will be added to @p plant for each
 // `<model>` tag in the SDF file.
 //
-// @throws std::runtime_error if the file is not in accordance with the SDF
+// @throws std::exception if the file is not in accordance with the SDF
 // specification containing a message with a list of errors encountered while
 // parsing the file.
-// @throws std::runtime_error if the file contains no models.
+// @throws std::exception if the file contains no models.
 // @throws std::exception if plant is nullptr or if MultibodyPlant::Finalize()
 // was already called on `plant`.
 //
@@ -69,12 +74,17 @@ ModelInstanceIndex AddModelFromSdf(
 // @param scene_graph
 //   A pointer to a mutable SceneGraph object used for geometry registration
 //   (either to model visual or contact geometry).  May be nullptr.
+// @param test_sdf_forced_nesting
+//   If true, a custom parser for SDFormat files (but using a different file
+//   extension) will be registered when using libsdformat's Interface API. This
+//   should only be used for testing.
 // @returns The set of model instance indices for the newly added models.
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    bool test_sdf_forced_nesting = false);
 
 }  // namespace internal
 }  // namespace multibody

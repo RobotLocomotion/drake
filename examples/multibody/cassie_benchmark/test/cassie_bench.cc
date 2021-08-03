@@ -6,8 +6,10 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/tools/performance/fixture_common.h"
 
 using drake::multibody::MultibodyPlant;
+using drake::symbolic::Expression;
 using drake::systems::Context;
 using drake::test::LimitMalloc;
 
@@ -72,12 +74,7 @@ class AllocationTracker {
 class CassieDoubleFixture : public benchmark::Fixture {
  public:
   CassieDoubleFixture() {
-    ComputeStatistics("min", [](const std::vector<double>& v) -> double {
-        return *(std::min_element(std::begin(v), std::end(v)));
-      });
-    ComputeStatistics("max", [](const std::vector<double>& v) -> double {
-        return *(std::max_element(std::begin(v), std::end(v)));
-      });
+    tools::performance::AddMinMaxStatistics(this);
   }
 
   // This apparently futile using statement works around "overloaded virtual"
@@ -285,8 +282,11 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   compute();
 
   for (int k = 0; k < 3; k++) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(57693));
+    // @see LimitMalloc note above. For this particular limit, the high water
+    // mark comes when building against Eigen 3.4, so only tighten the limit
+    // here if you've tested vs Eigen 3.4 specifically -- our default build
+    // of Drake currently uses the Eigen 3.3 series.
+    LimitMalloc guard(LimitReleaseOnly(57787));
 
     compute();
 
@@ -297,6 +297,67 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
     compute();
   }
   tracker_.Report(&state);
+}
+
+// Fixture that holds a Cassie robot model in a MultibodyPlant<Expression>. It
+// also holds a default context for Expression.
+class CassieExpressionFixture : public CassieDoubleFixture {
+ public:
+  using CassieDoubleFixture::SetUp;
+  void SetUp(benchmark::State& state) override {
+    CassieDoubleFixture::SetUp(state);
+    plant_expression_ = systems::System<double>::ToSymbolic(*plant_);
+    context_expression_ = plant_expression_->CreateDefaultContext();
+  }
+
+  // @see CassieDoubleFixture::InvalidateState(). This method invalidates the
+  // expression version of state.
+  void InvalidateState() override {
+    context_expression_->NoteContinuousStateChange();
+  }
+
+ protected:
+  std::unique_ptr<MultibodyPlant<Expression>> plant_expression_;
+  std::unique_ptr<Context<Expression>> context_expression_;
+};
+
+// This uses T=Expression, but all values are still constants (not variables).
+BENCHMARK_F(CassieExpressionFixture, ExpressionMassMatrix)
+    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
+    (benchmark::State& state) {
+  MatrixX<Expression> M(nv_, nv_);
+  for (auto _ : state) {
+    InvalidateState();
+    plant_expression_->CalcMassMatrix(*context_expression_, &M);
+  }
+}
+
+// This uses T=Expression, but all values are still constants (not variables).
+BENCHMARK_F(CassieExpressionFixture, ExpressionInverseDynamics)
+    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
+    (benchmark::State& state) {
+  VectorX<Expression> desired_vdot = VectorXd::Zero(nv_);
+  multibody::MultibodyForces<Expression> external_forces(*plant_expression_);
+  for (auto _ : state) {
+    InvalidateState();
+    plant_expression_->CalcInverseDynamics(
+        *context_expression_, desired_vdot, external_forces);
+  }
+}
+
+// This uses T=Expression, but all values are still constants (not variables).
+BENCHMARK_F(CassieExpressionFixture, ExpressionForwardDynamics)
+    // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
+    (benchmark::State& state) {
+  auto derivatives = plant_expression_->AllocateTimeDerivatives();
+  auto& port_value = plant_expression_->get_actuation_input_port().FixValue(
+      context_expression_.get(), u_.cast<Expression>().eval());
+  for (auto _ : state) {
+    InvalidateState();
+    port_value.GetMutableData();  // Invalidates caching of inputs.
+    plant_expression_->CalcTimeDerivatives(
+        *context_expression_, derivatives.get());
+  }
 }
 
 }  // namespace

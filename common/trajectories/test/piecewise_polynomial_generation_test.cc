@@ -658,6 +658,8 @@ GTEST_TEST(SplineTests, TestException) {
   Y = std::vector<MatrixX<double>>(T.size(), MatrixX<double>::Zero(rows, cols));
   MatrixX<double> Ydot0(rows, cols);
   MatrixX<double> Ydot1(rows, cols);
+  Ydot0.setZero();
+  Ydot1.setZero();
   DRAKE_EXPECT_NO_THROW(
       PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
           T, Y, Ydot0, Ydot1));

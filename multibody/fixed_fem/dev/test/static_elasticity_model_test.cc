@@ -5,15 +5,15 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
@@ -21,11 +21,12 @@ constexpr int kSolutionDimension = 3;
 constexpr int kQuadratureOrder = 1;
 using T = AutoDiffXd;
 using QuadratureType =
-    SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
-using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
+    internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                   kNumQuads>;
+using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
 using ElementType =
     StaticElasticityElement<IsoparametricElementType, QuadratureType,
                             ConstitutiveModelType>;
@@ -169,6 +170,6 @@ TEST_F(StaticElasticityModelTest, ExternalForce) {
                               std::numeric_limits<double>::epsilon()));
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

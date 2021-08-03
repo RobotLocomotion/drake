@@ -325,29 +325,42 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 }
 
 template <typename T>
+CollisionFilterManager SceneGraph<T>::collision_filter_manager() {
+  return model_.collision_filter_manager();;
+}
+
+template <typename T>
+CollisionFilterManager SceneGraph<T>::collision_filter_manager(
+    Context<T>* context) const {
+  return mutable_geometry_state(context).collision_filter_manager();
+}
+
+template <typename T>
 void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
-  model_.ExcludeCollisionsWithin(geometry_set);
+  collision_filter_manager().Apply(
+      CollisionFilterDeclaration().ExcludeWithin(geometry_set));
 }
 
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsWithin(
     Context<T>* context, const GeometrySet& geometry_set) const {
-  auto& g_state = mutable_geometry_state(context);
-  g_state.ExcludeCollisionsWithin(geometry_set);
+  collision_filter_manager(context).Apply(
+      CollisionFilterDeclaration().ExcludeWithin(geometry_set));
 }
 
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
                                              const GeometrySet& setB) {
-  model_.ExcludeCollisionsBetween(setA, setB);
+  collision_filter_manager().Apply(
+      CollisionFilterDeclaration().ExcludeBetween(setA, setB));
 }
 
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
                                              const GeometrySet& setA,
                                              const GeometrySet& setB) const {
-  auto& g_state = mutable_geometry_state(context);
-  g_state.ExcludeCollisionsBetween(setA, setB);
+  collision_filter_manager(context).Apply(
+      CollisionFilterDeclaration().ExcludeBetween(setA, setB));
 }
 
 template <typename T>

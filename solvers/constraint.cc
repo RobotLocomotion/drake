@@ -204,6 +204,11 @@ void LorentzConeConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
+std::ostream& LorentzConeConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "LorentzConeConstraint", vars, false);
+}
+
 template <typename DerivedX, typename ScalarY>
 void RotatedLorentzConeConstraint::DoEvalGeneric(
     const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
@@ -228,6 +233,12 @@ void RotatedLorentzConeConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
+}
+
+std::ostream& RotatedLorentzConeConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "RotatedLorentzConeConstraint", vars,
+                           false);
 }
 
 template <typename DerivedX, typename ScalarY>
@@ -507,6 +518,11 @@ void ExpressionConstraint::DoEval(
       (*y)[i] = expressions_[i].Substitute(subst);
     }
   }
+}
+
+std::ostream& ExpressionConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "ExpressionConstraint", vars, false);
 }
 
 ExponentialConeConstraint::ExponentialConeConstraint(

@@ -9,7 +9,8 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
+namespace internal {
 namespace {
 const ElementIndex kDummyElementIndex(0);
 constexpr int kNumQuads = 1;
@@ -75,19 +76,19 @@ CorotatedModel. */
 template <class Model>
 void TestUndeformedState() {
   const Model model(100.0, 0.25);
-  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
+  typename Model::Traits::DeformationGradientDataType data;
   const std::array<Matrix3<double>, kNumQuads> F{Matrix3<double>::Identity()};
-  cache_entry.UpdateCacheEntry(F);
+  data.UpdateData(F);
   // At the undeformed state, the energy density should be zero.
   const std::array<double, kNumQuads> analytic_energy_density{0};
   // At the undeformed state, the stress should be zero.
   const std::array<Matrix3<double>, kNumQuads> analytic_stress{
       Matrix3<double>::Zero()};
   std::array<double, kNumQuads> energy_density;
-  model.CalcElasticEnergyDensity(cache_entry, &energy_density);
+  model.CalcElasticEnergyDensity(data, &energy_density);
   EXPECT_EQ(energy_density, analytic_energy_density);
   std::array<Matrix3<double>, kNumQuads> stress;
-  model.CalcFirstPiolaStress(cache_entry, &stress);
+  model.CalcFirstPiolaStress(data, &stress);
   EXPECT_EQ(stress, analytic_stress);
 }
 
@@ -99,15 +100,15 @@ CorotatedModel. */
 template <class Model>
 void TestPIsDerivativeOfPsi() {
   const Model model(100.0, 0.3);
-  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
+  typename Model::Traits::DeformationGradientDataType data;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   // P should be derivative of Psi.
-  cache_entry.UpdateCacheEntry(deformation_gradients);
+  data.UpdateData(deformation_gradients);
   std::array<AutoDiffXd, kNumQuads> energy;
-  model.CalcElasticEnergyDensity(cache_entry, &energy);
+  model.CalcElasticEnergyDensity(data, &energy);
   std::array<Matrix3<AutoDiffXd>, kNumQuads> P;
-  model.CalcFirstPiolaStress(cache_entry, &P);
+  model.CalcFirstPiolaStress(data, &P);
   for (int i = 0; i < kNumQuads; ++i) {
     EXPECT_TRUE(CompareMatrices(
         Eigen::Map<const Matrix3<double>>(energy[i].derivatives().data(), 3, 3),
@@ -122,14 +123,14 @@ CorotatedModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP() {
   const Model model(100.0, 0.3);
-  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
+  typename Model::Traits::DeformationGradientDataType data;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
-  cache_entry.UpdateCacheEntry(deformation_gradients);
+  data.UpdateData(deformation_gradients);
   std::array<Matrix3<AutoDiffXd>, kNumQuads> P;
-  model.CalcFirstPiolaStress(cache_entry, &P);
+  model.CalcFirstPiolaStress(data, &P);
   std::array<Eigen::Matrix<AutoDiffXd, 9, 9>, kNumQuads> dPdF;
-  model.CalcFirstPiolaStressDerivative(cache_entry, &dPdF);
+  model.CalcFirstPiolaStressDerivative(data, &dPdF);
   for (int q = 0; q < kNumQuads; ++q) {
     for (int i = 0; i < kSpaceDimension; ++i) {
       for (int j = 0; j < kSpaceDimension; ++j) {
@@ -168,6 +169,7 @@ GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
   TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, kNumQuads>>();
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace internal
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

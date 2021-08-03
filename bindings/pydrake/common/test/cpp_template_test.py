@@ -147,7 +147,7 @@ class TestCppTemplate(unittest.TestCase):
                     self.mangled_result = self.__mangled_method()
 
                 def __mangled_method(self):
-                    # Ensure that that mangled methods are usable.
+                    # Ensure that mangled methods are usable.
                     return (T, 10)
 
             return Impl

@@ -18,9 +18,6 @@ from _drake_visualizer_builtin_scripts.show_point_pair_contact \
 # TODO(seancurtis-TRI) Make the dialog box for scaling force arrows in
 # show_point_pair_contact.py accessible to this plugin too.
 
-# TODO(seancurtis-TRI) Convert the modal dialog to a mode-less dialog to allow
-# continual tweaking of the visualization.
-
 
 class ColorMapModes:
     '''Common specification of color map modes'''
@@ -36,25 +33,27 @@ class ColorMapModes:
             return 'Unrecognized mode'
 
     @staticmethod
-    def get_modes():
-        return (ColorMapModes.kFlameMap, ColorMapModes.kTwoToneMap,
-                ColorMapModes.kIntensityMap)
+    def get_modes_and_maps():
+        return ((ColorMapModes.kFlameMap, FlameMap()),
+                (ColorMapModes.kTwoToneMap, TwoToneMap()),
+                (ColorMapModes.kIntensityMap, IntensityMap()))
 
     @staticmethod
     def get_mode_docstring(mode):
         if mode == ColorMapModes.kFlameMap:
-            return 'Color map that maps [min_val, max_val] -> black, blue, '
-            'magenta, orange, yellow, white linearly. Saturates to black and '
-            'white for values below min_val or above max_val, respectively.'
+            return ('Color map that maps [min_val, max_val] -> black, blue, '
+                    'magenta, orange, yellow, white linearly. Saturates to '
+                    'black and white for values below min_val or above '
+                    'max_val, respectively.')
         elif mode == ColorMapModes.kTwoToneMap:
-            return 'Maps [min_val, max_val] to a range of hues between color1 '
-            'and color2. Saturates to color1 and color2 for values '
-            'below min_val or above max_val, respectively. Presently,'
-            'color1 and color2 are blue and hot pink.'
+            return ('Maps [min_val, max_val] to a range of hues between '
+                    'color1 and color2. Saturates to color1 and color2 for '
+                    'values below min_val or above max_val, respectively. '
+                    'Presently, color1 and color2 are blue and hot pink.')
         elif mode == ColorMapModes.kIntensityMap:
-            return 'Maps [min_val, max_val] to some color. Saturates to black '
-            'and that color for values below min_val or above max_val, '
-            'respectively. Presently, the color is red.'
+            return ('Maps [min_val, max_val] to some color. Saturates to '
+                    'black and that color for values below min_val or above '
+                    'max_val, respectively. Presently, the color is red.')
         else:
             return 'unrecognized mode'
 
@@ -63,14 +62,28 @@ class ColorMapModes:
     kIntensityMap = 2
 
 
-class _ColorMapConfigurationDialog(QtGui.QDialog):
+def create_color_map_icon(size, color_map):
+    """Creates a QIcon representing the color map as a horizontal gradient."""
+    color_map.data_range = [0, 1]
+    samples = np.linspace(0.0, 1.0, size.width())
+    image = QtGui.QImage(size.width(), 1, QtGui.QImage.Format_RGB32)
+    for i in range(size.width()):
+        [r, g, b] = color_map.get_color(samples[i])
+        rgb = QtGui.QRgba64.fromRgba(int(r * 255), int(g * 255),
+                                     int(b * 255), 255).toArgb32()
+        image.setPixel(i, 0, rgb)
+    pixmap = QtGui.QPixmap()
+    pixmap.convertFromImage(image.scaled(size))
+    return QtGui.QIcon(pixmap)
+
+
+class _ConfigDialog(QtGui.QDialog):
     '''A simple dialog for configuring the hydroelastic visualization'''
 
     def __init__(self, visualizer, parent=None):
         QtGui.QDialog.__init__(self, parent)
+        self.setModal(False)
         self.setWindowTitle('Hydroelastic contact visualization settings')
-        self.reset_max_pressure_observed_functor = \
-            visualizer.reset_max_pressure_observed
         layout = QtGui.QGridLayout()
         layout.setColumnStretch(0, 0)
         layout.setColumnStretch(1, 1)
@@ -80,16 +93,18 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         # Color map selection.
         layout.addWidget(QtGui.QLabel('Color map'), row, 0)
         self.color_map_mode = QtGui.QComboBox()
-        modes = ColorMapModes.get_modes()
-        mode_labels = [ColorMapModes.get_mode_string(m) for m in modes]
-        self.color_map_mode.addItems(mode_labels)
-        self.color_map_mode.setCurrentIndex(visualizer.color_map_mode)
         mode_tool_tip = 'Determines the mapping from pressures to colors:\n'
-        for m in modes:
+        icon_size = QtCore.QSize(96, 16)
+        for mode, color_map in ColorMapModes.get_modes_and_maps():
+            label = ColorMapModes.get_mode_string(mode)
+            icon = create_color_map_icon(icon_size, color_map)
+            self.color_map_mode.addItem(icon, label)
             mode_tool_tip += '  - {}: {}\n'.format(
-                ColorMapModes.get_mode_string(m),
-                ColorMapModes.get_mode_docstring(m))
+                ColorMapModes.get_mode_string(mode),
+                ColorMapModes.get_mode_docstring(mode))
+        self.color_map_mode.setIconSize(icon_size)
         self.color_map_mode.setToolTip(mode_tool_tip)
+        self.color_map_mode.setCurrentIndex(visualizer.color_map_mode)
         layout.addWidget(self.color_map_mode, row, 1)
         row += 1
 
@@ -100,18 +115,12 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
                                      'will be visualized as the color defined'
                                      ' at the minimum value of the color map '
                                      '(must be at least zero).')
-        self.min_pressure_validator = QtGui.QDoubleValidator(0, 1e20, 2,
-                                                             self.min_pressure)
-        self.min_pressure_validator.setNotation(
+        min_pressure_validator = QtGui.QDoubleValidator(0, 1e20, 2,
+                                                        self.min_pressure)
+        min_pressure_validator.setNotation(
             QtGui.QDoubleValidator.ScientificNotation)
-        self.min_pressure.setValidator(self.min_pressure_validator)
+        self.min_pressure.setValidator(min_pressure_validator)
         self.min_pressure.setText('{:.3g}'.format(visualizer.min_pressure))
-        # TODO(seancurtis-TRI) This is supposed to automatically update max
-        # pressure. However, changing min pressure to be larger and then
-        # tabbing out of the widget doesn't necessarily send the
-        # editingFinished signal (whether it is sent appears to be arbitrary).
-        # We need to figure this out before we make a modeless configuration
-        # panel.
         self.min_pressure.editingFinished.connect(self.update_max_validator)
         layout.addWidget(self.min_pressure, row, 1)
         row += 1
@@ -122,11 +131,11 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         self.max_pressure.setToolTip('Pressures at or greater than this value '
                                      'will be visualized as the color defined'
                                      ' at the maximum value of the color map.')
-        self.max_pressure_validator = QtGui.QDoubleValidator(
+        max_pressure_validator = QtGui.QDoubleValidator(
             0, 1e20, 2, self.max_pressure)
-        self.max_pressure_validator.setNotation(
+        max_pressure_validator.setNotation(
             QtGui.QDoubleValidator.ScientificNotation)
-        self.max_pressure.setValidator(self.max_pressure_validator)
+        self.max_pressure.setValidator(max_pressure_validator)
         self.max_pressure.setText('{:.3g}'.format(visualizer.max_pressure))
         self.max_pressure.editingFinished.connect(self.update_min_validator)
         layout.addWidget(self.max_pressure, row, 1)
@@ -213,8 +222,8 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         mode_labels = [ContactVisModes.get_mode_string(m) for m in modes]
         self.magnitude_mode.addItems(mode_labels)
         self.magnitude_mode.setCurrentIndex(visualizer.magnitude_mode)
-        mode_tool_tip = 'Determines how the magnitude of all hydroelastic ' \
-                        'vector quantities are visualized:\n'
+        mode_tool_tip = ('Determines how the magnitude of all hydroelastic '
+                         'vector quantities are visualized:\n')
         for m in modes:
             mode_tool_tip += '  - {}: {}\n'.format(
                 ContactVisModes.get_mode_string(m),
@@ -230,7 +239,7 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
             'All visualized vectors are multiplied by this scale factor (must '
             'be non-negative and at most 100). It is dimensionless.')
         validator = QtGui.QDoubleValidator(0, 100, 3, self.global_scale)
-        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        validator.setNotation(QtGui.QDoubleValidator.ScientificNotation)
         self.global_scale.setValidator(validator)
         self.global_scale.setText("{:.3f}".format(visualizer.global_scale))
         layout.addWidget(self.global_scale, row, 1)
@@ -243,29 +252,25 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
                                       'this value will not be visualized '
                                       '(must be > 1e-10 and at most 100')
         validator = QtGui.QDoubleValidator(1e-10, 100, 10, self.min_magnitude)
-        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        validator.setNotation(QtGui.QDoubleValidator.ScientificNotation)
         self.min_magnitude.setValidator(validator)
         self.min_magnitude.setText("{:.3g}".format(visualizer.min_magnitude))
         layout.addWidget(self.min_magnitude, row, 1)
         row += 1
 
         # The maximum pressure value recorded and a button to reset it.
-        self.pressure_value_label = QtGui.QLabel(
-            'Maximum pressure value observed: {:.5e}'.format(
-                visualizer.max_pressure_observed))
+        self.pressure_value_label = QtGui.QLabel()
+        self.set_max_pressure(visualizer.max_pressure_observed)
         layout.addWidget(self.pressure_value_label, row, 0)
-        reset_button = QtGui.QPushButton('Reset max observed pressure')
-        reset_button.connect('clicked()',
-                             self.reset_max_pressure_observed)
-        layout.addWidget(reset_button, row, 1)
+        self.reset_button = QtGui.QPushButton('Reset max observed pressure')
+        layout.addWidget(self.reset_button, row, 1)
         row += 1
 
         # Accept/cancel.
-        btns = QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel
-        buttons = QtGui.QDialogButtonBox(btns, QtCore.Qt.Horizontal, self)
-        buttons.connect('accepted()', self.accept)
-        buttons.connect('rejected()', self.reject)
-        layout.addWidget(buttons, row, 0, 1, 2)
+        close_btn = QtGui.QPushButton("Close", self)
+        close_btn.connect("clicked()", self.accept)
+        close_btn.setAutoDefault(False)
+        layout.addWidget(close_btn, row, 0, 1, 2)
 
         self.setLayout(layout)
 
@@ -277,10 +282,10 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         if float(self.min_pressure.text) > float(self.max_pressure.text):
             self.min_pressure.setText(self.max_pressure.text)
 
-    def reset_max_pressure_observed(self):
-        self.reset_max_pressure_observed_functor()
-        self.pressure_value_label.setText('Maximum pressure value observed: '
-                                          '{:.5e}'.format(0))
+    def set_max_pressure(self, value):
+        """Slot for changing what the observed maximum pressure is."""
+        self.pressure_value_label.setText("Maximum pressure value observed: "
+                                          f"{value:.5e}")
 
 
 class ColorMap:
@@ -440,12 +445,227 @@ def create_texture(texture_size, color_map):
     return texture
 
 
+class VisualItem:
+    """Represents a single object added to the object model to represent an
+    aspect of a single contact: e.g., pressure patch, surface mesh, traction
+    forces, etc.
+
+    This associates the object model item and arbitrary user data. The user
+    data can be used in adding or updating the item via custom callbacks.
+    (The pressure mesh makes use of it, for example.)"""
+    def __init__(self, item: vis.PolyDataItem):
+        """Constructs a VisualItem.
+
+        Args:
+            vis_item: the PolyDataItem containing the visual element for
+                director's object model.
+            user_data: A tuple of objects associated with the item. These
+                can be used by the callbacks for updating."""
+        self.item = item
+        self.user_data = ()
+
+
+class VisualModel:
+    """Tracks all of the object model items used in the current model. It
+    allows the visualizer to update existing components as messages come in
+    rather than strictly rebuilding from scratch. This helps preserve GUI-level
+    configurations (like setting something visible)."""
+    def __init__(self, root_folder_name: str, view):
+        """Constructs the visual model.
+
+        Args:
+            root_folder_name: The name of the object model folder that
+                contains all hydroelastic visualization data.
+            view: The director view used to instantiate object model items.
+        """
+        self._root_folder = om.getOrCreateContainer(root_folder_name)
+        self.view = view
+        # All contacts are stored in this dictionary where the key is a unique
+        # string (which later becomes a folder in the object model) defined by
+        # the unique identifiers of the geometries in contact.
+        self._contacts = {}
+
+    class _Contact:
+        """Tracks the contact model components for a single contact. A
+        single contact is represented by a folder in the object model. It can
+        have one or more items (e.g. pressure field, force vectors, etc.).
+        The items are stored in a map associating item name with its
+        corresponding VisualItem."""
+
+        def __init__(self, folder):
+            """Constructs an *empty* contact model with the given folder
+            (generated by om.getOrCreateContainer())."""
+            self.folder = folder
+            self.items = {}
+
+        def update_item(self, item_name, callback):
+            """Applies the callback to the item in this contact model with the
+            given name (if such an item exists)."""
+            if item_name in self.items:
+                callback(self.items[item_name])
+
+        def set_mesh_data(self, mesh_data: vtk.vtkPolyData, item_name: str,
+                          add_callback, update_callback, view):
+            """Implements VisualModel.set_contact_mesh_data."""
+            if mesh_data is None:
+                if item_name in self.items:
+                    om.removeFromObjectModel(self.items.pop(item_name).item)
+            elif item_name in self.items:
+                vis_item = self.items[item_name]
+                update_callback(vis_item, mesh_data)
+            else:
+                item = vis.PolyDataItem(item_name, mesh_data, view)
+                om.addToObjectModel(item, self.folder)
+                vis_item = VisualItem(item)
+                self.items[item_name] = vis_item
+                add_callback(vis_item, mesh_data)
+
+        def set_debug_data(self, item_data: DebugData, item_name: str, view):
+            """Implements VisualModel.set_contact_debug_data."""
+            # The caller may instantiate an instance of DebugData (based on the
+            # flag *requesting* visualization of some quantity), but find no
+            # values to visualize. In that case, we don't want to add an item.
+            # We detect it because the DebugData.append has no input
+            # connections. This is part of the definition of "well defined"
+            # data.
+            if (item_data is None
+                    or item_data.append.GetNumberOfInputConnections(0) == 0):
+                if item_name in self.items:
+                    om.removeFromObjectModel(self.items.pop(item_name).item)
+            elif item_name in self.items:
+                self.items[item_name].item.setPolyData(
+                    item_data.getPolyData())
+                self.items[item_name].item.colorBy('RGB255')
+            else:
+                item = vis.PolyDataItem(item_name, item_data.getPolyData(),
+                                        view)
+                om.addToObjectModel(item, self.folder)
+                item.setProperty('Visible', True)
+                item.setProperty('Alpha', 1.0)
+                item.colorBy('RGB255')
+                self.items[item_name] = VisualItem(item)
+
+    def clear(self):
+        """Clears the entire model - all data for all contact surfaces is
+        removed."""
+        # This will recursively remove all items stored in contacts.
+        om.removeFromObjectModel(self._root_folder)
+        self._contacts = {}
+
+    def update_contact_directories(self, message):
+        """Given a hydroelastic contact message, updates the visual model's
+        knowledge of what contacts are present. Contacts that are not present
+        in the message get removed from the model. Contacts new in the message
+        are added to the model.
+
+        This does *not* populate any of the contact *items* for the contacts.
+        """
+        # Start by assuming all existing contacts need to be removed. For
+        # every contact found in the message, we remove that contact from the
+        # set.
+        contacts_to_remove = set(self._contacts.keys())
+        new_contacts = set()
+        for surface in message.hydroelastic_contacts:
+            contact = self._contact_key(surface)
+            if contact in contacts_to_remove:
+                contacts_to_remove.remove(contact)
+            else:
+                new_contacts.add(contact)
+        for contact in contacts_to_remove:
+            om.removeFromObjectModel(self._contacts[contact].folder)
+            self._contacts.pop(contact)
+        for contact in new_contacts:
+            contact_data_folder = om.getOrCreateContainer(
+                    self._contact_name(contact), self._root_folder)
+            self._contacts[contact] = self._Contact(contact_data_folder)
+
+    def _contact_name(self, contact_key):
+        """Given the `contact_key` (generated by _contact_key()), constructs a
+        "name" for the contact
+
+        Args:
+            contact: A 2-tuple of strings consisting of the names of the
+                two bodies in contact: body1 and body2."""
+        return f'Contact data between {contact_key[0]} and {contact_key[1]}'
+
+    def _contact_key(self, surface):
+        """Given a `surface` returns a key for use in accessing contact data in
+        `self._contacts`."""
+        return (surface.body1_name, surface.body2_name)
+
+    def contact_folder(self, surface):
+        """Returns the registered folder for the given surface."""
+        return self._contacts[self._contact_key(surface)].folder
+
+    def set_contact_debug_data(self, surface, item_data, item_name):
+        """For the contact represented by the given `surface`, adds, updates,
+        or removes (as appropriate) the named item with the given data.
+
+        An item is added if the data is well defined and no item with the given
+        name exists.
+
+        An item is updated if the data is well defined and the named item
+        already exists.
+
+        An item is removed, if the data is *not* well defined and an item
+        already exists.
+
+        Args:
+            surface: The contact surface to which this data belongs.
+            item_data: The vtkAppendPolyData to add. It is "well defined"
+                if it is *not* None and has had polygonal data added.
+            item_name: The unique name associated with this data."""
+        contact = self._contacts[self._contact_key(surface)]
+        contact.set_debug_data(item_data, item_name, self.view)
+
+    def set_contact_mesh_data(self, surface, mesh_data, item_name,
+                              add_callback, update_callback):
+        """For the contact represented by the given `surface`, adds, updates,
+        or removes (as appropriate) the named item with the given mesh data.
+
+        An item is added if the data is well defined and no item with the given
+        name exists.
+
+        An item is updated if the data is well defined and the named item
+        already exists.
+
+        An item is removed, if the data is *not* well defined and an item
+        already exists.
+
+        Args:
+            surface: The contact surface to which this data belongs.
+            mesh_data: The PolyDataItem to add. It is "well defined" if it
+                is *not* None.
+            item_name: The unique name associated with this data.
+            add_callback: Functor of the form
+                `f(item: VisualItem, mesh_data: vtk.vtkPolyData)` called when
+                an item is newly added. The mesh_data is the data that has
+                been assigned to the item. It can be used to provide custom
+                configuration.
+            update_callback: Functor of the form
+                `f(item: VisualItem, mesh_data: vtk.vtkPolyData)` called when
+                an item is updated. The mesh_data is the data that has been
+                assigned to the item. It can be used to provide custom
+                configuration."""
+        contact = self._contacts[self._contact_key(surface)]
+        contact.set_mesh_data(mesh_data, item_name, add_callback,
+                              update_callback, self.view)
+
+    def update_items(self, item_name, callback):
+        """Applies the callback to the named contact item in every contact."""
+        for contact in self._contacts.values():
+            contact.update_item(item_name, callback)
+
+
 class HydroelasticContactVisualizer:
     def __init__(self):
         self._folder_name = 'Hydroelastic Contact'
         self._name = 'Hydroelastic Contact Visualizer'
         self._enabled = False
-        self._sub = None
+        # Subscriber to the CONTACT_RESULTS messages.
+        self._contact_sub = None
+        # Subscriber to the DRAKE_VIEWER_LOAD_ROBOT messages.
+        self._load_sub = None
 
         self.set_enabled(True)
 
@@ -455,7 +675,7 @@ class HydroelasticContactVisualizer:
         #  something.
         self.color_map_mode = ColorMapModes.kFlameMap
         self.min_pressure = 0
-        self.max_pressure = 1e4
+        self.max_pressure = 1e8
         self.texture_size = 128
         self.show_contact_edges = True
         self.show_pressure = True
@@ -467,17 +687,46 @@ class HydroelasticContactVisualizer:
         self.global_scale = 0.3
         self.min_magnitude = 1e-4
         self.texture = create_texture(self.texture_size, FlameMap())
+        # Persist the state so we can update without messages.
+        self.visual_model = None
+        self.message = None
 
         menu_bar = applogic.getMainWindow().menuBar()
         plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
         contact_menu = get_sub_menu_or_make(plugin_menu, '&Contacts')
         self.configure_action = contact_menu.addAction(
             'Configure &Hydroelastic Contact Visualization')
-        self.configure_action.connect('triggered()', self.configure_via_dialog)
-        self.set_enabled(True)
+        self.configure_action.connect('triggered()', self.show_dialog)
 
-    def reset_max_pressure_observed(self):
-        self.max_pressure_observed = 0
+        # Make the dialog a child of the main window so it closes when the app
+        # closes.
+        self.dlg = _ConfigDialog(self, applogic.getMainWindow())
+
+        # Connect all of the widgets in the dialog to callbacks
+        self.dlg.color_map_mode.connect("currentIndexChanged(int)",
+                                        self.set_color_map)
+        self.dlg.min_pressure.connect("editingFinished()",
+                                      self.set_min_pressure)
+        self.dlg.max_pressure.connect("editingFinished()",
+                                      self.set_max_pressure)
+        self.dlg.show_pressure.connect("toggled(bool)",
+                                       self.toggle_show_pressure)
+        self.dlg.show_contact_edges.connect("toggled(bool)",
+                                            self.toggle_show_edges)
+        self.dlg.show_spatial_force.connect("toggled(bool)",
+                                            self.toggle_show_spatial_force)
+        self.dlg.show_traction_vectors.connect(
+            "toggled(bool)", self.toggle_show_traction_vectors)
+        self.dlg.show_slip_velocity_vectors.connect(
+            "toggled(bool)", self.toggle_show_slip_velocity)
+        self.dlg.magnitude_mode.connect("currentIndexChanged(int)",
+                                        self.set_magnitude_mode)
+        self.dlg.global_scale.connect("editingFinished()",
+                                      self.set_global_scale)
+        self.dlg.min_magnitude.connect("editingFinished()",
+                                       self.set_min_magnitude)
+        self.dlg.reset_button.connect("clicked()",
+                                      self.clear_max_observed_pressure)
 
     def create_color_map(self):
         if self.color_map_mode == ColorMapModes.kFlameMap:
@@ -489,46 +738,170 @@ class HydroelasticContactVisualizer:
         # Should never be here.
         assert False
 
-    def configure_via_dialog(self):
-        '''Configures the visualization'''
-        dlg = _ColorMapConfigurationDialog(self)
-        if dlg.exec_() == QtGui.QDialog.Accepted:
-            # TODO(edrumwri): Cause this to redraw any pressures that are
-            #  currently visualized.
-            self.color_map_mode = dlg.color_map_mode.currentIndex
-            self.min_pressure = float(dlg.min_pressure.text)
-            self.max_pressure = float(dlg.max_pressure.text)
-            self.show_contact_edges = dlg.show_contact_edges.isChecked()
-            self.show_spatial_force = dlg.show_spatial_force.isChecked()
-            self.show_pressure = dlg.show_pressure.isChecked()
-            self.show_slip_velocity_vectors =\
-                dlg.show_slip_velocity_vectors.isChecked()
-            self.show_traction_vectors = dlg.show_traction_vectors.isChecked()
-            self.magnitude_mode = dlg.magnitude_mode.currentIndex
-            self.global_scale = float(dlg.global_scale.text)
-            self.min_magnitude = float(dlg.min_magnitude.text)
-            # Recreate the texture with the potentially new color map.
+    def show_dialog(self):
+        self.dlg.show()
+
+    def set_color_map(self, new_index):
+        """Slot for dialog widget"""
+        if new_index != self.color_map_mode:
+            self.color_map_mode = new_index
             self.texture = create_texture(self.texture_size,
                                           self.create_color_map())
+            if self.visual_model:
+                self.visual_model.update_items(
+                    'Contact surface',
+                    lambda vis_item:
+                        vis_item.item.actor.SetTexture(self.texture))
+                color_map = self.create_color_map()
+                [r, g, b] = color_map.get_contrasting_color()
+                line_color = [r*255, g*255, b*255]
+                self.visual_model.update_items(
+                    'Mesh edges',
+                    lambda vis_item:
+                        vis_item.item.actor.GetProperty().SetColor(line_color))
+                applogic.getCurrentRenderView().render()
+
+    def update_uv_transform(self, xform):
+        """Updates the uv transform to reflect the current pressure range
+        settings.
+
+        Args:
+            xform: An instance of vtk.vtkTransformTextureCoords."""
+        # Conceptually, we map the interval [min, max] -> [0, 1]. To achieve
+        # this we simply translate and scale the pressure domain to the texture
+        # coordinate domain. We use the vtkTransformTextureCoords to achieve
+        # this with some surprising implementation details. The scale factor is
+        # as one would expect but the translation is not.
+        #
+        #   - The scale is simply 1 / (max - min). We introduce a small epsilon
+        #     in the denominator to prevent division by zero.
+        #   - The scaling is applied *before* the translation. That means we
+        #     don't offset the data by min, but by min * scale.
+        #   - We achieve translation by setting the *origin*. To translate a
+        #     target d units, we must put the origin at -d.
+        #
+        # Finally, We rely on the texture map *clamping* its values for
+        # pressure values less than min or greater than max.
+        pressure_scale = 1.0 / (self.max_pressure - self.min_pressure + 1e-10)
+        xform.SetOrigin(-self.min_pressure * pressure_scale, 0, 0)
+        xform.SetScale(pressure_scale, 1, 1)
+
+    def update_pressure_range(self):
+        """Updates all pressure patches to reflect the current pressure range
+        settings."""
+        def update_item(vis_item):
+            # We assume that this is only called on items with user data where
+            # the first item is the texture transform.
+            xform = vis_item.user_data[0]
+            self.update_uv_transform(xform)
+
+        if self.visual_model:
+            self.visual_model.update_items('Contact surface', update_item)
+            applogic.getCurrentRenderView().render()
+
+    def set_min_pressure(self):
+        """Slot for dialog widget"""
+        new_value = float(self.dlg.min_pressure.text)
+        if new_value != self.min_pressure:
+            self.min_pressure = new_value
+            self.update_pressure_range()
+            self.update_visual_data_from_message()
+
+    def set_max_pressure(self):
+        """Slot for dialog widget"""
+        new_value = float(self.dlg.max_pressure.text)
+        if new_value != self.max_pressure:
+            self.max_pressure = new_value
+            self.update_pressure_range()
+            self.update_visual_data_from_message()
+
+    def toggle_show_pressure(self, state):
+        """Slot for dialog widget"""
+        self.show_pressure = state
+        self.update_visual_data_from_message()
+
+    def toggle_show_edges(self, state):
+        """Slot for dialog widget"""
+        self.show_contact_edges = state
+        self.update_visual_data_from_message()
+
+    def toggle_show_spatial_force(self, state):
+        """Slot for dialog widget"""
+        self.show_spatial_force = state
+        self.update_visual_data_from_message()
+
+    def toggle_show_traction_vectors(self, state):
+        """Slot for dialog widget"""
+        self.show_traction_vectors = state
+        self.update_visual_data_from_message()
+
+    def toggle_show_slip_velocity(self, state):
+        """Slot for dialog widget"""
+        self.show_slip_velocity_vectors = state
+        self.update_visual_data_from_message()
+
+    def set_magnitude_mode(self, new_index):
+        """Slot for dialog widget"""
+        if new_index != self.magnitude_mode:
+            self.magnitude_mode = new_index
+            self.update_visual_data_from_message()
+
+    def set_global_scale(self):
+        """Slot for dialog widget"""
+        new_value = float(self.dlg.global_scale.text)
+        if new_value != self.global_scale:
+            self.global_scale = new_value
+            self.update_visual_data_from_message()
+
+    def set_min_magnitude(self):
+        """Slot for dialog widget"""
+        new_value = float(self.dlg.min_magnitude.text)
+        if new_value != self.min_magnitude:
+            self.min_magnitude = new_value
+            self.update_visual_data_from_message()
+
+    def clear_max_observed_pressure(self):
+        """Slot for dialog widget"""
+        self.max_pressure_observed = -1
+        # Also causes the dialog to update.
+        self.update_max_pressure(0)
+
+    def update_max_pressure(self, pressure):
+        """Tests to see if the maximum pressure needs to be increased. If so,
+        updates the dialog."""
+        if pressure > self.max_pressure_observed:
+            self.max_pressure_observed = pressure
+            # Note: This is a *horrible* hack rendered necessary because
+            # PythonQt doesn't provide QtCore.QObject *or* QtCore.pyqtSignal so
+            # we can't define signals on this class that connect to dialog
+            # slots.
+            self.dlg.set_max_pressure(pressure)
 
     def add_subscriber(self):
-        if self._sub is not None:
+        if self._contact_sub is not None:
             return
 
-        self._sub = lcmUtils.addSubscriber(
+        self._contact_sub = lcmUtils.addSubscriber(
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
         print(self._name + ' subscriber added.')
+        self._load_sub = lcmUtils.addSubscriber(
+            'DRAKE_VIEWER_LOAD_ROBOT',
+            messageClass=lcmdrakemsg.lcmt_viewer_load_robot,
+            callback=self.clear_on_load)
 
     def remove_subscriber(self):
-        if self._sub is None:
+        if self._contact_sub is None:
             return
 
-        lcmUtils.removeSubscriber(self._sub)
-        self._sub = None
+        lcmUtils.removeSubscriber(self._contact_sub)
+        self._contact_sub = None
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
         print(self._name + ' subscriber removed.')
+
+        lcmUtils.removeSubscriber(self._load_sub)
+        self._load_sub = None
 
     def is_enabled(self):
         return self._enabled
@@ -539,11 +912,6 @@ class HydroelasticContactVisualizer:
             self.add_subscriber()
         else:
             self.remove_subscriber()
-
-    def calc_uv(self, pressure):
-        u = ((pressure - self.min_pressure)
-             / (self.max_pressure - self.min_pressure))
-        return (min(max(0, u), 1), 0)
 
     # TODO(xuchenhan-tri): At the moment, we are reconstructing the mesh from
     # individual triangles passed in by lcm. This process involves some ugly
@@ -580,9 +948,11 @@ class HydroelasticContactVisualizer:
                 if v not in vertex_position_to_id:
                     vertex_position_to_id[v] = vertex_id
                     pos[vertex_id] = v_np
-                    uvs[vertex_id] = self.calc_uv(pressure)
-                    self.max_pressure_observed = max(
-                        self.max_pressure_observed, pressure)
+                    # We use the pressure value as the u-value in the texture
+                    # coordinate and rely on texture coordinate scaling to
+                    # visualize it in the user-specified domain.
+                    uvs[vertex_id] = (pressure, 0)
+                    self.update_max_pressure(pressure)
                     vertex_id += 1
             va_id = vertex_position_to_id[va]
             vb_id = vertex_position_to_id[vb]
@@ -604,16 +974,38 @@ class HydroelasticContactVisualizer:
         seg_mesh = list(seg_mesh_set)
         return pos, uvs, tri_mesh, seg_mesh
 
+    def clear_on_load(self, msg):
+        """Clears the entire visual model because it detected a robot load
+        message."""
+        if self.visual_model is not None:
+            self.visual_model.clear()
+            self.visual_model = None
+            self.message = None
+
     def handle_message(self, msg):
         # Limits the rate of message handling, since redrawing is done in the
         # message handler.
-        self._sub.setSpeedLimit(30)
+        self._contact_sub.setSpeedLimit(30)
 
-        # Removes the folder completely.
-        om.removeFromObjectModel(om.findObjectByName(self._folder_name))
+        if self.visual_model is None:
+            view = applogic.getCurrentRenderView()
+            self.visual_model = VisualModel(self._folder_name, view)
+        self.visual_model.update_contact_directories(msg)
+        self.message = msg
+        self.update_visual_data_from_message()
 
-        # Recreates folder.
-        folder = om.getOrCreateContainer(self._folder_name)
+    def update_visual_data_from_message(self):
+        """Updates the visual state based on the currently owned message. This
+        reconstructs *everything* as if the message were newly received."""
+        msg = self.message
+
+        if msg is None:
+            return
+
+        # TODO(SeanCurtis-TRI): This is used to update *current* data based on
+        #  configuration changes. *Any* change triggers a re-evaluation of
+        #  *all* visualization data. It's a simple, yet *huge* hammer.
+        #  Investigate making the updating more targeted in the future.
 
         # Set the color map.
         color_map = self.create_color_map()
@@ -676,34 +1068,23 @@ class HydroelasticContactVisualizer:
 
         # TODO(drum) Consider exiting early if no visualization options are
         # enabled.
-        view = applogic.getCurrentRenderView()
         for surface in msg.hydroelastic_contacts:
-            contact_data_folder = om.getOrCreateContainer(
-                    f'Contact data between {surface.body1_name} and '
-                    f'{surface.body2_name}', folder)
-
-            # Adds a collection of debug data to the console with the given
-            # item name.
-            def add_contact_data(data, item_name):
-                # Exploit the fact that data.append is a vtkAppendPolyData
-                # instance. The number of input connections on port zero is the
-                # number of *actual* geometries added. If zero have been added,
-                # do no work.
-                if (data is None
-                        or data.append.GetNumberOfInputConnections(0) == 0):
-                    return
-                item = vis.PolyDataItem(item_name, data.getPolyData(), view)
-                om.addToObjectModel(item, contact_data_folder)
-                item.setProperty('Visible', True)
-                item.setProperty('Alpha', 1.0)
-                item.colorBy('RGB255')
+            # For each quantity (spatial force, pressure field, etc.), we want
+            # to update the visual model explicitly by saying whether it is
+            # present or not. So, we initialize the data to None in all cases
+            # and *always* update self.visual_model. If the data is None, the
+            # quantity is explicitly off. Otherwise, it'll be on given the
+            # data generated in the block.
 
             # Draw the spatial force.
+            force_data = None
             if self.show_spatial_force:
                 force_data = DebugData()
                 point = np.array([surface.centroid_W[0],
                                   surface.centroid_W[1],
                                   surface.centroid_W[2]])
+                # This is actually the force on body 1. It is documented as
+                # such in the lcm message.
                 force = np.array([surface.force_C_W[0],
                                   surface.force_C_W[1],
                                   surface.force_C_W[2]])
@@ -724,8 +1105,8 @@ class HydroelasticContactVisualizer:
                     force_data.addArrow(
                         start=point,
                         end=point + auto_force_scale * force * scale,
-                        tubeRadius=0.001,
-                        headRadius=0.002, color=[1, 0, 0])
+                        tubeRadius=0.002,
+                        headRadius=0.004, color=[1, 0, 0])
 
                 # Draw the moment arrow if it's of sufficient magnitude.
                 if moment_mag > self.min_magnitude:
@@ -738,12 +1119,20 @@ class HydroelasticContactVisualizer:
                     force_data.addArrow(
                         start=point,
                         end=point + auto_moment_scale * moment * scale,
-                        tubeRadius=0.001,
-                        headRadius=0.002, color=[0, 0, 1])
-                add_contact_data(force_data, "Spatial force")
+                        tubeRadius=0.002,
+                        headRadius=0.004, color=[0, 0, 1])
+            # TODO See show_point_pair_contact.py. But if we ever had a single
+            # body represented with multiple contact geometries, we could end
+            # up with body pairs (A, B) and (B, A). This is less likely with
+            # hydro than with point pair contact, so resolving this is less
+            # urgent.
+            self.visual_model.set_contact_debug_data(
+                surface, force_data, f"Spatial force on {surface.body1_name}")
 
             # Iterate over all quadrature points, drawing traction and slip
             # velocity vectors.
+            traction_data = None
+            slip_data = None
             if self.show_traction_vectors or self.show_slip_velocity_vectors:
                 traction_data = DebugData()
                 slip_data = DebugData()
@@ -771,12 +1160,12 @@ class HydroelasticContactVisualizer:
                             offset = auto_traction_scale * traction * scale
                             traction_data.addArrow(
                                 start=origin, end=origin + offset,
-                                tubeRadius=0.000125,
-                                headRadius=0.00025, color=[1, 0, 1])
+                                tubeRadius=0.00125,
+                                headRadius=0.0025, color=[1, 0, 1])
                         else:
                             traction_data.addSphere(
                                 center=origin,
-                                radius=0.000125,
+                                radius=0.00125,
                                 color=[1, 0, 1])
 
                     if self.show_slip_velocity_vectors:
@@ -797,19 +1186,23 @@ class HydroelasticContactVisualizer:
                             offset = auto_slip_velocity_scale * slip * scale
                             slip_data.addArrow(
                                 start=origin, end=origin + offset,
-                                tubeRadius=0.000125,
-                                headRadius=0.00025, color=[0, 1, 1])
+                                tubeRadius=0.00125,
+                                headRadius=0.0025, color=[0, 1, 1])
                         else:
                             slip_data.addSphere(
                                 center=origin,
-                                radius=0.000125,
+                                radius=0.00125,
                                 color=[0, 1, 1])
-                add_contact_data(traction_data, "Traction")
-                add_contact_data(slip_data, "Slip velocity")
+            self.visual_model.set_contact_debug_data(
+                surface, traction_data, "Traction")
+            self.visual_model.set_contact_debug_data(
+                surface, slip_data, "Slip velocity")
 
             if self.show_pressure or self.show_contact_edges:
                 pos, uvs, tri_mesh, seg_mesh = \
                     self.process_triangles(surface)
+
+            vtk_polydata_tris = None
             if self.show_pressure and len(tri_mesh) > 0:
                 # Copy data to VTK objects.
                 vtk_uvs = vnp.getVtkFromNumpy(uvs)
@@ -824,17 +1217,11 @@ class HydroelasticContactVisualizer:
                 vtk_polydata_tris.SetPolys(vtk_tris)
                 vtk_polydata_tris.GetPointData().SetTCoords(vtk_uvs)
 
-                vtk_mapper = vtk.vtkPolyDataMapper()
-                vtk_mapper.SetInputData(vtk_polydata_tris)
+            self.visual_model.set_contact_mesh_data(
+                surface, vtk_polydata_tris, 'Contact surface',
+                self.add_pressure_mesh_cb, self.update_pressure_mesh_cb)
 
-                # Feed VTK objects into director.
-                item_name = 'Contact surface'
-                polydata_item = vis.PolyDataItem(
-                    item_name, vtk_polydata_tris, view)
-                polydata_item.actor.SetMapper(vtk_mapper)
-                polydata_item.actor.SetTexture(self.texture)
-                om.addToObjectModel(polydata_item, contact_data_folder)
-
+            vtk_polydata_segs = None
             if self.show_contact_edges and len(seg_mesh) > 0:
                 # Copy data to VTK objects.
                 vtk_segs = vtk.vtkCellArray()
@@ -846,19 +1233,44 @@ class HydroelasticContactVisualizer:
                     vnp.getVtkPointsFromNumpy(pos))
                 vtk_polydata_segs.SetLines(vtk_segs)
 
-                vtk_mapper = vtk.vtkPolyDataMapper()
-                vtk_mapper.SetInputData(vtk_polydata_segs)
-                vtk_mapper.Update()
-
-                # Feed VTK objects into director.
-                item_name = 'Mesh edges'
-                polydata_item = vis.PolyDataItem(
-                    item_name, vtk_polydata_segs, view)
-                polydata_item.actor.SetMapper(vtk_mapper)
                 [r, g, b] = color_map.get_contrasting_color()
-                contrasting_color = [r*255, g*255, b*255]
-                polydata_item.actor.GetProperty().SetColor(contrasting_color)
-                om.addToObjectModel(polydata_item, contact_data_folder)
+                line_color = [r*255, g*255, b*255]
+            self.visual_model.set_contact_mesh_data(
+                surface, vtk_polydata_segs, 'Mesh edges',
+                lambda vis_item, mesh_data:
+                    vis_item.item.actor.GetProperty().SetColor(line_color),
+                lambda vis_item, mesh_data:
+                    vis_item.item.setPolyData(mesh_data))
+
+    def add_pressure_mesh_cb(self, vis_item: VisualItem,
+                             mesh_data: vtk.vtkPolyData):
+        """The callback supplied to the VisualModel for when adding a pressure
+        mesh."""
+        # We subvert the standard pipeline that director uses to inject
+        # texture coordinate transformation (moving and scaling). Scaling the
+        # texture coordinates provides a superior result. It *seems* that
+        # it causes the mapping to happen per-fragment instead of per-vertex.
+        item = vis_item.item
+        xform = vtk.vtkTransformTextureCoords()
+        xform.SetInputData(mesh_data)
+        self.update_uv_transform(xform)
+        # Stash the xform to be used in update.
+        vis_item.user_data = (xform, )
+
+        mapper = item.actor.GetMapper()
+        mapper.SetInputData(None)
+        mapper.SetInputConnection(xform.GetOutputPort())
+        item.actor.SetTexture(self.texture)
+
+    def update_pressure_mesh_cb(self, vis_item: VisualItem,
+                                mesh_data: vtk.vtkPolyData):
+        """The callback supplied to the VisualModel for when updating a
+        pressure mesh."""
+        # In updating the pressure, we can't rely on director to
+        # connect the mesh data in correctly, we've stashed the texture
+        # coord transform into our user data; we'll connect into that.
+        vis_item.item.polyData = mesh_data
+        vis_item.user_data[0].SetInputData(mesh_data)
 
 
 @scoped_singleton_func

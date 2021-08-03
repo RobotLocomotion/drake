@@ -309,8 +309,8 @@ class Geometries final : public ShapeReifier {
    @param id            The unique identifier for the geometry.
    @param properties    The proximity properties which will determine if a
                         hydroelastic representation is requested.
-   @throws std::logic_error if the shape is a supported type but the properties
-                            are malformed.
+   @throws std::exception if the shape is a supported type but the properties
+                          are malformed.
    @pre There is no previous representation associated with id.  */
   void MaybeAddGeometry(const Shape& shape, GeometryId id,
                         const ProximityProperties& properties);

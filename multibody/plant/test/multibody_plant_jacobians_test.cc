@@ -305,8 +305,10 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
 
     // Create an empty MultibodyPlant and then add the two links.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
-    bodyA_ = &plant_->AddRigidBody("BodyA", M_Bcm);
-    bodyB_ = &plant_->AddRigidBody("BodyB", M_Bcm);
+    bodyA_instance_ = plant_->AddModelInstance("bodyAInstanceName");
+    bodyB_instance_ = plant_->AddModelInstance("bodyBInstanceName");
+    bodyA_ = &plant_->AddRigidBody("bodyA", bodyA_instance_, M_Bcm);
+    bodyB_ = &plant_->AddRigidBody("bodyB", bodyB_instance_, M_Bcm);
 
     // Create a revolute joint that connects point Wo of the world frame to a
     // unnamed point of link A that is a distance of link_length/2 from link A's
@@ -357,6 +359,8 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RigidBody<double>* bodyB_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
+  ModelInstanceIndex bodyA_instance_;
+  ModelInstanceIndex bodyB_instance_;
 };
 
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
@@ -457,40 +461,6 @@ TEST_F(TwoDOFPlanarPendulumTest,
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
 
-  // Test for CalcJacobianCenterOfMassTranslationalVelocity().
-  const Frame<double>& frame_W = plant_->world_frame();
-  Eigen::MatrixXd Js_v_WScm_W(3, plant_->num_velocities());
-  plant_->CalcJacobianCenterOfMassTranslationalVelocity(
-      *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W);
-
-  Eigen::MatrixXd Js_v_WScm_W_expected(3, plant_->num_velocities());
-  // Denoting Scm as the center of mass of the system formed by links A and B,
-  // Scm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) Wy,
-  // hence Scm's translational Jacobian with respect to {wAz_ , wBz_} is
-  // { L Wy, 0.25 L Wy } = { [0, L, 0] [0, 0.25 L, 0] }
-  Js_v_WScm_W_expected << 0.0, 0.0,
-                          link_length_, 0.25 * link_length_,
-                          0.0, 0.0;
-  const Vector3d v_WScm_W_expected =
-      (wAz_ * link_length_ + wBz_ * 0.25 * link_length_) * Vector3d::UnitY();
-  EXPECT_TRUE(CompareMatrices(Js_v_WScm_W, Js_v_WScm_W_expected, kTolerance));
-  EXPECT_TRUE(
-      CompareMatrices(Js_v_WScm_W * state.tail(plant_->num_velocities()),
-                      v_WScm_W_expected, kTolerance));
-
-  // Test for CalcBiasCenterOfMassTranslationalAcceleration()
-  const Vector3<double>& abias_WScm_W =
-      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
-          *context_, JacobianWrtVariable::kV, plant_->world_frame(),
-          plant_->world_frame());
-
-  // Scm's bias translational in world W is expected to be
-  // abias_WScm = -L (wAz_² + 0.5 wAz_ wBz_ + 0.25 wBz_²) 𝐖𝐱
-  Vector3d abias_WScm_W_expected =
-      -link_length_ * (wAz_ * wAz_ + 0.5 * wAz_ * wBz_ + 0.25 * wBz_ * wBz_) *
-      Vector3d::UnitX();
-  EXPECT_TRUE(CompareMatrices(abias_WScm_W, abias_WScm_W_expected, kTolerance));
-
   // Shortcuts to rigid bodies.
   const RigidBody<double>& body_A = rigid_bodyA();
   const RigidBody<double>& body_B = rigid_bodyB();
@@ -512,11 +482,76 @@ TEST_F(TwoDOFPlanarPendulumTest,
   // Verify MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld().
   const Vector3d v_WScm_W =
       plant_->CalcCenterOfMassTranslationalVelocityInWorld(*context_);
+  const Vector3d v_WScm_W_expected =
+      (wAz_ * link_length_ + wBz_ * 0.25 * link_length_) * Vector3d::UnitY();
   EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_expected, kTolerance));
   const Vector3d v_WScm_W_alternate = (mass_link_ * v_WAcm_W_expected
                                     +  mass_link_ * v_WBcm_W_expected)
                                     / (2 * mass_link_);
   EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_alternate, kTolerance));
+
+  // Test CalcJacobianCenterOfMassTranslationalVelocity() for full MBP.
+  const int num_velocities = plant_->num_velocities();
+  const Frame<double>& frame_W = plant_->world_frame();
+  Eigen::MatrixXd Js_v_WScm_W(3, num_velocities);
+  plant_->CalcJacobianCenterOfMassTranslationalVelocity(
+      *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W);
+
+  Eigen::MatrixXd Js_v_WScm_W_expected(3, num_velocities);
+  // Denoting Scm as the center of mass of the system formed by links A and B,
+  // Scm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) Wy,
+  // hence Scm's translational Jacobian with respect to {wAz_ , wBz_} is
+  // { L Wy, 0.25 L Wy } = { [0, L, 0] [0, 0.25 L, 0] }
+  Js_v_WScm_W_expected << 0.0, 0.0,
+                          link_length_, 0.25 * link_length_,
+                          0.0, 0.0;
+  EXPECT_TRUE(CompareMatrices(Js_v_WScm_W, Js_v_WScm_W_expected, kTolerance));
+  EXPECT_TRUE(
+      CompareMatrices(Js_v_WScm_W * state.tail(num_velocities),
+                      v_WScm_W_expected, kTolerance));
+
+  // Test CalcJacobianCenterOfMassTranslationalVelocity() for 1 model instance.
+  std::vector<ModelInstanceIndex> model_instances;
+  const ModelInstanceIndex bodyA_instance_index =
+      plant_->GetModelInstanceByName("bodyAInstanceName");
+  model_instances.push_back(bodyA_instance_index);
+  Eigen::MatrixXd Js_v_WAcm_W(3, num_velocities);
+  plant_->CalcJacobianCenterOfMassTranslationalVelocity(*context_,
+      model_instances, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WAcm_W);
+
+  // Acm's velocity in world W is expected to be 0.5 L wAz_ Wy,
+  // hence Acm's translational Jacobian with respect to {wAz_ , wBz_} is
+  // { 0.5 L Wy, 0 } = { [0, 0.5 L, 0] [0, 0, 0] }
+  Eigen::MatrixXd Js_v_WAcm_W_expected(3, num_velocities);
+  Js_v_WAcm_W_expected << 0.0, 0.0,
+                          0.5 * link_length_, 0.0,
+                          0.0, 0.0;
+  EXPECT_TRUE(CompareMatrices(Js_v_WAcm_W, Js_v_WAcm_W_expected, kTolerance));
+  EXPECT_TRUE(
+      CompareMatrices(Js_v_WAcm_W * state.tail(num_velocities),
+                      v_WAcm_W_expected, kTolerance));
+
+  // Test CalcJacobianCenterOfMassTranslationalVelocity() for 2 model instances.
+  // This should produce the same results as Scm (system center of mass).
+  const ModelInstanceIndex bodyB_instance_index =
+      plant_->GetModelInstanceByName("bodyBInstanceName");
+  model_instances.push_back(bodyB_instance_index);
+  plant_->CalcJacobianCenterOfMassTranslationalVelocity(*context_,
+      model_instances, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W);
+  EXPECT_TRUE(CompareMatrices(Js_v_WAcm_W, Js_v_WAcm_W_expected, kTolerance));
+
+  // Test for CalcBiasCenterOfMassTranslationalAcceleration().
+  const Vector3<double>& abias_WScm_W =
+      plant_->CalcBiasCenterOfMassTranslationalAcceleration(
+          *context_, JacobianWrtVariable::kV, plant_->world_frame(),
+          plant_->world_frame());
+
+  // Scm's bias translational in world W is expected to be
+  // abias_WScm = -L (wAz_² + 0.5 wAz_ wBz_ + 0.25 wBz_²) 𝐖𝐱
+  Vector3d abias_WScm_W_expected =
+      -link_length_ * (wAz_ * wAz_ + 0.5 * wAz_ * wBz_ + 0.25 * wBz_ * wBz_) *
+      Vector3d::UnitX();
+  EXPECT_TRUE(CompareMatrices(abias_WScm_W, abias_WScm_W_expected, kTolerance));
 }
 
 // Fixture for two degree-of-freedom 3D satellite tracker with bodies A and B.

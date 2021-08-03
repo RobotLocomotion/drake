@@ -6,6 +6,8 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity/proximity_utilities.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -22,12 +24,12 @@ using std::vector;
 GTEST_TEST(Callback, PairsProperlyFormed) {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
-  CollisionFilterLegacy collision_filter;
+  CollisionFilter collision_filter;
 
   EncodedData data_A(id_A, true);
   EncodedData data_B(id_B, true);
-  collision_filter.AddGeometry(data_A.encoding());
-  collision_filter.AddGeometry(data_B.encoding());
+  collision_filter.AddGeometry(data_A.id());
+  collision_filter.AddGeometry(data_B.id());
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);
@@ -51,15 +53,21 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
 
 // This test verifies that the broad-phase callback respects filtering.
 GTEST_TEST(Callback, RespectsCollisionFilter) {
-  CollisionFilterLegacy collision_filter;
+  CollisionFilter collision_filter;
 
   EncodedData data_A(GeometryId::get_new_id(), true);
   EncodedData data_B(GeometryId::get_new_id(), true);
-  collision_filter.AddGeometry(data_A.encoding());
-  collision_filter.AddGeometry(data_B.encoding());
-  // Filter the pair (A, B) by adding them to the same clique.
-  collision_filter.AddToCollisionClique(data_A.encoding(), 1);
-  collision_filter.AddToCollisionClique(data_B.encoding(), 1);
+  collision_filter.AddGeometry(data_A.id());
+  collision_filter.AddGeometry(data_B.id());
+  // Filter the pair (A, B); we'll put the ids in a set and simply return that
+  // set for the extract ids function.
+  std::unordered_set<GeometryId> ids{data_A.id(), data_B.id()};
+  CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+    return ids;
+  };
+  collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
+                             GeometrySet{data_A.id(), data_B.id()}),
+                         extract, false /* is_permanent */);
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);

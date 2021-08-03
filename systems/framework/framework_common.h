@@ -49,6 +49,9 @@ using InputPortIndex = TypeSafeIndex<class InputPortTag>;
 indexes used by a subsystem and its corresponding subcontext are the same. */
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
+/** Placeholder for future use. Currently, the only valid value is zero. */
+using ContinuousStateIndex = TypeSafeIndex<class ContinuousStateTag>;
+
 /** Serves as the local index for discrete state groups within a given System
 and its corresponding Context. */
 using DiscreteStateIndex = TypeSafeIndex<class DiscreteStateTag>;
@@ -221,16 +224,6 @@ class SystemParentServiceInterface {
  public:
   virtual ~SystemParentServiceInterface() = default;
 
-  // This method is invoked when we need to evaluate a connected input port of
-  // a child subsystem of this System. This need arises only if this System
-  // contains subsystems, and the framework promises only to invoke this method
-  // under that circumstance. Hence Diagram must implement this to evaluate the
-  // connected-to output port (likely belonging to a different child subsystem)
-  // and returning its value as the value for the given input port.
-  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
-      const ContextBase& context,
-      const InputPortBase& input_port) const = 0;
-
   // Generates and returns the full path name of the parent subsystem, starting
   // at the root of the containing Diagram, with path name separators between
   // segments. The returned string must be what would be returned by invoking
@@ -245,6 +238,20 @@ class SystemParentServiceInterface {
  protected:
   SystemParentServiceInterface() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemParentServiceInterface);
+
+ private:
+  friend class ::drake::systems::SystemBase;
+
+  // This method is invoked when we need to evaluate a connected input port of
+  // a child subsystem of this System. This need arises only if this System
+  // contains subsystems, and the framework promises only to invoke this method
+  // under that circumstance. Hence Diagram must implement this to evaluate the
+  // connected-to output port (likely belonging to a different child subsystem)
+  // and returning its value as the value for the given input port.
+  // @pre The given `input_port` must use same scalar type `T` as `this`.
+  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
+      const ContextBase& context,
+      const InputPortBase& input_port) const = 0;
 };
 
 // These dependency ticket numbers are common to all systems and contexts so

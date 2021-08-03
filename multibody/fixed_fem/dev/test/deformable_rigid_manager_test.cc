@@ -9,12 +9,13 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
+#include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /* Deformable body parameters. These parameters (with the exception of
  kMassDamping) are dummy in the sense that they do not affect the result of
  the test as long as they are valid. */
@@ -28,6 +29,7 @@ constexpr double kStiffnessDamping = 0.02;
 /* Time step. */
 constexpr double kDt = 0.0123;
 constexpr double kGravity = -9.81;
+constexpr double kDummySignedDistance = -0.058;
 /* Number of vertices in the box mesh (see below). */
 constexpr int kNumVertices = 8;
 /* Contact parameters. */
@@ -42,19 +44,46 @@ using geometry::GeometryId;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
 using geometry::SurfaceMesh;
+using geometry::VolumeMesh;
+using geometry::VolumeMeshFieldLinear;
+using math::RigidTransformd;
 using multibody::contact_solvers::internal::BlockSparseMatrix;
 using multibody::internal::DiscreteContactPair;
 using systems::Context;
 
 geometry::Box MakeUnitCube() { return geometry::Box(1.0, 1.0, 1.0); }
 
-/* Makes a unit cube and subdivide it into 6 tetrahedra. */
-geometry::VolumeMesh<double> MakeUnitCubeTetMesh() {
-  geometry::VolumeMesh<double> mesh =
+/* Makes a unit cube with the given `pose` in world and subdivide it into 6
+ tetrahedra. */
+VolumeMesh<double> MakeUnitCubeTetMesh(
+    RigidTransformd pose = RigidTransformd()) {
+  VolumeMesh<double> mesh =
       geometry::internal::MakeBoxVolumeMesh<double>(MakeUnitCube(), 1.0);
   DRAKE_DEMAND(mesh.num_elements() == 6);
   DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
-  return mesh;
+
+  std::vector<geometry::VolumeElement> elements = mesh.tetrahedra();
+  std::vector<geometry::VolumeVertex<double>> vertices;
+  for (const auto& v : mesh.vertices()) {
+    vertices.emplace_back(pose * v.r_MV());
+  }
+  return {std::move(elements), std::move(vertices)};
+}
+
+internal::ReferenceDeformableGeometry<double> MakeUnitCubeDeformableGeometry(
+    RigidTransformd pose = RigidTransformd()) {
+  auto mesh = std::make_unique<VolumeMesh<double>>(MakeUnitCubeTetMesh(pose));
+  /* This doesn't satisfy the requirement of the approximated signed-distance
+   field. In particular, it doesn't evaluate to zero on the boundary of the
+   mesh. But we are using our clear-box knowledge here to test interpolation of
+   the phi0 (and would like a nonzero value) and thus don't really care about
+   whether it's a valid approximation. */
+  std::vector<double> dummy_signed_distances(kNumVertices,
+                                             kDummySignedDistance);
+  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
+      "Dummy signed distances", std::move(dummy_signed_distances), mesh.get(),
+      false);
+  return {std::move(mesh), std::move(mesh_field)};
 }
 
 /* Returns a proximity property with the given point contact stiffness,
@@ -94,8 +123,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
    manager for the MultibodyPlant. */
   void SetUp() override {
     auto deformable_model = std::make_unique<DeformableModel<double>>(&plant_);
-    deformable_model->RegisterDeformableBody(MakeUnitCubeTetMesh(), "box",
-                                             MakeDeformableBodyConfig(),
+    deformable_model->RegisterDeformableBody(MakeUnitCubeDeformableGeometry(),
+                                             "box", MakeDeformableBodyConfig(),
                                              MakeDefaultProximityProperties());
     deformable_model_ = deformable_model.get();
     plant_.AddPhysicalModel(std::move(deformable_model));
@@ -137,7 +166,7 @@ class DeformableRigidManagerTest : public ::testing::Test {
   /* Fowards the call to
    DeformableRigidManager<double>::CalcDeformableRigidContactPair(). */
   internal::DeformableRigidContactPair<double> CalcDeformableRigidContactPair(
-      GeometryId rigid_id, SoftBodyIndex deformable_id) const {
+      GeometryId rigid_id, DeformableBodyIndex deformable_id) const {
     return deformable_rigid_manager_->CalcDeformableRigidContactPair(
         rigid_id, deformable_id);
   }
@@ -157,8 +186,8 @@ class DeformableRigidManagerTest : public ::testing::Test {
 };
 
 namespace {
-/* Verifies that the DeformableRigidManager calculates the expected displacement
- for a deformable object under free fall over one time step. */
+/* Verifies that the DeformableRigidManager calculates the expected
+ displacement for a deformable object under free fall over one time step. */
 TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
   auto context = plant_.CreateDefaultContext();
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
@@ -174,9 +203,9 @@ TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
   EXPECT_EQ(current_positions.size(), 1);
   EXPECT_EQ(current_positions[0].size(), kNumVertices * 3);
 
-  /* The factor of 0.25 seems strange but is correct. For the default mid-point
-   rule used by DynamicElasticityModel,
-        x = xₙ + dt ⋅ vₙ + dt² ⋅ (0.25 ⋅ a + 0.25 ⋅ aₙ).
+  /* The factor of 0.25 seems strange but is correct. For the default
+   mid-point rule used by DynamicElasticityModel,
+       x = xₙ + dt ⋅ vₙ + dt² ⋅ (0.25 ⋅ a + 0.25 ⋅ aₙ).
    In this test case vₙ and aₙ are both 0, so x - xₙ is given by 0.25 ⋅ a ⋅ dt².
   */
   const Vector3<double> expected_displacement(0, 0,
@@ -199,8 +228,8 @@ TEST_F(DeformableRigidManagerTest, CalcAccelerationKinematicsCache) {
 }
 
 /* Makes a finalized MultibodyPlant model of a ball falling into a plane. Sets a
- DiscreteUpdateManager for the plant if the `use_manager` flag is on. The given
- `scene_graph` is used to manage geometries and must be non-null. */
+ DiscreteUpdateManager for the plant if the `use_manager` flag is on. The
+ given `scene_graph` is used to manage geometries and must be non-null. */
 std::unique_ptr<MultibodyPlant<double>> MakePlant(
     std::unique_ptr<contact_solvers::internal::ContactSolver<double>>
         contact_solver,
@@ -344,23 +373,23 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
   auto context = plant_.CreateDefaultContext();
   auto simulator = systems::Simulator<double>(plant_, std::move(context));
   simulator.AdvanceTo(kDt);
-  const std::vector<geometry::VolumeMesh<double>>&
-      reference_configuration_meshes =
-          deformable_model_->reference_configuration_meshes();
-  DRAKE_DEMAND(reference_configuration_meshes.size() == 1);
+  const std::vector<internal::ReferenceDeformableGeometry<double>>&
+      reference_configuration_geometries =
+          deformable_model_->reference_configuration_geometries();
+  DRAKE_DEMAND(reference_configuration_geometries.size() == 1);
   const std::vector<geometry::internal::DeformableVolumeMesh<double>>&
       deformed_meshes = EvalDeformableMeshes(simulator.get_context());
   DRAKE_DEMAND(deformed_meshes.size() == 1);
   DRAKE_DEMAND(deformed_meshes[0].mesh().num_vertices() ==
-               reference_configuration_meshes[0].num_vertices());
+               reference_configuration_geometries[0].mesh().num_vertices());
   DRAKE_DEMAND(deformed_meshes[0].mesh().num_elements() ==
-               reference_configuration_meshes[0].num_elements());
+               reference_configuration_geometries[0].mesh().num_elements());
   /* Verify that the elements of the deformed mesh is the same as the elements
    of the initial mesh. */
   for (geometry::VolumeElementIndex i(0);
        i < deformed_meshes[0].mesh().num_elements(); ++i) {
     EXPECT_EQ(deformed_meshes[0].mesh().element(i),
-              reference_configuration_meshes[0].element(i));
+              reference_configuration_geometries[0].mesh().element(i));
   }
 
   /* Verify that the vertices of the mesh is as expected. */
@@ -407,7 +436,7 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
   SetCollisionObjectPoseInWorld(rigid_ids[0], X_DR);
   /* Calculates the contact pair between the only rigid geometry and the only
    deformable geometry. */
-  const SoftBodyIndex deformable_id(0);
+  const DeformableBodyIndex deformable_id(0);
   const internal::DeformableRigidContactPair<double> contact_pair =
       CalcDeformableRigidContactPair(rigid_ids[0], deformable_id);
   /* Verifies that the geometry ids are as expected. */
@@ -428,7 +457,8 @@ TEST_F(DeformableRigidManagerTest, CalcDeformableRigidContactPair) {
   const DeformableContactSurface<double> expected_contact_surface =
       ComputeTetMeshTriMeshContact<double>(
           geometry::internal::DeformableVolumeMesh<double>(
-              deformable_model_->reference_configuration_meshes()[0]),
+              deformable_model_->reference_configuration_geometries()[0]
+                  .mesh()),
           collision_objects.mesh(rigid_ids[0]),
           collision_objects.bvh(rigid_ids[0]), X_DR);
   EXPECT_EQ(contact_pair.num_contact_points(),
@@ -478,6 +508,8 @@ const CoulombFriction kFrictionB = {0.24, 0.23};
 const CoulombFriction kFrictionC = {0.34, 0.33};
 const CoulombFriction kFrictionD = {0.44, 0.43};
 
+/* Unit test for contact data from DeformableRigidManager fed to the contact
+ solver. */
 class DeformableRigidContactDataTest : public ::testing::Test {
  protected:
   /* Set up a scene with three rigid boxes and one deforamble cube.
@@ -488,7 +520,7 @@ class DeformableRigidContactDataTest : public ::testing::Test {
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
     A_ = deformable_model->RegisterDeformableBody(
-        MakeUnitCubeTetMesh(), "box_A", MakeDeformableBodyConfig(),
+        MakeUnitCubeDeformableGeometry(), "box_A", MakeDeformableBodyConfig(),
         MakeProximityProperties(kStiffnessA, kDampingA, kFrictionA));
     plant_->AddPhysicalModel(std::move(deformable_model));
     /* Add the rigid bodies. */
@@ -588,7 +620,7 @@ class DeformableRigidContactDataTest : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
   const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
-  SoftBodyIndex A_;
+  DeformableBodyIndex A_;
   BodyIndex B_;
   BodyIndex C_;
   BodyIndex D_;
@@ -832,7 +864,6 @@ TEST_F(DeformableRigidContactDataTest, ContactData) {
   }
   EXPECT_TRUE(CompareMatrices(mu_rigid_rigid, mu_rigid_rigid_expected));
 
-  std::cout << mu.transpose() << std::endl;
   /* A vs. B friction. */
   const auto& mu_AB = mu.segment(nc_rigid_rigid, nc_AB);
   const VectorXd mu_AB_expected =
@@ -859,12 +890,13 @@ TEST_F(DeformableRigidContactDataTest, ContactData) {
   }
   EXPECT_TRUE(CompareMatrices(phi0_rigid_rigid, phi0_rigid_rigid_expected));
 
-  // TODO(xuchenhan-tri): Update this test when rigid vs. deformable
-  // penetration
-  //  distance is properly implemented.
   /* rigid vs. deformable penetration distance. */
-  EXPECT_TRUE(CompareMatrices(phi0.tail(nc_rigid_deformable),
-                              VectorXd::Zero(nc_rigid_deformable)));
+  /* The phi0 data is interpolated from a constant field with value
+   kDummySignedDistance. */
+  EXPECT_TRUE(CompareMatrices(
+      phi0.tail(nc_rigid_deformable),
+      kDummySignedDistance * VectorXd::Ones(nc_rigid_deformable),
+      std::numeric_limits<double>::epsilon()));
 
   /* Verifies that the stiffness and damping data is as expected. */
   const auto [k_AB, d_AB] = multibody::internal::CombinePointContactParameters(
@@ -957,6 +989,200 @@ TEST_F(DeformableRigidContactDataTest, NoContact) {
 }
 
 }  // namespace
-}  // namespace fixed_fem
+
+/* Unit test for dynamics data from DeformableRigidManager fed to the contact
+ solver. */
+class DeformableRigidDynamicsDataTest : public ::testing::Test {
+ protected:
+  /* Set up a scene with two deforamble bodies and one rigid cube.
+   In particular, unit cube A and octahedron B are deformable and unit cube
+   C is rigid. */
+  void SetUp() override {
+    systems::DiagramBuilder<double> builder;
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
+    /* Add two deformable bodies. */
+    auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
+    A_ = deformable_model->RegisterDeformableBody(
+        MakeUnitCubeDeformableGeometry(RigidTransformd(Vector3d(0, 2, 0))),
+        "cube_A", MakeDeformableBodyConfig(),
+        MakeProximityProperties(kStiffnessA, kDampingA, kFrictionA));
+    B_ = deformable_model->RegisterDeformableBody(
+        MakeOctahedronDeformableGeometry<double>(), "octahedron_B",
+        MakeDeformableBodyConfig(),
+        MakeProximityProperties(kStiffnessB, kDampingB, kFrictionB));
+    plant_->AddPhysicalModel(std::move(deformable_model));
+    /* Add the rigid cube. */
+    C_ = plant_->AddRigidBody("cube_C", MakeSpatialInertiaForBox()).index();
+    collision_geometry_C_ = plant_->RegisterCollisionGeometry(
+        plant_->get_body(C_), math::RigidTransform<double>(),
+        geometry::Box(1.0, 1.0, 1.0), "C",
+        MakeProximityProperties(kStiffnessC, kDampingC, kFrictionC));
+    plant_->Finalize();
+
+    auto owned_deformable_rigid_manager =
+        std::make_unique<DeformableRigidManager<double>>();
+    deformable_rigid_manager_ = owned_deformable_rigid_manager.get();
+    plant_->SetDiscreteUpdateManager(std::move(owned_deformable_rigid_manager));
+    deformable_rigid_manager_->RegisterCollisionObjects(*scene_graph_);
+
+    diagram_ = builder.Build();
+    diagram_context_ = diagram_->CreateDefaultContext();
+  }
+
+  static SpatialInertia<double> MakeSpatialInertiaForBox() {
+    const UnitInertia<double> G_Rcm =
+        UnitInertia<double>::SolidBox(1.0, 1.0, 1.0);
+    return SpatialInertia<double>(1.0, Vector3d::Zero(), G_Rcm);
+  }
+
+  /* Calls DeformableRigidManager::EvalContactTangentMatrix() and returns the
+   tangent matrix for contact as a dense matrix. */
+  MatrixXd CalcContactTangentMatrix(const Context<double>& context) const {
+    const BlockSparseMatrix<double> A =
+        deformable_rigid_manager_->EvalContactTangentMatrix(context);
+    return A.MakeDenseMatrix();
+  }
+
+  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix() and returns the
+   free motion tangent matrix of the deformable body with the given `index` as a
+   dense matrix. */
+  MatrixXd CalcFreeMotionTangentMatrix(const Context<double>& context,
+                                       DeformableBodyIndex index) const {
+    const Eigen::SparseMatrix<double> tangent_matrix_sparse =
+        deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context, index);
+    return MatrixXd(tangent_matrix_sparse);
+  }
+
+  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrixSchurComplement()
+   and returns the Schur complement of the tangent matrix of the deformable body
+   with the given `index` as a dense matrix. */
+  const MatrixXd& EvalFreeMotionTangentMatrixSchurComplement(
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
+    const internal::SchurComplement<double>& schur_complement =
+        deformable_rigid_manager_->EvalFreeMotionTangentMatrixSchurComplement(
+            context, index);
+    return schur_complement.get_D_complement();
+  }
+
+  SceneGraph<double>* scene_graph_{nullptr};
+  MultibodyPlant<double>* plant_{nullptr};
+  const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
+  DeformableBodyIndex A_;
+  DeformableBodyIndex B_;
+  BodyIndex C_;
+  GeometryId collision_geometry_C_;
+  std::unique_ptr<systems::Diagram<double>> diagram_{nullptr};
+  std::unique_ptr<Context<double>> diagram_context_{nullptr};
+};
+
+namespace {
+
+/* Verifies that the Schur complement of the deformable free motion tangent
+ matrix is as expected in a simple scenario where we know what the contact
+ looks like. */
+TEST_F(DeformableRigidDynamicsDataTest,
+       FreeMotionTangentMatrixSchurComplement) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Move the rigid cube up so that it intersects the octahedron in the upper
+  prism. Recall that the octahedron looks like:
+                +Z   -X
+                 |   /
+              v5 ●  ● v3
+                 | /
+       v4     v0 |/
+  -Y----●--------●------●----+Y
+                /|      v2
+               / |
+           v1 ●  ● v6
+             /   |
+           +X    |
+                -Z
+  Therefore, all vertices except v6 are participating in contact. */
+  const Vector3d p_WC(0, 0, 1);
+  const math::RigidTransformd X_WC(p_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  const MatrixXd tangent_matrix_schur_complement =
+      EvalFreeMotionTangentMatrixSchurComplement(plant_context, B_);
+  constexpr int num_participating_vertices = 6;
+  EXPECT_EQ(tangent_matrix_schur_complement.rows(),
+            3 * num_participating_vertices);
+  EXPECT_EQ(tangent_matrix_schur_complement.cols(),
+            3 * num_participating_vertices);
+  /* Construct the Schur complement by hand and verify that it matches the
+   calculated result. Note that here we rely on the fact that the permutation in
+   the deformable dofs is identity since it so happens that v6 is the
+   non-participating vertex. */
+  const MatrixXd tangent_matrix =
+      CalcFreeMotionTangentMatrix(plant_context, B_);
+  const Eigen::SparseMatrix<double> participating_block =
+      tangent_matrix
+          .topLeftCorner<3 * num_participating_vertices,
+                         3 * num_participating_vertices>()
+          .sparseView();
+  const Eigen::SparseMatrix<double> non_participating_block =
+      tangent_matrix.bottomRightCorner<3, 3>().sparseView();
+  const Eigen::SparseMatrix<double> off_diagonal_block =
+      tangent_matrix.bottomLeftCorner<3, 3 * num_participating_vertices>()
+          .sparseView();
+  const internal::SchurComplement<double> expected_schur_complement =
+      internal::SchurComplement<double>(participating_block, off_diagonal_block,
+                                        non_participating_block);
+  EXPECT_TRUE(CompareMatrices(expected_schur_complement.get_D_complement(),
+                              tangent_matrix_schur_complement,
+                              std::numeric_limits<double>::epsilon()));
+}
+
+/* Verifies that the contact tangent matrix is empty when there is no contact.
+ */
+TEST_F(DeformableRigidDynamicsDataTest, NoContact) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Move the bodies far away from each other so that there is no contact at
+   all. */
+  const Vector3d p_WC(0, -5, 0);
+  const math::RigidTransformd X_WC(p_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  const MatrixXd tangent_matrix = CalcContactTangentMatrix(plant_context);
+  EXPECT_EQ(tangent_matrix.rows(), 0);
+  EXPECT_EQ(tangent_matrix.cols(), 0);
+}
+
+/* Verifies that the contact tangent matrix matches expectation. */
+TEST_F(DeformableRigidDynamicsDataTest, TangentMatrix) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Move the rigid body so that A and C are in contact but B and C are not.
+   */
+  const Vector3d p_WC(0, 2.5, 0);
+  const math::RigidTransformd X_WC(p_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  const MatrixXd tangent_matrix = CalcContactTangentMatrix(plant_context);
+  /* Since only A and C are in contact and all vertices of A are participating
+   in contact, the dimension of the tangent matrix should be 6 (rigid dofs) +
+   the number of dofs in A (3 * kNumVertices). B does not show up in the
+   tangent matrix. */
+  EXPECT_EQ(tangent_matrix.rows(), 6 + 3 * kNumVertices);
+  EXPECT_EQ(tangent_matrix.cols(), 6 + 3 * kNumVertices);
+  SpatialInertia<double> M = MakeSpatialInertiaForBox();
+  EXPECT_TRUE(CompareMatrices(tangent_matrix.topLeftCorner(6, 6),
+                              M.CopyToFullMatrix6()));
+  EXPECT_TRUE(
+      CompareMatrices(tangent_matrix.topRightCorner(6, 3 * kNumVertices),
+                      MatrixXd::Zero(6, 3 * kNumVertices)));
+  EXPECT_TRUE(
+      CompareMatrices(tangent_matrix.bottomLeftCorner(3 * kNumVertices, 6),
+                      MatrixXd::Zero(3 * kNumVertices, 6)));
+  /* Since *all* vertices in A are participating in contact, the Schur
+   complement of the free motion tangent matrix of A is the free motion
+   tangent matrix itself. */
+  EXPECT_TRUE(CompareMatrices(
+      tangent_matrix.bottomRightCorner(3 * kNumVertices, 3 * kNumVertices),
+      CalcFreeMotionTangentMatrix(plant_context, A_)));
+}
+
+}  // namespace
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

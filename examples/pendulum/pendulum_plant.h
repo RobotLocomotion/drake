@@ -77,9 +77,6 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   }
 
  private:
-  void CopyStateOut(const systems::Context<T>& context,
-                    PendulumState<T>* output) const;
-
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const final;

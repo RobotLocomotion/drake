@@ -46,6 +46,12 @@ namespace solvers {
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference
  * https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
+ *
+ * "dReal" -- Parameter name and values as specified in dReal Reference
+ * https://github.com/dreal/dreal4/blob/master/README.md#command-line-options.
+ * Note that Drake only supports a subset of the options listed in the
+ * reference. @see DrealSolver for the subset of these options supported by the
+ * solver interface.
  */
 class SolverOptions {
  public:
@@ -53,20 +59,35 @@ class SolverOptions {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions)
 
+  /** The values stored in SolverOptions can be double, int, or string.
+   * In the future, we might re-order or add more allowed types without any
+   * deprecation period, so be sure to use std::visit or std::get<T> to
+   * retrieve the variant's value in a future-proof way. */
+  using OptionValue = std::variant<double, int, std::string>;
+
+  /** Sets a double-valued solver option for a specific solver.
+   * @pydrake_mkdoc_identifier{double_option}
+   */
   void SetOption(const SolverId& solver_id, const std::string& solver_option,
                  double option_value);
 
+  /** Sets an integer-valued solver option for a specific solver.
+   * @pydrake_mkdoc_identifier{int_option}
+   */
   void SetOption(const SolverId& solver_id, const std::string& solver_option,
                  int option_value);
 
+  /** Sets a string-valued solver option for a specific solver.
+   * @pydrake_mkdoc_identifier{str_option}
+   */
   void SetOption(const SolverId& solver_id, const std::string& solver_option,
                  const std::string& option_value);
 
-  /// Set common options for all solvers supporting that option (for example,
-  /// printing the progress in each iteration). If the solver doesn't support
-  /// the option, the option is ignored.
-  void SetOption(CommonSolverOption key,
-                 const std::variant<double, int, std::string>& value);
+  /** Sets a common option for all solvers supporting that option (for example,
+   * printing the progress in each iteration). If the solver doesn't support
+   * the option, the option is ignored.
+   * @pydrake_mkdoc_identifier{common_option} */
+  void SetOption(CommonSolverOption key, OptionValue value);
 
   const std::unordered_map<std::string, double>& GetOptionsDouble(
       const SolverId& solver_id) const;
@@ -81,11 +102,18 @@ class SolverOptions {
    * Gets the common options for all solvers. Refer to CommonSolverOption for
    * more details.
    */
-  const std::unordered_map<CommonSolverOption,
-                           std::variant<double, int, std::string>>&
+  const std::unordered_map<CommonSolverOption, OptionValue>&
   common_solver_options() const {
     return common_solver_options_;
   }
+
+  /** Returns the kPrintFileName set via CommonSolverOption, or else an empty
+   * string if the option has not been set. */
+  std::string get_print_file_name() const;
+
+  /** Returns the kPrintToConsole set via CommonSolverOption, or else false if
+   * the option has not been set. */
+  bool get_print_to_console() const;
 
   template <typename T>
   const std::unordered_map<std::string, T>& GetOptions(
@@ -130,7 +158,7 @@ class SolverOptions {
    * @param double_keys The set of allowable keys for double options.
    * @param int_keys The set of allowable keys for int options.
    * @param str_keys The set of allowable keys for string options.
-   * @throw invalid_argument if the solver contains un-allowed options.
+   * @throws std::exception if the solver contains un-allowed options.
    */
   void CheckOptionKeysForSolver(
       const SolverId& solver_id,
@@ -146,8 +174,7 @@ class SolverOptions {
   std::unordered_map<SolverId, std::unordered_map<std::string, std::string>>
       solver_options_str_{};
 
-  std::unordered_map<CommonSolverOption, std::variant<double, int, std::string>>
-      common_solver_options_{};
+  std::unordered_map<CommonSolverOption, OptionValue> common_solver_options_{};
 };
 
 std::string to_string(const SolverOptions&);

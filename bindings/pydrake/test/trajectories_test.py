@@ -74,7 +74,7 @@ class TestTrajectories(unittest.TestCase):
         p2 = Polynomial(2)
         pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
 
-    def test_zero_order_hold(self):
+    def test_zero_order_hold_vector(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
         pp_d = pp.derivative(derivative_order=1)
@@ -88,6 +88,8 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.get_number_of_segments(), 2)
         self.assertEqual(pp.start_time(), 0.)
         self.assertEqual(pp.end_time(), 2.)
+        self.assertEqual(pp.rows(), 2)
+        self.assertEqual(pp.cols(), 1)
         self.assertEqual(pp.start_time(segment_index=0), 0.)
         self.assertEqual(pp.end_time(segment_index=0), 1.)
         self.assertEqual(pp.duration(segment_index=0), 1.)
@@ -95,7 +97,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.get_segment_index(t=1.5), 1)
         self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
 
-    def test_first_order_hold(self):
+    def test_first_order_hold_vector(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[2.], [3.]]), pp.value(.5))
@@ -104,7 +106,7 @@ class TestTrajectories(unittest.TestCase):
         np.testing.assert_equal(np.array([[2.], [2.]]), deriv.value(.5))
         pp.AppendFirstOrderSegment(time=3., sample=[-0.4, .57])
 
-    def test_hermite(self):
+    def test_hermite_vector(self):
         t = [0., 1., 2.]
         x = np.array([[0, 1, 1]])
         pp = PiecewisePolynomial.CubicShapePreserving(
@@ -112,7 +114,7 @@ class TestTrajectories(unittest.TestCase):
         pp.AppendCubicHermiteSegment(time=3., sample=[2], sample_dot=[2])
         pp.RemoveFinalSegment()
 
-    def test_cubic(self):
+    def test_cubic_vector(self):
         t = [0., 1., 2.]
         x = np.diag([4., 5., 6.])
         periodic_end = False
@@ -125,13 +127,48 @@ class TestTrajectories(unittest.TestCase):
             breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
             sample_dot_at_end=[0., 0., 0.])
 
-    def test_lagrange_interpolating_polynomial(self):
+    def test_lagrange_interpolating_polynomial_vector(self):
         t = [0., 1., 2.]
         x = np.diag([4., 5., 6.])
         pp = PiecewisePolynomial.LagrangeInterpolatingPolynomial(times=t,
                                                                  samples=x)
         self.assertEqual(pp.get_number_of_segments(), 1)
         np.testing.assert_array_almost_equal(x[:, [1]], pp.value(1.), 1e-12)
+
+    def test_matrix_trajectories(self):
+        A0 = np.array([[1, 2, 3], [4, 5, 6]])
+        A1 = np.array([[7, 8, 9], [10, 11, 12]])
+        A2 = np.array([[13, 14, 15], [16, 17, 18]])
+        t = [0., 1., 2.]
+        pp = dict()
+        pp["zoh"] = PiecewisePolynomial.ZeroOrderHold(
+            breaks=t, samples=[A0, A1, A2])
+        pp["foh"] = PiecewisePolynomial.FirstOrderHold(
+            breaks=t, samples=[A0, A1, A2])
+        pp["hermite"] = PiecewisePolynomial.CubicShapePreserving(
+            breaks=t, samples=[A0, A1, A2], zero_end_point_derivatives=False)
+        pp["c1"] = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=[A0, A1, A2], periodic_end=False)
+        pp["c2"] = PiecewisePolynomial.CubicHermite(
+            breaks=t, samples=[A0, A1, A2], samples_dot=[0*A0, 0*A1, 0*A2])
+        pp["c3"] = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=[A0, A1, A2], sample_dot_at_start=0*A0,
+            sample_dot_at_end=0*A0)
+        pp["lagrange"] = PiecewisePolynomial.LagrangeInterpolatingPolynomial(
+            times=t, samples=[A0, A1, A2])
+        for name, traj in pp.items():
+            if name == "lagrange":
+                self.assertEqual(traj.get_number_of_segments(), 1)
+            else:
+                self.assertEqual(traj.get_number_of_segments(), 2)
+            self.assertEqual(traj.start_time(), 0.)
+            self.assertEqual(traj.end_time(), 2.)
+            self.assertEqual(traj.rows(), 2)
+            self.assertEqual(traj.cols(), 3)
+        # Check the values for the easy cases:
+        np.testing.assert_equal(A0, pp["zoh"].value(.5))
+        np.testing.assert_allclose(
+            0.5*A0 + 0.5*A1, pp["foh"].value(.5), 1e-15)
 
     def test_reverse_and_scale_time(self):
         x = np.array([[10.], [20.], [30.]]).transpose()

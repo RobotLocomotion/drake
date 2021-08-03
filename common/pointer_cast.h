@@ -43,13 +43,13 @@ std::unique_ptr<T> dynamic_pointer_cast(std::unique_ptr<U>&& other) noexcept {
 }
 
 /// Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
-/// if `other` is nullptr or the cast fails, throws a std::logic_error.
+/// if `other` is nullptr or the cast fails, throws a std::exception.
 /// Casting is performed using `dynamic_cast` on the managed value (i.e., the
 /// result of `other.get()`).  On success, `other`'s managed value is
 /// transferred to the result and `other` is empty; on failure, `other` will
 /// retain its original managed value.
 ///
-/// @throws std::logic_error if the cast fails.
+/// @throws std::exception if the cast fails.
 ///
 /// Note that this function only supports default deleters.
 template <class T, class U>

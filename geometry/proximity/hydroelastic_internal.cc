@@ -61,37 +61,37 @@ void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
 }
 
 void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  MakeShape(sphere, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(sphere, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const Cylinder& cylinder, void* user_data) {
-  MakeShape(cylinder, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(cylinder, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const HalfSpace& half_space,
                                    void* user_data) {
-  MakeShape(half_space, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(half_space, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const Box& box, void* user_data) {
-  MakeShape(box, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(box, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const Capsule& capsule, void* user_data) {
-  MakeShape(capsule, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(capsule, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const Ellipsoid& ellipsoid,
                                    void* user_data) {
-  MakeShape(ellipsoid, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(ellipsoid, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  MakeShape(mesh, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(mesh, *static_cast<ReifyData*>(user_data));
 }
 
 void Geometries::ImplementGeometry(const Convex& convex, void* user_data) {
-  MakeShape(convex, *reinterpret_cast<ReifyData*>(user_data));
+  MakeShape(convex, *static_cast<ReifyData*>(user_data));
 }
 
 template <typename ShapeType>

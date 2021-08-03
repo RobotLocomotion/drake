@@ -757,10 +757,41 @@ class TestGeometry(unittest.TestCase):
         sg_context = sg.CreateDefaultContext()
         geometries = mut.GeometrySet()
 
-        sg.ExcludeCollisionsBetween(geometries, geometries)
-        sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
-        sg.ExcludeCollisionsWithin(geometries)
-        sg.ExcludeCollisionsWithin(sg_context, geometries)
+        # Mutate SceneGraph model
+        dut = sg.collision_filter_manager()
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeBetween(
+                geometries, geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowBetween(
+                set_A=geometries, set_B=geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowWithin(
+                geometry_set=geometries))
+
+        # Mutate context data
+        dut = sg.collision_filter_manager(sg_context)
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeBetween(
+                geometries, geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowBetween(
+                set_A=geometries, set_B=geometries))
+        dut.Apply(
+            mut.CollisionFilterDeclaration().AllowWithin(
+                geometry_set=geometries))
+
+        # TODO(2021-11-01) Remove these with deprecation resolution.
+        # Legacy API
+        with catch_drake_warnings(expected_count=4):
+            sg.ExcludeCollisionsBetween(geometries, geometries)
+            sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
+            sg.ExcludeCollisionsWithin(geometries)
+            sg.ExcludeCollisionsWithin(sg_context, geometries)
 
     @numpy_compare.check_nonsymbolic_types
     def test_value_instantiations(self, T):
@@ -902,7 +933,17 @@ class TestGeometry(unittest.TestCase):
         A = np.eye(3)
         b = [1.0, 1.0, 1.0]
         prog = MathematicalProgram()
-        x = prog.NewContinuousVariables(3)
+        x = prog.NewContinuousVariables(3, "x")
+        t = prog.NewContinuousVariables(1, "t")
+
+        # Test Point.
+        p = np.array([11.1, 12.2, 13.3])
+        point = mut.optimization.Point(p)
+        self.assertEqual(point.ambient_dimension(), 3)
+        np.testing.assert_array_equal(point.x(), p)
+        point.set_x(x=2*p)
+        np.testing.assert_array_equal(point.x(), 2*p)
+        point.set_x(x=p)
 
         # Test HPolyhedron.
         hpoly = mut.optimization.HPolyhedron(A=A, b=b)
@@ -910,7 +951,7 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.A(), A)
         np.testing.assert_array_equal(hpoly.b(), b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
-        hpoly.AddPointInSetConstraint(prog, x)
+        hpoly.AddPointInSetConstraints(prog, x)
         with self.assertRaisesRegex(
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
             hpoly.ToShapeWithPose()
@@ -922,18 +963,52 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_equal(h_box.b(), h_unit_box.b())
         self.assertIsInstance(
             h_box.MaximumVolumeInscribedEllipsoid(),
-            mut.optimization.HyperEllipsoid)
+            mut.optimization.Hyperellipsoid)
+        np.testing.assert_array_almost_equal(
+            h_box.ChebyshevCenter(), [0, 0, 0])
 
-        # Test HyperEllipsoid.
-        ellipsoid = mut.optimization.HyperEllipsoid(A=A, center=b)
+        # Test Hyperellipsoid.
+        ellipsoid = mut.optimization.Hyperellipsoid(A=A, center=b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
         np.testing.assert_array_equal(ellipsoid.A(), A)
         np.testing.assert_array_equal(ellipsoid.center(), b)
         self.assertTrue(ellipsoid.PointInSet(x=b, tol=0.0))
-        ellipsoid.AddPointInSetConstraint(prog, x)
+        ellipsoid.AddPointInSetConstraints(prog, x)
         shape, pose = ellipsoid.ToShapeWithPose()
         self.assertIsInstance(shape, mut.Ellipsoid)
         self.assertIsInstance(pose, RigidTransform)
+        scale, witness = ellipsoid.MinimumUniformScalingToTouch(point)
+        self.assertTrue(scale > 0.0)
+        np.testing.assert_array_almost_equal(witness, p)
+        e_ball = mut.optimization.Hyperellipsoid.MakeAxisAligned(
+            radius=[1, 1, 1], center=b)
+        np.testing.assert_array_equal(e_ball.A(), A)
+        np.testing.assert_array_equal(e_ball.center(), b)
+        e_ball2 = mut.optimization.Hyperellipsoid.MakeHypersphere(
+            radius=1, center=b)
+        np.testing.assert_array_equal(e_ball2.A(), A)
+        np.testing.assert_array_equal(e_ball2.center(), b)
+        e_ball3 = mut.optimization.Hyperellipsoid.MakeUnitBall(dim=3)
+        np.testing.assert_array_equal(e_ball3.A(), A)
+        np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
+
+        # Test VPolytope.
+        vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
+        vpoly = mut.optimization.VPolytope(vertices=vertices)
+        self.assertEqual(vpoly.ambient_dimension(), 2)
+        np.testing.assert_array_equal(vpoly.vertices(), vertices)
+        self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
+        vpoly.AddPointInSetConstraints(prog, x[0:2])
+        v_box = mut.optimization.VPolytope.MakeBox(
+            lb=[-1, -1, -1], ub=[1, 1, 1])
+        self.assertTrue(v_box.PointInSet([0, 0, 0]))
+        v_unit_box = mut.optimization.VPolytope.MakeUnitBox(dim=3)
+        self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
+
+        # Test remaining ConvexSet methods using these instances.
+        self.assertIsInstance(hpoly.Clone(), mut.optimization.HPolyhedron)
+        self.assertTrue(ellipsoid.IsBounded())
+        hpoly.AddPointInNonnegativeScalingConstraints(prog=prog, x=x, t=t[0])
 
         # Test MakeFromSceneGraph methods.
         scene_graph = mut.SceneGraph()
@@ -957,12 +1032,46 @@ class TestGeometry(unittest.TestCase):
         query_object = scene_graph.get_query_output_port().Eval(context)
         H = mut.optimization.HPolyhedron(
             query_object=query_object, geometry_id=box_geometry_id,
-            expressed_in=scene_graph.world_frame_id())
+            reference_frame=scene_graph.world_frame_id())
         self.assertEqual(H.ambient_dimension(), 3)
-        E = mut.optimization.HyperEllipsoid(
+        E = mut.optimization.Hyperellipsoid(
             query_object=query_object, geometry_id=sphere_geometry_id,
-            expressed_in=scene_graph.world_frame_id())
+            reference_frame=scene_graph.world_frame_id())
         self.assertEqual(E.ambient_dimension(), 3)
+        P = mut.optimization.Point(
+            query_object=query_object, geometry_id=sphere_geometry_id,
+            reference_frame=scene_graph.world_frame_id(),
+            maximum_allowable_radius=1.5)
+        self.assertEqual(P.ambient_dimension(), 3)
+        V = mut.optimization.VPolytope(
+            query_object=query_object, geometry_id=box_geometry_id,
+            reference_frame=scene_graph.world_frame_id())
+        self.assertEqual(V.ambient_dimension(), 3)
+
+        # Test Iris.
+        obstacles = mut.optimization.MakeIrisObstacles(
+            query_object=query_object,
+            reference_frame=scene_graph.world_frame_id())
+        options = mut.optimization.IrisOptions()
+        options.require_sample_point_is_contained = True
+        options.iteration_limit = 1
+        options.termination_threshold = 0.1
+        region = mut.optimization.Iris(
+            obstacles=obstacles, sample=[2, 3.4, 5],
+            domain=mut.optimization.HPolyhedron.MakeBox(
+                lb=[-5, -5, -5], ub=[5, 5, 5]), options=options)
+        self.assertIsInstance(region, mut.optimization.HPolyhedron)
+
+        obstacles = [
+            mut.optimization.HPolyhedron.MakeUnitBox(3),
+            mut.optimization.Hyperellipsoid.MakeUnitBall(3),
+            mut.optimization.Point([0, 0, 0]),
+            mut.optimization.VPolytope.MakeUnitBox(3)]
+        region = mut.optimization.Iris(
+            obstacles=obstacles, sample=[2, 3.4, 5],
+            domain=mut.optimization.HPolyhedron.MakeBox(
+                lb=[-5, -5, -5], ub=[5, 5, 5]), options=options)
+        self.assertIsInstance(region, mut.optimization.HPolyhedron)
 
     def test_deprecated_struct_member(self):
         """Tests successful deprecation of struct member"""

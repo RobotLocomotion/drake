@@ -19,7 +19,7 @@ std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
 MakeSceneGraphWithShape(const Shape& shape, const math::RigidTransformd& X_WG);
 
 // Returns true iff the convex optimization can make the `point` be in the set.
-bool CheckAddPointInSetConstraint(
+bool CheckAddPointInSetConstraints(
     const ConvexSet& set, const Eigen::Ref<const Eigen::VectorXd>& point);
 
 }  // namespace internal

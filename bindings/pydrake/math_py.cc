@@ -441,8 +441,22 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("RealContinuousLyapunovEquation", &RealContinuousLyapunovEquation,
           py::arg("A"), py::arg("Q"), doc.RealContinuousLyapunovEquation.doc)
       .def("DiscreteAlgebraicRiccatiEquation",
-          &DiscreteAlgebraicRiccatiEquation, py::arg("A"), py::arg("B"),
-          py::arg("Q"), py::arg("R"), doc.DiscreteAlgebraicRiccatiEquation.doc)
+          py::overload_cast<const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&>(
+              &DiscreteAlgebraicRiccatiEquation),
+          py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
+          doc.DiscreteAlgebraicRiccatiEquation.doc_4args)
+      .def("DiscreteAlgebraicRiccatiEquation",
+          py::overload_cast<const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&>(
+              &DiscreteAlgebraicRiccatiEquation),
+          py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"), py::arg("N"),
+          doc.DiscreteAlgebraicRiccatiEquation.doc_5args)
       .def("RealDiscreteLyapunovEquation", &RealDiscreteLyapunovEquation,
           py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
 

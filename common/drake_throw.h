@@ -12,8 +12,8 @@
 namespace drake {
 namespace internal {
 // Throw an error message.
-__attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
-void Throw(const char* condition, const char* func, const char* file, int line);
+[[noreturn]] void Throw(const char* condition, const char* func,
+                        const char* file, int line);
 }  // namespace internal
 }  // namespace drake
 

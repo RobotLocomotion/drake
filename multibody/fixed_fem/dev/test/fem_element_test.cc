@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 namespace test {
 namespace {
 const ElementIndex kZeroIndex = ElementIndex(0);
@@ -135,6 +135,6 @@ TEST_F(FemElementTest, MassMatrix) {
 }
 }  // namespace
 }  // namespace test
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

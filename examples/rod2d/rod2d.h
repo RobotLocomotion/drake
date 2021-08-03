@@ -173,7 +173,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// continuous ordinary differential equation based approach.
   /// @param dt The integration step size. This step size cannot be reset
   ///           after construction.
-  /// @throws std::logic_error if @p dt is not positive and system_type is
+  /// @throws std::exception if @p dt is not positive and system_type is
   ///         kDiscretized or @p dt is not zero and system_type is
   ///         kPiecewiseDAE or kContinuous.
   explicit Rod2D(SystemType system_type, double dt);
@@ -493,8 +493,6 @@ class Rod2D : public systems::LeafSystem<T> {
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   int get_k(const systems::Context<T>& context) const;
-  void CopyStateOut(const systems::Context<T>& context,
-                    systems::BasicVector<T>* output) const;
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
                              systems::ContinuousState<T>* derivatives)
                                const override;

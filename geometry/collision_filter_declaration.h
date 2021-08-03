@@ -20,29 +20,9 @@ class CollisionFilter;
  "collision filters"; collision filters limit the scope of various proximity
  queries.
 
- A SceneGraph instance contains the set of geometry
- `G = D ⋃ A = {g₀, g₁, ..., gₙ}`, where D is the set of dynamic geometries and
- A is the set of anchored geometries (by definition `D ⋂ A = ∅`). `Gₚ ⊂ G` is
- the subset of geometries that have a proximity role (with an analogous
- interpretation of `Dₚ` and `Aₚ`). Many proximity queries operate on pairs of
- geometries (e.g., (gᵢ, gⱼ)). The set of proximity candidate pairs for such
- queries is initially defined as `C = (Gₚ × Gₚ) - (Aₚ × Aₚ) - Fₚ - Iₚ`, where:
-
-  - `Gₚ × Gₚ = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ Gₚ` is the Cartesian product of the set
-    of SceneGraph proximity geometries.
-  - `Aₚ × Aₚ` represents all pairs consisting only of anchored geometries;
-    an anchored geometry is never tested against another anchored geometry.
-  - `Fₚ = {(gᵢ, gⱼ)} ∀ i, j`, such that `gᵢ, gⱼ ∈ Dₚ` and
-    `frame(gᵢ) == frame(gⱼ)`; the pairs where both geometries are rigidly
-    affixed to the same frame.
-  - `Iₚ = {(g, g)}, ∀ g ∈ Gₚ` is the set of all pairs consisting of a
-    geometry with itself; there is no meaningful proximity query on a
-    geometry with itself.
-
- Only pairs contained in C will be included in pairwise proximity operations.
-
- This class provides the basis for *declaring* what pairs should not be included
- in the set C.
+ This class provides the basis for *declaring* what pairs should or should not
+ be included in the set of proximity query candidates C (see documentation for
+ CollisionFilterManager for details on the set C).
 
  A declaration consists of zero or more *statements*. Each statement can
  declare, for example, that the pair (g₁, g₂) should be excluded from C (also
@@ -62,23 +42,73 @@ class CollisionFilter;
 
  It's worth noting, that the statements are evaluated in *invocation* order such
  that a later statement can partially or completely undo the effect of an
- earlier statement. */
+ earlier statement. The full declaration is evaluated by
+ CollisionFilterManager::Apply(). */
 class CollisionFilterDeclaration {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterDeclaration)
 
   CollisionFilterDeclaration() = default;
 
+  /** @name  Allowing pairs in consideration (removing collision filters)
+
+   These methods provide mechanisms which implicitly define a set of pairs and
+   add each pair into the set of proximity query candidates C (see the
+   documentation for CollisionFilterManager for definition of set C). Each
+   method provides the definition for the set of pairs.
+
+   SceneGraph maintains some invariants about pairs which will never be
+   considered in proximity queries (the sets `Aₚ × Aₚ`, `Fₚ`, or `Iₚ` -- again
+   see CollisionFilterManager for explanation of those sets). If any pair in
+   those sets are included in declarations which allow collisions, those pairs
+   will simply be ignored.
+
+   The *declared* pairs can be invalid (e.g., containing GeometryId values that
+   aren't part of the SceneGraph data). This will only be detected when applying
+   the declaration (see CollisionFilterManager::Apply()).  */
+  //@{
+
+  /** Allows geometry pairs in proximity evaluation by updating the
+   candidate pair set `C ← C ⋃ P*`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B, a ≠ b`
+   and `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
+   geometries `set_A` and `set_B`, respectively. Where
+   `P* = P - (Aₚ × Aₚ) - Fₚ - Iₚ`, the set of pairs after we remove the
+   SceneGraph-mandated invariants (see CollisionFilterManager for details on
+   those invariants).
+
+   To be explicit, in contrast to AllowWithin, this does _not_ clear filters
+   between members of the _same_ set (e.g., `(aᵢ, aⱼ)` or `(bᵢ, bⱼ)`). */
+  CollisionFilterDeclaration& AllowBetween(const GeometrySet& set_A,
+                                           const GeometrySet& set_B) {
+    statements_.emplace_back(kAllowBetween, std::move(set_A), std::move(set_B));
+    return *this;
+  }
+
+  /** Allows geometry pairs in proximity evaluation by updating the candidate
+   pair set `C ← C ⋃ P*`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G, i ≠ j` and
+   `G = {g₀, g₁, ..., gₘ}` is the input `geometry_set` of geometries. Where
+   `P* = P - (Aₚ × Aₚ) - Fₚ - Iₚ`, the set of pairs after we remove the
+   SceneGraph-mandated invariants (see CollisionFilterManager for details on
+   those invariants). */
+  CollisionFilterDeclaration& AllowWithin(const GeometrySet& geometry_set) {
+    statements_.emplace_back(kAllowWithin, std::move(geometry_set),
+                             GeometrySet{});
+    return *this;
+  }
+
+  //@}
+
   /** @name  Excluding pairs from consideration (adding collision filters)
 
    These methods provide mechanisms which implicitly define a set of pairs and
-   subtracts each implied pair from the set C. The documentation of each method
-   explains the relationship between the input parameters and the set of implied
-   geometry pairs.
+   subtracts each implied pair from the set of proximity query candidates C (see
+   the documentation for CollisionFilterManager for definition of set C). The
+   documentation of each method explains the relationship between the input
+   parameters and the set of implied geometry pairs.
 
-   The *declared* pairs may be invalid (e.g., containing GeometryId values that
+   The *declared* pairs can be invalid (e.g., containing GeometryId values that
    aren't part of the SceneGraph data). This will only be detected when applying
-   the declaration. */
+   the declaration (see CollisionFilterManager::Apply()). */
   //@{
 
   /** Excludes geometry pairs from proximity evaluation by updating the
@@ -109,14 +139,16 @@ class CollisionFilterDeclaration {
 
   // The various kinds of statements that can be made.
   enum StatementOp {
+    kAllowBetween,
+    kAllowWithin,
     kExcludeBetween,
     kExcludeWithin
   };
 
   // The record of a single statement.
   struct Statement {
-    Statement(StatementOp op_in, GeometrySet A_in, GeometrySet B_in) :
-      operation(op_in), set_A(std::move(A_in)), set_B(std::move(B_in)) {}
+    Statement(StatementOp op_in, GeometrySet A_in, GeometrySet B_in)
+        : operation(op_in), set_A(std::move(A_in)), set_B(std::move(B_in)) {}
     StatementOp operation;
     GeometrySet set_A;
     GeometrySet set_B;  // May be unused for unary statements.

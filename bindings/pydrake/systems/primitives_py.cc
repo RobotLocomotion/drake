@@ -28,6 +28,7 @@
 #include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 #include "drake/systems/primitives/trajectory_affine_system.h"
+#include "drake/systems/primitives/trajectory_linear_system.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
@@ -411,6 +412,44 @@ PYBIND11_MODULE(primitives, m) {
             overload_cast_explicit<VectorX<T>, const T&>(
                 &TrajectoryAffineSystem<T>::y0),
             doc.TrajectoryAffineSystem.y0.doc)
+        // Wrap a few methods from the TimeVaryingAffineSystem parent class.
+        // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
+        // wrapped.
+        .def("time_period", &TrajectoryAffineSystem<T>::time_period,
+            doc.TimeVaryingAffineSystem.time_period.doc)
+        .def("configure_default_state",
+            &TimeVaryingAffineSystem<T>::configure_default_state, py::arg("x0"),
+            doc.TimeVaryingAffineSystem.configure_default_state.doc)
+        .def("configure_random_state",
+            &TimeVaryingAffineSystem<T>::configure_random_state,
+            py::arg("covariance"),
+            doc.TimeVaryingAffineSystem.configure_random_state.doc);
+
+    DefineTemplateClassWithDefault<TrajectoryLinearSystem<T>, LeafSystem<T>>(m,
+        "TrajectoryLinearSystem", GetPyParam<T>(),
+        doc.TrajectoryLinearSystem.doc)
+        .def(py::init<const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&,
+                 const trajectories::Trajectory<double>&, double>(),
+            py::arg("A"), py::arg("B"), py::arg("C"), py::arg("D"),
+            py::arg("time_period") = 0.0, doc.TrajectoryLinearSystem.ctor.doc)
+        .def("A",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryLinearSystem<T>::A),
+            doc.TrajectoryLinearSystem.A.doc)
+        .def("B",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryLinearSystem<T>::B),
+            doc.TrajectoryLinearSystem.B.doc)
+        .def("C",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryLinearSystem<T>::C),
+            doc.TrajectoryLinearSystem.C.doc)
+        .def("D",
+            overload_cast_explicit<MatrixX<T>, const T&>(
+                &TrajectoryLinearSystem<T>::D),
+            doc.TrajectoryLinearSystem.D.doc)
         // Wrap a few methods from the TimeVaryingAffineSystem parent class.
         // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
         // wrapped.

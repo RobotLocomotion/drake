@@ -16,6 +16,7 @@ class TestDrealSolver(unittest.TestCase):
         x = prog.NewContinuousVariables(1, "x")
         prog.AddBoundingBoxConstraint(-1, 1, x)
         solver = DrealSolver()
+        self.assertEqual(solver.solver_id(), DrealSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "dReal")
         self.assertEqual(solver.SolverName(), "dReal")

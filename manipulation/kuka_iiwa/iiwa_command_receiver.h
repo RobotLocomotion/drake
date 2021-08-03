@@ -1,15 +1,9 @@
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
 
 namespace drake {
 namespace manipulation {
@@ -46,11 +40,12 @@ namespace kuka_iiwa {
 /// available to achieve the same effect without using events.
 /// @par
 /// The "torque" output will always be a vector of zeros.
-class IiwaCommandReceiver : public systems::LeafSystem<double> {
+class IiwaCommandReceiver final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
 
   explicit IiwaCommandReceiver(int num_joints = kIiwaArmNumJoints);
+  ~IiwaCommandReceiver() final;
 
   /// (Advanced.) Copies the current "position_measured" input (or zero if not
   /// connected) into Context state, and changes the behavior of the "position"
@@ -80,8 +75,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
  private:
   void DoCalcNextUpdateTime(
       const systems::Context<double>&,
-      systems::CompositeEventCollection<double>*, double*) const override;
-
+      systems::CompositeEventCollection<double>*, double*) const final;
   void CalcPositionMeasuredOrZero(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
   void LatchInitialPosition(

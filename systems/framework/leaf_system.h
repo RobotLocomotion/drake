@@ -1055,18 +1055,22 @@ class LeafSystem : public System<T> {
 
   /** Declares that this System should reserve continuous state with
   @p num_state_variables state variables, which have no second-order
-  structure. */
-  void DeclareContinuousState(int num_state_variables);
+  structure.
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(int num_state_variables);
 
   /** Declares that this System should reserve continuous state with @p num_q
   generalized positions, @p num_v generalized velocities, and @p num_z
-  miscellaneous state variables. */
-  void DeclareContinuousState(int num_q, int num_v, int num_z);
+  miscellaneous state variables.
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(int num_q, int num_v, int num_z);
 
   /** Declares that this System should reserve continuous state with
   @p model_vector.size() miscellaneous state variables, stored in a
-  vector cloned from @p model_vector. */
-  void DeclareContinuousState(const BasicVector<T>& model_vector);
+  vector cloned from @p model_vector.
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(
+      const BasicVector<T>& model_vector);
 
   /** Declares that this System should reserve continuous state with @p num_q
   generalized positions, @p num_v generalized velocities, and @p num_z
@@ -1074,9 +1078,10 @@ class LeafSystem : public System<T> {
   @p model_vector. Aborts if @p model_vector has the wrong size. If the
   @p model_vector declares any VectorBase::GetElementBounds()
   constraints, they will be re-declared as inequality constraints on this
-  system (see DeclareInequalityConstraint()). */
-  void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
-                              int num_v, int num_z);
+  system (see DeclareInequalityConstraint()).
+  @return index of the declared state (currently always zero). */
+  ContinuousStateIndex DeclareContinuousState(
+      const BasicVector<T>& model_vector, int num_q, int num_v, int num_z);
   //@}
 
   /** @name            Declare discrete state variables
@@ -1152,7 +1157,7 @@ class LeafSystem : public System<T> {
 
   You should normally provide a meaningful name for any input port you
   create. Names must be unique for this system (passing in a duplicate
-  name will throw std::logic_error). However, if you specify
+  name will throw std::exception). However, if you specify
   kUseDefaultName as the name, then a default name of e.g. "u2", where 2
   is the input port number will be provided. An empty name is not
   permitted. */
@@ -1416,15 +1421,9 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-
     auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)), MakeAllocateCallback(model_value),
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->get_mutable_value<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        },
+        NextOutputPortName(std::move(name)),
+        ValueProducer(this, model_value, calc),
         std::move(prerequisites_of_calc));
     return port;
   }
@@ -1464,18 +1463,15 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
-  /** Declares an abstract-valued output port by specifying member functions to
-  use both for the allocator and calculator. The signatures are:
-  @code
-  OutputType MySystem::MakeOutputValue() const;
-  void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
-  @endcode
-  where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  may be any concrete type such that `Value<OutputType>` is permitted.
-  See alternate signature if your allocator method needs a Context.
-  Template arguments will be deduced and do not need to be specified.
-  @see drake::Value */
+  // Declares an output port by specifying an allocator function pointer that
+  // returns by-value, and a calc function pointer.
   template <class MySystem, typename OutputType>
+  DRAKE_DEPRECATED("2021-11-01",
+      "This overload for DeclareAbstractOutputPort is rarely the best choice;"
+      " it is unusual for a boutique allocation to return an abstract type by"
+      " value rather than provide a model_value. If the default constructor"
+      " or a model value cannot be used, use the overload that accepts an"
+      " AllocCallback alloc_function instead.")
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
       OutputType (MySystem::*make)() const,
@@ -1484,14 +1480,12 @@ class LeafSystem : public System<T> {
           all_sources_ticket()}) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-
+    ValueProducer::AllocateCallback allocate = [this_ptr, make]() {
+      return AbstractValue::Make<OutputType>((this_ptr->*make)());
+    };
     auto& port = CreateAbstractLeafOutputPort(
         NextOutputPortName(std::move(name)),
-        [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->get_mutable_value<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        },
+        ValueProducer(this_ptr, std::move(allocate), calc),
         std::move(prerequisites_of_calc));
     return port;
   }
@@ -1506,6 +1500,29 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
+
+  /** Declares a vector-valued output port whose value is the continuous state
+  of this system.
+  @param state_index must be ContinuousStateIndex(0) for now, since LeafSystem
+  only supports a single continuous state group at the moment.
+  @pydrake_mkdoc_identifier{continuous} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      ContinuousStateIndex state_index);
+
+  /** Declares a vector-valued output port whose value is the given discrete
+  state group of this system.
+  @pydrake_mkdoc_identifier{discrete} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      DiscreteStateIndex state_index);
+
+  /** Declares an abstract-valued output port whose value is the given abstract
+  state of this system.
+  @pydrake_mkdoc_identifier{abstract} */
+  LeafOutputPort<T>& DeclareStateOutputPort(
+      std::variant<std::string, UseDefaultName> name,
+      AbstractStateIndex state_index);
   //@}
 
   // =========================================================================
@@ -1572,8 +1589,11 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return DeclareAbstractOutputPort(kUseDefaultName, make, calc,
                                      std::move(prerequisites_of_calc));
+#pragma GCC diagnostic pop
   }
 
   DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
@@ -2011,8 +2031,7 @@ class LeafSystem : public System<T> {
   // returns a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
       std::string name,
-      typename LeafOutputPort<T>::AllocCallback allocator,
-      typename LeafOutputPort<T>::CalcCallback calculator,
+      ValueProducer producer,
       std::set<DependencyTicket> calc_prerequisites);
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a

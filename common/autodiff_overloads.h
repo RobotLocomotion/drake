@@ -160,6 +160,22 @@ double ExtractDoubleOrThrow(const Eigen::AutoDiffScalar<DerType>& scalar) {
   return static_cast<double>(scalar.value());
 }
 
+/// Returns @p matrix as an Eigen::Matrix<double, ...> with the same size
+/// allocation as @p matrix.  Calls ExtractDoubleOrThrow on each element of the
+/// matrix, and therefore throws if any one of the extractions fail.
+template <typename DerType, int RowsAtCompileTime, int ColsAtCompileTime,
+          int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
+auto ExtractDoubleOrThrow(
+    const Eigen::MatrixBase<Eigen::Matrix<
+        Eigen::AutoDiffScalar<DerType>, RowsAtCompileTime, ColsAtCompileTime,
+        Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>>& matrix) {
+  return matrix
+      .unaryExpr([](const typename Eigen::AutoDiffScalar<DerType>& value) {
+        return ExtractDoubleOrThrow(value);
+      })
+      .eval();
+}
+
 /// Specializes common/dummy_value.h.
 template <typename DerType>
 struct dummy_value<Eigen::AutoDiffScalar<DerType>> {

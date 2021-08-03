@@ -56,7 +56,7 @@ DEFINE_double(
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;
@@ -83,9 +83,9 @@ int DoMain() {
   nonlinear_bar_config.set_stiffness_damping_coefficient(FLAGS_beta);
   nonlinear_bar_config.set_mass_density(FLAGS_density);
   nonlinear_bar_config.set_material_model(MaterialModel::kCorotated);
-  const geometry::VolumeMesh<double> nonlinear_bar_geometry =
-      MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_left);
-  const SoftBodyIndex nonlinear_bar_body_index =
+  const internal::ReferenceDeformableGeometry<double> nonlinear_bar_geometry =
+      MakeDiamondCubicBoxDeformableGeometry<double>(box, dx, translation_left);
+  const DeformableBodyIndex nonlinear_bar_body_index =
       deformable_model->RegisterDeformableBody(
           nonlinear_bar_geometry, "Corotated", nonlinear_bar_config,
           dummy_proximity_props);
@@ -95,9 +95,9 @@ int DoMain() {
   linear_bar_config.set_material_model(MaterialModel::kLinear);
   const math::RigidTransform<double> translation_right(
       Vector3<double>(0, 0.5, 0));
-  const geometry::VolumeMesh<double> linear_bar_geometry =
-      MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_right);
-  const SoftBodyIndex linear_bar_body_index =
+  const internal::ReferenceDeformableGeometry<double> linear_bar_geometry =
+      MakeDiamondCubicBoxDeformableGeometry<double>(box, dx, translation_right);
+  const DeformableBodyIndex linear_bar_body_index =
       deformable_model->RegisterDeformableBody(linear_bar_geometry, "Linear",
                                                linear_bar_config,
                                                dummy_proximity_props);
@@ -110,9 +110,13 @@ int DoMain() {
   deformable_model->SetWallBoundaryCondition(linear_bar_body_index, wall_origin,
                                              wall_normal);
 
+  std::vector<geometry::VolumeMesh<double>> reference_meshes;
+  for (const internal::ReferenceDeformableGeometry<double>& geometry :
+       deformable_model->reference_configuration_geometries()) {
+    reference_meshes.emplace_back(geometry.mesh());
+  }
   auto* visualizer = builder.AddSystem<DeformableVisualizer>(
-      1.0 / 60.0, deformable_model->names(),
-      deformable_model->reference_configuration_meshes());
+      1.0 / 60.0, deformable_model->names(), reference_meshes);
   const DeformableModel<double>* deformable_model_ptr = deformable_model.get();
   plant->AddPhysicalModel(std::move(deformable_model));
   plant->Finalize();
@@ -130,12 +134,12 @@ int DoMain() {
   simulator->AdvanceTo(FLAGS_simulation_time);
   return 0;
 }
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage("Demonstration of large deformation.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::multibody::fixed_fem::DoMain();
+  return drake::multibody::fem::DoMain();
 }

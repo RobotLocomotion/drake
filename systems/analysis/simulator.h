@@ -282,7 +282,7 @@ class Simulator {
   /// constraints -- it is up to you to make sure that constraints are
   /// satisfied by the initial conditions.
   ///
-  /// This method will throw `std::logic_error` if the combination of options
+  /// This method will throw `std::exception` if the combination of options
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
   ///
@@ -673,7 +673,7 @@ class Simulator {
   ///          (indicating that any witness-triggered events should trigger
   ///          at the end of a time interval over which continuous state is
   ///          integrated).
-  /// @throws std::logic_error if the accuracy is not set in the Context and
+  /// @throws std::exception if the accuracy is not set in the Context and
   ///         the integrator is not operating in fixed step mode (see
   ///         IntegratorBase::get_fixed_step_mode().
   std::optional<T> GetCurrentWitnessTimeIsolation() const;

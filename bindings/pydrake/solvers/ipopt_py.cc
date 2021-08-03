@@ -21,7 +21,8 @@ PYBIND11_MODULE(ipopt, m) {
 
   py::class_<IpoptSolver, SolverInterface>(
       m, "IpoptSolver", doc.IpoptSolver.doc)
-      .def(py::init<>(), doc.IpoptSolver.ctor.doc);
+      .def(py::init<>(), doc.IpoptSolver.ctor.doc)
+      .def_static("id", &IpoptSolver::id, doc.IpoptSolver.id.doc);
 
   py::class_<IpoptSolverDetails>(
       m, "IpoptSolverDetails", doc.IpoptSolverDetails.doc)

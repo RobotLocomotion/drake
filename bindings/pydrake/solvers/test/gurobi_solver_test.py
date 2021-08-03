@@ -2,6 +2,8 @@ import unittest
 import numpy as np
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
+from pydrake.common import temp_directory
+import os
 
 
 class TestMathematicalProgram(unittest.TestCase):
@@ -12,6 +14,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = GurobiSolver()
+        self.assertEqual(solver.solver_id(), GurobiSolver.id())
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_type(), mp.SolverType.kGurobi)
         result = solver.Solve(prog, None, None)
@@ -43,3 +46,28 @@ class TestMathematicalProgram(unittest.TestCase):
         with GurobiSolver.AcquireLicense() as license:
             self.assertTrue(license.is_valid())
         self.assertFalse(license.is_valid())
+
+    def test_write_to_file(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 1)
+        prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1])
+        solver = GurobiSolver()
+        file_name = temp_directory() + "/gurobi.mps"
+        options = mp.SolverOptions()
+        options.SetOption(solver.id(), "GRBwrite", file_name)
+        result = solver.Solve(prog, None, options)
+        self.assertTrue(os.path.exists(file_name))
+
+    def test_compute_iis(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddBoundingBoxConstraint(1, np.inf, x)
+        prog.AddLinearConstraint(x[0] + x[1] == 1)
+        solver = GurobiSolver()
+        ilp_file_name = temp_directory() + "/gurobi.ilp"
+        options = mp.SolverOptions()
+        options.SetOption(solver.id(), "GRBwrite", ilp_file_name)
+        options.SetOption(solver.id(), "GRBcomputeIIS", 1)
+        result = solver.Solve(prog, None, options)
+        self.assertTrue(os.path.exists(ilp_file_name))

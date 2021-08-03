@@ -605,9 +605,7 @@ bool Diagram<T>::AreConnected(const OutputPort<T>& output,
 
 template <typename T>
 Diagram<T>::Diagram() : System<T>(
-    SystemScalarConverter(
-        SystemTypeTag<Diagram>{},
-        SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
+    SystemScalarConverter::MakeWithoutSubtypeChecking<Diagram>()) {}
 
 template <typename T>
 Diagram<T>::Diagram(SystemScalarConverter converter)
@@ -997,10 +995,20 @@ template <typename T>
 const AbstractValue* Diagram<T>::EvalConnectedSubsystemInputPort(
     const ContextBase& context_base,
     const InputPortBase& input_port_base) const {
+  // Profiling revealed that it is too expensive to do a dynamic_cast here.
+  // A static_cast is safe as long we validate the SystemId, so that we know
+  // this Context is ours. Proving that our caller would have already checked
+  // the SystemId is too complicated, so we'll always just check ourselves.
+  this->ValidateContext(context_base);
   auto& diagram_context =
-      dynamic_cast<const DiagramContext<T>&>(context_base);
+      static_cast<const DiagramContext<T>&>(context_base);
+
+  // Profiling revealed that it is too expensive to do a dynamic_cast here.
+  // A static_cast is safe as long as the given input_port_base was actually
+  // an InputPort<T>, and since our sole caller is SystemBase which always
+  // retrieves the input_port_base from `this`, the <T> must be correct.
   auto& system =
-      dynamic_cast<const System<T>&>(input_port_base.get_system_interface());
+      static_cast<const System<T>&>(input_port_base.get_system_interface());
   const InputPortLocator id{&system, input_port_base.get_index()};
 
   // Find if this input port is exported (connected to an input port of this
@@ -1422,8 +1430,7 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   event_times_buffer_cache_index_ =
       this->DeclareCacheEntry(
           "event_times_buffer", ValueProducer(
-              // TODO(jwnimmer-tri) Improve ValueProducer constructor sugar.
-              internal::AbstractValueCloner(std::vector<T>(num_subsystems())),
+              std::vector<T>(num_subsystems()),
               &ValueProducer::NoopCalc),
           {this->nothing_ticket()}).cache_index();
 

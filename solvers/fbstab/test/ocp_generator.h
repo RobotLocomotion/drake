@@ -45,7 +45,7 @@ class OcpGenerator {
    * Returns problem data in the form accepted by FBstab.
    * @return problem data
    *
-   * Throws a runtime_error if one of the problem creator methods hasn't been
+   * Throws an exception if one of the problem creator methods hasn't been
    * called first.
    */
   FBstabMpc::QPData GetFBstabInput() const;
@@ -56,7 +56,7 @@ class OcpGenerator {
    *
    * @return simulation inputs
    *
-   * Throws a runtime_error if one of the problem creator methods hasn't been
+   * Throws an exception if one of the problem creator methods hasn't been
    * called first.
    */
   SimulationInputs GetSimulationInputs() const;
@@ -90,7 +90,7 @@ class OcpGenerator {
    *
    * @parm[in] N prediction horizon length
    *
-   * Throws a runtime_error if N <= 0.
+   * Throws an exception if N <= 0.
    */
   void ServoMotor(int N = 20);
 
@@ -107,7 +107,7 @@ class OcpGenerator {
    *
    * @param[in] N prediction horizon length
    *
-   * Throws a runtime_error if N <= 0.
+   * Throws an exception if N <= 0.
    */
   void SpacecraftRelativeMotion(int N = 40);
 
@@ -117,7 +117,7 @@ class OcpGenerator {
    *
    * @param[in] N prediction horizon length
    *
-   * Throws a runtime_error if N <= 0.
+   * Throws an exception if N <= 0.
    */
   void DoubleIntegrator(int N = 10);
 

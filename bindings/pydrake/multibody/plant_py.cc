@@ -238,20 +238,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "WeldFrames",
             [](Class* self, const Frame<T>& A, const Frame<T>& B,
-                const RigidTransform<double>& X_AB) -> const WeldJoint<T>& {
-              WarnDeprecated(
-                  "Please use MultibodyPlant.WeldFrames("
-                  "frame_on_parent_P=value1, frame_on_child_C=value2,"
-                  " X_PC=value3) instead. This variant will be removed"
-                  " after 2021-07-01.");
-              return self->WeldFrames(A, B, X_AB);
-            },
-            py::arg("A"), py::arg("B"),
-            py::arg("X_AB") = RigidTransform<double>::Identity(),
-            py_rvp::reference_internal, cls_doc.WeldFrames.doc)
-        .def(
-            "WeldFrames",
-            [](Class* self, const Frame<T>& A, const Frame<T>& B,
                 const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
               WarnDeprecated(doc_iso3_deprecation);
               return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
@@ -348,7 +334,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
-            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc)
+            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_5args)
         .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
             py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
@@ -556,7 +542,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
               self->CalcMassMatrixViaInverseDynamics(context, &H);
               return H;
             },
-            py::arg("context"))
+            py::arg("context"), cls_doc.CalcMassMatrixViaInverseDynamics.doc)
+        .def(
+            "CalcMassMatrix",
+            [](const Class* self, const Context<T>& context) {
+              MatrixX<T> H;
+              const int n = self->num_velocities();
+              H.resize(n, n);
+              self->CalcMassMatrix(context, &H);
+              return H;
+            },
+            py::arg("context"), cls_doc.CalcMassMatrix.doc)
         .def(
             "CalcBiasSpatialAcceleration",
             [](const Class* self, const systems::Context<T>& context,

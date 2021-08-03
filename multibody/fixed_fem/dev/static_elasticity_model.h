@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 /** The FEM model for static 3D elasticity problems. Implements the interface in
  FemModel. It is assumed that elements are only added to, but never deleted
  from, the model.
@@ -27,7 +27,7 @@ class StaticElasticityModel : public ElasticityModel<Element> {
 
   StaticElasticityModel()
       : ElasticityModel<Element>(
-            std::make_unique<ZerothOrderStateUpdater<FemState<Element>>>()) {}
+            std::make_unique<internal::ZerothOrderStateUpdater<T>>()) {}
 
   ~StaticElasticityModel() = default;
 
@@ -88,6 +88,6 @@ class StaticElasticityModel : public ElasticityModel<Element> {
     return FemState<Element>(X);
   }
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

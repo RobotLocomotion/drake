@@ -12,16 +12,15 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): Move the implementation of this class to a .cc file.
-/** %FemSolver solves for the state of a given FemModel at which residual of the
- model is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
- solver to solve for the zero residual state. A common workflow for solving a
- static FEM model looks like:
+/** %FemSolver solves for the state of a given FemModel at which the residual of
+ the model is sufficiently close to zero. %FemSolver uses a simple
+ Newton-Raphson solver to solve for the zero residual state. A common workflow
+ for solving a static FEM model looks like:
  ```
- // Creates a solver for a given FemModel and sets the LinearSystemSolver used
- // in the Newton-Raphson iterations.
- FemSolver solver(&model));
+ // Creates a solver for the given FemModel.
+ FemSolver<double> solver(&model));
  // Optionally, sets the tolerances under which we deem the residual is
  // effectively zero.
  solver.set_absolute_tolerance(kAbsoluteTolereance);
@@ -38,7 +37,8 @@ class FemSolver {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemSolver);
 
   // TODO(xuchenhan-tri): Consider allowing users to configure the linear
-  //  solver.
+  //  solver or at the very least, note that solver will not converge if the
+  //  tangent matrices that show up in the Newton iterations are not SPD.
   /** Constructs a new %FemSolver with the given FemModelBase and an Eigen
    Conjugate Gradient solver as the linear solver. The `model` pointer persists
    in `this` %FemSolver and thus the FemModelBase object must outlive `this`
@@ -51,8 +51,8 @@ class FemSolver {
         std::make_unique<internal::EigenConjugateGradientSolver<T>>(&A_op_);
   }
 
-  /** For dynamic models, advance the given FEM state from the previous time
-   step to the next time step. If the FEM model owned by `this` solver is
+  /** For dynamic models, advances the given FEM state from the previous time
+   step to the next time step. If the FEM model associated with `this` solver is
    static, throw an exception.
    @param[in] prev_state The state of the FEM model evaluated at the previous
    time step.
@@ -64,7 +64,7 @@ class FemSolver {
    next_state->num_generalized_positions().
    @throw std::exception if the input `prev_state` or `next_state` is
    incompatible with the FEM model associated with `this` %FemSolver, or if the
-   model is not dynamic (see is_dynamic()). */
+   model is not dynamic (see is_model_dynamic()). */
   void AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
                           FemStateBase<T>* next_state) const {
     DRAKE_DEMAND(next_state != nullptr);
@@ -74,21 +74,23 @@ class FemSolver {
     }
     model_->ThrowIfModelStateIncompatible(__func__, prev_state);
     model_->ThrowIfModelStateIncompatible(__func__, *next_state);
-    /* Grab the initial guess for the highest order state. */
-    const VectorX<T>& highest_order_state =
-        next_state->get_highest_order_state();
-    /* Since `highest_order_state` is only an initial guess, this only produces
-     an *initial guess* that is compatible with the previous time step. */
-    model_->AdvanceOneTimeStep(prev_state, highest_order_state, next_state);
+    /* Grab the initial guess for the unknown variable. */
+    const VectorX<T>& unknown_variable = model_->GetUnknowns(*next_state);
+    model_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
     SolveWithInitialGuess(next_state);
   }
 
-  /** For static models, solve for the state at equilibrium given the initial
-   guess. If the FEM model owned by the solver is dynamic, throw an exception.
+  // TODO(xuchenhan-tri): Consider making FemSolver only a Newton-Raphson
+  //  solver. In other words, make it ignorant of what kind of model it is
+  //  solving for and provide a single method that takes an initial guess and
+  //  returns the zero-residual state.
+  /** For static models, solves for the state at equilibrium given the initial
+   guess. If the FEM model associated with `this` solver is dynamic, throw an
+   exception.
    @pre next_state != nullptr.
    @throw std::exception if the input `state` is incompatible with the FEM model
    associated with `this` %FemSolver, or if the model is dynamic (see
-   is_dynamic()). */
+   is_model_dynamic()). */
   void SolveStaticModelWithInitialGuess(FemStateBase<T>* state) const {
     DRAKE_DEMAND(state != nullptr);
     if (is_model_dynamic()) {
@@ -96,7 +98,6 @@ class FemSolver {
           fmt::format("{}() can only be called on a static model!", __func__));
     }
     model_->ThrowIfModelStateIncompatible(__func__, *state);
-    /* Throw if mode is *not* static. */
     SolveWithInitialGuess(state);
   }
 
@@ -104,7 +105,7 @@ class FemSolver {
    than 0. Returns false otherwise. */
   bool is_model_dynamic() const { return model_->ode_order() > 0; }
 
-  /** Returns the FemModel that this solver owns. */
+  /** Returns the FemModel that this solver is solving. */
   const FemModelBase<T>& model() const { return *model_; }
 
   /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
@@ -158,9 +159,9 @@ class FemSolver {
       model_->UpdateStateFromChangeInUnknowns(dz_, state);
       model_->CalcResidual(*state, &b_);
       ++iter;
-    } while (dz_.norm() >
-                 std::max(relative_tolerance_ * state->HighestOrderStateNorm(),
-                          absolute_tolerance_) &&
+    } while (dz_.norm() > std::max(relative_tolerance_ *
+                                       model_->GetUnknowns(*state).norm(),
+                                   absolute_tolerance_) &&
              iter < kMaxIterations_);
     if (iter == kMaxIterations_) {
       // TODO(xuchenhan-tri): Provide some advice on how to get a "better
@@ -199,13 +200,13 @@ class FemSolver {
    solver, unitless. */
   T relative_tolerance_{1e-6};
   /* The absolute tolerance for determining the convergence of the Newton
-   solver. It has the same unit as the highest order state. */
+   solver. It has the same unit as the unknown variable z. */
   T absolute_tolerance_{1e-6};
   // TODO(xuchenhan-tri): Consider making `kMaxIterations_` configurable.
   /* Any reasonable Newton solve should converge within 20 iterations. If it
    doesn't converge in 20 iterations, chances are it will never converge. */
   int kMaxIterations_{20};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

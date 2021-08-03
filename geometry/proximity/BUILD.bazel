@@ -18,7 +18,6 @@ drake_cc_package_library(
         ":bvh",
         ":bvh_updater",
         ":collision_filter",
-        ":collision_filter_legacy",
         ":collisions_exist_callback",
         ":contact_surface_utility",
         ":deformable_volume_mesh",
@@ -120,15 +119,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "collision_filter_legacy",
-    hdrs = ["collision_filter_legacy.h"],
-    deps = [
-        "//common:essential",
-        "//common:sorted_vectors_have_intersection",
-    ],
-)
-
-drake_cc_library(
     name = "collisions_exist_callback",
     srcs = ["collisions_exist_callback.cc"],
     hdrs = ["collisions_exist_callback.h"],
@@ -138,7 +128,7 @@ drake_cc_library(
         "collisions_exist_callback.h",
     ],
     deps = [
-        ":collision_filter_legacy",
+        ":collision_filter",
         ":proximity_utilities",
         "//geometry:geometry_ids",
         "@fcl",
@@ -197,7 +187,7 @@ drake_cc_library(
         "distance_to_shape_callback.h",
     ],
     deps = [
-        ":collision_filter_legacy",
+        ":collision_filter",
         ":distance_to_point_callback",
         ":proximity_utilities",
         "//common:default_scalars",
@@ -215,7 +205,7 @@ drake_cc_library(
         "find_collision_candidates_callback.h",
     ],
     deps = [
-        ":collision_filter_legacy",
+        ":collision_filter",
         ":proximity_utilities",
         "//common:sorted_pair",
         "@fcl",
@@ -234,7 +224,7 @@ drake_cc_library(
         "hydroelastic_callback.h",
     ],
     deps = [
-        ":collision_filter_legacy",
+        ":collision_filter",
         ":hydroelastic_internal",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
@@ -537,7 +527,7 @@ drake_cc_library(
         "penetration_as_point_pair_callback.h",
     ],
     deps = [
-        ":collision_filter_legacy",
+        ":collision_filter",
         ":distance_to_point_callback",
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
@@ -682,7 +672,7 @@ drake_cc_library(
     hdrs = ["test/characterization_utilities.h"],
     visibility = ["//visibility:private"],
     deps = [
-        ":collision_filter_legacy",
+        ":collision_filter",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

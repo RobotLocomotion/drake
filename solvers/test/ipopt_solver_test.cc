@@ -6,6 +6,7 @@
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 #ifdef DRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT
 
@@ -208,6 +209,109 @@ GTEST_TEST(IpoptSolverTest, TestNonconvexQP) {
   if (solver.available()) {
     TestNonconvexQP(solver, false);
   }
+}
+
+/* Tests the solver's processing of the verbosity options. With multiple ways
+ to request verbosity (common options and solver-specific options), we simply
+ apply a smoke test that none of the means causes runtime errors. Note, we
+ don't test the case where we configure the mathematical program itself; that
+ is resolved in SolverBase. We only need to test the options passed into
+ Solve(). The possible configurations are:
+    - No verbosity set at all (this is implicitly tested in all other tests).
+    - Common option explicitly set (on & off)
+    - Solver option explicitly set (on & off)
+    - Both options explicitly set (with all permutations of (on, on), etc.) */
+GTEST_TEST(IpoptSolverTest, SolverOptionsVerbosity) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1);
+  prog.AddLinearConstraint(x(0) <= 3);
+  prog.AddLinearConstraint(x(0) >= -3);
+  prog.AddLinearCost(x(0));
+
+  IpoptSolver solver;
+
+  if (solver.is_available()) {
+    // Setting common options.
+    for (int print_to_console : {0, 1}) {
+      SolverOptions options;
+      options.SetOption(CommonSolverOption::kPrintToConsole, print_to_console);
+      solver.Solve(prog, {}, options);
+    }
+    // Setting solver options.
+    for (int print_to_console : {0, 2}) {
+      SolverOptions options;
+      options.SetOption(IpoptSolver::id(), "print_level", print_to_console);
+      solver.Solve(prog, {}, options);
+    }
+    // Setting both.
+    for (int common_print_to_console : {0, 1}) {
+      for (int solver_print_to_console : {0, 2}) {
+        SolverOptions options;
+        options.SetOption(CommonSolverOption::kPrintToConsole,
+                          common_print_to_console);
+        options.SetOption(IpoptSolver::id(), "print_level",
+                          solver_print_to_console);
+        solver.Solve(prog, {}, options);
+      }
+    }
+  }
+}
+
+TEST_P(TestEllipsoidsSeparation, TestSOCP) {
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    SolveAndCheckSolution(ipopt_solver, 1.E-8);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IpoptSolverTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn({EllipsoidsSeparationProblem::kProblem0,
+                         EllipsoidsSeparationProblem::kProblem1,
+                         EllipsoidsSeparationProblem::kProblem3}));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    SolveAndCheckSolution(ipopt_solver);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(IpoptSolverTest, TestQPasSOCP,
+                         ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    SolveAndCheckSolution(ipopt_solver, 2E-3);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IpoptSolverTest, TestFindSpringEquilibrium,
+    ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
+  MaximizeGeometricMeanTrivialProblem1 prob;
+  IpoptSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prob.prog(), {}, {});
+    prob.CheckSolution(result, 4E-6);
+  }
+}
+
+GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
+  MaximizeGeometricMeanTrivialProblem2 prob;
+  IpoptSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prob.prog(), {}, {});
+    prob.CheckSolution(result, 1.E-6);
+  }
+}
+
+GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
+  IpoptSolver solver;
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
 }
 }  // namespace test
 }  // namespace solvers

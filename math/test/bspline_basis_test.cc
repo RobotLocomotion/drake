@@ -104,12 +104,12 @@ TYPED_TEST(BsplineBasisTests, ConstructorErrors) {
       "The number of basis functions (.*) should be greater than or equal to "
       "the order (.*).";
   DRAKE_EXPECT_THROWS_MESSAGE(BsplineBasis<double>(order, 3),
-                              std::invalid_argument, expected_message_0);
+                              expected_message_0);
   const char* expected_message_1 =
       "The number of knots (.*) should be greater than or equal to twice the "
       "order (.*).";
   DRAKE_EXPECT_THROWS_MESSAGE(BsplineBasis<T>(order, {0, 1, 2, 3, 4, 5, 6}),
-                              std::invalid_argument, expected_message_1);
+                              expected_message_1);
 }
 
 // Verifies that ComputeActiveBasisFunctionIndices() returns the correct values
@@ -332,7 +332,6 @@ GTEST_TEST(BsplineBasisSerializeTests, NotEnoughKnotsTest) {
   BsplineBasis<double> dut{};
   DRAKE_EXPECT_THROWS_MESSAGE(
       YamlReadArchive(YAML::Load(not_enough_knots)).Accept(&dut),
-      std::runtime_error,
       ".*CheckInvariants.*");
 }
 
@@ -344,7 +343,6 @@ GTEST_TEST(BsplineBasisSerializeTests, UnsortedKnotsTest) {
   BsplineBasis<double> dut{};
   DRAKE_EXPECT_THROWS_MESSAGE(
       YamlReadArchive(YAML::Load(unsorted_knots)).Accept(&dut),
-      std::runtime_error,
       ".*CheckInvariants.*");
 }
 

@@ -4,8 +4,9 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
-/** Implements the interface StateUpdater with Newmark-beta time integration
+namespace fem {
+namespace internal {
+/* Implements the interface StateUpdater with Newmark-beta time integration
  scheme. Given the value for the current time step acceleration `a`, the states
  are calculated from states from the previous time step according to the
  following equations:
@@ -17,19 +18,13 @@ namespace fixed_fem {
 
  [Newmark, 1959] Newmark, Nathan M. "A method of computation for structural
  dynamics." Journal of the engineering mechanics division 85.3 (1959): 67-94.
-
- @tparam State    The type of FemState to be updated by the %NewmarkScheme. The
- template parameter State must be an instantiation of FemState.
- @pre State::ode_order() == 2. */
-template <class State>
-class NewmarkScheme final : public StateUpdater<State> {
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+class NewmarkScheme final : public StateUpdater<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NewmarkScheme);
 
-  static_assert(State::ode_order() == 2);
-  using T = typename State::T;
-
-  /** Construct a Newmark scheme with the provided timestep, `gamma` and `beta`.
+  /* Constructs a Newmark scheme with the provided timestep, `gamma` and `beta`.
    @pre dt > 0.
    @pre 0 <= gamma <= 1.
    @pre 0 <= beta <= 0.5. */
@@ -43,14 +38,16 @@ class NewmarkScheme final : public StateUpdater<State> {
   ~NewmarkScheme() = default;
 
  private:
-  /* Implements StateUpdater::weights(). */
   Vector3<T> do_get_weights() const final {
     return {beta_ * dt_ * dt_, gamma_ * dt_, 1.0};
   }
 
-  /* Implements StateUpdater::DoUpdateStateFromChangeInUnknowns(). */
+  const VectorX<T>& DoGetUnknowns(const FemStateBase<T>& state) const final {
+    return state.qddot();
+  }
+
   void DoUpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
-                                                  State* state) const final {
+                                         FemStateBase<T>* state) const final {
     const VectorX<T>& a = state->qddot();
     const VectorX<T>& v = state->qdot();
     const VectorX<T>& x = state->q();
@@ -59,14 +56,13 @@ class NewmarkScheme final : public StateUpdater<State> {
     state->SetQ(x + dt_ * dt_ * beta_ * dz);
   }
 
-  /* Implements StateUpdater::DoAdvanceOneTimeStep(). */
-  void DoAdvanceOneTimeStep(const State& prev_state,
-                            const VectorX<T>& highest_order_state,
-                            State* state) const final {
+  void DoAdvanceOneTimeStep(const FemStateBase<T>& prev_state,
+                            const VectorX<T>& unknown_variable,
+                            FemStateBase<T>* state) const final {
     const VectorX<T>& an = prev_state.qddot();
     const VectorX<T>& vn = prev_state.qdot();
     const VectorX<T>& xn = prev_state.q();
-    const VectorX<T>& a = highest_order_state;
+    const VectorX<T>& a = unknown_variable;
     state->SetQddot(a);
     state->SetQdot(vn + dt_ * (gamma_ * a + (1.0 - gamma_) * an));
     state->SetQ(xn + dt_ * vn + dt_ * dt_ * (beta_ * a + (0.5 - beta_) * an));
@@ -76,6 +72,7 @@ class NewmarkScheme final : public StateUpdater<State> {
   double gamma_{0.5};
   double beta_{0.25};
 };
-}  // namespace fixed_fem
+}  // namespace internal
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

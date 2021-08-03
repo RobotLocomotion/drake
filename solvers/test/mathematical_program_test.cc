@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
@@ -3261,6 +3262,192 @@ GTEST_TEST(TestMathematicalProgram, ReparsePolynomial) {
   }
 }
 
+template <typename C>
+void RemoveCostTest(MathematicalProgram* prog,
+                    const symbolic::Expression& cost1_expr,
+                    const std::vector<Binding<C>>* program_costs,
+                    ProgramAttribute affected_capability) {
+  auto cost1 = prog->AddCost(cost1_expr);
+  // cost1 and cost2 represent the same cost, but their evaluators point to
+  // different objects.
+  auto cost2 = prog->AddCost(cost1_expr);
+  ASSERT_NE(cost1.evaluator().get(), cost2.evaluator().get());
+  EXPECT_EQ(program_costs->size(), 2u);
+  EXPECT_EQ(prog->RemoveCost(cost1), 1);
+  EXPECT_EQ(program_costs->size(), 1u);
+  EXPECT_EQ(program_costs->at(0).evaluator().get(), cost2.evaluator().get());
+  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  // Now add another cost2 to program. If we remove cost2, now we get a program
+  // with empty linear cost.
+  prog->AddCost(cost2);
+  EXPECT_EQ(program_costs->size(), 2u);
+  EXPECT_EQ(prog->RemoveCost(cost2), 2);
+  EXPECT_EQ(program_costs->size(), 0u);
+  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+
+  // Currently program_costs is empty.
+  EXPECT_EQ(prog->RemoveCost(cost1), 0);
+  EXPECT_EQ(prog->required_capabilities().count(affected_capability), 0);
+
+  prog->AddCost(cost1);
+  // prog doesn't contain cost2, removing cost2 from prog ends up as a no-opt.
+  EXPECT_EQ(prog->RemoveCost(cost2), 0);
+  EXPECT_EQ(program_costs->size(), 1u);
+  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+
+  // cost3 and cost1 share the same evaluator, but the associated variables are
+  // different.
+  VectorX<symbolic::Variable> cost3_vars = cost1.variables();
+  cost3_vars[0] = cost1.variables()[1];
+  cost3_vars[1] = cost1.variables()[0];
+  auto cost3 = prog->AddCost(cost1.evaluator(), cost3_vars);
+  EXPECT_EQ(prog->RemoveCost(cost1), 1);
+  EXPECT_EQ(program_costs->size(), 1u);
+  EXPECT_GT(prog->required_capabilities().count(affected_capability), 0);
+  EXPECT_EQ(program_costs->at(0).evaluator().get(), cost3.evaluator().get());
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveLinearCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  RemoveCostTest<LinearCost>(&prog, x[0] + 2 * x[1], &(prog.linear_costs()),
+                             ProgramAttribute::kLinearCost);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveQuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  RemoveCostTest(&prog, x[0] * x[0] + 2 * x[1] * x[1],
+                 &(prog.quadratic_costs()), ProgramAttribute::kQuadraticCost);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveGenericCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  RemoveCostTest(&prog, x[0] * x[0] * x[1], &(prog.generic_costs()),
+                 ProgramAttribute::kGenericCost);
+}
+
+GTEST_TEST(TestMathematicalProgram, TestToString) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewIndeterminates<1>("y");
+  prog.AddLinearCost(2*x[0] + 3*x[1]);
+  prog.AddLinearConstraint(x[0]+x[1] <= 2.0);
+  prog.AddSosConstraint(x[0]*y[0]*y[0]);
+
+  std::string s = prog.to_string();
+  EXPECT_THAT(s, testing::HasSubstr("Decision variables"));
+  EXPECT_THAT(s, testing::HasSubstr("Indeterminates"));
+  EXPECT_THAT(s, testing::HasSubstr("Cost"));
+  EXPECT_THAT(s, testing::HasSubstr("Constraint"));
+  EXPECT_THAT(s, testing::HasSubstr("x"));
+  EXPECT_THAT(s, testing::HasSubstr("y"));
+  EXPECT_THAT(s, testing::HasSubstr("2"));
+  EXPECT_THAT(s, testing::HasSubstr("3"));
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveLinearConstraint) {
+  // ProgramAttribute::kLinearConstraint depends on both
+  // prog.linear_constraints() and prog.bounding_box_constraints().
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto lin_con1 = prog.AddLinearConstraint(x[0] + x[1] <= 1);
+  auto lin_con2 = prog.AddLinearConstraint(x[0] + 2 * x[1] <= 1);
+  EXPECT_EQ(prog.RemoveConstraint(lin_con1), 1);
+  EXPECT_EQ(prog.linear_constraints().size(), 1u);
+  EXPECT_GT(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+  // Now the program contains 2 lin_con2
+  prog.AddConstraint(lin_con2);
+  EXPECT_EQ(prog.RemoveConstraint(lin_con1), 0);
+  EXPECT_EQ(prog.RemoveConstraint(lin_con2), 2);
+  EXPECT_EQ(prog.linear_constraints().size(), 0u);
+  EXPECT_EQ(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+
+  auto bbcon = prog.AddBoundingBoxConstraint(1, 2, x);
+  EXPECT_GT(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+  EXPECT_EQ(prog.RemoveConstraint(bbcon), 1);
+  EXPECT_EQ(
+      prog.required_capabilities().count(ProgramAttribute::kLinearConstraint),
+      0);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveConstraintPSD) {
+  // ProgramAttribute::kPositiveSemidefiniteConstraint depends on both
+  // prog.positive_semidefinite_constraints() and
+  // prog.linear_matrix_inequality_constraints().
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  auto x = prog.NewContinuousVariables<2>();
+  auto lmi_con = prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Ones(),
+       2 * Eigen::Matrix3d::Ones()},
+      x);
+  EXPECT_EQ(prog.RemoveConstraint(psd_con), 1);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 0u);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kPositiveSemidefiniteConstraint),
+            0);
+  EXPECT_EQ(prog.RemoveConstraint(lmi_con), 1);
+  EXPECT_EQ(prog.linear_matrix_inequality_constraints().size(), 0u);
+  EXPECT_EQ(prog.required_capabilities().count(
+                ProgramAttribute::kPositiveSemidefiniteConstraint),
+            0);
+}
+
+// Remove a constraint from @p prog. Before removing the constraint, @p
+// prog_constraints has only one entry.
+template <typename C>
+void TestRemoveConstraint(MathematicalProgram* prog,
+                          const Binding<C>& constraint,
+                          const std::vector<Binding<C>>* prog_constraints,
+                          ProgramAttribute removed_capability) {
+  ASSERT_EQ(prog_constraints->size(), 1);
+  ASSERT_GT(prog->required_capabilities().count(removed_capability), 0);
+  EXPECT_EQ(prog->RemoveConstraint(constraint), 1);
+  EXPECT_EQ(prog_constraints->size(), 0u);
+  EXPECT_EQ(prog->required_capabilities().count(removed_capability), 0);
+}
+
+GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto lin_eq_con = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1);
+  auto lorentz_con =
+      prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  auto rotated_lorentz_con =
+      prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
+  Eigen::SparseMatrix<double> A(3, 3);
+  A.setIdentity();
+  auto exponential_con =
+      prog.AddExponentialConeConstraint(A, Eigen::Vector3d(1, 2, 3), x);
+  auto generic_con = prog.AddConstraint(x(0) * x(0) * x(1) == 1);
+  TestRemoveConstraint(&prog, lin_eq_con, &(prog.linear_equality_constraints()),
+                       ProgramAttribute::kLinearEqualityConstraint);
+  TestRemoveConstraint(&prog, lorentz_con, &(prog.lorentz_cone_constraints()),
+                       ProgramAttribute::kLorentzConeConstraint);
+  TestRemoveConstraint(&prog, rotated_lorentz_con,
+                       &(prog.rotated_lorentz_cone_constraints()),
+                       ProgramAttribute::kRotatedLorentzConeConstraint);
+  TestRemoveConstraint(&prog, exponential_con,
+                       &(prog.exponential_cone_constraints()),
+                       ProgramAttribute::kExponentialConeConstraint);
+  TestRemoveConstraint(&prog, generic_con, &(prog.generic_constraints()),
+                       ProgramAttribute::kGenericConstraint);
+
+  auto lcp_con = prog.AddLinearComplementarityConstraint(
+      Eigen::Matrix3d::Identity(), Eigen::Vector3d::Ones(), x);
+  TestRemoveConstraint(&prog, lcp_con,
+                       &(prog.linear_complementarity_constraints()),
+                       ProgramAttribute::kLinearComplementarityConstraint);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

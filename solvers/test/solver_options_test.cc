@@ -10,6 +10,8 @@ namespace solvers {
 GTEST_TEST(SolverOptionsTest, SetGetOption) {
   SolverOptions dut;
   EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
+  EXPECT_EQ(dut.get_print_file_name(), "");
+  EXPECT_EQ(dut.get_print_to_console(), false);
 
   const SolverId id1("id1");
   const SolverId id2("id2");
@@ -22,17 +24,19 @@ GTEST_TEST(SolverOptionsTest, SetGetOption) {
   dut.SetOption(id2, "some_string", "foo");
 
   dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
-  dut.SetOption(CommonSolverOption::kPrintToConsole, 0);
+  dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
 
   EXPECT_EQ(to_string(dut),
             "{SolverOptions,"
             " CommonSolverOption::kPrintFileName=foo.txt,"
-            " CommonSolverOption::kPrintToConsole=0,"
+            " CommonSolverOption::kPrintToConsole=1,"
             " id1:some_before=1.2,"
             " id1:some_double=1.1,"
             " id1:some_int=2,"
             " id2:some_int=3,"
             " id2:some_string=foo}");
+  EXPECT_EQ(dut.get_print_file_name(), "foo.txt");
+  EXPECT_EQ(dut.get_print_to_console(), true);
 
   const std::unordered_map<CommonSolverOption,
                            std::variant<double, int, std::string>>

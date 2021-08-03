@@ -134,6 +134,7 @@ class TestSystem : public LeafSystem<T> {
 
   using LeafSystem<T>::DeclareContinuousState;
   using LeafSystem<T>::DeclareDiscreteState;
+  using LeafSystem<T>::DeclareStateOutputPort;
   using LeafSystem<T>::DeclareNumericParameter;
   using LeafSystem<T>::DeclareVectorInputPort;
   using LeafSystem<T>::DeclareAbstractInputPort;
@@ -883,7 +884,7 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
 // second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<double, 4 + 3 + 2>;
-  system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
+  auto state_index = system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
   // Tests num_continuous_states without a context.
   EXPECT_EQ(4 + 3 + 2, system_.num_continuous_states());
@@ -898,6 +899,14 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(4, xc.get_generalized_position().size());
   EXPECT_EQ(3, xc.get_generalized_velocity().size());
   EXPECT_EQ(2, xc.get_misc_continuous_state().size());
+
+  // Check that the state retains its type when placed on an output port.
+  const auto& state_output_port = system_.DeclareStateOutputPort(
+      "state", state_index);
+  context = system_.CreateDefaultContext();
+  const Eigen::VectorXd ones = VectorXd::Ones(9);
+  context->SetContinuousState(ones);
+  EXPECT_EQ(state_output_port.Eval<MyVector9d>(*context).get_value(), ones);
 }
 
 TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
@@ -1138,7 +1147,6 @@ GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
   dut.set_name("dut");
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.AllocateInputAbstract(dut.get_input_port(0)),
-      std::exception,
       "System::AllocateInputAbstract\\(\\): a System with abstract input "
       "ports must pass a model_value to DeclareAbstractInputPort; the "
       "port\\[0\\] named 'no_model_input' did not do so \\(System ::dut\\)");
@@ -1163,7 +1171,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(0, Value<BasicVector<double>>(
                                    VectorXd::Constant(2, 0.0))),
-      std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
       "for input port 'input' \\(index 0\\) but the actual type was "
@@ -1171,7 +1178,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(0, Value<std::string>()),
-      std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
       "for input port 'input' \\(index 0\\) but the actual type was "
@@ -1182,7 +1188,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   context->FixInputPort(2, Value<int>(11));
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(2, Value<std::string>()),
-      std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
       "for input port 'abstract_input' \\(index 2\\) but the actual type was "
@@ -1356,6 +1361,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
       // Takes a BasicVector.
       indexes_.push_back(
           DeclareDiscreteState(MyVector2d(Vector2d(1., 2.))));
+      DeclareStateOutputPort("state", indexes_.back());
       // Takes an Eigen vector.
       indexes_.push_back(DeclareDiscreteState(Vector3d(3., 4., 5.)));
       // Four state variables, initialized to zero.
@@ -1377,6 +1383,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
   BasicVector<double>& xd0 = xd.get_mutable_vector(0);
   EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
   EXPECT_EQ(xd0.get_value(), Vector2d(1., 2.));
+  EXPECT_EQ(dut.get_output_port().Eval<MyVector2d>(*context).get_value(),
+            Vector2d(1., 2.));
 
   // Eigen vector should have been stored in a BasicVector-type object.
   BasicVector<double>& xd1 = xd.get_mutable_vector(1);
@@ -1393,11 +1401,15 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
   xd0.SetFromVector(Vector2d(9., 10.));
   xd1.SetFromVector(Vector3d(11., 12., 13.));
   xd2.SetFromVector(Vector4d(1., 2., 3., 4.));
+  // Ensure that the cache knows that the values have changed.
+  context->get_mutable_discrete_state();
 
   // Of course that had to work, but let's just prove it ...
   EXPECT_EQ(xd0.get_value(), Vector2d(9., 10.));
   EXPECT_EQ(xd1.get_value(), Vector3d(11., 12., 13.));
   EXPECT_EQ(xd2.get_value(), Vector4d(1., 2., 3., 4.));
+  EXPECT_EQ(dut.get_output_port().Eval<MyVector2d>(*context).get_value(),
+            Vector2d(9., 10.));
 
   dut.SetDefaultContext(&*context);
   EXPECT_EQ(xd0.get_value(), Vector2d(1., 2.));
@@ -1412,6 +1424,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
     DeclaredModelAbstractStateSystem() {
       DeclareAbstractState(Value<int>(1));
       DeclareAbstractState(Value<std::string>("wow"));
+      DeclareStateOutputPort("state", AbstractStateIndex{1});
     }
   };
 
@@ -1423,12 +1436,14 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   // Check that the allocations were made and with the correct type
   DRAKE_EXPECT_NO_THROW(context->get_abstract_state<int>(0));
   DRAKE_EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
+  EXPECT_EQ(dut.get_output_port().Eval<std::string>(*context), "wow");
 
   // Mess with the abstract values on the context.
   AbstractValues& values = context->get_mutable_abstract_state();
   AbstractValue& value = values.get_mutable_value(1);
   DRAKE_EXPECT_NO_THROW(value.set_value<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
+  EXPECT_EQ(dut.get_output_port().Eval<std::string>(*context), "whoops");
 
   // Ask it to reset to the defaults specified on system construction.
   dut.SetDefaultContext(context.get());
@@ -1501,12 +1516,15 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
         });
     unused(port);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     // Output port 3 is declared with a commonly-used signature taking
     // methods for both allocator and calculator for an abstract port.
     port = &DeclareAbstractOutputPort(
         kUseDefaultName, &DeclaredNonModelOutputSystem::MakeString,
         &DeclaredNonModelOutputSystem::CalcString);
     unused(port);
+#pragma GCC diagnostic pop
 
     // Output port 4 uses a default-constructed bare struct which should be
     // value-initialized.
@@ -2271,119 +2289,113 @@ GTEST_TEST(GraphvizTest, Ports) {
   EXPECT_THAT(dot, ::testing::HasSubstr("{{<u0>u0|<u1>u1} | {<y0>y0}}"));
 }
 
-// This system schedules two simultaneous publish events with
-// GetPerStepEvents(). Both events have abstract data, but of different types.
-// Both events have different custom handler callbacks. And DoPublish() is also
-// overridden.
-class TestTriggerSystem : public LeafSystem<double> {
+// This class serves as the mechanism by which we confirm that LeafSystem's
+// implementation of DispatchPublishHandler() actually calls DoPublish() and,
+// furthermore, the per-event dispatch implemented in DoPublish is completely
+// replaced by an overridden implementation.
+//
+// The system has to be able to detect when its DoPublish() is called but also
+// has to allow us to detect the difference between the built-in LeafSystem
+// publish event dispatching and the overridden behavior.
+// We do this in the following way:
+//
+//   1. We create a system that overrides DoPublish().
+//     a. The system can be configured to run in one of two modes:
+//        i. Ignore publish events.
+//        ii. Use default publication dispatch.
+//        iii. In either mode, we increment a counter that will allow us to
+//             recognize that our DoPublish override got exercised.
+//     b. The system declares one force publish event.
+//        i. The force event allows us to test both APIs
+//           System::Publish(context) and System::Publish(context, events). As
+//           all other trigger types exercise the two apis, we'll ignore other
+//           trigger types.
+//        ii. The event handler increments a counter allowing us to recognize
+//            when the *event* has been handled.
+//   2. We instantiate the system and evaluate the force events on it.
+//      i. In the "default" mode, we should see DoPublish() and the event
+//         handler invoked. This allows us to observe the "default" behavior and
+//         see that it changes.
+//      ii. In the "ignore events" mode, we expect DoPublish() to be called but
+//         not the event handler - we'll have completely supplanted the
+//         LeafSystem::DoPublish implementation).
+class DoPublishOverrideSystem : public LeafSystem<double> {
  public:
-  TestTriggerSystem() {}
+  /* Constructs the system to *default* event handling -- events will *not*
+   be ignored. */
+  DoPublishOverrideSystem() : LeafSystem<double>() {
+    DeclareForcedPublishEvent(&DoPublishOverrideSystem::HandleEvent);
+  }
 
+  bool ignore_events() const { return ignore_events_; }
+  void set_ignore_events(bool ignore_events) { ignore_events_ = ignore_events; }
+  int do_publish_count() const { return do_publish_count_; }
+  int event_handle_count() const { return event_handle_count_; }
+
+  EventStatus HandleEvent(const Context<double>&) const {
+    ++event_handle_count_;
+    return EventStatus::Succeeded();
+  }
+
+  // We need public access to the event collection to call
+  // Publish(context, events).
+  const EventCollection<PublishEvent<double>>&
+  get_forced_publish_events_collection() const {
+    return get_forced_publish_events();
+  }
+
+ private:
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
-    for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() == TriggerType::kForced)
-        continue;
-
-      // Call custom callback handler.
-      event->handle(*this, context);
-    }
-
-    publish_count_++;
+    ++do_publish_count_;
+    if (!ignore_events_) LeafSystem<double>::DoPublish(context, events);
   }
 
-  void DoGetPerStepEvents(
-      const Context<double>& context,
-      CompositeEventCollection<double>* events) const override {
-    {
-      PublishEvent<double> event(
-          std::bind(&TestTriggerSystem::StringCallback, this,
-              std::placeholders::_1, std::placeholders::_2,
-              std::make_shared<const std::string>("hello")));
-      event.AddToComposite(TriggerType::kPerStep, events);
-    }
+  // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
+  bool ignore_events_{false};
 
-    {
-      PublishEvent<double> event(
-          std::bind(&TestTriggerSystem::IntCallback, this,
-              std::placeholders::_1, std::placeholders::_2, 42));
-      event.AddToComposite(TriggerType::kPerStep, events);
-    }
-  }
+  // These mutable system members are an anti-pattern only acceptable as part of
+  // a unit test.
 
-  const std::vector<std::string>& get_string_data() const {
-    return string_data_;
-  }
+  // The number of times DoPublish() has been called on this instance.
+  mutable int do_publish_count_{0};
 
-  const std::vector<int>& get_int_data() const { return int_data_; }
-
-  int get_publish_count() const { return publish_count_; }
-
- private:
-  // Pass data by a shared_ptr<const stuff>.
-  void StringCallback(const Context<double>&, const PublishEvent<double>&,
-      std::shared_ptr<const std::string> data) const {
-    string_data_.push_back(*data);
-  }
-
-  // Pass data by value.
-  void IntCallback(const Context<double>&, const PublishEvent<double>&,
-      int data) const {
-    int_data_.push_back(data);
-  }
-
-  // Stores data copied from the abstract values in handled events.
-  mutable std::vector<std::string> string_data_;
-  mutable std::vector<int> int_data_;
-  mutable int publish_count_{0};
+  // The number of times the force publish event handler has been called on this
+  // instance.
+  mutable int event_handle_count_{0};
 };
 
-class TriggerTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    context_ = dut_.CreateDefaultContext();
-    info_ = dut_.AllocateCompositeEventCollection();
-    leaf_info_ =
-        dynamic_cast<const LeafCompositeEventCollection<double>*>(info_.get());
-    DRAKE_DEMAND(leaf_info_ != nullptr);
-  }
+GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
+  DoPublishOverrideSystem system;
+  std::unique_ptr<Context<double>> context = system.CreateDefaultContext();
+  const EventCollection<PublishEvent<double>>& events =
+      system.get_forced_publish_events_collection();
 
-  TestTriggerSystem dut_;
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<CompositeEventCollection<double>> info_;
-  const LeafCompositeEventCollection<double>* leaf_info_;
-};
+  // First test default behaviors - DoPublish gets called and event handler
+  // get called.
+  ASSERT_FALSE(system.ignore_events());
+  ASSERT_EQ(system.do_publish_count(), 0);
+  ASSERT_EQ(system.event_handle_count(), 0);
 
-// After handling of the events, int_data_ should be {42},
-// string_data_ should be {"hello"}.
-// Then forces a Publish() call on dut_, which should only increase
-// publish_count_ without changing any of the data_ vectors.
-TEST_F(TriggerTest, AbstractTrigger) {
-  // Schedules two publish events.
-  dut_.GetPerStepEvents(*context_, info_.get());
-  const auto& events = leaf_info_->get_publish_events().get_events();
-  EXPECT_EQ(events.size(), 2);
+  system.Publish(*context);
+  EXPECT_EQ(system.do_publish_count(), 1);
+  EXPECT_EQ(system.event_handle_count(), 1);
+  system.Publish(*context, events);
+  EXPECT_EQ(system.do_publish_count(), 2);
+  EXPECT_EQ(system.event_handle_count(), 2);
 
-  // Calls handler.
-  dut_.Publish(*context_, info_->get_publish_events());
+  // Now ignore default behaviors. This confirms *our* DoPublish completely
+  // supplants the default behavior.
+  system.set_ignore_events(true);
+  ASSERT_TRUE(system.ignore_events());
 
-  // Checks string_data_ in dut.
-  const auto& string_data = dut_.get_string_data();
-  EXPECT_EQ(string_data.size(), 1);
-  EXPECT_EQ(string_data.front(), "hello");
-
-  // Checks int_data_ in dut.
-  const auto& int_data = dut_.get_int_data();
-  EXPECT_EQ(int_data.size(), 1);
-  EXPECT_EQ(int_data.front(), 42);
-
-  // Now force a publish call, this should only increment the counter, without
-  // touching any of the x_data_ in dut.
-  dut_.Publish(*context_);
-  EXPECT_EQ(dut_.get_publish_count(), 2);
-  EXPECT_EQ(string_data.size(), 1);
-  EXPECT_EQ(int_data.size(), 1);
+  system.Publish(*context);
+  EXPECT_EQ(system.do_publish_count(), 3);
+  EXPECT_EQ(system.event_handle_count(), 2);
+  system.Publish(*context, events);
+  EXPECT_EQ(system.do_publish_count(), 4);
+  EXPECT_EQ(system.event_handle_count(), 2);
 }
 
 // The custom context type for the CustomContextSystem.
@@ -3178,7 +3190,7 @@ GTEST_TEST(SystemTest, MissedEventIssue12620) {
   auto events = nan_system.AllocateCompositeEventCollection();
   nan_context->SetTime(0.25);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      nan_system.CalcNextUpdateTime(*nan_context, events.get()), std::exception,
+      nan_system.CalcNextUpdateTime(*nan_context, events.get()),
       ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
       "time=0.25.*no update time.*NaN.*Return infinity.*");
 
@@ -3189,7 +3201,6 @@ GTEST_TEST(SystemTest, MissedEventIssue12620) {
   trigger_context->SetTime(0.25);
   DRAKE_EXPECT_THROWS_MESSAGE(
       trigger_system.CalcNextUpdateTime(*trigger_context, events.get()),
-      std::exception,
       ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
       "time=0.25.*update time 0.375.*empty Event collection.*"
       "at least one Event object must be provided.*");
@@ -3217,7 +3228,6 @@ GTEST_TEST(SystemTest, ForgotToSetTheUpdateTime) {
   forgot_context->SetTime(0.25);
   DRAKE_EXPECT_THROWS_MESSAGE(
       forgot_system.CalcNextUpdateTime(*forgot_context, events.get()),
-      std::exception,
       ".*CalcNextUpdateTime.*ForgotToSetTimeSystem.*MyForgetfulSystem.*"
       "time=0.25.*no update time.*NaN.*Return infinity.*");
 }

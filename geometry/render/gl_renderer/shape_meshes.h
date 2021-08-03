@@ -48,9 +48,9 @@ struct MeshData {
  If no texture coordinates are specified by the file, it will be indicated in
  the returned MeshData. See MeshData::has_tex_coord for more detail.
 
- @throws std::runtime_error if a) there are no normals, b) faces fail to
-                               reference normals, or c) faces fail to reference
-                               the texture coordinates if they are present.  */
+ @throws std::exception if a) there are no normals, b) faces fail to
+                           reference normals, or c) faces fail to reference
+                           the texture coordinates if they are present.  */
 MeshData LoadMeshFromObj(std::istream* input_stream,
                          const std::string& filename = "from_string");
 

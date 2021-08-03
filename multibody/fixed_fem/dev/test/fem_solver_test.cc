@@ -6,19 +6,18 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/eigen_conjugate_gradient_solver.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_model.h"
 #include "drake/multibody/fixed_fem/dev/test/dummy_element.h"
-#include "drake/multibody/fixed_fem/dev/zeroth_order_state_updater.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kSolutionDimension = 3;
@@ -30,11 +29,12 @@ constexpr int kNumDofs = kNumNodes * kSolutionDimension;
 constexpr double kTol = 1e-14;
 using T = double;
 using QuadratureType =
-    SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+    internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
-    LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
-using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
+    internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                   kNumQuads>;
+using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
 using ElementType =
     StaticElasticityElement<IsoparametricElementType, QuadratureType,
                             ConstitutiveModelType>;
@@ -78,9 +78,7 @@ class FemSolverTest : public ::testing::Test {
   }
 
   /* Creates the undeformed state of the model under test. */
-  State MakeReferenceState() const {
-    return model_.MakeFemState();
-  }
+  State MakeReferenceState() const { return model_.MakeFemState(); }
 
   /* Creates a Dirichlet boundary condition that constrains the first
    `kNumDirichlet` vertices. */
@@ -142,7 +140,6 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
   const T initial_error = nodal_force.norm();
   model_.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
-  const ZerothOrderStateUpdater<State> state_updater;
   solver_.SolveStaticModelWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
@@ -153,20 +150,19 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
 TEST_F(FemSolverTest, IncompatibleState) {
   FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_.SolveStaticModelWithInitialGuess(&dummy_state), std::exception,
+      solver_.SolveStaticModelWithInitialGuess(&dummy_state),
       "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
       "incompatible "
       "with the type of the FemModel.");
   State state_with_wrong_size(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_.SolveStaticModelWithInitialGuess(&state_with_wrong_size),
-      std::exception,
       "SolveStaticModelWithInitialGuess\\(\\): The size of the "
       "FemState \\(3\\) is incompatible "
       "with the size of the FemModel \\(24\\).");
 }
 // TODO(xuchenhan-tri): Add unit test for AdvanceOneTimeStep().
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

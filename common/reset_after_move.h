@@ -1,10 +1,10 @@
 #pragma once
 
+#include <type_traits>
 #include <utility>
 
 namespace drake {
 
-// TODO(sherm1) Upgrade this to match reset_on_copy (e.g. noexcept).
 /// Type wrapper that performs value-initialization on the wrapped type, and
 /// guarantees that when moving from this type that the donor object is reset
 /// to its value-initialized value.
@@ -50,24 +50,30 @@ class reset_after_move {
  public:
   /// Constructs a reset_after_move<T> with a value-initialized wrapped value.
   /// See http://en.cppreference.com/w/cpp/language/value_initialization.
-  reset_after_move() {}
+  reset_after_move() noexcept(std::is_nothrow_default_constructible_v<T>) {}
 
   /// Constructs a reset_after_move<T> with the given wrapped value.  This is
   /// an implicit conversion, so that reset_after_move<T> behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
-  reset_after_move(const T& value) : value_(value) {}
+  reset_after_move(const T& value) noexcept(
+      std::is_nothrow_copy_constructible_v<T>)
+      : value_(value) {}
 
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   /// MoveAssignable.
   //@{
   reset_after_move(const reset_after_move&) = default;
   reset_after_move& operator=(const reset_after_move&) = default;
-  reset_after_move(reset_after_move&& other) {
+  reset_after_move(reset_after_move&& other) noexcept(
+      std::is_nothrow_default_constructible_v<T> &&
+      std::is_nothrow_move_assignable_v<T>) {
     value_ = std::move(other.value_);
     other.value_ = T{};
   }
-  reset_after_move& operator=(reset_after_move&& other) {
+  reset_after_move& operator=(reset_after_move&& other) noexcept(
+      std::is_nothrow_default_constructible_v<T> &&
+      std::is_nothrow_move_assignable_v<T>) {
     if (this != &other) {
       value_ = std::move(other.value_);
       other.value_ = T{};

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="table">
+    <link name="body"/>
+    <frame name="top" attached_to="body">
+      <pose>0 0 0.5 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
+

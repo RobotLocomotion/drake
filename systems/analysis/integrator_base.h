@@ -212,7 +212,7 @@ class IntegratorBase {
    integrator supports this capability before calling this function; if
    the integrator does not support it, this method will throw an exception.
 
-   @throws std::logic_error if integrator does not support error
+   @throws std::exception if integrator does not support error
            estimation.
    */
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
@@ -318,7 +318,7 @@ class IntegratorBase {
             get_error_estimate() will still return a correct result), meaning
             that the additional (typically, but not necessarily small)
             computation required for error estimation will still be performed.
-   @throws std::logic_error if integrator does not support error
+   @throws std::exception if integrator does not support error
            estimation and @p flag is set to `false`.
    */
   void set_fixed_step_mode(bool flag) {
@@ -644,13 +644,13 @@ class IntegratorBase {
    Request that the first attempted integration step have a particular size.
    If no request is made, the integrator will estimate a suitable size
    for the initial step attempt. *If the integrator does not support error
-   control*, this method will throw a std::logic_error (call
+   control*, this method will throw a std::exception (call
    supports_error_estimation() to verify before calling this method). For
    variable-step integration, the initial target will be treated as a maximum
    step size subject to accuracy requirements and event occurrences. You can
    find out what size *actually* worked with
    `get_actual_initial_step_size_taken()`.
-   @throws std::logic_error If the integrator does not support error
+   @throws std::exception If the integrator does not support error
        estimation.
    */
   void request_initial_step_size_target(const T& step_size) {
@@ -807,7 +807,7 @@ class IntegratorBase {
     return req_min_step_size_; }
 
   /**
-   Sets whether the integrator should throw a std::runtime_error exception
+   Sets whether the integrator should throw a std::exception
    when the integrator's step size selection algorithm determines that it
    must take a step smaller than the minimum step size (for, e.g., purposes
    of error control). Default is `true`. If `false`, the integrator will
@@ -884,11 +884,11 @@ class IntegratorBase {
 
   /**
    An integrator must be initialized before being used. The pointer to the
-   context must be set before Initialize() is called (or an std::logic_error
+   context must be set before Initialize() is called (or an std::exception
    will be thrown). If Initialize() is not called, an exception will be
    thrown when attempting to call IntegrateNoFurtherThanTime(). To reinitialize
    the integrator, Reset() should be called followed by Initialize().
-   @throws std::logic_error If the context has not been set or a user-set
+   @throws std::exception If the context has not been set or a user-set
            parameter has been set illogically (i.e., one of the
            weighting matrix coefficients is set to a negative value- this
            check is only performed for integrators that support error
@@ -958,9 +958,9 @@ class IntegratorBase {
    @param boundary_time The present or future time (exception will be thrown
           if this is not the case) marking the end of the user-designated
           simulated interval.
-   @throws std::logic_error If the integrator has not been initialized or one
-                            of publish_time, update_time, or boundary_time is
-                            in the past.
+   @throws std::exception If the integrator has not been initialized or one
+                          of publish_time, update_time, or boundary_time is
+                          in the past.
    @return The reason for the integration step ending.
    @post The time in the context will be no greater than
          `min(publish_time, update_time, boundary_time)`.
@@ -990,8 +990,8 @@ class IntegratorBase {
             place of this function (which was created for off-simulation
             purposes), generally.
    @param t_final The current or future time to integrate to.
-   @throws std::logic_error If the integrator has not been initialized or
-                            t_final is in the past.
+   @throws std::exception If the integrator has not been initialized or
+                          t_final is in the past.
    @sa IntegrateNoFurtherThanTime(), which is designed to be operated by
        Simulator and accounts for publishing and state reinitialization.
    @sa IntegrateWithSingleFixedStepToTime(), which is also designed to be
@@ -1032,9 +1032,9 @@ class IntegratorBase {
             place of this function (which was created for off-simulation
             purposes), generally.
    @param t_target The current or future time to integrate to.
-   @throws std::logic_error If the integrator has not been initialized or
-                            `t_target` is in the past or the integrator
-                            is not operating in fixed step mode.
+   @throws std::exception If the integrator has not been initialized or
+                          `t_target` is in the past or the integrator
+                          is not operating in fixed step mode.
    @sa IntegrateNoFurtherThanTime(), which is designed to be operated by
        Simulator and accounts for publishing and state reinitialization.
    @sa IntegrateWithMultipleStepsToTime(), which is also designed to be
@@ -1235,7 +1235,7 @@ class IntegratorBase {
    @pre The system being integrated has continuous state.
    @pre No dense integration is in progress (no dense output is held by the
         integrator)
-   @throws std::logic_error if any of the preconditions is not met.
+   @throws std::exception if any of the preconditions is not met.
    @warning Dense integration may incur significant overhead.
    */
   void StartDenseIntegration() {
@@ -1277,7 +1277,7 @@ class IntegratorBase {
         integrator, after a call to StartDenseIntegration()).
    @post Previously held dense output is not updated nor referenced by
          the integrator anymore.
-   @throws std::logic_error if any of the preconditions is not met.
+   @throws std::exception if any of the preconditions is not met.
    */
   std::unique_ptr<trajectories::PiecewisePolynomial<T>> StopDenseIntegration() {
     if (!dense_output_) {
@@ -1364,8 +1364,8 @@ class IntegratorBase {
                  take a smaller step than specified to satisfy accuracy
                  requirements, to resolve integrator convergence problems, or
                  to respect the integrator's maximum step size.
-   @throws std::logic_error if integrator does not support error
-                            estimation.
+   @throws std::exception if integrator does not support error
+                          estimation.
    @note This function will shrink the integration step as necessary whenever
          the integrator's DoStep() fails to take the requested step
          e.g., due to integrator convergence failure.
@@ -1496,7 +1496,7 @@ class IntegratorBase {
 
     // Allow this update to *replace* the final segment if the start_time of
     // this step is earlier than the current end_time of the dense output and
-    // matches the start_time of the the final segment of the dense output.
+    // matches the start_time of the final segment of the dense output.
     // This happens, for instance, when the Simulator is doing WitnessFunction
     // isolation; it routinely back up the integration and try the same step
     // multiple times.  Note: we intentionally check for equality between

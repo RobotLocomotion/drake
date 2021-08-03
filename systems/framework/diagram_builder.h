@@ -17,9 +17,13 @@
 namespace drake {
 namespace systems {
 
-/// DiagramBuilder is a factory class for Diagram. It is single
-/// use: after calling Build or BuildInto, DiagramBuilder gives up ownership
-/// of the constituent systems, and should therefore be discarded.
+/// DiagramBuilder is a factory class for Diagram.
+///
+/// It is single use: after calling Build or BuildInto, DiagramBuilder gives up
+/// ownership of the constituent systems, and should therefore be discarded.
+///
+/// When a Diagram (or DiagramBuilder) that owns systems is destroyed, the
+/// systems will be destroyed in the reverse of the order they were added.
 ///
 /// A system must be added to the DiagramBuilder with AddSystem or
 /// AddNamedSystem before it can be wired up in any way. Every system must have
@@ -276,12 +280,12 @@ class DiagramBuilder {
 
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput.
-  /// @throws std::logic_error if the graph is not buildable.
+  /// @throws std::exception if the graph is not buildable.
   std::unique_ptr<Diagram<T>> Build();
 
   /// Configures @p target to have the topology that has been described by
   /// the calls to Connect, ExportInput, and ExportOutput.
-  /// @throws std::logic_error if the graph is not buildable.
+  /// @throws std::exception if the graph is not buildable.
   ///
   /// Only Diagram subclasses should call this method. The target must not
   /// already be initialized.
@@ -318,7 +322,7 @@ class DiagramBuilder {
   void ThrowIfAlgebraicLoopsExist() const;
 
   // Produces the Blueprint that has been described by the calls to
-  // Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
+  // Connect, ExportInput, and ExportOutput. Throws std::exception if the
   // graph is empty or contains algebraic loops.
   // The DiagramBuilder passes ownership of the registered systems to the
   // blueprint.

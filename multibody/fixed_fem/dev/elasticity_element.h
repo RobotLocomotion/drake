@@ -5,15 +5,15 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/fem/isoparametric_element.h"
+#include "drake/multibody/fem/quadrature.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
-#include "drake/multibody/fixed_fem/dev/isoparametric_element.h"
-#include "drake/multibody/fixed_fem/dev/quadrature.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): ElasticityElement and its derived classes should be
 //  placed in internal namespace.
 /** The traits class for ElasticityElement. This traits class is meant to be
@@ -28,43 +28,43 @@ template <class IsoparametricElementType, class QuadratureType,
 struct ElasticityElementTraits {
   /* Check that template parameters are of the correct types. */
   static_assert(
-      is_isoparametric_element<IsoparametricElementType>::value,
+      internal::is_isoparametric_element<IsoparametricElementType>::value,
       "The IsoparametricElementType template parameter must be a derived "
       "class of IsoparametricElement");
   static_assert(
-      is_quadrature<QuadratureType>::value,
+      internal::is_quadrature<QuadratureType>::value,
       "The QuadratureType template parameter must be a derived class of "
       "Quadrature<T, NaturalDim, NumLocations>, where NaturalDim can "
       "be 1, 2 or 3.");
   static_assert(
-      is_constitutive_model<ConstitutiveModelType>::value,
+      internal::is_constitutive_model<ConstitutiveModelType>::value,
       "The ConstitutiveModelType template parameter must be a derived "
       "class of ConstitutiveModel");
   /* Check that the scalar types are compatible. */
   static_assert(std::is_same_v<typename IsoparametricElementType::T,
                                typename ConstitutiveModelType::T>);
   /* Check that the number of quadrature points are compatible. */
-  static_assert(QuadratureType::num_quadrature_points() ==
-                IsoparametricElementType::num_sample_locations());
-  static_assert(QuadratureType::num_quadrature_points() ==
+  static_assert(QuadratureType::num_quadrature_points ==
+                IsoparametricElementType::num_sample_locations);
+  static_assert(QuadratureType::num_quadrature_points ==
                 ConstitutiveModelType::num_locations());
   /* Check that the natural dimensions are compatible. */
-  static_assert(IsoparametricElementType::natural_dimension() ==
-                QuadratureType::natural_dimension());
+  static_assert(IsoparametricElementType::natural_dimension ==
+                QuadratureType::natural_dimension);
   /* Only 3D elasticity is supported. */
-  static_assert(IsoparametricElementType::spatial_dimension() == 3);
+  static_assert(IsoparametricElementType::spatial_dimension == 3);
 
   using T = typename ConstitutiveModelType::T;
   using IsoparametricElement = IsoparametricElementType;
   using Quadrature = QuadratureType;
   using ConstitutiveModel = ConstitutiveModelType;
 
-  static constexpr int kNumNodes = IsoparametricElementType::num_nodes();
+  static constexpr int kNumNodes = IsoparametricElementType::num_nodes;
   static constexpr int kNumQuadraturePoints =
-      QuadratureType::num_quadrature_points();
-  static constexpr int kNaturalDimension = QuadratureType::natural_dimension();
+      QuadratureType::num_quadrature_points;
+  static constexpr int natural_dimension = QuadratureType::natural_dimension;
   static constexpr int kSpatialDimension =
-      IsoparametricElementType::spatial_dimension();
+      IsoparametricElementType::spatial_dimension;
   static constexpr int kSolutionDimension = 3;
   /* The number of degrees of freedom should be equal to the solution dimension
    (which gives the number of degrees of freedom for a single vertex) times
@@ -78,8 +78,8 @@ struct ElasticityElementTraits {
   // TODO(xuchenhan-tri): Enforce the constraint mentioned above with
   //  static_assert with easy-to-parse error messages.
   struct Data {
-    typename ConstitutiveModelType::Traits::DeformationGradientCacheEntryType
-        deformation_gradient_cache_entry;
+    typename ConstitutiveModelType::Traits::DeformationGradientDataType
+        deformation_gradient_data;
     /* The elastic energy density evaluated at quadrature points. */
     std::array<T, kNumQuadraturePoints> Psi;
     /* The first Piola stress evaluated at quadrature points. */
@@ -169,7 +169,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     constexpr int kDim = Traits::kSpatialDimension;
     // TODO(xuchenhan-tri): Consider caching the lumped mass locally when it is
     //  used for more than computing the gravity force.
-    const auto& lumped_mass = mass_matrix_.rowwise().sum();
+    const auto& lumped_mass = mass_matrix_.rowwise().sum().eval();
     for (int i = 0; i < Traits::kNumNodes; ++i) {
       /* The following computation is equivalent to performing the matrix-vector
        multiplication of the mass matrix and the stacked gravity vector. */
@@ -216,7 +216,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     DRAKE_DEMAND(density_ > 0);
     /* Find the Jacobian of the change of variable function X(ξ). */
     const std::array<
-        Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNaturalDimension>,
+        Eigen::Matrix<T, Traits::kSpatialDimension, Traits::natural_dimension>,
         Traits::kNumQuadraturePoints>
         dXdxi = isoparametric_element_.CalcJacobian(reference_positions);
     /* Record the quadrature point volume in reference configuration for each
@@ -225,27 +225,27 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
       /* The scale to transform quadrature weight in parent coordinates to
        reference coordinates. */
       T volume_scale;
-      if constexpr (Traits::kNaturalDimension == 3) {
+      if constexpr (Traits::natural_dimension == 3) {
         volume_scale = dXdxi[q].determinant();
         /* Degenerate tetrahedron in the initial configuration is not allowed.
          */
         DRAKE_DEMAND(volume_scale > 0);
         // NOLINTNEXTLINE(readability/braces) false positive
-      } else if constexpr (Traits::kNaturalDimension == 2) {
+      } else if constexpr (Traits::natural_dimension == 2) {
         /* Given the QR decomposition of the Jacobian matrix J = QR, where Q is
          unitary and R is upper triangular, the 2x2 top left corner of R gives
          the in plane deformation of the reference triangle. Its determinant
          provides the ratio of the area of triangle in the reference
          configuration over the area of the triangle in parent domain. */
         Eigen::ColPivHouseholderQR<Eigen::Matrix<T, Traits::kSpatialDimension,
-                                                 Traits::kNaturalDimension>>
+                                                 Traits::natural_dimension>>
             qr(dXdxi[q]);
         volume_scale = abs(qr.matrixR()
-                               .topLeftCorner(Traits::kNaturalDimension,
-                                              Traits::kNaturalDimension)
+                               .topLeftCorner(Traits::natural_dimension,
+                                              Traits::natural_dimension)
                                .template triangularView<Eigen::Upper>()
                                .determinant());
-      } else if constexpr (Traits::kNaturalDimension == 1) {
+      } else if constexpr (Traits::natural_dimension == 1) {
         volume_scale = dXdxi[q].norm();
       } else {
         DRAKE_UNREACHABLE();
@@ -257,14 +257,10 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
      in the calculation of deformation gradient. */
     dxidX_ = isoparametric_element_.CalcJacobianPseudoinverse(dXdxi);
 
-    const std::array<
-        Eigen::Matrix<T, Traits::kNumNodes, Traits::kNaturalDimension>,
-        Traits::kNumQuadraturePoints>& dSdxi =
-        isoparametric_element_.GetGradientInParentCoordinates();
-    // TODO(xuchenhan-tri) Replace this with CalcGradientInSpatialCoordinates()
-    //  when it is available in IsoparametricElement.
+    const auto dSdX = isoparametric_element_.CalcGradientInSpatialCoordinates(
+        reference_positions);
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
-      dSdX_transpose_[q] = (dSdxi[q] * dxidX_[q]).transpose();
+      dSdX_transpose_[q] = dSdX[q].transpose();
     }
     /* Gravity force depends on mass, which depends on volume. Therefore we must
      compute volume, mass, gravity in that order. */
@@ -311,8 +307,8 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    The negative force derivative we calculate here is given by ∫ dF/dxᵇ :
    dP/dF : dF/dxᵃ dX. The calculation uses a different conjugate pair, but is
    analytically equal to Kₐᵦ,c + Kₐᵦ,σ. See
-   multibody/fem/dev/doc/stiffness_matrix.pdf for the derivation that shows
-   the equivalence.
+   multibody/fixed_fem/dev/doc/stiffness_matrix.pdf for the derivation that
+   shows the equivalence.
    // TODO(xuchenhan-tri): Update the directory above when this file moves out
    //  of dev/.
 
@@ -393,16 +389,13 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   typename Traits::Data DoComputeData(
       const FemState<DerivedElement>& state) const {
     typename Traits::Data data;
-    data.deformation_gradient_cache_entry.mutable_deformation_gradient() =
-        CalcDeformationGradient(state);
-    data.deformation_gradient_cache_entry.UpdateCacheEntry(
-        data.deformation_gradient_cache_entry.deformation_gradient());
-    constitutive_model_.CalcElasticEnergyDensity(
-        data.deformation_gradient_cache_entry, &data.Psi);
-    constitutive_model_.CalcFirstPiolaStress(
-        data.deformation_gradient_cache_entry, &data.P);
+    data.deformation_gradient_data.UpdateData(CalcDeformationGradient(state));
+    constitutive_model_.CalcElasticEnergyDensity(data.deformation_gradient_data,
+                                                 &data.Psi);
+    constitutive_model_.CalcFirstPiolaStress(data.deformation_gradient_data,
+                                             &data.P);
     constitutive_model_.CalcFirstPiolaStressDerivative(
-        data.deformation_gradient_cache_entry, &data.dPdF);
+        data.deformation_gradient_data, &data.dPdF);
     return data;
   }
 
@@ -521,7 +514,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   /* The inverse element Jacobian evaluated at reference configuration at
    the quadrature points in this element. */
   std::array<
-      Eigen::Matrix<T, Traits::kNaturalDimension, Traits::kSolutionDimension>,
+      Eigen::Matrix<T, Traits::natural_dimension, Traits::kSolutionDimension>,
       Traits::kNumQuadraturePoints>
       dxidX_;
   /* The transpose of the derivatives of the shape functions with respect to the
@@ -542,6 +535,6 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   /* Gravity force on the element. */
   Vector<T, Traits::kNumDofs> gravity_force_;
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

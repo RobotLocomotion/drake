@@ -69,7 +69,7 @@ class LinearOperator {
   }
 
   // For `this` operator A, performs y = Aᵀ⋅x.
-  // The default implementation throws a std::runtime_error exception.
+  // The default implementation throws a std::exception.
   // Derived classes can provide an implementation through the virtual
   // interface DoMultiplyByTranspose().
   // @throws if y is nullptr.
@@ -125,17 +125,19 @@ class LinearOperator {
                           VectorX<T>* y) const = 0;
 
   // For `this` operator A, performs y = Aᵀ⋅x.
-  // The default implementation throws a std::runtime_error exception.
+  // The default implementation throws a std::exception.
   // Its NVI already performed checks for valid arguments.
-  virtual void DoMultiplyByTranspose(const Eigen::SparseVector<T>& x,
-                                     Eigen::SparseVector<T>* y) const;
+  virtual void DoMultiplyByTranspose(
+      const Eigen::Ref<const Eigen::SparseVector<T>>& x,
+      Eigen::SparseVector<T>* y) const;
 
   // Alternate signature to operate on dense vectors.
   // Its NVI already performed checks for valid arguments.
-  virtual void DoMultiplyByTranspose(const VectorX<T>& x, VectorX<T>* y) const;
+  virtual void DoMultiplyByTranspose(const Eigen::Ref<const VectorX<T>>& x,
+                                     VectorX<T>* y) const;
 
   // Assembles `this` operator into a sparse matrix A.
-  // The default implementation throws a std::runtime_error exception.
+  // The default implementation throws a std::exception.
   // Its NVI already performed checks for a valid non-null pointer to a matrix
   // of the proper size.
   // TODO(amcastro-tri): A default implementation for this method based on

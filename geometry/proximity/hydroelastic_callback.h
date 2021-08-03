@@ -10,7 +10,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
@@ -55,7 +55,7 @@ struct CallbackData {
                                   polygons.
    @param surfaces_in             The output results. Aliased.  */
   CallbackData(
-      const CollisionFilterLegacy* collision_filter_in,
+      const CollisionFilter* collision_filter_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       const Geometries* geometries_in,
       ContactPolygonRepresentation polygon_representation_in,
@@ -72,7 +72,7 @@ struct CallbackData {
   }
 
   /* The collision filter system.  */
-  const CollisionFilterLegacy& collision_filter;
+  const CollisionFilter& collision_filter;
 
   /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
@@ -110,24 +110,16 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       // Soft half space with rigid mesh.
       const SurfaceMesh<double>& mesh_R = rigid.mesh();
       const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
-
-      // TODO(DamrongGuoy): Pass `representation` parameter (the choice of
-      //  contact polygons) when ComputeContactSurfaceFromSoftHalfSpaceRigidMesh
-      //  supports it.
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR);
+          id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR,
+          representation);
     } else {
-      // Soft volume vs rigid half space. The half space-mesh intersection
-      // requires the mesh field to be a linear mesh field.
-      const auto& field_S =
-          dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
-              soft.pressure_field());
+      // Soft volume vs rigid half space.
+      const VolumeMeshFieldLinear<double, double>& field_S =
+          soft.pressure_field();
       const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
-      // TODO(DamrongGuoy): Pass `representation` parameter (the choice of
-      //  contact polygons) when
-      //  ComputeContactSurfaceFromSoftVolumeRigidHalfSpace supports it.
       return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+          id_S, field_S, bvh_S, X_WS, id_R, X_WR, representation);
     }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.
@@ -215,7 +207,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const EncodedData encoding_b(*object_B_ptr);
 
   const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_a.encoding(), encoding_b.encoding());
+      encoding_a.id(), encoding_b.id());
 
   if (can_collide) {
     CalcContactSurfaceResult result =
@@ -293,7 +285,7 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
   const EncodedData encoding_b(*object_B_ptr);
 
   const bool can_collide = data.data.collision_filter.CanCollideWith(
-      encoding_a.encoding(), encoding_b.encoding());
+      encoding_a.id(), encoding_b.id());
 
   if (can_collide) {
     CalcContactSurfaceResult result =

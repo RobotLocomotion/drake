@@ -217,25 +217,21 @@ TEST_F(IdentifierTests, InvalidGetValueCall) {
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(
       unused(invalid.get_value()),
-      std::exception, ".*is_valid.*failed.*");
+      ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidEqualityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      unused(invalid == a1_),
-      std::exception, ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(unused(invalid == a1_), ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidInequalityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      unused(invalid != a1_),
-      std::exception, ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(unused(invalid != a1_), ".*is_valid.*failed.*");
 }
 
 // Hashing an invalid id is *not* an error.
@@ -253,9 +249,7 @@ TEST_F(IdentifierTests, InvalidStream) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   std::stringstream ss;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      unused(ss << invalid),
-      std::exception, ".*is_valid.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(unused(ss << invalid), ".*is_valid.*failed.*");
 }
 
 }  // namespace

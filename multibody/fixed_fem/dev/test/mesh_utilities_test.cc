@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 namespace {
 
@@ -15,6 +15,7 @@ using Eigen::Vector3d;
 using geometry::Box;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
+using geometry::VolumeMeshFieldLinear;
 using geometry::VolumeVertex;
 using geometry::VolumeVertexIndex;
 using geometry::internal::ComputeEulerCharacteristic;
@@ -114,13 +115,14 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   return true;
 }
 
-GTEST_TEST(MeshUtilitiesTest, MakeDiamondCubicBoxVolumeMesh) {
+GTEST_TEST(MeshUtilitiesTest, DiamondCubicBoxVolumeMesh) {
   const double dx = 0.1;
   const RigidTransform<double> X_WB(Eigen::Quaternion<double>(1, 2, 3, 4),
                                     Vector3d(1, 2, 3));
   const Box cube(Box::MakeCube(2 * dx));
-  const VolumeMesh<double> cube_mesh =
-      MakeDiamondCubicBoxVolumeMesh<double>(cube, dx, X_WB);
+  const internal::ReferenceDeformableGeometry<double> cube_geometry =
+      MakeDiamondCubicBoxDeformableGeometry<double>(cube, dx, X_WB);
+  const VolumeMesh<double>& cube_mesh = cube_geometry.mesh();
   /* 2 x 2 x 2 = 8 cubes. Each cube is split into 5 tetrahedrons. */
   EXPECT_EQ(cube_mesh.num_elements(), 8 * 5);
   /* 3 x 3 x 3 = 27 vertices. From the cubes. No additional vertex is introduced
@@ -130,8 +132,9 @@ GTEST_TEST(MeshUtilitiesTest, MakeDiamondCubicBoxVolumeMesh) {
   EXPECT_TRUE(VerifyDiamondCubicBoxMesh(cube_mesh, cube, X_WB));
 
   const Box rectangle(1.2 * dx, 2.3 * dx, 3.5 * dx);
-  const VolumeMesh<double> rectangle_mesh =
-      MakeDiamondCubicBoxVolumeMesh<double>(rectangle, dx, X_WB);
+  const internal::ReferenceDeformableGeometry<double> rectangle_geometry =
+      MakeDiamondCubicBoxDeformableGeometry<double>(rectangle, dx, X_WB);
+  const VolumeMesh<double>& rectangle_mesh = rectangle_geometry.mesh();
   /* 2 x 3 x 4 = 24 cubes. Each cube is split into 5 tetrahedrons. */
   EXPECT_EQ(rectangle_mesh.num_elements(), 120);
   /* 3 x 4 x 5 = 60 vertices. From the cubes. No additional vertex is introduced
@@ -140,7 +143,36 @@ GTEST_TEST(MeshUtilitiesTest, MakeDiamondCubicBoxVolumeMesh) {
   /* Verify that the mesh is conforming and conforms to the box. */
   EXPECT_TRUE(VerifyDiamondCubicBoxMesh(rectangle_mesh, rectangle, X_WB));
 }
+
+/* Verifies that the signed distance field is correct at all vertex locations.
+ */
+GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
+  constexpr double dx = 0.1;
+  constexpr double half_Lx = 1.1 * dx;
+  constexpr double half_Ly = 1.2 * dx;
+  constexpr double half_Lz = 2.3 * dx;
+  const Box box(2.0 * half_Lx, 2.0 * half_Ly, 2.0 * half_Lz);
+  const internal::ReferenceDeformableGeometry<double> box_geometry =
+      MakeDiamondCubicBoxDeformableGeometry<double>(box, dx,
+                                                    math::RigidTransformd());
+  const VolumeMesh<double>& mesh = box_geometry.mesh();
+  const VolumeMeshFieldLinear<double, double>& mesh_field =
+      box_geometry.signed_distance();
+  for (VolumeVertexIndex i(0); i < mesh.num_vertices(); ++i) {
+    const double signed_distance = mesh_field.EvaluateAtVertex(i);
+    const Vector3d& r_WV = mesh.vertex(i).r_MV();
+    // clang-format off
+    const std::array<double, 6> distance_to_box_faces = {
+        half_Lx - r_WV(0), r_WV(0) + half_Lx,
+        half_Ly - r_WV(1), r_WV(1) + half_Ly,
+        half_Lz - r_WV(2), r_WV(2) + half_Lz };
+    // clang-format on
+    const double distance_to_surface = *std::min_element(
+        std::begin(distance_to_box_faces), std::end(distance_to_box_faces));
+    EXPECT_DOUBLE_EQ(-distance_to_surface, signed_distance);
+  }
+}
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

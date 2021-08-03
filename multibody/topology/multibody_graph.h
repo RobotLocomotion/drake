@@ -65,10 +65,10 @@ class MultibodyGraph {
     AddBody(), or it must be the designated index for the world body
     (world_index()).
   @returns The unique JointIndex for the added joint in the graph.
-  @throws std::runtime_error iff `name` is duplicated within `model_instance`.
-  @throws std::runtime_error iff `type` has not been registered with
+  @throws std::exception iff `name` is duplicated within `model_instance`.
+  @throws std::exception iff `type` has not been registered with
   RegisterJointType().
-  @throws std::runtime_error iff `parent_body_index` or `child_body_index` are
+  @throws std::exception iff `parent_body_index` or `child_body_index` are
   not valide body indexes for `this` graph. */
   JointIndex AddJoint(const std::string& name,
                       ModelInstanceIndex model_instance,
@@ -77,13 +77,13 @@ class MultibodyGraph {
 
   /* Returns the body that corresponds to the world. This body added via the
   first call to AddBody().
-  @throws std::runtime_error iff AddBody() was not called even once yet. */
+  @throws std::exception iff AddBody() was not called even once yet. */
   const Body& world_body() const;
 
   /* Returns the name we recognize as the World (or Ground) body. This is
   the name that was provided in the first AddBody() call.
   In Drake, MultibodyPlant names it the "WorldBody".
-  @throws std::runtime_error iff AddBody() was not called even once yet. */
+  @throws std::exception iff AddBody() was not called even once yet. */
   const std::string& world_body_name() const;
 
   /* Returns the unique index that identifies the "weld" joint type (always
@@ -100,7 +100,7 @@ class MultibodyGraph {
   to identify weld joints. "weld" joint type has index `weld_type_index()`.
   @param[in] joint_type_name
     A unique string identifying a joint type, such as "pin" or "prismatic".
-  @throws std::runtime_error if `joint_type_name` already identifies a
+  @throws std::exception if `joint_type_name` already identifies a
   previously registered joint type.
   @retval JointTypeIndex Index uniquely identifying the new joint type. */
   JointTypeIndex RegisterJointType(const std::string& joint_type_name);

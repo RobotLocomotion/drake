@@ -5,9 +5,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/linear_system_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
 namespace drake {
@@ -52,6 +54,5 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
   }
 }
-
 }  // namespace solvers
 }  // namespace drake

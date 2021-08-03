@@ -196,7 +196,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * will be created.
    *
    * You can only call this method once.
-   * @throws std::logic_error if called a second time.
+   * @throws std::exception if called a second time.
    *
    * @pre The publisher function may not be null.
    */

@@ -846,6 +846,7 @@ TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
   double pobj{0};
   double dobj{0};
   const int ret = csdp::easy_sdp(
+      nullptr,
       dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
       -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
       &pobj, &dobj);

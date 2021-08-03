@@ -167,10 +167,10 @@ class Formula {
    * value and use it to substitute all occurrences of the random variable in
    * this formula.
    *
-   * @throws std::runtime_error if a variable `v` is needed for an evaluation
-   *                            but not provided by @p env.
-   * @throws std::runtime_error if an unassigned random variable is detected
-   *                            while @p random_generator is `nullptr`.
+   * @throws std::exception if a variable `v` is needed for an evaluation
+   *                        but not provided by @p env.
+   * @throws std::exception if an unassigned random variable is detected
+   *                        while @p random_generator is `nullptr`.
    */
   bool Evaluate(const Environment& env = Environment{},
                 RandomGenerator* random_generator = nullptr) const;
@@ -183,7 +183,7 @@ class Formula {
 
   /** Returns a copy of this formula replacing all occurrences of @p var
    * with @p e.
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] Formula Substitute(const Variable& var,
                                    const Expression& e) const;
@@ -192,7 +192,7 @@ class Formula {
    * variables in @p s with corresponding expressions in @p s. Note that the
    * substitutions occur simultaneously. For example, (x / y >
    * 0).Substitute({{x, y}, {y, x}}) gets (y / x > 0).
-   * @throws std::runtime_error if NaN is detected during substitution.
+   * @throws std::exception if NaN is detected during substitution.
    */
   [[nodiscard]] Formula Substitute(const Substitution& s) const;
 
@@ -317,20 +317,20 @@ Formula operator>=(const Expression& e1, const Expression& e2);
  *
  * When this formula is evaluated, there are two possible outcomes:
  * - Returns false if the e.Evaluate() is not NaN.
- * - Throws std::runtime_error if NaN is detected during evaluation.
+ * - Throws std::exception if NaN is detected during evaluation.
  * Note that the evaluation of `isnan(e)` never returns true.
  */
 Formula isnan(const Expression& e);
 
 /** Returns a Formula determining if the given expression @p e is a
  * positive or negative infinity.
- * @throws std::runtime_error if NaN is detected during evaluation.
+ * @throws std::exception if NaN is detected during evaluation.
  */
 Formula isinf(const Expression& e);
 
 /** Returns a Formula determining if the given expression @p e has a finite
  * value.
- * @throws std::runtime_error if NaN is detected during evaluation.
+ * @throws std::exception if NaN is detected during evaluation.
  */
 Formula isfinite(const Expression& e);
 
@@ -338,7 +338,7 @@ Formula isfinite(const Expression& e);
  * matrix. By definition, a symmetric matrix @p m is positive-semidefinte if xᵀ
  * m x ≥ 0 for all vector x ∈ ℝⁿ.
  *
- * @throws std::runtime_error if @p m is not symmetric.
+ * @throws std::exception if @p m is not symmetric.
  *
  * @note This method checks if @p m is symmetric, which can be costly. If you
  * want to avoid it, please consider using
@@ -351,7 +351,7 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 /** Constructs and returns a symbolic positive-semidefinite formula from @p
  * m. If @p mode is Eigen::Lower, it's using the lower-triangular part of @p m
  * to construct a positive-semidefinite formula. If @p mode is Eigen::Upper, the
- * upper-triangular part of @p m is used. It throws std::runtime_error if @p has
+ * upper-triangular part of @p m is used. It throws std::exception if @p has
  * other values. See the following code snippet.
  *
  * @code
@@ -1332,19 +1332,37 @@ struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
 }  // namespace internal
 
 namespace numext {
-// not_equal_strict was only added in Eigen 3.3.5. Since the current minimum
-// Eigen version used by drake is 3.3.4, a version check is needed.
+
+// Provides specializations for equal_strict and not_equal_strict with
+// Expression. As of Eigen 3.4.0, these are called at least as part of
+// triangular vector solve (though they could also potentially come up
+// elsewhere). The default template relies on an implicit conversion to
+// bool but our bool operator is explicit, so we need to specialize.
+//
+// Furthermore, various Eigen algorithms will use "short-circuit when zero"
+// guards as an optimization to skip expensive computation if it can show
+// that the end result will remain unchanged. If our Expression has any
+// unbound variables during that guard, we will throw instead of skipping
+// the optimizaton. Therefore, we tweak these guards to special-case the
+// result when either of the operands is a literal zero, with no throwing
+// even if the other operand has unbound variables.
+//
+// These functions were only added in Eigen 3.3.5, but the minimum
+// Eigen version used by drake is 3.3.4, so a version check is needed.
 #if EIGEN_VERSION_AT_LEAST(3, 3, 5)
-/// Provides specialization for not_equal_strict with Expression.
-/// As of Eigen 3.4.0, this is called at least as part of triangular vector
-/// solve (though it could also potentially come up elsewhere). The default
-/// template relies on an implicit conversion to bool but our bool operator
-/// is explicit, so we need to specialize.
+template <>
+EIGEN_STRONG_INLINE bool equal_strict(
+    const drake::symbolic::Expression& x,
+    const drake::symbolic::Expression& y) {
+  if (is_zero(x)) { return is_zero(y); }
+  if (is_zero(y)) { return is_zero(x); }
+  return static_cast<bool>(x == y);
+}
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& x,
     const drake::symbolic::Expression& y) {
-  return static_cast<bool>(x != y);
+  return !Eigen::numext::equal_strict(x, y);
 }
 #endif
 

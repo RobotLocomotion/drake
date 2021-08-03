@@ -56,8 +56,6 @@ class SpringTester : public ::testing::Test {
     system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
     context_ = system_->CreateDefaultContext();
 
-    context_->EnableCaching();
-
     forces_ = std::make_unique<MultibodyForces<double>>(tree());
   }
 

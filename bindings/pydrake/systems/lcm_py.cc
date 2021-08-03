@@ -3,6 +3,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
@@ -11,6 +12,7 @@
 #include "drake/systems/lcm/connect_lcm_scope.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_scope_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/serializer.h"
 
@@ -37,6 +39,11 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
   // Python implementations of the class (whose inheritance will pass through
   // `PySerializerInterface`). C++ implementations will use the bindings on the
   // interface below.
+
+  std::unique_ptr<SerializerInterface> Clone() const override {
+    PYBIND11_OVERLOAD_PURE(
+        std::unique_ptr<SerializerInterface>, SerializerInterface, Clone);
+  }
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const override {
     PYBIND11_OVERLOAD_PURE(std::unique_ptr<AbstractValue>, SerializerInterface,
@@ -136,6 +143,7 @@ PYBIND11_MODULE(lcm, m) {
                   message_bytes.size());
             },
             py::arg("abstract_value"), cls_doc.Serialize.doc);
+    DefClone(&cls);
   }
 
   {
@@ -169,11 +177,43 @@ PYBIND11_MODULE(lcm, m) {
             py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);
   }
 
-  m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),
-      py::arg("builder"), py::arg("lcm") = nullptr,
-      py::arg("publish_period") = 0.0, py::keep_alive<0, 2>(),
+  {
+    using Class = LcmScopeSystem;
+    constexpr auto& cls_doc = doc.LcmScopeSystem;
+    py::class_<Class, LeafSystem<double>>(m, "LcmScopeSystem")
+        .def(py::init<int>(), py::arg("size"), cls_doc.ctor.doc)
+        .def_static(
+            "AddToBuilder",
+            [](systems::DiagramBuilder<double>* builder,
+                drake::lcm::DrakeLcmInterface* lcm,
+                const OutputPort<double>& signal, const std::string& channel,
+                double publish_period) {
+              auto [scope, publisher] = LcmScopeSystem::AddToBuilder(
+                  builder, lcm, signal, channel, publish_period);
+              // Annotate the proper rvp on the tuple of pointers.
+              py::object py_builder = py::cast(builder, py_rvp::reference);
+              py::list result;
+              result.append(
+                  py::cast(scope, py_rvp::reference_internal, py_builder));
+              result.append(
+                  py::cast(publisher, py_rvp::reference_internal, py_builder));
+              return result;
+            },
+            py::arg("builder"), py::arg("lcm"), py::arg("signal"),
+            py::arg("channel"), py::arg("publish_period"),
+            cls_doc.AddToBuilder.doc);
+  }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("ConnectLcmScope",
+      WrapDeprecated(doc.ConnectLcmScope.doc_deprecated, &ConnectLcmScope),
+      py::arg("src"), py::arg("channel"), py::arg("builder"),
+      py::arg("lcm") = nullptr, py::arg("publish_period") = 0.0,
+      py::keep_alive<0, 2>(),
       // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectLcmScope.doc);
+      py_rvp::reference, doc.ConnectLcmScope.doc_deprecated);
+#pragma GCC diagnostic pop
 
   // Bind C++ serializers.
   BindCppSerializers();

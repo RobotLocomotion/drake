@@ -56,6 +56,25 @@ namespace drake {
 ///   return string_to_enum.access().at(foo_string);
 /// }
 /// @endcode
+///
+/// In cases where computing the static data is more complicated than an
+/// initializer_list, you can use a temporary lambda to populate the value:
+/// @code
+/// const std::vector<double>& GetConstantMagicNumbers() {
+///   static const drake::never_destroyed<std::vector<double>> result{[]() {
+///     std::vector<double> prototype;
+///     std::mt19937 random_generator;
+///     for (int i = 0; i < 10; ++i) {
+///       double new_value = random_generator();
+///       prototype.push_back(new_value);
+///     }
+///     return prototype;
+///   }()};
+///   return result.access();
+/// }
+/// @endcode
+///
+/// Note in particular the `()` after the lambda. That causes it to be invoked.
 //
 // The above examples are repeated in the unit test; keep them in sync.
 template <typename T>

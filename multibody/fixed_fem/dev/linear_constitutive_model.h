@@ -7,26 +7,28 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model_cache_entry.h"
+#include "drake/multibody/fixed_fem/dev/linear_constitutive_model_data.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
+namespace internal {
+
 /* Forward declare the model to be referred to in the traits class. */
 template <typename T, int num_locations>
 class LinearConstitutiveModel;
 
-/** Traits for LinearConstitutiveModel. */
+/* Traits for LinearConstitutiveModel. */
 template <typename T, int num_locations>
 struct LinearConstitutiveModelTraits {
   using Scalar = T;
   using ModelType = LinearConstitutiveModel<T, num_locations>;
-  using DeformationGradientCacheEntryType =
-      LinearConstitutiveModelCacheEntry<T, num_locations>;
+  using DeformationGradientDataType =
+      LinearConstitutiveModelData<T, num_locations>;
   static constexpr int kNumLocations = num_locations;
 };
 
-/** Implements the infinitesimal-strain linear elasticity constitutive model as
+/* Implements the infinitesimal-strain linear elasticity constitutive model as
  described in Section 7.4 of [Gonzalez, 2008].
  @tparam_nonsymbolic_scalar T.
 
@@ -40,13 +42,13 @@ class LinearConstitutiveModel final
  public:
   using Traits = LinearConstitutiveModelTraits<T, num_locations>;
   using ModelType = typename Traits::ModelType;
-  using DeformationGradientCacheEntryType =
-      typename Traits::DeformationGradientCacheEntryType;
+  using DeformationGradientDataType =
+      typename Traits::DeformationGradientDataType;
   using Base = ConstitutiveModel<ModelType, Traits>;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModel)
 
-  /** Constructs a %LinearConstitutiveModel constitutive model with the
+  /* Constructs a LinearConstitutiveModel constitutive model with the
    prescribed Young's modulus and Poisson ratio.
    @param youngs_modulus Young's modulus of the model, with unit N/m²
    @param poisson_ratio Poisson ratio of the model, unitless.
@@ -55,7 +57,7 @@ class LinearConstitutiveModel final
    0.5. */
   LinearConstitutiveModel(const T& youngs_modulus, const T& poisson_ratio)
       : E_(youngs_modulus), nu_(poisson_ratio) {
-    std::tie(lambda_, mu_) = internal::CalcLameParameters(E_, nu_);
+    std::tie(lambda_, mu_) = CalcLameParameters(E_, nu_);
     /* Recall that
           Pᵢⱼ = 2μ * εᵢⱼ + λ * εₐₐ * δᵢⱼ,
       So,
@@ -84,8 +86,6 @@ class LinearConstitutiveModel final
     }
   }
 
-  ~LinearConstitutiveModel() = default;
-
   const T& youngs_modulus() const { return E_; }
 
   const T& poisson_ratio() const { return nu_; }
@@ -97,39 +97,37 @@ class LinearConstitutiveModel final
  private:
   friend Base;
 
-  /* Implements the interface ConstitutiveModel::CalcElasticEnergyDensity() in
-   the CRTP base class. */
+  /* Implements ConstitutiveModel::CalcElasticEnergyDensity() in the CRTP base
+   class. */
   void DoCalcElasticEnergyDensity(
-      const LinearConstitutiveModelCacheEntry<T, num_locations>& cache_entry,
+      const LinearConstitutiveModelData<T, num_locations>& data,
       std::array<T, num_locations>* Psi) const {
     for (int i = 0; i < num_locations; ++i) {
-      const auto& strain = cache_entry.strain()[i];
-      const auto& trace_strain = cache_entry.trace_strain()[i];
+      const auto& strain = data.strain()[i];
+      const auto& trace_strain = data.trace_strain()[i];
       (*Psi)[i] = mu_ * strain.squaredNorm() +
                   0.5 * lambda_ * trace_strain * trace_strain;
     }
   }
 
-  /* Implements the interface ConstitutiveModel::CalcFirstPiolaStress()
-   in the CRTP base class. */
-  void DoCalcFirstPiolaStress(
-      const DeformationGradientCacheEntryType& cache_entry,
-      std::array<Matrix3<T>, num_locations>* P) const {
+  /* Implements ConstitutiveModel::CalcFirstPiolaStress() in the CRTP base
+   class. */
+  void DoCalcFirstPiolaStress(const DeformationGradientDataType& data,
+                              std::array<Matrix3<T>, num_locations>* P) const {
     for (int i = 0; i < num_locations; ++i) {
-      const auto& strain = cache_entry.strain()[i];
-      const auto& trace_strain = cache_entry.trace_strain()[i];
+      const auto& strain = data.strain()[i];
+      const auto& trace_strain = data.trace_strain()[i];
       (*P)[i] =
           2.0 * mu_ * strain + lambda_ * trace_strain * Matrix3<T>::Identity();
     }
   }
 
-  /* Implements the interface
-   ConstitutiveModel::CalcFirstPiolaStressDerivative() in the CRTP base class.
-  */
+  /* Implements ConstitutiveModel::CalcFirstPiolaStressDerivative() in the CRTP
+   base class. */
   void DoCalcFirstPiolaStressDerivative(
-      const DeformationGradientCacheEntryType& cache_entry,
+      const DeformationGradientDataType& data,
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
-    unused(cache_entry);
+    unused(data);
     std::fill(dPdF->begin(), dPdF->end(), dPdF_);
   }
 
@@ -140,6 +138,8 @@ class LinearConstitutiveModel final
   Eigen::Matrix<T, 9, 9>
       dPdF_;  // The First Piola stress derivative is constant and precomputed.
 };
-}  // namespace fixed_fem
+
+}  // namespace internal
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

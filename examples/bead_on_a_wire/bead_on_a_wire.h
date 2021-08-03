@@ -123,7 +123,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   ///          (scalar `s`) as input and outputs a point in 3D as output.
   /// @param inv_f The pointer to a function that takes a point in 3D as input
   ///              and outputs a floating point scalar as output.
-  /// @throws std::logic_error if f or inv_f is a nullptr (the functions must
+  /// @throws std::exception if f or inv_f is a nullptr (the functions must
   ///         always be set).
   void reset_wire_parameter_functions(
         std::function<Eigen::Matrix<ArcLength, 3, 1>(const ArcLength&)> f,
@@ -203,9 +203,6 @@ class BeadOnAWire : public systems::LeafSystem<T> {
       const Eigen::VectorXd& lambda) const;
 
  protected:
-  void CopyStateOut(const systems::Context<T>& context,
-                    systems::BasicVector<T>* output) const;
-
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;

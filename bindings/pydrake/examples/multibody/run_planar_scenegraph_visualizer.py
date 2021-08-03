@@ -14,7 +14,7 @@ from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
-    PlanarSceneGraphVisualizer)
+    ConnectPlanarSceneGraphVisualizer)
 
 
 def run_pendulum_example(args):
@@ -23,16 +23,13 @@ def run_pendulum_example(args):
     parser = Parser(plant)
     parser.AddModelFromFile(FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf"))
-    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"))
     plant.Finalize()
 
-    pose_bundle_output_port = scene_graph.get_pose_bundle_output_port()
     T_VW = np.array([[1., 0., 0., 0.],
                      [0., 0., 1., 0.],
                      [0., 0., 0., 1.]])
-    visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-        scene_graph, T_VW=T_VW, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2]))
-    builder.Connect(pose_bundle_output_port, visualizer.get_input_port(0))
+    visualizer = ConnectPlanarSceneGraphVisualizer(
+        builder, scene_graph, T_VW=T_VW, xlim=[-1.2, 1.2], ylim=[-1.2, 1.2])
 
     if args.playback:
         visualizer.start_recording()
@@ -65,16 +62,15 @@ def run_manipulation_example(args):
 
     plant = station.get_multibody_plant()
     scene_graph = station.get_scene_graph()
-    pose_bundle_output_port = station.GetOutputPort("pose_bundle")
+    query_object_output_port = station.GetOutputPort("geometry_query")
 
     # Side-on view of the station.
     T_VW = np.array([[1., 0., 0., 0.],
                      [0., 0., 1., 0.],
                      [0., 0., 0., 1.]])
-    visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-        scene_graph, T_VW=T_VW, xlim=[-0.5, 1.0], ylim=[-1.2, 1.2],
-        draw_period=0.1))
-    builder.Connect(pose_bundle_output_port, visualizer.get_input_port(0))
+    ConnectPlanarSceneGraphVisualizer(
+        builder, scene_graph, query_object_output_port, T_VW=T_VW,
+        xlim=[-0.5, 1.0], ylim=[-1.2, 1.2], draw_period=0.1)
 
     if args.playback:
         visualizer.start_recording()

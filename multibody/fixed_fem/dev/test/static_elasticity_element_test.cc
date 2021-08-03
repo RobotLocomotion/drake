@@ -5,14 +5,14 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 class StaticElasticityElementTest : public ::testing::Test {
  protected:
   static constexpr int kNaturalDimension = 3;
@@ -21,11 +21,12 @@ class StaticElasticityElementTest : public ::testing::Test {
   const ElementIndex kZeroIndex{0};
   using T = AutoDiffXd;
   using QuadratureType =
-      SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-  static constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+      internal::SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
   using IsoparametricElementType =
-      LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
-  using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
+      internal::LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
+                                     kNumQuads>;
+  using ConstitutiveModelType = internal::LinearConstitutiveModel<T, kNumQuads>;
   using ElementType =
       StaticElasticityElement<IsoparametricElementType, QuadratureType,
                               ConstitutiveModelType>;
@@ -148,7 +149,7 @@ TEST_F(StaticElasticityElementTest, StiffnessMatrixIsPositionDerivative) {
 TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
   Eigen::Matrix<T, kNumDofs, kNumDofs> damping_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      element().CalcDampingMatrix(*state_, &damping_matrix), std::exception,
+      element().CalcDampingMatrix(*state_, &damping_matrix),
       "Static elasticity forms a zero-th order ODE and does not provide a "
       "damping matrix.");
 }
@@ -156,11 +157,11 @@ TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
 TEST_F(StaticElasticityElementTest, NoMassMatrix) {
   Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      element().CalcMassMatrix(*state_, &mass_matrix), std::exception,
+      element().CalcMassMatrix(*state_, &mass_matrix),
       "Static elasticity forms a zero-th order ODE and does not provide a mass "
       "matrix.");
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

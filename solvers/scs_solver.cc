@@ -13,6 +13,7 @@
 #include "linsys/amatrix.h"
 // clang-format on
 
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/math/quadratic_form.h"
@@ -419,6 +420,8 @@ void ParsePositiveSemidefiniteConstraint(
     psd_cone_length.push_back(F_rows);
   }
   cone->ssize = psd_cone_length.size();
+  // This scs_calloc doesn't need to accompany a ScopeExit since cone->s will be
+  // cleaned up recursively by freeing up cone in scs_free_data()
   cone->s = static_cast<scs_int*>(scs_calloc(cone->ssize, sizeof(scs_int)));
   for (int i = 0; i < cone->ssize; ++i) {
     cone->s[i] = psd_cone_length[i];
@@ -500,12 +503,21 @@ void SetScsProblemData(int A_row_count, int num_vars,
   scs_problem_data->n = num_vars;
 
   scs_problem_data->A = static_cast<ScsMatrix*>(malloc(sizeof(ScsMatrix)));
+  // This scs_calloc doesn't need to accompany a ScopeExit since
+  // scs_problem_data->A->x will be cleaned up recursively by freeing up
+  // scs_problem_data in scs_free_data()
   scs_problem_data->A->x =
       static_cast<scs_float*>(scs_calloc(A.nonZeros(), sizeof(scs_float)));
 
+  // This scs_calloc doesn't need to accompany a ScopeExit since
+  // scs_problem_data->A->i will be cleaned up recursively by freeing up
+  // scs_problem_data in scs_free_data()
   scs_problem_data->A->i =
       static_cast<scs_int*>(scs_calloc(A.nonZeros(), sizeof(scs_int)));
 
+  // This scs_calloc doesn't need to accompany a ScopeExit since
+  // scs_problem_data->A->p will be cleaned up recursively by freeing up
+  // scs_problem_data in scs_free_data()
   scs_problem_data->A->p = static_cast<scs_int*>(
       scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
 
@@ -520,12 +532,18 @@ void SetScsProblemData(int A_row_count, int num_vars,
   scs_problem_data->A->m = scs_problem_data->m;
   scs_problem_data->A->n = scs_problem_data->n;
 
+  // This scs_calloc doesn't need to accompany a ScopeExit since
+  // scs_problem_data->b will be cleaned up recursively by freeing up
+  // scs_problem_data in scs_free_data()
   scs_problem_data->b =
       static_cast<scs_float*>(scs_calloc(b.size(), sizeof(scs_float)));
 
   for (int i = 0; i < static_cast<int>(b.size()); ++i) {
     scs_problem_data->b[i] = b[i];
   }
+  // This scs_calloc doesn't need to accompany a ScopeExit since
+  // scs_problem_data->c will be cleaned up recursively by freeing up
+  // scs_problem_data in scs_free_data()
   scs_problem_data->c =
       static_cast<scs_float*>(scs_calloc(num_vars, sizeof(scs_float)));
   for (int i = 0; i < num_vars; ++i) {
@@ -533,6 +551,9 @@ void SetScsProblemData(int A_row_count, int num_vars,
   }
 
   // Set the parameters to default values.
+  // This scs_calloc doesn't need to accompany a ScopeExit since
+  // scs_problem_data->stgs will be cleaned up recursively by freeing up
+  // scs_problem_data in scs_free_data()
   scs_problem_data->stgs =
       static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
   scs_set_default_settings(scs_problem_data);
@@ -546,9 +567,7 @@ namespace {
 // Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, int>* solver_options_int,
-    const std::unordered_map<CommonSolverOption,
-                             std::variant<double, int, std::string>>&
-        common_options,
+    const bool print_to_console,
     SCS_SETTINGS* scs_settings) {
   auto it = solver_options_int->find("max_iters");
   if (it != solver_options_int->end()) {
@@ -567,15 +586,7 @@ void SetScsSettings(
     solver_options_int->erase(it);
   } else {
     // The common option has the second highest priority.
-    auto it_common = common_options.find(CommonSolverOption::kPrintToConsole);
-    if (it_common != common_options.end()) {
-      const int print_to_console_val = std::get<int>(it_common->second);
-      DRAKE_DEMAND(print_to_console_val == 0 || print_to_console_val == 1);
-      scs_settings->verbose = print_to_console_val;
-    } else {
-      // Default to no print.
-      scs_settings->verbose = 0;
-    }
+    scs_settings->verbose = print_to_console ? 1 : 0;
   }
   it = solver_options_int->find("warm_start");
   if (it != solver_options_int->end()) {
@@ -687,6 +698,12 @@ void ScsSolver::DoSolve(
 
   // cone stores all the cones K in the problem.
   ScsCone* cone = static_cast<ScsCone*>(scs_calloc(1, sizeof(ScsCone)));
+  ScsData* scs_problem_data =
+      static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
+  // It will free scs_problem_data, cone, together with their instantiated
+  // members.
+  ScopeExit problem_data_guard(
+      [&scs_problem_data, &cone]() { scs_free_data(scs_problem_data, cone); });
 
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
@@ -740,15 +757,13 @@ void ScsSolver::DoSolve(
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
 
-  ScsData* scs_problem_data =
-      static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
   SetScsProblemData(A_row_count, num_x, A, b, c, scs_problem_data);
   std::unordered_map<std::string, int> input_solver_options_int =
       merged_options.GetOptionsInt(id());
   std::unordered_map<std::string, double> input_solver_options_double =
       merged_options.GetOptionsDouble(id());
   SetScsSettings(&input_solver_options_int,
-                 merged_options.common_solver_options(),
+                 merged_options.get_print_to_console(),
                  scs_problem_data->stgs);
   SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
 
@@ -756,6 +771,7 @@ void ScsSolver::DoSolve(
 
   ScsSolution* scs_sol =
       static_cast<ScsSolution*>(scs_calloc(1, sizeof(ScsSolution)));
+  ScopeExit sol_guard([&scs_sol]() { scs_free_sol(scs_sol); });
 
   ScsSolverDetails& solver_details =
       result->SetSolverDetailsType<ScsSolverDetails>();
@@ -801,10 +817,6 @@ void ScsSolver::DoSolve(
   }
 
   result->set_solution_result(solution_result);
-
-  // Free allocated memory
-  scs_free_data(scs_problem_data, cone);
-  scs_free_sol(scs_sol);
 }
 
 }  // namespace solvers

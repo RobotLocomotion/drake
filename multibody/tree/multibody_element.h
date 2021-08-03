@@ -69,7 +69,7 @@ class MultibodyElement {
   /// `drake/multibody/plant/multibody_plant.h` in the translation unit that
   /// invokes this method; multibody_element.h cannot do that for you.
   ///
-  /// @throws std::logic_error if there is no %MultibodyPlant owner.
+  /// @throws std::exception if there is no %MultibodyPlant owner.
   template <typename MultibodyPlantDeferred = MultibodyPlant<T>>
   const MultibodyPlantDeferred& GetParentPlant() const {
     HasParentTreeOrThrow();
@@ -88,7 +88,7 @@ class MultibodyElement {
   /// Declares MultibodyTreeSystem Parameters at MultibodyTreeSystem::Finalize()
   /// time. NVI to the virtual method DoDeclareParameters().
   /// @param[in] tree_system A mutable copy of the parent MultibodyTreeSystem.
-  /// @pre 'tree_system' must be the same as the the parent tree system (what's
+  /// @pre 'tree_system' must be the same as the parent tree system (what's
   /// returned from GetParentTreeSystem()).
   void DeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) {
     DRAKE_DEMAND(tree_system == &GetParentTreeSystem());
@@ -167,7 +167,7 @@ class MultibodyElement {
 
   // Checks whether this MultibodyElement has been registered into
   // a MultibodyTree and throws an exception if not.
-  // @throws std::logic_error if the element is not in a MultibodyTree.
+  // @throws std::exception if the element is not in a MultibodyTree.
   void HasParentTreeOrThrow() const {
     if (!has_parent_tree()) {
       throw std::logic_error(
@@ -177,7 +177,7 @@ class MultibodyElement {
 
   // Checks whether this MultibodyElement belongs to the provided
   // MultibodyTree `tree` and throws an exception if not.
-  // @throws std::logic_error if `this` element is not in the given `tree`.
+  // @throws std::exception if `this` element is not in the given `tree`.
   void HasThisParentTreeOrThrow(const internal::MultibodyTree<T>* tree) const {
     DRAKE_ASSERT(tree != nullptr);
     if (parent_tree_ != tree) {

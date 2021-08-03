@@ -428,7 +428,7 @@ GTEST_TEST(IllegalTimeVaryingAffineSystemTest, BadSizeTest) {
   auto derivatives = sys.AllocateTimeDerivatives();
   DRAKE_EXPECT_THROWS_MESSAGE(
       sys.CalcTimeDerivatives(*context, derivatives.get()),
-      std::exception, ".*rows.*");
+      ".*rows.*");
 }
 
 class AffineSystemSymbolicTest : public ::testing::Test {

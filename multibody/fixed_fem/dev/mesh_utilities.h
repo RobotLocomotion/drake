@@ -1,21 +1,26 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/fixed_fem/dev/reference_deformable_geometry.h"
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
-/** Generates a tetrahedral volume mesh of a given box by subdividing the box
+namespace fem {
+/** Generates a deformable geometry from a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
  subdividing each rectangular cell into five tetrahedra. Two adjacent
-rectangular cells (sharing a rectangular face) are subdivided in the patterns
-that are mirrored of each other so that the mesh is conforming.
+ rectangular cells (sharing a rectangular face) are subdivided in the patterns
+ that are mirrored of each other so that the mesh is conforming.
 
-The following picture file shows example of the diamond cubic box volume mesh
-and demonstrates the mirrored subdivision pattern in adjacent cells. The file is
-distributed with the source code.
+ The following picture file shows example of the diamond cubic box volume mesh
+ and demonstrates the mirrored subdivision pattern in adjacent cells. The file
+ is distributed with the source code.
 
  | multibody/fixed_fem/dev/images/diamond_cubic_box_volume_mesh.png  |
  | (Top) A diamond cubic box volume mesh. (Center and bottom) mirrored
@@ -38,12 +43,38 @@ distributed with the source code.
      providing a resolution hint at least as large as the box's largest
      dimension.
  @param[in] X_WB
-     The pose of the rectanglur volume mesh in the world frame.
+     The pose of the rectangular volume mesh in the world frame.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-geometry::VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
+internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
     const geometry::Box& box, double resolution_hint,
     const math::RigidTransform<T>& X_WB);
-}  // namespace fixed_fem
+
+/* Generates a volume mesh of an octahedron comprising of eight tetrahedral
+ elements with vertices on the coordinate axes and the origin like this:
+
+                +Z   -X
+                 |   /
+              v5 ●  ● v3
+                 | /
+       v4     v0 |/
+  -Y----●--------●------●----+Y
+                /|      v2
+               / |
+           v1 ●  ● v6
+             /   |
+           +X    |
+                -Z
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
+
+/* Generates a ReferenceDeformableGeometry whose underlying mesh is given by
+ MakeOctahedronVolumeMesh().
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry();
+
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

@@ -41,7 +41,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
-   * @throws std::logic_error if breaks and quaternions have different length,
+   * @throws std::exception if breaks and quaternions have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
@@ -50,7 +50,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
-   * @throws std::logic_error if breaks and rot_matrices have different length,
+   * @throws std::exception if breaks and rot_matrices have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
@@ -59,7 +59,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
-   * @throws std::logic_error if breaks and rot_matrices have different length,
+   * @throws std::exception if breaks and rot_matrices have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
@@ -68,7 +68,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
-   * @throws std::logic_error if breaks and ang_axes have different length,
+   * @throws std::exception if breaks and ang_axes have different length,
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(

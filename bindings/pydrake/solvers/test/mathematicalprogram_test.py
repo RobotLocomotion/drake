@@ -1,4 +1,5 @@
 from pydrake.solvers import mathematicalprogram as mp
+import pydrake.solvers.mathematicalprogram._testing as mp_testing
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.scs import ScsSolver
@@ -24,6 +25,7 @@ import pydrake
 from pydrake.common import kDrakeAssertIsArmed
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
@@ -57,6 +59,16 @@ class TestCost(unittest.TestCase):
 
         cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
         self.assertTrue(cost.is_convex())
+
+    def test_l2norm_cost(self):
+        A = np.array([[1., 2.], [-.4, .7]])
+        b = np.array([0.5, -.4])
+        cost = mp.L2NormCost(A=A, b=b)
+        np.testing.assert_allclose(cost.A(), A)
+        np.testing.assert_allclose(cost.b(), b)
+        cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
+        np.testing.assert_allclose(cost.A(), 2*A)
+        np.testing.assert_allclose(cost.b(), 2*b)
 
 
 class TestQP:
@@ -174,8 +186,15 @@ class TestMathematicalProgram(unittest.TestCase):
         result.set_x_val(x_val_new)
         np.testing.assert_array_equal(x_val_new, result.get_x_val())
 
+    def test_str(self):
+        qp = TestQP()
+        s = str(qp.prog)
+        self.assertIn("Decision variables", s)
+        self.assertIn("LinearConstraint", s)
+        self.assertIn("QuadraticCost", s)
+
 # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
-    # perhaps we should test both of them?
+# perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
@@ -449,6 +468,26 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.GetBindingVariableValues(binding1, x_val), np.array([-2]))
         np.testing.assert_allclose(
             prog.GetBindingVariableValues(binding2, x_val), np.array([1, 2]))
+
+    def test_prog_check_satisfied(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        binding1 = prog.AddBoundingBoxConstraint(-1, 1, x[0])
+        binding2 = prog.AddLinearConstraint(x[1]+x[2] <= 2.0)
+        x_val = np.array([-2, .1, .3])
+        self.assertTrue(
+            prog.CheckSatisfied(binding=binding2, prog_var_vals=x_val,
+                                tol=0.0))
+        self.assertFalse(
+            prog.CheckSatisfied(bindings=[binding1, binding2],
+                                prog_var_vals=x_val,
+                                tol=0.0))
+        prog.SetInitialGuessForAllVariables(x_val)
+        self.assertTrue(
+            prog.CheckSatisfiedAtInitialGuess(binding=binding2, tol=0.0))
+        self.assertFalse(
+            prog.CheckSatisfiedAtInitialGuess(
+                bindings=[binding1, binding2], tol=0.0))
 
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
@@ -942,6 +981,33 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
 
+    def test_addcost_shared_ptr(self):
+        # In particular, confirm that LinearCost ends up in linear_costs, etc.
+        # as opposed to everything ending up as a generic_cost.
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, "x")
+        binding = prog.AddCost(obj=mp.LinearCost([1.0], 0.0), vars=x)
+        # Would be great if this was Binding[LinearCost], but we currently
+        # expect it to be only Binding[Cost]
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+        self.assertIsInstance(binding.evaluator(), mp.LinearCost)
+        self.assertEqual(len(prog.linear_costs()), 1)
+
+        binding = prog.AddCost(mp.QuadraticCost([[1.0]], [0.0], 0.0), x)
+        # Would be great if this was Binding[QuadraticCost], but we currently
+        # expect it to be only Binding[Cost]
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+        self.assertIsInstance(binding.evaluator(), mp.QuadraticCost)
+        self.assertEqual(len(prog.quadratic_costs()), 1)
+
+        # Confirm that I can add an L2NormCost. This is the only way to add an
+        # L2NormCost to a MathematicalProgram pending further progress on
+        # #15366.
+        binding = prog.AddCost(mp.L2NormCost([[1.0]], [0.0]), x)
+        self.assertIsInstance(binding, mp.Binding[mp.Cost])
+        self.assertIsInstance(binding.evaluator(), mp.L2NormCost)
+        self.assertEqual(len(prog.generic_costs()), 1)
+
     def test_addconstraint_matrix(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1, 'x')
@@ -1122,9 +1188,14 @@ class TestMathematicalProgram(unittest.TestCase):
         options_object.SetOption(solver_id, "double_key", 1.0)
         options_object.SetOption(solver_id, "int_key", 2)
         options_object.SetOption(solver_id, "string_key", "3")
+        options_object.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
+        options_object.SetOption(
+            mp.CommonSolverOption.kPrintFileName, "foo.txt")
         options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+        self.assertEqual(options_object.get_print_to_console(), True)
+        self.assertEqual(options_object.get_print_file_name(), "foo.txt")
 
         prog.SetSolverOptions(options_object)
         prog_options = prog.GetSolverOptions(solver_id)
@@ -1161,6 +1232,142 @@ class TestMathematicalProgram(unittest.TestCase):
         numpy_compare.assert_equal(prog.decision_variables()[1], a1)
         numpy_compare.assert_equal(prog.indeterminates()[0], x0)
         numpy_compare.assert_equal(prog.indeterminate(1), x1)
+
+    def test_make_first_available_solver(self):
+        gurobi_solver = GurobiSolver()
+        scs_solver = ScsSolver()
+        if scs_solver.available() and scs_solver.enabled():
+            solver = mp.MakeFirstAvailableSolver(
+                [gurobi_solver.solver_id(), scs_solver.solver_id()])
+
+    def test_remove_cost(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        linear_cost1 = prog.AddLinearCost(x[0] + 2 * x[1])
+        prog.RemoveCost(cost=linear_cost1)
+        self.assertEqual(len(prog.linear_costs()), 0)
+
+        quadratic_cost1 = prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
+        quadratic_cost2 = prog.AddQuadraticCost(x[2] * x[2])
+        prog.RemoveCost(cost=quadratic_cost1)
+        self.assertEqual(len(prog.quadratic_costs()), 1)
+
+        generic_cost1 = prog.AddCost(x[0] * x[1] * x[2])
+        generic_cost2 = prog.AddCost(x[0] * x[1] * x[2] * x[2])
+        prog.RemoveCost(cost=generic_cost2)
+        self.assertEqual(len(prog.generic_costs()), 1)
+
+    def test_binding_upcasting(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+
+        # Add general evaluators, costs, and constraints, and take bindings for
+        # them.
+        evaluator = mp_testing.Binding[mp_testing.StubEvaluatorBase].Make(x)
+        cost = prog.AddCost(x[0] ** 2)
+        constraint = prog.AddConstraint(x[0] >= 0.0)
+
+        mp_testing.AcceptBindingEvaluatorBase(evaluator)
+        mp_testing.AcceptBindingEvaluatorBase(cost)
+        mp_testing.AcceptBindingEvaluatorBase(constraint)
+
+        mp_testing.AcceptBindingCost(cost)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingCost(evaluator)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingCost(constraint)
+
+        mp_testing.AcceptBindingConstraint(constraint)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingConstraint(evaluator)
+        with self.assertRaises(TypeError):
+            mp_testing.AcceptBindingConstraint(cost)
+
+    def test_remove_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        X = prog.NewSymmetricContinuousVariables(3)
+
+        lin_con = prog.AddLinearConstraint(x[0] + x[1] <= 1)
+        prog.RemoveConstraint(constraint=lin_con)
+        self.assertEqual(len(prog.linear_constraints()), 0)
+
+        lin_eq_con = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1)
+        prog.RemoveConstraint(constraint=lin_eq_con)
+        self.assertEqual(len(prog.linear_equality_constraints()), 0)
+
+        bb_con = prog.AddBoundingBoxConstraint(0, 1, x)
+        prog.RemoveConstraint(constraint=bb_con)
+        self.assertEqual(len(prog.bounding_box_constraints()), 0)
+
+        lorentz_con = prog.AddLorentzConeConstraint(x)
+        prog.RemoveConstraint(constraint=lorentz_con)
+        self.assertEqual(len(prog.lorentz_cone_constraints()), 0)
+
+        rotated_lorentz_con = prog.AddRotatedLorentzConeConstraint(x)
+        prog.RemoveConstraint(constraint=rotated_lorentz_con)
+        self.assertEqual(len(prog.rotated_lorentz_cone_constraints()), 0)
+
+        psd_con = prog.AddPositiveSemidefiniteConstraint(X)
+        prog.RemoveConstraint(constraint=psd_con)
+        self.assertEqual(len(prog.positive_semidefinite_constraints()), 0)
+
+        lmi_con = prog.AddLinearMatrixInequalityConstraint(
+            [np.eye(3), np.eye(3), 2 * np.ones((3, 3))], x[:2])
+        prog.RemoveConstraint(constraint=lmi_con)
+        self.assertEqual(len(prog.linear_matrix_inequality_constraints()), 0)
+
+        exponential_con = prog.AddExponentialConeConstraint(
+            A=np.array([[1, 3], [2, 4], [0, 1]]), b=np.array([0, 1, 3]),
+            vars=x[:2])
+        prog.RemoveConstraint(constraint=exponential_con)
+        self.assertEqual(len(prog.exponential_cone_constraints()), 0)
+
+        lcp_con = prog.AddLinearComplementarityConstraint(
+            np.eye(3), np.ones((3,)), x)
+        prog.RemoveConstraint(constraint=lcp_con)
+        self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
+
+    def test_binding_instantiations(self):
+        # Explicit spelling
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertIs(mp.Binding_Cost, mp.Binding[mp.Cost])
+            self.assertIn(
+                "Binding_Cost is deprecated; please use Binding[Cost] instead",
+                str(w[0].message))
+
+        # Patterned spelling.
+        cls_list = [
+            mp.EvaluatorBase,
+            mp.Constraint,
+            mp.LinearConstraint,
+            mp.LorentzConeConstraint,
+            mp.RotatedLorentzConeConstraint,
+            mp.LinearEqualityConstraint,
+            mp.BoundingBoxConstraint,
+            mp.PositiveSemidefiniteConstraint,
+            mp.LinearMatrixInequalityConstraint,
+            mp.LinearComplementarityConstraint,
+            mp.ExponentialConeConstraint,
+            # mp.Cost,  # Checked above.
+            mp.LinearCost,
+            mp.QuadraticCost,
+            mp.L2NormCost,
+            mp.VisualizationCallback,
+        ]
+        for cls in cls_list:
+            binding_cls = mp.Binding[cls]
+            old_spelling = f"Binding_{cls.__name__}"
+            with catch_drake_warnings(expected_count=1):
+                binding_cls_old_spelling = getattr(mp, old_spelling)
+            self.assertIs(binding_cls, binding_cls_old_spelling)
+
+    def test_get_program_type(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2)
+        prog.AddLinearConstraint(x[0] + x[1] == 2)
+        prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
+        self.assertEqual(mp.GetProgramType(prog), mp.ProgramType.kQP)
 
 
 class DummySolverInterface(SolverInterface):

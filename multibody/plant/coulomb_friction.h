@@ -50,7 +50,7 @@ namespace multibody {
 /// See CalcContactFrictionFromSurfaceProperties(), which implements this law.
 /// More complex combination laws could also be a function of other parameters
 /// such as the mechanical properties of the interacting surfaces or even their
-/// roughnesses. For instance, if the the rubber surface above has metal studs
+/// roughnesses. For instance, if the rubber surface above has metal studs
 /// (somehow making the surface "rougher"), it will definitely have a better
 /// grip on an ice surface. Therefore this new variable should be taken into
 /// account in the combination law. Notice that in this example, this new
@@ -69,7 +69,7 @@ class CoulombFriction {
 
   /// Specifies both the static and dynamic friction coefficients for a given
   /// surface.
-  /// @throws std::logic_error if any of the friction coefficients are
+  /// @throws std::exception if any of the friction coefficients are
   /// negative or if `dynamic_friction > static_friction` (they can be equal.)
   CoulombFriction(const T& static_friction, const T& dynamic_friction);
 
@@ -86,7 +86,7 @@ class CoulombFriction {
   // Confirms two properties on the friction coefficient pair:
   //  1. Both values non-negative.
   //  2. static_friction >= dynamic_friction.
-  // Throws std::logic_error on failure of these tests.
+  // Throws std::exception on failure of these tests.
   static void ThrowForBadFriction(const T& static_friction,
                                   const T& dynamic_friction);
 

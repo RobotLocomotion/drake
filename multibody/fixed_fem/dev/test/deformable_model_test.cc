@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 // TODO(xuchenhan-tri): Add a test to verify that the deformable body parameters
 //  are properly passed to the FemModel.
 /* Deformable body parameters. These parameters are arbitrary and they do not
@@ -25,18 +25,31 @@ const double kDt = 0.0123;
 constexpr int kNumVertices = 8;
 
 using Eigen::VectorXd;
+using geometry::VolumeMesh;
+using geometry::VolumeMeshFieldLinear;
 
 class DeformableModelTest : public ::testing::Test {
  protected:
   /* Make a box and subdivide it into 6 tetrahedra. */
-  static geometry::VolumeMesh<double> MakeBoxTetMesh() {
+  static VolumeMesh<double> MakeBoxTetMesh() {
     const double length = 1;
     geometry::Box box(length, length, length);
-    geometry::VolumeMesh<double> mesh =
+    VolumeMesh<double> mesh =
         geometry::internal::MakeBoxVolumeMesh<double>(box, length);
     DRAKE_DEMAND(mesh.num_elements() == 6);
     DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
     return mesh;
+  }
+
+  static internal::ReferenceDeformableGeometry<double>
+  MakeBoxDeformableGeometry() {
+    auto mesh = std::make_unique<VolumeMesh<double>>(MakeBoxTetMesh());
+    /* All vertices of the box mesh lie on the surface. */
+    std::vector<double> signed_distances(kNumVertices, 0.0);
+    auto mesh_field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
+        "Approximated signed distance", std::move(signed_distances), mesh.get(),
+        false);
+    return {std::move(mesh), std::move(mesh_field)};
   }
 
   /* Create a dummy DeformableConfig. */
@@ -64,7 +77,7 @@ class DeformableModelTest : public ::testing::Test {
   int AddDeformableBox(DeformableModel<double>* deformable_model,
                        std::string name) {
     return deformable_model_->RegisterDeformableBody(
-        MakeBoxTetMesh(), std::move(name), MakeDeformableConfig(),
+        MakeBoxDeformableGeometry(), std::move(name), MakeDeformableConfig(),
         MakeProximityProps());
   }
 
@@ -81,25 +94,25 @@ TEST_F(DeformableModelTest, RegisterDeformableBody) {
   const std::vector<std::string>& registered_names = deformable_model_->names();
   EXPECT_EQ(registered_names.size(), 1);
   EXPECT_EQ(registered_names[0], "box");
-  const std::vector<geometry::VolumeMesh<double>>&
-      reference_configuration_meshes =
-          deformable_model_->reference_configuration_meshes();
-  EXPECT_EQ(reference_configuration_meshes.size(), 1);
-  EXPECT_TRUE(MakeBoxTetMesh().Equal(reference_configuration_meshes[0]));
+  const std::vector<internal::ReferenceDeformableGeometry<double>>&
+      reference_configuration_geometries =
+          deformable_model_->reference_configuration_geometries();
+  ASSERT_EQ(reference_configuration_geometries.size(), 1);
+  EXPECT_TRUE(
+      MakeBoxTetMesh().Equal(reference_configuration_geometries[0].mesh()));
 }
 
 /* Verifies that registering a deformable body returns the expected body id and
  that registering a body with an existing name throws an exception. */
 TEST_F(DeformableModelTest, RegisterDeformableBodyUniqueNameRequirement) {
   EXPECT_EQ(AddDeformableBox(deformable_model_.get(), "box1"),
-            SoftBodyIndex(0));
+            DeformableBodyIndex(0));
   /* The returned body index should be the same as the number of deformable
    bodies in the system before the new one is added. */
   EXPECT_EQ(AddDeformableBox(deformable_model_.get(), "box2"),
-            SoftBodyIndex(1));
+            DeformableBodyIndex(1));
   EXPECT_EQ(deformable_model_->num_bodies(), 2);
   DRAKE_EXPECT_THROWS_MESSAGE(AddDeformableBox(deformable_model_.get(), "box1"),
-                              std::exception,
                               "RegisterDeformableBody\\(\\): A body with name "
                               "'box1' already exists in the system.");
 }
@@ -124,6 +137,6 @@ TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
   }
 }
 }  // namespace
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake

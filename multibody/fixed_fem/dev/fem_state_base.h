@@ -6,7 +6,7 @@
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 namespace drake {
 namespace multibody {
-namespace fixed_fem {
+namespace fem {
 
 template <typename T>
 class DirichletBoundaryCondition;
@@ -49,20 +49,6 @@ class FemStateBase {
 
   void SetQddot(const Eigen::Ref<const VectorX<T>>& value);
   /** @} */
-
-  // TODO(xuchenhan-tri): Change the API to calculate the norm of the unknown
-  //  instead.
-  /** Calculates the norm of the state with the highest order. */
-  T HighestOrderStateNorm() const { return get_highest_order_state().norm(); }
-
-  // TODO(xuchenhan-tri): Change the API to get the the unknown state
-  //  instead.
-  const VectorX<T>& get_highest_order_state() const {
-    if (ode_order() == 0) return q_;
-    if (ode_order() == 1) return qdot_;
-    if (ode_order() == 2) return qddot_;
-    DRAKE_UNREACHABLE();
-  }
 
   int num_generalized_positions() const { return q_.size(); }
 
@@ -137,8 +123,8 @@ class FemStateBase {
   /* Time second derivatives of generalized node positions. */
   VectorX<T> qddot_{};
 };
-}  // namespace fixed_fem
+}  // namespace fem
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fixed_fem::FemStateBase);
+    class ::drake::multibody::fem::FemStateBase);

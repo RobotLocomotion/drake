@@ -70,7 +70,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/*
 # Note that we need a recent CMake to ensure we get the updated FindOpenGL and
 # therefore link the correct flavor of OpenGL library (GLVND). With the version
-# of CMake from the the Ubuntu distribution, we would need even more drastic
+# of CMake from the Ubuntu distribution, we would need even more drastic
 # patching of drake-visualizer.
 RUN export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 \
   && apt-key --keyring /etc/apt/trusted.gpg.d/bazel.gpg adv --quiet \
