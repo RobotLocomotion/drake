@@ -44,7 +44,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     int num_parallel_executions) {
   // Initialize storage for all simulation results.
   std::vector<RandomSimulationResult> simulation_results(
-      num_samples, RandomSimulationResult(*generator));
+      num_samples, RandomSimulationResult(RandomGenerator()));
 
   // Storage for active parallel simulation operations.
   std::list<std::future<int>> active_operations;
@@ -74,7 +74,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
            && simulations_dispatched < num_samples) {
       // Create the simulation result using the current generator state.
       simulation_results.at(simulations_dispatched) =
-          std::move(RandomSimulationResult(*generator));
+          RandomSimulationResult(*generator);
 
       // Make the simulator.
       auto simulator = make_simulator(generator);
