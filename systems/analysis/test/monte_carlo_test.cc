@@ -192,6 +192,59 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
   }
 }
 
+// Simple system that outputs constant scalar, where this scalar is stored in
+// the discrete state of the system.  The scalar value is randomized in
+// SetRandomState(). If the state value (cast to int) is odd, DoCalcVectorOutput
+// throws.
+class ThrowingRandomContextSystem : public VectorSystem<double> {
+ public:
+  ThrowingRandomContextSystem() : VectorSystem(0, 1) {
+    this->DeclareDiscreteState(1);
+  }
+
+ private:
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                      RandomGenerator* generator) const override {
+    std::normal_distribution<> distribution;
+    state->get_mutable_discrete_state(0).SetAtIndex(0,
+                                                    distribution(*generator));
+  }
+
+  void DoCalcVectorOutput(
+      const Context<double>& context,
+      const Eigen::VectorBlock<const VectorX<double>>& input,
+      const Eigen::VectorBlock<const VectorX<double>>& state,
+      Eigen::VectorBlock<VectorX<double>>* output) const override {
+    if ((static_cast<int>(state(0)) % 2) != 0) {
+      throw std::runtime_error("State value is odd");
+    } else {
+      *output = state;
+    }
+  }
+};
+
+GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
+  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
+    auto system = std::make_unique<ThrowingRandomContextSystem>();
+    return std::make_unique<Simulator<double>>(std::move(system));
+  };
+  const double final_time = 0.1;
+  const int num_samples = 10;
+
+  const RandomGenerator prototype_generator;
+  RandomGenerator serial_generator(prototype_generator);
+  RandomGenerator parallel_generator(prototype_generator);
+
+  EXPECT_THROW(MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &serial_generator, kNoConcurrency),
+      std::runtime_error);
+  EXPECT_THROW(MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &parallel_generator, kUseHardwareConcurrency),
+      std::runtime_error);
+}
+
 }  // namespace
 }  // namespace analysis
 }  // namespace systems

@@ -12,15 +12,15 @@ namespace drake {
 namespace systems {
 namespace analysis {
 namespace {
-/// Checks if a future has completed execution.
-template<typename T>
-inline bool IsFutureReady(const std::future<T>& future) {
+// Checks if a future has completed execution.
+template <typename T>
+bool IsFutureReady(const std::future<T>& future) {
   const std::future_status status =
       future.wait_for(std::chrono::milliseconds(1));
   return (status == std::future_status::ready);
 }
 
-/// Serial (single-threaded) implementation of MonteCarloSimulation.
+// Serial (single-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator) {
@@ -31,32 +31,20 @@ std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
     RandomSimulationResult simulation_result(*generator);
     simulation_result.output =
         RandomSimulation(make_simulator, output, final_time, generator);
-    simulation_results.push_back(simulation_result);
+    simulation_results.push_back(std::move(simulation_result));
   }
 
   return simulation_results;
 }
 
-/// Parallel (multi-threaded) implementation of MonteCarloSimulation.
+// Parallel (multi-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator,
     int num_parallel_executions) {
-  // Initialize all the simulations in deterministic order.
-  std::vector<std::unique_ptr<Simulator<double>>> simulators;
-  simulators.reserve(num_samples);
+  // Initialize storage for all simulation results.
   std::vector<RandomSimulationResult> simulation_results;
   simulation_results.reserve(num_samples);
-
-  for (int sample = 0; sample < num_samples; ++sample) {
-    RandomSimulationResult simulation_result(*generator);
-    simulation_results.push_back(simulation_result);
-
-    simulators.emplace_back(make_simulator(generator));
-    auto& simulator = *simulators.back();
-    const System<double>& system = simulator.get_system();
-    system.SetRandomContext(&simulator.get_mutable_context(), generator);
-  }
 
   // Storage for active parallel simulation operations.
   std::list<std::future<int>> active_operations;
@@ -69,6 +57,8 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     for (auto operation = active_operations.begin();
          operation != active_operations.end();) {
       if (IsFutureReady(*operation)) {
+        // This call to future.get() is necessary to propagate any exception
+        // thrown during simulation execution.
         const int sample_num = operation->get();
         drake::log()->debug("Simulation {} completed", sample_num);
         // Erase returns iterator to the next node in the list.
@@ -82,18 +72,25 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     // Dispatch new operations.
     while (static_cast<int>(active_operations.size()) < num_parallel_executions
            && simulations_dispatched < num_samples) {
-      const auto perform_simulation =
-          [&simulators, &simulation_results, &output, final_time] (
-              int sample_num) {
-        auto& simulator = *simulators.at(sample_num);
-        simulator.AdvanceTo(final_time);
+      // Create the simulation result using the current generator state.
+      simulation_results.emplace_back(*generator);
+
+      // Make the simulator.
+      auto simulator = make_simulator(generator);
+      const auto& system = simulator->get_system();
+      system.SetRandomContext(&simulator->get_mutable_context(), generator);
+
+      auto perform_simulation =
+          [simulator = std::move(simulator), &simulation_results, &output,
+           final_time, sample_num = simulations_dispatched] () {
+        simulator->AdvanceTo(final_time);
         simulation_results.at(sample_num).output =
-            output(simulator.get_system(), simulator.get_context());
+            output(simulator->get_system(), simulator->get_context());
         return sample_num;
       };
 
-      active_operations.emplace_back(std::async(
-          std::launch::async, perform_simulation, simulations_dispatched));
+      active_operations.emplace_back(
+          std::async(std::launch::async, std::move(perform_simulation)));
       drake::log()->debug("Simulation {} dispatched", simulations_dispatched);
       simulations_dispatched += 1;
     }

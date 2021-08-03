@@ -10,13 +10,15 @@
 namespace drake {
 namespace systems {
 namespace analysis {
-/**
- * Definitions to specify the desired concurrency for MonteCarloSimulation.
- * kNoConcurrency Specifies a single thread used for simulation.
- * kUseHardwareConcurrency Equivalent to specifying
- * num_parallel_executions = std::thread::hardware_concurrency().
+/***
+ * Definition to specify the desired concurrency for MonteCarloSimulation.
+ * Use only a single thread, equivalent to num_parallel_executions = 1.
  */
 const int kNoConcurrency = 1;
+/***
+ * Definition to specify the desired concurrency for MonteCarloSimulation.
+ * Equivalent to num_parallel_executions = std::thread::hardware_concurrency().
+ */
 const int kUseHardwareConcurrency = -1;
 
 /***
