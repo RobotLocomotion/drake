@@ -3,7 +3,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -12,6 +11,14 @@
 namespace drake {
 namespace systems {
 namespace analysis {
+/**
+ * Definitions to specify the desired concurrency for MonteCarloSimulation.
+ * kNoConcurrency Specifies a single thread used for simulation.
+ * kUseHardwareConcurrency Equivalent to specifying
+ * num_parallel_executions = std::thread::hardware_concurrency().
+ */
+const int kNoConcurrency = 1;
+const int kUseHardwareConcurrency = -1;
 
 /***
  * Defines a factory method that constructs a Simulator (with an owned System)
@@ -114,12 +121,6 @@ struct RandomSimulationResult {
 };
 
 /**
- * Returns the number of concurrent threads supported by the hardware,
- * equivalent to calling std::thread::hardware_concurrency().
- */
-int GetHardwareConcurrency();
-
-/**
  * Generate samples of a scalar random variable output by running many
  * random simulations drawn from independent samples of the
  * distributions governing the stochastic simulation.
@@ -147,10 +148,23 @@ int GetHardwareConcurrency();
  * same RandomGenerator object.
  *
  * @param num_parallel_executions Specify number of parallel executions to use
- * while performing `num_samples` simulations. If not provided, uses the result
- * of GetHardwareConcurrency to determine the number of parallel executions.
+ * while performing `num_samples` simulations. The default value,
+ * kNoConcurrency, specifies that simulations should be executed in serial. To
+ * use the default concurrency available on your hardware (equivalent to
+ * num_parallel_executions=std::thread::hardware_concurrency()), use value
+ * kUseHardwareConcurrency. Otherwise, num_parallel_executions must be >= 1.
  *
  * @returns a list of RandomSimulationResult's.
+ *
+ * Thread safety when parallel execution is specified:
+ * - @p make_simulator and @p generator are only accessed from the main thread.
+ *
+ * - Each simulator created by @p make_simulator is only accessed from within a
+ *   single worker thread; however, any resource shared between these simulators
+ *   must be safe for concurrent use.
+ *
+ * - * @p output is called from within worker threads performing simulation. It
+ *   must be safe for concurrent use.
  *
  * @ingroup analysis
  */
@@ -163,7 +177,7 @@ int GetHardwareConcurrency();
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator = nullptr,
-    const std::optional<int>& num_parallel_executions = {});
+    int num_parallel_executions = kNoConcurrency);
 
 }  // namespace analysis
 }  // namespace systems

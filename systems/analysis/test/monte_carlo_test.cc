@@ -140,61 +140,55 @@ GTEST_TEST(RandomSimulationTest, WithRandomInputs) {
   CheckConsistentReplay(make_simulator, &GetScalarOutput, final_time);
 }
 
-GTEST_TEST(MonteCarloSimulationSerialTest, BasicTest) {
-  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
-    auto system = std::make_unique<RandomContextSystem>();
-    return std::make_unique<Simulator<double>>(std::move(system));
-  };
-  const double final_time = 0.1;
-  const int num_samples = 10;
-  const auto results = MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples, nullptr, {1});
-
-  EXPECT_EQ(results.size(), num_samples);
-
-  // Check that the results were all different.
-  std::unordered_set<double> outputs;
-  for (const auto& result : results) {
-    outputs.emplace(result.output);
-  }
-  EXPECT_EQ(outputs.size(), results.size());
-
-  // Confirm that we can reproduce all of the results using RandomSimulation.
-  // Walk through the results in reverse, just for good measure.
-  for (auto it = results.rbegin(); it != results.rend(); ++it) {
-    RandomGenerator generator(it->generator_snapshot);
-    EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
-                               &generator),
-              it->output);
-  }
-}
-
-GTEST_TEST(MonteCarloSimulationParallelTest, BasicTest) {
+GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
   const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
     auto system = std::make_unique<RandomContextSystem>();
     return std::make_unique<Simulator<double>>(std::move(system));
   };
   const double final_time = 0.1;
   const int num_samples = 100;
-  const auto results = MonteCarloSimulation(make_simulator, &GetScalarOutput,
-                                            final_time, num_samples);
 
-  EXPECT_EQ(results.size(), num_samples);
+  const RandomGenerator prototype_generator;
+  RandomGenerator serial_generator(prototype_generator);
+  RandomGenerator parallel_generator(prototype_generator);
 
-  // Check that the results were all different.
-  std::unordered_set<double> outputs;
-  for (const auto& result : results) {
-    outputs.emplace(result.output);
+  const auto serial_results = MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &serial_generator, kNoConcurrency);
+  const auto parallel_results = MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &parallel_generator, kUseHardwareConcurrency);
+
+  EXPECT_EQ(serial_results.size(), num_samples);
+  EXPECT_EQ(parallel_results.size(), num_samples);
+
+  // Check that the results were all different. We only check the serial results
+  // since we check later that serial and parallel results are identical.
+  std::unordered_set<double> serial_outputs;
+  for (const auto& serial_result : serial_results) {
+    serial_outputs.emplace(serial_result.output);
   }
-  EXPECT_EQ(outputs.size(), results.size());
+  EXPECT_EQ(serial_outputs.size(), serial_results.size());
 
-  // Confirm that we can reproduce all of the results using RandomSimulation.
-  // Walk through the results in reverse, just for good measure.
-  for (auto it = results.rbegin(); it != results.rend(); ++it) {
-    RandomGenerator generator(it->generator_snapshot);
+  // Confirm that serial and parallel MonteCarloSimulation produce the same
+  // results, and that they are both reproducible.
+  for (int sample = 0; sample < num_samples; ++sample) {
+    const auto& serial_result = serial_results.at(sample);
+    const auto& parallel_result = parallel_results.at(sample);
+
+    EXPECT_EQ(serial_result.output, parallel_result.output);
+
+    RandomGenerator serial_reproduction_generator(
+        serial_result.generator_snapshot);
+    RandomGenerator parallel_reproduction_generator(
+        parallel_result.generator_snapshot);
+
     EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
-                               &generator),
-              it->output);
+                               &serial_reproduction_generator),
+              serial_result.output);
+    EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
+                               &parallel_reproduction_generator),
+              parallel_result.output);
   }
 }
 

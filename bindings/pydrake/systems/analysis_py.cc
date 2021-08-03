@@ -237,8 +237,9 @@ PYBIND11_MODULE(analysis, m) {
             &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
-    // Note: parallel simulation must be disabled in the binding, since parallel
-    // execution of Python systems in multiple threads is not supported.
+    // Note: parallel simulation must be disabled in the binding via
+    // num_parallel_executions=kNoConcurrency, since parallel execution of
+    // Python systems in multiple threads is not supported.
     // TODO(calderpg-tri) Once Python subsystem detection is implemented in
     // MonteCarloSimulation, this can be relaxed so that purely C++ systems
     // created via Python can still be simulated in parallel.
@@ -247,8 +248,8 @@ PYBIND11_MODULE(analysis, m) {
                           const ScalarSystemFunction& output, double final_time,
                           int num_samples, RandomGenerator* generator)
                           -> std::vector<RandomSimulationResult> {
-          return MonteCarloSimulation(
-              make_simulator, output, final_time, num_samples, generator, {1});
+          return MonteCarloSimulation(make_simulator, output, final_time,
+              num_samples, generator, kNoConcurrency);
         }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("num_samples"), py::arg("generator"),

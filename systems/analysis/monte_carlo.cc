@@ -3,7 +3,7 @@
 #include <future>
 #include <list>
 #include <mutex>
-#include <unordered_map>
+#include <thread>
 
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/system.h"
@@ -66,16 +66,16 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
   while (active_operations.size() > 0 ||
          simulations_dispatched < num_samples) {
     // Check for completed operations.
-    for (auto itr = active_operations.begin();
-         itr != active_operations.end();) {
-      if (IsFutureReady(*itr)) {
-        const int sample_num = itr->get();
+    for (auto operation = active_operations.begin();
+         operation != active_operations.end();) {
+      if (IsFutureReady(*operation)) {
+        const int sample_num = operation->get();
         drake::log()->debug("Simulation {} completed", sample_num);
         // Erase returns iterator to the next node in the list.
-        itr = active_operations.erase(itr);
+        operation = active_operations.erase(operation);
       } else {
         // Advance to next node in the list.
-        ++itr;
+        ++operation;
       }
     }
 
@@ -121,18 +121,10 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
   return output(system, simulator->get_context());
 }
 
-int GetHardwareConcurrency() {
-  return static_cast<int>(std::thread::hardware_concurrency());
-}
-
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     const double final_time, const int num_samples, RandomGenerator* generator,
-    const std::optional<int>& num_parallel_executions) {
-  if (num_parallel_executions.has_value()) {
-    DRAKE_THROW_UNLESS(num_parallel_executions.value() >= 1);
-  }
-
+    const int num_parallel_executions) {
   std::unique_ptr<RandomGenerator> owned_generator{};
   if (generator == nullptr) {
     // Create a generator to be used for this set of tests.
@@ -140,10 +132,11 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
     generator = owned_generator.get();
   }
 
-  const int hardware_concurrency = GetHardwareConcurrency();
+  const int hardware_concurrency =
+      static_cast<int>(std::thread::hardware_concurrency());
   int num_threads = 0;
-  if (num_parallel_executions.has_value()) {
-    num_threads = num_parallel_executions.value();
+  if (num_parallel_executions > 1) {
+    num_threads = num_parallel_executions;
     if (num_threads > hardware_concurrency) {
       drake::log()->warn(
           "Provided num_parallel_executions value of {} is greater than the "
@@ -154,12 +147,20 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
       drake::log()->debug(
           "Using provided value of {} parallel executions", num_threads);
     }
-  } else {
+  } else if (num_parallel_executions == kNoConcurrency) {
+    num_threads = 1;
+    drake::log()->debug("kNoConcurrency specified, using a single thread");
+  } else if (num_parallel_executions == kUseHardwareConcurrency) {
     num_threads = hardware_concurrency;
     drake::log()->debug(
-        "num_parallel_executions not provided, using default value of {} "
-        "parallel executions",
+        "kUseHardwareConcurrency specified, using hardware concurrency {}",
         num_threads);
+  } else {
+    throw std::runtime_error(fmt::format(
+        "Specified num_parallel_executions {} is not valid. Valid options are "
+        "kNoConcurrency, kUseHardwareConcurrency, or num_parallel_executions "
+        ">= 1",
+        num_parallel_executions));
   }
 
   // Since the parallel implementation incurs additional overhead even in the
