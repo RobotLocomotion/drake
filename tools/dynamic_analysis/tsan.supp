@@ -62,6 +62,3 @@ mutex:__cxa_finalize
 # a TODO in our dynamic_analysis/bazel.rc.  Once our toolchain supports
 # a blacklist, we should use it instead of this.
 race:^lcm_memq_handle$
-
-# Suppress innocuous race on access to the dummy CacheEntryValue.
-race:drake::systems::CacheEntryValue::mark_out_of_date

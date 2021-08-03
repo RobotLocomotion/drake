@@ -23,6 +23,7 @@ namespace drake {
 namespace systems {
 
 class DependencyGraph;
+class DependencyTracker;
 
 //==============================================================================
 //                             CACHE ENTRY VALUE
@@ -451,25 +452,12 @@ class CacheEntryValue {
   }
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Returns a mutable reference to an unused cache entry
-  // value object, which has no valid CacheIndex or DependencyTicket and has a
-  // meaningless value. The reference is to a singleton %CacheEntryValue and
-  // will always return the same address. You may invoke mark_up_to_date()
-  // harmlessly on this object, but may not depend on its contents in any way as
-  // they may change unexpectedly. The intention is that this object is used as
-  // a common throw-away destination for non-cache DependencyTracker
-  // invalidations so that invalidation can be done unconditionally, and to the
-  // same memory location, for speed.
-  static CacheEntryValue& dummy() {
-    static never_destroyed<CacheEntryValue> dummy;
-    return dummy.access();
-  }
-#endif
-
  private:
   // So Cache and no one else can construct and copy CacheEntryValues.
   friend class Cache;
+
+  // DependencyTracker needs to default-construct a dummy cache value.
+  friend class DependencyTracker;
 
   // Allow these adapters access to our private constructors on our behalf.
   // TODO(sherm1) These friend declarations allow us to hide constructors we
