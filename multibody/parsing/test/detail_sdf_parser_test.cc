@@ -4,6 +4,7 @@
 #include <regex>
 #include <stdexcept>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
 
@@ -1140,9 +1141,9 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
 </model>
 )""");
 
-  EXPECT_TRUE(std::regex_match(buffer.str(), std::regex(
-    R"([\s\S]*Warning[\s\S]*XML Element\[bad_element\], child of )"
-    R"(element\[model\], not defined in SDF[\s\S]*)")));
+  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
+      ".*Warning.*XML Element\\[bad_element\\], child of"
+      " element\\[model\\], not defined in SDF.*"));
 
   ParseTestString(R"""(
 <model name='a'>
@@ -1157,9 +1158,9 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
   </joint>
 </model>)""", "1.8");
 
-  EXPECT_TRUE(std::regex_match(buffer.str(), std::regex(
-    R"([\s\S]*Warning[\s\S]*SDF Element\[initial_position\] is )"
-    R"(deprecated[\s\S]*)")));
+  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
+      ".*Warning.*SDF Element\\[initial_position\\] is "
+      "deprecated.*"));
 }
 
 // Reports if the frame with the given id has a geometry with the given role
