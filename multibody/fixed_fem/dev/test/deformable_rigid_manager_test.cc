@@ -1072,11 +1072,11 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
     return deformable_rigid_manager_->EvalFreeMotionRigidVelocities(context);
   }
 
-  /* Calls DeformableRigidManager::EvalParticipatingFreeMotionVelocities(). */
-  const VectorX<double>& EvalParticipatingFreeMotionVelocities(
-      const systems::Context<double>& context) const {
-    return deformable_rigid_manager_->EvalParticipatingFreeMotionVelocities(
-        context);
+  /* Calls DeformableRigidManager::EvalContactParticipatingVelocities(). */
+  const VectorX<double>& EvalContactParticipatingVelocities(
+      const systems::Context<double>& context, bool free_motion) const {
+    return deformable_rigid_manager_->EvalContactParticipatingVelocities(
+        context, free_motion);
   }
 
   /* Calls DeformableRigidManager::EvalFreeMotionFemStateBase(). */
@@ -1176,8 +1176,11 @@ TEST_F(DeformableRigidDynamicsDataTest, NoContact) {
   EXPECT_EQ(tangent_matrix.rows(), 0);
   EXPECT_EQ(tangent_matrix.cols(), 0);
   const VectorX<double>& participating_v_star =
-      EvalParticipatingFreeMotionVelocities(plant_context);
+      EvalContactParticipatingVelocities(plant_context, true);
   EXPECT_EQ(participating_v_star.size(), 0);
+  const VectorX<double>& participating_v0 =
+      EvalContactParticipatingVelocities(plant_context, false);
+  EXPECT_EQ(participating_v0.size(), 0);
 }
 
 /* Verifies that the contact tangent matrix matches expectation. */
@@ -1264,7 +1267,7 @@ TEST_F(DeformableRigidDynamicsDataTest, ParticipatingFreeMotionVelocities) {
             7 /* number of vertices in the octehedral mesh */ * 3);
 
   const VectorXd& participating_v_star =
-      EvalParticipatingFreeMotionVelocities(plant_context);
+      EvalContactParticipatingVelocities(plant_context, true);
   /* v0-v4, and v6 are participating in contact. */
   constexpr int kNumParticipatingVertices = 6;
   constexpr int kNumParticipatingDofs = 3 * kNumParticipatingVertices;
@@ -1285,6 +1288,11 @@ TEST_F(DeformableRigidDynamicsDataTest, ParticipatingFreeMotionVelocities) {
   EXPECT_TRUE(
       CompareMatrices(participating_v_star.tail<kNumParticipatingDofs>(),
                       expected_participating_deformable_v_star));
+
+  const VectorXd& participating_v0 =
+      EvalContactParticipatingVelocities(plant_context, false);
+  EXPECT_TRUE(CompareMatrices(
+      participating_v0, VectorXd::Zero(kNumRigidDofs + kNumParticipatingDofs)));
 }
 
 // TODO(xuchenhan-tri): This unit test can be strengthened by leveraging
