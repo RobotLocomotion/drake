@@ -2,9 +2,10 @@
 
 #include <array>
 
+#include <fmt/format.h>
+
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/deformation_gradient_data.h"
-#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace multibody {
@@ -16,61 +17,52 @@ namespace internal {
  is defined through a hyperelastic potential energy, which increases with
  non-rigid deformation from the initial state.
 
- ConstitutiveModel serves as the interface base class for all hyperelastic
- constitutive models. Since constitutive models are usually evaluated in
- computationally intensive inner loops of the simulation, the overhead caused by
- virtual methods may be significant. Therefore, this class uses a CRTP pattern
- to achieve compile-time polymorphism and avoids the overhead of virtual
- methods and facilitates inlining instead. Derived constitutive models must
- inherit from this base class and implement the interface this class provides.
- The derived constitutive model must also be accompanied by a corresponding
- traits class that declares the compile time quantities and type declarations
- that this base class requires.
+ ConstitutiveModel is a CRTP base class that provides the common interface to
+ calculate energy density/stress/stress derivatives, and facilitates inlining,
+ but is not intended to be a polymorphic class. Derived constitutive models must
+ implement the `DoCalc()` methods. The derived constitutive model must also be
+ accompanied by a corresponding traits class that declares the compile time
+ quantities and type declarations that this base class requires.
  @tparam DerivedConstitutiveModel The concrete constitutive model that inherits
  from ConstitutiveModel through CRTP.
  @tparam DerivedTraits The traits class associated with the
- DerivedConstitutiveModel. */
+ DerivedConstitutiveModel. It muist provide the type definitions `Scalar`
+ (the scalar type the constitutive model is templated on) and `Data` (the
+ DeformationGradientData that works in tandem with the derived constitutive
+ model). */
 template <class DerivedConstitutiveModel, class DerivedTraits>
 class ConstitutiveModel {
  public:
-  static_assert(
-      std::is_same_v<typename DerivedTraits::ModelType,
-                     DerivedConstitutiveModel>,
-      "The DerivedConstitutiveModel and the DerivedTraits must be compatible.");
   using Traits = DerivedTraits;
   using T = typename Traits::Scalar;
 
   /* The number of locations at which the constitutive relationship is
    evaluated. */
-  static constexpr int num_locations() { return DerivedTraits::kNumLocations; }
+  static constexpr int num_locations = DerivedTraits::Data::num_locations;
 
-  /* @name "Calc" Methods
+  /* "Calc" Methods
    Methods for calculating the energy density and its derivatives given the
    data required for these calculations. The constitutive model expects
-   that the input data are up-to-date. FemElement is responsible for updating
-   these data. ConstitutiveModel will not and cannot verify the data provided
-   are up-to-date. */
+   that the input data are up-to-date, but cannot and will not verify this
+   prerequisite. It is the responsibility of the caller to provide
+   up-to-date input data. */
 
   /* Calculates the energy density in reference configuration, in unit J/m³,
    given the model data.
    @pre `Psi != nullptr`. */
-  void CalcElasticEnergyDensity(
-      const typename DerivedTraits::DeformationGradientDataType& data,
-      std::array<T, num_locations()>* Psi) const {
+  void CalcElasticEnergyDensity(const typename DerivedTraits::Data& data,
+                                std::array<T, num_locations>* Psi) const {
     DRAKE_ASSERT(Psi != nullptr);
-    static_cast<const DerivedConstitutiveModel*>(this)
-        ->DoCalcElasticEnergyDensity(data, Psi);
+    derived().DoCalcElasticEnergyDensity(data, Psi);
   }
 
   /* Calculates the First Piola stress, in unit Pa, given the deformation
    gradient data.
    @pre `P != nullptr`. */
-  void CalcFirstPiolaStress(
-      const typename DerivedTraits::DeformationGradientDataType& data,
-      std::array<Matrix3<T>, num_locations()>* P) const {
+  void CalcFirstPiolaStress(const typename DerivedTraits::Data& data,
+                            std::array<Matrix3<T>, num_locations>* P) const {
     DRAKE_ASSERT(P != nullptr);
-    static_cast<const DerivedConstitutiveModel*>(this)->DoCalcFirstPiolaStress(
-        data, P);
+    derived().DoCalcFirstPiolaStress(data, P);
   }
 
   /* Calculates the derivative of First Piola stress with respect to the
@@ -97,11 +89,10 @@ class ConstitutiveModel {
                    -------------------------------------
   @pre `dPdF != nullptr`. */
   void CalcFirstPiolaStressDerivative(
-      const typename DerivedTraits::DeformationGradientDataType& data,
-      std::array<Eigen::Matrix<T, 9, 9>, num_locations()>* dPdF) const {
+      const typename DerivedTraits::Data& data,
+      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
     DRAKE_ASSERT(dPdF != nullptr);
-    static_cast<const DerivedConstitutiveModel*>(this)
-        ->DoCalcFirstPiolaStressDerivative(data, dPdF);
+    derived().DoCalcFirstPiolaStressDerivative(data, dPdF);
   }
 
  protected:
@@ -111,6 +102,39 @@ class ConstitutiveModel {
    construction of a base class object. Concrete instances should be obtained
    through the constructors of the derived constitutive models. */
   ConstitutiveModel() = default;
+
+  /* Derived classes *must* shadow these methods to compute energy
+   density/stress/stress derivatives from deformation gradient data. The output
+   argument is guaranteed to be non-null. */
+  void DoCalcElasticEnergyDensity(const typename DerivedTraits::Data& data,
+                                  std::array<T, num_locations>* Psi) const {
+    throw std::logic_error(
+        fmt::format("The derived class {} must provide a shadow definition of "
+                    "DoCalcElasticEnergyDensity() to be correct.",
+                    NiceTypeName::Get(derived())));
+  }
+
+  void DoCalcFirstPiolaStress(const typename DerivedTraits::Data& data,
+                              std::array<Matrix3<T>, num_locations>* P) const {
+    throw std::logic_error(
+        fmt::format("The derived class {} must provide a shadow definition of "
+                    "DoCalcFirstPiolaStress() to be correct.",
+                    NiceTypeName::Get(derived())));
+  }
+
+  void DoCalcFirstPiolaStressDerivative(
+      const typename DerivedTraits::Data& data,
+      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
+    throw std::logic_error(
+        fmt::format("The derived class {} must provide a shadow definition of "
+                    "DoCalcFirstPiolaStressDerivative() to be correct.",
+                    NiceTypeName::Get(derived())));
+  }
+
+ private:
+  const DerivedConstitutiveModel& derived() const {
+    return *static_cast<const DerivedConstitutiveModel*>(this);
+  }
 };
 
 template <class Model>
