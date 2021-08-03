@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "ibex.h"
+#include "./ibex.h"
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
