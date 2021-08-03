@@ -128,5 +128,40 @@ GTEST_TEST(SortedPair, WriteToStream) {
   EXPECT_EQ(ss.str(), "(7, 8)");
 }
 
+GTEST_TEST(SortedPair, StructuredBinding) {
+  SortedPair<int> pair{8, 7};
+
+  // Copy access.
+  {
+    auto [a, b] = pair;
+    EXPECT_EQ(a, pair.first());
+    EXPECT_EQ(b, pair.second());
+  }
+
+  // Mutable reference access.
+  {
+    auto& [a, b] = pair;
+    a = 13;
+    b = 14;
+    EXPECT_EQ(a, pair.first());
+    EXPECT_EQ(b, pair.second());
+  }
+
+  // Const reference access.
+  {
+    auto& [a, b] = pair;
+    EXPECT_EQ(&a, &pair.first());
+    EXPECT_EQ(&b, &pair.second());
+  }
+
+  // Access via range iterators.
+  {
+    std::vector<SortedPair<int>> pairs({{1, 2}, {3, 6}});
+    for (const auto& [a, b] : pairs) {
+      EXPECT_EQ(2 * a, b);
+    }
+  }
+}
+
 }  // namespace
 }  // namespace drake

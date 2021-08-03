@@ -1,7 +1,9 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
+#include <type_traits>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
@@ -86,6 +88,21 @@ struct SortedPair {
     hash_append(hasher, p.second_);
   }
 
+  /// @name Support for using SortedPair in structured bindings.
+  //@{
+  template<std::size_t Index>
+  std::tuple_element_t<Index, SortedPair<T>>& get() {
+    if constexpr (Index == 0) return first_;
+    if constexpr (Index == 1) return second_;
+  }
+
+  template<std::size_t Index>
+  const std::tuple_element_t<Index, SortedPair<T>>& get() const {
+    if constexpr (Index == 0) return first_;
+    if constexpr (Index == 1) return second_;
+  }
+  //@}
+
  private:
   T first_{};          // The first of the two objects, according to operator<.
   T second_{};         // The second of the two objects, according to operator<.
@@ -168,5 +185,17 @@ struct hash<drake::SortedPair<T>>
 template <class T>
 struct __is_fast_hash<hash<drake::SortedPair<T>>> : std::false_type {};
 #endif
+
+/// Support using `SortedPair<T>` in structured bindings.  E.g.,
+///
+///    SortedPair<Foo> pair(Foo(1), Foo(2));
+///    const auto& [a, b] = pair;
+template <typename T>
+struct tuple_size<drake::SortedPair<T>> : integral_constant<size_t, 2> {};
+
+template <size_t Index, typename T>
+struct tuple_element<Index, drake::SortedPair<T>> {
+  using type = T;
+};
 
 }  // namespace std
