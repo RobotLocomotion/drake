@@ -89,6 +89,11 @@ class DeformableModel final : public multibody::internal::PhysicalModel<T> {
   /** Returns the number of deformable bodies registered. */
   int num_bodies() const { return reference_configuration_geometries_.size(); }
 
+  // TODO(xuchenhan-tri): Implement the O(1) `num_dofs()` that precomputes the
+  //  result at initialization phase.
+  /** Returns the number deformable degrees of freedom. */
+  int NumDofs() const;
+
   /** Returns the FEM model of the selected deformable body. Each deformable
    body is modeled as an individual FEM model. */
   const FemModelBase<T>& fem_model(DeformableBodyIndex body_index) const {

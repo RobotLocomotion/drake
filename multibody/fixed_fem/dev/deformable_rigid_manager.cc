@@ -1,7 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_manager.h"
 
-#include <set>
-
+#include "drake/multibody/contact_solvers/block_sparse_linear_operator.h"
+#include "drake/multibody/fixed_fem/dev/inverse_spd_operator.h"
 #include "drake/multibody/fixed_fem/dev/permute_block_sparse_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -9,8 +9,13 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+using multibody::contact_solvers::internal::BlockSparseLinearOperator;
 using multibody::contact_solvers::internal::BlockSparseMatrix;
 using multibody::contact_solvers::internal::BlockSparseMatrixBuilder;
+using multibody::contact_solvers::internal::ContactSolverResults;
+using multibody::contact_solvers::internal::InverseSpdOperator;
+using multibody::contact_solvers::internal::PointContactData;
+using multibody::contact_solvers::internal::SystemDynamicsData;
 using multibody::internal::DiscreteContactPair;
 
 template <typename T>
@@ -176,6 +181,14 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
   deformable_contact_data_cache_index_ =
       deformable_contact_data_cache_entry.cache_index();
 
+  const auto& contact_point_data_cache_entry = this->DeclareCacheEntry(
+      "Contact point data",
+      systems::ValueProducer(this,
+                             &DeformableRigidManager<T>::CalcContactPointData),
+      {systems::System<T>::xd_ticket()});
+  contact_point_data_cache_index_ =
+      contact_point_data_cache_entry.cache_index();
+
   /* Calculates the tangent matrix for the contact solver. */
   const auto& contact_tangent_matrix_cache_entry = this->DeclareCacheEntry(
       "Tangent matrix for contact",
@@ -184,6 +197,20 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket()});
   contact_tangent_matrix_cache_index_ =
       contact_tangent_matrix_cache_entry.cache_index();
+
+  const auto& velocities_cache_entry = this->DeclareCacheEntry(
+      "Velocities for all dofs",
+      systems::ValueProducer(this, &DeformableRigidManager<T>::CalcVelocities),
+      {systems::System<T>::xd_ticket()});
+  velocities_cache_index_ = velocities_cache_entry.cache_index();
+
+  const auto& free_motion_velocities_cache_entry = this->DeclareCacheEntry(
+      "Free motion velocities for all dofs",
+      systems::ValueProducer(
+          this, &DeformableRigidManager<T>::CalcFreeMotionVelocities),
+      {systems::System<T>::all_sources_ticket()});
+  free_motion_velocities_cache_index_ =
+      free_motion_velocities_cache_entry.cache_index();
 
   const auto& free_motion_rigid_velocities_cache_entry =
       this->DeclareCacheEntry(
@@ -196,20 +223,45 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
 
   const auto& participating_free_motion_velocities_cache_entry =
       this->DeclareCacheEntry(
-          "Participating free motion velocities for contact",
-          systems::ValueProducer(this,
-                                 &DeformableRigidManager<
-                                     T>::CalcParticipatingFreeMotionVelocities),
+          "Participating free motion velocities for contact (v_star)",
+          systems::ValueProducer(
+              std::function<void(const systems::Context<T>&, VectorX<T>*)>{
+                  [this](const systems::Context<T>& context,
+                         VectorX<T>* v_star) {
+                    this->CalcFreeMotionParticipatingVelocities(context,
+                                                                v_star);
+                  }}),
           {systems::System<T>::xd_ticket(),
            free_motion_rigid_velocities_cache_entry.ticket()});
   participating_free_motion_velocities_cache_index_ =
       participating_free_motion_velocities_cache_entry.cache_index();
+
+  const auto& participating_velocities_cache_entry = this->DeclareCacheEntry(
+      "Participating velocities for contact (v0)",
+      systems::ValueProducer(
+          std::function<void(const systems::Context<T>&, VectorX<T>*)>{
+              [this](const systems::Context<T>& context, VectorX<T>* v0) {
+                this->CalcParticipatingVelocities(context, v0);
+              }}),
+      {systems::System<T>::xd_ticket()});
+  participating_velocities_cache_index_ =
+      participating_velocities_cache_entry.cache_index();
+
+  const auto& two_way_coupled_contact_solver_results_cache_entry =
+      this->DeclareCacheEntry(
+          "Two-way coupled contact solver results",
+          systems::ValueProducer(this,
+                                 &DeformableRigidManager<
+                                     T>::CalcTwoWayCoupledContactSolverResults),
+          {systems::System<T>::all_sources_ticket()});
+  two_way_coupled_contact_solver_results_cache_index_ =
+      two_way_coupled_contact_solver_results_cache_entry.cache_index();
 }
 
 template <typename T>
 void DeformableRigidManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
+    ContactSolverResults<T>* results) const {
   /* Assert this method was called on a context storing discrete state. */
   this->plant().ValidateContext(context);
   DRAKE_ASSERT(context.num_continuous_states() == 0);
@@ -252,6 +304,51 @@ void DeformableRigidManager<T>::DoCalcContactSolverResults(
         context.get_time(), v, M, minus_tau, fn, rigid_contact_jacobians.Jn,
         rigid_contact_jacobians.Jt, stiffness, damping, mu, results);
   }
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcTwoWayCoupledContactSolverResults(
+    const systems::Context<T>& context,
+    ContactSolverResults<T>* results) const {
+  DRAKE_DEMAND(results != nullptr);
+  DRAKE_DEMAND(contact_solver_ != nullptr);
+
+  const int rigid_dofs = this->plant().num_velocities();
+  /* Quick exit if there are no moving rigid or deformable objects. */
+  if (rigid_dofs == 0 && deformable_model_->num_bodies() == 0) {
+    results->Resize(0, 0);
+    return;
+  }
+
+  /* Extract all information needed by the contact solver. */
+  /* Point contact data. */
+  const BlockSparseMatrix<T> Jc = CalcContactJacobian(context);
+  const BlockSparseLinearOperator<T> Jc_op("Contact Jacobian", &Jc);
+  const ContactPointData& point_data = EvalContactPointData(context);
+
+  /* System dynamics data.*/
+  const VectorX<T>& v_star = EvalFreeMotionParticipatingVelocities(context);
+  const BlockSparseMatrix<T>& A = EvalContactTangentMatrix(context);
+  // TODO(xuchenhan-tri): The inverse is currently calculated inefficiently.
+  //  However, since the inverse tangent matrix won't be needed for the new
+  //  contact solver. We do not try to optimize it right now. Use the matrix A
+  //  instead of its inverse when the new contact solver is available.
+  const InverseSpdOperator<T> A_inv_op("Tangent matrix inverse",
+                                       A.MakeDenseMatrix());
+
+  const SystemDynamicsData<T> dynamics_data(&A_inv_op, &v_star);
+  const PointContactData<T> contact_data(&point_data.phi0, &Jc_op,
+                                         &point_data.stiffness,
+                                         &point_data.damping, &point_data.mu);
+  const int nv = dynamics_data.num_velocities();
+  const int nc = contact_data.num_contacts();
+
+  results->Resize(nv, nc);
+  /* Alejandro's experiment shows that v0 is no worse than v_star as an initial
+   guess in general and is better in steady state. */
+  const VectorX<T>& v0 = EvalParticipatingVelocities(context);
+  contact_solver_->SolveWithGuess(this->plant().time_step(), dynamics_data,
+                                  contact_data, v0, results);
 }
 
 template <typename T>
@@ -895,9 +992,25 @@ void DeformableRigidManager<T>::CalcFreeMotionRigidVelocities(
 }
 
 template <typename T>
-void DeformableRigidManager<T>::CalcParticipatingFreeMotionVelocities(
-    const systems::Context<T>& context, VectorX<T>* v_star) const {
-  DRAKE_DEMAND(v_star != nullptr);
+void DeformableRigidManager<T>::CalcFreeMotionParticipatingVelocities(
+    const systems::Context<T>& context,
+    VectorX<T>* participating_v_star) const {
+  const VectorX<T>& v_star = EvalFreeMotionVelocities(context);
+  ExtractParticipatingVelocities(context, v_star, participating_v_star);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcParticipatingVelocities(
+    const systems::Context<T>& context, VectorX<T>* participating_v0) const {
+  const VectorX<T>& v0 = EvalVelocities(context);
+  ExtractParticipatingVelocities(context, v0, participating_v0);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::ExtractParticipatingVelocities(
+    const systems::Context<T>& context, const VectorX<T>& v,
+    VectorX<T>* participating_v) const {
+  DRAKE_DEMAND(participating_v != nullptr);
   const std::vector<internal::DeformableContactData<T>>&
       deformable_contact_data = EvalDeformableRigidContact(context);
   int num_deformable_vertices_in_contact = 0;
@@ -909,7 +1022,7 @@ void DeformableRigidManager<T>::CalcParticipatingFreeMotionVelocities(
       this->EvalDiscreteContactPairs(context);
   /* Return an empty velocity vector if there is no contact. */
   if (rigid_contact_pairs.empty() && num_deformable_vertices_in_contact == 0) {
-    v_star->resize(0);
+    participating_v->resize(0);
     return;
   }
 
@@ -920,15 +1033,18 @@ void DeformableRigidManager<T>::CalcParticipatingFreeMotionVelocities(
    order as in CalcContactTangentMatrix(). */
   const int num_rigid_velocities = this->plant().num_velocities();
   const int num_deformable_velocities = num_deformable_vertices_in_contact * 3;
-  v_star->resize(num_rigid_velocities + num_deformable_velocities);
-  v_star->head(num_rigid_velocities) = EvalFreeMotionRigidVelocities(context);
-  /* Now fill in the deformable participating velocities. */
-  int v_star_offset = num_rigid_velocities;
+  participating_v->resize(num_rigid_velocities + num_deformable_velocities);
+  participating_v->head(num_rigid_velocities) = v.head(num_rigid_velocities);
+  /* Now extract the deformable participating velocities. */
+  int v_offset = num_rigid_velocities;
+  int participating_v_offset = num_rigid_velocities;
   for (DeformableBodyIndex deformable_index(0);
        deformable_index < deformable_contact_data.size(); ++deformable_index) {
-    const FemStateBase<T>& fem_state_star =
-        EvalFreeMotionFemStateBase(context, deformable_index);
-    const VectorX<T>& v_star_deformable = fem_state_star.qdot();
+    const int num_dofs =
+        deformable_model_->fem_model(deformable_index).num_dofs();
+    /* The velocity of all dofs associated with the deformable body with index
+     `deformable_index`. */
+    const auto& v_body = v.segment(v_offset, num_dofs);
     const std::vector<int>& permuted_to_original_indexes =
         deformable_contact_data[deformable_index]
             .permuted_to_original_indexes();
@@ -936,17 +1052,59 @@ void DeformableRigidManager<T>::CalcParticipatingFreeMotionVelocities(
          vertex <
          deformable_contact_data[deformable_index].num_vertices_in_contact();
          ++vertex) {
-      /* For each participating deformable vertex, look up its free motion
+      /* For each participating deformable vertex, look up its (free motion)
        velocity through the mapping from the permuted index to the original
        index. */
-      v_star->template segment<3>(v_star_offset) =
-          v_star_deformable.template segment<3>(
-              3 * permuted_to_original_indexes[vertex]);
-      v_star_offset += 3;
+      participating_v->template segment<3>(participating_v_offset) =
+          v_body.template segment<3>(3 * permuted_to_original_indexes[vertex]);
+      participating_v_offset += 3;
     }
+    v_offset += num_dofs;
   }
-  /* Sanity check that all entries in `v_star` has been filled. */
-  DRAKE_DEMAND(v_star_offset == v_star->size());
+  /* Sanity check that all entries in `participating_v` have been filled and
+   all entries in `v` have been scanned through. */
+  DRAKE_DEMAND(v_offset == v.size());
+  DRAKE_DEMAND(participating_v_offset == participating_v->size());
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcVelocities(
+    const systems::Context<T>& context, VectorX<T>* v) const {
+  DRAKE_DEMAND(v != nullptr);
+  const int num_rigid_velocities = this->plant().num_velocities();
+  const int num_deformable_velocities = deformable_model_->NumDofs();
+  v->resize(num_rigid_velocities + num_deformable_velocities);
+  v->head(num_rigid_velocities) = this->plant().GetVelocities(context);
+  int dof_offset = num_rigid_velocities;
+  for (DeformableBodyIndex deformable_index(0);
+       deformable_index < deformable_model_->num_bodies(); ++deformable_index) {
+    const VectorX<T>& deformable_v =
+        EvalFemStateBase(context, deformable_index).qdot();
+    v->segment(dof_offset, deformable_v.size()) = deformable_v;
+    dof_offset += deformable_v.size();
+  }
+  /* Sanity check that all entries in `v` have been filled. */
+  DRAKE_DEMAND(dof_offset == v->size());
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+  const int num_rigid_velocities = this->plant().num_velocities();
+  const int num_deformable_velocities = deformable_model_->NumDofs();
+  v_star->resize(num_rigid_velocities + num_deformable_velocities);
+  v_star->head(num_rigid_velocities) = EvalFreeMotionRigidVelocities(context);
+  int dof_offset = num_rigid_velocities;
+  for (DeformableBodyIndex deformable_index(0);
+       deformable_index < deformable_model_->num_bodies(); ++deformable_index) {
+    const VectorX<T>& deformable_v_star =
+        EvalFreeMotionFemStateBase(context, deformable_index).qdot();
+    v_star->segment(dof_offset, deformable_v_star.size()) = deformable_v_star;
+    dof_offset += deformable_v_star.size();
+  }
+  /* Sanity check that all entries in `v_star` have been filled. */
+  DRAKE_DEMAND(dof_offset == v_star->size());
 }
 
 }  // namespace fem

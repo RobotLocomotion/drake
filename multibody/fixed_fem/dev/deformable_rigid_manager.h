@@ -101,6 +101,7 @@ class DeformableRigidManager final
   friend class DeformableRigidManagerTest;
   friend class DeformableRigidContactDataTest;
   friend class DeformableRigidDynamicsDataTest;
+  friend class DeformableRigidContactSolverTest;
 
   // TODO(xuchenhan-tri): Implement CloneToDouble() and CloneToAutoDiffXd() and
   //  the corresponding is_cloneable methods.
@@ -124,6 +125,24 @@ class DeformableRigidManager final
   void DoCalcContactSolverResults(
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const final;
+
+  /* Eval version of CalcTwoWayCoupledContactSolverResults(). */
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalTwoWayCoupledContactSolverResults(
+      const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(two_way_coupled_contact_solver_results_cache_index_)
+        .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
+            context);
+  }
+
+  /* Calculates the two-way coupled contact solver results with the results for
+   rigid dofs before the results for participating deformable dofs. See class
+   documentation of multibody::contact_solvers::internal::ContactSolver for a
+   description of the contact problem being solved. */
+  void CalcTwoWayCoupledContactSolverResults(
+      const systems::Context<T>& context,
+      contact_solvers::internal::ContactSolverResults<T>* results) const;
 
   /* Calculates all contact quantities needed by the contact solver and the
    TAMSI solver from the given `context` and `rigid_contact_pairs`.
@@ -179,8 +198,7 @@ class DeformableRigidManager final
   }
 
   /* Calculates the free motion FEM state of the deformable body with index
-   * `id`.
-   */
+   `id`. */
   void CalcFreeMotionFemStateBase(const systems::Context<T>& context,
                                   DeformableBodyIndex id,
                                   FemStateBase<T>* fem_state_star) const;
@@ -323,6 +341,14 @@ class DeformableRigidManager final
       const systems::Context<T>& context,
       const internal::DeformableContactData<T>& contact_data) const;
 
+  /* Eval version of CalcContactPointData(). */
+  const ContactPointData& EvalContactPointData(
+      const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(contact_point_data_cache_index_)
+        .template Eval<ContactPointData>(context);
+  }
+
   /* Calculates the combined friction, stiffness, damping, and penetration
    distance at all contact points. The way that the contact points are ordered
    in `contact_point_data` is directly correlated with the entries in the result
@@ -360,24 +386,73 @@ class DeformableRigidManager final
   void CalcFreeMotionRigidVelocities(const systems::Context<T>& context,
                                      VectorX<T>* v_star) const;
 
-  /* Eval version of CalcParticipatingFreeMotionVelocities(). */
-  const VectorX<T>& EvalParticipatingFreeMotionVelocities(
+  /* Eval version of CalcFreeMotionParticipatingVelocities(). */
+  const VectorX<T>& EvalFreeMotionParticipatingVelocities(
       const systems::Context<T>& context) const {
     return this->plant()
         .get_cache_entry(participating_free_motion_velocities_cache_index_)
         .template Eval<VectorX<T>>(context);
   }
 
-  /* Calculates the free motion velocities (v_star) of the participating dofs
-   used by the contact solver. A dof is considered as "participating" if
+  /* Calculates the free motion velocities of the participating dofs used by the
+   contact solver. See ExtractParticipatingVelocities() for definition of
+   "participating". */
+  void CalcFreeMotionParticipatingVelocities(
+      const systems::Context<T>& context,
+      VectorX<T>* participating_v_star) const;
+
+  /* Eval version of CalcParticipatingVelocities(). */
+  const VectorX<T>& EvalParticipatingVelocities(
+      const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(participating_velocities_cache_index_)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  /* Calculates the velocities of the participating dofs used by the contact
+   solver at the previous time step. See ExtractParticipatingVelocities() for
+   definition of "participating". */
+  void CalcParticipatingVelocities(const systems::Context<T>& context,
+                                   VectorX<T>* participating_v0) const;
+
+  /* Extracts the velocities of the participating dofs used by the contact
+   solver from the vector of all velocities `v`. A dof is considered as
+   "participating" if
        1. it belongs to *any* rigid body and there exist either rigid-rigid
           contact or rigid-deformable contact, or,
        2. it belongs to a deformable body that participates in deformable-rigid
           contact (see DeformableContactData::permute_vertex_indexes()).
-   The number and the order of the velocities are the same as the columns of the
-   contact tangent matrix (see CalcContactTangentMatrix()). */
-  void CalcParticipatingFreeMotionVelocities(const systems::Context<T>& context,
-                                             VectorX<T>* v_star) const;
+   The number and the order of the participating velocities are the same as the
+   columns of the contact tangent matrix (see CalcContactTangentMatrix()). This
+   method properly resizes the output argument `participating_v` so the caller
+   doesn't have to resize it. */
+  void ExtractParticipatingVelocities(const systems::Context<T>& context,
+                                      const VectorX<T>& v,
+                                      VectorX<T>* pariticipating_v) const;
+
+  /* Eval version of CalcVelocities(). */
+  const VectorX<T>& EvalVelocities(const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(velocities_cache_index_)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  /* Extracts the generalized velocities stored in context for both rigid and
+   deformable dofs. */
+  void CalcVelocities(const systems::Context<T>& context, VectorX<T>* v) const;
+
+  /* Eval version of CalcFreeMotionVelocities(). */
+  const VectorX<T>& EvalFreeMotionVelocities(
+      const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(free_motion_velocities_cache_index_)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  /* Calculates the free motion velocities of all rigid and deformable dofs,
+   with the rigid velocities coming before deformable velocities. */
+  void CalcFreeMotionVelocities(const systems::Context<T>& context,
+                                VectorX<T>* v_star) const;
 
   /* Given the GeometryId of a rigid collision geometry, returns the body frame
    of the collision geometry.
@@ -400,12 +475,20 @@ class DeformableRigidManager final
       tangent_matrix_schur_complement_cache_indexes_;
   /* Cached contact query results. */
   systems::CacheIndex deformable_contact_data_cache_index_;
+  /* Cached contact point data. */
+  systems::CacheIndex contact_point_data_cache_index_;
   /* Cached tangent matrix for contact. */
   systems::CacheIndex contact_tangent_matrix_cache_index_;
+  /* Cached v0/v* for all dofs. */
+  systems::CacheIndex velocities_cache_index_;
+  systems::CacheIndex free_motion_velocities_cache_index_;
   /* Cached free motion velocities for rigid dofs. */
   systems::CacheIndex free_motion_rigid_velocities_cache_index_;
   /* Cached participating velocities for contact. */
+  systems::CacheIndex participating_velocities_cache_index_;
   systems::CacheIndex participating_free_motion_velocities_cache_index_;
+  /* Cached two-way coupled contact solver results. */
+  systems::CacheIndex two_way_coupled_contact_solver_results_cache_index_;
   /* Solvers for all deformable bodies. */
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
