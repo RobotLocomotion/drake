@@ -1072,11 +1072,12 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
     return deformable_rigid_manager_->EvalFreeMotionRigidVelocities(context);
   }
 
-  /* Calls DeformableRigidManager::EvalParticipatingFreeMotionVelocities(). */
+  /* Calls DeformableRigidManager::EvalContactParticipatingVelocities() and
+   evaluates the free motion velocities `v_star`. */
   const VectorX<double>& EvalParticipatingFreeMotionVelocities(
       const systems::Context<double>& context) const {
-    return deformable_rigid_manager_->EvalParticipatingFreeMotionVelocities(
-        context);
+    return deformable_rigid_manager_->EvalContactParticipatingVelocities(
+        context, true);
   }
 
   /* Calls DeformableRigidManager::EvalFreeMotionFemStateBase(). */
