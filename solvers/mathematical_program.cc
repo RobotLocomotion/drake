@@ -810,23 +810,25 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v) {
-  return AddConstraint(internal::ParseLorentzConeConstraint(v));
+    const Eigen::Ref<const VectorX<Expression>>& v,
+    LorentzConeConstraint::EvalType eval_type) {
+  return AddConstraint(internal::ParseLorentzConeConstraint(v, eval_type));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Expression& linear_expression, const Expression& quadratic_expression,
-    double tol) {
+    double tol, LorentzConeConstraint::EvalType eval_type) {
   return AddConstraint(internal::ParseLorentzConeConstraint(
-      linear_expression, quadratic_expression, tol));
+      linear_expression, quadratic_expression, tol, eval_type));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
-    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    LorentzConeConstraint::EvalType eval_type) {
   shared_ptr<LorentzConeConstraint> constraint =
-      make_shared<LorentzConeConstraint>(A, b);
+      make_shared<LorentzConeConstraint>(A, b, eval_type);
   return AddConstraint(Binding<LorentzConeConstraint>(constraint, vars));
 }
 

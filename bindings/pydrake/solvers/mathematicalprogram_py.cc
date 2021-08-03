@@ -1010,32 +1010,40 @@ void BindMathematicalProgram(py::module m) {
               .doc_3args_double_double_constEigenMatrixBase)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
-              const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
+              const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&,
+              LorentzConeConstraint::EvalType)>(
               &MathematicalProgram::AddLorentzConeConstraint),
           py::arg("v"),
-          doc.MathematicalProgram.AddLorentzConeConstraint.doc_1args_v)
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
+          doc.MathematicalProgram.AddLorentzConeConstraint
+              .doc_2args_v_eval_type)
       .def(
           "AddLorentzConeConstraint",
           [](MathematicalProgram* self,
               const symbolic::Expression& linear_expression,
-              const symbolic::Expression& quadratic_expression, double tol) {
+              const symbolic::Expression& quadratic_expression, double tol,
+              LorentzConeConstraint::EvalType eval_type) {
             return self->AddLorentzConeConstraint(
-                linear_expression, quadratic_expression, tol);
+                linear_expression, quadratic_expression, tol, eval_type);
           },
           py::arg("linear_expression"), py::arg("quadratic_expression"),
           py::arg("tol") = 0.,
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
           doc.MathematicalProgram.AddLorentzConeConstraint
-              .doc_3args_linear_expression_quadratic_expression_tol)
+              .doc_4args_linear_expression_quadratic_expression_tol_eval_type)
       .def(
           "AddLorentzConeConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const Eigen::MatrixXd>& A,
               const Eigen::Ref<const Eigen::VectorXd>& b,
-              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-            return self->AddLorentzConeConstraint(A, b, vars);
+              const Eigen::Ref<const VectorXDecisionVariable>& vars,
+              LorentzConeConstraint::EvalType eval_type) {
+            return self->AddLorentzConeConstraint(A, b, vars, eval_type);
           },
-          py::arg("A"), py::arg("b"), py::arg("vars") = 0.,
-          doc.MathematicalProgram.AddLorentzConeConstraint.doc_3args_A_b_vars)
+          py::arg("A"), py::arg("b"), py::arg("vars"),
+          py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
+          doc.MathematicalProgram.AddLorentzConeConstraint
+              .doc_4args_A_b_vars_eval_type)
       .def(
           "AddRotatedLorentzConeConstraint",
           [](MathematicalProgram* self,
@@ -1650,7 +1658,9 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
           doc.LorentzConeConstraint.ctor.doc)
       .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc)
-      .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc);
+      .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc)
+      .def("eval_type", &LorentzConeConstraint::eval_type,
+          doc.LorentzConeConstraint.eval_type.doc);
 
   py::class_<RotatedLorentzConeConstraint, Constraint,
       std::shared_ptr<RotatedLorentzConeConstraint>>(
