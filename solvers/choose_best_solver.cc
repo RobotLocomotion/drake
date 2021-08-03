@@ -4,10 +4,12 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
@@ -94,44 +96,112 @@ bool IsMatch(const MathematicalProgram& prog) {
       SomeSolver::ProgramAttributesSatisfied(prog);
 }
 
+template <typename SomeSolver, typename... SomeSolvers>
+SolverId ChooseFirstMatchingSolver(const MathematicalProgram& prog) {
+  if (IsMatch<SomeSolver>(prog)) {
+    return SomeSolver::id();
+  } else {
+    if constexpr (sizeof...(SomeSolvers) > 0) {
+      return ChooseFirstMatchingSolver<SomeSolvers...>(prog);
+    } else {
+      throw std::invalid_argument(
+          "There is no available solver for the optimization program");
+    }
+  }
+}
+
 }  // namespace
 
 SolverId ChooseBestSolver(const MathematicalProgram& prog) {
-  if (IsMatch<LinearSystemSolver>(prog)) {
-    return LinearSystemSolver::id();
-  } else if (IsMatch<EqualityConstrainedQPSolver>(prog)) {
-    return EqualityConstrainedQPSolver::id();
-  } else if (IsMatch<MosekSolver>(prog)) {
-    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
-    // faster than Gurobi for convex optimization problem. But we should run
-    // a more thorough comparison.
-    return MosekSolver::id();
-  } else if (IsMatch<GurobiSolver>(prog)) {
-    return GurobiSolver::id();
-  } else if (IsMatch<OsqpSolver>(prog)) {
-    // For a QP, we prioritize OSQP over CLP.
-    // For an LP, we prioritize CLP, and don't allow solving LP with OSQP.
-    return OsqpSolver::id();
-  } else if (IsMatch<ClpSolver>(prog)) {
-    return ClpSolver::id();
-  } else if (IsMatch<MobyLCPSolver<double>>(prog)) {
-    return MobyLcpSolverId::id();
-  } else if (IsMatch<SnoptSolver>(prog)) {
-    return SnoptSolver::id();
-  } else if (IsMatch<IpoptSolver>(prog)) {
-    return IpoptSolver::id();
-  } else if (IsMatch<NloptSolver>(prog)) {
-    return NloptSolver::id();
-  } else if (IsMatch<CsdpSolver>(prog)) {
-    return CsdpSolver::id();
-  } else if (IsMatch<ScsSolver>(prog)) {
-    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
-    // modest accuracy quite fast, but then slows down significantly if the user
-    // wants high accuracy.
-    return ScsSolver::id();
+  const ProgramType program_type = GetProgramType(prog);
+  switch (program_type) {
+    case ProgramType::kLP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          LinearSystemSolver, MosekSolver, GurobiSolver, ClpSolver,
+          // Dispreferred (generic nonlinear solvers).
+          SnoptSolver, IpoptSolver, NloptSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
+          // Dispreferred (ADMM, low accuracy).
+          ScsSolver>(prog);
+    }
+    case ProgramType::kQP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          EqualityConstrainedQPSolver, MosekSolver, GurobiSolver,
+          // Dispreferred (ADMM, low accuracy)
+          OsqpSolver,
+          // Dispreferred (Memory issue) TODO(hongkai.dai): look into the memory
+          // issue inside CLP solver.
+          ClpSolver,
+          // Dispreferred (generic nonlinear solvers).
+          SnoptSolver, IpoptSolver, NloptSolver,
+          // Dispreferred (ADMM, low accuracy)
+          ScsSolver>(prog);
+    }
+    case ProgramType::kSOCP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          MosekSolver, GurobiSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
+          // Dispreferred (ADMM, low accuracy)
+          ScsSolver,
+          // Dispreferred (generic nonlinear solvers).
+          SnoptSolver, IpoptSolver, NloptSolver>(prog);
+    }
+    case ProgramType::kSDP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          MosekSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
+          // Dispreferred (ADMM, low accuracy).
+          ScsSolver,
+          // Dispreferred (generic nonlinear solvers).
+          SnoptSolver, IpoptSolver, NloptSolver>(prog);
+    }
+    case ProgramType::kGP:
+    case ProgramType::kCGP: {
+      return ChooseFirstMatchingSolver<MosekSolver, ScsSolver>(prog);
+    }
+    case ProgramType::kMILP:
+    case ProgramType::kMIQP:
+    case ProgramType::kMISOCP: {
+      return ChooseFirstMatchingSolver<MosekSolver, GurobiSolver>(prog);
+    }
+    case ProgramType::kMISDP: {
+      throw std::runtime_error(
+          "ChooseBestSolver():The MISDP problem is not well-supported yet. You "
+          "can try Drake's implementation MixedIntegerBranchAndBound for small "
+          "sized MISDP.");
+    }
+    case ProgramType::kQuadraticCostConicConstraint: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          MosekSolver, GurobiSolver,
+          // Dispreferred solver (ADMM, low accuracy)
+          ScsSolver>(prog);
+    }
+    case ProgramType::kNLP: {
+      return ChooseFirstMatchingSolver<SnoptSolver, IpoptSolver, NloptSolver>(
+          prog);
+    }
+    case ProgramType::kLCP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solver.
+          MobyLCPSolver<double>,
+          // Dispreferred solver (generic nonlinear solver)
+          SnoptSolver, IpoptSolver, NloptSolver>(prog);
+    }
+    case ProgramType::kUnknown: {
+      throw std::runtime_error(
+          "ChooseBestSolver(): The program type is not known, we can't "
+          "recommend a solver. Please instantiate the solver explicitly.");
+    }
   }
-  throw std::invalid_argument(
-      "There is no available solver for the optimization program");
+  DRAKE_UNREACHABLE();
 }
 
 const std::set<SolverId>& GetKnownSolvers() {
