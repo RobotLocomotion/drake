@@ -1,7 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_manager.h"
 
-#include <set>
-
+#include "drake/multibody/contact_solvers/block_sparse_linear_operator.h"
+#include "drake/multibody/fixed_fem/dev/inverse_spd_operator.h"
 #include "drake/multibody/fixed_fem/dev/permute_block_sparse_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -9,8 +9,13 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+using multibody::contact_solvers::internal::BlockSparseLinearOperator;
 using multibody::contact_solvers::internal::BlockSparseMatrix;
 using multibody::contact_solvers::internal::BlockSparseMatrixBuilder;
+using multibody::contact_solvers::internal::ContactSolverResults;
+using multibody::contact_solvers::internal::InverseSpdOperator;
+using multibody::contact_solvers::internal::PointContactData;
+using multibody::contact_solvers::internal::SystemDynamicsData;
 using multibody::internal::DiscreteContactPair;
 
 template <typename T>
@@ -176,6 +181,14 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
   deformable_contact_data_cache_index_ =
       deformable_contact_data_cache_entry.cache_index();
 
+  const auto& contact_point_data_cache_entry = this->DeclareCacheEntry(
+      "Contact point data",
+      systems::ValueProducer(this,
+                             &DeformableRigidManager<T>::CalcContactPointData),
+      {systems::System<T>::xd_ticket()});
+  contact_point_data_cache_index_ =
+      contact_point_data_cache_entry.cache_index();
+
   /* Calculates the tangent matrix for the contact solver. */
   const auto& contact_tangent_matrix_cache_entry = this->DeclareCacheEntry(
       "Tangent matrix for contact",
@@ -204,12 +217,22 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
            free_motion_rigid_velocities_cache_entry.ticket()});
   participating_free_motion_velocities_cache_index_ =
       participating_free_motion_velocities_cache_entry.cache_index();
+
+  const auto& two_way_coupled_contact_solver_results_cache_entry =
+      this->DeclareCacheEntry(
+          "Two-way coupled contact solver results",
+          systems::ValueProducer(this,
+                                 &DeformableRigidManager<
+                                     T>::CalcTwoWayCoupledContactSolverResults),
+          {systems::System<T>::all_sources_ticket()});
+  two_way_coupled_contact_solver_results_cache_index_ =
+      two_way_coupled_contact_solver_results_cache_entry.cache_index();
 }
 
 template <typename T>
 void DeformableRigidManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
+    ContactSolverResults<T>* results) const {
   /* Assert this method was called on a context storing discrete state. */
   this->plant().ValidateContext(context);
   DRAKE_ASSERT(context.num_continuous_states() == 0);
@@ -252,6 +275,49 @@ void DeformableRigidManager<T>::DoCalcContactSolverResults(
         context.get_time(), v, M, minus_tau, fn, rigid_contact_jacobians.Jn,
         rigid_contact_jacobians.Jt, stiffness, damping, mu, results);
   }
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcTwoWayCoupledContactSolverResults(
+    const systems::Context<T>& context,
+    ContactSolverResults<T>* two_way_coupled_results) const {
+  DRAKE_DEMAND(two_way_coupled_results != nullptr);
+  DRAKE_DEMAND(contact_solver_ != nullptr);
+
+  const int rigid_dofs = this->plant().num_velocities();
+  /* Quick exit if there are no moving rigid or deformable objects. */
+  if (rigid_dofs == 0 && deformable_model_->num_bodies() == 0) {
+    two_way_coupled_results->Resize(0, 0);
+    return;
+  }
+
+  /* Extract all information needed by the contact solver. */
+  /* Point contact data. */
+  const BlockSparseMatrix<T> Jc = CalcContactJacobian(context);
+  const BlockSparseLinearOperator<T> Jc_op("Contact Jacobian", &Jc);
+  const ContactPointData& point_data = EvalContactPointData(context);
+
+  /* System dynamics data.*/
+  const VectorX<T>& v_star = EvalParticipatingFreeMotionVelocities(context);
+  const BlockSparseMatrix<T>& A = EvalContactTangentMatrix(context);
+  // TODO(xuchenhan-tri): The inverse is currently calculated inefficiently.
+  //  However, since the inverse tangent matrix won't be needed for the new
+  //  contact solver. We do not try to optimize it right now. Use the matrix A
+  //  instead of its inverse when the new contact solver is available.
+  const InverseSpdOperator<T> A_inv_op("Tangent matrix inverse",
+                                       A.MakeDenseMatrix());
+
+  const SystemDynamicsData<T> dynamics_data(&A_inv_op, &v_star);
+  const PointContactData<T> contact_data(&point_data.phi0, &Jc_op,
+                                         &point_data.stiffness,
+                                         &point_data.damping, &point_data.mu);
+  const int nv = dynamics_data.num_velocities();
+  const int nc = contact_data.num_contacts();
+
+  two_way_coupled_results->Resize(nv, nc);
+  contact_solver_->SolveWithGuess(this->plant().time_step(), dynamics_data,
+                                  contact_data, v_star,
+                                  two_way_coupled_results);
 }
 
 template <typename T>
