@@ -108,16 +108,18 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
  * Standard Template Library <a href=
  *   "https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine">
  * RandomNumberEngine concept</a>, if you wish to serialize the results.
- * Note that the generator "snapshots" are returned as const, because any
- * non-const operations on that object may advance the state of the
- * generator (making it no-longer valuable in reproducing the simulation).
+ * Note that performing any non-const operations on generator_snapshot may
+ * advance the state of the generator and make it no longer capable of
+ * reproducing the simulation.
  */
 struct RandomSimulationResult {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult)
+
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)
       : generator_snapshot(generator), output(value) {}
 
-  const RandomGenerator generator_snapshot;
+  RandomGenerator generator_snapshot;
   double output{};
 };
 

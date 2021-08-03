@@ -233,7 +233,7 @@ PYBIND11_MODULE(analysis, m) {
         m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
         .def_readwrite("output", &RandomSimulationResult::output,
             doc.RandomSimulationResult.output.doc)
-        .def_readonly("generator_snapshot",
+        .def_readwrite("generator_snapshot",
             &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
