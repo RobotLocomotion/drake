@@ -8,6 +8,7 @@
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
@@ -94,44 +95,56 @@ bool IsMatch(const MathematicalProgram& prog) {
       SomeSolver::ProgramAttributesSatisfied(prog);
 }
 
+template <typename SomeSolver, typename... SomeSolvers>
+SolverId ChooseFirstMatchingSolver(const MathematicalProgram& prog) {
+  if (IsMatch<SomeSolver>(prog)) {
+    return SomeSolver::id();
+  } else {
+    if constexpr (sizeof...(SomeSolvers) > 0) {
+      return ChooseFirstMatchingSolver<SomeSolvers...>(prog);
+    } else {
+      throw std::invalid_argument(
+          "There is no available solver for the optimization program");
+    }
+  }
+}
+
 }  // namespace
 
 SolverId ChooseBestSolver(const MathematicalProgram& prog) {
-  if (IsMatch<LinearSystemSolver>(prog)) {
-    return LinearSystemSolver::id();
-  } else if (IsMatch<EqualityConstrainedQPSolver>(prog)) {
-    return EqualityConstrainedQPSolver::id();
-  } else if (IsMatch<MosekSolver>(prog)) {
-    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
-    // faster than Gurobi for convex optimization problem. But we should run
-    // a more thorough comparison.
-    return MosekSolver::id();
-  } else if (IsMatch<GurobiSolver>(prog)) {
-    return GurobiSolver::id();
-  } else if (IsMatch<OsqpSolver>(prog)) {
-    // For a QP, we prioritize OSQP over CLP.
-    // For an LP, we prioritize CLP, and don't allow solving LP with OSQP.
-    return OsqpSolver::id();
-  } else if (IsMatch<ClpSolver>(prog)) {
-    return ClpSolver::id();
-  } else if (IsMatch<MobyLCPSolver<double>>(prog)) {
-    return MobyLcpSolverId::id();
-  } else if (IsMatch<SnoptSolver>(prog)) {
-    return SnoptSolver::id();
-  } else if (IsMatch<IpoptSolver>(prog)) {
-    return IpoptSolver::id();
-  } else if (IsMatch<NloptSolver>(prog)) {
-    return NloptSolver::id();
-  } else if (IsMatch<CsdpSolver>(prog)) {
-    return CsdpSolver::id();
-  } else if (IsMatch<ScsSolver>(prog)) {
-    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
-    // modest accuracy quite fast, but then slows down significantly if the user
-    // wants high accuracy.
-    return ScsSolver::id();
+  const ProgramType program_type = GetProgramType(prog);
+  switch (program_type) {
+    case ProgramType::kLP: {
+      return ChooseFirstMatchingSolver<
+          LinearSystemSolver, MosekSolver, GurobiSolver, ClpSolver, SnoptSolver,
+          IpoptSolver, NloptSolver, CsdpSolver, ScsSolver>(prog);
+    }
+    case ProgramType::kQP: {
+      return ChooseFirstMatchingSolver<
+          EqualityConstrainedQPSolver, MosekSolver, GurobiSolver, OsqpSolver,
+          ClpSolver, SnoptSolver, IpoptSolver, NloptSolver, ScsSolver>(prog);
+    }
+    case ProgramType::kSOCP: {
+      return ChooseFirstMatchingSolver<GurobiSolver, MosekSolver, CsdpSolver,
+                                       ScsSolver, SnoptSolver, IpoptSolver,
+                                       NloptSolver>(prog);
+    }
+    case ProgramType::kSDP: {
+      return ChooseFirstMatchingSolver<MosekSolver, CsdpSolver, ScsSolver,
+                                       SnoptSolver, IpoptSolver, NloptSolver>(
+          prog);
+    }
+    case ProgramType::kGP:
+    case ProgramType::kCGP: {
+      return ChooseFirstMatchingSolver<MosekSolver, ScsSolver>(prog);
+    }
+    default: {
+      return ChooseFirstMatchingSolver<
+          LinearSystemSolver, EqualityConstrainedQPSolver, MosekSolver,
+          GurobiSolver, OsqpSolver, ClpSolver, MobyLCPSolver<double>,
+          SnoptSolver, IpoptSolver, NloptSolver, CsdpSolver, ScsSolver>(prog);
+    }
   }
-  throw std::invalid_argument(
-      "There is no available solver for the optimization program");
 }
 
 const std::set<SolverId>& GetKnownSolvers() {
