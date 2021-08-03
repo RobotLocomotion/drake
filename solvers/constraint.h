@@ -323,6 +323,10 @@ class LorentzConeConstraint : public Constraint {
 
   ~LorentzConeConstraint() override {}
 
+  EvalType eval_type() const { return eval_type_; }
+
+  void set_eval_type(EvalType eval_type) { eval_type_ = eval_type; }
+
   /** Getter for A. */
   const Eigen::SparseMatrix<double>& A() const { return A_; }
 
@@ -354,7 +358,7 @@ class LorentzConeConstraint : public Constraint {
   // using AutoDiffXd, and return the gradient as a dense matrix.
   const Eigen::MatrixXd A_dense_;
   const Eigen::VectorXd b_;
-  const EvalType eval_type_;
+  EvalType eval_type_;
 };
 
 /**

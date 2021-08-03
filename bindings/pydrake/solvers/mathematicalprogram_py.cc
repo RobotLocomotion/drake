@@ -1650,7 +1650,11 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("eval_type") = LorentzConeConstraint::EvalType::kConvexSmooth,
           doc.LorentzConeConstraint.ctor.doc)
       .def("A", &LorentzConeConstraint::A, doc.LorentzConeConstraint.A.doc)
-      .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc);
+      .def("b", &LorentzConeConstraint::b, doc.LorentzConeConstraint.b.doc)
+      .def("eval_type", &LorentzConeConstraint::eval_type,
+          doc.LorentzConeConstraint.eval_type.doc)
+      .def("set_eval_type", &LorentzConeConstraint::set_eval_type,
+          py::arg("eval_type"), doc.LorentzConeConstraint.set_eval_type.doc);
 
   py::class_<RotatedLorentzConeConstraint, Constraint,
       std::shared_ptr<RotatedLorentzConeConstraint>>(

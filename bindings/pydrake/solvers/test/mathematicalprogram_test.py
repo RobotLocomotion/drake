@@ -1099,6 +1099,13 @@ class TestMathematicalProgram(unittest.TestCase):
             eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
+        self.assertEqual(
+            constraint.eval_type(),
+            mp.LorentzConeConstraint.EvalType.kConvexSmooth)
+        constraint.set_eval_type(
+            eval_type=mp.LorentzConeConstraint.EvalType.kConvex)
+        self.assertEqual(
+            constraint.eval_type(), mp.LorentzConeConstraint.EvalType.kConvex)
 
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
