@@ -47,7 +47,7 @@ struct ElasticityElementTraits {
   static_assert(QuadratureType::num_quadrature_points ==
                 IsoparametricElementType::num_sample_locations);
   static_assert(QuadratureType::num_quadrature_points ==
-                ConstitutiveModelType::num_locations());
+                ConstitutiveModelType::num_locations);
   /* Check that the natural dimensions are compatible. */
   static_assert(IsoparametricElementType::natural_dimension ==
                 QuadratureType::natural_dimension);
@@ -78,8 +78,7 @@ struct ElasticityElementTraits {
   // TODO(xuchenhan-tri): Enforce the constraint mentioned above with
   //  static_assert with easy-to-parse error messages.
   struct Data {
-    typename ConstitutiveModelType::Traits::DeformationGradientDataType
-        deformation_gradient_data;
+    typename ConstitutiveModelType::Data deformation_gradient_data;
     /* The elastic energy density evaluated at quadrature points. */
     std::array<T, kNumQuadraturePoints> Psi;
     /* The first Piola stress evaluated at quadrature points. */
