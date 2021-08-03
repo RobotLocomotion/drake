@@ -138,7 +138,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
       drake::log()->warn(
           "Provided num_parallel_executions value of {} is greater than the "
           "value of hardware concurrency {} for this computer, this is likely "
-          "to result in poor peformance",
+          "to result in poor performance",
           num_threads, hardware_concurrency);
     } else {
       drake::log()->debug(
