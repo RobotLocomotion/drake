@@ -1911,9 +1911,14 @@ class MathematicalProgram {
    * Vector4<symbolic::Expression> v(x+1, y+1, x, 2.);
    * prog.AddLorentzConeConstraint(v);
    * @endcode
+   * @param eval_type The evaluation type when evaluating the lorentz cone
+   * constraint in generic optimization. Refer to
+   * LorentzConeConstraint::EvalType for more details.
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
-      const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth);
 
   /**
    * Adds Lorentz cone constraint on the linear expression v1 and quadratic
@@ -1923,6 +1928,9 @@ class MathematicalProgram {
    * @param tol The tolerance to determine if the matrix in v2 is positive
    * semidefinite or not. @see DecomposePositiveQuadraticForm for more
    * explanation. @default is 0.
+   * @param eval_type The evaluation type when evaluating the lorentz cone
+   * constraint in generic optimization. Refer to
+   * LorentzConeConstraint::EvalType for more details.
    * @retval binding The newly added Lorentz cone constraint, together with the
    * bound variables.
    * @pre
@@ -1953,7 +1961,9 @@ class MathematicalProgram {
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Expression& linear_expression,
-      const symbolic::Expression& quadratic_expression, double tol = 0);
+      const symbolic::Expression& quadratic_expression, double tol = 0,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
@@ -1977,8 +1987,11 @@ class MathematicalProgram {
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
-    return AddLorentzConeConstraint(A, b, ConcatenateVariableRefList(vars));
+      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth) {
+    return AddLorentzConeConstraint(A, b, ConcatenateVariableRefList(vars),
+                                    eval_type);
   }
 
   /**
@@ -2015,7 +2028,9 @@ class MathematicalProgram {
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
       const Eigen::Ref<const Eigen::VectorXd>& b,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth);
 
   /**
    * Imposes that a vector @f$ x\in\mathbb{R}^m @f$ lies in Lorentz cone. Namely
@@ -2031,8 +2046,11 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
-      const VariableRefList& vars) {
-    return AddLorentzConeConstraint(ConcatenateVariableRefList(vars));
+      const VariableRefList& vars,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth) {
+    return AddLorentzConeConstraint(ConcatenateVariableRefList(vars),
+                                    eval_type);
   }
 
   /**
@@ -2050,12 +2068,14 @@ class MathematicalProgram {
    */
   template <int rows>
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
-      const Eigen::MatrixBase<VectorDecisionVariable<rows>>& vars) {
+      const Eigen::MatrixBase<VectorDecisionVariable<rows>>& vars,
+      LorentzConeConstraint::EvalType eval_type =
+          LorentzConeConstraint::EvalType::kConvexSmooth) {
     Eigen::Matrix<double, rows, rows> A(vars.rows(), vars.rows());
     A.setIdentity();
     Eigen::Matrix<double, rows, 1> b(vars.rows());
     b.setZero();
-    return AddLorentzConeConstraint(A, b, vars);
+    return AddLorentzConeConstraint(A, b, vars, eval_type);
   }
 
   /**

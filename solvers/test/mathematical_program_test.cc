@@ -1939,8 +1939,9 @@ bool AreTwoPolynomialsNear(
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog, const Expression& linear_expr,
     const Expression& quadratic_expr) {
-  const auto& binding1 =
-      prog->AddLorentzConeConstraint(linear_expr, quadratic_expr);
+  const auto& binding1 = prog->AddLorentzConeConstraint(
+      linear_expr, quadratic_expr, 0.,
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
   EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
   EXPECT_EQ(binding1.variables(), binding2.variables());
@@ -1965,7 +1966,8 @@ void CheckParsedSymbolicLorentzConeConstraint(
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
-  const auto& binding1 = prog->AddLorentzConeConstraint(e);
+  const auto& binding1 = prog->AddLorentzConeConstraint(
+      e, LorentzConeConstraint::EvalType::kConvexSmooth);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
 
   EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
@@ -2700,9 +2702,11 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   prog.AddBoundingBoxConstraint(-10, 10, x(0));
   prog.AddBoundingBoxConstraint(-4, 5, x(1));
   prog.AddLorentzConeConstraint(
-      Vector3<symbolic::Expression>(+x(0), +x(1), x(2) - 0.5 * x(1)));
+      Vector3<symbolic::Expression>(+x(0), +x(1), x(2) - 0.5 * x(1)),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   prog.AddLorentzConeConstraint(
-      Vector3<symbolic::Expression>(x(0) + x(1), +x(0), x(2) - x(1)));
+      Vector3<symbolic::Expression>(x(0) + x(1), +x(0), x(2) - x(1)),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   prog.AddRotatedLorentzConeConstraint(Vector4<symbolic::Expression>(
       +x(0), +x(1), 0.5 * (x(0) + x(1)), 0.5 * x(2)));
   prog.AddRotatedLorentzConeConstraint(
@@ -3420,8 +3424,9 @@ GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
   auto lin_eq_con = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1);
-  auto lorentz_con =
-      prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  auto lorentz_con = prog.AddLorentzConeConstraint(
+      x.cast<symbolic::Expression>(),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   auto rotated_lorentz_con =
       prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
   Eigen::SparseMatrix<double> A(3, 3);

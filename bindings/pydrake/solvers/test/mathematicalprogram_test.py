@@ -1099,6 +1099,9 @@ class TestMathematicalProgram(unittest.TestCase):
             eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
         np.testing.assert_array_equal(constraint.A().todense(), A)
         np.testing.assert_array_equal(constraint.b(), b)
+        self.assertEqual(
+            constraint.eval_type(),
+            mp.LorentzConeConstraint.EvalType.kConvexSmooth)
 
     def test_add_lorentz_cone_constraint(self):
         # Call AddLorentzConeConstraint, make sure no error is thrown.
@@ -1106,14 +1109,17 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewContinuousVariables(3)
 
         prog.AddLorentzConeConstraint(
-            v=np.array([x[0]+1, x[1]+x[2], 2*x[1]]))
+            v=np.array([x[0]+1, x[1]+x[2], 2*x[1]]),
+            eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
         prog.AddLorentzConeConstraint(
             linear_expression=x[0] + x[1] + 1,
             quadratic_expression=x[0]*x[0] + x[1] * x[1] + 2 * x[0] * x[1] + 1,
-            tol=0.)
+            tol=0., eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
         A = np.array([[1, 0], [0, 1], [1, 0], [0, 0]])
         b = np.array([1, 1, 0, 2])
-        constraint = prog.AddLorentzConeConstraint(A=A, b=b, vars=x[:2])
+        constraint = prog.AddLorentzConeConstraint(
+            A=A, b=b, vars=x[:2],
+            eval_type=mp.LorentzConeConstraint.EvalType.kConvexSmooth)
         np.testing.assert_allclose(
             constraint.evaluator().A().todense(), A)
         np.testing.assert_allclose(constraint.evaluator().b(), b)
