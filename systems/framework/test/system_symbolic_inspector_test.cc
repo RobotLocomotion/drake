@@ -112,7 +112,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     const Eigen::Vector2d f0(10.0, 11.0);
     const Vector2<symbolic::Expression> next_xd =
         A * xd + B1 * u0 + B2 * u1 + f0;
-    discrete_state->get_mutable_vector(0).SetFromVector(next_xd);
+    discrete_state->set_value(0, next_xd);
   }
 };
 

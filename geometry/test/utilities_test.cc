@@ -1,5 +1,8 @@
 #include "drake/geometry/utilities.h"
 
+#include <set>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -72,6 +75,31 @@ GTEST_TEST(GeometryUtilities, RigidTransformConversion) {
   RigidTransform<double> X_AB_ad_converted = convert_to_double(X_AB_ad);
   EXPECT_TRUE(
       CompareMatrices(X_AB.GetAsMatrix34(), X_AB_ad_converted.GetAsMatrix34()));
+}
+
+GTEST_TEST(GeometryUtilities, MapKeyRange) {
+  const std::unordered_map<int, std::string> values{{1, std::string("one")},
+                                                    {2, std::string("two")},
+                                                    {3, std::string("three")}};
+  MapKeyRange<int, std::string> range(&values);
+  int count = 0;
+  for (int i : range) {
+    ++count;
+    EXPECT_EQ(values.count(i), 1);
+  }
+  EXPECT_EQ(count, values.size());
+
+  std::set<int> read_values_set(range.begin(), range.end());
+  EXPECT_EQ(read_values_set.size(), values.size());
+  for (int i : read_values_set) {
+    EXPECT_EQ(values.count(i), 1);
+  }
+
+  std::vector<int> read_values_vector(range.begin(), range.end());
+  EXPECT_EQ(read_values_vector.size(), values.size());
+  for (int i : read_values_vector) {
+    EXPECT_EQ(values.count(i), 1);
+  }
 }
 
 GTEST_TEST(GeometryUtilities, Vector3Conversion) {

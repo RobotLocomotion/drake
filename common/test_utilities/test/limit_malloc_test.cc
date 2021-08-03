@@ -159,7 +159,7 @@ TEST_P(LimitMallocDeathTest, MaxLimitTest) {
 }
 
 TEST_P(LimitMallocDeathTest, ObservationTest) {
-  // Though not actually a death test, this is is a convenient place to test
+  // Though not actually a death test, this is a convenient place to test
   // that the getter returns a correct count.  We must check within a unit test
   // that is known to be disabled via the BUILD file for platforms without a
   // working implementation.

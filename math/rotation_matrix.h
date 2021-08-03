@@ -515,7 +515,7 @@ class RotationMatrix {
     return matrix() * v_B;
   }
 
-  /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
+  /// Returns how close the matrix R is to being a 3x3 orthonormal matrix by
   /// computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
   /// difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).
   /// @param[in] R matrix being checked for orthonormality.

@@ -81,10 +81,15 @@ class TestGeometry(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_frames(), 3)
-        self.assertEqual(len(inspector.all_frame_ids()), 3)
+        with catch_drake_warnings(expected_count=3):
+            self.assertEqual(len(inspector.all_frame_ids()), 3)
+            self.assertTrue(inspector.world_frame_id()
+                            in inspector.all_frame_ids())
+            self.assertTrue(global_frame in inspector.all_frame_ids())
+        self.assertEqual(len(inspector.GetAllFrameIds()), 3)
         self.assertTrue(inspector.world_frame_id()
-                        in inspector.all_frame_ids())
-        self.assertTrue(global_frame in inspector.all_frame_ids())
+                        in inspector.GetAllFrameIds())
+        self.assertTrue(global_frame in inspector.GetAllFrameIds())
         self.assertIsInstance(inspector.world_frame_id(), mut.FrameId)
         self.assertEqual(inspector.num_geometries(), 3)
         self.assertEqual(len(inspector.GetAllGeometryIds()), 3)
@@ -1072,21 +1077,3 @@ class TestGeometry(unittest.TestCase):
             domain=mut.optimization.HPolyhedron.MakeBox(
                 lb=[-5, -5, -5], ub=[5, 5, 5]), options=options)
         self.assertIsInstance(region, mut.optimization.HPolyhedron)
-
-    def test_deprecated_struct_member(self):
-        """Tests successful deprecation of struct member"""
-        with catch_drake_warnings(expected_count=1):
-            # Initializing by referencing the deprecated field warns.
-            data = mut.SignedDistancePair(is_nhat_BA_W_unique=False)
-
-        data = mut.SignedDistancePair()
-        with catch_drake_warnings(expected_count=2):
-            # Setting the deprecated field warns.
-            data.is_nhat_BA_W_unique = False
-            _ = data.is_nhat_BA_W_unique
-
-        # Specifying all other members in constructor is fine.
-        data = mut.SignedDistancePair(id_A=mut.GeometryId.get_new_id(),
-                                      id_B=mut.GeometryId.get_new_id(),
-                                      p_ACa=[0, 0, 1], p_BCb=[1, 0, 0],
-                                      distance=13, nhat_BA_W=[0, 1, 0])

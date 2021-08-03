@@ -140,9 +140,8 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
         const systems::DiscreteValues<T>& all_discrete_states =
             context.get_discrete_state();
         for (int i = 0; i < num_bodies(); ++i) {
-          const systems::BasicVector<T>& discrete_state =
-              all_discrete_states.get_vector(discrete_state_indexes_[i]);
-          const auto& discrete_value = discrete_state.get_value();
+          const auto& discrete_value =
+              all_discrete_states.get_value(discrete_state_indexes_[i]);
           const int num_dofs = discrete_value.size() / 3;
           const auto& q = discrete_value.head(num_dofs);
           output_value[i] = q;

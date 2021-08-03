@@ -107,7 +107,7 @@ class Sphere final : public Shape {
 
   /** Constructs a sphere with the given `radius`.
    @throws std::exception if `radius` is negative. Note that a zero radius is
-   is considered valid. */
+   considered valid. */
   explicit Sphere(double radius);
 
   double radius() const { return radius_; }

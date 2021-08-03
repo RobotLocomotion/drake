@@ -65,7 +65,7 @@ def _impl(repository_ctx):
         "BUILD.bazel",
     )
 
-    # Create a summary file for for Drake maintainers.  We need to list all
+    # Create a summary file for Drake maintainers.  We need to list all
     # possible binaries so Drake's mirroring scripts will fetch everything.
     generate_repository_metadata(
         repository_ctx,

@@ -211,7 +211,7 @@ def github_download_and_extract(
         stripPrefix = _strip_prefix(repository, commit, extra_strip_prefix),
     )
 
-    # Create a summary file for for Drake maintainers.
+    # Create a summary file for Drake maintainers.
     generate_repository_metadata(
         repository_ctx,
         repository_rule_type = "github",

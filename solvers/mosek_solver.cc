@@ -272,7 +272,7 @@ MSKrescodee AddLinearConstraintToMosek(
   // newly added linear constraint.
   // mosek_matrix_variable_entries[j] contains all the entries in that matrix
   // variable X̅ⱼ that show up in this new linear constraint.
-  // This map is used to compute the symmetric matrix A̅ᵢⱼ in the term term
+  // This map is used to compute the symmetric matrix A̅ᵢⱼ in the term
   // <A̅ᵢⱼ, X̅ⱼ>.
   std::unordered_map<MSKint64t, std::vector<MatrixVariableEntry>>
       mosek_matrix_variable_entries;

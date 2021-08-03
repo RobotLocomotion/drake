@@ -105,6 +105,19 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
     }
   }
 }
+
+GTEST_TEST(MatrixUtilitiesTest, PermuteBlockVector) {
+  constexpr int kNumBlocks = 3;
+  VectorX<double> v(3 * kNumBlocks);
+  v << 0, 1, 2, 3, 4, 5, 6, 7, 8;
+  const std::vector<int> block_permutation = {1, 2, 0};
+  const VectorX<double> permuted_v =
+      PermuteBlockVector<double>(v, block_permutation);
+  VectorX<double> expected_result(3 * kNumBlocks);
+  expected_result << 6, 7, 8, 0, 1, 2, 3, 4, 5;
+  EXPECT_TRUE(CompareMatrices(expected_result, permuted_v));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace fem

@@ -101,7 +101,7 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::num_frames().  */
   int get_num_frames() const { return static_cast<int>(frames_.size()); }
 
-  /** Implementation of SceneGraphInspector::all_frame_ids().  */
+  /** Implementation of SceneGraphInspector::GetAllFrameIds().  */
   FrameIdRange get_frame_ids() const { return FrameIdRange(&frames_); }
 
   /** Implementation of SceneGraphInspector::num_geometries().  */
