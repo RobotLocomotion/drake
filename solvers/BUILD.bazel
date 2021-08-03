@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":get_program_type",
         ":gurobi_qp",
         ":gurobi_solver",
+        ":ibex_solver",
         ":indeterminate",
         ":integer_inequality_solver",
         ":integer_optimization_util",
@@ -290,6 +291,7 @@ drake_cc_library(
         ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
+        ":ibex_solver",
         ":ipopt_solver",
         ":linear_system_solver",
         ":moby_lcp_solver",
@@ -723,6 +725,41 @@ drake_cc_library(
     ] + select({
         "//conditions:default": [
             "@dreal//dreal/api",
+        ],
+        "//tools:no_dreal": [
+        ],
+    }),
+)
+
+# Ibex is a dependency of dReal; disabling dReal disables Ibex.  We could
+# consider supporting Ibex w/o dReal, but have no use cases that need that
+# support yet.
+drake_cc_library(
+    name = "ibex_solver",
+    srcs = [
+        "ibex_solver_common.cc",
+        "ibex_converter.cc",
+    ] + select({
+        "//tools:no_dreal": [
+            "no_ibex.cc",
+        ],
+        "//conditions:default": [
+            "ibex_solver.cc",
+        ],
+    }),
+    hdrs = [
+        "ibex_converter.h",
+        "ibex_solver.h",
+    ],
+    deps = [
+        ":mathematical_program",
+        ":solver_base",
+        ":solver_options",
+        ":mathematical_program_result",
+        "//common:essential",
+    ] + select({
+        "//conditions:default": [
+            "@ibex//:ibex",
         ],
         "//tools:no_dreal": [
         ],
@@ -1270,6 +1307,24 @@ drake_cc_googletest(
         ":mathematical_program",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ibex_solver_test",
+    deps = [
+        ":generic_trivial_constraint",
+        ":generic_trivial_cost",
+        ":ibex_solver",
+        ":mathematical_program",
+        ":nlopt_solver",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ibex_converter_test",
+    deps = [
+        ":ibex_solver",
     ],
 )
 
