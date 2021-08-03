@@ -7,11 +7,6 @@ def eigen_repository(name):
         name = name,
         remote = "https://gitlab.com/libeigen/eigen.git",
         branch = "3.4",
-        patches = [
-            # Taken from https://gitlab.com/libeigen/eigen/-/merge_requests/562.
-            # Once that MR is accepted, we can remove our copy of the patch.
-            "@drake//tools/workspace/eigen:68d4a63e6ad812664686dc40a75e1528c308842e.patch",  # noqa
-        ],
         build_file_content = """
 cc_library(
     name = "eigen",
