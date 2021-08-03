@@ -1072,11 +1072,17 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
     return deformable_rigid_manager_->EvalFreeMotionRigidVelocities(context);
   }
 
-  /* Calls DeformableRigidManager::EvalParticipatingFreeMotionVelocities(). */
-  const VectorX<double>& EvalParticipatingFreeMotionVelocities(
+  /* Calls DeformableRigidManager::EvalFreeMotionParticipatingVelocities(). */
+  const VectorX<double>& EvalFreeMotionParticipatingVelocities(
       const systems::Context<double>& context) const {
-    return deformable_rigid_manager_->EvalParticipatingFreeMotionVelocities(
+    return deformable_rigid_manager_->EvalFreeMotionParticipatingVelocities(
         context);
+  }
+
+  /* Calls DeformableRigidManager::EvalParticipatingVelocities(). */
+  const VectorX<double>& EvalParticipatingVelocities(
+      const systems::Context<double>& context) const {
+    return deformable_rigid_manager_->EvalParticipatingVelocities(context);
   }
 
   /* Calls DeformableRigidManager::EvalFreeMotionFemStateBase(). */
@@ -1176,8 +1182,11 @@ TEST_F(DeformableRigidDynamicsDataTest, NoContact) {
   EXPECT_EQ(tangent_matrix.rows(), 0);
   EXPECT_EQ(tangent_matrix.cols(), 0);
   const VectorX<double>& participating_v_star =
-      EvalParticipatingFreeMotionVelocities(plant_context);
+      EvalFreeMotionParticipatingVelocities(plant_context);
   EXPECT_EQ(participating_v_star.size(), 0);
+  const VectorX<double>& participating_v0 =
+      EvalParticipatingVelocities(plant_context);
+  EXPECT_EQ(participating_v0.size(), 0);
 }
 
 /* Verifies that the contact tangent matrix matches expectation. */
@@ -1264,7 +1273,7 @@ TEST_F(DeformableRigidDynamicsDataTest, ParticipatingFreeMotionVelocities) {
             7 /* number of vertices in the octehedral mesh */ * 3);
 
   const VectorXd& participating_v_star =
-      EvalParticipatingFreeMotionVelocities(plant_context);
+      EvalFreeMotionParticipatingVelocities(plant_context);
   /* v0-v4, and v6 are participating in contact. */
   constexpr int kNumParticipatingVertices = 6;
   constexpr int kNumParticipatingDofs = 3 * kNumParticipatingVertices;
@@ -1285,6 +1294,11 @@ TEST_F(DeformableRigidDynamicsDataTest, ParticipatingFreeMotionVelocities) {
   EXPECT_TRUE(
       CompareMatrices(participating_v_star.tail<kNumParticipatingDofs>(),
                       expected_participating_deformable_v_star));
+
+  const VectorXd& participating_v0 =
+      EvalParticipatingVelocities(plant_context);
+  EXPECT_TRUE(CompareMatrices(
+      participating_v0, VectorXd::Zero(kNumRigidDofs + kNumParticipatingDofs)));
 }
 
 // TODO(xuchenhan-tri): This unit test can be strengthened by leveraging
