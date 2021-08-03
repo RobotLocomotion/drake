@@ -533,19 +533,21 @@ shared_ptr<Constraint> MakePolynomialConstraint(
 }
 
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
-    const Eigen::Ref<const VectorX<Expression>>& v) {
+    const Eigen::Ref<const VectorX<Expression>>& v,
+    LorentzConeConstraint::EvalType eval_type) {
   DRAKE_DEMAND(v.rows() >= 2);
   Eigen::MatrixXd A{};
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
-  return CreateBinding(make_shared<LorentzConeConstraint>(A, b), vars);
+  return CreateBinding(make_shared<LorentzConeConstraint>(A, b, eval_type),
+                       vars);
 }
 
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
-    const Expression& linear_expr, const Expression& quadratic_expr,
-    double tol) {
+    const Expression& linear_expr, const Expression& quadratic_expr, double tol,
+    LorentzConeConstraint::EvalType eval_type) {
   const auto& quadratic_p =
       symbolic::ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
@@ -572,7 +574,7 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   expr(0) = linear_expr;
   // expr.segment(1, C.rows()) = y
   expr.segment(1, C.rows()) = C * quadratic_vars + d;
-  return ParseLorentzConeConstraint(expr);
+  return ParseLorentzConeConstraint(expr, eval_type);
 }
 
 Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(

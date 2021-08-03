@@ -144,6 +144,8 @@ void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   LorentzConeConstraint cnstr1(A, b, LorentzConeConstraint::EvalType::kConvex);
   LorentzConeConstraint cnstr2(A, b,
                                LorentzConeConstraint::EvalType::kConvexSmooth);
+  EXPECT_EQ(cnstr1.eval_type(), LorentzConeConstraint::EvalType::kConvex);
+  EXPECT_EQ(cnstr2.eval_type(), LorentzConeConstraint::EvalType::kConvexSmooth);
   EXPECT_EQ(cnstr1.num_constraints(), 1);
   EXPECT_EQ(cnstr2.num_constraints(), 1);
   EXPECT_TRUE(CompareMatrices(cnstr1.lower_bound(), Vector1d(0)));

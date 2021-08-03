@@ -71,10 +71,12 @@ TEST_F(ParseQuadraticConstraintTest, Test0) {
                                 -kInf, 3);
 }
 
-void CheckParseLorentzConeConstraint(const Expression& linear_expression,
-                                     const Expression& quadratic_expression) {
+void CheckParseLorentzConeConstraint(
+    const Expression& linear_expression, const Expression& quadratic_expression,
+    LorentzConeConstraint::EvalType eval_type) {
   Binding<LorentzConeConstraint> binding = internal::ParseLorentzConeConstraint(
-      linear_expression, quadratic_expression);
+      linear_expression, quadratic_expression, 0., eval_type);
+  EXPECT_EQ(binding.evaluator()->eval_type(), eval_type);
   const Eigen::MatrixXd A = binding.evaluator()->A();
   const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
@@ -139,25 +141,29 @@ class ParseLorentzConeConstraintTest : public ::testing::Test {
 TEST_F(ParseLorentzConeConstraintTest, Test0) {
   // Test x(0) >= sqrt(x(1)² + x(2)² + ... + x(n-1)²)
   CheckParseLorentzConeConstraint(
-      x_(0), x_.tail<3>().cast<Expression>().squaredNorm());
+      x_(0), x_.tail<3>().cast<Expression>().squaredNorm(),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test1) {
   // Test 2 * x(0) >= sqrt(x(1)² + x(2)² + ... + x(n-1)²)
   CheckParseLorentzConeConstraint(
-      2 * x_(0), x_.tail<3>().cast<Expression>().squaredNorm());
+      2 * x_(0), x_.tail<3>().cast<Expression>().squaredNorm(),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test2) {
   // Test 2 * x(0) + 3 * x(1) + 2 >= sqrt(x(1)² + x(2)² + ... + x(n-1)²)
-  CheckParseLorentzConeConstraint(
-      2 * x_(0) + 3 * x_(1) + 2, x_.tail<3>().cast<Expression>().squaredNorm());
+  CheckParseLorentzConeConstraint(2 * x_(0) + 3 * x_(1) + 2,
+                                  x_.tail<3>().cast<Expression>().squaredNorm(),
+                                  LorentzConeConstraint::EvalType::kConvex);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test3) {
   // Test x(0) >= sqrt(2x(1)² + x(2)² + 3x(3)² + 2)
   CheckParseLorentzConeConstraint(
-      x_(0), 2 * x_(1) * x_(1) + x_(2) * x_(2) + 3 * x_(3) * x_(3) + 2);
+      x_(0), 2 * x_(1) * x_(1) + x_(2) * x_(2) + 3 * x_(3) * x_(3) + 2,
+      LorentzConeConstraint::EvalType::kConvex);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test4) {
@@ -165,13 +171,15 @@ TEST_F(ParseLorentzConeConstraintTest, Test4) {
   // + 3)
   CheckParseLorentzConeConstraint(x_(0) + 2 * x_(2) + 3,
                                   2 * pow(x_(1) + x_(0) + 2 * x_(3) - 1, 2) +
-                                      3 * pow(-x_(0) + 2 * x_(3) + 1, 2) + 3);
+                                      3 * pow(-x_(0) + 2 * x_(3) + 1, 2) + 3,
+                                  LorentzConeConstraint::EvalType::kConvex);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test5) {
   // Test 2 >= sqrt((x(1)+2x(2))² + (x(2)-x(0)+2)² + 3)
   CheckParseLorentzConeConstraint(
-      2, pow(x_(1) + 2 * x_(2), 2) + pow(x_(2) - x_(0) + 2, 2) + 3);
+      2, pow(x_(1) + 2 * x_(2), 2) + pow(x_(2) - x_(0) + 2, 2) + 3,
+      LorentzConeConstraint::EvalType::kConvex);
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test6) {
