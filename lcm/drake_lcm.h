@@ -36,12 +36,11 @@ class DrakeLcm : public DrakeLcmInterface {
    * launching the receive thread.
    *
    * @param defer_initialization controls whether or not LCM's background
-   * receive thread will be launched immediately during the constructor
-   * (when false) or deferred until the first time it's needed (when true).
-   * This can be useful if the scheduling configuration for new threads varies
-   * between the construction time and and first use.  For other constructor
-   * overloads, this setting defaults to `false` -- the thread is launched
-   * immediately.
+   * receive thread will be launched immediately during the constructor (when
+   * false) or deferred until the first time it's needed (when true).  This can
+   * be useful if the scheduling configuration for new threads varies between
+   * the construction time and first use.  For other constructor overloads,
+   * this setting defaults to `false` -- the thread is launched immediately.
    */
   DrakeLcm(std::string lcm_url, bool defer_initialization);
 

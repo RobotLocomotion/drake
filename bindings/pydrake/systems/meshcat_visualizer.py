@@ -331,7 +331,7 @@ class MeshcatVisualizer(LeafSystem):
         vis = self.vis[self.prefix]
         # Make a fixed-seed generator for random colors for bodies.
         color_generator = np.random.RandomState(seed=42)
-        for frame_id in inspector.all_frame_ids():
+        for frame_id in inspector.GetAllFrameIds():
             count = inspector.NumGeometriesForFrameWithRole(
                 frame_id, self._role)
             if count == 0:

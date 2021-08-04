@@ -1,13 +1,16 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <memory>
+#include <regex>
 #include <stdexcept>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -1109,25 +1112,54 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       R"([\s\S]*XML Attribute\[bad_attribute\] in element\[model\] not )"
       R"(defined in SDF.[\s\S]*)");
 
-  // TODO(#15018): This currently only emits a Drake-log deprecation warning.
-  // We should handle this more directly in the future, ideally via
-  // libsdformat's policies.
-  ParseTestString(R"""(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
 <model name='model_with_too_many_top_level_elements'>
   <link name='a'/>
 </model>
 <model name='two_models_too_many'>
   <link name='b'/>
 </model>
-)""");
+)"""),
+    ".*has 2 models and 0 worlds.*");
 
-  // TODO(#15018): Have this be a printed warning, and then make this an error.
+  std::stringstream buffer;
+  sdf::Console::ConsoleStream old_stream =
+    sdf::Console::Instance()->GetMsgStream();
+  ScopeExit revert_stream(
+    [&old_stream]()
+    { sdf::Console::Instance()->GetMsgStream() = old_stream; });
+  sdf::Console::Instance()->GetMsgStream() =
+    sdf::Console::ConsoleStream(&buffer);
+
+  // TODO(#15018): This throws a warning, make this an error.
   ParseTestString(R"""(
 <model name='model_with_bad_element'>
   <link name='a'/>
   <bad_element/>
 </model>
 )""");
+
+  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
+      ".*Warning.*XML Element\\[bad_element\\], child of"
+      " element\\[model\\], not defined in SDF.*"));
+
+  ParseTestString(R"""(
+<model name='a'>
+  <link name='l1'/>
+  <link name='l2'/>
+  <joint name='b' type="revolute">
+    <child>l1</child>
+    <parent>l2</parent>
+    <axis>
+      <initial_position>0</initial_position>
+    </axis>
+  </joint>
+</model>)""", "1.8");
+
+  EXPECT_THAT(buffer.str(), testing::MatchesRegex(
+      ".*Warning.*SDF Element\\[initial_position\\] is "
+      "deprecated.*"));
 }
 
 // Reports if the frame with the given id has a geometry with the given role

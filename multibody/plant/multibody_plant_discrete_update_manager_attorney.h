@@ -93,6 +93,12 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
                             stiffness, damping, mu, results);
   }
 
+  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
+                                        const systems::Context<T>& context,
+                                        MultibodyForces<T>* forces) {
+    plant.AddInForcesFromInputPorts(context, forces);
+  }
+
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
   /* Returns the per-body arrays of collision geometries indexed by BodyIndex

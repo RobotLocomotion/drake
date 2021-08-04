@@ -76,7 +76,7 @@ struct DynamicFrameData {
  specified.
 
  The appearance of the geometry in the visualizer is typically defined by the
- the geometry's properties for the visualized role.
+ geometry's properties for the visualized role.
 
    - For the visualized role, if a geometry has the ("phong", "diffuse")
      property described in the table below, that value is used.

@@ -296,8 +296,8 @@ class ExpressionAddFactory {
   [[nodiscard]] Expression GetExpression() const;
 
  private:
-  /* Adds constant to this factory.
-   * Adding constant constant into an add factory representing
+  /* Adds a constant @p constant to this factory.
+   * Adding constant into an add factory representing
    *
    *     c0 + c1 * t1 + ... + cn * tn
    *

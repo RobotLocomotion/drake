@@ -19,7 +19,7 @@ Usage example: @code
 @endcode
 The regular expression must match the entire error message. If there is
 boilerplate you don't care to match at the beginning and end, surround with
-with `.*` to ignore in single-line messages or `[\s\S]*` for multiline
+`.*` to ignore in single-line messages or `[\s\S]*` for multiline
 messages.
 
 The "exception" argument is optional and defaults to "std::exception" when

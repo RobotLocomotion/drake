@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -163,6 +164,14 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
   EXPECT_EQ(100.0, xd.get_vector()[0]);
   xd.get_mutable_vector()[1] = 1000.0;
   EXPECT_EQ(1000.0, xd[1]);
+
+  Eigen::Vector2d vec{44., 45.}, vec2{46., 47.};
+  xd.set_value(vec);
+  EXPECT_TRUE(CompareMatrices(xd.get_value(), vec));
+  xd.get_mutable_value() = vec2;
+  EXPECT_TRUE(CompareMatrices(xd.get_value(), vec2));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(Vector3d::Ones()), ".*size.*");
 }
 
 // Tests that the convenience accessors for a DiscreteValues that contains
@@ -176,6 +185,9 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugarEmpty) {
                               expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
                               expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(VectorXd()), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_value(), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_value(), expected_pattern);
 }
 
 // Tests that the convenience accessors for a DiscreteValues that contains
@@ -189,6 +201,14 @@ TEST_F(DiscreteValuesTest, ConvenienceSugarMultiple) {
                               expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
                               expected_pattern);
+
+  Eigen::Vector2d vec{44., 45.}, vec2{46., 47.};
+  xd.set_value(1, vec);
+  EXPECT_TRUE(CompareMatrices(xd.get_value(1), vec));
+  xd.get_mutable_value(1) = vec2;
+  EXPECT_TRUE(CompareMatrices(xd.get_value(1), vec2));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(1, Vector3d::Ones()), ".*size.*");
 }
 
 // For DiagramDiscreteValues we want to check that we can build a tree of

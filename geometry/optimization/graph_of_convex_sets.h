@@ -151,10 +151,10 @@ class GraphOfConvexSets {
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const symbolic::Expression& e);
 
-    /** Adds a cost to this edge.  @p binding must must contain *only*
-    elements of xu() and xv() as variables. For technical
-    reasons relating to being able to "turn-off" the cost on inactive edges, all
-    costs are eventually implemented with a slack variable and a constraint:
+    /** Adds a cost to this edge.  @p binding must contain *only* elements of
+    xu() and xv() as variables. For technical reasons relating to being able to
+    "turn-off" the cost on inactive edges, all costs are eventually implemented
+    with a slack variable and a constraint:
     @verbatim
     min g(xu, xv) ⇒ min ℓ, s.t. ℓ ≥ g(xu,xv)
     @endverbatim
@@ -172,7 +172,7 @@ class GraphOfConvexSets {
     solvers::Binding<solvers::Constraint> AddConstraint(
         const symbolic::Formula& f);
 
-    /** Adds a constraint to this edge.  @p binding must must contain *only*
+    /** Adds a constraint to this edge.  @p binding must contain *only*
     elements of xu() and xv() as variables.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv(). */

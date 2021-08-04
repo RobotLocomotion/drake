@@ -573,7 +573,6 @@ std::string LoadSdf(
   data_source.DemandExactlyOne();
 
   std::string root_dir;
-
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
     ThrowAnyErrors(root->Load(full_path, parser_config));
@@ -1259,20 +1258,18 @@ sdf::ParserConfig CreateNewSdfParserConfig(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting) {
+
   // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  // TODO(#15018): Later, we should change unrecognized elements policy to
+  // become an error.
+  parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
       return ResolveUri(_input, package_map, ".");
     });
-  // TODO(#15018): This means that unrecognized elements won't be shown to a
-  // user directly (via console or exception). We should change unrecognized
-  // elements policy to print a warning, and later become an error.
-  DRAKE_DEMAND(
-      parser_config.UnrecognizedElementsPolicy()
-      == sdf::EnforcementPolicy::LOG);
 
   parser_config.RegisterCustomModelParser(
       [plant, &package_map, &parser_config, test_sdf_forced_nesting](
@@ -1294,7 +1291,7 @@ ModelInstanceIndex AddModelFromSdf(
     geometry::SceneGraph<double>* scene_graph,
     bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(!plant->is_finalized());
+    DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::ParserConfig parser_config =
       CreateNewSdfParserConfig(package_map, plant, test_sdf_forced_nesting);
@@ -1351,21 +1348,18 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   std::string root_dir = LoadSdf(&root, data_source, parser_config);
 
-  // Throw an error if there are no models or worlds.
-  if (root.Model() == nullptr && root.WorldCount() == 0) {
-    throw std::runtime_error(
-        "File must have at least one <model>, or <world> with one "
-        "child <model> element.");
-  }
-
-  // Only one world in an SDF file is allowed.
-  if (root.WorldCount() > 1) {
-    throw std::runtime_error("File must contain only one <world>.");
-  }
-
-  // Do not allow a <world> to have a <model> sibling.
-  if (root.Model() != nullptr && root.WorldCount() > 0) {
-    throw std::runtime_error("A <world> and <model> cannot be siblings.");
+  // There either must be exactly one model, or exactly one world.
+  // TODO(jwnimmer-tri) When we upgrade to a version of libsdformat that no
+  // longer offers ModelCount(), use 'Model() != nullptr ? 1 : 0' here.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const uint64_t model_count = root.ModelCount();
+#pragma GCC diagnostic pop
+  const uint64_t world_count = root.WorldCount();
+  if ((model_count + world_count) != 1) {
+    throw std::runtime_error(fmt::format(
+        "File must have exactly one <model> or exactly one <world>, but"
+        " instead has {} models and {} worlds", model_count, world_count));
   }
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
@@ -1376,41 +1370,26 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   // At this point there should be only Models or a single World at the Root
   // level.
-  if (root.Model() != nullptr) {
-    // Load all the models at the root level.
-    // TODO(jwnimmer-tri) When we upgrade to a version of libsdformat that no
-    // longer offers ModelCount(), we should simplify this entire block by
-    // removing the for-each-model loop, instead just using the root.Model().
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const uint64_t model_count = root.ModelCount();
-#pragma GCC diagnostic pop
-    if (model_count != 1) {
-      static const logging::Warn log_once(
-        "The feature to load multiple models from a single SDFormat model file "
-        "in Drake is deprecated, and will be removed on or around 2021-08-01. "
-        "If you need multiple root-level models, please use an SDFormat world "
-        "file.");
-    }
-    for (uint64_t i = 0; i < model_count; ++i) {
-      // Get the model.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      const sdf::Model& model = *root.ModelByIndex(i);
-#pragma GCC diagnostic pop
-      // //sdf/model/pose/@relative_to is invalid. Note, libsdformat should emit
-      // an error during Load, but currently doesn't. See sdformat#567
-      ThrowIfPoseFrameSpecified(model.Element());
+  if (model_count > 0) {
+    DRAKE_DEMAND(model_count == 1);
+    DRAKE_DEMAND(world_count == 0);
+    DRAKE_DEMAND(root.Model() != nullptr);
+    const sdf::Model& model = *root.Model();
 
-      std::vector<ModelInstanceIndex> added_model_instances =
-          AddModelsFromSpecification(model, model.Name(), {}, plant,
-                                     package_map, root_dir);
-      model_instances.insert(model_instances.end(),
-                             added_model_instances.begin(),
-                             added_model_instances.end());
-    }
+    // //sdf/model/pose/@relative_to is invalid. Note, libsdformat should emit
+    // an error during Load, but currently doesn't. See sdformat#567
+    ThrowIfPoseFrameSpecified(model.Element());
+
+    std::vector<ModelInstanceIndex> added_model_instances =
+        AddModelsFromSpecification(model, model.Name(), {}, plant,
+                                   package_map, root_dir);
+    model_instances.insert(model_instances.end(),
+                           added_model_instances.begin(),
+                           added_model_instances.end());
   } else {
-    // Load the world and all the models in the world.
+    DRAKE_DEMAND(model_count == 0);
+    DRAKE_DEMAND(world_count == 1);
+    DRAKE_DEMAND(root.WorldByIndex(0) != nullptr);
     const sdf::World& world = *root.WorldByIndex(0);
 
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints

@@ -94,8 +94,7 @@ struct CallbackData {
                               is expressed in the world frame. Where grad_W is
                               not unique, then an arbitrary value is
                               assigned (as documented in
-                              QueryObject::ComputeSignedDistanceToPoint().
- @param is_grad_w_unique[out] True if the value in `grad_W` is unique.  */
+                              QueryObject::ComputeSignedDistanceToPoint().  */
 //@{
 
 /* Computes distance from point to sphere with the understanding that all
@@ -104,32 +103,28 @@ struct CallbackData {
 template <typename T>
 void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
                                  const Vector3<T>& p_SQ, Vector3<T>* p_SN,
-                                 T* distance, Vector3<T>* grad_S,
-                                 bool* is_grad_W_unique);
+                                 T* distance, Vector3<T>* grad_S);
 
 /* Overload of ComputeDistanceToPrimitive() for sphere primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
-                                T* distance, Vector3<T>* grad_W,
-                                bool* is_grad_W_unique);
+                                T* distance, Vector3<T>* grad_W);
 
 /* Overload of ComputeDistanceToPrimitive() for halfspace primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
-                                T* distance, Vector3<T>* grad_W,
-                                bool* is_grad_W_unique);
+                                T* distance, Vector3<T>* grad_W);
 
 /* Overload of ComputeDistanceToPrimitive() for capsule primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
-                                T* distance, Vector3<T>* grad_W,
-                                bool* is_grad_W_unique);
+                                T* distance, Vector3<T>* grad_W);
 
 // TODO(DamrongGuoy): Add overloads for all supported geometries.
 

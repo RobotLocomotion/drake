@@ -53,8 +53,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ignition_math",
     "ignition_utils",
     "lcm",
-    "lcmtypes_bot2_core",
-    "lcmtypes_robotlocomotion",
     "meshcat",
     "meshcat_python",
     "pybind11",

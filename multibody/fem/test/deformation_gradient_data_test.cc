@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/deformation_gradient_data.h"
+#include "drake/multibody/fem/deformation_gradient_data.h"
 
 #include <gtest/gtest.h>
 
@@ -15,8 +15,7 @@ constexpr int kNumLocations = 1;
 using Eigen::Matrix3d;
 
 /* A dummy DeformationGradientData for testing the behaviors of
- DeformationGradientData::UpdateData(). See
- DeformationGradientDataTest::UpdateData below. It holds a single deformation
+ DeformationGradientData::UpdateData(). It holds a single deformation
  gradient dependent data which simply doubles the deformation gradient. */
 template <typename T, int num_locations_at_compile_time>
 class DummyData : public DeformationGradientData<
@@ -38,8 +37,9 @@ class DummyData : public DeformationGradientData<
 
  private:
   /* Using `Base` as the alias for the base class is a preferred pattern that
-   usually provides more readability. Here, it that doesn't provide specific
-   value in this dummy class because of the simplicity of the dummy class. */
+   usually provides more readability. It doesn't provide any value in this
+   simple dummy class but we're defining it anyway to set a good example for how
+   to structure real classes. */
   using Base =
       DeformationGradientData<DummyData<T, num_locations_at_compile_time>>;
 
@@ -80,7 +80,12 @@ GTEST_TEST(DeformationGradientDataTest, UpdateData) {
                               2.0 * Matrix3d::Identity()));
 
   /* Arbitrary deformation gradient. */
-  const Matrix3d F = 2.8 * Matrix3d::Identity();
+  Matrix3d F;
+  // clang-format off
+  F << 4, 9, 2,
+       3, 5, 7,
+       8, 1, 6;
+  // clang-format on
   dummy_data.UpdateData({F});
 
   EXPECT_TRUE(CompareMatrices(dummy_data.deformation_gradient()[0], F));

@@ -68,7 +68,7 @@ TEST_F(SymbolicUnificationTest, ConstantFailure) {
   // Rule: 3 => 5.
   const RewritingRule rule{3, 5};
   const Rewriter rewriter = MakeRuleRewriter(rule);
-  // Fails to match 4 with with the above rule.
+  // Fails to match 4 with the above rule.
   const Expression e{4};
   EXPECT_PRED2(ExprEqual, rewriter(e), e /* no change */);
 }
@@ -108,28 +108,28 @@ TEST_F(SymbolicUnificationTest, AdditionFailureNonZeroCoeff) {
   const RewritingRule rule{2 + sin(x_) + cos(y_), 3 + 4 * x_ + 5 * y_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
 
-  // Fails to match the following with with the above rule (constant
+  // Fails to match the following with the above rule (constant
   // mismatched).
   // Example of Case 4 in UnificationVisitor::VisitAddition.
   const Expression e1{5 + sin(a_) + cos(b_)};
   EXPECT_PRED2(ExprEqual, rewriter(e1), e1 /* no change */);
 
-  // Fails to match the following with with the above rule (length).
+  // Fails to match the following with the above rule (length).
   // Example of Case 4 in UnificationVisitor::VisitAddition.
   const Expression e2{2 + sin(a_)};
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
 
-  // Fails to match the following with with the above rule (sin != cos).
+  // Fails to match the following with the above rule (sin != cos).
   // Example of Case 4 in UnificationVisitor::VisitAddition.
   const Expression e3{2 + cos(a_) + cos(b_)};
   EXPECT_PRED2(ExprEqual, rewriter(e3), e3 /* no change */);
 
-  // Fails to match the following with with the above rule (cos != tan).
+  // Fails to match the following with the above rule (cos != tan).
   // Example of Case 4 in UnificationVisitor::VisitAddition.
   const Expression e4{2 + sin(a_) + tan(b_)};
   EXPECT_PRED2(ExprEqual, rewriter(e4), e4 /* no change */);
 
-  // Fails to match the following with with the above rule (coefficient
+  // Fails to match the following with the above rule (coefficient
   // mismatched).
   // Example of Case 3 in UnificationVisitor::VisitAddition.
   const Expression e5{sin(a_) + cos(b_)};
@@ -141,21 +141,21 @@ TEST_F(SymbolicUnificationTest, AdditionFailureZeroCoeff) {
   const RewritingRule rule{sin(x_) + cos(y_) + sin(z_), x_ + y_ + z_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
 
-  // Fails to match the following with with the above rule (not addition).
+  // Fails to match the following with the above rule (not addition).
   const Expression e1{cos(a_)};
   EXPECT_PRED2(ExprEqual, rewriter(e1), e1 /* no change */);
 
-  // Fails to match the following with with the above rule (length).
+  // Fails to match the following with the above rule (length).
   // Example of Case 2 in UnificationVisitor::VisitAddition.
   const Expression e2{3 + cos(a_)};
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
 
-  // Fails to match the following with with the above rule (sin(x) vs 1).
+  // Fails to match the following with the above rule (sin(x) vs 1).
   // Example of Case 2 in UnificationVisitor::VisitAddition.
   const Expression e3{1 + log(a_) + abs(b_)};
   EXPECT_PRED2(ExprEqual, rewriter(e3), e3 /* no change */);
 
-  // Fails to match the following with with the above rule (sin != tan).
+  // Fails to match the following with the above rule (sin != tan).
   // Example of Case 1 in UnificationVisitor::VisitAddition.
   const Expression e4{sin(b_) + cos(a_) + tan(c_)};
   EXPECT_PRED2(ExprEqual, rewriter(e4), e4 /* no change */);
@@ -216,7 +216,7 @@ TEST_F(SymbolicUnificationTest, MultiplicationFailure1) {
                            4 * pow(x_, y_) * pow(2, z_)};
   const Rewriter rewriter = MakeRuleRewriter(rule);
 
-  // Fails to match the following with with the above rule.
+  // Fails to match the following with the above rule.
   // Example of Case 3 in UnificationVisitor::VisitMultiplication.
   const Expression e{pow(cos(a_), c_) * cos(b_)};
   EXPECT_PRED2(ExprEqual, rewriter(e), e /* no change */);
@@ -227,19 +227,19 @@ TEST_F(SymbolicUnificationTest, MultiplicationFailure2) {
   //    => x + y + z
   const RewritingRule rule{sin(x_) * cos(y_) * tan(z_), x_ + y_ + z_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
-  // Fails to match the following with with the above rule.
+  // Fails to match the following with the above rule.
   // Example of Case 1 in UnificationVisitor::VisitMultiplication.
   const Expression e1{sin(a_) * acos(b_) * tan(c_)};
   EXPECT_PRED2(ExprEqual, rewriter(e1), e1 /* no change */);
-  // Fails to match the following with with the above rule.
+  // Fails to match the following with the above rule.
   // Example of Case 1 in UnificationVisitor::VisitMultiplication.
   const Expression e2{a_ * sin(b_)};
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
-  // Fails to match the following with with the above rule.
+  // Fails to match the following with the above rule.
   // Example of Case 2 in UnificationVisitor::VisitMultiplication.
   const Expression e3{5 * cos(b_) * tan(z_)};
   EXPECT_PRED2(ExprEqual, rewriter(e3), e3 /* no change */);
-  // Fails to match the following with with the above rule.
+  // Fails to match the following with the above rule.
   const Expression e4{5};
   EXPECT_PRED2(ExprEqual, rewriter(e4), e4 /* no change */);
 }
@@ -248,11 +248,11 @@ TEST_F(SymbolicUnificationTest, MultiplicationFailure3) {
   // Rule: 2 * x * y * z => x + y + z.
   const RewritingRule rule{2 * x_ * y_ * z_, x_ + y_ + z_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
-  // Fails to match the following with with the above rule (coefficients).
+  // Fails to match the following with the above rule (coefficients).
   // Example of Case 4 in UnificationVisitor::VisitMultiplication.
   const Expression e1{3 * a_ * b_ * c_};
   EXPECT_PRED2(ExprEqual, rewriter(e1), e1 /* no change */);
-  // Fails to match the following with with the above rule (length).
+  // Fails to match the following with the above rule (length).
   // Example of Case 4 in UnificationVisitor::VisitMultiplication.
   const Expression e2{3 * a_ * b_};
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
@@ -262,7 +262,7 @@ TEST_F(SymbolicUnificationTest, MultiplicationFailure4) {
   // Rule: x * y * z => x + y + z.
   const RewritingRule rule{x_ * y_ * z_, x_ + y_ + z_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
-  // Fails to match the following with with the above rule.
+  // Fails to match the following with the above rule.
   // Example of Case 2 in UnificationVisitor::VisitMultiplication.
   const Expression e{3 * a_};
   EXPECT_PRED2(ExprEqual, rewriter(e), e /* no change */);
