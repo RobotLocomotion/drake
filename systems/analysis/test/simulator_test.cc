@@ -1319,7 +1319,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
         DiscreteUpdateEvent<double>([this](const Context<double>&,
                                            const DiscreteUpdateEvent<double>&,
                                            DiscreteValues<double>* x_0) {
-          x_0->get_mutable_vector()[0] = 0.;
+          (*x_0)[0] = 0.;
           result_.clear();
         }));
 
@@ -1341,7 +1341,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
                                            DiscreteValues<double>* x_np1) {
           const double x_n = get_x(context);
           const double u = get_input_port(0).Eval(context)[0];
-          x_np1->get_mutable_vector()[0] = x_n + u;  // x_{n+1} = x_n + u(t)
+          (*x_np1)[0] = x_n + u;  // x_{n+1} = x_n + u(t)
         }));
   }
 

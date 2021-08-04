@@ -188,7 +188,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     DRAKE_DEMAND(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
     xn += Bt * u;
   }
-  updates->get_mutable_vector().SetFromVector(xn);
+  updates->set_value(xn);
 }
 
 template <typename T>
@@ -396,7 +396,7 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
 
     xnext += B_ * u;
   }
-  updates->get_mutable_vector().SetFromVector(xnext);
+  updates->set_value(xnext);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((

@@ -1052,7 +1052,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
   1. No intersection returns nullptr.
   2. The resulting contact surface is a function of the tets provided; they
      are all considered and only those that actually intersect contribute to
-     to the final output.
+     the final output.
   3. Duplicates handled correctly; if the input mesh has no duplicates, the
      result has none. Alternatively, if the input has duplicates, the output
      does as well.

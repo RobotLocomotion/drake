@@ -81,7 +81,7 @@ int do_main() {
                   pendulum.get_actuation_input_port());
 
   // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(!!pendulum.get_source_id());
+  DRAKE_DEMAND(pendulum.get_source_id().has_value());
 
   builder.Connect(
       pendulum.get_geometry_poses_output_port(),

@@ -2814,7 +2814,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context
   ///   The context containing the state of the model.
   /// @param[in] v
-  ///   A vector of of generalized velocities for this model.
+  ///   A vector of generalized velocities for this model.
   ///   This method aborts if v is not of size num_velocities().
   /// @param[out] qdot
   ///   A valid (non-null) pointer to a vector in `ℝⁿ` with n being the number

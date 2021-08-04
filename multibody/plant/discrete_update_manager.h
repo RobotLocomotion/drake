@@ -210,6 +210,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+  void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
+                                 MultibodyForces<T>* forces) const;
+
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
   //  geometries.
   const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()

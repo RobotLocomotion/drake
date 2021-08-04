@@ -181,10 +181,8 @@ class VectorSystem : public LeafSystem<T> {
 
     // Obtain the block form of xd after the update (i.e., the next state).
     DRAKE_ASSERT(discrete_state != nullptr);
-    BasicVector<T>& discrete_update_vector =
-        discrete_state->get_mutable_vector();
     Eigen::VectorBlock<VectorX<T>> discrete_update_block =
-        discrete_update_vector.get_mutable_value();
+        discrete_state->get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorDiscreteVariableUpdates(context, input_block, state_block,

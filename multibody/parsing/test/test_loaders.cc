@@ -31,6 +31,21 @@ void LoadFromUrdf(
   parser.AddModelFromFile(urdf_path, "");
 }
 
+std::ostream& operator<<(std::ostream& os, const ModelLoadFunction& func) {
+  const auto* const target = func.target<void(*)(
+      const std::string&,
+      MultibodyPlant<double>*,
+      geometry::SceneGraph<double>*)>();
+  if (target != nullptr && *target == LoadFromSdf) {
+    os << "LoadFromSdf()";
+  } else if (target != nullptr && *target == LoadFromUrdf) {
+    os << "LoadFromUrdf()";
+  } else {
+    os << "unknown ModelLoadFunction";
+  }
+  return os;
+}
+
 }  // namespace test
 }  // namespace multibody
 }  // namespace drake

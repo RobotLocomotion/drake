@@ -1,0 +1,25 @@
+Use GTEST_DONT_DEFINE_TEST_F to guard TEST_F
+
+Per the documentation, there should be one like-named toggle per macro,
+they should not share a toggle.
+
+https://github.com/google/googletest/pull/3472
+
+--- googletest/include/gtest/gtest.h	2021-06-11 10:42:26.000000000 -0700
++++ googletest/include/gtest/gtest.h	2021-07-01 10:46:26.275471431 -0700
+@@ -2380,11 +2380,12 @@
+ //   }
+ //
+ // GOOGLETEST_CM0011 DO NOT DELETE
+-#if !GTEST_DONT_DEFINE_TEST
+-#define TEST_F(test_fixture, test_name)\
++#define GTEST_TEST_F(test_fixture, test_name)\
+   GTEST_TEST_(test_fixture, test_name, test_fixture, \
+               ::testing::internal::GetTypeId<test_fixture>())
+-#endif  // !GTEST_DONT_DEFINE_TEST
++#if !GTEST_DONT_DEFINE_TEST_F
++#define TEST_F(test_fixture, test_name) GTEST_TEST_F(test_fixture, test_name)
++#endif  // !GTEST_DONT_DEFINE_TEST_F
+ 
+ // Returns a path to temporary directory.
+ // Tries to determine an appropriate directory for the platform.

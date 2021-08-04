@@ -67,7 +67,7 @@ from pydrake.systems.primitives import (
     ZeroOrderHold,
     )
 
-# TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
+# TODO(eric.cousineau): The scope of this test file and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
 # ensure that the tests reflect this, even if there is some coupling.
 
@@ -320,6 +320,12 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(DiscreteValues().num_groups(), 0)
         discrete_values = DiscreteValues(data=[BasicVector(1), BasicVector(2)])
         self.assertEqual(discrete_values.num_groups(), 2)
+        x = np.array([1.23, 4.56])
+        discrete_values.set_value(1, x)
+        np.testing.assert_array_equal(discrete_values.get_value(index=1), x)
+        np.testing.assert_array_equal(
+            discrete_values.get_mutable_value(index=1), x)
+
         discrete_values = DiscreteValues(datum=BasicVector(np.arange(3)))
         self.assertEqual(discrete_values.size(), 3)
         discrete_values_clone = discrete_values.Clone()
@@ -327,6 +333,10 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(len(discrete_values.get_data()), 1)
         self.assertEqual(discrete_values.get_vector(index=0).size(), 3)
         self.assertEqual(discrete_values.get_mutable_vector(index=0).size(), 3)
+        x = np.array([1., 3., 4.])
+        discrete_values.set_value(x)
+        np.testing.assert_array_equal(discrete_values.get_value(), x)
+        np.testing.assert_array_equal(discrete_values.get_mutable_value(), x)
         discrete_values[1] = 5.
         self.assertEqual(discrete_values[1], 5.)
         discrete_values.SetFrom(DiscreteValues(BasicVector(3)))

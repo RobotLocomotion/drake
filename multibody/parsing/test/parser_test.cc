@@ -81,14 +81,19 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
   }
 }
 
-GTEST_TEST(FileParserTest, MultiModelTest) {
+// Try loading a file with two <model> elements, but without a <world>.
+// This should always result in an error. For an example of a valid <world>
+// with two <model> elements, refer to MultiModelViaWorldIncludesTest.
+GTEST_TEST(FileParserTest, MultiModelErrorsTest) {
   const std::string sdf_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/two_models.sdf");
 
-  // Check that the plural method loads two models.
+  // Check the plural method.
   {
     MultibodyPlant<double> plant(0.0);
-    EXPECT_EQ(Parser(&plant).AddAllModelsFromFile(sdf_name).size(), 2);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&plant).AddAllModelsFromFile(sdf_name),
+        ".*has 2 models and 0 worlds.*");
   }
 
   // The singular method cannot load a two-model file.

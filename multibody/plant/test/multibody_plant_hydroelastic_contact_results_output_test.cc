@@ -58,7 +58,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
 
     // Sanity check on the availability of the optional source id before using
     // it.
-    DRAKE_DEMAND(!!plant_->get_source_id());
+    DRAKE_DEMAND(plant_->get_source_id().has_value());
 
     builder.Connect(scene_graph.get_query_output_port(),
                     plant_->get_geometry_query_input_port());

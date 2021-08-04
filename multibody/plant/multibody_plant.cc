@@ -2605,7 +2605,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
-  updates->get_mutable_vector(0).SetFromVector(x_next);
+  updates->set_value(0, x_next);
 }
 
 template<typename T>
