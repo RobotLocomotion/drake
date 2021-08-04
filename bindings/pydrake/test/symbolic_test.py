@@ -389,6 +389,7 @@ class TestSymbolicExpression(unittest.TestCase):
         install_numpy_warning_filters(force=True)
 
     def _check_algebra(self, algebra):
+        konstant = algebra.to_algebra(1.0)
         xv = algebra.to_algebra(x)
         yv = algebra.to_algebra(y)
         zv = algebra.to_algebra(z)
@@ -467,8 +468,8 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(+e_xv, "x")
         numpy_compare.assert_equal(-e_xv, "(-1 * x)")
 
-        # Comparison. For `VectorizedAlgebra`, uses `np.vectorize` workaround
-        # for #8315.
+        # Comparison, expression vs expression.
+        # For `VectorizedAlgebra`, uses `np.vectorize` workaround for #8315.
         # TODO(eric.cousineau): `BaseAlgebra.check_logical` is designed for
         # AutoDiffXd (float-convertible), not for symbolic (not always
         # float-convertible).
@@ -478,6 +479,22 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(algebra.ne(e_xv, e_yv), "(x != y)")
         numpy_compare.assert_equal(algebra.ge(e_xv, e_yv), "(x >= y)")
         numpy_compare.assert_equal(algebra.gt(e_xv, e_yv), "(x > y)")
+
+        # Comparison, expression vs constant.
+        numpy_compare.assert_equal(algebra.lt(e_xv, konstant), "(x < 1)")
+        numpy_compare.assert_equal(algebra.le(e_xv, konstant), "(x <= 1)")
+        numpy_compare.assert_equal(algebra.eq(e_xv, konstant), "(x == 1)")
+        numpy_compare.assert_equal(algebra.ne(e_xv, konstant), "(x != 1)")
+        numpy_compare.assert_equal(algebra.ge(e_xv, konstant), "(x >= 1)")
+        numpy_compare.assert_equal(algebra.gt(e_xv, konstant), "(x > 1)")
+
+        # Comparison, constant vs expression.
+        numpy_compare.assert_equal(algebra.lt(konstant, e_yv), "(y > 1)")
+        numpy_compare.assert_equal(algebra.le(konstant, e_yv), "(y >= 1)")
+        numpy_compare.assert_equal(algebra.eq(konstant, e_yv), "(y == 1)")
+        numpy_compare.assert_equal(algebra.ne(konstant, e_yv), "(y != 1)")
+        numpy_compare.assert_equal(algebra.ge(konstant, e_yv), "(y <= 1)")
+        numpy_compare.assert_equal(algebra.gt(konstant, e_yv), "(y < 1)")
 
         # Math functions.
         numpy_compare.assert_equal(algebra.abs(e_xv), "abs(x)")
