@@ -585,6 +585,12 @@ class ContextBase : public internal::ContextMessageInterface {
     notify_set_system_id(id);
   }
 
+  // Returns a mutable dummy CacheEntryValue that can
+  // serve as a /dev/null-like destination for throw-away writes.
+  CacheEntryValue& dummy_cache_entry_value() const final {
+    return get_mutable_cache().dummy_cache_entry_value();
+  }
+
   // Notifies interested subclasses of the id of the subsystem that created
   // this context.
   virtual void notify_set_system_id(internal::SystemId) {}

@@ -126,8 +126,8 @@ nodes. */
 // maintained by the CacheEntryValue object. This is an inner loop activity
 // that must be done very efficiently. It is faster to invalidate with
 // unconditional, inline code than to have a runtime test or abstract interface
-// for cache invalidation. To permit that, we allocate a static dummy
-// CacheEntryValue here, make it available for all non-cache DependencyTrackers
+// for cache invalidation. To permit that, we allocate a per-Cache dummy
+// CacheEntryValue, make it available for all non-cache DependencyTrackers
 // to "invalidate", and require that the definition of the cache invalidation
 // method is visible here rather than use an abstract interface to it.
 
@@ -150,13 +150,14 @@ class DependencyTracker {
   DependencyGraph. The ticket is unique within the containing subcontext. */
   DependencyTicket ticket() const { return ticket_; }
 
+  // This is intended for use in connecting pre-defined trackers to cache
+  // entry values that are created later. See the private constructor
+  // documentation for more information.
   /** (Internal use only) Sets the cache entry value to be marked out-of-date
   when this tracker's prerequisites change.
   @pre The supplied cache entry value is non-null.
   @pre No cache entry value has previously been assigned. */
-  // This is intended for use in connecting pre-defined trackers to cache
-  // entry values that are created later. See the private constructor
-  // documentation for more information.
+
   void set_cache_entry_value(CacheEntryValue* cache_value) {
     DRAKE_DEMAND(cache_value != nullptr);
     DRAKE_DEMAND(!has_associated_cache_entry_);
@@ -164,10 +165,10 @@ class DependencyTracker {
     has_associated_cache_entry_ = true;
   }
 
-  /** (Internal use only) Returns a pointer to the CacheEntryValue if this
-  tracker is a cache entry tracker, otherwise nullptr. */
   // This is for validating that this tracker is associated with the right
   // cache entry. Don't use this during runtime invalidation.
+  /** (Internal use only) Returns a pointer to the CacheEntryValue if this
+  tracker is a cache entry tracker, otherwise nullptr. */
   const CacheEntryValue* cache_entry_value() const {
     DRAKE_DEMAND(cache_value_ != nullptr);
     if (!has_associated_cache_entry_)
@@ -313,17 +314,22 @@ class DependencyTracker {
   // Constructs a tracker with a given ticket number, a human-readable
   // description and an optional CacheEntryValue object that should be marked
   // out-of-date when a prerequisite changes. The description should be of the
-  // associated value only, like "input port 3"; don't include "tracker". The
-  // system pathname service of the owning subcontext must be supplied here and
-  // be non-null.
+  // associated value only, like "input port 3"; don't include "tracker". If
+  // the owning_subcontext is non-null we can complete the initialization,
+  // but when this is used as part of Context cloning we'll have to defer the
+  // final steps until the pointer fixup phase.
   DependencyTracker(DependencyTicket ticket, std::string description,
                     const internal::ContextMessageInterface* owning_subcontext,
                     CacheEntryValue* cache_value)
       : ticket_(ticket),
         description_(std::move(description)),
-        owning_subcontext_(owning_subcontext),
+        owning_subcontext_(owning_subcontext),  // may be nullptr
         has_associated_cache_entry_(cache_value != nullptr),
-        cache_value_(cache_value ? cache_value : &CacheEntryValue::dummy()) {
+        cache_value_(cache_value) {
+    // If we can, connect non-cache tracker to the dummy cache entry value now.
+    if (!has_associated_cache_entry_ && owning_subcontext != nullptr)
+      cache_value_ = &owning_subcontext->dummy_cache_entry_value();
+
     DRAKE_LOGGER_DEBUG(
         "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
         description_, has_associated_cache_entry_ ? "with" : "without",

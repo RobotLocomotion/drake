@@ -14,7 +14,6 @@ values. */
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/never_destroyed.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/framework_common.h"
@@ -451,32 +450,15 @@ class CacheEntryValue {
   }
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Returns a mutable reference to an unused cache entry
-  // value object, which has no valid CacheIndex or DependencyTicket and has a
-  // meaningless value. The reference is to a singleton %CacheEntryValue and
-  // will always return the same address. You may invoke mark_up_to_date()
-  // harmlessly on this object, but may not depend on its contents in any way as
-  // they may change unexpectedly. The intention is that this object is used as
-  // a common throw-away destination for non-cache DependencyTracker
-  // invalidations so that invalidation can be done unconditionally, and to the
-  // same memory location, for speed.
-  static CacheEntryValue& dummy() {
-    static never_destroyed<CacheEntryValue> dummy;
-    return dummy.access();
-  }
-#endif
-
  private:
   // So Cache and no one else can construct and copy CacheEntryValues.
   friend class Cache;
 
-  // Allow these adapters access to our private constructors on our behalf.
-  // TODO(sherm1) These friend declarations allow us to hide constructors we
+  // Allow this adapter access to our private constructors on our behalf.
+  // TODO(sherm1) This friend declaration allows us to hide constructors we
   //   don't want users to call. But there is still a loophole in that a user
-  //   could create objects of these types and get access indirectly. Consider
+  //   could create objects of this type and get access indirectly. Consider
   //   whether that is a real problem that needs to be solved and if so fix it.
-  friend class never_destroyed<CacheEntryValue>;
   friend class copyable_unique_ptr<CacheEntryValue>;
 
   // Default constructor can only be used privately to construct an empty
@@ -750,6 +732,10 @@ class Cache {
   @see ContextBase::is_cache_frozen() for the user-facing API */
   bool is_cache_frozen() const { return is_cache_frozen_; }
 
+  /** (Internal use only) Returns a mutable reference to a dummy CacheEntryValue
+  that can serve as a /dev/null-like destination for throw-away writes. */
+  CacheEntryValue& dummy_cache_entry_value() { return dummy_; }
+
  private:
   // So ContextBase and no one else can copy a Cache.
   friend class ContextBase;
@@ -775,6 +761,16 @@ class Cache {
 
   // All CacheEntryValue objects, indexed by CacheIndex.
   std::vector<copyable_unique_ptr<CacheEntryValue>> store_;
+
+  // A per-Cache (and hence, per-Context) mutable, unused cache entry value
+  // object, which has no valid CacheIndex or DependencyTicket and has a
+  // meaningless value. A DependencyTracker may invoke mark_up_to_date()
+  // harmlessly on this object, but may not depend on its contents in any way as
+  // they may change unexpectedly. The intention is that this object is used as
+  // a common throw-away destination for non-cache DependencyTracker
+  // invalidations so that invalidation can be done unconditionally, and to the
+  // same memory location within a LeafContext, for speed.
+  CacheEntryValue dummy_;
 
   // Whether we are currently preventing mutable access to the cache.
   bool is_cache_frozen_{false};
