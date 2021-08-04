@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model_data.h"
+#include "drake/multibody/fem/linear_constitutive_model_data.h"
 
 #include <gtest/gtest.h>
 
@@ -19,6 +19,9 @@ void VerifySizes(
   ASSERT_EQ(data.trace_strain().size(), kNumLocations);
 }
 
+/* Tests that the deformation gradient is initialized to the identity matrix and
+ the deformation gradient dependent data are initialized to be consistent with
+ the initial deformation gradient. */
 GTEST_TEST(LinearConstitutiveModelDataTest, Initialization) {
   LinearConstitutiveModelData<double, kNumLocations> linear_elasticity_data;
   VerifySizes(linear_elasticity_data);
@@ -32,9 +35,19 @@ GTEST_TEST(LinearConstitutiveModelDataTest, Initialization) {
 GTEST_TEST(LinearConstitutiveModelDataTest, UpdateData) {
   LinearConstitutiveModelData<double, kNumLocations> linear_elasticity_data;
 
-  const Matrix3<double> F = 3.0 * Matrix3<double>::Identity();
-  const Matrix3<double> expected_strain = 2.0 * Matrix3<double>::Identity();
-  const double expected_trace_strain = 6.0;
+  Matrix3<double> F;
+  // clang-format off
+  F << 4, 9, 2,
+       3, 5, 7,
+       8, 1, 6;
+  // clang-format on
+  Matrix3<double> expected_strain;
+  // clang-format off
+  expected_strain << 3, 6, 5,
+                     6, 4, 4,
+                     5, 4, 5;
+  // clang-format on
+  const double expected_trace_strain = 12.0;
 
   linear_elasticity_data.UpdateData({F});
   EXPECT_TRUE(
