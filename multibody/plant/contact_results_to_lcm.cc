@@ -2,29 +2,76 @@
 
 #include <memory>
 
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 
 namespace drake {
 namespace multibody {
 
+using geometry::GeometryId;
+using internal::FullBodyName;
 using systems::Context;
+
+namespace internal {
+
+bool operator==(const FullBodyName& n1, const FullBodyName& n2) {
+  return n1.model == n2.model && n1.body == n2.body &&
+         n1.geometry == n2.geometry;
+}
+
+}  // namespace internal
+
+namespace {
+
+template <typename T>
+const std::vector<GeometryId>& GetCollisionGeometriesForBody(
+    const MultibodyPlant<T>& plant, const Body<T>& body,
+    bool warn_for_multi_geometry_body) {
+  const std::vector<GeometryId>& geometries =
+      plant.GetCollisionGeometriesForBody(body);
+  if (warn_for_multi_geometry_body && geometries.size() > 1) {
+    static const logging::Warn log_once(
+        "MultibodyPlant has at least one body '{}/{}' with multiple contact "
+        "geometries. ContactResultsToLcmSystem should be instantiated on both "
+        "the plant and the corresponding SceneGraph. Failure to do so may lead "
+        "to undesirable visualization behavior.",
+        plant.GetModelInstanceName(body.model_instance()), body.name());
+    unused(log_once);
+  }
+  return geometries;
+}
+
+std::string id_as_label(GeometryId id) {
+  return fmt::format("Id({})", id);
+}
+
+}  // namespace
 
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
-    const MultibodyPlant<T>& plant)
+    const MultibodyPlant<T>& plant,
+    const std::function<std::string(GeometryId)>& geometry_name_lookup)
     : ContactResultsToLcmSystem<T>(true) {
   DRAKE_DEMAND(plant.is_finalized());
   const int body_count = plant.num_bodies();
 
   body_names_.reserve(body_count);
-  using std::to_string;
+  const bool namer_given = static_cast<bool>(geometry_name_lookup);
+  const std::function<std::string(GeometryId)>& namer =
+      namer_given ? geometry_name_lookup : &id_as_label;
   for (BodyIndex i{0}; i < body_count; ++i) {
     const Body<T>& body = plant.get_body(i);
+    using std::to_string;
     body_names_.push_back(body.name() + "(" + to_string(body.model_instance()) +
                           ")");
-    for (auto geometry_id : plant.GetCollisionGeometriesForBody(body))
-      geometry_id_to_body_name_map_[geometry_id] = body.name();
+    for (auto geometry_id :
+         GetCollisionGeometriesForBody(plant, body, namer_given)) {
+      const std::string& model_name =
+          plant.GetModelInstanceName(body.model_instance());
+      geometry_id_to_body_name_map_[geometry_id] = {model_name, body.name(),
+                                                    namer(geometry_id)};
+    }
   }
 }
 
@@ -63,13 +110,13 @@ template <typename T>
 void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     const Context<T>& context, lcmt_contact_results_for_viz* output) const {
   // Get input / output.
-  const auto& contact_results = get_contact_result_input_port().
-      template Eval<ContactResults<T>>(context);
+  const auto& contact_results =
+      get_contact_result_input_port().template Eval<ContactResults<T>>(context);
   auto& msg = *output;
 
   // Time in microseconds.
-  msg.timestamp = static_cast<int64_t>(
-      ExtractDoubleOrThrow(context.get_time()) * 1e6);
+  msg.timestamp =
+      static_cast<int64_t>(ExtractDoubleOrThrow(context.get_time()) * 1e6);
   msg.num_point_pair_contacts = contact_results.num_point_pair_contacts();
   msg.point_pair_contact_info.resize(msg.num_point_pair_contacts);
   msg.num_hydroelastic_contacts = contact_results.num_hydroelastic_contacts();
@@ -108,10 +155,16 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
             hydroelastic_contact_info.quadrature_point_data();
 
     // Get the two body names.
-    surface_msg.body1_name = geometry_id_to_body_name_map_.at(
-            hydroelastic_contact_info.contact_surface().id_M());
-    surface_msg.body2_name = geometry_id_to_body_name_map_.at(
-            hydroelastic_contact_info.contact_surface().id_N());
+    const FullBodyName& name1 = geometry_id_to_body_name_map_.at(
+        hydroelastic_contact_info.contact_surface().id_M());
+    surface_msg.body1_name = name1.body;
+    surface_msg.model1_name = name1.model;
+    surface_msg.geometry1_name = name1.geometry;
+    const FullBodyName& name2 = geometry_id_to_body_name_map_.at(
+        hydroelastic_contact_info.contact_surface().id_N());
+    surface_msg.body2_name = name2.body;
+    surface_msg.model2_name = name2.model;
+    surface_msg.geometry2_name = name2.geometry;
 
     const geometry::ContactSurface<T>& contact_surface =
         hydroelastic_contact_info.contact_surface();
@@ -173,23 +226,25 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& multibody_plant,
-    lcm::DrakeLcmInterface* lcm) {
+    const MultibodyPlant<double>& multibody_plant, lcm::DrakeLcmInterface* lcm,
+    const std::function<std::string(GeometryId)>& geometry_name_lookup) {
   return ConnectContactResultsToDrakeVisualizer(
       builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(), lcm);
+      multibody_plant.get_contact_results_output_port(), lcm,
+      geometry_name_lookup);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    const std::function<std::string(GeometryId)>& geometry_name_lookup) {
   DRAKE_DEMAND(builder != nullptr);
 
-  auto contact_to_lcm =
+  ContactResultsToLcmSystem<double>* contact_to_lcm =
       builder->template AddSystem<ContactResultsToLcmSystem<double>>(
-          multibody_plant);
+          multibody_plant, geometry_name_lookup);
   contact_to_lcm->set_name("contact_to_lcm");
 
   auto contact_results_publisher = builder->AddSystem(

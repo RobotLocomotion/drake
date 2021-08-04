@@ -1919,35 +1919,54 @@ class TestPlant(unittest.TestCase):
         # ContactResultsToLcmSystem
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        plant = MultibodyPlant_[float](0.0)
-        Parser(plant).AddModelFromFile(file_name)
-        plant.Finalize()
-        plant.set_penetration_allowance(penetration_allowance=0.0001)
-        plant.set_stiction_tolerance(v_stiction=0.001)
-        self.assertIsInstance(
-            plant.get_contact_penalty_method_time_scale(), float)
-        contact_results_to_lcm = ContactResultsToLcmSystem(plant)
-        context = contact_results_to_lcm.CreateDefaultContext()
-        contact_results_to_lcm.get_input_port(0).FixValue(
-            context, ContactResults_[float]())
-        output = contact_results_to_lcm.AllocateOutput()
-        contact_results_to_lcm.CalcOutput(context, output)
-        result = output.get_data(0)
-        self.assertIsInstance(result, AbstractValue)
+        # There are two versions of the constructor; one takes a SceneGraph, one
+        # does not. Test both.
+        for use_custom_names in (True, False):
+            builder = DiagramBuilder_[float]()
+            plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+
+            Parser(plant).AddModelFromFile(file_name)
+            plant.Finalize()
+            plant.set_penetration_allowance(penetration_allowance=0.0001)
+            plant.set_stiction_tolerance(v_stiction=0.001)
+            self.assertIsInstance(
+                plant.get_contact_penalty_method_time_scale(), float)
+            if use_custom_names:
+                def make_names(id):
+                    return f"PydrakeTestName{id}"
+                contact_results_to_lcm = ContactResultsToLcmSystem(plant,
+                                                                   make_names)
+            else:
+                contact_results_to_lcm = ContactResultsToLcmSystem(plant)
+            context = contact_results_to_lcm.CreateDefaultContext()
+            contact_results_to_lcm.get_input_port(0).FixValue(
+                context, ContactResults_[float]())
+            output = contact_results_to_lcm.AllocateOutput()
+            contact_results_to_lcm.CalcOutput(context, output)
+            result = output.get_data(0)
+            self.assertIsInstance(result, AbstractValue)
 
     def test_connect_contact_results(self):
-        DiagramBuilder = DiagramBuilder_[float]
-        MultibodyPlant = MultibodyPlant_[float]
-
+        # There are two versions of the function; one takes a SceneGraph, one
+        # does not. Test both.
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        builder = DiagramBuilder()
-        plant = builder.AddSystem(MultibodyPlant(0.001))
-        Parser(plant).AddModelFromFile(file_name)
-        plant.Finalize()
+        for use_custom_names in (True, False):
+            builder = DiagramBuilder_[float]()
+            plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
 
-        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
-        self.assertIsInstance(publisher, LcmPublisherSystem)
+            Parser(plant).AddModelFromFile(file_name)
+            plant.Finalize()
+
+            if use_custom_names:
+                def make_names(id):
+                    return f"PydrakeTestName{id}"
+                publisher = ConnectContactResultsToDrakeVisualizer(
+                    builder, plant, geometry_name_lookup=make_names)
+            else:
+                publisher = ConnectContactResultsToDrakeVisualizer(builder,
+                                                                   plant)
+            self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):
         builder_f = DiagramBuilder_[float]()
