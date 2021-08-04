@@ -216,6 +216,10 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(inspector.GetFrameId(global_geometry), global_frame)
         self.assertEqual(
             inspector.GetName(geometry_id=global_geometry), "sphere1")
+        geo_name_lookup = scene_graph.geometry_name_lookup()
+        self.assertEqual(
+            inspector.GetName(global_geometry),
+            geo_name_lookup(global_geometry))
         self.assertIsInstance(inspector.GetShape(geometry_id=global_geometry),
                               mut.Sphere)
         self.assertIsInstance(
