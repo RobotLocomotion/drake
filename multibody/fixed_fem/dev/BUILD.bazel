@@ -396,23 +396,9 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        ":linear_constitutive_model_data",
         "//common:default_scalars",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_constitutive_model_data",
-    srcs = [
-        "linear_constitutive_model_data.cc",
-    ],
-    hdrs = [
-        "linear_constitutive_model_data.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//multibody/fem:deformation_gradient_data",
+        "//multibody/fem:linear_constitutive_model_data",
     ],
 )
 
@@ -740,14 +726,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_constitutive_model_data_test",
-    deps = [
-        ":linear_constitutive_model_data",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
