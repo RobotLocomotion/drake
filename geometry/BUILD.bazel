@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":collision_filter_declaration",
         ":collision_filter_manager",
         ":drake_visualizer",
+        ":drake_visualizer_params",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
@@ -93,6 +94,7 @@ drake_cc_library(
     srcs = ["drake_visualizer.cc"],
     hdrs = ["drake_visualizer.h"],
     deps = [
+        ":drake_visualizer_params",
         ":geometry_roles",
         ":geometry_version",
         ":scene_graph",
@@ -101,6 +103,15 @@ drake_cc_library(
         "//lcmtypes:viewer",
         "//systems/framework:context",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_visualizer_params",
+    hdrs = ["drake_visualizer_params.h"],
+    deps = [
+        ":geometry_roles",
+        ":rgba",
     ],
 )
 

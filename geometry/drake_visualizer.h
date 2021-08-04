@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/query_object.h"
@@ -21,19 +22,6 @@ namespace geometry {
 // Forward declare a tester class used as a friend of DrakeVisualizer.
 template <typename T>
 class DrakeVisualizerTest;
-
-/** The set of parameters for configuring DrakeVisualizer.  */
-struct DrakeVisualizerParams {
-  /** The duration (in seconds) between published LCM messages that update the
-   poses of the scene's geometry.  */
-  double publish_period{1 / 60.0};
-
-  /* The role of the geometries to be sent to the visualizer.  */
-  Role role{Role::kIllustration};
-
-  /** The color to apply to any geometry that hasn't defined one.  */
-  Rgba default_color{0.9, 0.9, 0.9, 1.0};
-};
 
 namespace internal {
 /* Data stored in the cache; populated when we transmit a load message and
