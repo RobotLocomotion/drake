@@ -80,7 +80,7 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
     auto& tracker = context.get_tracker(ticket);
     EXPECT_EQ(tracker.ticket(), ticket);
     DRAKE_EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
-        &context, &CacheEntryValue::dummy()));
+        &context, &context.dummy_cache_entry_value()));
     EXPECT_THROW(tracker.ThrowIfBadDependencyTracker(&context2),
                  std::logic_error);
   }
@@ -461,6 +461,24 @@ TEST_F(HandBuiltDependencies, Clone) {
 
   // Create a clone of the dependency graph and exercise the pointer fixup code.
   auto clone_context = context_.Clone();
+
+  // Check a tracker that is known NOT to be a cache entry tracker to
+  // ensure that it is referencing the dummy CacheEntryValue in the cloned
+  // context, not the original one.
+
+  // Verify that each Context has a unique dummy CacheEntryValue.
+  ASSERT_NE(&context_.dummy_cache_entry_value(),
+      &clone_context->dummy_cache_entry_value());
+
+  // Now verify that the trackers are associated with the right one.
+  const DependencyTracker& original_time_tracker =
+      context_.get_tracker(time_ticket_);
+  const DependencyTracker& clone_time_tracker =
+      clone_context->get_tracker(time_ticket_);
+  DRAKE_EXPECT_NO_THROW(original_time_tracker.ThrowIfBadDependencyTracker(
+        &context_, &context_.dummy_cache_entry_value()));
+  DRAKE_EXPECT_NO_THROW(clone_time_tracker.ThrowIfBadDependencyTracker(
+        clone_context.get(), &clone_context->dummy_cache_entry_value()));
 
   // Now study the cloned graph to see if it got fixed up correctly.
   DependencyGraph& clone_graph = clone_context->get_mutable_dependency_graph();

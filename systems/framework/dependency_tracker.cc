@@ -218,7 +218,8 @@ void DependencyTracker::RepairTrackerPointers(
   DRAKE_DEMAND(cache != nullptr);
   owning_subcontext_ = owning_subcontext;
 
-  // Set the cache entry pointer.
+  // Set the cache entry pointer to refer to the new cache, either to a real
+  // CacheEntryValue or the cache's dummy value.
   DRAKE_DEMAND(has_associated_cache_entry_ ==
                source.has_associated_cache_entry_);
   if (has_associated_cache_entry_) {
@@ -228,6 +229,8 @@ void DependencyTracker::RepairTrackerPointers(
         "Cloned tracker '{}' repairing cache entry {} invalidation to {:#x}.",
         GetPathDescription(), source.cache_value_->cache_index(),
         size_t(cache_value_));
+  } else {
+    cache_value_ = &cache->dummy_cache_entry_value();
   }
 
   // Set the subscriber pointers.

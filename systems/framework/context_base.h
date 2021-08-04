@@ -255,6 +255,14 @@ class ContextBase : public internal::ContextMessageInterface {
   /** Returns true if this context has no parent. */
   bool is_root_context() const { return parent_ == nullptr; }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Returns a mutable dummy CacheEntryValue that can
+  // serve as a /dev/null-like destination for throw-away writes.
+  CacheEntryValue& dummy_cache_entry_value() const final {
+    return get_mutable_cache().dummy_cache_entry_value();
+  }
+#endif
+
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
