@@ -1149,8 +1149,7 @@ PYBIND11_MODULE(plant, m) {
     py::class_<Class, systems::LeafSystem<T>>(
         m, "ContactResultsToLcmSystem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
-            // Keep alive, reference: `self` keeps `plant` alive.
-            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+            cls_doc.ctor.doc)
         .def("get_contact_result_input_port",
             &Class::get_contact_result_input_port, py_rvp::reference_internal,
             cls_doc.get_contact_result_input_port.doc)
@@ -1174,7 +1173,29 @@ PYBIND11_MODULE(plant, m) {
       py::keep_alive<2, 1>(),
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(),
-      doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
+      doc.ConnectContactResultsToDrakeVisualizer.doc_3args_builder_plant_lcm);
+
+  m.def(
+      "ConnectContactResultsToDrakeVisualizer",
+      [](systems::DiagramBuilder<double>* builder,
+          const MultibodyPlant<double>& plant,
+          const geometry::SceneGraph<double>& scene_graph,
+          lcm::DrakeLcmInterface* lcm) {
+        return drake::multibody::ConnectContactResultsToDrakeVisualizer(
+            builder, plant, scene_graph, lcm);
+      },
+      py::arg("builder"), py::arg("plant"), py::arg("scene_graph"),
+      py::arg("lcm") = nullptr, py_rvp::reference,
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(),
+      // Keep alive, transitive: `plant` keeps `builder` alive.
+      py::keep_alive<2, 1>(),
+      // Keep alive, transitive: `scene_graph` keeps `builder` alive.
+      py::keep_alive<3, 1>(),
+      // Keep alive, transitive: `lcm` keeps `builder` alive.
+      py::keep_alive<4, 1>(),
+      doc.ConnectContactResultsToDrakeVisualizer
+          .doc_4args_builder_plant_scene_graph_lcm);
 
   {
     using Class = PropellerInfo;
