@@ -388,6 +388,17 @@ class TestSymbolicExpression(unittest.TestCase):
         # with NumPy 1.16, it became PY2 too. Figure out why.
         install_numpy_warning_filters(force=True)
 
+    def test_15549(self):
+        # XXX This test needs more work.
+        import pydrake.math as drake_math
+        x = sym.Variable("x")
+        2 <= x**2
+        x**2 <= 2
+        drake_math.le(x**2, 2)
+        drake_math.le(2, x**2)  # <== this crashes
+        drake_math.ge(x**2, 2)
+        drake_math.ge(2, x**2)  # <== this too.
+
     def _check_algebra(self, algebra):
         konstant = algebra.to_algebra(1.0)
         xv = algebra.to_algebra(x)
