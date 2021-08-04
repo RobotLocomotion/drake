@@ -105,6 +105,7 @@ enum class OutputPortSelection { kNoOutput = -1, kUseFirstOutputIfItExists =
     -2 };
 
 #ifndef DRAKE_DOXYGEN_CXX
+class CacheEntryValue;
 class ContextBase;
 class InputPortBase;
 class SystemBase;
@@ -210,6 +211,10 @@ class ContextMessageInterface {
 
   // Returns true if the cache in this subcontext has been frozen.
   virtual bool is_cache_frozen() const = 0;
+
+  // Returns a mutable reference to the Context's (mutable) Cache's dummy
+  // CacheEntryValue.
+  virtual CacheEntryValue& dummy_cache_entry_value() const = 0;
 
  protected:
   ContextMessageInterface() = default;
