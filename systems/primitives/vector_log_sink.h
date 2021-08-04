@@ -10,18 +10,13 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/primitives/vector_log.h"
 
 namespace drake {
 namespace systems {
-
-// TODO(rpoyner-tri) All of the multi-trigger API and implementation here
-// (TriggerTypeSet, logic for trigger types and publish periods) is duplicated
-// from LcmPublisherSystem. It should all be factored to LeafSystem, especially
-// if a third use of this pattern turns up.
-using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
 
 /// A discrete sink block which logs its vector-valued input to per-context
 /// memory. This data is then retrievable outside of System operation,
