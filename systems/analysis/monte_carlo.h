@@ -14,12 +14,12 @@ namespace analysis {
  * Definition to specify the desired concurrency for MonteCarloSimulation.
  * Use only a single thread, equivalent to num_parallel_executions = 1.
  */
-const int kNoConcurrency = 1;
+constexpr int kNoConcurrency = 1;
 /**
  * Definition to specify the desired concurrency for MonteCarloSimulation.
  * Equivalent to num_parallel_executions = std::thread::hardware_concurrency().
  */
-const int kUseHardwareConcurrency = -1;
+constexpr int kUseHardwareConcurrency = -1;
 
 /***
  * Defines a factory method that constructs a Simulator (with an owned System)
@@ -162,11 +162,11 @@ struct RandomSimulationResult {
  * Thread safety when parallel execution is specified:
  * - @p make_simulator and @p generator are only accessed from the main thread.
  *
- * - Each simulator created by @p make_simulator is only accessed from within a
- *   single worker thread; however, any resource shared between these simulators
- *   must be safe for concurrent use.
+ * - Each simulator created by @p make_simulator and its context are only
+ *   accessed from within a single worker thread; however, any resource shared
+ *   between these simulators must be safe for concurrent use.
  *
- * - * @p output is called from within worker threads performing simulation. It
+ * - @p output is called from within worker threads performing simulation. It
  *   must be safe for concurrent use.
  *
  * @ingroup analysis

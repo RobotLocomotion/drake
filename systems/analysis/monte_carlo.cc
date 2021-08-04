@@ -15,6 +15,8 @@ namespace {
 // Checks if a future has completed execution.
 template <typename T>
 bool IsFutureReady(const std::future<T>& future) {
+  // future.wait_for() is the only method to check the status of a future
+  // without waiting for it to complete.
   const std::future_status status =
       future.wait_for(std::chrono::milliseconds(1));
   return (status == std::future_status::ready);
@@ -42,7 +44,10 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator,
     int num_parallel_executions) {
-  // Initialize storage for all simulation results.
+  // Initialize storage for all simulation results. The full vector must be
+  // constructed up front (i.e. we can't use reserve()) to avoid a race
+  // condition on checking the size of the vector when the worker threads write
+  // simulation results.
   std::vector<RandomSimulationResult> simulation_results(
       num_samples, RandomSimulationResult(RandomGenerator()));
 
@@ -93,7 +98,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
       active_operations.emplace_back(
           std::async(std::launch::async, std::move(perform_simulation)));
       drake::log()->debug("Simulation {} dispatched", simulations_dispatched);
-      simulations_dispatched += 1;
+      ++simulations_dispatched;
     }
 
     // Wait a bit before checking for completion.

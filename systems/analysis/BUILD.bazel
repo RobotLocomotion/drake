@@ -556,7 +556,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "monte_carlo_test",
-    # This test launches # of logical processors threads.
+    # This test launches # of logical processors threads. To avoid resource
+    # exhaustion during bazel test, we specify 99 processors so that this test
+    # is run exclusively.
     tags = ["cpu:99"],
     deps = [
         ":monte_carlo",
