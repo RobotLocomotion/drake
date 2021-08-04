@@ -9,6 +9,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
+#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -1065,6 +1066,33 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
     return schur_complement.get_D_complement();
   }
 
+  /* Calls DeformableRigidManager::EvalFreeMotionRigidVelocities(). */
+  const VectorX<double>& EvalFreeMotionRigidVelocities(
+      const systems::Context<double>& context) const {
+    return deformable_rigid_manager_->EvalFreeMotionRigidVelocities(context);
+  }
+
+  /* Calls DeformableRigidManager::EvalParticipatingFreeMotionVelocities(). */
+  const VectorX<double>& EvalParticipatingFreeMotionVelocities(
+      const systems::Context<double>& context) const {
+    return deformable_rigid_manager_->EvalParticipatingFreeMotionVelocities(
+        context);
+  }
+
+  /* Calls DeformableRigidManager::EvalFreeMotionFemStateBase(). */
+  const FemStateBase<double>& EvalFreeMotionFemStateBase(
+      const systems::Context<double>& context,
+      DeformableBodyIndex index) const {
+    return deformable_rigid_manager_->EvalFreeMotionFemStateBase(context,
+                                                                 index);
+  }
+
+  /* Calls DeformableRigidManager::EvalDeformableRigidContact(). */
+  const std::vector<internal::DeformableContactData<double>>&
+  EvalDeformableRigidContact(const systems::Context<double>& context) {
+    return deformable_rigid_manager_->EvalDeformableRigidContact(context);
+  }
+
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
   const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
@@ -1147,6 +1175,9 @@ TEST_F(DeformableRigidDynamicsDataTest, NoContact) {
   const MatrixXd tangent_matrix = CalcContactTangentMatrix(plant_context);
   EXPECT_EQ(tangent_matrix.rows(), 0);
   EXPECT_EQ(tangent_matrix.cols(), 0);
+  const VectorX<double>& participating_v_star =
+      EvalParticipatingFreeMotionVelocities(plant_context);
+  EXPECT_EQ(participating_v_star.size(), 0);
 }
 
 /* Verifies that the contact tangent matrix matches expectation. */
@@ -1180,6 +1211,99 @@ TEST_F(DeformableRigidDynamicsDataTest, TangentMatrix) {
   EXPECT_TRUE(CompareMatrices(
       tangent_matrix.bottomRightCorner(3 * kNumVertices, 3 * kNumVertices),
       CalcFreeMotionTangentMatrix(plant_context, A_)));
+}
+
+/* Verifies that the participating free motion velocities match expectation for
+ a simple set up where a rigid unit cube intersects with the bottom half of a
+ deformable octahedron. See the ASCII illustration below. */
+TEST_F(DeformableRigidDynamicsDataTest, ParticipatingFreeMotionVelocities) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Move the rigid cube down so that it intersects the octahedron in the lower
+   prism.
+
+   The setup viewed in the YZ plane looks like:
+                 +Z
+                  |
+               v5 ●
+                ⁄  | ＼
+              ⁄    |   ＼
+        v4  ⁄      |  B  ＼  v2
+   -Y-----●-------●-------●----+Y
+            \     |      ⁄
+              \---|----⁄
+              | \ |  ⁄ |
+              |   ● v6|
+              |   |   |
+              ----|----  C
+                  |
+                 -Z
+  Recall that the octahedron looks like:
+                +Z   -X
+                 |   /
+              v5 ●  ● v3
+                 | /
+       v4     v0 |/
+  -Y----●--------●------●----+Y
+                /|      v2
+               / |
+           v1 ●  ● v6
+             /   |
+           +X    |
+                -Z
+  Therefore, all vertices except v5 are participating in contact. */
+  const Vector3d p_WC(0, 0, -1);
+  const math::RigidTransformd X_WC(p_WC);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(C_), X_WC);
+  const VectorXd& rigid_v_star = EvalFreeMotionRigidVelocities(plant_context);
+  const VectorXd& deformable_v_star =
+      EvalFreeMotionFemStateBase(plant_context, B_).qdot();
+  constexpr int kNumRigidDofs = 6;
+  EXPECT_EQ(rigid_v_star.size(), kNumRigidDofs);
+  EXPECT_EQ(deformable_v_star.size(),
+            7 /* number of vertices in the octehedral mesh */ * 3);
+
+  const VectorXd& participating_v_star =
+      EvalParticipatingFreeMotionVelocities(plant_context);
+  /* v0-v4, and v6 are participating in contact. */
+  constexpr int kNumParticipatingVertices = 6;
+  constexpr int kNumParticipatingDofs = 3 * kNumParticipatingVertices;
+  EXPECT_EQ(participating_v_star.size(), kNumRigidDofs + kNumParticipatingDofs);
+  /* Verify rigid velocities for the participating C. */
+  EXPECT_TRUE(CompareMatrices(participating_v_star.head<kNumRigidDofs>(),
+                              rigid_v_star));
+  /* Get the expected participating deformable velocities by permuting the
+   vector of deformable velocities for all vertices. */
+  const internal::DeformableContactData<double>& contact_data =
+      EvalDeformableRigidContact(plant_context)[B_];
+  const VectorXd expected_participating_deformable_v_star =
+      internal::PermuteBlockVector<double>(
+          deformable_v_star, contact_data.permuted_vertex_indexes())
+          .head<kNumParticipatingDofs>();
+  /* Verify deformable velocities for the participating B matches expectation.
+   */
+  EXPECT_TRUE(
+      CompareMatrices(participating_v_star.tail<kNumParticipatingDofs>(),
+                      expected_participating_deformable_v_star));
+}
+
+// TODO(xuchenhan-tri): This unit test can be strengthened by leveraging
+//  the fixture in multibody_plant_forward_dynamics_test.cc when
+//  DeformableRigidManager moves out of dev,
+/* Verifies that the free motion rigid velocities match expectation. */
+TEST_F(DeformableRigidDynamicsDataTest, FreeMotionRigidVelocities) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  const Vector3d w_WC(1, 2, 3);
+  const Vector3d v_WC(4, 5, 6);
+  const SpatialVelocity<double> V_WC(w_WC, v_WC);
+  plant_->SetFreeBodySpatialVelocity(&plant_context,
+                                     plant_->GetBodyByName("cube_C"), V_WC);
+  const VectorXd rigid_v_star = EvalFreeMotionRigidVelocities(plant_context);
+  EXPECT_TRUE(CompareMatrices(rigid_v_star.head<3>(), w_WC));
+  EXPECT_TRUE(CompareMatrices(
+      rigid_v_star.tail<3>(),
+      v_WC + plant_->time_step() * plant_->gravity_field().gravity_vector()));
 }
 
 }  // namespace
