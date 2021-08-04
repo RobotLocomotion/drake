@@ -132,6 +132,38 @@ class InverseDynamicsTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+// Tests that inverse dynamics returns the expected torque for a given state and
+// desired acceleration for the iiwa arm.
+TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
+  const std::string full_name = drake::FindResourceOrThrow(
+      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
+  mbp->WeldFrames(mbp->world_frame(),
+                  mbp->GetFrameByName("iiwa_link_0"));
+
+  // Add gravitational forces, finalize the model, and transfer ownership.
+  mbp->mutable_gravity_field().set_gravity_vector(
+      -9.8 * Vector3<double>::UnitZ());
+  mbp->Finalize();
+  Init(std::move(mbp),
+       InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
+
+  Eigen::VectorXd q = Eigen::VectorXd::Zero(7);
+  Eigen::VectorXd v = Eigen::VectorXd::Zero(7);
+  Eigen::VectorXd vd_d = Eigen::VectorXd::Zero(7);
+  for (int i = 0; i < 7; ++i) {
+    q[i] = i * 0.1 - 0.3;
+    v[i] = i - 3;
+    vd_d[i] = i - 3;
+  }
+
+  // Check that gravity is modeled.
+  EXPECT_TRUE(GravityModeled(q));
+
+  CheckTorque(q, v, vd_d);
+}
+
 // Tests that the expected value of the gravity compensating torque and the
 // value computed by the InverseDynamics in pure gravity compensation mode
 // for a given joint configuration of the KUKA IIWA Arm are identical.
@@ -174,38 +206,6 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   EXPECT_TRUE(GravityModeled(robot_position));
 
   CheckGravityTorque(robot_position);
-}
-
-// Tests that inverse dynamics returns the expected torque for a given state and
-// desired acceleration for the iiwa arm.
-TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
-  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
-  const std::string full_name = drake::FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
-  mbp->WeldFrames(mbp->world_frame(),
-                  mbp->GetFrameByName("iiwa_link_0"));
-
-  // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->mutable_gravity_field().set_gravity_vector(
-      -9.8 * Vector3<double>::UnitZ());
-  mbp->Finalize();
-  Init(std::move(mbp),
-       InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);
-
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(7);
-  Eigen::VectorXd v = Eigen::VectorXd::Zero(7);
-  Eigen::VectorXd vd_d = Eigen::VectorXd::Zero(7);
-  for (int i = 0; i < 7; ++i) {
-    q[i] = i * 0.1 - 0.3;
-    v[i] = i - 3;
-    vd_d[i] = i - 3;
-  }
-
-  // Check that gravity is modeled.
-  EXPECT_TRUE(GravityModeled(q));
-
-  CheckTorque(q, v, vd_d);
 }
 
 }  // namespace
