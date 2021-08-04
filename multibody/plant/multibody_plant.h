@@ -1831,7 +1831,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, or if the length of
   /// `q_v` is not equal to `num_positions() + num_velocities()`.
   void SetPositionsAndVelocities(
-      systems::Context<T>* context, const VectorX<T>& q_v) const {
+      systems::Context<T>* context,
+      const Eigen::Ref<const VectorX<T>>& q_v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_v.size() == (num_positions() + num_velocities()));
     internal_tree().GetMutablePositionsAndVelocities(context) = q_v;
@@ -1845,7 +1846,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `num_positions(model_instance) + num_velocities(model_instance)`.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, ModelInstanceIndex model_instance,
-      const VectorX<T>& q_v) const {
+      const Eigen::Ref<const VectorX<T>>& q_v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(
         q_v.size() ==
@@ -1914,7 +1915,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `context` is nullptr, if `context` does not
   /// correspond to the Context for a multibody model, or if the length of `q`
   /// is not equal to `num_positions()`.
-  void SetPositions(systems::Context<T>* context, const VectorX<T>& q) const {
+  void SetPositions(systems::Context<T>* context,
+                    const Eigen::Ref<const VectorX<T>>& q) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q.size() == num_positions());
     GetMutablePositions(context) = q;
@@ -1926,9 +1928,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the Context for a multibody model, if the model instance
   /// index is invalid, or if the length of `q_instance` is not equal to
   /// `num_positions(model_instance)`.
-  void SetPositions(
-      systems::Context<T>* context,
-      ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
+  void SetPositions(systems::Context<T>* context,
+                    ModelInstanceIndex model_instance,
+                    const Eigen::Ref<const VectorX<T>>& q_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
@@ -1945,7 +1947,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre `state` comes from this MultibodyPlant.
   void SetPositions(const systems::Context<T>& context,
                     systems::State<T>* state, ModelInstanceIndex model_instance,
-                    const VectorX<T>& q_instance) const {
+                    const Eigen::Ref<const VectorX<T>>& q_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
     CheckValidState(state);
@@ -2014,7 +2016,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the `context` is nullptr, if the context does
   /// not correspond to the context for a multibody model, or if the length of
   /// `v` is not equal to `num_velocities()`.
-  void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
+  void SetVelocities(systems::Context<T>* context,
+                     const Eigen::Ref<const VectorX<T>>& v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v.size() == num_velocities());
     GetMutableVelocities(context) = v;
@@ -2026,9 +2029,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the Context for a multibody model, if the model instance
   /// index is invalid, or if the length of `v_instance` is not equal to
   /// `num_velocities(model_instance)`.
-  void SetVelocities(
-      systems::Context<T>* context,
-      ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+  void SetVelocities(systems::Context<T>* context,
+                     ModelInstanceIndex model_instance,
+                     const Eigen::Ref<const VectorX<T>>& v_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context);
@@ -2043,9 +2046,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// index is invalid, or if the length of `v_instance` is not equal to
   /// `num_velocities(model_instance)`.
   /// @pre `state` comes from this MultibodyPlant.
-  void SetVelocities(
-      const systems::Context<T>& context, systems::State<T>* state,
-      ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+  void SetVelocities(const systems::Context<T>& context,
+                     systems::State<T>* state,
+                     ModelInstanceIndex model_instance,
+                     const Eigen::Ref<const VectorX<T>>& v_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
     CheckValidState(state);
@@ -2698,8 +2702,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   entries will be ordered by BodyIndex.
   /// @throws std::exception if A_WB_array is not of size `num_bodies()`.
   void CalcSpatialAccelerationsFromVdot(
-      const systems::Context<T>& context,
-      const VectorX<T>& known_vdot,
+      const systems::Context<T>& context, const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
   /// Given the state of this model in `context` and a known vector

@@ -506,7 +506,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcSpatialAccelerationsFromVdot",
             [](const Class* self, const Context<T>& context,
-                const VectorX<T>& known_vdot) {
+                const Eigen::Ref<const VectorX<T>>& known_vdot) {
               std::vector<SpatialAcceleration<T>> A_WB_array(
                   self->num_bodies());
               self->CalcSpatialAccelerationsFromVdot(
@@ -943,14 +943,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
-                const VectorX<T>& q) { self->SetPositions(context, q); },
+                const Eigen::Ref<const VectorX<T>>& q) {
+              self->SetPositions(context, q);
+            },
             py_rvp::reference, py::arg("context"), py::arg("q"),
             cls_doc.SetPositions.doc_2args)
         .def(
             "SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
-                const VectorX<T>& q) {
+                const Eigen::Ref<const VectorX<T>>& q) {
               self->SetPositions(context, model_instance, q);
             },
             py_rvp::reference, py::arg("context"), py::arg("model_instance"),
@@ -972,13 +974,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "SetVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
-                const VectorX<T>& v) { self->SetVelocities(context, v); },
+                const Eigen::Ref<const VectorX<T>>& v) {
+              self->SetVelocities(context, v);
+            },
             py_rvp::reference, py::arg("context"), py::arg("v"),
             cls_doc.SetVelocities.doc_2args)
         .def(
             "SetVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
-                ModelInstanceIndex model_instance, const VectorX<T>& v) {
+                ModelInstanceIndex model_instance,
+                const Eigen::Ref<const VectorX<T>>& v) {
               self->SetVelocities(context, model_instance, v);
             },
             py_rvp::reference, py::arg("context"), py::arg("model_instance"),
@@ -1002,7 +1007,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "SetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
-                const VectorX<T>& q_v) {
+                const Eigen::Ref<const VectorX<T>>& q_v) {
               self->SetPositionsAndVelocities(context, q_v);
             },
             py_rvp::reference, py::arg("context"), py::arg("q_v"),
@@ -1011,7 +1016,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             "SetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
-                const VectorX<T>& q_v) {
+                const Eigen::Ref<const VectorX<T>>& q_v) {
               self->SetPositionsAndVelocities(context, model_instance, q_v);
             },
             py_rvp::reference, py::arg("context"), py::arg("model_instance"),
