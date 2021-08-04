@@ -129,10 +129,9 @@ Edge* GraphOfConvexSets::AddEdge(const VertexId& u_id, const VertexId& v_id,
   if (name.empty()) {
     name = fmt::format("e{}", edges_.size());
   }
-  auto [iter, success] = edges_.emplace(std::unique_ptr<Edge>(
+  edges_.emplace_back(std::unique_ptr<Edge>(
       new Edge(u_iter->second.get(), v_iter->second.get(), name)));
-  DRAKE_DEMAND(success);
-  return iter->get();
+  return edges_.back().get();
 }
 
 Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,

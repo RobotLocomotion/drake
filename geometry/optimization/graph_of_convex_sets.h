@@ -272,9 +272,9 @@ class GraphOfConvexSets {
       bool convex_relaxation = false) const;
 
  private:
-  std::unordered_map<VertexId, std::unique_ptr<Vertex>> vertices_{};
-  std::unordered_set<std::unique_ptr<Edge>> edges_{};
-  std::unordered_map<const Edge*, bool> locked_edges_{};
+  std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
+  std::vector<std::unique_ptr<Edge>> edges_{};
+  std::map<const Edge*, bool> locked_edges_{};
 };
 
 }  // namespace optimization
