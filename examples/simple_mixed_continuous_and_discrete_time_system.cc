@@ -22,7 +22,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem : public LeafSystem<double> {
     DeclarePeriodicDiscreteUpdateEvent(
         1.0, 0.0, &SimpleMixedContinuousTimeDiscreteTimeSystem::Update);
     DeclareVectorOutputPort(
-        "y", BasicVector<double>(2),  // xd;xc
+        "y", 2,  // xd;xc
         &SimpleMixedContinuousTimeDiscreteTimeSystem::CopyStateOut);
     DeclareDiscreteState(1);    // xd
     DeclareContinuousState(1);  // xc

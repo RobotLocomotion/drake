@@ -1,7 +1,10 @@
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_manager.h"
 
+#include <set>
+
 #include "drake/multibody/fixed_fem/dev/permute_block_sparse_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -181,6 +184,26 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket()});
   contact_tangent_matrix_cache_index_ =
       contact_tangent_matrix_cache_entry.cache_index();
+
+  const auto& free_motion_rigid_velocities_cache_entry =
+      this->DeclareCacheEntry(
+          "Free motion velocities for rigid dofs",
+          systems::ValueProducer(
+              this, &DeformableRigidManager<T>::CalcFreeMotionRigidVelocities),
+          {systems::System<T>::all_sources_ticket()});
+  free_motion_rigid_velocities_cache_index_ =
+      free_motion_rigid_velocities_cache_entry.cache_index();
+
+  const auto& participating_free_motion_velocities_cache_entry =
+      this->DeclareCacheEntry(
+          "Participating free motion velocities for contact",
+          systems::ValueProducer(this,
+                                 &DeformableRigidManager<
+                                     T>::CalcParticipatingFreeMotionVelocities),
+          {systems::System<T>::xd_ticket(),
+           free_motion_rigid_velocities_cache_entry.ticket()});
+  participating_free_motion_velocities_cache_index_ =
+      participating_free_motion_velocities_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -830,6 +853,100 @@ BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactTangentMatrix(
     ++block_index;
   }
   return builder.Build();
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcFreeMotionRigidVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+  /* First calculate all non-contact forces. */
+  MultibodyForces<T> forces(this->plant());
+
+  const multibody::internal::PositionKinematicsCache<T>& pc =
+      this->plant().EvalPositionKinematics(context);
+  const multibody::internal::VelocityKinematicsCache<T>& vc =
+      this->plant().EvalVelocityKinematics(context);
+  /* Compute forces applied by force elements. Note that this resets forces
+   to empty so must come before other force calculations. */
+  this->internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
+  this->AddInForcesFromInputPorts(context, &forces);
+
+  /* Perform the tip-to-base pass to compute the force bias terms needed by ABA.
+   */
+  const auto& tree_topology = this->internal_tree().get_topology();
+  multibody::internal::ArticulatedBodyForceCache<T> aba_force_cache(
+      tree_topology);
+  this->internal_tree().CalcArticulatedBodyForceCache(context, forces,
+                                                      &aba_force_cache);
+
+  multibody::internal::AccelerationKinematicsCache<T> ac(tree_topology);
+  this->internal_tree().CalcArticulatedBodyAccelerations(context,
+                                                         aba_force_cache, &ac);
+
+  /* Notice we are using a symplectic Euler scheme here. All forces are
+   evaluated at the start of the time step to obtain the velocity, but the
+   position update uses the post-contact velocity at the next time step. */
+  const VectorX<T>& vdot0 = ac.get_vdot();
+  const double dt = this->plant().time_step();
+  const auto& x0 =
+      context.get_discrete_state(this->multibody_state_index()).get_value();
+  const auto& v0 = x0.bottomRows(this->plant().num_velocities());
+  *v_star = v0 + dt * vdot0;
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcParticipatingFreeMotionVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+  const std::vector<internal::DeformableContactData<T>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+  int num_deformable_vertices_in_contact = 0;
+  for (const auto& contact_data : deformable_contact_data) {
+    num_deformable_vertices_in_contact +=
+        contact_data.num_vertices_in_contact();
+  }
+  const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs =
+      this->EvalDiscreteContactPairs(context);
+  /* Return an empty velocity vector if there is no contact. */
+  if (rigid_contact_pairs.empty() && num_deformable_vertices_in_contact == 0) {
+    v_star->resize(0);
+    return;
+  }
+
+  // TODO(xuchenhan-tri): Change the rigid velocities accordingly when the
+  //  branch induced sparsity is introduced.
+  /* For now, all rigid velocities are participating in contact if *any* contact
+   exists. Put them in front of the deformable velocities to follow the same
+   order as in CalcContactTangentMatrix(). */
+  const int num_rigid_velocities = this->plant().num_velocities();
+  const int num_deformable_velocities = num_deformable_vertices_in_contact * 3;
+  v_star->resize(num_rigid_velocities + num_deformable_velocities);
+  v_star->head(num_rigid_velocities) = EvalFreeMotionRigidVelocities(context);
+  /* Now fill in the deformable participating velocities. */
+  int v_star_offset = num_rigid_velocities;
+  for (DeformableBodyIndex deformable_index(0);
+       deformable_index < deformable_contact_data.size(); ++deformable_index) {
+    const FemStateBase<T>& fem_state_star =
+        EvalFreeMotionFemStateBase(context, deformable_index);
+    const VectorX<T>& v_star_deformable = fem_state_star.qdot();
+    const std::vector<int>& permuted_to_original_indexes =
+        deformable_contact_data[deformable_index]
+            .permuted_to_original_indexes();
+    for (int vertex = 0;
+         vertex <
+         deformable_contact_data[deformable_index].num_vertices_in_contact();
+         ++vertex) {
+      /* For each participating deformable vertex, look up its free motion
+       velocity through the mapping from the permuted index to the original
+       index. */
+      v_star->template segment<3>(v_star_offset) =
+          v_star_deformable.template segment<3>(
+              3 * permuted_to_original_indexes[vertex]);
+      v_star_offset += 3;
+    }
+  }
+  /* Sanity check that all entries in `v_star` has been filled. */
+  DRAKE_DEMAND(v_star_offset == v_star->size());
 }
 
 }  // namespace fem

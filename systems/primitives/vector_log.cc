@@ -34,8 +34,8 @@ void VectorLog<T>::AddData(const T& time, const VectorX<T>& sample) {
   }
 
   // Record time and input to the num_samples position.
-  sample_times_(num_samples_) = time;
-  data_.col(num_samples_) = sample;
+  sample_times_(int64_t{num_samples_}) = time;
+  data_.col(int64_t{num_samples_}) = sample;
 
   // Update the count.
   ++num_samples_;

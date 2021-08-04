@@ -29,7 +29,7 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
   this->DeclareInputPort("uniform", kVectorValued, num_depth_readings,
                          RandomDistribution::kUniform);
   // Declare measurement output port.
-  this->DeclareVectorOutputPort("depth", BasicVector<T>(num_depth_readings),
+  this->DeclareVectorOutputPort("depth", num_depth_readings,
                                 &BeamModel<T>::CalcOutput);
 
   this->DeclareNumericParameter(BeamModelParams<T>());

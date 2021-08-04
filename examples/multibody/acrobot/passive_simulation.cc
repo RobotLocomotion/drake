@@ -79,7 +79,7 @@ int do_main() {
                   acrobot.get_actuation_input_port());
 
   // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(!!acrobot.get_source_id());
+  DRAKE_DEMAND(acrobot.get_source_id().has_value());
 
   builder.Connect(
       acrobot.get_geometry_poses_output_port(),

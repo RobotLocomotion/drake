@@ -573,7 +573,6 @@ std::string LoadSdf(
   data_source.DemandExactlyOne();
 
   std::string root_dir;
-
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
     ThrowAnyErrors(root->Load(full_path, parser_config));
@@ -1212,20 +1211,18 @@ sdf::ParserConfig CreateNewSdfParserConfig(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     bool test_sdf_forced_nesting) {
+
   // TODO(marcoag) ensure that we propagate the right ParserConfig instance.
   sdf::ParserConfig parser_config;
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
+  // TODO(#15018): Later, we should change unrecognized elements policy to
+  // become an error.
+  parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
       return ResolveUri(_input, package_map, ".");
     });
-  // TODO(#15018): This means that unrecognized elements won't be shown to a
-  // user directly (via console or exception). We should change unrecognized
-  // elements policy to print a warning, and later become an error.
-  DRAKE_DEMAND(
-      parser_config.UnrecognizedElementsPolicy()
-      == sdf::EnforcementPolicy::LOG);
 
   parser_config.RegisterCustomModelParser(
       [plant, &package_map, &parser_config, test_sdf_forced_nesting](
@@ -1247,7 +1244,7 @@ ModelInstanceIndex AddModelFromSdf(
     geometry::SceneGraph<double>* scene_graph,
     bool test_sdf_forced_nesting) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(!plant->is_finalized());
+    DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   sdf::ParserConfig parser_config =
       CreateNewSdfParserConfig(package_map, plant, test_sdf_forced_nesting);

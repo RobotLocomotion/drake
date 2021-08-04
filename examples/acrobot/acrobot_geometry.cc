@@ -51,7 +51,7 @@ AcrobotGeometry::AcrobotGeometry(const AcrobotParams<double>& params,
 
   // Note: using AcrobotState as the port type would have complicated the
   // trajectory playback workflow used in run_swing_up_traj_optimization.cc.
-  this->DeclareVectorInputPort("state", systems::BasicVector<double>(4));
+  this->DeclareVectorInputPort("state", 4);
   this->DeclareAbstractOutputPort("geometry_pose",
                                   &AcrobotGeometry::OutputGeometryPose);
 

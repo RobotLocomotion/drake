@@ -60,8 +60,8 @@ class CustomAdder(LeafSystem):
         LeafSystem.__init__(self)
         for i in range(num_inputs):
             self.DeclareVectorInputPort(
-                "input{}".format(i), BasicVector(size))
-        self.DeclareVectorOutputPort("sum", BasicVector(size), self._calc_sum)
+                "input{}".format(i), size)
+        self.DeclareVectorOutputPort("sum", size, self._calc_sum)
 
     def _calc_sum(self, context, sum_data):
         # @note This will NOT work if the scalar type is AutoDiff or symbolic,
@@ -210,6 +210,7 @@ class TestCustom(unittest.TestCase):
         dut.DeclareAbstractState(AbstractValue.Make(1))
         dut.DeclareDiscreteState(1)
         dut.DeclareVectorInputPort("u0", BasicVector(1))
+        self.assertEqual(dut.DeclareVectorInputPort("u1", 2).size(), 2)
         dut.DeclareNumericParameter(BasicVector(1))
         for func, arg in [
                 (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
@@ -284,6 +285,11 @@ class TestCustom(unittest.TestCase):
                 self.DeclareVectorOutputPort(
                     "noop", BasicVector(1), noop,
                     prerequisites_of_calc=set([self.nothing_ticket()]))
+                self.DeclareVectorOutputPort("noop2",
+                                             1,
+                                             noop,
+                                             prerequisites_of_calc=set(
+                                                 [self.nothing_ticket()]))
                 self.witness = self.MakeWitnessFunction(
                     "witness", WitnessFunctionDirection.kCrossesZero,
                     self._witness)

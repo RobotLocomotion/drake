@@ -19,9 +19,8 @@ class SimpleDiscreteTimeSystem : public LeafSystem<double> {
   SimpleDiscreteTimeSystem() {
     DeclarePeriodicDiscreteUpdateEvent(1.0, 0.0,
                                        &SimpleDiscreteTimeSystem::Update);
-    DeclareVectorOutputPort("y", BasicVector<double>(1),
-                            &SimpleDiscreteTimeSystem::CopyStateOut);
-    DeclareDiscreteState(1);  // One state variable.
+    auto state_index = DeclareDiscreteState(1);  // One state variable.
+    DeclareStateOutputPort("y", state_index);
   }
 
  private:
@@ -30,13 +29,6 @@ class SimpleDiscreteTimeSystem : public LeafSystem<double> {
               DiscreteValues<double>* next_state) const {
     const double x_n = context.get_discrete_state()[0];
     (*next_state)[0] = std::pow(x_n, 3.0);
-  }
-
-  // y = x
-  void CopyStateOut(const Context<double>& context,
-                    BasicVector<double>* output) const {
-    const double x = context.get_discrete_state()[0];
-    (*output)[0] = x;
   }
 };
 

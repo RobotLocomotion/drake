@@ -25,8 +25,8 @@ class DeformationGradientData;
  It stores the deformation gradients calculated at the prescribed "locations"
  (the number of which could depend on varying criteria, e.g., quadrature points,
  etc.). A derived class will further store derived quantities which solely
- depend on the stored deformation gradients that facilitates calculations of
- energy density, stress, and stress derivatives (e.g., strain).
+ depend on the stored deformation gradients (e.g., strain) that facilitate
+ calculations of energy density, stress, and stress derivatives.
 
  As part of a derivation, the child `FooData` class must implement the method:
 
@@ -50,11 +50,12 @@ class DeformationGradientData<
   static constexpr int num_locations = num_locations_at_compile_time;
 
   /* Updates the data with the given deformation gradients. The deformation
-   gradient dependent quantities are also updated with the given `F`.
-   @param F The up-to-date deformation gradients evaluated at the prescribed
-   locations. */
-  void UpdateData(std::array<Matrix3<T>, num_locations> F) {
-    deformation_gradient_ = std::move(F);
+   gradient dependent quantities are also updated with the given
+   `deformation_gradient`.
+   @param deformation_gradient The up-to-date deformation gradients evaluated at
+   the prescribed locations. */
+  void UpdateData(std::array<Matrix3<T>, num_locations> deformation_gradient) {
+    deformation_gradient_ = std::move(deformation_gradient);
     static_cast<Derived*>(this)->UpdateFromDeformationGradient();
   }
 
@@ -63,6 +64,14 @@ class DeformationGradientData<
   }
 
  protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientData);
+
+  /* Constructs a DeformationGradientData with identity deformation gradients.
+   */
+  DeformationGradientData() {
+    deformation_gradient_.fill(Matrix3<T>::Identity());
+  }
+
   /* Derived classes *must* shadow this method to compute quantities derived
    from deformation gradients. `deformation_gradient()` will be up to date
    before any call to this method. */
@@ -71,14 +80,6 @@ class DeformationGradientData<
         fmt::format("The derived class {} must provide a shadow definition of "
                     "UpdateFromDeformationGradient() to be correct.",
                     NiceTypeName::Get(*static_cast<Derived*>(this))));
-  }
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientData);
-
-  /* Constructs a DeformationGradientData with identity deformation gradients.
-   */
-  DeformationGradientData() {
-    deformation_gradient_.fill(Matrix3<T>::Identity());
   }
 
  private:

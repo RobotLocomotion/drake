@@ -40,9 +40,9 @@ drake_cc_library(
         "constitutive_model.h",
     ],
     deps = [
-        ":deformation_gradient_data",
         ":fem_indexes",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 
@@ -74,10 +74,10 @@ drake_cc_library(
         "corotated_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_data",
         ":matrix_utilities",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 
@@ -118,20 +118,6 @@ drake_cc_library(
     deps = [
         ":deformable_rigid_contact_pair",
         ":reference_deformable_geometry",
-    ],
-)
-
-drake_cc_library(
-    name = "deformation_gradient_data",
-    srcs = [
-        "deformation_gradient_data.cc",
-    ],
-    hdrs = [
-        "deformation_gradient_data.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//common:nice_type_name",
     ],
 )
 
@@ -425,8 +411,8 @@ drake_cc_library(
         "linear_constitutive_model_data.h",
     ],
     deps = [
-        ":deformation_gradient_data",
         "//common:essential",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 
@@ -634,15 +620,6 @@ drake_cc_googletest(
         "//geometry/proximity:make_box_mesh",
         "//multibody/contact_solvers:pgs_solver",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "deformation_gradient_data_test",
-    deps = [
-        ":deformation_gradient_data",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 

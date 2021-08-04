@@ -52,7 +52,7 @@ QuadrotorGeometry::QuadrotorGeometry(
   source_id_ = *mbp.get_source_id();
   frame_id_ = mbp.GetBodyFrameIdOrThrow(mbp.GetBodyIndices(model_id)[0]);
 
-  this->DeclareVectorInputPort("state", systems::BasicVector<double>(12));
+  this->DeclareVectorInputPort("state", 12);
   this->DeclareAbstractOutputPort(
       "geometry_pose", &QuadrotorGeometry::OutputGeometryPose);
 }
