@@ -25,8 +25,8 @@ from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (BasicVector, DiagramBuilder,
-                                       LeafSystem, PublishEvent)
+from pydrake.systems.framework import (DiagramBuilder, LeafSystem,
+                                       PublishEvent)
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer, MeshcatVisualizer)
@@ -49,7 +49,7 @@ class EndEffectorTeleop(LeafSystem):
         """
 
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+        self.DeclareVectorOutputPort("rpy_xyz", 6,
                                      self.DoCalcOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger

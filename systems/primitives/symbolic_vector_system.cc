@@ -140,8 +140,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
     for (int i = 0; i < output_.size(); i++) {
       DRAKE_ASSERT(output_[i].GetVariables().IsSubsetOf(all_vars));
     }
-    this->DeclareVectorOutputPort(kUseDefaultName,
-                                  BasicVector<T>(output_.size()),
+    this->DeclareVectorOutputPort(kUseDefaultName, output_.size(),
                                   &SymbolicVectorSystem<T>::CalcOutput);
   }
 

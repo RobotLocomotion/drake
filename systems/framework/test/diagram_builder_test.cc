@@ -51,10 +51,8 @@ class ConstAndEcho final : public LeafSystem<T> {
  public:
   ConstAndEcho() : LeafSystem<T>(SystemTypeTag<ConstAndEcho>{}) {
     this->DeclareInputPort("input", kVectorValued, 1);
-    this->DeclareVectorOutputPort(
-        "echo", BasicVector<T>(1), &ConstAndEcho::CalcEcho);
-    this->DeclareVectorOutputPort(
-        "constant", BasicVector<T>(1), &ConstAndEcho::CalcConstant);
+    this->DeclareVectorOutputPort("echo", 1, &ConstAndEcho::CalcEcho);
+    this->DeclareVectorOutputPort("constant", 1, &ConstAndEcho::CalcConstant);
   }
 
   // Scalar-converting copy constructor.

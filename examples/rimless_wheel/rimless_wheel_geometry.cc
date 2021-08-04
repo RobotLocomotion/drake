@@ -56,8 +56,7 @@ RimlessWheelGeometry::RimlessWheelGeometry(
   source_id_ = scene_graph->RegisterSource();
 
   // Note: the floating-base state output from RimlessWheel uses RPY.
-  this->DeclareVectorInputPort("floating_base_state",
-                               systems::BasicVector<double>(12));
+  this->DeclareVectorInputPort("floating_base_state", 12);
   this->DeclareAbstractOutputPort("geometry_pose",
                                   &RimlessWheelGeometry::OutputGeometryPose);
 

@@ -356,9 +356,9 @@ class Controller final : public LeafSystem<T> {
         u0_(std::move(u0)),
         K_(std::move(K)),
         k0_(std::move(k0)) {
-    this->DeclareVectorInputPort("plant_state", BasicVector<T>(K_->cols()));
+    this->DeclareVectorInputPort("plant_state", K_->cols());
     this->DeclareVectorOutputPort(
-        "command", BasicVector<T>(K_->rows()), &Controller::CalcOutput,
+        "command", K_->rows(), &Controller::CalcOutput,
         {this->time_ticket(), this->input_port_ticket(InputPortIndex(0))});
   }
 

@@ -82,10 +82,9 @@ class DesiredVelocityMotor final : public LeafSystem<T> {
         kProportional_(proportional) {
     this->DeclareInputPort("Plant state", systems::kVectorValued,
                            plant.num_multibody_states());
-    output_index_ =
-        this->DeclareVectorOutputPort("Torque", BasicVector<T>(1),
-                                      &DesiredVelocityMotor<T>::CalcTorque)
-            .get_index();
+    output_index_ = this->DeclareVectorOutputPort(
+                            "Torque", 1, &DesiredVelocityMotor<T>::CalcTorque)
+                        .get_index();
   }
 
   /// Returns the output port on which the sum is presented.

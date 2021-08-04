@@ -1051,8 +1051,7 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
                                        &ExampleDiscreteSystem::Update);
 
     // Present y_n (=S_n) at the output port.
-    DeclareVectorOutputPort("Sn", systems::BasicVector<double>(1),
-                            &ExampleDiscreteSystem::Output);
+    DeclareVectorOutputPort("Sn", 1, &ExampleDiscreteSystem::Output);
   }
 
   static constexpr double kPeriod = 1 / 50.;  // Update at 50Hz (h=1/50).
@@ -1119,7 +1118,7 @@ class SinusoidalDelayHybridSystem : public LeafSystem<double> {
     this->DeclarePeriodicDiscreteUpdateEvent(
         kUpdatePeriod, 0.0, &SinusoidalDelayHybridSystem::Update);
     this->DeclareDiscreteState(1 /* single state variable */);
-    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
+    this->DeclareVectorOutputPort("y", 1,
                                   &SinusoidalDelayHybridSystem::CalcOutput);
   }
 
@@ -1199,9 +1198,7 @@ class ShiftedTimeOutputter : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShiftedTimeOutputter)
 
   ShiftedTimeOutputter() {
-    this->DeclareVectorOutputPort("time",
-                                  BasicVector<double>(1),
-                                  &ShiftedTimeOutputter::OutputTime);
+    this->DeclareVectorOutputPort("time", 1, &ShiftedTimeOutputter::OutputTime);
   }
 
  private:
@@ -1222,7 +1219,7 @@ class SimpleHybridSystem : public LeafSystem<double> {
     this->DeclarePeriodicDiscreteUpdateEvent(kPeriod, offset,
         &SimpleHybridSystem::Update);
     this->DeclareDiscreteState(1 /* single state variable */);
-    this->DeclareVectorInputPort("u", systems::BasicVector<double>(1));
+    this->DeclareVectorInputPort("u", 1);
   }
 
  private:
@@ -1280,9 +1277,7 @@ class DeltaFunction : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeltaFunction)
 
   explicit DeltaFunction(double spike_time) : spike_time_(spike_time) {
-    this->DeclareVectorOutputPort("spike",
-                                  BasicVector<double>(1),
-                                  &DeltaFunction::Output);
+    this->DeclareVectorOutputPort("spike", 1, &DeltaFunction::Output);
   }
 
   // Change the spike time. Be sure to re-initialize after calling this.
@@ -1312,7 +1307,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
   DiscreteInputAccumulator() {
     DeclareDiscreteState(1);  // Just one state variable, x[0].
 
-    DeclareVectorInputPort("u", BasicVector<double>(1));
+    DeclareVectorInputPort("u", 1);
 
     // Set initial condition x_0 = 0, and clear the result.
     DeclareInitializationEvent(

@@ -22,7 +22,7 @@ CompassGait<T>::CompassGait()
   this->DeclareAbstractState(Value<bool>(left_stance));
 
   // Hip torque input.
-  this->DeclareVectorInputPort("hip_torque", systems::BasicVector<T>(1));
+  this->DeclareVectorInputPort("hip_torque", 1);
 
   // The minimal state of the system.
   this->DeclareVectorOutputPort(
@@ -31,8 +31,7 @@ CompassGait<T>::CompassGait()
 
   // The floating-base (RPY) state of the system (useful for visualization).
   this->DeclareVectorOutputPort(
-      "floating_base_state", systems::BasicVector<T>(14),
-      &CompassGait::FloatingBaseStateOut,
+      "floating_base_state", 14, &CompassGait::FloatingBaseStateOut,
       {this->all_state_ticket(), this->all_parameters_ticket()});
 
   this->DeclareNumericParameter(CompassGaitParams<T>());

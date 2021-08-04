@@ -646,6 +646,14 @@ InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
 }
 
 template <typename T>
+InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
+    std::variant<std::string, UseDefaultName> name, int size,
+    std::optional<RandomDistribution> random_type) {
+  return DeclareVectorInputPort(std::move(name), BasicVector<T>(size),
+                                random_type);
+}
+
+template <typename T>
 InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
     std::variant<std::string, UseDefaultName> name,
     const AbstractValue& model_value) {
