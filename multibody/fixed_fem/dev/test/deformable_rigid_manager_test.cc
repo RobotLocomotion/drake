@@ -289,7 +289,7 @@ VectorXd CalcFinalState(
   DRAKE_DEMAND(plant.num_positions() == 7);
 
   /* Wire up the plant and the scene graph. */
-  DRAKE_DEMAND(!!plant.get_source_id());
+  DRAKE_DEMAND(plant.get_source_id().has_value());
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
   builder.Connect(
