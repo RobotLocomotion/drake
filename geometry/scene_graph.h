@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -804,6 +805,23 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Returns an inspector on the system's _model_ scene graph data.  */
   const SceneGraphInspector<T>& model_inspector() const;
+
+  /** Returns a function that can be used to look up geometry names from
+   GeometryIds. This provides a scalar-independent method for performing this
+   query. For an example of usage, see multibody::ContactResultsToLcmSystem.
+
+   The look up function has the same semantics as
+   @ref SceneGraphInspector::GetName(GeometryId) const
+   "SceneGraphInspector::GetName()".
+
+   The returned look up function depends on the %SceneGraph instance that
+   created it; the %SceneGraph instance must outlive the functor. Acquiring the
+   functor is cheap. When in doubt, do not save the functor; instead ask
+   %SceneGraph for a functor for each unique scope of usage.
+
+   @note This is a stop gap measure until SceneGraphInspector can be modified
+   to remove its dependency on scalar type. */
+  std::function<std::string(GeometryId)> geometry_name_lookup() const;
 
   /** @name         Collision filtering
    @anchor scene_graph_collision_filter_manager

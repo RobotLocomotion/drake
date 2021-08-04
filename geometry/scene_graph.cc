@@ -325,6 +325,14 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 }
 
 template <typename T>
+std::function<std::string(GeometryId)> SceneGraph<T>::geometry_name_lookup()
+    const {
+  return [&inspector = model_inspector_](GeometryId id) -> std::string {
+    return inspector.GetName(id);
+  };
+}
+
+template <typename T>
 CollisionFilterManager SceneGraph<T>::collision_filter_manager() {
   return model_.collision_filter_manager();;
 }
