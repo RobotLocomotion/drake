@@ -33,6 +33,8 @@ using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
+using multibody::internal::FullBodyName;
+using std::function;
 using std::make_unique;
 using std::move;
 using std::nullopt;
@@ -53,7 +55,7 @@ class ContactResultsToLcmTester {
   ContactResultsToLcmTester() = delete;
 
   template <typename T>
-  static unordered_map<GeometryId, string>& get_geometry_id_to_body_map(
+  static unordered_map<GeometryId, FullBodyName>& get_geometry_id_to_body_map(
       ContactResultsToLcmSystem<T>* system) {
     return system->geometry_id_to_body_name_map_;
   }
@@ -61,7 +63,7 @@ class ContactResultsToLcmTester {
   template <typename T>
   static void AddToGeometryBodyMap(
       ContactResultsToLcmSystem<T>* system,
-      std::initializer_list<unordered_map<GeometryId, string>::value_type>
+      std::initializer_list<unordered_map<GeometryId, FullBodyName>::value_type>
           items) {
     system->geometry_id_to_body_name_map_.insert(items);
   }
@@ -83,6 +85,33 @@ class ContactResultsToLcmTester {
     return system_T.Equals(system_U);
   }
 };
+
+/* Friend class to the plant. We're going to use this to artificially associate
+ GeometryIds (for mythical collision geometries) with bodies. This removes the
+ need for these tests to directly depend on SceneGraph. */
+class MultibodyPlantTester {
+ public:
+  /* Adds the given geometry `id` to the given `body` as one of its collision
+   geometries. */
+  template <typename T>
+  static void AddCollisionGeometryToBody(GeometryId id, const Body<T>& body,
+                                         MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(body.index() < plant->num_bodies());
+    plant->collision_geometries_[body.index()].push_back(id);
+  }
+};
+
+namespace internal {
+
+/* For the purpose of this test, enable writing FullBodyName to string so that
+ failure messages include human readable output (rather than bytestrings). */
+std::ostream& operator<<(std::ostream& out, const FullBodyName& name) {
+  out << "Model: '" << name.model << "', Body = '" << name.body << "', Geo: '"
+      << name.geometry << "'";
+  return out;
+}
+
+}  // namespace internal
 
 namespace {
 
@@ -199,40 +228,44 @@ const std::array<GeometryId, N>& GetGeometryIds() {
 template <typename T>
 class ContactResultsToLcmTest : public ::testing::Test {
  protected:
-  void SetUp() {
-    if constexpr (std::is_same_v<T, Expression>) {
-      /* SceneGraph<symbolic::Expression> is *not* supported. */
-      plant_ = builder_.template AddSystem<MultibodyPlant<T>>(0.0);
-    } else {
-      SceneGraph<T>* scene_graph;
-      std::tie(plant_, scene_graph) =
-          AddMultibodyPlantSceneGraph(&builder_, 0.0);
-    }
-    test_model_index_ = plant_->AddModelInstance("TestInstance");
-  }
+  /* Adds a body with the given `name` to the given `plant` as part of the given
+   model instance. In order to test the tables that ContactResultsToLcmSystem
+   builds during construction, this method builds the expected tables based
+   on the body added to the plant. The entries are added to the given
+   `id_to_body_map` and `body_names` output parameters.
 
-  void AddBody(const std::string& name, MultibodyPlant<T>* plant,
-               unordered_map<GeometryId, string>* id_to_body_map,
-               vector<string>* body_names,
-               optional<ModelInstanceIndex> opt_model_index = nullopt) {
-    const ModelInstanceIndex model_index =
-        opt_model_index.has_value() ? *opt_model_index : test_model_index_;
+   @param body_name         The name of the body to add.
+   @param model_index       The model instance to which this body will be
+                            added.
+   @param namer             A functor that turns GeometryId into strings.
+   @param plant             The plant to add the body to.
+   @param id_to_body_map    The ContactResultsToLcmSystem table that maps
+                            GeometryId to FullBodyName.
+   @param body_names        The ContactResultsToLcmSystem table that maps body
+                            index to body name.
+   @pre `model_index` is a valid model instance index. */
+  void AddBody(const std::string& body_name, ModelInstanceIndex model_index,
+               const function<string(GeometryId)>& namer,
+               MultibodyPlant<T>* plant,
+               unordered_map<GeometryId, FullBodyName>* id_to_body_map,
+               vector<string>* body_names) {
     const auto& body =
-        plant->AddRigidBody(name, model_index, SpatialInertia<double>());
-    body_names->push_back(fmt::format("{}({})", name, model_index));
-    if constexpr (!std::is_same_v<T, Expression>) {
-      // We can only register geometry for T != Expression.
-      const GeometryId id = plant->RegisterCollisionGeometry(
-          body, RigidTransform<double>{}, Sphere(0.5), name + "_sphere",
-          CoulombFriction<double>());
-      id_to_body_map->insert({id, name});
-    }
-  }
+        plant->AddRigidBody(body_name, model_index, SpatialInertia<double>());
+    /* The expected format based on knowledge of the ContactResultToLcmSystem's
+     implementation. */
+    body_names->push_back(fmt::format("{}({})", body_name, model_index));
 
-  MultibodyPlant<T>& get_plant(bool finalize = false) {
-    DRAKE_DEMAND(plant_ != nullptr);
-    if (finalize) plant_->Finalize();
-    return *plant_;
+    /* We will *simulate* registering a collision geometry with MBP. Rather than
+     instantiating SceneGraph<T> (which we can't even do for symbolic), we'll
+     use friend access to shove a GeometryId into MBP's table of known,
+     per-body collision geometries. That is sufficient for
+     ContactResultsToLcmSystem to add entries to its tables. */
+    const GeometryId fake_id = GeometryId::get_new_id();
+    MultibodyPlantTester::AddCollisionGeometryToBody(fake_id, body, plant);
+    /* And, now, populate the table. */
+    const string& model_name = plant->GetModelInstanceName(model_index);
+    const string geometry_name = namer(fake_id);
+    id_to_body_map->insert({fake_id, {model_name, body_name, geometry_name}});
   }
 
   /* Adds fake point-pair contact results to the given set of contact `results`.
@@ -290,11 +323,11 @@ class ContactResultsToLcmTest : public ::testing::Test {
 
     if (lcm_system != nullptr) {
       ContactResultsToLcmTester::AddToGeometryBodyMap(
-          lcm_system, {{ids[0], "G0's body"},
-                       {ids[1], "G1's body"},
-                       {ids[2], "G2's body"},
-                       {ids[3], "G3's body"},
-                       {GeometryId::get_new_id(), "Unreferenced body"}});
+          lcm_system, {{ids[0], {"Model0", "Body0", "Geo0"}},
+                       {ids[1], {"Model1", "Body1", "Geo1"}},
+                       {ids[2], {"Model2", "Body2", "Geo2"}},
+                       {ids[3], {"Model3", "Body3", "Geo3"}},
+                       {GeometryId::get_new_id(), {"M", "B", "G"}}});
     }
 
     /* In creating this fake contact data, what matters *most* is that the body
@@ -318,10 +351,6 @@ class ContactResultsToLcmTest : public ::testing::Test {
         MakeQuadratureData<U>(Vector3<U>{-3, -1, -2}));
     results->AddContactInfo(&pair2.access());
   }
-
-  DiagramBuilder<T> builder_;
-  MultibodyPlant<T>* plant_{};
-  ModelInstanceIndex test_model_index_{};
 };
 
 using ScalarTypes = ::testing::Types<double, AutoDiffXd, Expression>;
@@ -333,38 +362,61 @@ TYPED_TEST_SUITE(ContactResultsToLcmTest, ScalarTypes);
 TYPED_TEST(ContactResultsToLcmTest, Constructor) {
   using T = TypeParam;
 
-  /* These mirror the internal data tables in ContactResultsToLcmSystem. We'll
-   populate them as we populate MBP and confirm that the resulting tables match
-   the tables we build by hand. */
-  unordered_map<GeometryId, string> expected_geo_body_map;
-  /* The world body will always be the first listed. */
-  vector<string> expected_body_names{{"WorldBody(0)"}};
+  for (bool use_custom_names : {true, false}) {
+    /* These mirror the internal data tables in ContactResultsToLcmSystem. We'll
+     populate them as we populate MBP and confirm that the resulting tables
+     match the tables we build by hand. */
+    unordered_map<GeometryId, FullBodyName> expected_geo_body_map;
+    /* The world body will always be the first listed. */
+    vector<string> expected_body_names{{"WorldBody(0)"}};
 
-  MultibodyPlant<T>& plant = this->get_plant();
-  /* Body 1 and 2 go to the same model instance (the "default" for this test).
-   */
-  this->AddBody("body1", &plant, &expected_geo_body_map, &expected_body_names);
-  this->AddBody("body2", &plant, &expected_geo_body_map, &expected_body_names);
-  const ModelInstanceIndex model3 = plant.AddModelInstance("JustForBody3");
-  this->AddBody("body3", &plant, &expected_geo_body_map, &expected_body_names,
-                model3);
-  plant.Finalize();
+    auto namer = [use_custom_names](GeometryId id) {
+      if (use_custom_names) {
+        /* Create an arbitrary name unique to this test. */
+        return fmt::format("CustomTestId({})", id);
+      }
+      /* Reproduce the expected default name for ContactResultsToLcmSystem. */
+      return fmt::format("Id({})", id);
+    };
 
-  /* Construction should populate tables about bodies. */
-  ContactResultsToLcmSystem<T> lcm(plant);
+    MultibodyPlant<T> plant(0.0);
+    /* Body 1 and 2 go to the same model instance. Body 3 goes to its own. */
+    const ModelInstanceIndex model12 = plant.AddModelInstance("JustForBody12");
+    this->AddBody("body1", model12, namer, &plant, &expected_geo_body_map,
+                  &expected_body_names);
+    this->AddBody("body2", model12, namer, &plant, &expected_geo_body_map,
+                  &expected_body_names);
+    const ModelInstanceIndex model3 = plant.AddModelInstance("JustForBody3");
+    this->AddBody("body3", model3, namer, &plant, &expected_geo_body_map,
+                  &expected_body_names);
+    plant.Finalize();
 
-  /* Examine the constructed tables. */
-  const auto& body_names = ContactResultsToLcmTester::get_body_names(&lcm);
-  const auto& id_to_body_map =
-      ContactResultsToLcmTester::get_geometry_id_to_body_map(&lcm);
-  EXPECT_EQ(body_names, expected_body_names);
-  EXPECT_EQ(id_to_body_map, expected_geo_body_map);
+    SCOPED_TRACE(use_custom_names ? "Using custom names"
+                                  : "Using default names");
+    /* Construction should populate tables about bodies. */
+    unique_ptr<ContactResultsToLcmSystem<T>> lcm{};
+    if (use_custom_names) {
+      lcm = make_unique<ContactResultsToLcmSystem<T>>(plant, namer);
+    } else {
+      /* Rather than simply passing in `nullptr`, we want to test the default-
+       value spelling of the constructor. */
+      lcm = make_unique<ContactResultsToLcmSystem<T>>(plant);
+    }
 
-  /* We'll further confirm that the system has its default name and ports
-   available. */
-  EXPECT_EQ(lcm.get_name(), "ContactResultsToLcmSystem");
-  EXPECT_NO_THROW(lcm.get_contact_result_input_port());
-  EXPECT_NO_THROW(lcm.get_lcm_message_output_port());
+    /* Examine the constructed tables. */
+    const auto& body_names =
+        ContactResultsToLcmTester::get_body_names(lcm.get());
+    const auto& id_to_body_map =
+        ContactResultsToLcmTester::get_geometry_id_to_body_map(lcm.get());
+    EXPECT_EQ(body_names, expected_body_names);
+    EXPECT_EQ(id_to_body_map, expected_geo_body_map);
+
+    /* We'll further confirm that the system has its default name and ports
+     available. */
+    EXPECT_EQ(lcm->get_name(), "ContactResultsToLcmSystem");
+    EXPECT_NO_THROW(lcm->get_contact_result_input_port());
+    EXPECT_NO_THROW(lcm->get_lcm_message_output_port());
+  }
 }
 
 /* Confirms that empty ContactResults produces an empty message. */
@@ -373,7 +425,8 @@ TYPED_TEST(ContactResultsToLcmTest, EmptyContactResults) {
 
   /* We're not going to populate the plant, because we're going to set the
    internal tables by hand and fix the input for the context. */
-  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  MultibodyPlant<T> plant(0.0);
+  plant.Finalize();
   ContactResultsToLcmSystem<T> lcm(plant);
   const unique_ptr<Context<T>> context = lcm.AllocateContext();
 
@@ -410,9 +463,8 @@ TYPED_TEST(ContactResultsToLcmTest, EmptyContactResults) {
     ContactResultsToLcmTester::AddToBodyNames(
         &lcm, {"A body", "Another body", "and more"});
     ContactResultsToLcmTester::AddToGeometryBodyMap(
-        &lcm,
-        {{GeometryId::get_new_id(), "A body"},
-         {GeometryId::get_new_id(), "The names don't even have to match"}});
+        &lcm, {{GeometryId::get_new_id(), {"A model", "A body", "A geometry"}},
+               {GeometryId::get_new_id(), {"names", "don't", "matter"}}});
     SCOPED_TRACE("With populated tables");
     confirm_empty();
   }
@@ -439,7 +491,8 @@ TYPED_TEST(ContactResultsToLcmTest, PointPairContactOnly) {
 
   /* We're not going to populate the plant, because we're going to set the
    internal tables by hand and fix the input for the context. */
-  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  MultibodyPlant<T> plant(0.0);
+  plant.Finalize();
   ContactResultsToLcmSystem<T> lcm(plant);
   const unique_ptr<Context<T>> context = lcm.AllocateContext();
 
@@ -515,7 +568,8 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
 
   /* We're not going to populate the plant, because we're going to set the
    internal tables by hand and fix the input for the context. */
-  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  MultibodyPlant<T> plant(0.0);
+  plant.Finalize();
   ContactResultsToLcmSystem<T> lcm(plant);
   const unique_ptr<Context<T>> context = lcm.AllocateContext();
 
@@ -544,8 +598,15 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     const auto& surface = pair_data.contact_surface();
     const auto& mesh = surface.mesh_W();
 
-    EXPECT_EQ(pair_message.body1_name, geo_to_body_map.at(surface.id_M()));
-    EXPECT_EQ(pair_message.body2_name, geo_to_body_map.at(surface.id_N()));
+    const auto& name1 = geo_to_body_map.at(surface.id_M());
+    EXPECT_EQ(pair_message.body1_name, name1.body);
+    EXPECT_EQ(pair_message.model1_name, name1.model);
+    EXPECT_EQ(pair_message.geometry1_name, name1.geometry);
+
+    const auto& name2 = geo_to_body_map.at(surface.id_N());
+    EXPECT_EQ(pair_message.body2_name, name2.body);
+    EXPECT_EQ(pair_message.model2_name, name2.model);
+    EXPECT_EQ(pair_message.geometry2_name, name2.geometry);
 
     /* Mesh aggregate results: centroid, force, moment. */
     // clang-format off
@@ -626,7 +687,8 @@ TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
 
   /* We're not going to populate the plant, because we're going to set the
    internal tables by hand and fix the input for the context. */
-  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  MultibodyPlant<T> plant(0.0);
+  plant.Finalize();
   ContactResultsToLcmSystem<T> lcm(plant);
   const unique_ptr<Context<T>> context = lcm.AllocateContext();
 
@@ -664,10 +726,13 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
 
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
-  ContactResultsToLcmSystem<double> lcm_double(plant);
+  auto custom_names = [](GeometryId id) {
+    return fmt::format("String that must be copied to match {}", id);
+  };
+  ContactResultsToLcmSystem<double> lcm_double(plant, custom_names);
 
   /* We don't care about double-valued results, we're just using it to
-    populate the tables in lcm_double. These will get copied over. */
+   populate the tables in lcm_double. These will get copied over. */
   ContactResults<double> contacts_double;
   this->AddFakePointPairContact(&lcm_double, &contacts_double);
   this->AddFakeHydroContact(&lcm_double, &contacts_double);
@@ -705,49 +770,111 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
 }
 
 GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
-  systems::DiagramBuilder<double> builder;
+  for (bool use_custom_names : {true, false}) {
+    auto namer = [](GeometryId id) { return fmt::format("TestId({})", id); };
 
-  // Make a trivial plant with at least one body.
-  auto plant = builder.AddSystem<MultibodyPlant>(0.0);
-  plant->AddRigidBody("link", SpatialInertia<double>());
-  plant->Finalize();
+    systems::DiagramBuilder<double> builder;
 
-  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
+    /* Make a trivial plant with at least one body (and one fake collision
+     geometry). */
+    auto plant = builder.AddSystem<MultibodyPlant>(0.0);
+    const auto& body = plant->AddRigidBody("link", SpatialInertia<double>());
+    const GeometryId fake_id = GeometryId::get_new_id();
+    MultibodyPlantTester::AddCollisionGeometryToBody(fake_id, body, plant);
+    plant->Finalize();
 
-  // Confirm that we get a non-null result.
-  EXPECT_NE(publisher, nullptr);
+    systems::lcm::LcmPublisherSystem* publisher{};
+    if (use_custom_names) {
+      publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant,
+                                                         nullptr, namer);
+    } else {
+      /* Test the default-value nature of the name look up parameter. */
+      publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
+    }
 
-  // Check that the publishing event was set as documented.
-  auto periodic_events = publisher->GetPeriodicEvents();
-  EXPECT_EQ(periodic_events.size(), 1);
-  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
+    /* Confirm that we get a non-null result. */
+    EXPECT_NE(publisher, nullptr);
+
+    /* Check that the publishing event was set as documented. */
+    auto periodic_events = publisher->GetPeriodicEvents();
+    EXPECT_EQ(periodic_events.size(), 1);
+    EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
+
+    /* Grab the contact results to lcm system and confirm the namer has
+     correctly handled. The name should either be TestId(\d+) or Id(\d+). */
+    for (auto* system : builder.GetMutableSystems()) {
+      auto* lcm = dynamic_cast<ContactResultsToLcmSystem<double>*>(system);
+      if (lcm != nullptr) {
+        const auto& id_to_body_map =
+            ContactResultsToLcmTester::get_geometry_id_to_body_map(lcm);
+        EXPECT_EQ(id_to_body_map.count(fake_id), 1);
+        if (use_custom_names) {
+          EXPECT_EQ(id_to_body_map.at(fake_id).geometry, namer(fake_id));
+        } else {
+          EXPECT_EQ(id_to_body_map.at(fake_id).geometry,
+                    fmt::format("Id({})", fake_id));
+        }
+        break;
+      }
+    }
+  }
 }
 
 GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
-  systems::DiagramBuilder<double> builder;
+  for (bool use_custom_names : {true, false}) {
+    auto namer = [](GeometryId id) { return fmt::format("TestId({})", id); };
+    systems::DiagramBuilder<double> builder;
 
-  // Make a trivial plant with at least one body.
-  MultibodyPlant<double>* plant;
-  SceneGraph<double>* scene_graph;
-  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  plant->AddRigidBody("link", SpatialInertia<double>());
-  plant->Finalize();
+    /* Make a trivial plant with at least one body (and one fake collision
+     geometry). */
+    auto plant = builder.AddSystem<MultibodyPlant>(0.0);
+    const auto& body = plant->AddRigidBody("link", SpatialInertia<double>());
+    const GeometryId fake_id = GeometryId::get_new_id();
+    MultibodyPlantTester::AddCollisionGeometryToBody(fake_id, body, plant);
+    plant->Finalize();
 
-  builder.ExportOutput(plant->get_contact_results_output_port(),
-                       "contact_results");
+    builder.ExportOutput(plant->get_contact_results_output_port(),
+                         "contact_results");
 
-  auto diagram = builder.AddSystem(builder.Build());
+    auto diagram = builder.AddSystem(builder.Build());
 
-  auto publisher = ConnectContactResultsToDrakeVisualizer(
-      &builder, *plant, diagram->GetOutputPort("contact_results"));
+    systems::lcm::LcmPublisherSystem* publisher{};
+    if (use_custom_names) {
+      publisher = ConnectContactResultsToDrakeVisualizer(
+          &builder, *plant, diagram->GetOutputPort("contact_results"), nullptr,
+          namer);
+    } else {
+      /* Test the default-value nature of the name look up parameter. */
+      publisher = ConnectContactResultsToDrakeVisualizer(
+        &builder, *plant, diagram->GetOutputPort("contact_results"));
+    }
 
-  // Confirm that we get a non-null result.
-  EXPECT_NE(publisher, nullptr);
+    /* Confirm that we get a non-null result. */
+    EXPECT_NE(publisher, nullptr);
 
-  // Check that the publishing event was set as documented.
-  auto periodic_events = publisher->GetPeriodicEvents();
-  EXPECT_EQ(periodic_events.size(), 1);
-  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
+    /* Check that the publishing event was set as documented. */
+    auto periodic_events = publisher->GetPeriodicEvents();
+    EXPECT_EQ(periodic_events.size(), 1);
+    EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
+
+    /* Grab the contact results to lcm system and confirm the namer has
+     correctly handled. The name should either be TestId(\d+) or Id(\d+). */
+    for (auto* system : builder.GetMutableSystems()) {
+      auto* lcm = dynamic_cast<ContactResultsToLcmSystem<double>*>(system);
+      if (lcm != nullptr) {
+        const auto& id_to_body_map =
+            ContactResultsToLcmTester::get_geometry_id_to_body_map(lcm);
+        EXPECT_EQ(id_to_body_map.count(fake_id), 1);
+        if (use_custom_names) {
+          EXPECT_EQ(id_to_body_map.at(fake_id).geometry, namer(fake_id));
+        } else {
+          EXPECT_EQ(id_to_body_map.at(fake_id).geometry,
+                    fmt::format("Id({})", fake_id));
+        }
+        break;
+      }
+    }
+  }
 }
 
 }  // namespace
