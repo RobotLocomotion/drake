@@ -5,6 +5,11 @@
 namespace drake {
 namespace systems {
 
+// TODO(rpoyner-tri) All of the multi-trigger API and implementation here
+// (TriggerTypeSet usage, logic for trigger types and publish periods) is
+// duplicated from LcmPublisherSystem. It should all be factored to LeafSystem,
+// especially if a third use of this pattern turns up.
+
 template <typename T>
 VectorLogSink<T>::VectorLogSink(int input_size, double publish_period)
     : VectorLogSink<T>(

@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
@@ -418,6 +419,12 @@ enum class TriggerType {
    */
   kWitness,
 };
+
+/**
+ * This set-type alias provides a convenient API vocabulary for systems to
+ * specify multiple trigger types.
+ */
+using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
 
 /**
  * Abstract base class that represents an event. The base event contains two
