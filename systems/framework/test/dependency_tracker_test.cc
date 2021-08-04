@@ -79,6 +79,8 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
     ASSERT_TRUE(context.get_dependency_graph().has_tracker(ticket));
     auto& tracker = context.get_tracker(ticket);
     EXPECT_EQ(tracker.ticket(), ticket);
+    DRAKE_EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
+        &context, &CacheEntryValue::dummy()));
     EXPECT_THROW(tracker.ThrowIfBadDependencyTracker(&context2),
                  std::logic_error);
   }

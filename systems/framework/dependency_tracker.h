@@ -297,7 +297,7 @@ class DependencyTracker {
   pointer to it here and we'll check that this tracker agrees. If you know which
   cache entry is supposed to be associated with this tracker, supply a pointer
   to that and we'll check it (trackers that are not associated with a real cache
-  entry are still associated with an internal dummy cache value). In addition we
+  entry are still associated with the CacheEntryValue::dummy()). In addition we
   check for other internal inconsistencies.
   @throws std::exception for anything that goes wrong, with an appropriate
                          explanatory message. */
@@ -323,7 +323,7 @@ class DependencyTracker {
         description_(std::move(description)),
         owning_subcontext_(owning_subcontext),
         has_associated_cache_entry_(cache_value != nullptr),
-        cache_value_(cache_value ? cache_value : &dummy_cache_value_) {
+        cache_value_(cache_value ? cache_value : &CacheEntryValue::dummy()) {
     DRAKE_LOGGER_DEBUG(
         "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
         description_, has_associated_cache_entry_ ? "with" : "without",
@@ -396,12 +396,8 @@ class DependencyTracker {
   // Pointer to the system name service of the owning subcontext.
   const internal::ContextMessageInterface* owning_subcontext_{nullptr};
 
-  // Dummy cache value, kept so that cache_value_ can always point to a valid
-  // cache value.
-  CacheEntryValue dummy_cache_value_;
-
-  // If false, cache_value_ will be set to point to dummy_cache_value_ so we
-  // don't need to check during invalidation sweeps.
+  // If false, cache_value_ will be set to point to CacheEntryValue::dummy() so
+  // we don't need to check during invalidation sweeps.
   bool has_associated_cache_entry_{false};
   CacheEntryValue* cache_value_{nullptr};
 
