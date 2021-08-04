@@ -18,6 +18,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using ElementNode = std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>;
+
 // Helper struct that provides for either a file name xor file contents to be
 // passed between our various parsing functions.  Exactly one of the pointers
 // must be set to non-nullptr.
@@ -106,46 +108,43 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
     const std::function<const Frame<double>&(const char*)>& read_frame,
     MultibodyPlant<double>* plant);
 
-// Helper struct that provides the common logic to register
-// a collistion filter group.
-void RegisterCollisionFilterGroup(
-    ModelInstanceIndex model_instance,
-    const MultibodyPlant<double>& plant,
-    std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> group_node,
-    std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
-    std::set<SortedPair<std::string>>* collision_filter_pairs,
-    const std::function< std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement*>(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement*>, const char*)> &next_child_element,
-    const std::function< std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement* > (std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement* >, const char*)> &next_sibbling_element,
-    const std::function<bool(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement* >, const char*)> &has_attribute,
-    const std::function<std::string(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement* >, const char*)> &read_string_attribute,
-    const std::function<bool(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement* >, const char*)> &read_bool_attribute);
-
+// TODO(@SeanCurtis-TRI): The real solution here is to create a wrapper
+// class that provides a consistent interface to either representation.
+// Then instantiate on the caller side and express the code here in terms of
+// that type.
+//
 // Populates collision filter groups from a reading interface in a URDF/SDF
 // agnostic manner. Through this, the API to specify the collision_filter_group
 // tag in both SDF and URDF can be controlled/modified in a single function.
+// @param model_instance        Model Instance that contains the bodies involved
+//                              in the collision filter groups
+// @param model_node            Node used to parse for the
+//                              collision_gilter_group tag
+// @param plant                 MultibodyPlant used to register the collision
+//                              filter groups
+// @param next_child_element    Function that returns the next child element
+//                              with the specified tag in the ElementNode
+//                              provided.
+// @param next_sibling_element  Function that teturns the next sibling element
+//                              with the specified tag in the ElementNode
+//                              provided.
+// @param has_attribute         Function that checks if an attribute exists
+//                              in the ElementNode provided.
+// @param read_string_attribute Function that reads a string attribute with the
+//                              name provided in the ElementNoded provided.
+// @param read_bool_attribute   Function that reads a boolean attribute with
+//                              the name provided in the ElementNode provided.
 void ParseCollisionFilterGroupCommon(
-    ModelInstanceIndex model_instance,
-    std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> model_node,
+    ModelInstanceIndex model_instance, ElementNode model_node,
     MultibodyPlant<double>* plant,
-    const std::function< std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>
-        (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>, const char*)>
-        &next_child_element,
-    const std::function< std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>
-        (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*>, const char*)>
-        &next_sibbling_element,
-    const std::function<bool(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement* >, const char*)> &has_attribute,
-    const std::function<std::string(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement*>, const char*)> &read_string_attribute,
-    const std::function<bool(std::variant<sdf::ElementPtr,
-        tinyxml2::XMLElement*>, const char*)> &read_bool_attribute);
+    const std::function<ElementNode(ElementNode, const char*)>&
+        next_child_element,
+    const std::function<ElementNode(ElementNode, const char*)>&
+        next_sibling_element,
+    const std::function<bool(ElementNode, const char*)>& has_attribute,
+    const std::function<std::string(ElementNode, const char*)>&
+        read_string_attribute,
+    const std::function<bool(ElementNode, const char*)>& read_bool_attribute);
 
 }  // namespace internal
 }  // namespace multibody

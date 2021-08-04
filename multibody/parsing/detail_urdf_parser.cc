@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <variant>
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
@@ -161,50 +162,42 @@ void ParseBody(const multibody::PackageMap& package_map,
   }
 }
 
-void ParseCollisionFilterGroup(
-    ModelInstanceIndex model_instance,
-    XMLElement* node,
-    MultibodyPlant<double>* plant) {
-
-  auto next_child_element = []
-    (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-      const char *element_name) {
-    return std::get<tinyxml2::XMLElement*>(data_element)->
-                    FirstChildElement(element_name);
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
+                               XMLElement* node,
+                               MultibodyPlant<double>* plant) {
+  auto next_child_element = [](ElementNode data_element,
+                               const char* element_name) {
+    return std::get<tinyxml2::XMLElement*>(data_element)
+        ->FirstChildElement(element_name);
   };
-  auto next_sibbling_element = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *element_name) {
-    return std::get<tinyxml2::XMLElement*>(data_element)->
-                    NextSiblingElement(element_name);
+  auto next_sibling_element = [](ElementNode data_element,
+                                 const char* element_name) {
+    return std::get<tinyxml2::XMLElement*>(data_element)
+        ->NextSiblingElement(element_name);
   };
-  auto has_attribute = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *attribute_name) {
+  auto has_attribute = [](ElementNode data_element,
+                          const char* attribute_name) {
     std::string attribute_value;
     return ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
                                 attribute_name, &attribute_value);
   };
-  auto get_string_attribute = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *attribute_name) {
+  auto get_string_attribute = [](ElementNode data_element,
+                                 const char* attribute_name) {
     std::string attribute_value;
     ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
                          attribute_name, &attribute_value);
     return attribute_value;
   };
-  auto get_bool_attribute = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *attribute_name) {
+  auto get_bool_attribute = [](ElementNode data_element,
+                               const char* attribute_name) {
     std::string attribute_value;
     ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
                          attribute_name, &attribute_value);
-    return attribute_value  == std::string("true") ? true : false;
+    return attribute_value == std::string("true") ? true : false;
   };
-
-  ParseCollisionFilterGroupCommon(model_instance, node, plant,
-      next_child_element, next_sibbling_element, has_attribute,
-      get_string_attribute, get_bool_attribute);
+  ParseCollisionFilterGroupCommon(
+      model_instance, node, plant, next_child_element, next_sibling_element,
+      has_attribute, get_string_attribute, get_bool_attribute);
 }
 
 // Parses a joint URDF specification to obtain the names of the joint, parent

@@ -7,6 +7,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <sdf/sdf.hh>
@@ -862,45 +863,37 @@ bool AreWelded(
   return false;
 }
 
-void ParseCollisionFilterGroup(
-    ModelInstanceIndex model_instance,
-    sdf::Model model,
-    MultibodyPlant<double>* plant) {
-
-  auto next_child_element = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *element_name) {
-    return std::get<sdf::ElementPtr>(data_element)->
-                    GetElementImpl(std::string(element_name));
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
+                               sdf::Model model,
+                               MultibodyPlant<double>* plant) {
+  auto next_child_element = [](ElementNode data_element,
+                               const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetElementImpl(std::string(element_name));
   };
-  auto next_sibbling_element = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *element_name) {
-    return std::get<sdf::ElementPtr>(data_element)->
-                    GetNextElement(std::string(element_name));
+  auto next_sibling_element = [](ElementNode data_element,
+                                 const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetNextElement(std::string(element_name));
   };
-  auto has_attribute = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *attribute_name) {
-    return std::get<sdf::ElementPtr>(data_element)->
-                    HasAttribute(std::string(attribute_name));
+  auto has_attribute = [](ElementNode data_element,
+                          const char* attribute_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->HasAttribute(std::string(attribute_name));
   };
-  auto get_string_attribute = []
-    (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-      const char *attribute_name) {
-    return std::get<sdf::ElementPtr>(data_element)->
-                    Get<std::string>(attribute_name);
+  auto get_string_attribute = [](ElementNode data_element,
+                                 const char* attribute_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->Get<std::string>(attribute_name);
   };
-  auto get_bool_attribute = []
-      (std::variant<sdf::ElementPtr, tinyxml2::XMLElement*> data_element,
-        const char *attribute_name) {
-    return std::get<sdf::ElementPtr>(data_element)->
-                    Get<bool>(attribute_name);
+  auto get_bool_attribute = [](ElementNode data_element,
+                               const char* attribute_name) {
+    return std::get<sdf::ElementPtr>(data_element)->Get<bool>(attribute_name);
   };
-
   ParseCollisionFilterGroupCommon(model_instance, model.Element(), plant,
-    next_child_element, next_sibbling_element, has_attribute,
-    get_string_attribute, get_bool_attribute);
+                                  next_child_element, next_sibling_element,
+                                  has_attribute, get_string_attribute,
+                                  get_bool_attribute);
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
@@ -1037,9 +1030,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     }
   }
 
-  drake::log()->trace("sdf_parser: Add collision filter groups");
   // Parses the collision filter groups only if the scene graph is registered.
   if (plant->geometry_source_is_registered()) {
+    drake::log()->trace("sdf_parser: Add collision filter groups");
     ParseCollisionFilterGroup(model_instance, model, plant);
   }
 

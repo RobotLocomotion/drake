@@ -343,6 +343,9 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
       "and should be a <drake:joint>");
 }
 
+// TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
+// belongs in detail_common_test.cc. Urdf and Sdf parsing just need enough
+// testing to indicate that the method is being invoked correctly.
 GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/"

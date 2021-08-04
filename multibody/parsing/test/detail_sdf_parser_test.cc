@@ -2058,6 +2058,9 @@ GTEST_TEST(SdfParser, InterfaceAPI) {
   }
 }
 
+// TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
+// belongs in detail_common_test.cc. Urdf and Sdf parsing just need enough
+// testing to indicate that the method is being invoked correctly.
 GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
