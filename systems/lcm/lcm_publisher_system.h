@@ -24,7 +24,9 @@ class DrakeLcm;
 namespace systems {
 namespace lcm {
 
-using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
+using TriggerTypeSet
+DRAKE_DEPRECATED("2021-12-01", "Use drake::systems::TriggerTypeSet instead.")
+= systems::TriggerTypeSet;
 
 /**
  * Publishes an LCM message containing information from its input port.
@@ -114,7 +116,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm,
-      const TriggerTypeSet& publish_triggers,
+      const systems::TriggerTypeSet& publish_triggers,
       double publish_period = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
@@ -178,7 +180,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem(const std::string& channel,
       std::unique_ptr<SerializerInterface> serializer,
       drake::lcm::DrakeLcmInterface* lcm,
-      const TriggerTypeSet& publish_triggers,
+      const systems::TriggerTypeSet& publish_triggers,
       double publish_period = 0.0);
 
   ~LcmPublisherSystem() override;
