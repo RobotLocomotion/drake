@@ -14,6 +14,7 @@ namespace lcm {
 
 using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeLcm;
+using systems::TriggerTypeSet;
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
@@ -89,7 +90,7 @@ void LcmPublisherSystem::AddInitializationMessage(
   initialization_publisher_ = std::move(initialization_publisher);
 
   DeclareInitializationEvent(systems::PublishEvent<double>(
-      systems::TriggerType::kInitialization,
+      TriggerType::kInitialization,
       [this](const systems::Context<double>& context,
              const systems::PublishEvent<double>&) {
         this->initialization_publisher_(context, this->lcm_);

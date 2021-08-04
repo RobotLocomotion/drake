@@ -30,6 +30,7 @@
 #include "drake/systems/primitives/trajectory_affine_system.h"
 #include "drake/systems/primitives/trajectory_linear_system.h"
 #include "drake/systems/primitives/trajectory_source.h"
+#include "drake/systems/primitives/vector_log_sink.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -52,7 +53,7 @@ PYBIND11_MODULE(primitives, m) {
 
   py::module::import("pydrake.systems.framework");
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
-  auto bind_common_scalar_types = [m, &doc](auto dummy) {
+  auto bind_common_scalar_types = [&m, &doc](auto dummy) {
     using T = decltype(dummy);
 
     DefineTemplateClassWithDefault<Adder<T>, LeafSystem<T>>(
@@ -319,6 +320,94 @@ PYBIND11_MODULE(primitives, m) {
         .def("dynamics_for_variable",
             &SymbolicVectorSystem<T>::dynamics_for_variable, py::arg("var"),
             doc.SymbolicVectorSystem.dynamics_for_variable.doc);
+
+    DefineTemplateClassWithDefault<VectorLog<T>>(
+        m, "VectorLog", GetPyParam<T>(), doc.VectorLog.doc)
+        .def_property_readonly_static("kDefaultCapacity",
+            [](py::object) { return VectorLog<T>::kDefaultCapacity; })
+        .def(py::init<int>(), py::arg("input_size"), doc.VectorLog.ctor.doc)
+        .def("num_samples", &VectorLog<T>::num_samples,
+            doc.VectorLog.num_samples.doc)
+        .def(
+            "sample_times",
+            [](const VectorLog<T>* self) {
+              // Reference
+              return CopyIfNotPodType(self->sample_times());
+            },
+            return_value_policy_for_scalar_type<T>(),
+            doc.VectorLog.sample_times.doc)
+        .def(
+            "data",
+            [](const VectorLog<T>* self) {
+              // Reference.
+              return CopyIfNotPodType(self->data());
+            },
+            return_value_policy_for_scalar_type<T>(), doc.VectorLog.data.doc)
+        .def("Clear", &VectorLog<T>::Clear, doc.VectorLog.Clear.doc)
+        .def("Reserve", &VectorLog<T>::Reserve, doc.VectorLog.Reserve.doc)
+        .def("AddData", &VectorLog<T>::AddData, py::arg("time"),
+            py::arg("sample"), doc.VectorLog.AddData.doc)
+        .def("get_input_size", &VectorLog<T>::get_input_size,
+            doc.VectorLog.get_input_size.doc);
+
+    DefineTemplateClassWithDefault<VectorLogSink<T>, LeafSystem<T>>(
+        m, "VectorLogSink", GetPyParam<T>(), doc.VectorLogSink.doc)
+        .def(py::init<int, double>(), py::arg("input_size"),
+            py::arg("publish_period") = 0.0, doc.VectorLogSink.ctor.doc_2args)
+        .def(py::init<int, const TriggerTypeSet&, double>(),
+            py::arg("input_size"), py::arg("publish_triggers"),
+            py::arg("publish_period") = 0.0, doc.VectorLogSink.ctor.doc_3args)
+        .def(
+            "GetLog",
+            [](const VectorLogSink<T>* self, const Context<T>& context)
+                -> const VectorLog<T>& { return self->GetLog(context); },
+            py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), py_rvp::reference,
+            doc.VectorLogSink.GetLog.doc)
+        .def(
+            "GetMutableLog",
+            [](const VectorLogSink<T>* self, Context<T>* context)
+                -> VectorLog<T>& { return self->GetMutableLog(context); },
+            py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), py_rvp::reference,
+            doc.VectorLogSink.GetMutableLog.doc)
+        .def(
+            "FindLog",
+            [](const VectorLogSink<T>* self, const Context<T>& context)
+                -> const VectorLog<T>& { return self->FindLog(context); },
+            py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), py_rvp::reference,
+            doc.VectorLogSink.FindLog.doc)
+        .def(
+            "FindMutableLog",
+            [](const VectorLogSink<T>* self, Context<T>* context)
+                -> VectorLog<T>& { return self->FindMutableLog(context); },
+            py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), py_rvp::reference,
+            doc.VectorLogSink.FindMutableLog.doc);
+
+    m.def("LogVectorOutput",
+        py::overload_cast<const OutputPort<T>&, DiagramBuilder<T>*, double>(
+            &LogVectorOutput<T>),
+        py::arg("src"), py::arg("builder"), py::arg("publish_period") = 0.0,
+        // Keep alive, ownership: `return` keeps `builder` alive.
+        py::keep_alive<0, 2>(),
+        // See #11531 for why `py_rvp::reference` is needed.
+        py_rvp::reference, doc.LogVectorOutput.doc_3args);
+
+    m.def("LogVectorOutput",
+        py::overload_cast<const OutputPort<T>&, DiagramBuilder<T>*,
+            const TriggerTypeSet&, double>(&LogVectorOutput<T>),
+        py::arg("src"), py::arg("builder"), py::arg("publish_triggers"),
+        py::arg("publish_period") = 0.0,
+        // Keep alive, ownership: `return` keeps `builder` alive.
+        py::keep_alive<0, 2>(),
+        // See #11531 for why `py_rvp::reference` is needed.
+        py_rvp::reference, doc.LogVectorOutput.doc_4args);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
