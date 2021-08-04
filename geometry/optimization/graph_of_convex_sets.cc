@@ -140,6 +140,10 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
   return AddEdge(u.id(), v.id(), std::move(name));
 }
 
+void GraphOfConvexSets::LockEdge(const Edge& edge, bool active) {
+  locked_edges_[&edge] = active;
+}
+
 std::unordered_set<VertexId> GraphOfConvexSets::VertexIds() const {
   std::unordered_set<VertexId> ids(vertices_.size());
   for (const auto& v : vertices_) {
@@ -185,6 +189,11 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     } else {
       phi = e->phi_;
       prog.AddDecisionVariables(Vector1<Variable>(phi));
+    }
+    const auto locked_edge = locked_edges_.find(e.get());
+    if (locked_edge != locked_edges_.end()) {
+      double phi_value = locked_edge->second ? 1.0 : 0.0;
+      prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
     }
     prog.AddDecisionVariables(e->y_);
     prog.AddDecisionVariables(e->z_);

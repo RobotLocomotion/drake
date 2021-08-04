@@ -227,6 +227,8 @@ class GraphOfConvexSets {
   empty then a default name will be provided. */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
+  void LockEdge(const Edge& edge, bool active);
+
   /** Returns the VertexIds of the vertices stored in the graph.  Note that the
   order of the elements is not guaranteed. */
   std::unordered_set<VertexId> VertexIds() const;
@@ -272,6 +274,7 @@ class GraphOfConvexSets {
  private:
   std::unordered_map<VertexId, std::unique_ptr<Vertex>> vertices_{};
   std::unordered_set<std::unique_ptr<Edge>> edges_{};
+  std::unordered_map<const Edge*, bool> locked_edges_{};
 };
 
 }  // namespace optimization

@@ -638,7 +638,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   Vertex* target = spp.AddVertex(Point(Vector2d(9, 0)), "target");
 
   spp.AddEdge(*source, *p1);
-  spp.AddEdge(*source, *p2);
+  Edge* source_to_p2 = spp.AddEdge(*source, *p2);
   spp.AddEdge(*source, *p3);
   spp.AddEdge(*p1, *e2);
   spp.AddEdge(*p2, *p3);
@@ -686,6 +686,25 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
       EXPECT_NEAR(e->GetSolutionCost(result), 0.0, 1e-5);
     }
   }
+
+  // Test that forcing an edge not on the shortest path to be active yields a
+  // higher cost.
+  spp.LockEdge(*source_to_p2, true);
+  auto new_result = spp.SolveShortestPath(source->id(), target->id(), false);
+  ASSERT_TRUE(new_result.is_success());
+
+  const std::forward_list<Vertex*> new_shortest_path{source, p2, e2, target};
+  for (const auto& e : spp.Edges()) {
+    auto iter =
+        std::find(new_shortest_path.begin(), new_shortest_path.end(), &e->u());
+    if (iter != new_shortest_path.end() && &e->v() == *(++iter)) {
+      // Then it's on the shortest path; cost should be non-zero.
+      EXPECT_GE(e->GetSolutionCost(new_result), 1.0);
+    } else {
+      EXPECT_NEAR(e->GetSolutionCost(new_result), 0.0, 1e-5);
+    }
+  }
+  EXPECT_GT(new_result.get_optimal_cost(), result.get_optimal_cost());
 }
 
 }  // namespace optimization
