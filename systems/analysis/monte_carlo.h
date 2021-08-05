@@ -21,6 +21,14 @@ constexpr int kNoConcurrency = 1;
  */
 constexpr int kUseHardwareConcurrency = -1;
 
+namespace internal {
+/*
+ * Internal helper used by MonteCarloSimulation to select number of threads to
+ * use.
+ */
+int SelectNumberOfThreadsToUse(int num_parallel_executions);
+}  // namespace internal
+
 /***
  * Defines a factory method that constructs a Simulator (with an owned System)
  * using the supplied RandomGenerator as the only source of randomness.

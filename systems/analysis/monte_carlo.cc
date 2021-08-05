@@ -111,33 +111,13 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 }
 }  // namespace
 
-double RandomSimulation(const SimulatorFactory& make_simulator,
-                        const ScalarSystemFunction& output, double final_time,
-                        RandomGenerator* generator) {
-  auto simulator = make_simulator(generator);
-
-  const System<double>& system = simulator->get_system();
-  system.SetRandomContext(&simulator->get_mutable_context(), generator);
-
-  simulator->AdvanceTo(final_time);
-
-  return output(system, simulator->get_context());
-}
-
-std::vector<RandomSimulationResult> MonteCarloSimulation(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    const double final_time, const int num_samples, RandomGenerator* generator,
-    const int num_parallel_executions) {
-  std::unique_ptr<RandomGenerator> owned_generator{};
-  if (generator == nullptr) {
-    // Create a generator to be used for this set of tests.
-    owned_generator = std::make_unique<RandomGenerator>();
-    generator = owned_generator.get();
-  }
-
+namespace internal {
+int SelectNumberOfThreadsToUse(const int num_parallel_executions) {
   const int hardware_concurrency =
       static_cast<int>(std::thread::hardware_concurrency());
+
   int num_threads = 0;
+
   if (num_parallel_executions > 1) {
     num_threads = num_parallel_executions;
     if (num_threads > hardware_concurrency) {
@@ -165,6 +145,37 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
         ">= 1",
         num_parallel_executions));
   }
+
+  return num_threads;
+}
+}  // namespace internal
+
+double RandomSimulation(const SimulatorFactory& make_simulator,
+                        const ScalarSystemFunction& output, double final_time,
+                        RandomGenerator* generator) {
+  auto simulator = make_simulator(generator);
+
+  const System<double>& system = simulator->get_system();
+  system.SetRandomContext(&simulator->get_mutable_context(), generator);
+
+  simulator->AdvanceTo(final_time);
+
+  return output(system, simulator->get_context());
+}
+
+std::vector<RandomSimulationResult> MonteCarloSimulation(
+    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
+    const double final_time, const int num_samples, RandomGenerator* generator,
+    const int num_parallel_executions) {
+  std::unique_ptr<RandomGenerator> owned_generator{};
+  if (generator == nullptr) {
+    // Create a generator to be used for this set of tests.
+    owned_generator = std::make_unique<RandomGenerator>();
+    generator = owned_generator.get();
+  }
+
+  const int num_threads =
+      internal::SelectNumberOfThreadsToUse(num_parallel_executions);
 
   // Since the parallel implementation incurs additional overhead even in the
   // num_threads=1 case, dispatch to the serial implementation in these cases.

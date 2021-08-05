@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/monte_carlo.h"
 
 #include <cmath>
+#include <thread>
 
 #include <gtest/gtest.h>
 
@@ -15,6 +16,32 @@ namespace drake {
 namespace systems {
 namespace analysis {
 namespace {
+// Only use two threads during testing. This value should match the "cpu" tag
+// in BUILD.bazel defining this test.
+constexpr int kTestConcurrency = 2;
+
+GTEST_TEST(SelectNumberOfThreadsToUseTest, BasicTest) {
+  const int hardware_concurrency =
+      static_cast<int>(std::thread::hardware_concurrency());
+
+  // When kNoConcurrency is selected, only one thread should be used.
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(kNoConcurrency), 1);
+
+  // If kUseHardwareConcurrency is specified, the number of threads should
+  // match std::thread::hardware_concurrency().
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(kUseHardwareConcurrency),
+            hardware_concurrency);
+
+  // If a value greater than zero is specified, it selects the number of threads
+  // to use.
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(1), 1);
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(10), 10);
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(100), 100);
+
+  // Zero and negative values (that are not kUseHardwareConcurrency) throw.
+  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(0), std::runtime_error);
+  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(-10), std::runtime_error);
+}
 
 // Checks that RandomSimulation repeatedly produces the same output sample
 // when given the same RandomGenerator, but produces different output samples
@@ -157,7 +184,7 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
       &serial_generator, kNoConcurrency);
   const auto parallel_results = MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
-      &parallel_generator, kUseHardwareConcurrency);
+      &parallel_generator, kTestConcurrency);
 
   EXPECT_EQ(serial_results.size(), num_samples);
   EXPECT_EQ(parallel_results.size(), num_samples);
@@ -241,7 +268,7 @@ GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
       std::runtime_error);
   EXPECT_THROW(MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
-      &parallel_generator, kUseHardwareConcurrency),
+      &parallel_generator, kTestConcurrency),
       std::runtime_error);
 }
 
