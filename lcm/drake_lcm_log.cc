@@ -62,6 +62,16 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::Subscribe(
   return nullptr;
 }
 
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::SubscribeAllChannels(
+    MultichannelHandlerFunction handler) {
+  if (is_write_) {
+    throw std::logic_error("Subscribe is only available for log playback.");
+  }
+  std::lock_guard<std::mutex> lock(mutex_);
+  multichannel_subscriptions_.push_back(std::move(handler));
+  return nullptr;
+}
+
 int DrakeLcmLog::HandleSubscriptions(int) {
   if (is_write_) {
     throw std::logic_error(
@@ -103,6 +113,9 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
   for (auto iter = range.first; iter != range.second; ++iter) {
     const HandlerFunction& handler = iter->second;
     handler(next_event_->data, next_event_->datalen);
+  }
+  for (MultichannelHandlerFunction& handler : multichannel_subscriptions_) {
+    handler(next_event_->channel, next_event_->data, next_event_->datalen);
   }
 
   // Advance log.

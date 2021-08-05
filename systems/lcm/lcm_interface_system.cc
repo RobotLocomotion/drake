@@ -28,6 +28,10 @@ LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
 
 LcmInterfaceSystem::~LcmInterfaceSystem() = default;
 
+std::string LcmInterfaceSystem::get_lcm_url() const {
+  return lcm_->get_lcm_url();
+}
+
 void LcmInterfaceSystem::Publish(
     const std::string& channel, const void* data, int data_size,
     std::optional<double> time_sec) {
@@ -37,6 +41,11 @@ void LcmInterfaceSystem::Publish(
 std::shared_ptr<DrakeSubscriptionInterface> LcmInterfaceSystem::Subscribe(
     const std::string& channel, HandlerFunction handler) {
   return lcm_->Subscribe(channel, std::move(handler));
+}
+
+std::shared_ptr<DrakeSubscriptionInterface>
+LcmInterfaceSystem::SubscribeAllChannels(MultichannelHandlerFunction handler) {
+  return lcm_->SubscribeAllChannels(std::move(handler));
 }
 
 int LcmInterfaceSystem::HandleSubscriptions(int timeout_millis) {

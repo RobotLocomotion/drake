@@ -15,6 +15,10 @@ void OnHandleSubscriptionsError(
 DrakeLcmInterface::DrakeLcmInterface() = default;
 DrakeLcmInterface::~DrakeLcmInterface() = default;
 
+std::string DrakeLcmInterface::get_lcm_url() const {
+  throw std::logic_error("This DrakeLcmInterface class does not provide a URL");
+}
+
 DrakeSubscriptionInterface::DrakeSubscriptionInterface() = default;
 DrakeSubscriptionInterface::~DrakeSubscriptionInterface() = default;
 

@@ -55,6 +55,20 @@ class DrakeLcmInterface {
   using HandlerFunction = std::function<void(const void*, int)>;
 
   /**
+   * A callback used by DrakeLcmInterface::SubscribeMultipleChannels (which
+   * therefore needs the receiving channel passed in).
+   */
+  using MultichannelHandlerFunction =
+      std::function<void(const std::string&, const void*, int)>;
+
+  /**
+   * Return a URL describing the transport of this LCM interface; the result
+   * is implementation-dependent and intended for logging and readability
+   * rather than processing.
+   */
+  virtual std::string get_lcm_url() const;
+
+  /**
    * Most users should use the drake::lcm::Publish() free function, instead of
    * this interface method.
    *
@@ -97,6 +111,13 @@ class DrakeLcmInterface {
    */
   virtual std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string& channel, HandlerFunction) = 0;
+
+  /**
+   * Subscribe to all channels; this is useful for logging and redirecting LCM
+   * traffic without regard to its content.
+   */
+  virtual std::shared_ptr<DrakeSubscriptionInterface> SubscribeAllChannels(
+      MultichannelHandlerFunction) = 0;
 
   /**
    * Invokes the HandlerFunction callbacks for all subscriptions' pending
