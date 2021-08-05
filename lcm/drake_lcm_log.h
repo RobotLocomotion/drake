@@ -77,6 +77,18 @@ class DrakeLcmLog : public DrakeLcmInterface {
       const std::string& channel, HandlerFunction handler) override;
 
   /**
+   * Subscribe to all channels; this is useful for logging and redirecting LCM
+   * traffic without regard to its content.
+   *
+   * @throws std::exception if this instance is not constructed in read-only
+   * mode.
+   *
+   * @return nullptr because this implementation does not support unsubscribe.
+   */
+  std::shared_ptr<DrakeSubscriptionInterface> SubscribeAllChannels(
+      MultichannelHandlerFunction) override;
+
+  /**
    * This is a no-op for Read mode, and an exception in Write mode.
    */
   int HandleSubscriptions(int) override;
@@ -124,11 +136,14 @@ class DrakeLcmLog : public DrakeLcmInterface {
     return static_cast<uint64_t>(sec * 1e6);
   }
 
+  std::string get_lcm_url() const override;
+
  private:
   void OnHandleSubscriptionsError(const std::string&) override;
 
   const bool is_write_;
   const bool overwrite_publish_time_with_system_clock_;
+  const std::string url_;
 
   // TODO(jwnimmer-tri) It is not clear to me why this class needs a mutex
   // (i.e., where multiple threads are coming from).  That factor needs to be
@@ -137,6 +152,8 @@ class DrakeLcmLog : public DrakeLcmInterface {
   // This mutes guards access to all of the below member fields.
   mutable std::mutex mutex_;
   std::multimap<std::string, DrakeLcmInterface::HandlerFunction> subscriptions_;
+  std::vector<DrakeLcmInterface::MultichannelHandlerFunction>
+    multichannel_subscriptions_;
   std::unique_ptr<::lcm::LogFile> log_;
   const ::lcm::LogEvent* next_event_{nullptr};
 };
