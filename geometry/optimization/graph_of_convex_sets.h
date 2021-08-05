@@ -227,6 +227,7 @@ class GraphOfConvexSets {
   empty then a default name will be provided. */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
+  /** Requires that @p edge be active (phi == 1) or inactive (phi == 0). */
   void LockEdge(const Edge& edge, bool active);
 
   /** Returns the VertexIds of the vertices stored in the graph.  Note that the
