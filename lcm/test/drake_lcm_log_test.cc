@@ -29,6 +29,7 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   w_log.reset();
 
   auto r_log = std::make_unique<DrakeLcmLog>("test.log", false);
+
   // Add multiple subscribers to the same channel.
   std::vector<drake::lcmt_drake_signal> messages(3, drake::lcmt_drake_signal{});
   for (int i = 0; i < 3; i++) {
@@ -37,6 +38,16 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
           messages[i] = message;
         });
   }
+
+  // Also subscribe via SubscribeAllChannels
+  bool multichannel_received = false;
+  r_log->SubscribeAllChannels(
+      [&multichannel_received](
+          std::string_view channel, const void*, int) {
+        EXPECT_EQ(channel, "test_channel");
+        EXPECT_FALSE(multichannel_received);
+        multichannel_received = true;
+      });
 
   double r_time = r_log->GetNextMessageTime();
   EXPECT_NEAR(r_time, log_time, 1e-12);
@@ -51,6 +62,8 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
     EXPECT_EQ(msg.coord[0], decoded_msg.coord[0]);
     EXPECT_EQ(msg.timestamp, decoded_msg.timestamp);
   }
+
+  EXPECT_TRUE(multichannel_received);
 }
 
 }  // namespace
