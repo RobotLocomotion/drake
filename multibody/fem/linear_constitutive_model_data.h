@@ -10,12 +10,18 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Data supporting calculations in LinearConstitutiveModel.
+/* Data supporting calculations in LinearConstitutiveModel. Specifically, the
+ supporting data are:
+ 1. the infinitesimal strain, E = 0.5 * (F + Fᵀ) - I, and
+ 2. the trace of the infinitesimal strain, Tr(E).
+
  See LinearConstitutiveModel for how the data is used. See
  DeformationGradientData for more about constitutive model data.
  @tparam_nonsymbolic_scalar T.
  @tparam num_locations Number of locations at which the deformation gradient
- dependent quantities are evaluated. */
+ dependent quantities are evaluated. We currently only provide one instantiation
+ of this template with `num_locations = 1`, but more instantiations can easily
+ be added when needed. */
 template <typename T, int num_locations>
 class LinearConstitutiveModelData
     : public DeformationGradientData<
@@ -26,14 +32,14 @@ class LinearConstitutiveModelData
   /* Constructs a LinearConstitutiveModelData with zero strain. */
   LinearConstitutiveModelData();
 
-  /* Returns the infinitesimal strains evaluated at the quadrature locations
-   for the associated element. */
+  /* Returns the infinitesimal strains (E = 0.5 * (F + Fᵀ) - I, see class
+   documentation) evaluated with the latest deformation gradient F. */
   const std::array<Matrix3<T>, num_locations>& strain() const {
     return strain_;
   }
 
-  /* Returns the traces of the infinitesimal strains evaluated at the
-   quadrature locations for the associated element. */
+  /* Returns the traces of the infinitesimal strains (Tr(E), see class
+   documentation) evaluated with the latest deformation gradient F. */
   const std::array<T, num_locations>& trace_strain() const {
     return trace_strain_;
   }
@@ -48,7 +54,7 @@ class LinearConstitutiveModelData
    required by the CRTP base class. */
   void UpdateFromDeformationGradient();
 
-  /* Infinitesimal strain = 0.5 * (F + Fᵀ) - I. */
+  /* The infinitesimal strain. */
   std::array<Matrix3<T>, num_locations> strain_;
   /* Trace of `strain_`. */
   std::array<T, num_locations> trace_strain_;
