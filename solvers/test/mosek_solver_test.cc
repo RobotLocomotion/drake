@@ -300,6 +300,26 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
       ".*cannot set Mosek option \'non-existing options\' to value \'42\'.*");
 }
 
+GTEST_TEST(MosekTest, Write) {
+  // Write model to a file.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1), true /* is_convex */);
+  MosekSolver mosek_solver;
+  SolverOptions solver_options;
+  const std::string file = temp_directory() + "mosek.mps";
+  EXPECT_FALSE(filesystem::exists(file));
+  solver_options.SetOption(MosekSolver::id(), "writedata", file);
+  mosek_solver.Solve(prog, {}, solver_options);
+  EXPECT_TRUE(filesystem::exists(file));
+  filesystem::remove(file);
+  // Set "writedata" to "". Now expect no model file.
+  solver_options.SetOption(MosekSolver::id(), "writedata", "");
+  mosek_solver.Solve(prog, {}, solver_options);
+  EXPECT_FALSE(filesystem::exists(file));
+}
+
 GTEST_TEST(MosekSolver, TestInitialGuess) {
   // Mosek allows to set initial guess for integer/binary variables.
   // Solve the following mixed-integer problem
