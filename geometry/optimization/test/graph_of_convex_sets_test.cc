@@ -698,10 +698,12 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     auto iter =
         std::find(new_shortest_path.begin(), new_shortest_path.end(), &e->u());
     if (iter != new_shortest_path.end() && &e->v() == *(++iter)) {
-      // Then it's on the shortest path; cost should be non-zero.
-      EXPECT_GE(e->GetSolutionCost(new_result), 1.0);
+      // Then it's on the shortest path; phi should be 1.
+      EXPECT_NEAR(new_result.GetSolution(e->phi()), 1.0, 1e-5);
     } else {
-      EXPECT_NEAR(e->GetSolutionCost(new_result), 0.0, 1e-5);
+      drake::log()->debug("{} -> {}: phi = {:e}", e->u().name(), e->v().name(),
+                          new_result.GetSolution(e->phi()));
+      EXPECT_NEAR(new_result.GetSolution(e->phi()), 0.0, 1e-5);
     }
   }
   EXPECT_GT(new_result.get_optimal_cost(), result.get_optimal_cost());
