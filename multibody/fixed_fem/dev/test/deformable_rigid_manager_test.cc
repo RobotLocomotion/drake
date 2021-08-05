@@ -204,13 +204,7 @@ TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
   EXPECT_EQ(current_positions.size(), 1);
   EXPECT_EQ(current_positions[0].size(), kNumVertices * 3);
 
-  /* The factor of 0.25 seems strange but is correct. For the default
-   mid-point rule used by DynamicElasticityModel,
-       x = xₙ + dt ⋅ vₙ + dt² ⋅ (0.25 ⋅ a + 0.25 ⋅ aₙ).
-   In this test case vₙ and aₙ are both 0, so x - xₙ is given by 0.25 ⋅ a ⋅ dt².
-  */
-  const Vector3<double> expected_displacement(0, 0,
-                                              0.25 * kGravity * kDt * kDt);
+  const Vector3<double> expected_displacement(0, 0, 0.5 * kGravity * kDt * kDt);
   const double kTol = 1e-14;
   for (int i = 0; i < kNumVertices; ++i) {
     const Vector3<double> displacement =

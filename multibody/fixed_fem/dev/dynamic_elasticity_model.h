@@ -8,7 +8,7 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/multibody/fixed_fem/dev/damping_model.h"
 #include "drake/multibody/fixed_fem/dev/elasticity_model.h"
-#include "drake/multibody/fixed_fem/dev/newmark_scheme.h"
+#include "drake/multibody/fixed_fem/dev/velocity_newmark_scheme.h"
 
 namespace drake {
 namespace multibody {
@@ -34,7 +34,7 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
    */
   explicit DynamicElasticityModel(double dt)
       : ElasticityModel<Element>(
-            std::make_unique<internal::NewmarkScheme<T>>(dt, 0.5, 0.25)) {}
+            std::make_unique<internal::VelocityNewmarkScheme<T>>(dt, 1, 0.5)) {}
 
   ~DynamicElasticityModel() = default;
 
