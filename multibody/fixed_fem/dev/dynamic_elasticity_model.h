@@ -6,9 +6,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/multibody/fixed_fem/dev/acceleration_newmark_scheme.h"
 #include "drake/multibody/fixed_fem/dev/damping_model.h"
 #include "drake/multibody/fixed_fem/dev/elasticity_model.h"
-#include "drake/multibody/fixed_fem/dev/newmark_scheme.h"
 
 namespace drake {
 namespace multibody {
@@ -34,7 +34,8 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
    */
   explicit DynamicElasticityModel(double dt)
       : ElasticityModel<Element>(
-            std::make_unique<internal::NewmarkScheme<T>>(dt, 0.5, 0.25)) {}
+            std::make_unique<internal::AccelerationNewmarkScheme<T>>(dt, 0.5,
+                                                                     0.25)) {}
 
   ~DynamicElasticityModel() = default;
 
