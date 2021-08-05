@@ -240,9 +240,6 @@ PYBIND11_MODULE(analysis, m) {
     // Note: parallel simulation must be disabled in the binding via
     // num_parallel_executions=kNoConcurrency, since parallel execution of
     // Python systems in multiple threads is not supported.
-    // TODO(calderpg-tri) Once Python subsystem detection is implemented in
-    // MonteCarloSimulation, this can be relaxed so that purely C++ systems
-    // created via Python can still be simulated in parallel.
     m.def("MonteCarloSimulation",
         WrapCallbacks([](const SimulatorFactory make_simulator,
                           const ScalarSystemFunction& output, double final_time,

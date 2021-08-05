@@ -173,10 +173,6 @@ struct RandomSimulationResult {
  */
 // TODO(russt): Consider generalizing this with options (e.g. setting the
 // number of simulators, number of samples per simulator, ...).
-// TODO(calderpg-tri): Consider adding check to determine if the system built by
-// make_simulator contains Python elements; if it does not, then it can be
-// safely simulated in parallel even if MonteCarloSimulation is called via
-// pydrake. In the interim, bindings can only use num_parallel_executions=1.
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
     double final_time, int num_samples, RandomGenerator* generator = nullptr,
