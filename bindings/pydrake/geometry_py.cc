@@ -22,6 +22,7 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/iris.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
@@ -1437,6 +1438,23 @@ void def_geometry_optimization(py::module m) {
             py::arg("dim"), cls_doc.MakeUnitBall.doc);
     py::implicitly_convertible<Hyperellipsoid,
         copyable_unique_ptr<ConvexSet>>();
+  }
+
+  {
+    const auto& cls_doc = doc.MinkowskiSum;
+    py::class_<MinkowskiSum, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
+        .def(py::init<const ConvexSets&>(), py::arg("sets"),
+            cls_doc.ctor.doc_1args)
+        .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
+            py::arg("setB"), cls_doc.ctor.doc_2args)
+        .def(py::init<const QueryObject<double>&, GeometryId,
+                 std::optional<FrameId>>(),
+            py::arg("query_object"), py::arg("geometry_id"),
+            py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
+        .def("num_terms", &MinkowskiSum::num_terms, cls_doc.num_terms.doc)
+        .def("term", &MinkowskiSum::term, py_rvp::reference_internal,
+            py::arg("index"), cls_doc.term.doc);
+    py::implicitly_convertible<MinkowskiSum, copyable_unique_ptr<ConvexSet>>();
   }
 
   {
