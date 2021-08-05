@@ -10,7 +10,7 @@ namespace fem {
 namespace internal {
 namespace {
 
-constexpr int kNumLocations = 1;
+constexpr int kNumLocations = 2;
 
 void VerifySizes(
     const LinearConstitutiveModelData<double, kNumLocations>& data) {

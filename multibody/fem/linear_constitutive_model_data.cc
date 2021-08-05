@@ -25,6 +25,7 @@ void LinearConstitutiveModelData<
 
 template class LinearConstitutiveModelData<double, 1>;
 template class LinearConstitutiveModelData<AutoDiffXd, 1>;
+template class LinearConstitutiveModelData<double, 2>;
 
 }  // namespace internal
 }  // namespace fem
