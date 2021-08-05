@@ -19,11 +19,27 @@ GTEST_TEST(DrakeMockLcmTest, AcceptanceTest) {
   const std::string channel_name = "DrakeMockLcmTest.AcceptanceTest";
   lcmt_drake_signal message{};
   message.timestamp = 10;
-  Subscriber<lcmt_drake_signal> subscriber(&dut, channel_name);
-  Publish(&dut, channel_name, message);
-  dut.HandleSubscriptions(0);
-  EXPECT_EQ(subscriber.count(), 1);
-  EXPECT_EQ(subscriber.message().timestamp, 10);
+
+  {
+    Subscriber<lcmt_drake_signal> subscriber(&dut, channel_name);
+    Publish(&dut, channel_name, message);
+    dut.HandleSubscriptions(0);
+    EXPECT_EQ(subscriber.count(), 1);
+    EXPECT_EQ(subscriber.message().timestamp, 10);
+  }
+
+  {
+    int received = 0;
+    dut.SubscribeAllChannels(
+        [&received, &channel_name](
+            std::string_view channel, const void*, int) {
+          EXPECT_EQ(channel, channel_name);
+          received++;
+        });
+    Publish(&dut, channel_name, message);
+    dut.HandleSubscriptions(0);
+    EXPECT_EQ(received, 1);
+  }
 }
 
 }  // namespace

@@ -3,6 +3,8 @@
 #include <limits>
 #include <utility>
 
+#include "fmt/format.h"
+
 #include "drake/lcm/drake_lcm.h"
 
 namespace drake {
@@ -24,9 +26,15 @@ LcmInterfaceSystem::LcmInterfaceSystem(std::unique_ptr<DrakeLcmInterface> owned)
 LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
     : lcm_(lcm) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
+  this->set_name(fmt::format(
+      "LcmInterfaceSystem(lcm_url={})", lcm_->get_lcm_url()));
 }
 
 LcmInterfaceSystem::~LcmInterfaceSystem() = default;
+
+std::string LcmInterfaceSystem::get_lcm_url() const {
+  return lcm_->get_lcm_url();
+}
 
 void LcmInterfaceSystem::Publish(
     const std::string& channel, const void* data, int data_size,
@@ -37,6 +45,11 @@ void LcmInterfaceSystem::Publish(
 std::shared_ptr<DrakeSubscriptionInterface> LcmInterfaceSystem::Subscribe(
     const std::string& channel, HandlerFunction handler) {
   return lcm_->Subscribe(channel, std::move(handler));
+}
+
+std::shared_ptr<DrakeSubscriptionInterface>
+LcmInterfaceSystem::SubscribeAllChannels(MultichannelHandlerFunction handler) {
+  return lcm_->SubscribeAllChannels(std::move(handler));
 }
 
 int LcmInterfaceSystem::HandleSubscriptions(int timeout_millis) {
