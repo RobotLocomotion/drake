@@ -863,30 +863,30 @@ bool AreWelded(
   return false;
 }
 
-void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
-                               sdf::Model model,
+void ParseCollisionFilterGroup(const ModelInstanceIndex& model_instance,
+                               const sdf::Model& model,
                                MultibodyPlant<double>* plant) {
-  auto next_child_element = [](ElementNode data_element,
+  auto next_child_element = [](const ElementNode& data_element,
                                const char* element_name) {
     return std::get<sdf::ElementPtr>(data_element)
         ->GetElementImpl(std::string(element_name));
   };
-  auto next_sibling_element = [](ElementNode data_element,
+  auto next_sibling_element = [](const ElementNode& data_element,
                                  const char* element_name) {
     return std::get<sdf::ElementPtr>(data_element)
         ->GetNextElement(std::string(element_name));
   };
-  auto has_attribute = [](ElementNode data_element,
+  auto has_attribute = [](const ElementNode& data_element,
                           const char* attribute_name) {
     return std::get<sdf::ElementPtr>(data_element)
         ->HasAttribute(std::string(attribute_name));
   };
-  auto get_string_attribute = [](ElementNode data_element,
+  auto get_string_attribute = [](const ElementNode& data_element,
                                  const char* attribute_name) {
     return std::get<sdf::ElementPtr>(data_element)
         ->Get<std::string>(attribute_name);
   };
-  auto get_bool_attribute = [](ElementNode data_element,
+  auto get_bool_attribute = [](const ElementNode& data_element,
                                const char* attribute_name) {
     return std::get<sdf::ElementPtr>(data_element)->Get<bool>(attribute_name);
   };

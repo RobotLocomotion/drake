@@ -82,36 +82,47 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
       bushing_force_stiffness, bushing_force_damping);
 }
 
-// Registers collision filter groups from a reading interface in a URDF/SDF
+// Collects collision filter groups from a reading interface in a URDF/SDF
 // agnostic manner.
-// @param model_instance        Model Instance that contains the bodies involved
-//                              in the collision filter groups
-// @param plant                 MultibodyPlant used to register the collision
-//                              filter groups
-// @param model_node            Node corresponding to the collision_gilter_group
-// @param next_child_element    Function that returns the next child element
-//                              with the specified tag in the ElementNode
-//                              provided.
-// @param next_sibling_element  Function that teturns the next sibling element
-//                              with the specified tag in the ElementNode
-//                              provided.
-// @param read_string_attribute Function that reads a string attribute with the
-//                              name provided in the ElementNoded provided.
-// @param read_bool_attribute   Function that reads a boolean attribute with
-//                              the name provided in the ElementNode provided.
-void RegisterCollisionFilterGroup(
-    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant,
-    ElementNode group_node,
+// @param model_instance               Model Instance that contains the bodies
+//                                     involved in the collision filter groups.
+// @param plant                        MultibodyPlant used to register the
+//                                     collision filter groups.
+// @param group_node                   Node corresponding to the
+//                                     collision_gilter_group.
+// @param next_child_element           Function that returns the next child
+//                                     element with the specified tag in the
+//                                     ElementNode provided.
+// @param next_sibling_element         Function that returns the next sibling
+//                                     element with the specified tag in the
+//                                     ElementNode provided.
+// @param has_attribute                Function that checks if an attribute
+//                                     exists in the ElementNode provided.
+// @param read_string_attribute        Function that reads a string attribute
+//                                     with the name provided in the
+//                                     ElementNode provided.
+// @param read_bool_attribute          Function that reads a boolean attribute
+//                                     with the name provided in the
+//                                     ElementNode provided.
+// @param[out] collision_filter_groups Map of collision filter group names to
+//                                     its geometry sets representing the
+//                                     constituent members.
+// @param[out] collision_filter_pairs  Filter group pairs between whom
+//                                     collisions will be excluded.
+void CollectCollisionFilterGroup(
+    const ModelInstanceIndex& model_instance,
+    const MultibodyPlant<double>& plant, const ElementNode& group_node,
     std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
     std::set<SortedPair<std::string>>* collision_filter_pairs,
-    const std::function<ElementNode(ElementNode, const char*)>&
+    const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
-    const std::function<ElementNode(ElementNode, const char*)>&
+    const std::function<ElementNode(const ElementNode&, const char*)>&
         next_sibling_element,
-    const std::function<bool(ElementNode, const char*)>& has_attribute,
-    const std::function<std::string(ElementNode, const char*)>&
+    const std::function<bool(const ElementNode&, const char*)>& has_attribute,
+    const std::function<std::string(const ElementNode&, const char*)>&
         read_string_attribute,
-    const std::function<bool(ElementNode, const char*)>& read_bool_attribute) {
+    const std::function<bool(const ElementNode&, const char*)>&
+        read_bool_attribute) {
   DRAKE_DEMAND(plant.geometry_source_is_registered());
   if (has_attribute(group_node, "ignore")) {
     if (read_bool_attribute(group_node, "ignore")) {
@@ -172,16 +183,18 @@ void RegisterCollisionFilterGroup(
 }
 
 void ParseCollisionFilterGroupCommon(
-    ModelInstanceIndex model_instance, ElementNode model_node,
+    const ModelInstanceIndex& model_instance,
+    const ElementNode& model_node,
     MultibodyPlant<double>* plant,
-    const std::function<ElementNode(ElementNode, const char*)>&
+    const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
-    const std::function<ElementNode(ElementNode, const char*)>&
+    const std::function<ElementNode(const ElementNode&, const char*)>&
         next_sibling_element,
-    const std::function<bool(ElementNode, const char*)>& has_attribute,
-    const std::function<std::string(ElementNode, const char*)>&
+    const std::function<bool(const ElementNode&, const char*)>& has_attribute,
+    const std::function<std::string(const ElementNode&, const char*)>&
         read_string_attribute,
-    const std::function<bool(ElementNode, const char*)>& read_bool_attribute) {
+    const std::function<bool(const ElementNode&, const char*)>&
+        read_bool_attribute) {
   DRAKE_DEMAND(plant->geometry_source_is_registered());
   std::map<std::string, geometry::GeometrySet> collision_filter_groups;
   std::set<SortedPair<std::string>> collision_filter_pairs;
@@ -193,7 +206,7 @@ void ParseCollisionFilterGroupCommon(
            : std::get<tinyxml2::XMLElement*>(group_node) != nullptr;
        group_node =
            next_sibling_element(group_node, "drake:collision_filter_group")) {
-    RegisterCollisionFilterGroup(
+    CollectCollisionFilterGroup(
         model_instance, *plant, group_node, &collision_filter_groups,
         &collision_filter_pairs, next_child_element, next_sibling_element,
         has_attribute, read_string_attribute, read_bool_attribute);

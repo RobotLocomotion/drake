@@ -117,15 +117,15 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 // agnostic manner. Through this, the API to specify the collision_filter_group
 // tag in both SDF and URDF can be controlled/modified in a single function.
 // @param model_instance        Model Instance that contains the bodies involved
-//                              in the collision filter groups
+//                              in the collision filter groups.
 // @param model_node            Node used to parse for the
-//                              collision_gilter_group tag
+//                              collision_gilter_group tag.
 // @param plant                 MultibodyPlant used to register the collision
-//                              filter groups
+//                              filter groups.
 // @param next_child_element    Function that returns the next child element
 //                              with the specified tag in the ElementNode
 //                              provided.
-// @param next_sibling_element  Function that teturns the next sibling element
+// @param next_sibling_element  Function that returns the next sibling element
 //                              with the specified tag in the ElementNode
 //                              provided.
 // @param has_attribute         Function that checks if an attribute exists
@@ -135,16 +135,17 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 // @param read_bool_attribute   Function that reads a boolean attribute with
 //                              the name provided in the ElementNode provided.
 void ParseCollisionFilterGroupCommon(
-    ModelInstanceIndex model_instance, ElementNode model_node,
+    const ModelInstanceIndex& model_instance, const ElementNode& model_node,
     MultibodyPlant<double>* plant,
-    const std::function<ElementNode(ElementNode, const char*)>&
+    const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
-    const std::function<ElementNode(ElementNode, const char*)>&
+    const std::function<ElementNode(const ElementNode&, const char*)>&
         next_sibling_element,
-    const std::function<bool(ElementNode, const char*)>& has_attribute,
-    const std::function<std::string(ElementNode, const char*)>&
+    const std::function<bool(const ElementNode&, const char*)>& has_attribute,
+    const std::function<std::string(const ElementNode&, const char*)>&
         read_string_attribute,
-    const std::function<bool(ElementNode, const char*)>& read_bool_attribute);
+    const std::function<bool(const ElementNode&, const char*)>&
+        read_bool_attribute);
 
 }  // namespace internal
 }  // namespace multibody
