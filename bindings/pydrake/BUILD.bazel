@@ -270,6 +270,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
+    "//bindings/pydrake/lcmtypes",
     "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
@@ -288,7 +289,9 @@ drake_py_library(
     # pycodestyle gets confused by the top `with` statement. This should be
     # removed once no modules with deprecation warnings are imported.
     tags = ["nolint"],
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES + [
+        "//bindings/pydrake/lcmtypes:all_py",
+    ],
 )
 
 # Package roll-up (for Bazel dependencies).
@@ -507,7 +510,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "//lcmtypes:lcmtypes_drake_py",
+        "//bindings/pydrake/lcmtypes",
     ],
 )
 
