@@ -15,7 +15,8 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
                          bool overwrite_publish_time_with_system_clock)
     : is_write_(is_write),
       overwrite_publish_time_with_system_clock_(
-          overwrite_publish_time_with_system_clock) {
+          overwrite_publish_time_with_system_clock),
+      url_("lcmlog://" + file_name) {
   if (is_write_) {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "w");
   } else {
@@ -25,6 +26,10 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
   if (!log_->good()) {
     throw std::runtime_error("Failed to open log file: " + file_name);
   }
+}
+
+std::string DrakeLcmLog::get_lcm_url() const {
+  return url_;
 }
 
 void DrakeLcmLog::Publish(const std::string& channel, const void* data,
@@ -59,6 +64,16 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::Subscribe(
   }
   std::lock_guard<std::mutex> lock(mutex_);
   subscriptions_.emplace(channel, std::move(handler));
+  return nullptr;
+}
+
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::SubscribeAllChannels(
+    MultichannelHandlerFunction handler) {
+  if (is_write_) {
+    throw std::logic_error("Subscribe is only available for log playback.");
+  }
+  std::lock_guard<std::mutex> lock(mutex_);
+  multichannel_subscriptions_.push_back(std::move(handler));
   return nullptr;
 }
 
@@ -103,6 +118,9 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
   for (auto iter = range.first; iter != range.second; ++iter) {
     const HandlerFunction& handler = iter->second;
     handler(next_event_->data, next_event_->datalen);
+  }
+  for (MultichannelHandlerFunction& handler : multichannel_subscriptions_) {
+    handler(next_event_->channel, next_event_->data, next_event_->datalen);
   }
 
   // Advance log.

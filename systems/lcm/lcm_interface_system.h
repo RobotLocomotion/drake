@@ -57,10 +57,13 @@ class LcmInterfaceSystem final
   ~LcmInterfaceSystem() final;
 
   // DrakeLcmInterface overrides.
+  std::string get_lcm_url() const override;
   void Publish(const std::string&, const void*, int,
                std::optional<double>) final;
   std::shared_ptr<drake::lcm::DrakeSubscriptionInterface>
       Subscribe(const std::string&, HandlerFunction) final;
+  std::shared_ptr<drake::lcm::DrakeSubscriptionInterface>
+      SubscribeAllChannels(MultichannelHandlerFunction) final;
   int HandleSubscriptions(int) final;
 
  private:

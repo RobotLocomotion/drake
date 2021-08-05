@@ -146,6 +146,49 @@ TEST_F(DrakeLcmTest, SubscribeTest2) {
   EXPECT_EQ(total, 1);
 }
 
+// Repeat SubscribeTest for SubscribeAllChannels.
+TEST_F(DrakeLcmTest, SubscribeAllTest) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.SubscribeAllTest";
+
+  lcmt_drake_signal received{};
+  auto subscription = dut_->SubscribeAllChannels([&received, &channel_name](
+      std::string_view channel, const void* data, int size) {
+    EXPECT_EQ(channel, channel_name);
+    received.decode(data, 0, size);
+  });
+  subscription.reset();  // Deleting the subscription should be a no-op.
+
+  int total = 0;
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    native_lcm->publish(channel_name, &message_);
+    total += dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(total, 1);
+}
+
+// Repeat SubscribeTest2 for SubscribeAllChannels.
+TEST_F(DrakeLcmTest, SubscribeAllTest2) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.SubscribeAllTest2";
+
+  lcmt_drake_signal received{};
+  auto subscription = dut_->SubscribeAllChannels([&received, &channel_name](
+      std::string_view channel, const void* data, int size) {
+    EXPECT_EQ(channel, channel_name);
+    received.decode(data, 0, size);
+  });
+  subscription->set_unsubscribe_on_delete(false);  // We shall be explicit.
+  subscription.reset();
+
+  int total = 0;
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    native_lcm->publish(channel_name, &message_);
+    total += dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(total, 1);
+}
+
 // Tests DrakeLcm's round-trip ability using DrakeLcmInterface's sugar,
 // without any native LCM APIs.
 TEST_F(DrakeLcmTest, AcceptanceTest) {
@@ -192,6 +235,32 @@ TEST_F(DrakeLcmTest, UnsubscribeTest) {
   lcmt_drake_signal received{};
   auto subscription = dut_->Subscribe(channel_name, [&](
       const void* data, int size) {
+    received.decode(data, 0, size);
+  });
+  subscription->set_unsubscribe_on_delete(true);
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel_name, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+
+  // Then, unsubscribe and make sure no more messages are delivered.
+  subscription.reset();
+  received = {};
+  Publish(dut_.get(), channel_name, message_);
+  ASSERT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 0);
+  ASSERT_EQ(received.timestamp, 0);
+}
+
+// Tests DrakeLcm's unsubscribe after a SubscribeAll to ensure multi-channel
+// subscriptions behave correctly.
+TEST_F(DrakeLcmTest, UnsubscribeFromMultichannelTest) {
+  const std::string channel_name =
+      "DrakeLcmTest.UnsubscribeFromMultichannelTest";
+
+  // First, confirm that the subscriber is active.
+  lcmt_drake_signal received{};
+  auto subscription = dut_->SubscribeAllChannels([&](
+      std::string_view channel, const void* data, int size) {
     received.decode(data, 0, size);
   });
   subscription->set_unsubscribe_on_delete(true);
