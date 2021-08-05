@@ -174,8 +174,10 @@ struct RandomSimulationResult {
  *   accessed from within a single worker thread; however, any resource shared
  *   between these simulators must be safe for concurrent use.
  *
- * - @p output is called from within worker threads performing simulation. It
- *   must be safe for concurrent use.
+ * - @p output is called from within worker threads performing simulation with
+ *   the simulator and context belonging to each worker thread. It must be safe
+ *   to make concurrent calls to @p output (i.e. any mutable state inside the
+ *   function must be safe for concurrent use).
  *
  * @ingroup analysis
  */
