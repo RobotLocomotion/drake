@@ -31,9 +31,9 @@ struct CallbackData {
       : collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
         point_pairs(*point_pairs_in) {
-    DRAKE_DEMAND(collision_filter_in);
-    DRAKE_DEMAND(X_WGs_in);
-    DRAKE_DEMAND(point_pairs_in);
+    DRAKE_DEMAND(collision_filter_in != nullptr);
+    DRAKE_DEMAND(X_WGs_in != nullptr);
+    DRAKE_DEMAND(point_pairs_in != nullptr);
     request.num_max_contacts = 1;
     request.enable_contact = true;
     // NOTE: As of 5/1/2018 the GJK implementation of Libccd appears to be

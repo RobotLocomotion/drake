@@ -816,7 +816,7 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     int gv_dim,
     ProblemData* modified_problem_data) {
   // Verify that the modified problem data points to something.
-  DRAKE_DEMAND(modified_problem_data);
+  DRAKE_DEMAND(modified_problem_data != nullptr);
 
   // Get the number of equality constraints.
   const int num_eq_constraints = problem_data.kG.size();
@@ -882,7 +882,7 @@ void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
   using std::max;
   using std::abs;
 
-  DRAKE_DEMAND(cf);
+  DRAKE_DEMAND(cf != nullptr);
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -944,7 +944,7 @@ void ConstraintSolver<T>::FormAndSolveConstraintLcp(
   using std::max;
   using std::abs;
 
-  DRAKE_DEMAND(cf);
+  DRAKE_DEMAND(cf != nullptr);
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -1528,9 +1528,9 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLcp(
     VectorX<T>* a,
     MatrixX<T>* MM,
     VectorX<T>* qq) {
-  DRAKE_DEMAND(MM);
-  DRAKE_DEMAND(qq);
-  DRAKE_DEMAND(a);
+  DRAKE_DEMAND(MM != nullptr);
+  DRAKE_DEMAND(qq != nullptr);
+  DRAKE_DEMAND(a != nullptr);
 
   // Look for early exit.
   if (qq->rows() == 0)
@@ -1620,9 +1620,9 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLcp(
     MlcpToLcpData* mlcp_to_lcp_data,
     MatrixX<T>* MM,
     VectorX<T>* qq) {
-  DRAKE_DEMAND(MM);
-  DRAKE_DEMAND(qq);
-  DRAKE_DEMAND(mlcp_to_lcp_data);
+  DRAKE_DEMAND(MM != nullptr);
+  DRAKE_DEMAND(qq != nullptr);
+  DRAKE_DEMAND(mlcp_to_lcp_data != nullptr);
 
   // Get number of contacts and limits.
   const int num_contacts = problem_data.mu.size();
@@ -1704,7 +1704,7 @@ void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
     std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
     int m,
     MatrixX<T>* iM_GT) {
-  DRAKE_DEMAND(iM_GT);
+  DRAKE_DEMAND(iM_GT != nullptr);
   DRAKE_DEMAND(iM_GT->cols() == m);
 
   VectorX<T> basis(m);  // Basis vector.
@@ -1774,8 +1774,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
     const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& trunc_neg_invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) {
-  DRAKE_DEMAND(MM);
-  DRAKE_DEMAND(qq);
+  DRAKE_DEMAND(MM != nullptr);
+  DRAKE_DEMAND(qq != nullptr);
 
   // Get numbers of types of contacts.
   const int num_sliding = problem_data.sliding_contacts.size();
@@ -1862,8 +1862,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLcp(
     const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& trunc_neg_invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) {
-  DRAKE_DEMAND(MM);
-  DRAKE_DEMAND(qq);
+  DRAKE_DEMAND(MM != nullptr);
+  DRAKE_DEMAND(qq != nullptr);
 
   // Get numbers of types of contacts.
   const int num_sliding = problem_data.sliding_contacts.size();
@@ -2069,8 +2069,8 @@ void ConstraintSolver<T>::FormImpactingConstraintLcp(
     const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& trunc_neg_invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) {
-  DRAKE_DEMAND(MM);
-  DRAKE_DEMAND(qq);
+  DRAKE_DEMAND(MM != nullptr);
+  DRAKE_DEMAND(qq != nullptr);
 
   // Get numbers of contacts.
   const int num_contacts = problem_data.mu.size();

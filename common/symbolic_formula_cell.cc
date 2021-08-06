@@ -33,7 +33,7 @@ RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
     : FormulaCell{k}, e_lhs_{std::move(lhs)}, e_rhs_{std::move(rhs)} {}
 
 void RelationalFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, e_lhs_);
   hash_append(*hasher, e_rhs_);
@@ -69,7 +69,7 @@ NaryFormulaCell::NaryFormulaCell(const FormulaKind k, set<Formula> formulas)
     : FormulaCell{k}, formulas_{std::move(formulas)} {}
 
 void NaryFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, formulas_);
 }
@@ -180,7 +180,7 @@ FormulaVar::FormulaVar(Variable v)
 }
 
 void FormulaVar::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, var_);
 }
@@ -403,7 +403,7 @@ FormulaNot::FormulaNot(Formula f)
     : FormulaCell{FormulaKind::Not}, f_{std::move(f)} {}
 
 void FormulaNot::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, f_);
 }
@@ -442,7 +442,7 @@ FormulaForall::FormulaForall(Variables vars, Formula f)
       f_{std::move(f)} {}
 
 void FormulaForall::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, vars_);
   hash_append(*hasher, f_);
@@ -499,7 +499,7 @@ FormulaIsnan::FormulaIsnan(Expression e)
     : FormulaCell{FormulaKind::Isnan}, e_{std::move(e)} {}
 
 void FormulaIsnan::HashAppendDetail(DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   hash_append(*hasher, e_);
 }
@@ -584,7 +584,7 @@ struct VariablesCollector {
 
 void FormulaPositiveSemidefinite::HashAppendDetail(
     DelegatingHasher* hasher) const {
-  DRAKE_ASSERT(hasher);
+  DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
   // Computes a hash of a matrix only using its lower-triangular part.
   for (int i = 0; i < m_.rows(); ++i) {

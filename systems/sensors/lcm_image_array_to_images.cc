@@ -55,10 +55,10 @@ struct PngDecodeData {
 };
 
 void CopyNextPngBytes(png_structp png_ptr, png_bytep data, size_t length) {
-  DRAKE_DEMAND(png_ptr);
+  DRAKE_DEMAND(png_ptr != nullptr);
   PngDecodeData* decode_data = reinterpret_cast<PngDecodeData*>(
       png_get_io_ptr(png_ptr));
-  DRAKE_DEMAND(decode_data);
+  DRAKE_DEMAND(decode_data != nullptr);
 
   if (decode_data->pos + static_cast<int>(length) > decode_data->size) {
     png_error(png_ptr, "Attempt to read past end of PNG input buffer");
@@ -76,10 +76,10 @@ bool DecompressPng(const lcmt_image* lcm_image, Image<kPixelType>* image) {
 
   png_structp png_ptr = png_create_read_struct(
       PNG_LIBPNG_VER_STRING, 0, 0, 0);
-  DRAKE_DEMAND(png_ptr);
+  DRAKE_DEMAND(png_ptr != nullptr);
 
   png_infop info_ptr = png_create_info_struct(png_ptr);
-  DRAKE_DEMAND(info_ptr);
+  DRAKE_DEMAND(info_ptr != nullptr);
 
   if (setjmp(png_jmpbuf(png_ptr)) == 0) {
     png_set_read_fn(png_ptr, &decode_data, CopyNextPngBytes);

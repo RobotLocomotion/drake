@@ -399,7 +399,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
 
   // Verify that the vector of triggered witnesses is non-null.
-  DRAKE_DEMAND(triggered_witnesses);
+  DRAKE_DEMAND(triggered_witnesses != nullptr);
 
   // TODO(edrumwri): Speed this process using interpolation between states,
   // more powerful root finding methods, and/or introducing the concept of
@@ -567,7 +567,7 @@ Simulator<T>::IntegrateContinuousState(
   using std::abs;
 
   // Clear the composite event collection.
-  DRAKE_ASSERT(witnessed_events);
+  DRAKE_ASSERT(witnessed_events != nullptr);
   witnessed_events->Clear();
 
   // Save the time and current state.

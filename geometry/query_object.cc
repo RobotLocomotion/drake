@@ -127,8 +127,8 @@ template <typename T>
 void QueryObject<T>::ComputeContactSurfacesWithFallback(
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  DRAKE_DEMAND(surfaces);
-  DRAKE_DEMAND(point_pairs);
+  DRAKE_DEMAND(surfaces != nullptr);
+  DRAKE_DEMAND(point_pairs != nullptr);
 
   ThrowIfNotCallable();
 
@@ -141,8 +141,8 @@ template <typename T>
 void QueryObject<T>::ComputePolygonalContactSurfacesWithFallback(
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  DRAKE_DEMAND(surfaces);
-  DRAKE_DEMAND(point_pairs);
+  DRAKE_DEMAND(surfaces != nullptr);
+  DRAKE_DEMAND(point_pairs != nullptr);
 
   ThrowIfNotCallable();
 

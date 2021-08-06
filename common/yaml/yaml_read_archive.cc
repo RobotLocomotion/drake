@@ -149,7 +149,7 @@ void YamlReadArchive::ReportError(const std::string& note) const {
   for (auto* archive = parent_; archive; archive = archive->parent_) {
     fmt::print(e, " while accepting ");
     archive->PrintNodeSummary(e);
-    if (archive->debug_visit_name_) {
+    if (archive->debug_visit_name_ != nullptr) {
       fmt::print(e, " while visiting ");
       archive->PrintVisitNameType(e);
     }
@@ -201,12 +201,12 @@ void YamlReadArchive::PrintNodeSummary(std::ostream& s) const {
 }
 
 void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
-  if (!debug_visit_name_) {
+  if (debug_visit_name_ == nullptr) {
     s << "<root>";
     return;
   }
-  DRAKE_DEMAND(debug_visit_name_);
-  DRAKE_DEMAND(debug_visit_type_);
+  DRAKE_DEMAND(debug_visit_name_ != nullptr);
+  DRAKE_DEMAND(debug_visit_type_ != nullptr);
   fmt::print(s, "{} {}",
              drake::NiceTypeName::Get(*debug_visit_type_),
              debug_visit_name_);
