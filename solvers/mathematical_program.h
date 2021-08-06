@@ -2320,7 +2320,6 @@ class MathematicalProgram {
    * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
    * expressions @p e. We create a new symmetric matrix of variables M being
    * positive semidefinite, with the linear equality constraint e == M.
-   * @tparam Derived An Eigen Matrix of symbolic expressions.
    * @param e Imposes constraint "e is positive semidefinite".
    * @pre{1. e is symmetric.
    *      2. e(i, j) is linear for all i, j
@@ -2342,28 +2341,15 @@ class MathematicalProgram {
    * prog.AddPositiveSemidefiniteConstraint(e);
    * @endcode
    */
-  template <typename Derived>
-  typename std::enable_if_t<
-      std::is_same_v<typename Derived::Scalar, symbolic::Expression>,
-      Binding<PositiveSemidefiniteConstraint>>
-  AddPositiveSemidefiniteConstraint(const Eigen::MatrixBase<Derived>& e) {
-    DRAKE_DEMAND(e.rows() == e.cols());
-    DRAKE_ASSERT(e == e.transpose());
-    const int e_rows = Derived::RowsAtCompileTime;
-    MatrixDecisionVariable<e_rows, e_rows> M{};
-    if (e_rows == Eigen::Dynamic) {
-      M = NewSymmetricContinuousVariables(e.rows());
-    } else {
-      M = NewSymmetricContinuousVariables<e_rows>();
-    }
+  Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+    // TODO(jwnimmer-tri) Move this whole function definition into the cc file.
+    DRAKE_THROW_UNLESS(e.rows() == e.cols());
+    DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
+    const MatrixXDecisionVariable M = NewSymmetricContinuousVariables(e.rows());
     // Adds the linear equality constraint that M = e.
     AddLinearEqualityConstraint(
-        e - M, Eigen::Matrix<double, e_rows, e_rows>::Zero(e.rows(), e.rows()),
-        true);
-    const int M_flat_size =
-        e_rows == Eigen::Dynamic ? Eigen::Dynamic : e_rows * e_rows;
-    const Eigen::Map<Eigen::Matrix<symbolic::Variable, M_flat_size, 1>> M_flat(
-        &M(0, 0), e.size());
+        e - M, Eigen::MatrixXd::Zero(e.rows(), e.rows()), true);
     return AddPositiveSemidefiniteConstraint(M);
   }
 
