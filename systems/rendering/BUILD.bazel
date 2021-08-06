@@ -28,6 +28,8 @@ drake_cc_library(
     name = "pose_aggregator",
     srcs = ["pose_aggregator.cc"],
     hdrs = ["pose_aggregator.h"],
+    # Not necessary for gcc, but clang gets cranky without this.
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":pose_bundle",
         ":pose_vector",
@@ -99,6 +101,8 @@ drake_cc_library(
     name = "render_pose_to_geometry_pose",
     srcs = ["render_pose_to_geometry_pose.cc"],
     hdrs = ["render_pose_to_geometry_pose.h"],
+    # Not necessary for gcc, but clang gets cranky without this.
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":pose_vector",
         "//geometry:frame_kinematics",

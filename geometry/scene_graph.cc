@@ -400,9 +400,15 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   output->set(&context, this);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
                                    PoseBundle<T>* output) const {
+  static const logging::Warn log_once(
+      "Do not use SceneGraph's PoseBundle-valued output port. It is deprecated "
+      "for removal after 2021-12-01. Instead use the QueryObject-valued port "
+      "and directly query for any information you need.");
   // Note: This functionality can potentially lead to strange visualization
   // artifacts. No invariant is maintained on what poses are being reported.
   // That means, when computing the output, *any* frame with illustration
@@ -429,6 +435,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
     // TODO(SeanCurtis-TRI): Handle velocity.
   }
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 std::vector<FrameId> SceneGraph<T>::GetDynamicFrames(

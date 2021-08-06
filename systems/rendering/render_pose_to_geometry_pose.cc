@@ -9,6 +9,9 @@ using drake::geometry::FrameId;
 using drake::geometry::SourceId;
 using drake::math::RigidTransform;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 namespace drake {
 namespace systems {
 namespace rendering {
@@ -48,3 +51,5 @@ RenderPoseToGeometryPose<T>::~RenderPoseToGeometryPose() = default;
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::rendering::RenderPoseToGeometryPose)
+
+#pragma GCC diagnostic pop

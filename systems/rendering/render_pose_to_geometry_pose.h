@@ -12,15 +12,22 @@ namespace rendering {
 /// rendering::PoseVector<T> on the input to geometry::FramePoseVector<T>
 /// on the output.
 template <typename T>
-class RenderPoseToGeometryPose final : public LeafSystem<T> {
+class DRAKE_DEPRECATED("2021-12-01",
+                       "RenderPoseToGeometryPose is no longer in use. "
+                       "Instead of passing through PoseVector, please output "
+                       "geometry::FramePoseVector directly.")
+RenderPoseToGeometryPose final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderPoseToGeometryPose)
 
   RenderPoseToGeometryPose(geometry::SourceId, geometry::FrameId);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit RenderPoseToGeometryPose(const RenderPoseToGeometryPose<U>&);
+#pragma GCC diagnostic pop
 
   ~RenderPoseToGeometryPose() override;
 

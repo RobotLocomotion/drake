@@ -522,13 +522,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
-            py_rvp::reference_internal, cls_doc.get_source_pose_port.doc)
-        .def(
-            "get_pose_bundle_output_port",
-            [](Class* self) -> const systems::OutputPort<T>& {
-              return self->get_pose_bundle_output_port();
-            },
-            py_rvp::reference_internal, cls_doc.get_pose_bundle_output_port.doc)
+            py_rvp::reference_internal, cls_doc.get_source_pose_port.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("get_pose_bundle_output_port",
+            WrapDeprecated(cls_doc.get_pose_bundle_output_port.doc_deprecated,
+                &Class::get_pose_bundle_output_port),
+            py_rvp::reference_internal,
+            cls_doc.get_pose_bundle_output_port.doc_deprecated);
+#pragma GCC diagnostic pop
+
+    cls  // BR
         .def("get_query_output_port", &Class::get_query_output_port,
             py_rvp::reference_internal, cls_doc.get_query_output_port.doc)
         .def("model_inspector", &Class::model_inspector,
