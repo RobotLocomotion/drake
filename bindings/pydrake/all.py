@@ -45,6 +45,7 @@ from .trajectories import *
 from .common.all import *
 from .geometry.all import *
 # - `examples` does not offer public Drake library symbols.
+from .lcmtypes.all import *
 from .manipulation.all import *
 from .multibody.all import *
 from .solvers.all import *

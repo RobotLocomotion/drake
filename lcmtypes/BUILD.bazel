@@ -26,7 +26,33 @@ load(
     "drake_lcm_java_library",
     "drake_lcm_py_library",
 )
+load(":defs.bzl", "ALL_LCM_SRCS")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# Search for all *.lcm files.
+_GLOB_ALL_LCM_SRCS = sorted(glob(["*.lcm"]))
+
+# The list of files in the glob, but not in defs.bzl.
+_MISSING_ALL = [
+    x
+    for x in _GLOB_ALL_LCM_SRCS
+    if x not in ALL_LCM_SRCS
+]
+
+# The list of files in defs.bzl, but not in the glob.
+_EXTRA_ALL = [
+    x
+    for x in ALL_LCM_SRCS
+    if x not in _GLOB_ALL_LCM_SRCS
+]
+
+# Fail with an error message if the two lists disagree.
+(len(_MISSING_ALL + _EXTRA_ALL) == 0) or fail(
+    "Please update lcmtypes/defs.bzl to add {} and remove {}".format(
+        _MISSING_ALL,
+        _EXTRA_ALL,
+    ),
+)
 
 drake_lcm_cc_library(
     name = "acrobot",
@@ -249,7 +275,7 @@ drake_lcm_py_library(
     # We'll rely on the //:module_py path munging instead.
     add_current_package_to_imports = False,
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]),
+    lcm_srcs = ALL_LCM_SRCS,
     visibility = ["//visibility:private"],
 )
 
@@ -264,7 +290,7 @@ drake_py_library(
 drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]),
+    lcm_srcs = ALL_LCM_SRCS,
 )
 
 # This should list every LCM type that is known to Drake.

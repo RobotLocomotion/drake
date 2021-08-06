@@ -11,7 +11,6 @@ import webbrowser
 
 import numpy as np
 
-from drake import lcmt_viewer_load_robot
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.common.value import AbstractValue
