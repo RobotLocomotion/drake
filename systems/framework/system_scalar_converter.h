@@ -220,7 +220,7 @@ void SystemScalarConverter::Add(const ConverterFunction<T, U>& func) {
   // is typed as `void* => void*` in order to have a non-templated signature
   // and thus fit into a homogeneously-typed std::unordered_map.
   Insert(typeid(T), typeid(U), [func](const void* const bare_u) {
-    DRAKE_ASSERT(bare_u);
+    DRAKE_ASSERT(bare_u != nullptr);
     const System<U>& other = *static_cast<const System<U>*>(bare_u);
     return func(other).release();
   });

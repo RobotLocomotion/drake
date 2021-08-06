@@ -40,7 +40,7 @@ class ScrewJointTest : public ::testing::Test {
                                           kScrewPitch, kDamping);
     mutable_joint_ = dynamic_cast<ScrewJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));
-    DRAKE_DEMAND(mutable_joint_);
+    DRAKE_DEMAND(mutable_joint_ != nullptr);
     mutable_joint_->set_position_limits(
         Vector1d::Constant(kPositionLowerLimit),
         Vector1d::Constant(kPositionUpperLimit));

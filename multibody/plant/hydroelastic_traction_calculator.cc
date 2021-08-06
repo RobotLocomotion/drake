@@ -30,8 +30,8 @@ void HydroelasticTractionCalculator<T>::
         std::vector<HydroelasticQuadraturePointData<T>>*
             traction_at_quadrature_points,
         SpatialForce<T>* F_Ac_W) const {
-  DRAKE_DEMAND(traction_at_quadrature_points);
-  DRAKE_DEMAND(F_Ac_W);
+  DRAKE_DEMAND(traction_at_quadrature_points != nullptr);
+  DRAKE_DEMAND(F_Ac_W != nullptr);
 
   // Use a second-order Gaussian quadrature rule. For linear pressure fields,
   // the second-order rule allows exact computation (to floating point error)

@@ -392,7 +392,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     T zero_tol,
     VectorX<T>* M_prime_col,
     VectorX<T>* q_prime) const {
-  DRAKE_DEMAND(q_prime);
+  DRAKE_DEMAND(q_prime != nullptr);
 
   const int kArtificial = M.rows();
   DRAKE_DEMAND(driving_index >= 0 && driving_index <= kArtificial);
@@ -404,7 +404,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   // If the driving index does not correspond to the artificial variable,
   // M_prime_col must be non-null.
   if (!IsArtificial(indep_variables_[driving_index]))
-    DRAKE_DEMAND(M_prime_col);
+    DRAKE_DEMAND(M_prime_col != nullptr);
 
   // Determine the sets.
   DetermineIndexSets();
@@ -555,7 +555,7 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
     int artificial_index,
     T zero_tol,
     VectorX<T>* z) const {
-  DRAKE_DEMAND(z);
+  DRAKE_DEMAND(z != nullptr);
   const int n = q.rows();
 
   // Compute the solution by pivoting the artificial variable, which was just
@@ -581,7 +581,7 @@ template <typename T>
 bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
     int* blocking_index) const {
-  DRAKE_DEMAND(blocking_index);
+  DRAKE_DEMAND(blocking_index != nullptr);
   DRAKE_DEMAND(ratios.size() == matrix_col.size());
   DRAKE_DEMAND(zero_tol > 0);
 
@@ -670,7 +670,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                                      const T& zero_tol) const {
   using std::max;
   using std::abs;
-  DRAKE_DEMAND(num_pivots);
+  DRAKE_DEMAND(num_pivots != nullptr);
 
   DRAKE_LOGGER_DEBUG(
       "UnrevisedLemkeSolver::SolveLcpLemke() entered, M: {}, "

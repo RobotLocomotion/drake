@@ -195,13 +195,13 @@ class InitialValueProblem {
 
   /// Gets a reference to the internal integrator instance.
   const IntegratorBase<T>& get_integrator() const {
-    DRAKE_DEMAND(integrator_.get());
+    DRAKE_DEMAND(integrator_ != nullptr);
     return *integrator_.get();
   }
 
   /// Gets a mutable reference to the internal integrator instance.
   IntegratorBase<T>& get_mutable_integrator() {
-    DRAKE_DEMAND(integrator_.get());
+    DRAKE_DEMAND(integrator_ != nullptr);
     return *integrator_.get();
   }
 

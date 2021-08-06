@@ -59,7 +59,7 @@ IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
 enum class ColumnType { Nonnegative, Nonpositive, Indefinite };
 std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
                                       IntegerVectorList* alphabet) {
-  DRAKE_ASSERT(alphabet);
+  DRAKE_ASSERT(alphabet != nullptr);
   int cnt = 0;
   std::vector<ColumnType> column_type(A.cols(), ColumnType::Indefinite);
 

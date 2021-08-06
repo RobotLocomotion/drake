@@ -62,7 +62,7 @@ class MapKeyRange {
   };
 
   explicit MapKeyRange(const std::unordered_map<K, V>* map) : map_(map) {
-    DRAKE_DEMAND(map);
+    DRAKE_DEMAND(map != nullptr);
   }
   ConstIterator begin() const { return ConstIterator(map_->cbegin()); }
   ConstIterator end() const { return ConstIterator(map_->cend()); }

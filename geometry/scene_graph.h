@@ -629,7 +629,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @code
    const ProximityProperties* old_props =
        scene_graph.model_inspector().GetProximityProperties(geometry_id);
-   DRAKE_DEMAND(old_props);
+   DRAKE_DEMAND(old_props != nullptr);
    ProximityProperties new_props(*old_props);
    // Add a new property.
    new_props.AddProperty("group", "new_prop_name", some_value);
