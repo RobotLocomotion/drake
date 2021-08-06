@@ -162,7 +162,7 @@ void ParseBody(const multibody::PackageMap& package_map,
   }
 }
 
-void ParseCollisionFilterGroup(const ModelInstanceIndex& model_instance,
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
                                XMLElement* node,
                                MultibodyPlant<double>* plant) {
   auto next_child_element = [](const ElementNode& data_element,

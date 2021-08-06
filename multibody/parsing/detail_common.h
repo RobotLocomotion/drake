@@ -135,7 +135,7 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 // @param read_bool_attribute   Function that reads a boolean attribute with
 //                              the name provided in the ElementNode provided.
 void ParseCollisionFilterGroupCommon(
-    const ModelInstanceIndex& model_instance, const ElementNode& model_node,
+    ModelInstanceIndex model_instance, const ElementNode& model_node,
     MultibodyPlant<double>* plant,
     const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,

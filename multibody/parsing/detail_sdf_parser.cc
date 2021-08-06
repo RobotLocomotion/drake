@@ -863,7 +863,7 @@ bool AreWelded(
   return false;
 }
 
-void ParseCollisionFilterGroup(const ModelInstanceIndex& model_instance,
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
                                const sdf::Model& model,
                                MultibodyPlant<double>* plant) {
   auto next_child_element = [](const ElementNode& data_element,

@@ -110,7 +110,7 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 // @param[out] collision_filter_pairs  Filter group pairs between whom
 //                                     collisions will be excluded.
 void CollectCollisionFilterGroup(
-    const ModelInstanceIndex& model_instance,
+    ModelInstanceIndex model_instance,
     const MultibodyPlant<double>& plant, const ElementNode& group_node,
     std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
     std::set<SortedPair<std::string>>* collision_filter_pairs,
@@ -183,7 +183,7 @@ void CollectCollisionFilterGroup(
 }
 
 void ParseCollisionFilterGroupCommon(
-    const ModelInstanceIndex& model_instance,
+    ModelInstanceIndex model_instance,
     const ElementNode& model_node,
     MultibodyPlant<double>* plant,
     const std::function<ElementNode(const ElementNode&, const char*)>&
