@@ -1089,8 +1089,7 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const MatrixX<Expression>>& e) {
             return self->AddPositiveSemidefiniteConstraint(e);
           },
-          doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
-              .doc_1args_constEigenMatrixBase)
+          doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args_e)
       .def(
           "AddLinearMatrixInequalityConstraint",
           [](MathematicalProgram* self,
