@@ -6,6 +6,7 @@
 #include <cmath>
 #include <limits>
 #include <list>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -1767,11 +1768,18 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
       ThrowForInvalidOption(rescode, int_options.first, int_options.second);
     }
   }
+  std::optional<std::string> msk_writedata;
   for (const auto& str_options : merged_options.GetOptionsStr(id())) {
     if (rescode == MSK_RES_OK) {
-      rescode = MSK_putnastrparam(task, str_options.first.c_str(),
-                                  str_options.second.c_str());
-      ThrowForInvalidOption(rescode, str_options.first, str_options.second);
+      if (str_options.first == "writedata") {
+        if (str_options.second != "") {
+          msk_writedata = str_options.second;
+        }
+      } else {
+        rescode = MSK_putnastrparam(task, str_options.first.c_str(),
+                                    str_options.second.c_str());
+        ThrowForInvalidOption(rescode, str_options.first, str_options.second);
+      }
     }
   }
 
@@ -1946,6 +1954,10 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
     MSKrescodee trmcode;  // termination code
     rescode = MSK_optimizetrm(task, &trmcode);
+  }
+
+  if (rescode == MSK_RES_OK && msk_writedata.has_value()) {
+    rescode = MSK_writedata(task, msk_writedata.value().c_str());
   }
 
   // Determines the solution type.

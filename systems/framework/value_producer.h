@@ -436,6 +436,9 @@ class ValueProducer final {
   static CalcCallback make_calc_mode_1(
       const SomeInstance* instance,
       void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const) {
+    static_assert(std::is_base_of_v<ContextBase, SomeContext>,
+                  "The inferred type of SomeContext was invalid;"
+                  " typically it should be Context<T>.");
     const SomeClass* typed_instance = instance_cast<SomeClass>(instance);
     if (calc == nullptr) {
       ThrowBadNull();
@@ -454,6 +457,9 @@ class ValueProducer final {
   static CalcCallback make_calc_mode_2(
       const SomeInstance* instance,
       SomeOutput (SomeClass::*calc)(const SomeContext&) const) {
+    static_assert(std::is_base_of_v<ContextBase, SomeContext>,
+                  "The inferred type of SomeContext was invalid;"
+                  " typically it should be Context<T>.");
     const SomeClass* typed_instance = instance_cast<SomeClass>(instance);
     if (calc == nullptr) {
       ThrowBadNull();
@@ -470,6 +476,9 @@ class ValueProducer final {
   template <typename SomeContext, typename SomeOutput>
   static CalcCallback make_calc_mode_3(
       std::function<void(const SomeContext&, SomeOutput*)>&& calc) {
+    static_assert(std::is_base_of_v<ContextBase, SomeContext>,
+                  "The inferred type of SomeContext was invalid;"
+                  " typically it should be Context<T>.");
     if (calc == nullptr) {
       ThrowBadNull();
     }
@@ -485,6 +494,9 @@ class ValueProducer final {
   template <typename SomeContext, typename SomeOutput>
   static CalcCallback make_calc_mode_4(
       std::function<SomeOutput(const SomeContext&)>&& calc) {
+    static_assert(std::is_base_of_v<ContextBase, SomeContext>,
+                  "The inferred type of SomeContext was invalid;"
+                  " typically it should be Context<T>.");
     if (calc == nullptr) {
       ThrowBadNull();
     }
@@ -499,6 +511,11 @@ class ValueProducer final {
   // For overload series (a).
   template <typename SomeOutput>
   static AllocateCallback make_allocate_mode_a() {
+    static_assert(
+        std::is_default_constructible_v<SomeOutput>,
+        "When ValueProducer is used with an output type that is not default"
+        " constructible, then you must provide either a model_value or an"
+        " allocate callback function.");
     return static_cast<std::unique_ptr<drake::AbstractValue>(*)()>(
         &AbstractValue::Make<SomeOutput>);
   }
