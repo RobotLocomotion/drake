@@ -431,6 +431,28 @@ TEST_F(LeafSystemTest, DefaultPortNameTest) {
       "y1");
 }
 
+TEST_F(LeafSystemTest, DeclareVectorPortsBySizeTest) {
+  const InputPort<double>& input =
+      system_.DeclareVectorInputPort("my_input", 2);
+  EXPECT_EQ(input.get_name(), "my_input");
+  EXPECT_EQ(input.size(), 2);
+  EXPECT_FALSE(input.is_random());
+  EXPECT_TRUE(system_
+                  .DeclareVectorInputPort(kUseDefaultName, 3,
+                                          RandomDistribution::kUniform)
+                  .is_random());
+
+  const OutputPort<double>& output = system_.DeclareVectorOutputPort(
+      "my_output", 3, &TestSystem<double>::CalcOutput);
+  EXPECT_EQ(output.get_name(), "my_output");
+  EXPECT_EQ(output.size(), 3);
+
+  const OutputPort<double>& output2 = system_.DeclareVectorOutputPort(
+      "my_output2", 2, [](const Context<double>&, BasicVector<double>*) {});
+  EXPECT_EQ(output2.get_name(), "my_output2");
+  EXPECT_EQ(output2.size(), 2);
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 class AllThingsDeprecated final : public LeafSystem<double> {

@@ -56,8 +56,7 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
                                        &ExampleDiscreteSystem::Update);
 
     // Present y_n (=S_n) at the output port.
-    DeclareVectorOutputPort("Sn", systems::BasicVector<double>(1),
-                            &ExampleDiscreteSystem::Output);
+    DeclareVectorOutputPort("Sn", 1, &ExampleDiscreteSystem::Output);
   }
 
   static constexpr double kPeriod = 1 / 50.;  // Update at 50Hz (h=1/50).

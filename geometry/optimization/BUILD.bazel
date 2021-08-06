@@ -26,6 +26,7 @@ drake_cc_library(
         "convex_set.cc",
         "hpolyhedron.cc",
         "hyperellipsoid.cc",
+        "minkowski_sum.cc",
         "point.cc",
         "vpolytope.cc",
     ],
@@ -33,6 +34,7 @@ drake_cc_library(
         "convex_set.h",
         "hpolyhedron.h",
         "hyperellipsoid.h",
+        "minkowski_sum.h",
         "point.h",
         "vpolytope.h",
     ],
@@ -122,6 +124,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "minkowski_sum_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

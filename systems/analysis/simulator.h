@@ -710,7 +710,7 @@ class Simulator {
   // TODO(sherm1) Add an option where the Simulator returns failed status
   // rather than throwing.
   void CallMonitorUpdateStatusAndMaybeThrow(SimulatorStatus* status) {
-    DRAKE_DEMAND(status);
+    DRAKE_DEMAND(status != nullptr);
     if (!get_monitor()) return;
     const EventStatus monitor_status = get_monitor()(*context_);
     if (monitor_status.severity() == EventStatus::kReachedTermination) {

@@ -33,7 +33,7 @@ DifferentialInverseKinematicsIntegrator::
   }
 
   this->DeclareVectorOutputPort(
-      "joint_positions", systems::BasicVector<double>(robot.num_positions()),
+      "joint_positions", robot.num_positions(),
       &DifferentialInverseKinematicsIntegrator::CopyPositionsOut,
       {all_state_ticket()});
 
@@ -90,7 +90,7 @@ void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
     systems::DiscreteValues<double>* discrete_state) const {
   unused(events);
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_DEMAND(input);
+  DRAKE_DEMAND(input != nullptr);
   const math::RigidTransformd& X_WE_desired =
       input->get_value<math::RigidTransformd>();
   const math::RigidTransform<double> X_WE = ForwardKinematics(context);

@@ -41,6 +41,7 @@ drake_cc_package_library(
         ":trajectory_linear_system",
         ":trajectory_source",
         ":vector_log",
+        ":vector_log_sink",
         ":wrap_to_system",
         ":zero_order_hold",
     ],
@@ -320,6 +321,16 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:reset_after_move",
+    ],
+)
+
+drake_cc_library(
+    name = "vector_log_sink",
+    srcs = ["vector_log_sink.cc"],
+    hdrs = ["vector_log_sink.h"],
+    deps = [
+        ":vector_log",
+        "//systems/framework",
     ],
 )
 
@@ -668,6 +679,22 @@ drake_cc_googletest(
     name = "vector_log_test",
     deps = [
         ":vector_log",
+    ],
+)
+
+drake_cc_googletest(
+    name = "vector_log_sink_test",
+    deps = [
+        ":affine_system",
+        ":constant_vector_source",
+        ":linear_system",
+        ":vector_log_sink",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

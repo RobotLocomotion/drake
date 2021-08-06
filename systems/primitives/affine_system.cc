@@ -53,7 +53,7 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
     // output port's prerequisites; see AffineSystem's ctor for an example.
     // By default, the output port will depend on everything (time, input,
     // state, accuracy, etc.).
-    this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(num_outputs_),
+    this->DeclareVectorOutputPort(kUseDefaultName, num_outputs_,
                                   &TimeVaryingAffineSystem::CalcOutputY);
   }
 }

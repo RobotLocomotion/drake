@@ -456,8 +456,8 @@ template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr) {
   using std::abs;
-  DRAKE_ASSERT(xtplus_radau);
-  DRAKE_ASSERT(xtplus_itr);
+  DRAKE_ASSERT(xtplus_radau != nullptr);
+  DRAKE_ASSERT(xtplus_itr != nullptr);
   DRAKE_ASSERT(xtplus_radau->size() == xt0.size());
   DRAKE_ASSERT(xtplus_itr->size() == xt0.size());
 

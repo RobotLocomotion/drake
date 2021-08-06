@@ -13,7 +13,7 @@ WrapToSystem<T>::WrapToSystem(int input_size) : input_size_(input_size) {
   DRAKE_DEMAND(input_size_ > 0);
 
   this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size_);
-  this->DeclareVectorOutputPort(kUseDefaultName, BasicVector<T>(input_size_),
+  this->DeclareVectorOutputPort(kUseDefaultName, input_size_,
                                 &WrapToSystem::CalcWrappedOutput);
 }
 

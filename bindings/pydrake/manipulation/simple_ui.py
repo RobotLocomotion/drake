@@ -12,7 +12,6 @@ import numpy as np
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import JointIndex
 from pydrake.systems.framework import (
-    BasicVector,
     LeafSystem,
     PublishEvent,
     VectorSystem,
@@ -184,9 +183,8 @@ class SchunkWsgButtons(LeafSystem):
             force_limit:     Force limit to send to Schunk WSG controller.
         """
         LeafSystem.__init__(self)
-        self.DeclareVectorOutputPort("position", BasicVector(1),
-                                     self.CalcPositionOutput)
-        self.DeclareVectorOutputPort("force_limit", BasicVector(1),
+        self.DeclareVectorOutputPort("position", 1, self.CalcPositionOutput)
+        self.DeclareVectorOutputPort("force_limit", 1,
                                      self.CalcForceLimitOutput)
 
         if window is None:

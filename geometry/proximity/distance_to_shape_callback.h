@@ -52,9 +52,9 @@ struct CallbackData {
         X_WGs(*X_WGs_in),
         max_distance(max_distance_in),
         nearest_pairs(*nearest_pairs_in) {
-    DRAKE_DEMAND(collision_filter_in);
-    DRAKE_DEMAND(X_WGs_in);
-    DRAKE_DEMAND(nearest_pairs_in);
+    DRAKE_DEMAND(collision_filter_in != nullptr);
+    DRAKE_DEMAND(X_WGs_in != nullptr);
+    DRAKE_DEMAND(nearest_pairs_in != nullptr);
   }
 
   /* The collision filter system.  */
@@ -95,7 +95,7 @@ class DistancePairGeometry {
                        const math::RigidTransform<T>& X_WB,
                        SignedDistancePair<T>* result)
       : id_A_(id_A), id_B_(id_B), X_WA_(X_WA), X_WB_(X_WB), result_(result) {
-    DRAKE_ASSERT(result);
+    DRAKE_ASSERT(result != nullptr);
   }
 
   /* @name  Overloads in support of sphere-shape computation

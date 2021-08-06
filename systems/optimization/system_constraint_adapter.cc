@@ -14,7 +14,7 @@ SystemConstraintAdapter::SystemConstraintAdapter(
       // TODO(hongkai.dai): use system_symbolic_ to parse the constraint in the
       // symbolic form.
       system_symbolic_{system_double_->ToSymbolicMaybe()} {
-  DRAKE_DEMAND(system);
+  DRAKE_DEMAND(system != nullptr);
 }
 
 std::optional<std::vector<solvers::Binding<solvers::Constraint>>>

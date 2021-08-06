@@ -17,9 +17,8 @@ namespace {
 class SimpleContinuousTimeSystem : public LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
-    DeclareVectorOutputPort("y", BasicVector<double>(1),
-                            &SimpleContinuousTimeSystem::CopyStateOut);
-    DeclareContinuousState(1);  // One state variable.
+    auto state_index = DeclareContinuousState(1);  // One state variable.
+    DeclareStateOutputPort("y", state_index);
   }
 
  private:
@@ -30,13 +29,6 @@ class SimpleContinuousTimeSystem : public LeafSystem<double> {
     const double x = context.get_continuous_state()[0];
     const double xdot = -x + std::pow(x, 3.0);
     (*derivatives)[0] = xdot;
-  }
-
-  // y = x
-  void CopyStateOut(const Context<double>& context,
-                    BasicVector<double>* output) const {
-    const double x = context.get_continuous_state()[0];
-    (*output)[0] = x;
   }
 };
 

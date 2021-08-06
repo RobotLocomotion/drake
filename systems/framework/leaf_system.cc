@@ -355,11 +355,11 @@ template <typename T>
 void LeafSystem<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
     Event<T>* event,
     CompositeEventCollection<T>* events) const {
-  DRAKE_DEMAND(event);
-  DRAKE_DEMAND(event->get_event_data());
+  DRAKE_DEMAND(event != nullptr);
+  DRAKE_DEMAND(event->get_event_data() != nullptr);
   DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
-      event->get_event_data()));
-  DRAKE_DEMAND(events);
+      event->get_event_data()) != nullptr);
+  DRAKE_DEMAND(events != nullptr);
   event->AddToComposite(events);
 }
 
@@ -643,6 +643,14 @@ InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
       });
   return this->DeclareInputPort(NextInputPortName(std::move(name)),
                                 kVectorValued, size, random_type);
+}
+
+template <typename T>
+InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
+    std::variant<std::string, UseDefaultName> name, int size,
+    std::optional<RandomDistribution> random_type) {
+  return DeclareVectorInputPort(std::move(name), BasicVector<T>(size),
+                                random_type);
 }
 
 template <typename T>

@@ -21,7 +21,7 @@ CacheEntry::CacheEntry(
       description_(std::move(description)),
       value_producer_(std::move(value_producer)),
       prerequisites_of_calc_(std::move(prerequisites_of_calc)) {
-  DRAKE_DEMAND(owning_system);
+  DRAKE_DEMAND(owning_system != nullptr);
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
   DRAKE_DEMAND(value_producer_.is_valid());
 

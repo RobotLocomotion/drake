@@ -120,10 +120,6 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                             systems::CompositeEventCollection<double>* events,
                             double* time) const final;
 
-  std::unique_ptr<AbstractValue> AllocateSerializerOutputValue() const;
-  void CalcSerializerOutputValue(const Context<double>& context,
-                                 AbstractValue* output_value) const;
-
   systems::EventStatus ProcessMessageAndStoreToAbstractState(
       const Context<double>&, State<double>* state) const;
 

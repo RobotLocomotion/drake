@@ -73,8 +73,7 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
                                        &FibonacciDifferenceEquation::Update);
 
     // Output y_n. This will be the Fibonacci element F_n if queried at `t=n*h`.
-    DeclareVectorOutputPort("Fn", systems::BasicVector<double>(1),
-                            &FibonacciDifferenceEquation::Output);
+    DeclareVectorOutputPort("Fn", 1, &FibonacciDifferenceEquation::Output);
   }
 
   /// Update period (in seconds) for the system.

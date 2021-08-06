@@ -29,7 +29,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
       serializer_(std::move(serializer)),
       magic_number_{kMagic} {
   DRAKE_DEMAND(serializer_ != nullptr);
-  DRAKE_DEMAND(lcm);
+  DRAKE_DEMAND(lcm != nullptr);
 
   subscription_ = lcm->Subscribe(
       channel_, [this](const void* buffer, int size) {
@@ -39,22 +39,15 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     subscription_->set_unsubscribe_on_delete(true);
   }
 
-  // Use the "advanced" method to construct explicit non-member functors to
-  // deal with the unusual methods we have available.
-  DeclareAbstractOutputPort(
-      kUseDefaultName,
-      [this]() {
-        return this->AllocateSerializerOutputValue();
-      },
-      [this](const Context<double>& context, AbstractValue* out) {
-        this->CalcSerializerOutputValue(context, out);
-      });
-
   // Declare our two states (message_value, message_count).
   static_assert(kStateIndexMessage == 0, "");
-  this->DeclareAbstractState(*AllocateSerializerOutputValue());
+  auto message_state_index =
+      this->DeclareAbstractState(*serializer_->CreateDefaultValue());
   static_assert(kStateIndexMessageCount == 1, "");
   this->DeclareAbstractState(Value<int>(0));
+
+  // Our sole output is the message state.
+  this->DeclareStateOutputPort(kUseDefaultName, message_state_index);
 
   // Declare an unrestricted forced update handler that is invoked when a
   // "forced" trigger occurs. This gives the user flexibility to force update
@@ -140,17 +133,6 @@ std::string LcmSubscriberSystem::make_name(const std::string& channel) {
 
 const std::string& LcmSubscriberSystem::get_channel_name() const {
   return channel_;
-}
-
-std::unique_ptr<AbstractValue>
-LcmSubscriberSystem::AllocateSerializerOutputValue() const {
-  return serializer_->CreateDefaultValue();
-}
-
-void LcmSubscriberSystem::CalcSerializerOutputValue(
-    const Context<double>& context, AbstractValue* output_value) const {
-  output_value->SetFrom(
-      context.get_abstract_state().get_value(kStateIndexMessage));
 }
 
 void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {

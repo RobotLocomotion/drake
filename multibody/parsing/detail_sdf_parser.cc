@@ -587,7 +587,7 @@ std::string LoadSdf(
       root_dir = ".";
     }
   } else {
-    DRAKE_DEMAND(data_source.file_contents);
+    DRAKE_DEMAND(data_source.file_contents != nullptr);
     ThrowAnyErrors(root->LoadSdfString(*data_source.file_contents,
                                        parser_config));
   }

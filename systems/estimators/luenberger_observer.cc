@@ -16,7 +16,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
     : owned_system_(std::move(owned_system)),
       observed_system_(owned_system_ ? owned_system_.get() : system),
       observer_gain_(observer_gain) {
-  DRAKE_DEMAND(observed_system_);
+  DRAKE_DEMAND(observed_system_ != nullptr);
   observed_system_->ValidateContext(observed_system_context);
 
   // Note: Could potentially extend this to MIMO systems.
@@ -43,7 +43,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
   // Output port is the (estimated) state of the observed system.
   // Note: Again, the derived type of the state vector is lost here, because xc
   // is only guaranteed to be a VectorBase, not a BasicVector.
-  this->DeclareVectorOutputPort("estimated_state", BasicVector<T>(xc.size()),
+  this->DeclareVectorOutputPort("estimated_state", xc.size(),
                                 &LuenbergerObserver::CalcEstimatedState,
                                 {this->xc_ticket()});
 

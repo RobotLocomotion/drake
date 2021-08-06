@@ -742,8 +742,8 @@ class QueryObject {
   // `scene_graph` cannot be null.
   void set(const systems::Context<T>* context,
            const SceneGraph<T>* scene_graph) {
-    DRAKE_DEMAND(context);
-    DRAKE_DEMAND(scene_graph);
+    DRAKE_DEMAND(context != nullptr);
+    DRAKE_DEMAND(scene_graph != nullptr);
     state_.reset();
     context_ = context;
     scene_graph_ = scene_graph;

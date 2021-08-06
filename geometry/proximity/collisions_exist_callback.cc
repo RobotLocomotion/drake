@@ -9,7 +9,7 @@ namespace has_collisions {
 
 CallbackData::CallbackData(const CollisionFilter* collision_filter_in)
     : collision_filter(*collision_filter_in) {
-  DRAKE_DEMAND(collision_filter_in);
+  DRAKE_DEMAND(collision_filter_in != nullptr);
   request.num_max_contacts = 1;
   request.enable_contact = false;
   // NOTE: As of 5/1/2018 the GJK implementation of Libccd appears to be
