@@ -60,6 +60,12 @@ filegroup(
 
 _IMPORT = "." + _PYTHON_SITE_PACKAGES_RELPATH
 
+# N.B. This is not a standalone Python library.
+py_library(
+    name = ".lcmtypes_drake_py",
+    srcs = glob(["*.py"]),
+)
+
 py_library(
     name = ".pydrake",
     srcs = glob(include = [
@@ -70,6 +76,9 @@ py_library(
     ]) + [
         ":.all_runfiles",
         ":.drake_shared_library",
+    ],
+    deps = [
+        ":.lcmtypes_drake_py",
     ],
     imports = [
         _IMPORT,

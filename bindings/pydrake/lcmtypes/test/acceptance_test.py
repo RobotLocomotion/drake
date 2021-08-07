@@ -1,7 +1,4 @@
-
 import unittest
-
-import pydrake.lcmtypes
 
 
 class AcceptanceTest(unittest.TestCase):
