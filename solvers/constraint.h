@@ -332,6 +332,9 @@ class LorentzConeConstraint : public Constraint {
   /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
 
+  /** Getter for eval type. */
+  EvalType eval_type() const { return eval_type_; }
+
  private:
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,

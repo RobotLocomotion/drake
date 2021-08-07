@@ -1938,9 +1938,11 @@ bool AreTwoPolynomialsNear(
 
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog, const Expression& linear_expr,
-    const Expression& quadratic_expr) {
-  const auto& binding1 =
-      prog->AddLorentzConeConstraint(linear_expr, quadratic_expr);
+    const Expression& quadratic_expr,
+    LorentzConeConstraint::EvalType eval_type) {
+  const auto& binding1 = prog->AddLorentzConeConstraint(
+      linear_expr, quadratic_expr, 0., eval_type);
+  EXPECT_EQ(binding1.evaluator()->eval_type(), eval_type);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
   EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
   EXPECT_EQ(binding1.variables(), binding2.variables());
@@ -1965,19 +1967,24 @@ void CheckParsedSymbolicLorentzConeConstraint(
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const Eigen::Matrix<Expression, Eigen::Dynamic, 1>>& e) {
-  const auto& binding1 = prog->AddLorentzConeConstraint(e);
-  const auto& binding2 = prog->lorentz_cone_constraints().back();
+  for (const auto eval_type : {LorentzConeConstraint::EvalType::kConvex,
+                               LorentzConeConstraint::EvalType::kConvexSmooth,
+                               LorentzConeConstraint::EvalType::kNonconvex}) {
+    const auto& binding1 = prog->AddLorentzConeConstraint(e, eval_type);
+    EXPECT_EQ(binding1.evaluator()->eval_type(), eval_type);
+    const auto& binding2 = prog->lorentz_cone_constraints().back();
 
-  EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
-  EXPECT_EQ(binding1.evaluator()->A() * binding1.variables() +
-                binding1.evaluator()->b(),
-            e);
-  EXPECT_EQ(binding2.evaluator()->A() * binding2.variables() +
-                binding2.evaluator()->b(),
-            e);
+    EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
+    EXPECT_EQ(binding1.evaluator()->A() * binding1.variables() +
+                  binding1.evaluator()->b(),
+              e);
+    EXPECT_EQ(binding2.evaluator()->A() * binding2.variables() +
+                  binding2.evaluator()->b(),
+              e);
 
-  CheckParsedSymbolicLorentzConeConstraint(prog, e(0),
-                                           e.tail(e.rows() - 1).squaredNorm());
+    CheckParsedSymbolicLorentzConeConstraint(
+        prog, e(0), e.tail(e.rows() - 1).squaredNorm(), eval_type);
+  }
 }
 
 void CheckParsedSymbolicRotatedLorentzConeConstraint(
@@ -2069,26 +2076,41 @@ TEST_F(SymbolicLorentzConeTest, Test6) {
 
 TEST_F(SymbolicLorentzConeTest, Test7) {
   CheckParsedSymbolicLorentzConeConstraint(
-      &prog_, x_(0) + 2, pow(x_(0), 2) + 4 * x_(0) * x_(1) + 4 * pow(x_(1), 2));
+      &prog_, x_(0) + 2, pow(x_(0), 2) + 4 * x_(0) * x_(1) + 4 * pow(x_(1), 2),
+      LorentzConeConstraint::EvalType::kConvex);
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2, pow(x_(0), 2) + 4 * x_(0) * x_(1) + 4 * pow(x_(1), 2),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
 }
 
 TEST_F(SymbolicLorentzConeTest, Test8) {
   CheckParsedSymbolicLorentzConeConstraint(
       &prog_, x_(0) + 2,
-      pow(x_(0), 2) - (x_(0) - x_(1)) * (x_(0) + x_(1)) + 2 * x_(1) + 3);
+      pow(x_(0), 2) - (x_(0) - x_(1)) * (x_(0) + x_(1)) + 2 * x_(1) + 3,
+      LorentzConeConstraint::EvalType::kConvex);
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2,
+      pow(x_(0), 2) - (x_(0) - x_(1)) * (x_(0) + x_(1)) + 2 * x_(1) + 3,
+      LorentzConeConstraint::EvalType::kConvexSmooth);
 }
 
 TEST_F(SymbolicLorentzConeTest, Test9) {
-  CheckParsedSymbolicLorentzConeConstraint(&prog_, 2,
-                                           pow(x_(0), 2) + pow(x_(1), 2));
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, 2, pow(x_(0), 2) + pow(x_(1), 2),
+      LorentzConeConstraint::EvalType::kConvex);
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, 2, pow(x_(0), 2) + pow(x_(1), 2),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
 }
 
 TEST_F(SymbolicLorentzConeTest, TestLinearConstraint) {
   // Actually adding linear constraint, that the quadratic expression is
   // actually a constant.
-  CheckParsedSymbolicLorentzConeConstraint(&prog_, x_(0) + 2, 1);
-  CheckParsedSymbolicLorentzConeConstraint(&prog_, x_(0) + 2,
-                                           x_(0) - 2 * (0.5 * x_(0) + 1) + 3);
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2, 1, LorentzConeConstraint::EvalType::kConvexSmooth);
+  CheckParsedSymbolicLorentzConeConstraint(
+      &prog_, x_(0) + 2, x_(0) - 2 * (0.5 * x_(0) + 1) + 3,
+      LorentzConeConstraint::EvalType::kConvexSmooth);
 }
 
 TEST_F(SymbolicLorentzConeTest, TestError) {
@@ -2700,9 +2722,11 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   prog.AddBoundingBoxConstraint(-10, 10, x(0));
   prog.AddBoundingBoxConstraint(-4, 5, x(1));
   prog.AddLorentzConeConstraint(
-      Vector3<symbolic::Expression>(+x(0), +x(1), x(2) - 0.5 * x(1)));
+      Vector3<symbolic::Expression>(+x(0), +x(1), x(2) - 0.5 * x(1)),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   prog.AddLorentzConeConstraint(
-      Vector3<symbolic::Expression>(x(0) + x(1), +x(0), x(2) - x(1)));
+      Vector3<symbolic::Expression>(x(0) + x(1), +x(0), x(2) - x(1)),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   prog.AddRotatedLorentzConeConstraint(Vector4<symbolic::Expression>(
       +x(0), +x(1), 0.5 * (x(0) + x(1)), 0.5 * x(2)));
   prog.AddRotatedLorentzConeConstraint(
@@ -3420,8 +3444,9 @@ GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
   auto lin_eq_con = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1);
-  auto lorentz_con =
-      prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+  auto lorentz_con = prog.AddLorentzConeConstraint(
+      x.cast<symbolic::Expression>(),
+      LorentzConeConstraint::EvalType::kConvexSmooth);
   auto rotated_lorentz_con =
       prog.AddRotatedLorentzConeConstraint(x.cast<symbolic::Expression>());
   Eigen::SparseMatrix<double> A(3, 3);
