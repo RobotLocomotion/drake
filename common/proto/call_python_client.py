@@ -50,7 +50,7 @@ import traceback
 
 import numpy as np
 
-from drake import lcmt_call_python, lcmt_call_python_data
+from pydrake.lcmtypes import lcmt_call_python, lcmt_call_python_data
 
 
 def _ensure_sigint_handler():

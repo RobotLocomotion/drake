@@ -31,6 +31,12 @@ drake_py_library(
     name = "deprecation_py",
     testonly = 1,
     srcs = ["deprecation.py"],
+    # TODO(jwnimmer-tri) When deprecated drake.lcmt_foo is removed on or after
+    # 2022-12-01, we should remove the `visiblity = []` override here.
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        "//lcmtypes:__pkg__",
+    ],
     deps = [":module_py"],
 )
 
