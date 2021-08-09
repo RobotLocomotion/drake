@@ -32,7 +32,8 @@ namespace systems {
 ///   integrator for `simulator` is reset according to the gflags declared in
 ///   this file.
 /// @returns A reference to the newly created integrator owned by `simulator`.
-IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
+template <typename T>
+IntegratorBase<T>& ResetIntegratorFromGflags(Simulator<T>* simulator);
 
 /// Makes a new simulator according to the gflags declared in this file.
 /// @param[in] system
@@ -42,9 +43,9 @@ IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
 ///   The Context that will be used as the initial condition for the simulation;
 ///   otherwise the Simulator will obtain a default Context from `system`.
 /// @returns The newly created Simulator.
-std::unique_ptr<Simulator<double>> MakeSimulatorFromGflags(
-    const System<double>& system,
-    std::unique_ptr<Context<double>> context = nullptr);
+template <typename T>
+std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
+    const System<T>& system, std::unique_ptr<Context<T>> context = nullptr);
 
 }  // namespace systems
 }  // namespace drake

@@ -17,16 +17,30 @@ namespace drake {
 namespace systems {
 namespace {
 
-GTEST_TEST(SimulatorFlagsTest, ResetIntegrator) {
-  ConstantVectorSource<double> source(2);
-  Simulator<double> simulator(source);
+template <typename T>
+void ResetIntegratorTest() {
+  ConstantVectorSource<T> source(2);
+  Simulator<T> simulator(source);
   const void* prior_integrator = &simulator.get_integrator();
-  IntegratorBase<double>& result = ResetIntegratorFromFlags(
-      &simulator, "runge_kutta2", 0.001);
+  IntegratorBase<T>& result =
+      ResetIntegratorFromFlags(&simulator, "runge_kutta2", T(0.001));
   EXPECT_NE(&simulator.get_integrator(), prior_integrator);
   EXPECT_EQ(&simulator.get_integrator(), &result);
-  EXPECT_EQ(NiceTypeName::Get(result),
-            "drake::systems::RungeKutta2Integrator<double>");
+  std::string result_name_expected;
+  if constexpr (std::is_same_v<T, double>) {
+    result_name_expected = "drake::systems::RungeKutta2Integrator<double>";
+  } else if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    result_name_expected =
+        "drake::systems::RungeKutta2Integrator<drake::AutoDiffXd>";
+  } else {
+    throw std::runtime_error("Unknown type T");
+  }
+  EXPECT_EQ(NiceTypeName::Get(result), result_name_expected);
+}
+
+GTEST_TEST(SimulatorFlagsTest, ResetIntegrator) {
+  ResetIntegratorTest<double>();
+  ResetIntegratorTest<AutoDiffXd>();
 }
 
 GTEST_TEST(SimulatorFlagsTest, GetSchemes) {
@@ -42,7 +56,8 @@ GTEST_TEST(SimulatorFlagsTest, GetSchemes) {
   }
 }
 
-class DummySystem final : public drake::systems::LeafSystem<double> {
+template <typename T>
+class DummySystem final : public drake::systems::LeafSystem<T> {
  public:
   DummySystem() {}
 };
@@ -53,7 +68,7 @@ GTEST_TEST(SimulatorConfigFunctionsTest, SimulatorConfigCongruenceTest) {
   // N.B. Due to the RoundTripTest, we know that ExtractSimulatorConfig is doing
   // actual work, not just returning a default constructed SimulatorConfig.
 
-  const DummySystem dummy;
+  const DummySystem<double> dummy;
   Simulator<double> simulator(dummy);
 
   const SimulatorConfig config_defaults;
@@ -69,7 +84,8 @@ GTEST_TEST(SimulatorConfigFunctionsTest, SimulatorConfigCongruenceTest) {
             config_defaults.publish_every_time_step);
 }
 
-GTEST_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
+template <typename T>
+void RoundTripTest() {
   const std::string bespoke_str = "integration_scheme: runge_kutta5\n"
                                   "max_step_size: 0.003\n"
                                   "accuracy: 0.03\n"
@@ -93,8 +109,8 @@ GTEST_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
 
   // Ensure that a roundtrip through the Accept and Extract functions does not
   // corrupt data.
-  const DummySystem dummy;
-  Simulator<double> simulator(dummy);
+  const DummySystem<T> dummy;
+  Simulator<T> simulator(dummy);
   ApplySimulatorConfig(&simulator, bespoke);
   const SimulatorConfig readback = ExtractSimulatorConfig(simulator);
   EXPECT_EQ(readback.integration_scheme, bespoke.integration_scheme);
@@ -103,6 +119,11 @@ GTEST_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.use_error_control, bespoke.use_error_control);
   EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
   EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
+}
+
+GTEST_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
+  RoundTripTest<double>();
+  RoundTripTest<AutoDiffXd>();
 }
 
 }  // namespace
