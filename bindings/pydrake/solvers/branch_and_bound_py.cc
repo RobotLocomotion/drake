@@ -15,6 +15,7 @@ PYBIND11_MODULE(branch_and_bound, m) {
 
   m.doc() = "branch_and_bound bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.solvers.mathematicalprogram");
 
   {

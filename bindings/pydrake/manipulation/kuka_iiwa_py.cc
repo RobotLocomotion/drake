@@ -22,6 +22,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   using namespace drake::manipulation::kuka_iiwa;
   constexpr auto& doc = pydrake_doc.drake.manipulation.kuka_iiwa;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   {

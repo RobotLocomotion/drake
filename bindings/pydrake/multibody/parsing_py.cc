@@ -23,6 +23,8 @@ PYBIND11_MODULE(parsing, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
+  py::module::import("pydrake.common");
+
   // PackageMap
   {
     using Class = PackageMap;

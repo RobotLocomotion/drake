@@ -39,6 +39,8 @@ PYBIND11_MODULE(symbolic, m) {
   using namespace drake::symbolic;
   constexpr auto& doc = pydrake_doc.drake.symbolic;
 
+  py::module::import("pydrake.common");
+
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
   // issue, we should aggressively try to avoid these warnings.
