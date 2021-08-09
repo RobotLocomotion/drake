@@ -17,6 +17,7 @@ PYBIND11_MODULE(planner, m) {
   m.doc() = "Tools for manipulation planning.";
   constexpr auto& doc = pydrake_doc.drake.manipulation.planner;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   py::enum_<DifferentialInverseKinematicsStatus>(m,

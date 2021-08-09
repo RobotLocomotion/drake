@@ -50,7 +50,9 @@ PYBIND11_MODULE(primitives, m) {
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
   constexpr auto& doc = pydrake_doc.drake.systems;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);

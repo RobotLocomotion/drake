@@ -14,6 +14,7 @@ PYBIND11_MODULE(sdpa_free_format, m) {
 
   m.doc() = "SdpaFreeFormat bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.solvers.mathematicalprogram");
 
   py::enum_<RemoveFreeVariableMethod>(

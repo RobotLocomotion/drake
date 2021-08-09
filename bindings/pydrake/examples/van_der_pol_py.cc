@@ -17,6 +17,7 @@ PYBIND11_MODULE(van_der_pol, m) {
 
   m.doc() = "Bindings for the van_der_pol example.";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.

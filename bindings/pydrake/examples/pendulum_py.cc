@@ -25,6 +25,7 @@ PYBIND11_MODULE(pendulum, m) {
   m.doc() = "Bindings for the Pendulum example.";
   constexpr auto& doc = pydrake_doc.drake.examples.pendulum;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.

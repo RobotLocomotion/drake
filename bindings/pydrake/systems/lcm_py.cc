@@ -96,6 +96,7 @@ PYBIND11_MODULE(lcm, m) {
   using namespace drake::systems::lcm;
   constexpr auto& doc = pydrake_doc.drake.systems.lcm;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.lcm");
   py::module::import("pydrake.systems.framework");
 

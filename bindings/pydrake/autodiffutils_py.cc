@@ -25,6 +25,8 @@ PYBIND11_MODULE(autodiffutils, m) {
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc.drake.math;
 
+  py::module::import("pydrake.common");
+
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
   // issue, we should aggressively try to avoid these warnings.

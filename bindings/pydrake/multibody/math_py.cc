@@ -206,6 +206,7 @@ PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.math");
   py::module::import("pydrake.symbolic");
