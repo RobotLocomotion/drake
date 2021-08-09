@@ -489,6 +489,7 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_positions_and_velocities(
     const systems::Context<T>& context) const {
+  tree_system().ValidateContext(context);
   if (is_state_discrete()) {
     return get_discrete_state_vector(context);
   }
@@ -517,6 +518,8 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::GetMutablePositionsAndVelocities(
     systems::Context<T>* context) const {
+  DRAKE_ASSERT(context != nullptr);
+  tree_system().ValidateContext(*context);
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(context);
   }
@@ -529,6 +532,8 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::get_mutable_positions_and_velocities(
     systems::State<T>* state) const {
+  DRAKE_ASSERT(state != nullptr);
+  DRAKE_THROW_UNLESS(state->get_system_id() == tree_system().get_system_id());
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(state);
   }
@@ -631,6 +636,8 @@ Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::extract_qv_from_continuous(
     const systems::VectorBase<T>& continuous_qvz_base) const {
   DRAKE_ASSERT(!is_state_discrete());
+  DRAKE_ASSERT(dynamic_cast<const systems::BasicVector<T>*>(
+                   &continuous_qvz_base) != nullptr);
   const int num_qv = num_positions() + num_velocities();
 
   const systems::BasicVector<T>& continuous_qvz =
@@ -644,8 +651,10 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::extract_mutable_qv_from_continuous(
     systems::VectorBase<T>* continuous_qvz_base) const {
-  DRAKE_ASSERT(continuous_qvz_base != nullptr);
   DRAKE_ASSERT(!is_state_discrete());
+  DRAKE_ASSERT(continuous_qvz_base != nullptr);
+  DRAKE_ASSERT(dynamic_cast<systems::BasicVector<T>*>(continuous_qvz_base) !=
+               nullptr);
   const int num_qv = num_positions() + num_velocities();
 
   systems::BasicVector<T>& continuous_qvz =
