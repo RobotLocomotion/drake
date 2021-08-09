@@ -2,9 +2,14 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -466,6 +471,36 @@ drake_cc_googletest(
     tags = ["no_valgrind_tools"],
     deps = [
         ":simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulator_print_stats_test",
+    deps = [
+        ":simulator_print_stats",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_binary(
+    name = "simulator_gflags_main",
+    testonly = True,
+    srcs = ["test/simulator_gflags_main.cc"],
+    deps = [
+        ":simulator_config_functions",
+        ":simulator_gflags",
+        "//common/yaml:yaml_write_archive",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_py_unittest(
+    name = "simulator_gflags_test",
+    data = [
+        ":simulator_gflags_main",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 
