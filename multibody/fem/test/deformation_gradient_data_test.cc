@@ -36,14 +36,7 @@ class DummyData : public DeformationGradientData<
   }
 
  private:
-  /* Using `Base` as the alias for the base class is a preferred pattern that
-   usually provides more readability. It doesn't provide any value in this
-   simple dummy class but we're defining it anyway to set a good example for how
-   to structure real classes. */
-  using Base =
-      DeformationGradientData<DummyData<T, num_locations_at_compile_time>>;
-
-  friend Base;
+  friend DeformationGradientData<DummyData<T, num_locations_at_compile_time>>;
 
   /* Shadows DeformationGradientData::UpdateFromDeformationGradient() as
    required by the CRTP base class. */
