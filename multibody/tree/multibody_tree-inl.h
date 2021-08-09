@@ -617,6 +617,15 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
 
 // State is continuous. This might have x = [q, v, z] -- we only want q and v.
 
+// These next two private methods are used only in the above implementations for
+// digging continuous State out of a Context, which results in a VectorBase.
+// Profiling showed that it is too expensive to do a dynamic_cast for simple
+// state access, which is VERY frequent. However a static_cast is safe here as
+// long as the supplied VectorBase comes from the State in a LeafContext,
+// because LeafContext continuous state variables are BasicVectors.
+// MultibodyPlant's user-accessible API is expected to validate the
+// user-provided Context prior to calling down to MultibodyTree, so we don't
+// have to guard against a DiagramContext way down here.
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::extract_qv_from_continuous(
@@ -624,10 +633,8 @@ MultibodyTree<T>::extract_qv_from_continuous(
   DRAKE_ASSERT(!is_state_discrete());
   const int num_qv = num_positions() + num_velocities();
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
   const systems::BasicVector<T>& continuous_qvz =
-      dynamic_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
+      static_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
   DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
   Eigen::VectorBlock<const VectorX<T>> qvz = continuous_qvz.get_value();
   return make_block_segment(qvz, 0, num_qv);
@@ -641,10 +648,8 @@ MultibodyTree<T>::extract_mutable_qv_from_continuous(
   DRAKE_ASSERT(!is_state_discrete());
   const int num_qv = num_positions() + num_velocities();
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
   systems::BasicVector<T>& continuous_qvz =
-      dynamic_cast<systems::BasicVector<T>&>(*continuous_qvz_base);
+      static_cast<systems::BasicVector<T>&>(*continuous_qvz_base);
   DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
   Eigen::VectorBlock<VectorX<T>> qvz = continuous_qvz.get_mutable_value();
   return make_mutable_block_segment(&qvz, 0, num_qv);
