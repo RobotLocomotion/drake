@@ -489,6 +489,15 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_positions_and_velocities(
     const systems::Context<T>& context) const {
+
+  // Note that we can't currently count on MultibodyPlant's API to have
+  // validated this Context. The extract_qv_from_continuous() call
+  // below depends on this being a LeafContext. We'll just verify that this
+  // Context belongs to the owning System, since we know that's a LeafSystem.
+
+  // tree_system().ValidateContext(*context);
+  DRAKE_THROW_UNLESS(context.get_system_id() == tree_system().get_system_id());
+
   if (is_state_discrete()) {
     return get_discrete_state_vector(context);
   }
@@ -517,6 +526,16 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::GetMutablePositionsAndVelocities(
     systems::Context<T>* context) const {
+  DRAKE_ASSERT(context != nullptr);
+
+  // Note that we can't currently count on MultibodyPlant's API to have
+  // validated this Context. The extract_mutable_qv_from_continuous() call
+  // below depends on this being a LeafContext. We'll just verify that this
+  // Context belongs to the owning System, since we know that's a LeafSystem.
+
+  // tree_system().ValidateContext(*context);
+  DRAKE_THROW_UNLESS(context->get_system_id() == tree_system().get_system_id());
+
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(context);
   }
@@ -529,6 +548,15 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::get_mutable_positions_and_velocities(
     systems::State<T>* state) const {
+  DRAKE_ASSERT(state != nullptr);
+
+  // Note that we can't currently count on MultibodyPlant's API to have
+  // validated this State. The extract_mutable_qv_from_continuous() call
+  // below depends on this being the State of a LeafContext. We'll just verify
+  // that this State was created by the owning System, since we know that's
+  // a LeafSystem.
+  DRAKE_THROW_UNLESS(state->get_system_id() == tree_system().get_system_id());
+
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(state);
   }
@@ -622,15 +650,15 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
 // Profiling showed that it is too expensive to do a dynamic_cast for simple
 // state access, which is VERY frequent. However a static_cast is safe here as
 // long as the supplied VectorBase comes from the State in a LeafContext,
-// because LeafContext continuous state variables are BasicVectors.
-// MultibodyPlant's user-accessible API is expected to validate the
-// user-provided Context prior to calling down to MultibodyTree, so we don't
-// have to guard against a DiagramContext way down here.
+// because LeafContext continuous state variables are BasicVectors. We're
+// depending on all callers to verify that precondition.
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::extract_qv_from_continuous(
     const systems::VectorBase<T>& continuous_qvz_base) const {
   DRAKE_ASSERT(!is_state_discrete());
+  DRAKE_ASSERT(dynamic_cast<const systems::BasicVector<T>*>(
+                   &continuous_qvz_base) != nullptr);
   const int num_qv = num_positions() + num_velocities();
 
   const systems::BasicVector<T>& continuous_qvz =
@@ -644,8 +672,10 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::extract_mutable_qv_from_continuous(
     systems::VectorBase<T>* continuous_qvz_base) const {
-  DRAKE_ASSERT(continuous_qvz_base != nullptr);
   DRAKE_ASSERT(!is_state_discrete());
+  DRAKE_ASSERT(continuous_qvz_base != nullptr);
+  DRAKE_ASSERT(dynamic_cast<systems::BasicVector<T>*>(continuous_qvz_base) !=
+               nullptr);
   const int num_qv = num_positions() + num_velocities();
 
   systems::BasicVector<T>& continuous_qvz =

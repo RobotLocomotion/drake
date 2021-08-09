@@ -832,6 +832,10 @@ class SystemBase : public internal::SystemMessageInterface {
     ValidateContext(*context);
   }
 
+  /** (Internal) Gets the id used to tag context data as being created by this
+  system. See @ref system_compatibility. */
+  internal::SystemId get_system_id() const { return system_id_; }
+
  protected:
   /** (Internal use only). */
   SystemBase() = default;
@@ -1170,10 +1174,6 @@ class SystemBase : public internal::SystemMessageInterface {
     if (n > 0)
       implicit_time_derivatives_residual_size_ = n;
   }
-
-  /** (Internal) Gets the id used to tag context data as being created by this
-  system. See @ref system_compatibility. */
-  internal::SystemId get_system_id() const { return system_id_; }
 
  private:
   void CreateSourceTrackers(ContextBase*) const;
