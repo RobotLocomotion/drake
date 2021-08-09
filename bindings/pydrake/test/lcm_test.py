@@ -1,8 +1,7 @@
 import unittest
 
 from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
-
-from drake import lcmt_quaternion
+from pydrake.lcmtypes import lcmt_quaternion
 
 
 class TestLcm(unittest.TestCase):
