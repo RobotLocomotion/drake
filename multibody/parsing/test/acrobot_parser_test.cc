@@ -43,11 +43,11 @@ class AcrobotModelTests :
 
     // Create a benchmark model for verification of the parsed model.
     // The benchmark model is created programmatically through Drake's API.
-    benchmark_plant_ =
-        benchmarks::acrobot::MakeAcrobotPlant(parameters_, true);
+    benchmark_plant_ = benchmarks::acrobot::MakeAcrobotPlant(parameters_, true);
     benchmark_shoulder_ =
-        &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
-    benchmark_elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
+        &benchmark_plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
+    benchmark_elbow_ =
+        &benchmark_plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
     benchmark_context_ = benchmark_plant_->CreateDefaultContext();
   }
 
