@@ -115,6 +115,8 @@ class TestAll(unittest.TestCase):
             # symbolic
             "Variable",
             "Expression",
+            # lcmtypes
+            "lcmt_drake_signal",
             # manipulation
             # - planner
             "DoDifferentialInverseKinematics",

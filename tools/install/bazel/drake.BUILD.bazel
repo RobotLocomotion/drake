@@ -60,10 +60,8 @@ filegroup(
 
 _IMPORT = "." + _PYTHON_SITE_PACKAGES_RELPATH
 
-# N.B. This is not a standalone Python library.
-# TODO(eric.cousineau): Expose this as an alias
-# `@drake//lcmtypes:lcmtypes_drake_py` when it can only depend on specific
-# parts of the runfiles (not all of pydrake).
+# TODO(jwnimmer-tri) When deprecated drake.lcmt_foo is removed on 2021-12-01,
+# also remove this target.
 py_library(
     name = ".lcmtypes_drake_py",
     srcs = glob(["*.py"]),
