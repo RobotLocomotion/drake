@@ -61,7 +61,7 @@ drake_cc_library(
     ],
     deps = [
         ":deformation_gradient_data",
-        "//common:default_scalars",
+        "//common:autodiff",
         "//common:essential",
     ],
 )

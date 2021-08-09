@@ -1,6 +1,6 @@
 #include "drake/multibody/fem/linear_constitutive_model_data.h"
 
-#include "drake/common/default_scalars.h"
+#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace multibody {
@@ -9,6 +9,10 @@ namespace internal {
 
 template <typename T, int num_locations>
 LinearConstitutiveModelData<T, num_locations>::LinearConstitutiveModelData() {
+  /* Intialize data memebers to be consistent with the deformation gradient
+   which is initialized to the identity matrix. This achieves the same result
+   as invoking `UpdateFromDeformationGradient()` but is slightly more
+   efficient.*/
   strain_.fill(Matrix3<T>::Zero());
   trace_strain_.fill(0.0);
 }
