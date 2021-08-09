@@ -448,7 +448,12 @@ disambiguated by const-ness.
 
 Examples of functions to bind and not bind:
 
-```{.cc}
+<!--
+WARNING: Adding {.cc} for syntax coloring seems to cause Doxygen to break
+(#15439).
+-->
+
+```
 // N.B. The two free functions below aren't necessarily great in terms of coding
 // and the GSG; however, we use them for illustrative purposes.
 
