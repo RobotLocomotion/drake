@@ -43,6 +43,8 @@ PYBIND11_MODULE(trajectories, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::trajectories;
   constexpr auto& doc = pydrake_doc.drake.trajectories;
+
+  py::module::import("pydrake.common");
   py::module::import("pydrake.polynomial");
 
   using T = double;

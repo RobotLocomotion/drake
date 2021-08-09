@@ -16,6 +16,7 @@ PYBIND11_MODULE(dreal, m) {
 
   m.doc() = "dReal solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.solvers.mathematicalprogram");
   py::module::import("pydrake.symbolic");
 

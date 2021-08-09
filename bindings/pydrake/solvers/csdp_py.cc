@@ -16,6 +16,7 @@ PYBIND11_MODULE(csdp, m) {
 
   m.doc() = "Csdp solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
   py::module::import("pydrake.solvers.sdpa_free_format");

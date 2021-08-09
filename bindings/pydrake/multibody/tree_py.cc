@@ -1006,6 +1006,7 @@ PYBIND11_MODULE(tree, m) {
 
   m.doc() = "Bindings for MultibodyTree and related components.";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.multibody.math");
 
