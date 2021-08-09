@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":get_program_type",
         ":gurobi_qp",
         ":gurobi_solver",
+        ":ibex_solver",
         ":indeterminate",
         ":integer_inequality_solver",
         ":integer_optimization_util",
@@ -290,6 +291,7 @@ drake_cc_library(
         ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
+        ":ibex_solver",
         ":ipopt_solver",
         ":linear_system_solver",
         ":moby_lcp_solver",
@@ -723,6 +725,50 @@ drake_cc_library(
     ] + select({
         "//conditions:default": [
             "@dreal//dreal/api",
+        ],
+        "//tools:no_dreal": [
+        ],
+    }),
+)
+
+# Ibex is a dependency of dReal; disabling dReal disables Ibex.  We could
+# consider supporting Ibex w/o dReal, but have no use cases that need that
+# support yet.
+drake_cc_library(
+    name = "ibex_solver",
+    srcs = [
+        "ibex_solver_common.cc",
+    ] + select({
+        "//tools:no_dreal": [
+            "no_ibex.cc",
+        ],
+        "//conditions:default": [
+            "ibex_converter.cc",
+            "ibex_solver.cc",
+        ],
+    }),
+    hdrs = [
+        "ibex_solver.h",
+    ] + select({
+        "//conditions:default": [
+            "ibex_converter.h",
+        ],
+        "//tools:no_dreal": [
+        ],
+    }),
+    install_hdrs_exclude = select({
+        "//conditions:default": ["ibex_converter.h"],
+        "//tools:no_dreal": [],
+    }),
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
+        ":solver_base",
+        ":solver_options",
+        "//common:essential",
+    ] + select({
+        "//conditions:default": [
+            "@ibex//:ibex",
         ],
         "//tools:no_dreal": [
         ],
@@ -1274,6 +1320,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ibex_solver_test",
+    deps = [
+        ":generic_trivial_constraint",
+        ":generic_trivial_cost",
+        ":ibex_solver",
+        ":mathematical_program",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ibex_converter_test",
+    deps = [
+        ":ibex_solver",
+    ],
+)
+
+drake_cc_googletest(
     name = "integer_optimization_util_test",
     deps = [
         ":integer_optimization_util",
@@ -1780,6 +1843,11 @@ add_lint_tests(cpplint_extra_srcs = [
     "gurobi_solver.cc",
     "gurobi_solver.h",
     "gurobi_solver_common.cc",
+    "ibex_converter.cc",
+    "ibex_converter.h",
+    "ibex_solver.cc",
+    "ibex_solver.h",
+    "ibex_solver_common.cc",
     "ipopt_solver.cc",
     "ipopt_solver.h",
     "ipopt_solver_common.cc",
@@ -1793,6 +1861,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_csdp.cc",
     "no_dreal.cc",
     "no_gurobi.cc",
+    "no_ibex.cc",
     "no_ipopt.cc",
     "no_mosek.cc",
     "no_nlopt.cc",
