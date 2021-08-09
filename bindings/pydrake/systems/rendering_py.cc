@@ -25,6 +25,7 @@ PYBIND11_MODULE(rendering, m) {
 
   m.doc() = "Bindings for the rendering portion of the Systems framework.";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   using T = double;

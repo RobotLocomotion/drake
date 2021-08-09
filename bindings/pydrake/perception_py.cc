@@ -152,12 +152,14 @@ void init_perception(py::module m) {
 }
 
 PYBIND11_MODULE(perception, m) {
+  m.doc() = "Python bindings for //perception";
+
+  py::module::import("pydrake.common");
+
   // N.B. To stick to directory structure, we do not define this in a
   // `pc_flags` submodule.
   init_pc_flags(m);
   init_perception(m);
-
-  m.doc() = "Python bindings for //perception";
 }
 
 }  // namespace

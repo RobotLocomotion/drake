@@ -33,6 +33,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
 
   m.doc() = "InverseKinematics module";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.solvers.mathematicalprogram");

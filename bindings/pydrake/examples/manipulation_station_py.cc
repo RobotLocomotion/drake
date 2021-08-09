@@ -24,6 +24,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   m.doc() = "Bindings for the Manipulation Station example.";
   constexpr auto& doc = pydrake_doc.drake.examples.manipulation_station;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.framework");

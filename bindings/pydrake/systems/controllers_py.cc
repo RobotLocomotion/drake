@@ -28,6 +28,7 @@ PYBIND11_MODULE(controllers, m) {
   using drake::systems::System;
   constexpr auto& doc = pydrake_doc.drake.systems.controllers;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.symbolic");

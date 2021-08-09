@@ -15,6 +15,7 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
 
   m.doc() = "mixed integer optimization utils bindings";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.solvers.mathematicalprogram");
 
   m.def(

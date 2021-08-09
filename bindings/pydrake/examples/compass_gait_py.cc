@@ -20,6 +20,7 @@ PYBIND11_MODULE(compass_gait, m) {
   m.doc() = "Bindings for the compass gait example.";
   constexpr auto& doc = pydrake_doc.drake.examples.compass_gait;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.

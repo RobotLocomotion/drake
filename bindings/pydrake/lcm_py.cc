@@ -18,6 +18,8 @@ PYBIND11_MODULE(lcm, m) {
   using namespace drake::lcm;
   constexpr auto& doc = pydrake_doc.drake.lcm;
 
+  py::module::import("pydrake.common");
+
   // Use `py::bytes` as a mid-point between C++ LCM (`void* + int` /
   // `vector<uint8_t>`) and Python LCM (`str`).
   using PyHandlerFunction = std::function<void(py::bytes)>;

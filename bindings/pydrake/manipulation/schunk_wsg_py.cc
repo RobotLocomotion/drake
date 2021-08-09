@@ -18,6 +18,7 @@ PYBIND11_MODULE(schunk_wsg, m) {
   m.doc() = "Tools for schunk wsg.";
   constexpr auto& doc = pydrake_doc.drake.manipulation.schunk_wsg;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   {

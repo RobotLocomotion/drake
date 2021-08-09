@@ -19,6 +19,7 @@ PYBIND11_MODULE(quadrotor, m) {
 
   m.doc() = "Bindings for the Quadrotor example.";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
 

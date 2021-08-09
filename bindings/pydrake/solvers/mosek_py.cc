@@ -17,6 +17,7 @@ PYBIND11_MODULE(mosek, m) {
 
   m.doc() = "Mosek solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
 

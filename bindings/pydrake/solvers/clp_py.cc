@@ -16,6 +16,7 @@ PYBIND11_MODULE(clp, m) {
 
   m.doc() = "Clp solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
 

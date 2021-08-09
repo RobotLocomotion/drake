@@ -25,6 +25,7 @@ PYBIND11_MODULE(analysis, m) {
 
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   {

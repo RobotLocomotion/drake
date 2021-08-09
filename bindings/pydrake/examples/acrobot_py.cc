@@ -27,6 +27,7 @@ PYBIND11_MODULE(acrobot, m) {
 
   m.doc() = "Bindings for the Acrobot example.";
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
 
   // TODO(eric.cousineau): At present, we only bind doubles.

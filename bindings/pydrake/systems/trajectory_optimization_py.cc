@@ -19,6 +19,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
 
   using solvers::VectorXDecisionVariable;
 
+  py::module::import("pydrake.common");
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
