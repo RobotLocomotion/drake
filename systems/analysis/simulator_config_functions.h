@@ -32,10 +32,9 @@ system associated with `simulator` according to the given arguments.
 
 @ingroup simulator_configuration */
 template <typename T>
-IntegratorBase<T>& ResetIntegratorFromFlags(
-    Simulator<T>* simulator,
-    const std::string& scheme,
-    const T& max_step_size);
+IntegratorBase<T>& ResetIntegratorFromFlags(Simulator<T>* simulator,
+                                            const std::string& scheme,
+                                            double max_step_size);
 
 /** Returns the allowed string values for the `scheme` parameter in
 ResetIntegratorFromFlags() and SimulatorConfig::integration_scheme.
@@ -52,9 +51,9 @@ Integrator with a new one; be careful not to keep old references around.)
   integrator and the simulator.
 
 @ingroup simulator_configuration */
-void ApplySimulatorConfig(
-    drake::systems::Simulator<double>* simulator,
-    const SimulatorConfig& config);
+template <typename T>
+void ApplySimulatorConfig(drake::systems::Simulator<T>* simulator,
+                          const SimulatorConfig& config);
 
 /** Reports the simulator's current configuration, including the configuration
 of the integrator.
@@ -62,8 +61,9 @@ of the integrator.
 @param[in] simulator The Simulator to extract the configuration from.
 
 @ingroup simulator_configuration */
+template <typename T>
 SimulatorConfig ExtractSimulatorConfig(
-    const drake::systems::Simulator<double>& simulator);
+    const drake::systems::Simulator<T>& simulator);
 
 }  // namespace systems
 }  // namespace drake

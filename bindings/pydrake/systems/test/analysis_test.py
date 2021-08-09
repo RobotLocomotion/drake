@@ -8,6 +8,7 @@ from pydrake.systems.primitives import (
 )
 from pydrake.systems.framework import EventStatus
 from pydrake.systems.analysis import (
+    PrintSimulatorStatistics,
     RungeKutta2Integrator_,
     RungeKutta2Integrator, RungeKutta3Integrator,
     RegionOfAttraction,
@@ -91,6 +92,7 @@ class TestAnalysis(unittest.TestCase):
         self.assertIsNone(status.system())
         self.assertEqual(status.message(), "")
         self.assertTrue(status.IsIdenticalStatus(other=status))
+        PrintSimulatorStatistics(simulator)
 
     def test_system_monitor(self):
         x = Variable("x")
