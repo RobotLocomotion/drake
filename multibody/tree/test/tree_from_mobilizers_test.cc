@@ -490,13 +490,13 @@ TEST_F(PendulumTests, CreateContext) {
 
   // Verifies the correct number of generalized positions and velocities.
   EXPECT_EQ(tree.get_positions(*context).size(), 2);
-  EXPECT_EQ(tree.get_mutable_positions(&*context).size(), 2);
+  EXPECT_EQ(tree.GetMutablePositions(&*context).size(), 2);
   EXPECT_EQ(tree.get_velocities(*context).size(), 2);
-  EXPECT_EQ(tree.get_mutable_velocities(&*context).size(), 2);
+  EXPECT_EQ(tree.GetMutableVelocities(&*context).size(), 2);
 
   // Verifies methods to retrieve fixed-sized segments of the state.
   EXPECT_EQ(tree.get_state_segment<1>(*context, 1).size(), 1);
-  EXPECT_EQ(tree.get_mutable_state_segment<1>(&*context, 1).size(), 1);
+  EXPECT_EQ(tree.GetMutableStateSegment<1>(&*context, 1).size(), 1);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in

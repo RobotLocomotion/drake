@@ -52,7 +52,7 @@ Vector3<T> SpaceXYZFloatingMobilizer<T>::get_translational_velocity(
 template <typename T>
 const SpaceXYZFloatingMobilizer<T>& SpaceXYZFloatingMobilizer<T>::set_angles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
-  auto q = this->get_mutable_positions(context).template head<3>();
+  auto q = this->GetMutablePositions(context).template head<3>();
   q = angles;
   return *this;
 }
@@ -61,7 +61,7 @@ template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
 SpaceXYZFloatingMobilizer<T>::set_translation(systems::Context<T>* context,
                                               const Vector3<T>& p_FM) const {
-  auto q = this->get_mutable_positions(context).template tail<3>();
+  auto q = this->GetMutablePositions(context).template tail<3>();
   q = p_FM;
   return *this;
 }
@@ -70,7 +70,7 @@ template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
 SpaceXYZFloatingMobilizer<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
-  auto v = this->get_mutable_velocities(context).template head<3>();
+  auto v = this->GetMutableVelocities(context).template head<3>();
   v = w_FM;
   return *this;
 }
@@ -79,7 +79,7 @@ template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
 SpaceXYZFloatingMobilizer<T>::set_translational_velocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
-  auto v = this->get_mutable_velocities(context).template tail<3>();
+  auto v = this->GetMutableVelocities(context).template tail<3>();
   v = v_FM;
   return *this;
 }

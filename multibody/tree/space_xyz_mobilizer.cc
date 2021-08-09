@@ -21,7 +21,7 @@ Vector3<T> SpaceXYZMobilizer<T>::get_angles(
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
-  auto q = this->get_mutable_positions(&*context);
+  auto q = this->GetMutablePositions(context);
   q = angles;
   return *this;
 }
@@ -29,7 +29,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-  auto q = this->get_mutable_positions(&*context);
+  auto q = this->GetMutablePositions(context);
   DRAKE_ASSERT(q.size() == kNq);
   q = math::RollPitchYaw<T>(R_FM).vector();
   return *this;
