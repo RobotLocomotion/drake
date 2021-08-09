@@ -6,6 +6,10 @@ import numpy as np
 
 from ._module_py import *
 
+# When running from python, turn DRAKE_ASSERT and DRAKE_DEMAND failures into
+# SystemExit, instead of process aborts.  See RobotLocomotion/drake#5268.
+set_assertion_failure_to_throw_exception()
+
 
 def _wrap_to_match_input_shape(f):
     # See docstring for `WrapToMatchInputShape` in `eigen_pybind.h` for more

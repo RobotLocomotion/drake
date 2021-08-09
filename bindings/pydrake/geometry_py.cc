@@ -1535,6 +1535,7 @@ void def_geometry_all(py::module m) {
 
 PYBIND11_MODULE(geometry, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
+  py::module::import("pydrake.common");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.lcm");
 
