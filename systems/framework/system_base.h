@@ -817,8 +817,17 @@ class SystemBase : public internal::SystemMessageInterface {
                : num_continuous_states();
   }
 
+  // Note that it is extremely unlikely that a Context will have an invalid
+  // system id because it is near impossible for a user to create one. We'll
+  // just assume it's valid as a precondition on the ValidateContext() methods.
+  // In Debug builds this will be reported as an error but otherwise a
+  // readable but imperfect "Not created for this System" message will issue
+  // if there is no id.
+
   /** Checks whether the given context was created for this system.
-  @note This method is sufficiently fast for performance sensitive code. */
+  @note This method is sufficiently fast for performance sensitive code.
+  @throws std::exception if the System Ids don't match.
+  @pre both `context` and `this` have valid System Ids. */
   void ValidateContext(const ContextBase& context) const final {
     if (context.get_system_id() != system_id_) {
       ThrowValidateContextMismatch(context);
@@ -826,10 +835,44 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Checks whether the given context was created for this system.
-  @note This method is sufficiently fast for performance sensitive code. */
-  void ValidateContext(ContextBase* context) const {
+  @note This method is sufficiently fast for performance sensitive code.
+  @throws std::exception if the System Ids don't match.
+  @throws std::exception if `context` is null.
+  @pre if `context` is non-null, then both `context` and `this` have valid
+       System Ids. */
+  void ValidateContext(const ContextBase* context) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     ValidateContext(*context);
+  }
+
+  // In contrast to Contexts it is easier to create some System-related objects
+  // without assigning them a valid system id. So for checking arbitrary object
+  // types we'll permit the object to have an invalid system id. (We still
+  // require that this SystemBase has a valid system id.) If the object doesn't
+  // have a valid system id, we produce an accurate "Not created for this
+  // System" message rather than one that says something obscure about invalid
+  // Identifiers. We don't need to distinguish between "no system id" and "wrong
+  // system id" mismatches; the end result is the same and we can keep this
+  // method tinier (encouraging inlining) if we don't make a separate test.
+
+  /** Checks whether the given object was created for this system.
+  @note This method is sufficiently fast for performance sensitive code.
+  @throws std::exception if the System Ids don't match or if `object` doesn't
+                         have an associated System Id.
+  @throws std::exception if the argument type is a pointer and it is null.
+  @pre `this` System has a valid system id. */
+  template <class Clazz>
+  void ValidateCreatedForThisSystem(const Clazz& object) const {
+    const internal::SystemId id = [&]() {
+      if constexpr (std::is_pointer_v<Clazz>) {
+        DRAKE_THROW_UNLESS(object != nullptr);
+        return object->get_system_id();
+      } else {
+        return object.get_system_id();
+      }
+    }();
+    if (!id.is_same_as_valid_id(system_id_))
+      ThrowNotCreatedForThisSystem(object);
   }
 
  protected:
@@ -1209,6 +1252,16 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(0 <= index && index < abstract_parameter_tickets_.size());
     return abstract_parameter_tickets_[index];
   }
+
+  template <class Clazz>
+  [[noreturn]] void ThrowNotCreatedForThisSystem(const Clazz& object) const {
+    unused(object);
+    ThrowNotCreatedForThisSystemImpl(
+        NiceTypeName::Get<std::remove_pointer_t<Clazz>>());
+  }
+
+  [[noreturn]] void ThrowNotCreatedForThisSystemImpl(
+      const std::string& nice_type_name) const;
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.

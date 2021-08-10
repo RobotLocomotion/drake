@@ -79,6 +79,10 @@ class SystemOutput {
     return &port_values_[index]->template get_mutable_value<BasicVector<T>>();
   }
 
+  /** (Internal) Gets the id of the System that created this output.
+  See @ref system_compatibility. */
+  internal::SystemId get_system_id() const { return system_id_; }
+
  private:
   friend class System<T>;
   friend class SystemOutputTest;
@@ -89,10 +93,6 @@ class SystemOutput {
   void add_port(std::unique_ptr<AbstractValue> model_value) {
     port_values_.emplace_back(std::move(model_value));
   }
-
-  // Gets the id of the subsystem that created this output.
-  // See @ref system_compatibility.
-  internal::SystemId get_system_id() const { return system_id_; }
 
   // Records the id of the subsystem that created this output.
   // See @ref system_compatibility.
