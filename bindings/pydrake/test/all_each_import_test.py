@@ -16,8 +16,6 @@ class TestAllEachImport(unittest.TestCase):
         self._expected_non_native_modules = [
             # A standalone 'import pydrake' should not trigger native code.
             "pydrake",
-            # This module has no native dependencies.
-            "pydrake.visualization",
             # Another example of a module we'd want to be non-native would be
             # pydrake.lcmtypes, but we don't have such a module (yet).
         ]
