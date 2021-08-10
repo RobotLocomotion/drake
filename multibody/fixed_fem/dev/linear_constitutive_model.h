@@ -2,9 +2,8 @@
 
 #include <array>
 
-#include "drake/common/eigen_types.h"
+#include "drake/multibody/fem/linear_constitutive_model_data.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model_data.h"
 
 namespace drake {
 namespace multibody {
@@ -20,7 +19,11 @@ struct LinearConstitutiveModelTraits {
 
 /* Implements the infinitesimal-strain linear elasticity constitutive model as
  described in Section 7.4 of [Gonzalez, 2008].
- @tparam_nonsymbolic_scalar T.
+ @tparam_nonsymbolic_scalar.
+ @tparam num_locations Number of locations at which the constitutive
+ relationship is evaluated. We currently only provide one instantiation of this
+ template with `num_locations = 1`, but more instantiations can easily be added
+ when needed.
 
 [Gonzalez, 2008] Gonzalez, Oscar, and Andrew M. Stuart. A first course in
 continuum mechanics. Cambridge University Press, 2008. */
@@ -30,10 +33,12 @@ class LinearConstitutiveModel final
           LinearConstitutiveModel<T, num_locations>,
           LinearConstitutiveModelTraits<T, num_locations>> {
  public:
-  using Traits = LinearConstitutiveModelTraits<T, num_locations>;
-  using Data = typename Traits::Data;
-
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModel)
+
+  using Base =
+      ConstitutiveModel<LinearConstitutiveModel<T, num_locations>,
+                        LinearConstitutiveModelTraits<T, num_locations>>;
+  using Data = typename Base::Data;
 
   /* Constructs a LinearConstitutiveModel constitutive model with the
    prescribed Young's modulus and Poisson ratio.
@@ -47,29 +52,32 @@ class LinearConstitutiveModel final
 
   const T& poisson_ratio() const { return nu_; }
 
+  /* Returns the shear modulus (Lame's second parameter) which is given by
+   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson
+   ratio. See `fem::internal::CalcLameParameters()`. */
   const T& shear_modulus() const { return mu_; }
 
+  /* Returns the Lame's first parameter which is given by
+   `E*nu/((1+nu)*(1-2*nu))` where `E` is the Young's modulus and `nu` is the
+   Poisson ratio. See `fem::internal::CalcLameParameters()`. */
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  using Base =
-      ConstitutiveModel<LinearConstitutiveModel<T, num_locations>, Traits>;
   friend Base;
 
-  /* Shadows ConstitutiveModel::DoCalcElasticEnergyDensity() as required by the
+  /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
+   the CRTP base class. */
+  void CalcElasticEnergyDensityImpl(const Data& data,
+                                    std::array<T, num_locations>* Psi) const;
+
+  /* Shadows ConstitutiveModel::CalcFirstPiolaStressImpl() as required by the
    CRTP base class. */
-  void DoCalcElasticEnergyDensity(
-      const LinearConstitutiveModelData<T, num_locations>& data,
-      std::array<T, num_locations>* Psi) const;
+  void CalcFirstPiolaStressImpl(const Data& data,
+                                std::array<Matrix3<T>, num_locations>* P) const;
 
-  /* Shadows ConstitutiveModel::DoCalcFirstPiolaStress() as required by the CRTP
-   base class. */
-  void DoCalcFirstPiolaStress(const Data& data,
-                              std::array<Matrix3<T>, num_locations>* P) const;
-
-  /* Shadows ConstitutiveModel::DoCalcFirstPiolaStressDerivative() as required
+  /* Shadows ConstitutiveModel::CalcFirstPiolaStressDerivativeImpl() as required
    by the CRTP base class. */
-  void DoCalcFirstPiolaStressDerivative(
+  void CalcFirstPiolaStressDerivativeImpl(
       const Data& data,
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const;
 

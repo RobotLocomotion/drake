@@ -17,17 +17,18 @@ namespace internal {
  is defined through a hyperelastic potential energy, which increases with
  non-rigid deformation from the initial state.
 
- ConstitutiveModel is a CRTP base class that provides the common interface to
- calculate energy density/stress/stress derivatives, and facilitates inlining,
- but is not intended to be a polymorphic class. Derived constitutive models must
- implement the `DoCalc()` methods. The derived constitutive model must also be
- accompanied by a corresponding traits class that declares the compile time
- quantities and type declarations that this base class requires.
+ ConstitutiveModel is a CRTP base class that facilitates inlining and provides
+ the common interface to calculate energy density, stress, and stress
+ derivatives, but is not intended to be a polymorphic class. Derived
+ constitutive models must shadow the `CalcFooImpl()` methods. The derived
+ constitutive model must also be accompanied by a corresponding traits class
+ that declares the compile time quantities and type declarations that this base
+ class requires.
  @tparam DerivedConstitutiveModel The concrete constitutive model that inherits
  from ConstitutiveModel through CRTP.
  @tparam DerivedTraits The traits class associated with the
  DerivedConstitutiveModel. It muist provide the type definitions `Scalar`
- (the scalar type the constitutive model is templated on) and `Data` (the
+ (the scalar type of the constitutive model) and `Data` (the derived
  DeformationGradientData that works in tandem with the derived constitutive
  model). */
 template <class DerivedConstitutiveModel, class DerivedTraits>
@@ -35,43 +36,43 @@ class ConstitutiveModel {
  public:
   using Traits = DerivedTraits;
   using T = typename Traits::Scalar;
+  using Data = typename Traits::Data;
 
   /* The number of locations at which the constitutive relationship is
    evaluated. */
-  static constexpr int num_locations = DerivedTraits::Data::num_locations;
+  static constexpr int num_locations = Data::num_locations;
 
   /* "Calc" Methods
    Methods for calculating the energy density and its derivatives given the
    data required for these calculations. The constitutive model expects
-   that the input data are up-to-date, but cannot and will not verify this
-   prerequisite. It is the responsibility of the caller to provide
-   up-to-date input data. */
+   that the input data are up-to-date, but cannot verify this prerequisite. It
+   is the responsibility of the caller to provide up-to-date input data. */
 
   /* Calculates the energy density in reference configuration, in unit J/m³,
-   given the model data.
+   given the deformation gradient related quantities contained in `data`.
    @pre `Psi != nullptr`. */
-  void CalcElasticEnergyDensity(const typename DerivedTraits::Data& data,
+  void CalcElasticEnergyDensity(const Data& data,
                                 std::array<T, num_locations>* Psi) const {
     DRAKE_ASSERT(Psi != nullptr);
-    derived().DoCalcElasticEnergyDensity(data, Psi);
+    derived().CalcElasticEnergyDensityImpl(data, Psi);
   }
 
   /* Calculates the First Piola stress, in unit Pa, given the deformation
-   gradient data.
+   gradient related quantities contained in `data`.
    @pre `P != nullptr`. */
-  void CalcFirstPiolaStress(const typename DerivedTraits::Data& data,
+  void CalcFirstPiolaStress(const Data& data,
                             std::array<Matrix3<T>, num_locations>* P) const {
     DRAKE_ASSERT(P != nullptr);
-    derived().DoCalcFirstPiolaStress(data, P);
+    derived().CalcFirstPiolaStressImpl(data, P);
   }
 
-  /* Calculates the derivative of First Piola stress with respect to the
-   deformation gradient, given the model data. The stress derivative
-   dPᵢⱼ/dFₖₗ is a 4-th order tensor that is flattened to a 9-by-9 matrix. The
-   9-by-9 matrix is organized into 3-by-3 blocks of 3-by-3 submatrices. The
-   ik-th entry in the jl-th block corresponds to the value dPᵢⱼ/dFₖₗ. Let A
-   denote the fourth order tensor dP/dF, then A is flattened to a 9-by-9 matrix
-   in the following way:
+  /* Calculates the derivative of first Piola stress with respect to the
+   deformation gradient, given the deformation gradient related quantities
+   contained in `data`. The stress derivative dPᵢⱼ/dFₖₗ is a 4-th order tensor
+   that is flattened to a 9-by-9 matrix. The 9-by-9 matrix is organized into
+   3-by-3 blocks of 3-by-3 submatrices. The ik-th entry in the jl-th block
+   corresponds to the value dPᵢⱼ/dFₖₗ. Let A denote the fourth order tensor
+   dP/dF, then A is flattened to a 9-by-9 matrix in the following way:
 
                        l = 1       l = 2       l = 3
                    -------------------------------------
@@ -89,10 +90,10 @@ class ConstitutiveModel {
                    -------------------------------------
   @pre `dPdF != nullptr`. */
   void CalcFirstPiolaStressDerivative(
-      const typename DerivedTraits::Data& data,
+      const Data& data,
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
     DRAKE_ASSERT(dPdF != nullptr);
-    derived().DoCalcFirstPiolaStressDerivative(data, dPdF);
+    derived().CalcFirstPiolaStressDerivativeImpl(data, dPdF);
   }
 
  protected:
@@ -104,30 +105,30 @@ class ConstitutiveModel {
   ConstitutiveModel() = default;
 
   /* Derived classes *must* shadow these methods to compute energy
-   density/stress/stress derivatives from deformation gradient data. The output
+   density, stress, and stress derivatives from the given `data`. The output
    argument is guaranteed to be non-null. */
-  void DoCalcElasticEnergyDensity(const typename DerivedTraits::Data& data,
-                                  std::array<T, num_locations>* Psi) const {
+  void CalcElasticEnergyDensityImpl(const Data& data,
+                                    std::array<T, num_locations>* Psi) const {
     throw std::logic_error(
         fmt::format("The derived class {} must provide a shadow definition of "
-                    "DoCalcElasticEnergyDensity() to be correct.",
+                    "CalcElasticEnergyDensityImpl() to be correct.",
                     NiceTypeName::Get(derived())));
   }
 
-  void DoCalcFirstPiolaStress(const typename DerivedTraits::Data& data,
-                              std::array<Matrix3<T>, num_locations>* P) const {
+  void CalcFirstPiolaStressImpl(
+      const Data& data, std::array<Matrix3<T>, num_locations>* P) const {
     throw std::logic_error(
         fmt::format("The derived class {} must provide a shadow definition of "
-                    "DoCalcFirstPiolaStress() to be correct.",
+                    "CalcFirstPiolaStressImpl() to be correct.",
                     NiceTypeName::Get(derived())));
   }
 
-  void DoCalcFirstPiolaStressDerivative(
-      const typename DerivedTraits::Data& data,
+  void CalcFirstPiolaStressDerivativeImpl(
+      const Data& data,
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
     throw std::logic_error(
         fmt::format("The derived class {} must provide a shadow definition of "
-                    "DoCalcFirstPiolaStressDerivative() to be correct.",
+                    "CalcFirstPiolaStressDerivativeImpl() to be correct.",
                     NiceTypeName::Get(derived())));
   }
 

@@ -78,7 +78,7 @@ struct ElasticityElementTraits {
   // TODO(xuchenhan-tri): Enforce the constraint mentioned above with
   //  static_assert with easy-to-parse error messages.
   struct Data {
-    typename ConstitutiveModelType::Traits::Data deformation_gradient_data;
+    typename ConstitutiveModelType::Data deformation_gradient_data;
     /* The elastic energy density evaluated at quadrature points. */
     std::array<T, kNumQuadraturePoints> Psi;
     /* The first Piola stress evaluated at quadrature points. */
