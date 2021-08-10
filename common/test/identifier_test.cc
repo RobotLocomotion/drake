@@ -72,6 +72,17 @@ TEST_F(IdentifierTests, AssignmentAndComparison) {
   EXPECT_TRUE(temp == a3_);
 }
 
+// Check the specialized internal-use compare that can be used on an invalid
+// Identifier.
+TEST_F(IdentifierTests, InvalidOrSameComparison) {
+  AId same_as_a1 = a1_;
+  EXPECT_TRUE(same_as_a1.is_same_as_valid_id(a1_));
+  EXPECT_FALSE(a1_.is_same_as_valid_id(a2_));
+
+  AId invalid;
+  EXPECT_FALSE(invalid.is_same_as_valid_id(a1_));
+}
+
 // Confirms that ids are configured to serve as unique keys in
 // STL containers.
 TEST_F(IdentifierTests, ServeAsMapKey) {
@@ -232,6 +243,16 @@ TEST_F(IdentifierTests, InvalidInequalityCompare) {
   if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(unused(invalid != a1_), ".*is_valid.*failed.*");
+}
+
+// Comparison of invalid ids is an error.
+TEST_F(IdentifierTests, BadInvalidOrSameComparison) {
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
+  AId invalid;
+  DRAKE_EXPECT_THROWS_MESSAGE(unused(a1_.is_same_as_valid_id(invalid)),
+                              ".*is_valid.*failed.*");
 }
 
 // Hashing an invalid id is *not* an error.
