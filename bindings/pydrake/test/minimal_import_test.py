@@ -1,11 +1,17 @@
+"""Checks that simple 'import pydrake' does not load Drake's C++ native
+library.
+
+Note that we can't use Drake's unittest framework for this test case,
+because it loads native code as part of its deprecation testing probes.
+
+On macOS, we aren't able to access the psutil.memory_maps(), so we can't
+actually run this test. We'll assume that testing on Ubuntu is sufficient.
+"""
 import sys
 
+if "darwin" in sys.platform:
+    sys.exit(0)
 import psutil
-
-# Checks that simple 'import pydrake' does not load Drake's C++ native library.
-#
-# Note that we can't use Drake's unittest framework for this test case, because
-# it loads native code as part of its deprecation testing probes.
 
 
 def _error(message):
