@@ -1,0 +1,7 @@
+package package1.package2;
+
+struct lcmt_bar
+{
+  int64_t utime;
+  double value;
+}

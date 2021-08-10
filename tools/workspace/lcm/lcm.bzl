@@ -28,6 +28,8 @@ def _lcm_aggregate_hdr(
     """
     if aggregate_hdr and len(hdrs):
         if aggregate_hdr == "AUTO":
+            if "." in lcm_package:
+                fail("aggregate_hdr=AUTO is not supported for nested packages")
             aggregate_hdr = join_paths(
                 dirname(hdrs[0]),
                 "%s.%s" % (lcm_package, suffix),
@@ -51,6 +53,7 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     below).  The filenames will use the given extension.
 
     """
+    lcm_package_dir = lcm_package.replace(".", "/")
 
     # Find and remove the dirname and extension shared by all lcm_srcs.
     # For srcs in the current directory, the dirname will be empty.
@@ -67,14 +70,14 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
     # Assemble the expected output paths, inferring struct names from what we
     # got in lcm_srcs, if necessary.
     outs = [
-        join_paths(subdir, lcm_package, lcm_struct + extension)
+        join_paths(subdir, lcm_package_dir, lcm_struct + extension)
         for lcm_struct in (lcm_structs or lcm_names)
     ]
 
     # Some languages have extra metadata.
     (extension in [".hpp", ".py", ".java"]) or fail(extension)
     if extension == ".py":
-        outs.append(join_paths(subdir, lcm_package, "__init__.py"))
+        outs.append(join_paths(subdir, lcm_package_dir, "__init__.py"))
 
     return outs
 
@@ -175,8 +178,9 @@ def lcm_cc_library(
         fail("lcm_package is required")
 
     helper_tags = []
-    if "manual" in kwargs.get("tags", []):
-        helper_tags.append("manual")
+    for sticky_tag in ["manual", "nolint"]:
+        if sticky_tag in kwargs.get("tags", []):
+            helper_tags.append(sticky_tag)
 
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".hpp")
     _lcm_library_gen(
