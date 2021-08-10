@@ -1,0 +1,69 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace/lcm:lcm.bzl",
+    "lcm_cc_library",
+    "lcm_java_library",
+    "lcm_py_library",
+)
+load("@drake//tools/skylark:py.bzl", "py_library")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_googletest")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+_LCM_PACKAGE = "package1.package2"
+
+_LCM_SRCS = [
+    "lcmt_foo.lcm",
+    "lcmt_bar.lcm",
+]
+
+lcm_cc_library(
+    name = "cc_lib",
+    aggregate_hdr = "package1/package2/package2.hpp",
+    lcm_package = _LCM_PACKAGE,
+    lcm_srcs = _LCM_SRCS,
+    # Disable Drake's add_lint_tests() for this library.
+    # This line would not typically be required for non-Drake projects.
+    tags = ["nolint"],
+)
+
+lcm_java_library(
+    name = "java_lib",
+    lcm_package = _LCM_PACKAGE,
+    lcm_srcs = _LCM_SRCS,
+    # Disable Drake's add_lint_tests() for this library.
+    # This line would not typically be required for non-Drake projects.
+    tags = ["nolint"],
+)
+
+lcm_py_library(
+    name = "py_lib",
+    lcm_package = _LCM_PACKAGE,
+    lcm_srcs = _LCM_SRCS,
+    # Disable Drake's add_lint_tests() for this library.
+    # This line would not typically be required for non-Drake projects.
+    tags = ["nolint"],
+)
+
+drake_cc_googletest(
+    name = "cc_lib_test",
+    deps = [
+        ":cc_lib",
+    ],
+)
+
+drake_py_unittest(
+    name = "py_lib_test",
+    deps = [
+        ":py_lib",
+    ],
+)
+
+# N.B. Our java messages are only ever used by lcm-spy, so traditionally we
+# don't write tests for them. (In practice, we've never seen any regressions
+# escape due to that lack of testing.)
+
+add_lint_tests()
