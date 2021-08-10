@@ -111,7 +111,7 @@ class VectorLogSink final : public LeafSystem<T> {
 
   /// Access the log as a mutable object within this component's context.
   /// @throws std::exception if context was not created for this system.
-  VectorLog<T>& GetMutableLog(const Context<T>& context) const;
+  VectorLog<T>& GetMutableLog(Context<T>* context) const;
 
   /// Access the log within a containing root context.
   /// @throws std::exception if supplied context is not a root context, or was
@@ -121,10 +121,14 @@ class VectorLogSink final : public LeafSystem<T> {
   /// Access the log as a mutable object within a containing root context.
   /// @throws std::exception if supplied context is not a root context, or was
   /// not created for the containing diagram.
-  VectorLog<T>& FindMutableLog(const Context<T>& root_context) const;
+  VectorLog<T>& FindMutableLog(Context<T>* root_context) const;
 
  private:
   template <typename> friend class VectorLogSink;
+
+  // Access the mutable vector log stored in the given `context`'s cache entry.
+  // @throws std::exception if context was not created for this system.
+  VectorLog<T>& GetLogFromCache(const Context<T>& context) const;
 
   // Remember trigger details for use in scalar conversion.
   TriggerTypeSet publish_triggers_;

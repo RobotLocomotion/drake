@@ -82,12 +82,30 @@ const VectorLog<T>&
 VectorLogSink<T>::GetLog(const Context<T>& context) const {
   // Relying on the mutable implementation here avoids pointless out-of-date
   // checks.
-  return GetMutableLog(context);
+  return GetLogFromCache(context);
 }
 
 template <typename T>
 VectorLog<T>&
-VectorLogSink<T>::GetMutableLog(const Context<T>& context) const {
+VectorLogSink<T>::GetMutableLog(Context<T>* context) const {
+  return GetLogFromCache(*context);
+}
+
+template <typename T>
+const VectorLog<T>&
+VectorLogSink<T>::FindLog(const Context<T>& root_context) const {
+  return GetLogFromCache(this->GetMyContextFromRoot(root_context));
+}
+
+template <typename T>
+VectorLog<T>&
+VectorLogSink<T>::FindMutableLog(Context<T>* root_context) const {
+  return GetLogFromCache(this->GetMyMutableContextFromRoot(root_context));
+}
+
+template <typename T>
+VectorLog<T>&
+VectorLogSink<T>::GetLogFromCache(const Context<T>& context) const {
   this->ValidateContext(context);
   CacheEntryValue& value =
       this->get_cache_entry(log_cache_index_)
@@ -96,20 +114,8 @@ VectorLogSink<T>::GetMutableLog(const Context<T>& context) const {
 }
 
 template <typename T>
-const VectorLog<T>&
-VectorLogSink<T>::FindLog(const Context<T>& root_context) const {
-  return FindMutableLog(root_context);
-}
-
-template <typename T>
-VectorLog<T>&
-VectorLogSink<T>::FindMutableLog(const Context<T>& root_context) const {
-  return GetMutableLog(this->GetMyContextFromRoot(root_context));
-}
-
-template <typename T>
 EventStatus VectorLogSink<T>::WriteToLog(const Context<T>& context) const {
-  GetMutableLog(context).AddData(
+  GetLogFromCache(context).AddData(
       context.get_time(), this->get_input_port().Eval(context));
   return EventStatus::Succeeded();
 }
