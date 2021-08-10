@@ -3,7 +3,7 @@
 #include <array>
 #include <utility>
 
-#include "drake/common/default_scalars.h"
+#include "drake/common/autodiff.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
 
 namespace drake {
@@ -45,9 +45,8 @@ LinearConstitutiveModel<T, num_locations>::LinearConstitutiveModel(
 }
 
 template <typename T, int num_locations>
-void LinearConstitutiveModel<T, num_locations>::DoCalcElasticEnergyDensity(
-    const LinearConstitutiveModelData<T, num_locations>& data,
-    std::array<T, num_locations>* Psi) const {
+void LinearConstitutiveModel<T, num_locations>::CalcElasticEnergyDensityImpl(
+    const Data& data, std::array<T, num_locations>* Psi) const {
   for (int i = 0; i < num_locations; ++i) {
     const auto& strain = data.strain()[i];
     const auto& trace_strain = data.trace_strain()[i];
@@ -57,7 +56,7 @@ void LinearConstitutiveModel<T, num_locations>::DoCalcElasticEnergyDensity(
 }
 
 template <typename T, int num_locations>
-void LinearConstitutiveModel<T, num_locations>::DoCalcFirstPiolaStress(
+void LinearConstitutiveModel<T, num_locations>::CalcFirstPiolaStressImpl(
     const Data& data, std::array<Matrix3<T>, num_locations>* P) const {
   for (int i = 0; i < num_locations; ++i) {
     const auto& strain = data.strain()[i];
@@ -69,7 +68,7 @@ void LinearConstitutiveModel<T, num_locations>::DoCalcFirstPiolaStress(
 
 template <typename T, int num_locations>
 void LinearConstitutiveModel<T, num_locations>::
-    DoCalcFirstPiolaStressDerivative(
+    CalcFirstPiolaStressDerivativeImpl(
         const Data&,
         std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
   dPdF->fill(dPdF_);

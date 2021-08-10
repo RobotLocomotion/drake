@@ -3,7 +3,7 @@
 #include <array>
 #include <utility>
 
-#include "drake/common/default_scalars.h"
+#include "drake/common/autodiff.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
 
 namespace drake {
@@ -19,9 +19,8 @@ CorotatedModel<T, num_locations>::CorotatedModel(const T& youngs_modulus,
 }
 
 template <typename T, int num_locations>
-void CorotatedModel<T, num_locations>::DoCalcElasticEnergyDensity(
-    const CorotatedModelData<T, num_locations>& data,
-    std::array<T, num_locations>* Psi) const {
+void CorotatedModel<T, num_locations>::CalcElasticEnergyDensityImpl(
+    const Data& data, std::array<T, num_locations>* Psi) const {
   for (int i = 0; i < num_locations; ++i) {
     const T& Jm1 = data.Jm1()[i];
     const Matrix3<T>& F = data.deformation_gradient()[i];
@@ -31,19 +30,19 @@ void CorotatedModel<T, num_locations>::DoCalcElasticEnergyDensity(
 }
 
 template <typename T, int num_locations>
-void CorotatedModel<T, num_locations>::DoCalcFirstPiolaStress(
+void CorotatedModel<T, num_locations>::CalcFirstPiolaStressImpl(
     const Data& data, std::array<Matrix3<T>, num_locations>* P) const {
   for (int i = 0; i < num_locations; ++i) {
     const T& Jm1 = data.Jm1()[i];
     const Matrix3<T>& F = data.deformation_gradient()[i];
     const Matrix3<T>& R = data.R()[i];
     const Matrix3<T>& JFinvT = data.JFinvT()[i];
-    (*P)[i].noalias() = 2.0 * mu_ * (F - R) + lambda_ * Jm1 * JFinvT;
+    (*P)[i] = 2.0 * mu_ * (F - R) + lambda_ * Jm1 * JFinvT;
   }
 }
 
 template <typename T, int num_locations>
-void CorotatedModel<T, num_locations>::DoCalcFirstPiolaStressDerivative(
+void CorotatedModel<T, num_locations>::CalcFirstPiolaStressDerivativeImpl(
     const Data& data,
     std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
   for (int i = 0; i < num_locations; ++i) {
