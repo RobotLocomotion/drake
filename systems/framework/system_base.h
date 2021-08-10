@@ -827,9 +827,28 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Checks whether the given context was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
-  void ValidateContext(ContextBase* context) const {
+  void ValidateContext(const ContextBase* context) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     ValidateContext(*context);
+  }
+
+  /** Checks whether the given object was created for this system.
+  @note This method is sufficiently fast for performance sensitive code.
+  @throws std::exception if the System Ids don't match or if `object` doesn't
+                         have an associated System Id.
+  @throws std::exception if the argument type is a pointer and it is null. */
+  template <class Clazz>
+  void ValidateCreatedForThisSystem(const Clazz& object) const {
+    const internal::SystemId id = [&]() {
+      if constexpr (std::is_pointer_v<Clazz>) {
+        DRAKE_THROW_UNLESS(object != nullptr);
+        return object->get_system_id();
+      } else {
+        return object.get_system_id();
+      }
+    }();
+    if (id != system_id_)
+      ThrowNotCreatedForThisSystem(object);
   }
 
  protected:
@@ -1209,6 +1228,16 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(0 <= index && index < abstract_parameter_tickets_.size());
     return abstract_parameter_tickets_[index];
   }
+
+  template <class Clazz>
+  [[noreturn]] void ThrowNotCreatedForThisSystem(const Clazz& object) const {
+    unused(object);
+    ThrowNotCreatedForThisSystemImpl(
+        NiceTypeName::Get<std::remove_pointer_t<Clazz>>());
+  }
+
+  [[noreturn]] void ThrowNotCreatedForThisSystemImpl(
+      const std::string& nice_type_name) const;
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
