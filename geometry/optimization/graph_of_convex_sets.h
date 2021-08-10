@@ -1,8 +1,10 @@
 #pragma once
 
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -56,6 +58,7 @@ class GraphOfConvexSets {
   class Edge;  // forward declaration.
 
   using VertexId = Identifier<class VertexTag>;
+  using EdgeId = Identifier<class EdgeTag>;
 
   /** Each vertex in the graph has a corresponding ConvexSet, and a std::string
   name. */
@@ -110,6 +113,9 @@ class GraphOfConvexSets {
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge)
 
     ~Edge();
+
+    /** Returns the unique identifier associated with this Edge. */
+    EdgeId id() const { return id_; }
 
     /** Returns the string name associated with this edge. */
     const std::string& name() const { return name_; }
@@ -186,8 +192,9 @@ class GraphOfConvexSets {
 
    private:
     // Constructs a new edge.
-    Edge(const Vertex* u, const Vertex* v, std::string name);
+    Edge(const EdgeId& id, const Vertex* u, const Vertex* v, std::string name);
 
+    const EdgeId id_{};
     const Vertex* const u_{};
     const Vertex* const v_{};
     symbolic::Variables allowed_vars_{};
@@ -236,7 +243,7 @@ class GraphOfConvexSets {
 
   /** Returns pointers to the edges stored in the graph.  Note that the order of
   the elements is not guaranteed. */
-  std::unordered_set<Edge*> Edges() const;
+  std::unordered_set<Edge*> Edges();
 
   // TODO(russt): std::string GetGraphvizString(const
   // std::optional<solvers::MathematicalProgramResult>& = std::nullopt) const;
@@ -272,9 +279,14 @@ class GraphOfConvexSets {
       const Vertex& source, const Vertex& target,
       bool convex_relaxation = false) const;
 
+  /** Custom comparator for sorting edges based on their identifiers. */
+  static bool CompareEdges(const std::unique_ptr<Edge>& a,
+                           const std::unique_ptr<Edge>& b);
+
  private:
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
-  std::vector<std::unique_ptr<Edge>> edges_{};
+  std::set<std::unique_ptr<Edge>, decltype(&GraphOfConvexSets::CompareEdges)>
+      edges_{&GraphOfConvexSets::CompareEdges};
   std::map<const Edge*, bool> locked_edges_{};
 };
 

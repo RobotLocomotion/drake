@@ -18,6 +18,7 @@ namespace geometry {
 namespace optimization {
 
 using Edge = GraphOfConvexSets::Edge;
+using EdgeId = GraphOfConvexSets::EdgeId;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
 
@@ -57,8 +58,9 @@ VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
   return result.GetSolution(placeholder_x_);
 }
 
-Edge::Edge(const Vertex* u, const Vertex* v, std::string name)
-    : u_{u},
+Edge::Edge(const EdgeId& id, const Vertex* u, const Vertex* v, std::string name)
+    : id_{id},
+      u_{u},
       v_{v},
       allowed_vars_{u_->x()},
       phi_{"phi", symbolic::Variable::Type::BINARY},
@@ -108,6 +110,11 @@ double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
 }
 
+bool GraphOfConvexSets::CompareEdges(const std::unique_ptr<Edge>& a,
+                                     const std::unique_ptr<Edge>& b) {
+  return a->id() < b->id();
+}
+
 Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   if (name.empty()) {
     name = fmt::format("v{}", vertices_.size());
@@ -129,9 +136,11 @@ Edge* GraphOfConvexSets::AddEdge(const VertexId& u_id, const VertexId& v_id,
   if (name.empty()) {
     name = fmt::format("e{}", edges_.size());
   }
-  edges_.emplace_back(std::unique_ptr<Edge>(
-      new Edge(u_iter->second.get(), v_iter->second.get(), name)));
-  return edges_.back().get();
+  EdgeId id = EdgeId::get_new_id();
+  auto [iter, success] = edges_.emplace(std::unique_ptr<Edge>(
+      new Edge(id, u_iter->second.get(), v_iter->second.get(), name)));
+  DRAKE_DEMAND(success);
+  return iter->get();
 }
 
 Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
@@ -151,7 +160,7 @@ std::unordered_set<VertexId> GraphOfConvexSets::VertexIds() const {
   return ids;
 }
 
-std::unordered_set<Edge*> GraphOfConvexSets::Edges() const {
+std::unordered_set<Edge*> GraphOfConvexSets::Edges() {
   std::unordered_set<Edge*> edges(edges_.size());
   for (auto& e : edges_) {
     edges.emplace(e.get());
