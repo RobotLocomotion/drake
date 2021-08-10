@@ -22,7 +22,7 @@ namespace {
 GTEST_TEST(TestVectorLogSink, LogGetters) {
   VectorLogSink<double> dut(11);
   auto context = dut.CreateDefaultContext();
-  EXPECT_EQ(&(dut.GetLog(*context)), &(dut.GetMutableLog(*context)));
+  EXPECT_EQ(&(dut.GetLog(*context)), &(dut.GetMutableLog(context.get())));
 }
 
 GTEST_TEST(TestVectorLogSink, LogFinders) {
@@ -31,12 +31,13 @@ GTEST_TEST(TestVectorLogSink, LogFinders) {
   auto dut = builder.AddSystem<VectorLogSink<double>>(1);
   auto diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
-  auto& logger_context = dut->GetMyContextFromRoot(*diagram_context);
+  auto& logger_context =
+      dut->GetMyMutableContextFromRoot(diagram_context.get());
 
   EXPECT_EQ(&(dut->GetLog(logger_context)),
             &(dut->FindLog(*diagram_context)));
   EXPECT_EQ(&(dut->FindLog(*diagram_context)),
-            &(dut->FindMutableLog(*diagram_context)));
+            &(dut->FindMutableLog(diagram_context.get())));
 
   DRAKE_EXPECT_THROWS_MESSAGE(dut->GetLog(*diagram_context),
                               ".*Context was not created for.*");
@@ -122,7 +123,7 @@ GTEST_TEST(TestVectorLogSink, LinearSystemTest) {
   EXPECT_TRUE(CompareMatrices(log.data(), log2.data()));
 
   // Test that Clear makes everything empty.
-  logger->FindMutableLog(context).Clear();
+  logger->FindMutableLog(&context).Clear();
   EXPECT_EQ(log.num_samples(), 0);
   EXPECT_EQ(log.sample_times().size(), 0);
   EXPECT_EQ(log.data().cols(), 0);
