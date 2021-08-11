@@ -14,9 +14,7 @@ load(
 )
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
@@ -69,7 +67,7 @@ generate_file(
 #ifdef IGNITION_MATH_VISIBLE
 #undef IGNITION_MATH_VISIBLE
 #endif
-#define IGNITION_MATH_VISIBLE __attribute__ ((visibility("default")))
+#define IGNITION_MATH_VISIBLE
 
 #ifdef IGN_DEPRECATED
 #undef IGN_DEPRECATED
@@ -169,11 +167,11 @@ public_headers = public_headers_no_gen + [
     "include/ignition/math.hh",
 ]
 
-# Generates the library exported to users.  The explicitly listed srcs= matches
-# upstream's explicitly listed sources plus private headers.  The explicitly
-# listed hdrs= matches upstream's public headers.
-cc_binary(
-    name = "libdrake_ignition_math.so",
+# Generates the library.  The explicitly listed srcs= matches upstream's
+# explicitly listed sources plus private headers.  The explicitly listed
+# hdrs= matches upstream's public headers.
+cc_library(
+    name = "ignition_math",
     srcs = [
         "src/Angle.cc",
         "src/AxisAlignedBox.cc",
@@ -199,48 +197,17 @@ cc_binary(
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
     ] + private_headers + public_headers,
-    copts = [
-        "-fvisibility-inlines-hidden",
-        "-w",
-    ],
-    includes = ["include"],
-    linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_ignition_math.so"],
-        "//conditions:default": [],
-    }),
-    linkshared = 1,
-    visibility = [],
-)
-
-cc_library(
-    name = "ignition_math",
-    srcs = ["libdrake_ignition_math.so"],
-    hdrs = public_headers,
+    # TODO(jwnimmer-tri) Ideally, we should use hidden visibility for the
+    # private builds of our dependencies.
+    copts = ["-w"],
     includes = ["include"],
     visibility = ["//visibility:public"],
 )
 
-CMAKE_PACKAGE = "ignition-math%d" % (PROJECT_MAJOR)
-
-cmake_config(
-    package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/ignition_math:package-create-cps.py",
-    version_file = ":config",
-)
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = CMAKE_PACKAGE)
-
 install(
     name = "install",
-    workspace = CMAKE_PACKAGE,
-    targets = [":libdrake_ignition_math.so"],
-    hdrs = public_headers,
-    hdr_dest = "include/" + CMAKE_PACKAGE,
-    hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",
         "LICENSE",
     ],
-    deps = [":install_cmake_config"],
 )
