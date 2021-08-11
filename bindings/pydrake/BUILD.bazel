@@ -271,6 +271,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
+    "//bindings/pydrake/lcmtypes",
     "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
@@ -280,6 +281,7 @@ add_pybind_coverage_data(
 
 PY_LIBRARIES = [
     ":module_py",
+    "//bindings/pydrake/lcmtypes:all_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -508,7 +510,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "//lcmtypes:lcmtypes_drake_py",
+        "//bindings/pydrake/lcmtypes",
     ],
 )
 

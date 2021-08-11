@@ -18,10 +18,10 @@ console to send arbitrary commands.
 
 from director import lcmUtils
 
-import drake as lcmdrake
+from pydrake.lcmtypes import lcmt_schunk_wsg_command
 
 def sendGripperCommand(targetPositionMM, force):
-    msg = lcmdrake.lcmt_schunk_wsg_command()
+    msg = lcmt_schunk_wsg_command()
     msg.utime = int(time.time()*1e6)
     msg.force = force
     msg.target_position_mm = targetPositionMM
