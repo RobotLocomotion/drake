@@ -55,6 +55,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "corotated_model",
+    srcs = [
+        "corotated_model.cc",
+    ],
     hdrs = [
         "corotated_model.h",
     ],
@@ -63,7 +66,7 @@ drake_cc_library(
         ":constitutive_model_utilities",
         ":corotated_model_data",
         ":matrix_utilities",
-        "//common:default_scalars",
+        "//common:autodiff",
         "//common:essential",
     ],
 )
@@ -75,7 +78,7 @@ drake_cc_library(
     ],
     deps = [
         ":matrix_utilities",
-        "//common:default_scalars",
+        "//common:autodiff",
         "//common:essential",
         "//multibody/fem:deformation_gradient_data",
     ],
@@ -390,13 +393,16 @@ drake_cc_library(
 
 drake_cc_library(
     name = "linear_constitutive_model",
+    srcs = [
+        "linear_constitutive_model.cc",
+    ],
     hdrs = [
         "linear_constitutive_model.h",
     ],
     deps = [
         ":constitutive_model",
         ":constitutive_model_utilities",
-        "//common:default_scalars",
+        "//common:autodiff",
         "//common:essential",
         "//multibody/fem:linear_constitutive_model_data",
     ],
@@ -574,6 +580,31 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "constitutive_model_test_utilities",
+    testonly = 1,
+    srcs = ["test/constitutive_model_test_utilities.cc"],
+    hdrs = ["test/constitutive_model_test_utilities.h"],
+    deps = [
+        ":constitutive_model",
+        ":corotated_model",
+        ":linear_constitutive_model",
+        ":test_utilities",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "corotated_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":corotated_model",
+    ],
+)
+
 drake_cc_googletest(
     name = "deformable_contact_test",
     deps = [
@@ -720,12 +751,17 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "hyperelastic_constitutive_model_test",
     deps = [
-        ":corotated_model",
-        ":linear_constitutive_model",
-        ":test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
+        ":constitutive_model",
         "//common/test_utilities:expect_throws_message",
-        "//math:gradient",
+        "//multibody/fem:deformation_gradient_data",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":linear_constitutive_model",
     ],
 )
 

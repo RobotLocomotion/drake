@@ -1,12 +1,8 @@
 #pragma once
 
 #include <array>
-#include <utility>
 
-#include "drake/common/eigen_types.h"
-#include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
-#include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model_data.h"
 
 namespace drake {
@@ -14,22 +10,20 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Forward declare the model to be referred to in the traits class. */
-template <typename T, int num_locations>
-class CorotatedModel;
-
 /* Traits for CorotatedModel. */
 template <typename T, int num_locations>
 struct CorotatedModelTraits {
   using Scalar = T;
-  using ModelType = CorotatedModel<T, num_locations>;
-  using DeformationGradientDataType = CorotatedModelData<T, num_locations>;
-  static constexpr int kNumLocations = num_locations;
+  using Data = CorotatedModelData<T, num_locations>;
 };
 
 /* Implements the fixed corotated hyperelastic constitutive model as
  described in [Stomakhin, 2012].
- @tparam_nonsymbolic_scalar T.
+ @tparam_nonsymbolic_scalar.
+ @tparam num_locations Number of locations at which the constitutive
+ relationship is evaluated. We currently only provide one instantiation of this
+ template with `num_locations = 1`, but more instantiations can easily be added
+ when needed.
 
  [Stomakhin, 2012] Stomakhin, Alexey, et al. "Energetically consistent
  invertible elasticity." Proceedings of the 11th ACM SIGGRAPH/Eurographics
@@ -39,88 +33,52 @@ class CorotatedModel final
     : public ConstitutiveModel<CorotatedModel<T, num_locations>,
                                CorotatedModelTraits<T, num_locations>> {
  public:
-  using Traits = CorotatedModelTraits<T, num_locations>;
-  using ModelType = typename Traits::ModelType;
-  using DeformationGradientDataType =
-      typename Traits::DeformationGradientDataType;
-  using Base = ConstitutiveModel<ModelType, Traits>;
-
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModel)
+
+  using Base = ConstitutiveModel<CorotatedModel<T, num_locations>,
+                                 CorotatedModelTraits<T, num_locations>>;
+  using Data = typename Base::Data;
 
   /* Constructs a CorotatedModel constitutive model with the
    prescribed Young's modulus and Poisson ratio.
-   @param youngs_modulus Young's modulus of the model, with unit N/m²
-   @param poisson_ratio Poisson ratio of the model, unitless.
-   @pre youngs_modulus must be non-negative.
-   @pre poisson_ratio must be strictly greater than -1 and strictly smaller than
-   0.5. */
-  CorotatedModel(const T& youngs_modulus, const T& poisson_ratio)
-      : E_(youngs_modulus), nu_(poisson_ratio) {
-    std::tie(lambda_, mu_) = CalcLameParameters(E_, nu_);
-  }
+   @param youngs_modulus  Young's modulus of the model, with unit N/m²
+   @param poisson_ratio   Poisson ratio of the model, unitless.
+   @pre youngs_modulus >= 0.
+   @pre -1 < poisson_ratio < 0.5. */
+  CorotatedModel(const T& youngs_modulus, const T& poisson_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
   const T& poisson_ratio() const { return nu_; }
 
+  /* Returns the shear modulus (Lame's second parameter) which is given by
+   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson
+   ratio. See `fem::internal::CalcLameParameters()`. */
   const T& shear_modulus() const { return mu_; }
 
+  /* Returns the Lame's first parameter which is given by
+   `E*nu/((1+nu)*(1-2*nu))` where `E` is the Young's modulus and `nu` is the
+   Poisson ratio. See `fem::internal::CalcLameParameters()`. */
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
   friend Base;
 
-  /* Implements ConstitutiveModel::CalcElasticEnergyDensity() in the CRTP base
-   class. */
-  void DoCalcElasticEnergyDensity(
-      const CorotatedModelData<T, num_locations>& data,
-      std::array<T, num_locations>* Psi) const {
-    for (int i = 0; i < num_locations; ++i) {
-      const T& Jm1 = data.Jm1()[i];
-      const Matrix3<T>& F = data.deformation_gradient()[i];
-      const Matrix3<T>& R = data.R()[i];
-      (*Psi)[i] = mu_ * (F - R).squaredNorm() + 0.5 * lambda_ * Jm1 * Jm1;
-    }
-  }
+  /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
+   the CRTP base class. */
+  void CalcElasticEnergyDensityImpl(const Data& data,
+                                    std::array<T, num_locations>* Psi) const;
 
-  /* Implements ConstitutiveModel::CalcFirstPiolaStress() in the CRTP base
-   class. */
-  void DoCalcFirstPiolaStress(const DeformationGradientDataType& data,
-                              std::array<Matrix3<T>, num_locations>* P) const {
-    for (int i = 0; i < num_locations; ++i) {
-      const T& Jm1 = data.Jm1()[i];
-      const Matrix3<T>& F = data.deformation_gradient()[i];
-      const Matrix3<T>& R = data.R()[i];
-      const Matrix3<T>& JFinvT = data.JFinvT()[i];
-      (*P)[i].noalias() = 2.0 * mu_ * (F - R) + lambda_ * Jm1 * JFinvT;
-    }
-  }
+  /* Shadows ConstitutiveModel::CalcFirstPiolaStressImpl() as required by the
+   CRTP base class. */
+  void CalcFirstPiolaStressImpl(const Data& data,
+                                std::array<Matrix3<T>, num_locations>* P) const;
 
-  /* Implements ConstitutiveModel::CalcFirstPiolaStressDerivative() in the CRTP
-   base class. */
-  void DoCalcFirstPiolaStressDerivative(
-      const DeformationGradientDataType& data,
-      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
-    for (int i = 0; i < num_locations; ++i) {
-      const T& Jm1 = data.Jm1()[i];
-      const Matrix3<T>& F = data.deformation_gradient()[i];
-      const Matrix3<T>& R = data.R()[i];
-      const Matrix3<T>& S = data.S()[i];
-      const Matrix3<T>& JFinvT = data.JFinvT()[i];
-      const Vector<T, 3 * 3>& flat_JFinvT =
-          Eigen::Map<const Vector<T, 3 * 3>>(JFinvT.data(), 3 * 3);
-      auto& local_dPdF = (*dPdF)[i];
-      /* The contribution from derivatives of Jm1. */
-      local_dPdF.noalias() = lambda_ * flat_JFinvT * flat_JFinvT.transpose();
-      /* The contribution from derivatives of F. */
-      local_dPdF.diagonal().array() += 2.0 * mu_;
-      /* The contribution from derivatives of R. */
-      internal::AddScaledRotationalDerivative<T>(R, S, -2.0 * mu_, &local_dPdF);
-      /* The contribution from derivatives of JFinvT. */
-      internal::AddScaledCofactorMatrixDerivative<T>(F, lambda_ * Jm1,
-                                                     &local_dPdF);
-    }
-  }
+  /* Shadows ConstitutiveModel::CalcFirstPiolaStressDerivativeImpl() as required
+   by the CRTP base class. */
+  void CalcFirstPiolaStressDerivativeImpl(
+      const Data& data,
+      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const;
 
   T E_;       // Young's modulus, N/m².
   T nu_;      // Poisson ratio.
