@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/unused.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 
 namespace drake {
@@ -12,7 +13,7 @@ using systems::Context;
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     const MultibodyPlant<T>& plant)
-    : systems::LeafSystem<T>() {
+    : ContactResultsToLcmSystem<T>(true) {
   DRAKE_DEMAND(plant.is_finalized());
   const int body_count = plant.num_bodies();
 
@@ -25,14 +26,6 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     for (auto geometry_id : plant.GetCollisionGeometriesForBody(body))
       geometry_id_to_body_name_map_[geometry_id] = body.name();
   }
-
-  this->set_name("ContactResultsToLcmSystem");
-  contact_result_input_port_index_ = this->DeclareAbstractInputPort(
-      systems::kUseDefaultName,
-      Value<ContactResults<T>>()).get_index();
-  message_output_port_index_ = this->DeclareAbstractOutputPort(
-      systems::kUseDefaultName,
-      &ContactResultsToLcmSystem::CalcLcmContactOutput).get_index();
 }
 
 template <typename T>
@@ -45,6 +38,25 @@ template <typename T>
 const systems::OutputPort<T>&
 ContactResultsToLcmSystem<T>::get_lcm_message_output_port() const {
   return this->get_output_port(message_output_port_index_);
+}
+
+template <typename T>
+ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(bool dummy)
+    : systems::LeafSystem<T>(
+          systems::SystemTypeTag<ContactResultsToLcmSystem>{}) {
+  // Simply omitting the unused parameter `dummy` causes a linter error; cpplint
+  // thinks it is a C-style cast.
+  unused(dummy);
+  this->set_name("ContactResultsToLcmSystem");
+  contact_result_input_port_index_ =
+      this->DeclareAbstractInputPort(systems::kUseDefaultName,
+                                     Value<ContactResults<T>>())
+          .get_index();
+  message_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              systems::kUseDefaultName,
+              &ContactResultsToLcmSystem::CalcLcmContactOutput)
+          .get_index();
 }
 
 template <typename T>
