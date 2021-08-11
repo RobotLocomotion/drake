@@ -23,6 +23,13 @@ namespace multibody {
  message. It has a single input port with type ContactResults<T> and a single
  output port with lcmt_contact_results_for_viz.
 
+ Although this class can be instantiated on all default scalars, its
+ functionality will be limited for `T` = symbolic::Expression. If there are any
+ `symbolic::Variable`s in the expression, attempting to evaluate the output port
+ will throw an exception. The support is sufficient that a systems::Diagram with
+ a %ContactResultsToLcmSystem can be scalar converted to symbolic::Expression
+ without error, but not necessarily evaluated.
+
  @tparam_default_scalar
  */
 template <typename T>
@@ -41,18 +48,41 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   /** Scalar-converting copy constructor.  */
   template <typename U>
   explicit ContactResultsToLcmSystem(const ContactResultsToLcmSystem<U>& other)
-      : systems::LeafSystem<T>(), body_names_(other.body_names_) {}
+      : ContactResultsToLcmSystem<T>(true) {
+    geometry_id_to_body_name_map_ = other.geometry_id_to_body_name_map_;
+    body_names_ = other.body_names_;
+  }
 
   const systems::InputPort<T>& get_contact_result_input_port() const;
   const systems::OutputPort<T>& get_lcm_message_output_port() const;
 
  private:
+  friend class ContactResultsToLcmTester;
+
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U> friend class ContactResultsToLcmSystem;
 
+  // Special constructor that handles configuring ports. Used by both public
+  // constructor and scalar-converting copy constructor.
+  explicit ContactResultsToLcmSystem(bool);
+
   void CalcLcmContactOutput(const systems::Context<T>& context,
                             lcmt_contact_results_for_viz* output) const;
+
+  // Reports if the other system is equivalent to this one. This can be used to
+  // make sure the scalar copy converter has been updated. Every instance member
+  // should be included in this function.
+  template <typename U = T>
+  bool Equals(const ContactResultsToLcmSystem<U>& other) const {
+    return this->get_name() == other.get_name() &&
+           contact_result_input_port_index_ ==
+               other.contact_result_input_port_index_ &&
+           message_output_port_index_ == other.message_output_port_index_ &&
+           geometry_id_to_body_name_map_ ==
+               other.geometry_id_to_body_name_map_ &&
+           body_names_ == other.body_names_;
+  }
 
   // Named indices for the i/o ports.
   systems::InputPortIndex contact_result_input_port_index_;
