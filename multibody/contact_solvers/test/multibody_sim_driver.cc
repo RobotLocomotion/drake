@@ -70,7 +70,7 @@ void MultibodySimDriver::SetPointContactParameters(const Body<double>& body,
   for (const auto& id : geometries) {
     const geometry::ProximityProperties* old_props =
         inspector.GetProximityProperties(id);
-    DRAKE_DEMAND(old_props);
+    DRAKE_DEMAND(old_props != nullptr);
     geometry::ProximityProperties new_props(*old_props);
     // Update to a new property. If not existent, UpdateProperty() behaves as
     // AddProperty.
@@ -97,7 +97,7 @@ std::vector<double> MultibodySimDriver::GetDynamicFrictionCoefficients(
   for (const auto& id : geometries) {
     const geometry::ProximityProperties* props =
         inspector.GetProximityProperties(id);
-    DRAKE_DEMAND(props);
+    DRAKE_DEMAND(props != nullptr);
     const auto& friction = props->GetProperty<CoulombFriction<double>>(
         geometry::internal::kMaterialGroup, geometry::internal::kFriction);
     params.push_back(friction.dynamic_friction());

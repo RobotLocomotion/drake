@@ -64,7 +64,7 @@ VectorX<double> ComputeVelocities(const RigidTransform<double>& pose_1,
 }
 
 // TODO(naveenoid) : Replace the usage of these methods eventually with
-// PoseVector or a similar future variant.
+// some struct with clearer pose semantics.
 // Sets a pose from a 7-element array whose first 3 elements are position and
 // last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
 RigidTransform<double> PoseVector7ToRigidTransform(

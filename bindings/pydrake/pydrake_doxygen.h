@@ -430,6 +430,62 @@ This works about 80% of the time.
 - Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
 (using perfect forwarding when appropriate).
 
+### Mutable vs. `const` Method Overloads
+
+C++ has the ability to distinguish `T` and `const T` for both function arguments
+and class methods. However, Python does not have a native mechanism for this. It
+is possible to provide a feature like this in Python (see discussion and
+prototypes in [#7793](https://github.com/RobotLocomotion/drake/issues/7793));
+however, its pros (similarity to C++) have not yet outweighted the cons (awkard
+non-Pythonic types and workflows).
+
+When a function is overloaded only by its `const`-ness, choose to bind the
+mutable overload, not the `const` overload.
+
+We do this because `pybind11` evaluates overloads in the order they are bound,
+and is not possible for a user to "reach" any overloads that can only be
+disambiguated by const-ness.
+
+Examples of functions to bind and not bind:
+
+<!--
+WARNING: Adding {.cc} for syntax coloring seems to cause Doxygen to break
+(#15439).
+-->
+
+```
+// N.B. The two free functions below aren't necessarily great in terms of coding
+// and the GSG; however, we use them for illustrative purposes.
+
+// BIND: Should be exposed.
+void MyFunction(MyClass* mutable_value);
+// DO NOT BIND: Identical to above mutable overload, may constrain user.
+void MyFunction(const MyClass& value);
+
+// Disambiguating an accessor solely based on `const`-ness of `this`. In
+// general, you may want to avoid this.
+class MyOtherClassDispreferred {
+ public:
+  ...
+  // BIND: Even though more costly, this ensure the user has access to the
+  // "maximum" amount of functionality.
+  MyClass& value();
+
+  // DO NOT BIND: Identical to above mutable overload.
+  const MyClass& value() const;
+};
+
+class MyOtherClassPreferred {
+ public:
+  ...
+  // BIND: Unambiguous.
+  MyClass& mutable_value();
+
+  // BIND: Unambiguous.
+  const MyValue& value() const;
+};
+```
+
 ### Public C++ API Considerations for Function and Method Templates
 
 The motivation behind this section can be found under the

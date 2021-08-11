@@ -1,1 +1,2 @@
-# Empty Python module.
+# Bootstrap our native code.
+import pydrake.common as _common

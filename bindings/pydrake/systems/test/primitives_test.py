@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
     DiagramBuilder_,
+    TriggerType,
     VectorBase,
 )
 from pydrake.systems.test.test_util import (
@@ -41,6 +42,7 @@ from pydrake.systems.primitives import (
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
     LogOutput,
+    LogVectorOutput,
     MatrixGain,
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
@@ -55,6 +57,7 @@ from pydrake.systems.primitives import (
     TrajectoryAffineSystem, TrajectoryAffineSystem_,
     TrajectoryLinearSystem, TrajectoryLinearSystem_,
     TrajectorySource,
+    VectorLog, VectorLogSink, VectorLogSink_,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
 )
@@ -104,6 +107,7 @@ class TestGeneral(unittest.TestCase):
                                    supports_symbolic=False)
         self._check_instantiations(TrajectoryLinearSystem_,
                                    supports_symbolic=False)
+        self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -666,3 +670,96 @@ class TestGeneral(unittest.TestCase):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
             num_positions=5, time_step=0.4, suppress_initial_transient=True)
         self.assertTrue(state_interpolator.suppress_initial_transient())
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_log_vector_output(self, T):
+        # Add various redundant loggers to a system, to exercise the
+        # LogVectorOutput bindings.
+        builder = DiagramBuilder_[T]()
+        kSize = 1
+        integrator = builder.AddSystem(Integrator_[T](kSize))
+        port = integrator.get_output_port(0)
+        loggers = []
+        loggers.append(LogVectorOutput(port, builder))
+        loggers.append(LogVectorOutput(src=port, builder=builder))
+        loggers.append(LogVectorOutput(port, builder, 0.125))
+        loggers.append(LogVectorOutput(
+            src=port, builder=builder, publish_period=0.125))
+
+        loggers.append(LogVectorOutput(port, builder, {TriggerType.kForced}))
+        loggers.append(LogVectorOutput(
+            src=port, builder=builder, publish_triggers={TriggerType.kForced}))
+        loggers.append(LogVectorOutput(
+            port, builder, {TriggerType.kPeriodic}, 0.125))
+        loggers.append(LogVectorOutput(
+            src=port, builder=builder,
+            publish_triggers={TriggerType.kPeriodic}, publish_period=0.125))
+
+        # Check the returned loggers by calling some trivial methods.
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        self.assertTrue(all(logger.FindLog(context).num_samples() == 0
+                            for logger in loggers))
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_vector_log(self, T):
+        kSize = 1
+        dut = VectorLog(kSize)
+        self.assertEqual(dut.get_input_size(), kSize)
+        dut.AddData(0.1, [22.22])
+        self.assertEqual(dut.num_samples(), 1)
+        self.assertEqual(dut.sample_times(), [0.1])
+        self.assertEqual(dut.data(), [22.22])
+        dut.Clear()
+        self.assertEqual(dut.num_samples(), 0)
+        # There is no good way from python to test the semantics of Reserve(),
+        # but test the binding anyway.
+        dut.Reserve(VectorLog.kDefaultCapacity * 3)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_vector_log_sink(self, T):
+        # Add various redundant loggers to a system, to exercise the
+        # VectorLog constructor bindings.
+        builder = DiagramBuilder_[T]()
+        kSize = 1
+        constructors = [VectorLogSink_[T]]
+        loggers = []
+        if T == float:
+            constructors.append(VectorLogSink)
+        for constructor in constructors:
+            loggers.append(builder.AddSystem(constructor(kSize)))
+            loggers.append(builder.AddSystem(constructor(input_size=kSize)))
+            loggers.append(builder.AddSystem(constructor(kSize, 0.125)))
+            loggers.append(builder.AddSystem(
+                constructor(input_size=kSize, publish_period=0.125)))
+            loggers.append(builder.AddSystem(
+                constructor(kSize, {TriggerType.kForced})))
+            loggers.append(builder.AddSystem(
+                constructor(input_size=kSize,
+                            publish_triggers={TriggerType.kForced})))
+            loggers.append(builder.AddSystem(
+                constructor(kSize, {TriggerType.kPeriodic}, 0.125)))
+            loggers.append(builder.AddSystem(
+                constructor(input_size=kSize,
+                            publish_triggers={TriggerType.kPeriodic},
+                            publish_period=0.125)))
+
+        # Exercise all of the log access methods.
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        # FindLog and FindMutableLog find the same object.
+        self.assertTrue(
+            all(logger.FindLog(context) == logger.FindMutableLog(context)
+                for logger in loggers))
+        # Build a list of pairs of loggers and their local contexts.
+        loggers_and_contexts = [(x, x.GetMyContextFromRoot(context))
+                                for x in loggers]
+        # GetLog and GetMutableLog find the same object.
+        self.assertTrue(
+            all(logger.GetLog(logger_context)
+                == logger.GetMutableLog(logger_context)
+                for logger, logger_context in loggers_and_contexts))
+        # GetLog and FindLog find the same object, given the proper contexts.
+        self.assertTrue(
+            all(logger.GetLog(logger_context) == logger.FindLog(context)
+                for logger, logger_context in loggers_and_contexts))

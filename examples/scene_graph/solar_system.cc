@@ -58,7 +58,7 @@ unique_ptr<GeometryInstance> MakeShape(const RigidTransformd& pose,
 
 template <typename T>
 SolarSystem<T>::SolarSystem(SceneGraph<T>* scene_graph) {
-  DRAKE_DEMAND(scene_graph);
+  DRAKE_DEMAND(scene_graph != nullptr);
   source_id_ = scene_graph->RegisterSource("solar_system");
 
   this->DeclareContinuousState(kBodyCount /* num_q */, kBodyCount /* num_v */,

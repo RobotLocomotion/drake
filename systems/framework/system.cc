@@ -16,7 +16,7 @@ System<T>::~System() {}
 
 template <typename T>
 void System<T>::Accept(SystemVisitor<T>* v) const {
-  DRAKE_DEMAND(v);
+  DRAKE_DEMAND(v != nullptr);
   v->VisitSystem(*this);
 }
 
@@ -274,7 +274,7 @@ void System<T>::CalcImplicitTimeDerivativesResidual(
         this->implicit_time_derivatives_residual_size(), residual->size()));
   }
   ValidateContext(context);
-  ValidateCreatedForThisSystem(&proposed_derivatives);
+  ValidateCreatedForThisSystem(proposed_derivatives);
   DoCalcImplicitTimeDerivativesResidual(context, proposed_derivatives,
                                         residual);
 }
@@ -871,7 +871,7 @@ template <typename T>
 void System<T>::GetWitnessFunctions(
     const Context<T>& context,
     std::vector<const WitnessFunction<T>*>* w) const {
-  DRAKE_DEMAND(w);
+  DRAKE_DEMAND(w != nullptr);
   DRAKE_DEMAND(w->empty());
   ValidateContext(context);
   DoGetWitnessFunctions(context, w);

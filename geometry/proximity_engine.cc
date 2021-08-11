@@ -760,8 +760,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       ContactPolygonRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces);
-    DRAKE_DEMAND(point_pairs);
+    DRAKE_DEMAND(surfaces != nullptr);
+    DRAKE_DEMAND(point_pairs != nullptr);
 
     // All these quantities, except `representation`, are aliased in the
     // callback data.
@@ -787,8 +787,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces);
-    DRAKE_DEMAND(point_pairs);
+    DRAKE_DEMAND(surfaces != nullptr);
+    DRAKE_DEMAND(point_pairs != nullptr);
     ComputeContactSurfacesWithFallbackImpl(
         X_WGs, ContactPolygonRepresentation::kCentroidSubdivision, surfaces,
         point_pairs);
@@ -798,8 +798,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces);
-    DRAKE_DEMAND(point_pairs);
+    DRAKE_DEMAND(surfaces != nullptr);
+    DRAKE_DEMAND(point_pairs != nullptr);
     // TODO(14579): Change kSingleTriangle to the future polygon representation.
     ComputeContactSurfacesWithFallbackImpl(
         X_WGs, ContactPolygonRepresentation::kSingleTriangle, surfaces,

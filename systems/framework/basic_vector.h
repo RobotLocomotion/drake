@@ -79,7 +79,8 @@ class BasicVector : public VectorBase<T> {
   }
 
   /// Returns the entire vector as a mutable Eigen::VectorBlock, which allows
-  /// mutation of the values, but does not allow resizing the vector itself.
+  /// mutation of the values, but does not allow `resize()` to be invoked on
+  /// the returned object.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     return values_.head(values_.rows());
   }

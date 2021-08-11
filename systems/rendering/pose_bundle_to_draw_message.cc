@@ -9,6 +9,9 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 PoseBundleToDrawMessage::PoseBundleToDrawMessage() {
   this->DeclareAbstractInputPort(
       kUseDefaultName, Value<PoseBundle<double>>());
@@ -54,6 +57,8 @@ void PoseBundleToDrawMessage::CalcViewerDrawMessage(
     message.quaternion[i][3] = q.z();
   }
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace rendering
 }  // namespace systems

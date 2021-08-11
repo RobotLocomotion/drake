@@ -735,7 +735,7 @@ class Context : public ContextBase {
   /// invalidation notifications. Use get_mutable_parameters() instead for
   /// normal access.
   static Parameters<T>& access_mutable_parameters(Context<T>* context) {
-    DRAKE_ASSERT(context);
+    DRAKE_ASSERT(context != nullptr);
     return *context->parameters_;
   }
 
@@ -743,7 +743,7 @@ class Context : public ContextBase {
   /// invalidation notifications. Use get_mutable_state() instead for normal
   /// access.
   static State<T>& access_mutable_state(Context<T>* context) {
-    DRAKE_ASSERT(context);
+    DRAKE_ASSERT(context != nullptr);
     return context->do_access_mutable_state();
   }
 

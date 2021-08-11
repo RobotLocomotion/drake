@@ -1036,7 +1036,7 @@ void GurobiSolver::DoSolve(
   // Note that it is not necessary to free this environment; rather,
   // we just have to call GRBfreemodel(model).
   GRBenv* model_env = GRBgetenv(model);
-  DRAKE_DEMAND(model_env);
+  DRAKE_DEMAND(model_env != nullptr);
 
   // Handle common solver options before gurobi-specific options stored in
   // merged_options, so that gurobi-specific options can overwrite common solver

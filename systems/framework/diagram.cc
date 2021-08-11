@@ -29,7 +29,7 @@ std::vector<const systems::System<T>*> Diagram<T>::GetSystems() const {
 
 template <typename T>
 void Diagram<T>::Accept(SystemVisitor<T>* v) const {
-  DRAKE_DEMAND(v);
+  DRAKE_DEMAND(v != nullptr);
   v->VisitDiagram(*this);
 }
 
@@ -366,7 +366,7 @@ template <typename T>
 const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
     const System<T>& subsystem,
     const ContinuousState<T>& derivatives) const {
-  this->ValidateCreatedForThisSystem(&derivatives);
+  this->ValidateCreatedForThisSystem(derivatives);
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
   DRAKE_DEMAND(diagram_derivatives != nullptr);
@@ -378,7 +378,7 @@ template <typename T>
 const DiscreteValues<T>& Diagram<T>::GetSubsystemDiscreteValues(
     const System<T>& subsystem,
     const DiscreteValues<T>& discrete_values) const {
-  this->ValidateCreatedForThisSystem(&discrete_values);
+  this->ValidateCreatedForThisSystem(discrete_values);
   auto diagram_discrete_state =
       dynamic_cast<const DiagramDiscreteValues<T>*>(&discrete_values);
   DRAKE_DEMAND(diagram_discrete_state != nullptr);
@@ -390,7 +390,7 @@ template <typename T>
 const CompositeEventCollection<T>&
 Diagram<T>::GetSubsystemCompositeEventCollection(const System<T>& subsystem,
     const CompositeEventCollection<T>& events) const {
-  this->ValidateCreatedForThisSystem(&events);
+  this->ValidateCreatedForThisSystem(events);
   auto ret = DoGetTargetSystemCompositeEventCollection(subsystem, &events);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -427,7 +427,7 @@ State<T>& Diagram<T>::GetMutableSubsystemState(const System<T>& subsystem,
 template <typename T>
 const State<T>& Diagram<T>::GetSubsystemState(const System<T>& subsystem,
                                               const State<T>& state) const {
-  this->ValidateCreatedForThisSystem(&state);
+  this->ValidateCreatedForThisSystem(state);
   auto ret = DoGetTargetSystemState(subsystem, &state);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
@@ -623,14 +623,14 @@ template <typename T>
 void Diagram<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
     Event<T>* event,
     CompositeEventCollection<T>* events) const {
-  DRAKE_DEMAND(events);
-  DRAKE_DEMAND(event);
-  DRAKE_DEMAND(event->get_event_data());
+  DRAKE_DEMAND(events != nullptr);
+  DRAKE_DEMAND(event != nullptr);
+  DRAKE_DEMAND(event->get_event_data() != nullptr);
 
   // Get the event data- it will need to be modified.
   auto data = dynamic_cast<WitnessTriggeredEventData<T>*>(
       event->get_mutable_event_data());
-  DRAKE_DEMAND(data);
+  DRAKE_DEMAND(data != nullptr);
 
   // Get the vector of events corresponding to the subsystem.
   const System<T>& subsystem = data->triggered_witness()->get_system();
@@ -1124,7 +1124,7 @@ void Diagram<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-  DRAKE_DEMAND(diagram_context);
+  DRAKE_DEMAND(diagram_context != nullptr);
   const DiagramEventCollection<PublishEvent<T>>& info =
       dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
           event_info);
@@ -1146,10 +1146,10 @@ void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-  DRAKE_DEMAND(diagram_context);
+  DRAKE_DEMAND(diagram_context != nullptr);
   auto diagram_discrete =
       dynamic_cast<DiagramDiscreteValues<T>*>(discrete_state);
-  DRAKE_DEMAND(diagram_discrete);
+  DRAKE_DEMAND(diagram_discrete != nullptr);
 
   const DiagramEventCollection<DiscreteUpdateEvent<T>>& diagram_events =
       dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
@@ -1203,7 +1203,7 @@ void Diagram<T>::DispatchUnrestrictedUpdateHandler(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-  DRAKE_DEMAND(diagram_context);
+  DRAKE_DEMAND(diagram_context != nullptr);
   auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
   DRAKE_DEMAND(diagram_state != nullptr);
 

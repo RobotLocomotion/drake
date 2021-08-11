@@ -46,7 +46,7 @@ class BallRpyJointTest : public ::testing::Test {
                                             kDamping);
     mutable_joint_ = dynamic_cast<BallRpyJoint<double>*>(
         &model->get_mutable_joint(joint_->index()));
-    DRAKE_DEMAND(mutable_joint_);
+    DRAKE_DEMAND(mutable_joint_ != nullptr);
     mutable_joint_->set_position_limits(
         Vector3d::Constant(kPositionLowerLimit),
         Vector3d::Constant(kPositionUpperLimit));

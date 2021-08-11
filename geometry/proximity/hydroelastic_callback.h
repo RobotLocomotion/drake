@@ -65,10 +65,10 @@ struct CallbackData {
         geometries(*geometries_in),
         polygon_representation(polygon_representation_in),
         surfaces(*surfaces_in) {
-    DRAKE_DEMAND(collision_filter_in);
-    DRAKE_DEMAND(X_WGs_in);
-    DRAKE_DEMAND(geometries_in);
-    DRAKE_DEMAND(surfaces_in);
+    DRAKE_DEMAND(collision_filter_in != nullptr);
+    DRAKE_DEMAND(X_WGs_in != nullptr);
+    DRAKE_DEMAND(geometries_in != nullptr);
+    DRAKE_DEMAND(surfaces_in != nullptr);
   }
 
   /* The collision filter system.  */

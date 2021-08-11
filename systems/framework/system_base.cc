@@ -281,6 +281,20 @@ void SystemBase::ThrowValidateContextMismatch(
       context.GetSystemPathname()));
 }
 
+void SystemBase::ThrowNotCreatedForThisSystemImpl(
+    const std::string& nice_type_name, internal::SystemId id) const {
+  if (!id.is_valid()) {
+    throw std::logic_error(fmt::format(
+        "{} was not associated with any System but should have been "
+        "created for {} System {}",
+        nice_type_name, GetSystemType(), GetSystemPathname()));
+  } else {
+    throw std::logic_error(fmt::format("{} was not created for {} System {}",
+                                       nice_type_name, GetSystemType(),
+                                       GetSystemPathname()));
+  }
+}
+
 [[noreturn]] void SystemBase::ThrowUnsupportedScalarConversion(
     const SystemBase& from, const std::string& destination_type_name) {
   std::stringstream ss;

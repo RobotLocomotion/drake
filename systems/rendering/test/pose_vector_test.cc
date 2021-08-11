@@ -24,6 +24,9 @@ namespace systems {
 namespace rendering {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 // Tests that the default PoseVector is initialized to identity.
 GTEST_TEST(PoseVector, InitiallyIdentity) {
   const PoseVector<double> vec;
@@ -191,6 +194,8 @@ GTEST_TEST(PoseVector, Autodiff) {
     }
   }
 }
+
+#pragma GCC diagnostic pop
 
 };  // namespace
 }  // namespace rendering

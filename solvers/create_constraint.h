@@ -242,14 +242,18 @@ std::shared_ptr<Constraint> MakePolynomialConstraint(
  * Assist MathematicalProgram::AddLorentzConeConstraint(...).
  */
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+    LorentzConeConstraint::EvalType eval_type =
+        LorentzConeConstraint::EvalType::kConvexSmooth);
 
 /*
  * Assist MathematicalProgram::AddLorentzConeConstraint(...).
  */
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const symbolic::Expression& linear_expr,
-    const symbolic::Expression& quadratic_expr, double tol = 0);
+    const symbolic::Expression& quadratic_expr, double tol = 0,
+    LorentzConeConstraint::EvalType eval_type =
+        LorentzConeConstraint::EvalType::kConvexSmooth);
 
 /*
  * Assist MathematicalProgram::AddRotatedLorentzConeConstraint(...)

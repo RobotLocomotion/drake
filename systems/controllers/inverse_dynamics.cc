@@ -16,7 +16,7 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
       mode_(mode),
       q_dim_(plant->num_positions()),
       v_dim_(plant->num_velocities()) {
-  DRAKE_DEMAND(multibody_plant_);
+  DRAKE_DEMAND(multibody_plant_ != nullptr);
   DRAKE_DEMAND(plant->is_finalized());
 
   input_port_index_state_ =

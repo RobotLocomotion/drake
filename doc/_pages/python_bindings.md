@@ -154,7 +154,7 @@ After following the above install steps, check to ensure you can import
 ``pydrake``.
 
 ```bash
-python3 -c 'import pydrake; print(pydrake.__file__)'
+python3 -c 'import pydrake.all; print(pydrake.__file__)'
 ```
 
 <div class="note" markdown="1">

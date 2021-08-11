@@ -59,8 +59,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // _zero_ state.  See Mobilizer::set_zero_state().
   void set_zero_state(const systems::Context<T>&,
                       systems::State<T>* state) const final {
-    get_mutable_positions(&*state) = get_zero_position();
-    get_mutable_velocities(&*state).setZero();
+    get_mutable_positions(state) = get_zero_position();
+    get_mutable_velocities(state).setZero();
   };
 
   // Sets the elements of the `state` associated with this Mobilizer to the
@@ -167,6 +167,7 @@ class MobilizerImpl : public Mobilizer<T> {
   //@{
   // Helper to return a const fixed-size Eigen::VectorBlock referencing the
   // segment in the state vector corresponding to `this` mobilizer's state.
+  // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNq> get_positions(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().template get_state_segment<kNq>(
@@ -175,32 +176,27 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   // segment in the state vector corresponding to `this` mobilizer's state.
-  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
+  // Causes invalidation of at least q-dependent cache entries.
+  // @pre `context` is a valid multibody system Context.
+  Eigen::VectorBlock<VectorX<T>, kNq> GetMutablePositions(
       systems::Context<T>* context) const {
-    return this->get_parent_tree().template get_mutable_state_segment<kNq>(
-        &*context, this->get_positions_start());
+    return this->get_parent_tree().template GetMutableStateSegment<kNq>(
+        context, this->get_positions_start());
   }
 
   // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   // the segment in the `state` corresponding to `this` mobilizer's generalized
-  // positions.
+  // positions. No cache invalidation occurs.
+  // @pre `state` is a valid multibody system State.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNq>(
-        &*state, this->get_positions_start());
-  }
-
-  // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
-  // the segment in the `state` corresponding to `this` mobilizer's generalized
-  // velocities.
-  Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
-      systems::State<T>* state) const {
-    return this->get_parent_tree().template get_mutable_state_segment<kNv>(
-        &*state, this->get_velocities_start());
+        state, this->get_positions_start());
   }
 
   // Helper to return a const fixed-size Eigen::VectorBlock referencing the
   // segment in the state vector corresponding to `this` mobilizer's state.
+  // @pre `context` is a valid multibody system Context.
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().template get_state_segment<kNv>(context,
@@ -209,10 +205,22 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   // segment in the state vector corresponding to `this` mobilizer's state.
-  Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
+  // Causes invalidation of at least v-dependent cache entries.
+  // @pre `context` is a valid multibody system Context.
+  Eigen::VectorBlock<VectorX<T>, kNv> GetMutableVelocities(
       systems::Context<T>* context) const {
+    return this->get_parent_tree().template GetMutableStateSegment<kNv>(
+        context, this->get_velocities_start());
+  }
+
+  // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  // the segment in the `state` corresponding to `this` mobilizer's generalized
+  // velocities. No cache invalidation occurs.
+  // @pre `state` is a valid multibody system State.
+  Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
+      systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNv>(
-        &*context, this->get_velocities_start());
+        state, this->get_velocities_start());
   }
   //@}
 

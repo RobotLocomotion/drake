@@ -161,7 +161,7 @@ void Rod2D<T>::GetContactPoints(const systems::Context<T>& context,
   using std::cos;
   using std::sin;
 
-  DRAKE_DEMAND(points);
+  DRAKE_DEMAND(points != nullptr);
   DRAKE_DEMAND(points->empty());
 
   const Vector3<T> q = GetRodConfig(context);
@@ -185,7 +185,7 @@ template <class T>
 void Rod2D<T>::GetContactPointsTangentVelocities(
     const systems::Context<T>& context,
     const std::vector<Vector2<T>>& points, std::vector<T>* vels) const {
-  DRAKE_DEMAND(vels);
+  DRAKE_DEMAND(vels != nullptr);
   const Vector3<T> q = GetRodConfig(context);
   const Vector3<T> v = GetRodVelocity(context);
 
@@ -305,7 +305,7 @@ void Rod2D<T>::CalcConstraintProblemData(
     multibody::constraint::ConstraintAccelProblemData<T>* data)
     const {
   using std::abs;
-  DRAKE_DEMAND(data);
+  DRAKE_DEMAND(data != nullptr);
   DRAKE_DEMAND(points.size() == tangent_vels.size());
 
   // Set the inertia solver.
@@ -413,7 +413,7 @@ void Rod2D<T>::CalcImpactProblemData(
     const std::vector<Vector2<T>>& points,
     multibody::constraint::ConstraintVelProblemData<T>* data) const {
   using std::abs;
-  DRAKE_DEMAND(data);
+  DRAKE_DEMAND(data != nullptr);
 
   // Setup the generalized inertia matrix.
   Matrix3<T> M;

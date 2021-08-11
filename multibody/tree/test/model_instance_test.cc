@@ -122,7 +122,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   // Clear the entire multibody state vector so that we can check the effect
   // of setting one instance at a time.
   tree.GetMutablePositionsAndVelocities(context.get()).setZero();
-  EXPECT_EQ(tree.GetPositionsAndVelocities(*context).norm(), 0);
+  EXPECT_EQ(tree.get_positions_and_velocities(*context).norm(), 0);
 
   // Validate setting the position and velocity through the multibody state
   // vector for an instance.

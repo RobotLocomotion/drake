@@ -407,8 +407,8 @@ class GeometryState {
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces);
-    DRAKE_DEMAND(point_pairs);
+    DRAKE_DEMAND(surfaces != nullptr);
+    DRAKE_DEMAND(point_pairs != nullptr);
     return geometry_engine_->ComputeContactSurfacesWithFallback(
         X_WGs_, surfaces, point_pairs);
   }
@@ -418,8 +418,8 @@ class GeometryState {
   void ComputePolygonalContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces);
-    DRAKE_DEMAND(point_pairs);
+    DRAKE_DEMAND(surfaces != nullptr);
+    DRAKE_DEMAND(point_pairs != nullptr);
     return geometry_engine_->ComputePolygonalContactSurfacesWithFallback(
         X_WGs_, surfaces, point_pairs);
   }
