@@ -106,6 +106,10 @@ Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
   return *iter;
 }
 
+void Edge::AddPhiConstraint(bool phi_value) {
+  phi_value_ = phi_value;
+}
+
 double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
 }
@@ -140,10 +144,6 @@ Edge* GraphOfConvexSets::AddEdge(const VertexId& u_id, const VertexId& v_id,
 Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
                                  std::string name) {
   return AddEdge(u.id(), v.id(), std::move(name));
-}
-
-void GraphOfConvexSets::LockEdge(const Edge& edge, bool active) {
-  locked_edges_[&edge] = active;
 }
 
 std::unordered_set<VertexId> GraphOfConvexSets::VertexIds() const {
@@ -194,9 +194,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       phi = e->phi_;
       prog.AddDecisionVariables(Vector1<Variable>(phi));
     }
-    const auto locked_edge = locked_edges_.find(e.get());
-    if (locked_edge != locked_edges_.end()) {
-      double phi_value = locked_edge->second ? 1.0 : 0.0;
+    if (e->phi_value_.has_value()) {
+      double phi_value = *e->phi_value_ ? 1.0 : 0.0;
       prog.AddBoundingBoxConstraint(phi_value, phi_value, phi);
     }
     prog.AddDecisionVariables(e->y_);

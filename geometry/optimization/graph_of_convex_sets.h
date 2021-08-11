@@ -185,6 +185,9 @@ class GraphOfConvexSets {
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
+    /** Adds a constraint on the binary variable associated with this edge. */
+    void AddPhiConstraint(bool phi_value);
+
     /** Returns the sum of the costs associated with this edge in a
     MathematicalProgramResult. */
     double GetSolutionCost(
@@ -212,6 +215,7 @@ class GraphOfConvexSets {
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
     std::unordered_set<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
   };
@@ -233,9 +237,6 @@ class GraphOfConvexSets {
   vertex references must refer to valid vertices in this graph. If @p name is
   empty then a default name will be provided. */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
-
-  /** Requires that @p edge be active (phi == 1) or inactive (phi == 0). */
-  void LockEdge(const Edge& edge, bool active);
 
   /** Returns the VertexIds of the vertices stored in the graph.  Note that the
   order of the elements is not guaranteed. */
@@ -282,7 +283,6 @@ class GraphOfConvexSets {
  private:
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
   std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
-  std::map<const Edge*, bool> locked_edges_{};
 };
 
 }  // namespace optimization

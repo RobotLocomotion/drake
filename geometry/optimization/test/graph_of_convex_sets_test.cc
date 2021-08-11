@@ -689,7 +689,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
 
   // Test that forcing an edge not on the shortest path to be active yields a
   // higher cost.
-  spp.LockEdge(*source_to_p2, true);
+  source_to_p2->AddPhiConstraint(true);
   auto new_result = spp.SolveShortestPath(source->id(), target->id(), false);
   ASSERT_TRUE(new_result.is_success());
 
