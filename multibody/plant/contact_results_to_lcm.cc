@@ -12,7 +12,7 @@ using systems::Context;
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     const MultibodyPlant<T>& plant)
-    : systems::LeafSystem<T>() {
+    : ContactResultsToLcmSystem<T>(true) {
   DRAKE_DEMAND(plant.is_finalized());
   const int body_count = plant.num_bodies();
 
@@ -25,14 +25,6 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     for (auto geometry_id : plant.GetCollisionGeometriesForBody(body))
       geometry_id_to_body_name_map_[geometry_id] = body.name();
   }
-
-  this->set_name("ContactResultsToLcmSystem");
-  contact_result_input_port_index_ = this->DeclareAbstractInputPort(
-      systems::kUseDefaultName,
-      Value<ContactResults<T>>()).get_index();
-  message_output_port_index_ = this->DeclareAbstractOutputPort(
-      systems::kUseDefaultName,
-      &ContactResultsToLcmSystem::CalcLcmContactOutput).get_index();
 }
 
 template <typename T>
@@ -45,6 +37,22 @@ template <typename T>
 const systems::OutputPort<T>&
 ContactResultsToLcmSystem<T>::get_lcm_message_output_port() const {
   return this->get_output_port(message_output_port_index_);
+}
+
+template <typename T>
+// NOLINTNEXTLINE(readability/casting) cpplint considers this a c-style cast.
+ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(bool)
+    : systems::LeafSystem<T>() {
+  this->set_name("ContactResultsToLcmSystem");
+  contact_result_input_port_index_ =
+      this->DeclareAbstractInputPort(systems::kUseDefaultName,
+                                     Value<ContactResults<T>>())
+          .get_index();
+  message_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+              systems::kUseDefaultName,
+              &ContactResultsToLcmSystem::CalcLcmContactOutput)
+          .get_index();
 }
 
 template <typename T>
