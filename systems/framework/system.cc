@@ -274,7 +274,7 @@ void System<T>::CalcImplicitTimeDerivativesResidual(
         this->implicit_time_derivatives_residual_size(), residual->size()));
   }
   ValidateContext(context);
-  ValidateCreatedForThisSystem(&proposed_derivatives);
+  ValidateCreatedForThisSystem(proposed_derivatives);
   DoCalcImplicitTimeDerivativesResidual(context, proposed_derivatives,
                                         residual);
 }

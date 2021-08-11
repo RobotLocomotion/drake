@@ -34,7 +34,7 @@ in the system ID hinting family by implementing the following concept:
 get_system_id of an object whose set_system_id has not been called will return
 an invalid (default-constructed, zero-valued) ID.
 
-A System method participates by calling ValidateCreatedForThisSystem(&object)
+A System method participates by calling ValidateCreatedForThisSystem(object)
 on an object that implements the concept.
 
 An invalid system ID represents the absence of information about the associated
@@ -53,10 +53,10 @@ Where an ID-bearing object implements Clone(), it MUST clone the system ID and,
 recursively, those of its members, whether valid or invalid.
 
 Where an ID-bearing object implements the potentially-scalar-converting
-SetFrom(), if the scalar types differ, it MUST NOT set the system IDs, nor may it
-set the system IDs of its copied members (because being of the wrong type it is
-no longer valid data for the original System). This prohibition does not apply
-when the scalar types are the same.
+SetFrom(), if the scalar types differ, it MUST NOT set the system IDs, nor may
+it set the system IDs of its copied members (because being of the wrong type it
+is no longer valid data for the original System). This prohibition does not
+apply when the scalar types are the same.
 
 Data types that currently implement the above-described scheme include Context,
 ContinuousState, DiscreteValues, CompositeEventCollection, Parameters, State,

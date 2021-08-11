@@ -200,6 +200,16 @@ class Identifier {
     hash_append(hasher, i.value_);
   }
 
+  /** (Internal use only) Compares this possibly-invalid Identifier with one
+  that is known to be valid and returns `false` if they don't match. It is an
+  error if `valid_id` is not actually valid, and that is strictly enforced in
+  Debug builds. However, it is not an error if `this` id is invalid; that
+  results in a `false` return. This method can be faster than testing
+  separately for validity and equality. */
+  bool is_same_as_valid_id(Identifier valid_id) const {
+    return value_ == valid_id.get_value();
+  }
+
  protected:
   // Instantiates an identifier from the underlying representation type.
   explicit Identifier(int64_t val) : value_(val) {}
