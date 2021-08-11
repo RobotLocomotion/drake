@@ -489,6 +489,13 @@ template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_positions_and_velocities(
     const systems::Context<T>& context) const {
+
+  // Note that we can't currently count on MultibodyPlant's API to have
+  // validated this Context. The extract_qv_from_continuous() call
+  // below depends on this being a LeafContext. We'll just verify that this
+  // Context belongs to the owning System, since we know that's a LeafSystem.
+  tree_system().ValidateContext(context);
+
   if (is_state_discrete()) {
     return get_discrete_state_vector(context);
   }
@@ -517,6 +524,14 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::GetMutablePositionsAndVelocities(
     systems::Context<T>* context) const {
+  DRAKE_ASSERT(context != nullptr);
+
+  // Note that we can't currently count on MultibodyPlant's API to have
+  // validated this Context. The extract_mutable_qv_from_continuous() call
+  // below depends on this being a LeafContext. We'll just verify that this
+  // Context belongs to the owning System, since we know that's a LeafSystem.
+  tree_system().ValidateContext(*context);
+
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(context);
   }
@@ -529,6 +544,15 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::get_mutable_positions_and_velocities(
     systems::State<T>* state) const {
+  DRAKE_ASSERT(state != nullptr);
+
+  // Note that we can't currently count on MultibodyPlant's API to have
+  // validated this State. The extract_mutable_qv_from_continuous() call
+  // below depends on this being the State of a LeafContext. We'll just verify
+  // that this State was created by the owning System, since we know that's
+  // a LeafSystem.
+  tree_system().ValidateCreatedForThisSystem(*state);
+
   if (is_state_discrete()) {
     return get_mutable_discrete_state_vector(state);
   }
@@ -617,17 +641,24 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
 
 // State is continuous. This might have x = [q, v, z] -- we only want q and v.
 
+// These next two private methods are used only in the above implementations for
+// digging continuous State out of a Context, which results in a VectorBase.
+// Profiling showed that it is too expensive to do a dynamic_cast for simple
+// state access, which is VERY frequent. However a static_cast is safe here as
+// long as the supplied VectorBase comes from the State in a LeafContext,
+// because LeafContext continuous state variables are BasicVectors. We're
+// depending on all callers to verify that precondition.
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::extract_qv_from_continuous(
     const systems::VectorBase<T>& continuous_qvz_base) const {
   DRAKE_ASSERT(!is_state_discrete());
+  DRAKE_ASSERT(dynamic_cast<const systems::BasicVector<T>*>(
+                   &continuous_qvz_base) != nullptr);
   const int num_qv = num_positions() + num_velocities();
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
   const systems::BasicVector<T>& continuous_qvz =
-      dynamic_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
+      static_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
   DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
   Eigen::VectorBlock<const VectorX<T>> qvz = continuous_qvz.get_value();
   return make_block_segment(qvz, 0, num_qv);
@@ -637,14 +668,14 @@ template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::extract_mutable_qv_from_continuous(
     systems::VectorBase<T>* continuous_qvz_base) const {
-  DRAKE_ASSERT(continuous_qvz_base != nullptr);
   DRAKE_ASSERT(!is_state_discrete());
+  DRAKE_ASSERT(continuous_qvz_base != nullptr);
+  DRAKE_ASSERT(dynamic_cast<systems::BasicVector<T>*>(continuous_qvz_base) !=
+               nullptr);
   const int num_qv = num_positions() + num_velocities();
 
-  // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
-  //              static_cast in Release builds.
   systems::BasicVector<T>& continuous_qvz =
-      dynamic_cast<systems::BasicVector<T>&>(*continuous_qvz_base);
+      static_cast<systems::BasicVector<T>&>(*continuous_qvz_base);
   DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
   Eigen::VectorBlock<VectorX<T>> qvz = continuous_qvz.get_mutable_value();
   return make_mutable_block_segment(&qvz, 0, num_qv);
