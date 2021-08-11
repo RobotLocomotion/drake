@@ -110,18 +110,12 @@ double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
 }
 
-bool GraphOfConvexSets::CompareEdges(const std::unique_ptr<Edge>& a,
-                                     const std::unique_ptr<Edge>& b) {
-  return a->id() < b->id();
-}
-
 Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   if (name.empty()) {
     name = fmt::format("v{}", vertices_.size());
   }
   VertexId id = VertexId::get_new_id();
-  auto [iter, success] =
-      vertices_.emplace(id, std::unique_ptr<Vertex>(new Vertex(id, set, name)));
+  auto [iter, success] = vertices_.try_emplace(id, new Vertex(id, set, name));
   DRAKE_DEMAND(success);
   return iter->second.get();
 }
@@ -137,10 +131,10 @@ Edge* GraphOfConvexSets::AddEdge(const VertexId& u_id, const VertexId& v_id,
     name = fmt::format("e{}", edges_.size());
   }
   EdgeId id = EdgeId::get_new_id();
-  auto [iter, success] = edges_.emplace(std::unique_ptr<Edge>(
-      new Edge(id, u_iter->second.get(), v_iter->second.get(), name)));
+  auto [iter, success] = edges_.try_emplace(
+      id, new Edge(id, u_iter->second.get(), v_iter->second.get(), name));
   DRAKE_DEMAND(success);
-  return iter->get();
+  return iter->second.get();
 }
 
 Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
@@ -162,7 +156,8 @@ std::unordered_set<VertexId> GraphOfConvexSets::VertexIds() const {
 
 std::unordered_set<Edge*> GraphOfConvexSets::Edges() {
   std::unordered_set<Edge*> edges(edges_.size());
-  for (auto& e : edges_) {
+  for (auto& [edge_id, e] : edges_) {
+    unused(edge_id);
     edges.emplace(e.get());
   }
   return edges;
@@ -185,7 +180,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   std::unordered_map<const Edge*, Variable> relaxed_phi(
       convex_relaxation ? edges_.size() : 0);
 
-  for (const auto& e : edges_) {
+  for (const auto& [edge_id, e] : edges_) {
+    unused(edge_id);
     outgoing_edges[e->u().id()].emplace_back(e.get());
     incoming_edges[e->v().id()].emplace_back(e.get());
 

@@ -279,14 +279,9 @@ class GraphOfConvexSets {
       const Vertex& source, const Vertex& target,
       bool convex_relaxation = false) const;
 
-  /** Custom comparator for sorting edges based on their identifiers. */
-  static bool CompareEdges(const std::unique_ptr<Edge>& a,
-                           const std::unique_ptr<Edge>& b);
-
  private:
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
-  std::set<std::unique_ptr<Edge>, decltype(&GraphOfConvexSets::CompareEdges)>
-      edges_{&GraphOfConvexSets::CompareEdges};
+  std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
   std::map<const Edge*, bool> locked_edges_{};
 };
 
