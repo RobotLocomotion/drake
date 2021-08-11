@@ -110,6 +110,10 @@ void Edge::AddPhiConstraint(bool phi_value) {
   phi_value_ = phi_value;
 }
 
+void Edge::ClearPhiConstraints() {
+  phi_value_ = std::nullopt;
+}
+
 double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
 }

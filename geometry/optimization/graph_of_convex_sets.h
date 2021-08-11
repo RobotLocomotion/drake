@@ -188,6 +188,9 @@ class GraphOfConvexSets {
     /** Adds a constraint on the binary variable associated with this edge. */
     void AddPhiConstraint(bool phi_value);
 
+    /** Removes any constraints added with AddPhiConstraint. */
+    void ClearPhiConstraints();
+
     /** Returns the sum of the costs associated with this edge in a
     MathematicalProgramResult. */
     double GetSolutionCost(
