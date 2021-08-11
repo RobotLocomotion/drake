@@ -5,6 +5,7 @@
 
 #include <fmt/core.h>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -13,15 +14,19 @@
 namespace drake {
 namespace systems {
 
-void PrintSimulatorStatistics(const Simulator<double>& simulator) {
-  const systems::IntegratorBase<double>& integrator =
-      simulator.get_integrator();
+template <typename T>
+void PrintSimulatorStatistics(const Simulator<T>& simulator) {
+  const systems::IntegratorBase<T>& integrator = simulator.get_integrator();
 
   std::string integrator_scheme_name =
       NiceTypeName::RemoveNamespaces(NiceTypeName::Get(integrator));
   // Remove "<double>" from the scheme name if it's in it.
-  integrator_scheme_name = std::regex_replace(integrator_scheme_name,
-      std::regex("<double>"), "");
+  // The other scalar type T=AutoDiffXd is more interesting and we keep it
+  // in the name.
+  if constexpr (std::is_same_v<T, double>) {
+    integrator_scheme_name =
+        std::regex_replace(integrator_scheme_name, std::regex("<double>"), "");
+  }
 
   fmt::print("General stats regarding discrete updates:\n");
   fmt::print("Number of time steps taken (simulator stats) = {:d}\n",
@@ -45,12 +50,14 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
              integrator.get_num_steps_taken());
   if (!integrator.get_fixed_step_mode()) {
     // Print statistics available only to error-controlled integrators.
-    fmt::print("Initial time step taken = {:10.6g} s\n",
-               integrator.get_actual_initial_step_size_taken());
+    fmt::print(
+        "Initial time step taken = {:10.6g} s\n",
+        ExtractDoubleOrThrow(integrator.get_actual_initial_step_size_taken()));
     fmt::print("Largest time step taken = {:10.6g} s\n",
-               integrator.get_largest_step_size_taken());
+               ExtractDoubleOrThrow(integrator.get_largest_step_size_taken()));
     fmt::print("Smallest adapted step size = {:10.6g} s\n",
-               integrator.get_smallest_adapted_step_size_taken());
+               ExtractDoubleOrThrow(
+                   integrator.get_smallest_adapted_step_size_taken()));
     fmt::print("Number of steps shrunk due to error control = {:d}\n",
                integrator.get_num_step_shrinkages_from_error_control());
   }
@@ -68,8 +75,8 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
 
   // Check if the integrator is implicit using dynamic casting. If it's
   // implicit, we can print out a few more helpful statistics.
-  const systems::ImplicitIntegrator<double>* implicit_integrator =
-      dynamic_cast<const systems::ImplicitIntegrator<double>*>(
+  const systems::ImplicitIntegrator<T>* implicit_integrator =
+      dynamic_cast<const systems::ImplicitIntegrator<T>*>(
           &(simulator.get_integrator()));
   const bool integrator_is_implicit = (implicit_integrator != nullptr);
   if (integrator_is_implicit) {
@@ -154,5 +161,7 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
   }
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&PrintSimulatorStatistics<T>))
 }  // namespace systems
 }  // namespace drake

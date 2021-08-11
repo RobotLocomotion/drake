@@ -9,7 +9,8 @@ namespace systems {
 /// simulator that advanced the state of a system forward in time.
 /// @param[in] simulator
 ///   The simulator to output statistics for.
-void PrintSimulatorStatistics(const Simulator<double>& simulator);
+template <typename T>
+void PrintSimulatorStatistics(const Simulator<T>& simulator);
 
 }  // namespace systems
 }  // namespace drake

@@ -1,18 +1,23 @@
 import unittest
 
 from pydrake.symbolic import Variable, Expression
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.systems.primitives import (
     ConstantVectorSource,
+    ConstantVectorSource_,
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
 )
 from pydrake.systems.framework import EventStatus
 from pydrake.systems.analysis import (
+    PrintSimulatorStatistics,
+    ResetIntegratorFromFlags,
     RungeKutta2Integrator_,
     RungeKutta2Integrator, RungeKutta3Integrator,
     RegionOfAttraction,
     RegionOfAttractionOptions,
     Simulator,
+    Simulator_,
     SimulatorStatus,
 )
 from pydrake.trajectories import PiecewisePolynomial
@@ -91,6 +96,15 @@ class TestAnalysis(unittest.TestCase):
         self.assertIsNone(status.system())
         self.assertEqual(status.message(), "")
         self.assertTrue(status.IsIdenticalStatus(other=status))
+        PrintSimulatorStatistics(simulator)
+
+    def test_reset_integrator_from_flags(self):
+        for T in (float, AutoDiffXd):
+            source = ConstantVectorSource_[T]([2, 3])
+            simulator = Simulator_[T](source)
+            result = ResetIntegratorFromFlags(
+                simulator=simulator, scheme="runge_kutta2",
+                max_step_size=0.001)
 
     def test_system_monitor(self):
         x = Variable("x")

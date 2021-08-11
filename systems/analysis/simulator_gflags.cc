@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/simulator.h"
@@ -60,12 +61,13 @@ DEFINE_bool(simulator_use_error_control,
 namespace drake {
 namespace systems {
 
-IntegratorBase<double>& ResetIntegratorFromGflags(
-    Simulator<double>* simulator) {
+template <typename T>
+IntegratorBase<T>& ResetIntegratorFromGflags(Simulator<T>* simulator) {
   DRAKE_THROW_UNLESS(simulator != nullptr);
-  IntegratorBase<double>& integrator = ResetIntegratorFromFlags(
-      simulator, FLAGS_simulator_integration_scheme,
-      FLAGS_simulator_max_time_step);
+  IntegratorBase<T>& integrator =
+      ResetIntegratorFromFlags(
+          simulator, FLAGS_simulator_integration_scheme,
+          T(FLAGS_simulator_max_time_step));
   // For integrators that support error control, turn on or off error control
   // based on the simulator_use_error_control flag.
   if (integrator.supports_error_estimation()) {
@@ -85,10 +87,10 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
   return integrator;
 }
 
-std::unique_ptr<Simulator<double>> MakeSimulatorFromGflags(
-    const System<double>& system, std::unique_ptr<Context<double>> context) {
-  auto simulator =
-      std::make_unique<Simulator<double>>(system, std::move(context));
+template <typename T>
+std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
+    const System<T>& system, std::unique_ptr<Context<T>> context) {
+  auto simulator = std::make_unique<Simulator<T>>(system, std::move(context));
 
   const SimulatorConfig config {
     FLAGS_simulator_integration_scheme,
@@ -104,5 +106,9 @@ std::unique_ptr<Simulator<double>> MakeSimulatorFromGflags(
   return simulator;
 }
 
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+      &ResetIntegratorFromGflags<T>,
+      &MakeSimulatorFromGflags<T>
+))
 }  // namespace systems
 }  // namespace drake
