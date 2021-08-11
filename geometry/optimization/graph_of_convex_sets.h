@@ -185,7 +185,10 @@ class GraphOfConvexSets {
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
-    /** Adds a constraint on the binary variable associated with this edge. */
+    /** Adds a constraint on the binary variable associated with this edge.
+    @note We intentionally do not return a binding to the constraint created by
+    this call, as that would allow the caller to make nonsensical modifications
+    to its bounds (i.e. requiring phi == 0.5). */
     void AddPhiConstraint(bool phi_value);
 
     /** Removes any constraints added with AddPhiConstraint. */
