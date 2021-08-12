@@ -25,13 +25,20 @@ SolverId IbexSolver::id() {
 bool IbexSolver::is_enabled() { return true; }
 
 bool IbexSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
-  // TODO(soonho): Add more attributes to its `solver_capabilities` with test
-  // cases.
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kExponentialConeConstraint,
           ProgramAttribute::kGenericConstraint,
-          ProgramAttribute::kLinearConstraint, ProgramAttribute::kGenericCost,
-          ProgramAttribute::kQuadraticCost});
+          ProgramAttribute::kLinearComplementarityConstraint,
+          ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kLinearEqualityConstraint,
+          ProgramAttribute::kLorentzConeConstraint,
+          ProgramAttribute::kRotatedLorentzConeConstraint,
+          ProgramAttribute::kGenericCost,
+          ProgramAttribute::kLinearCost,
+          ProgramAttribute::kQuadraticCost,
+      });
+
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }
