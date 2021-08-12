@@ -356,6 +356,8 @@ class RigidBody : public Body<T> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
+  void DoLock(systems::Context<T>*) const override;
+
   // Implementation for MultibodyElement::DoDeclareParameters().
   // RigidBody declares a single parameter for its SpatialInertia.
   void DoDeclareParameters(
