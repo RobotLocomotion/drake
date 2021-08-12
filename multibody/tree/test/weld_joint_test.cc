@@ -42,7 +42,7 @@ class WeldJointTest : public ::testing::Test {
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model));
+        std::move(model), true/* is_discrete */);
   }
 
   const internal::MultibodyTree<double>& tree() const {
@@ -86,6 +86,13 @@ TEST_F(WeldJointTest, GetJointLimits) {
   EXPECT_EQ(joint_->velocity_upper_limits().size(), 0);
   EXPECT_EQ(joint_->acceleration_lower_limits().size(), 0);
   EXPECT_EQ(joint_->acceleration_upper_limits().size(), 0);
+}
+
+TEST_F(WeldJointTest, JointLocking) {
+  // Joint locking on a weld joint does nothing; still, invoking it should not
+  // be an error.
+  auto context = system_->CreateDefaultContext();
+  DRAKE_EXPECT_NO_THROW(joint_->Lock(context.get()));
 }
 
 }  // namespace
