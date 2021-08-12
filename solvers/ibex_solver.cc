@@ -191,12 +191,22 @@ void IbexSolver::DoSolve(const MathematicalProgram& prog,
     AddFormula(b.evaluator()->CheckSatisfied(b.variables()), &ibex_converter,
                &factory, &expr_ctrs);
   }
-
-  // TODO(soonho): Support the following constraint types.
-  DRAKE_DEMAND(prog.lorentz_cone_constraints().empty());
-  DRAKE_DEMAND(prog.rotated_lorentz_cone_constraints().empty());
-  DRAKE_DEMAND(prog.exponential_cone_constraints().empty());
-  DRAKE_DEMAND(prog.linear_complementarity_constraints().empty());
+  for (const auto& b : prog.lorentz_cone_constraints()) {
+    AddFormula(b.evaluator()->CheckSatisfied(b.variables()), &ibex_converter,
+               &factory, &expr_ctrs);
+  }
+  for (const auto& b : prog.rotated_lorentz_cone_constraints()) {
+    AddFormula(b.evaluator()->CheckSatisfied(b.variables()), &ibex_converter,
+               &factory, &expr_ctrs);
+  }
+  for (const auto& b : prog.exponential_cone_constraints()) {
+    AddFormula(b.evaluator()->CheckSatisfied(b.variables()), &ibex_converter,
+               &factory, &expr_ctrs);
+  }
+  for (const auto& b : prog.linear_complementarity_constraints()) {
+    AddFormula(b.evaluator()->CheckSatisfied(b.variables()), &ibex_converter,
+               &factory, &expr_ctrs);
+  }
 
   // Note: PositiveSemidefiniteConstraint and LinearMatrixInequalityConstraint
   // are not supported because their symbolic evaluation is not defined.
