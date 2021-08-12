@@ -509,6 +509,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//geometry:drake_visualizer",
         "//math:geometric_transform",
         "//multibody/plant:contact_results_to_lcm",
