@@ -15,12 +15,24 @@ drake_cc_package_library(
     name = "fem",
     visibility = ["//multibody/fixed_fem:__subpackages__"],
     deps = [
+        ":constitutive_model",
         ":deformation_gradient_data",
         ":isoparametric_element",
         ":linear_constitutive_model_data",
         ":linear_simplex_element",
         ":quadrature",
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "constitutive_model",
+    hdrs = [
+        "constitutive_model.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 
@@ -104,6 +116,15 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "constitutive_model_test",
+    deps = [
+        ":constitutive_model",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/fem:deformation_gradient_data",
     ],
 )
 

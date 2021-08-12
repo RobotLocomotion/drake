@@ -1,8 +1,9 @@
+#include "drake/multibody/fem/constitutive_model.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/fem/deformation_gradient_data.h"
-#include "drake/multibody/fem/constitutive_model.h"
 
 namespace drake {
 namespace multibody {
@@ -23,11 +24,11 @@ struct InvalidModelTraits {
   using Data = DummyData<double, kNumLocations>;
 };
 
-/* An invalid ConstitutiveModel that is missing the
+/* ConstitutiveModel requires derived classes to shadow the
  CalcElasticEnergyDensityImpl(), CalcFirstPiolaStressImpl(), and
- CalcFirstPiolaStressDerivativeImpl() methods. This class is used to test that
- an exception is thrown in the case where the derived class of ConstitutiveModel
- doesn't shadow these methods. */
+ CalcFirstPiolaStressDerivativeImpl() methods. Failure to do so should throw a
+ helpful exception. This implementation doesn't shadow the messages and
+ confirms the exceptions. */
 class InvalidModel
     : public ConstitutiveModel<InvalidModel, InvalidModelTraits> {};
 
