@@ -39,9 +39,9 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S) {
   const Eigen::JacobiSVD<Matrix3<T>, Eigen::HouseholderQRPreconditioner> svd(
       F, Eigen::ComputeFullU | Eigen::ComputeFullV);
-  auto U = svd.matrixU();
-  const auto& V = svd.matrixV();
-  auto sigma = svd.singularValues();
+  Matrix3<T> U = svd.matrixU();
+  const Matrix3<T>& V = svd.matrixV();
+  Vector3<T> sigma = svd.singularValues();
   *R = U * V.transpose();
   /* Ensure that R is a proper rotation. If R is a reflection, flip the sign of
    the last column of U and the last singular value. */
@@ -96,11 +96,11 @@ void AddScaledRotationalDerivative(
   Matrix3<T> A = -S;
   A.diagonal().array() += S.trace();
   const T J = A.determinant();
-  DRAKE_DEMAND(J != 0);
+  DRAKE_ASSERT(J != 0);
   const T scale_over_J = scale / J;
-  const auto RA = R * A;
-  const auto sRA = scale_over_J * RA;
-  const auto sRART = sRA * R.transpose();
+  const Matrix3<T> RA = R * A;
+  const Matrix3<T> sRA = scale_over_J * RA;
+  const Matrix3<T> sRART = sRA * R.transpose();
   for (int a = 0; a < 3; ++a) {
     for (int b = 0; b < 3; ++b) {
       const int column_index = 3 * b + a;
@@ -140,7 +140,7 @@ void AddScaledCofactorMatrixDerivative(
     EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dCdM) {
   /* See the convention for ordering the 9-by-9 derivative at the top of the
    file. */
-  const auto& A = scale * M;
+  const Matrix3<T> A = scale * M;
   (*scaled_dCdM)(4, 0) += A(2, 2);
   (*scaled_dCdM)(5, 0) += -A(1, 2);
   (*scaled_dCdM)(7, 0) += -A(2, 1);
