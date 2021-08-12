@@ -39,7 +39,10 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
   /// @param g
   ///   Acceleration of gravity. In this model if `g > 0` the gravity vector
   ///   points downward in the z-axis direction.
-  AxiallySymmetricFreeBodyPlant(double mass, double I, double J, double g);
+  /// @param time_step [optional]
+  ///   See MultibodyPlant::MultibodyPlant.
+  AxiallySymmetricFreeBodyPlant(double mass, double I, double J, double g,
+                                double time_step = 0.0);
 
   /// Scalar-converting copy constructor.
   template <typename U>
