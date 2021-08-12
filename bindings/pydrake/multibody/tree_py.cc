@@ -306,7 +306,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("F_Bo_W"), py::arg("forces"), cls_doc.AddInForceInWorld.doc)
         .def("AddInForce", &Class::AddInForce, py::arg("context"),
             py::arg("p_BP_E"), py::arg("F_Bp_E"), py::arg("frame_E"),
-            py::arg("forces"), cls_doc.AddInForce.doc);
+            py::arg("forces"), cls_doc.AddInForce.doc)
+        .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
+        .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
+        .def("is_locked", &Class::is_locked, py::arg("context"),
+            cls_doc.is_locked.doc);
   }
 
   {
@@ -400,7 +404,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("lower_limits"), py::arg("upper_limits"),
             cls_doc.set_acceleration_limits.doc)
         .def("set_default_positions", &Class::set_default_positions,
-            py::arg("default_positions"), cls_doc.set_default_positions.doc);
+            py::arg("default_positions"), cls_doc.set_default_positions.doc)
+        .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
+        .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
+        .def("is_locked", &Class::is_locked, py::arg("context"),
+            cls_doc.is_locked.doc);
   }
 
   // BallRpyJoint
