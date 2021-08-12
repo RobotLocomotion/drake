@@ -75,6 +75,15 @@ void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyIndex body_id,
 }
 
 template <typename T>
+int DeformableModel<T>::NumDofs() const {
+  int dofs = 0;
+  for (const auto& fem_model : fem_models_) {
+    dofs += fem_model->num_dofs();
+  }
+  return dofs;
+}
+
+template <typename T>
 template <template <class, int> class Model>
 void DeformableModel<T>::RegisterDeformableBodyHelper(
     const geometry::VolumeMesh<T>& mesh, std::string name,
