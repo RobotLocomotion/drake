@@ -255,6 +255,78 @@ std::string GetScopedName(
   }
 }
 
+// Make a new, smaller square matrix from square matrix @p m, by selecting the
+// rows and columns indexed by @p indices.
+template <typename T>
+MatrixX<T> SelectRowsCols(const MatrixX<T>& m,
+                          const std::vector<int>& indices) {
+  DRAKE_ASSERT(m.rows() == m.cols());
+  int selected_count = indices.size();
+  if (selected_count == m.rows()) {
+    return m;
+  }
+  MatrixX<T> result(selected_count, selected_count);
+
+  for (int i = 0; i < selected_count; i++) {
+    for (int j = 0; j < selected_count; j++) {
+      result(i, j) = m(indices[i], indices[j]);
+    }
+  }
+  return result;
+}
+
+// Make a new, smaller matrix from matrix m, by selecting the columns indexed
+// by @p indices.
+template <typename T>
+MatrixX<T> SelectCols(const MatrixX<T>& m,
+                      const std::vector<int>& indices) {
+  int selected_count = indices.size();
+  if (selected_count == m.cols()) {
+    return m;
+  }
+  MatrixX<T> result(m.rows(), selected_count);
+
+  for (int i = 0; i < selected_count; i++) {
+    result.col(i) = m.col(indices[i]);
+  }
+  return result;
+}
+
+// Make a new, smaller vector from vector @p v, by selecting the rows indexed
+// by @p indices.
+template <typename T>
+VectorX<T> SelectRows(const VectorX<T>& v,
+                      const std::vector<int>& indices) {
+  int selected_count = indices.size();
+  if (selected_count == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(selected_count);
+
+  for (int i = 0; i < selected_count; i++) {
+    result(i) = v(indices[i]);
+  }
+  return result;
+}
+
+// Make a new, larger vector of size @p rows_out, by projecting rows of @p v to
+// rows indexed by @p indices. New rows are filled with zeros.
+template <typename T>
+VectorX<T> ProjectRows(const VectorX<T>& v, int rows_out,
+                       const std::vector<int>& indices) {
+  DRAKE_ASSERT(static_cast<int>(indices.size()) == v.rows());
+  DRAKE_ASSERT(rows_out >= v.rows());
+  if (rows_out == v.rows()) {
+    return v;
+  }
+  VectorX<T> result = VectorX<T>::Zero(rows_out);
+
+  for (int i = 0; i < v.rows(); i++) {
+    result(indices[i]) = v(i);
+  }
+  return result;
+}
+
 }  // namespace
 
 template <typename T>
@@ -2212,6 +2284,21 @@ void MultibodyPlant<T>::CalcContactSolverResults(
       EvalDiscreteContactPairs(context0);
   const int num_contacts = contact_pairs.size();
 
+  // Joint locking: quick exit if everything is locked.
+  const auto& locking_data = EvalJointLockingData(context0);
+  const auto& indices = locking_data.unlocked_velocity_indices;
+  if (indices.empty()) {
+    // Everything is locked! Return a result that indicates no movement.
+    results->Resize(nv, num_contacts);
+    results->v_next.setZero();
+    results->fn.setZero();
+    results->ft.setZero();
+    results->vn.setZero();
+    results->vt.setZero();
+    results->tau_contact.setZero();
+    return;
+  }
+
   // Compute normal and tangential velocity Jacobians at t0.
   const internal::ContactJacobians<T>& contact_jacobians =
       EvalContactJacobians(context0);
@@ -2239,15 +2326,83 @@ void MultibodyPlant<T>::CalcContactSolverResults(
     phi0[i] = contact_pairs[i].phi0;
   }
 
+  // Joint locking: reduce solver inputs.
+  MatrixX<T> M0_unlocked = SelectRowsCols(M0, indices);
+  VectorX<T> minus_tau_unlocked = SelectRows(minus_tau, indices);
+  MatrixX<T> Jn_unlocked = SelectCols(contact_jacobians.Jn, indices);
+  MatrixX<T> Jt_unlocked = SelectCols(contact_jacobians.Jt, indices);
+  MatrixX<T> Jc_unlocked = SelectCols(contact_jacobians.Jc, indices);
+
+  VectorX<T> v0_unlocked = SelectRows(v0, indices);
+
+  // TAMSI is initialized with num_velocities(). Resize the internal solver
+  // workspace if needed.
+  tamsi_solver_->ResizeIfNeeded(indices.size());
+
+  contact_solvers::internal::ContactSolverResults<T> results_unlocked;
+  results_unlocked.Resize(indices.size(), num_contacts);
+
   if (contact_solver_ != nullptr) {
-    CallContactSolver(contact_solver_.get(), context0.get_time(), v0, M0,
-                      minus_tau, phi0, contact_jacobians.Jc, stiffness, damping,
-                      mu, results);
+    CallContactSolver(contact_solver_.get(), context0.get_time(), v0_unlocked,
+                      M0_unlocked, minus_tau_unlocked, phi0, Jc_unlocked,
+                      stiffness, damping, mu, &results_unlocked);
   } else {
-    CallTamsiSolver(context0.get_time(), v0, M0, minus_tau, fn0,
-                    contact_jacobians.Jn, contact_jacobians.Jt, stiffness,
-                    damping, mu, results);
+    CallTamsiSolver(context0.get_time(), v0_unlocked, M0_unlocked,
+                    minus_tau_unlocked, fn0, Jn_unlocked, Jt_unlocked,
+                    stiffness, damping, mu, &results_unlocked);
   }
+
+  // Joint locking: expand reduced outputs.
+  results->v_next = ProjectRows(results_unlocked.v_next,
+                                num_velocities(), indices);
+  results->tau_contact = contact_jacobians.Jn.transpose() * results_unlocked.fn;
+  results->tau_contact = results->tau_contact +
+                         contact_jacobians.Jt.transpose() * results_unlocked.ft;
+
+  results->fn = results_unlocked.fn;
+  results->ft = results_unlocked.ft;
+  results->vn = results_unlocked.vn;
+  results->vt = results_unlocked.vt;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcJointLockingData(
+    const systems::Context<T>& context, internal::JointLockingData* data) const {
+  DRAKE_DEMAND(data != nullptr);
+  data->unlocked_velocity_indices.reserve(num_velocities());
+  auto& indices = data->unlocked_velocity_indices;
+
+  int velocity_cursor = 0;
+  int unlocked_cursor = 0;
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if (joint.is_locked(context)) {
+      velocity_cursor += joint.num_velocities();
+    } else {
+      for (int k = 0; k < joint.num_velocities(); k++) {
+        indices[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (!body.is_floating()) {
+      continue;
+    }
+    if (body.is_locked(context)) {
+      velocity_cursor += 6;
+    } else {
+      for (int k = 0; k < 6; k++) {
+        indices[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+  DRAKE_ASSERT(velocity_cursor == num_velocities());
+  DRAKE_ASSERT(unlocked_cursor <= num_velocities());
+
+  // Use size to indicate exactly how many velocities are unlocked.
+  data->unlocked_velocity_indices.resize(unlocked_cursor);
 }
 
 template <typename T>
@@ -2966,6 +3121,15 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
+
+  // Cache joint locking constraint matrix
+  const auto& joint_locking_data_cache_entry =
+      this->DeclareCacheEntry("Joint Locking Data.",
+                              internal::JointLockingData(),
+                              &MultibodyPlant::CalcJointLockingData,
+                              {this->all_parameters_ticket()});
+  cache_indexes_.joint_locking_data =
+      joint_locking_data_cache_entry.cache_index();
 }
 
 template <typename T>

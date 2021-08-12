@@ -241,6 +241,8 @@ class BallRpyJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  void DoLock(systems::Context<T>*) const final;
+
   // Make BallRpyJoint templated on every other scalar type a friend of
   // BallRpyJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of BallRpyJoint<T>.
