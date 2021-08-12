@@ -12,7 +12,7 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* A constitutive model relates the strain to the stress of the material and
+/* A constitutive model relates the strain to the stress of a material and
  governs the material response under deformation. This constitutive relationship
  is defined through a hyperelastic potential energy, which increases with
  non-rigid deformation from the initial state.
@@ -27,7 +27,7 @@ namespace internal {
  @tparam DerivedConstitutiveModel The concrete constitutive model that inherits
  from ConstitutiveModel through CRTP.
  @tparam DerivedTraits The traits class associated with the
- DerivedConstitutiveModel. It muist provide the type definitions `Scalar`
+ DerivedConstitutiveModel. It must provide the type definitions `Scalar`
  (the scalar type of the constitutive model) and `Data` (the derived
  DeformationGradientData that works in tandem with the derived constitutive
  model). */
@@ -44,11 +44,17 @@ class ConstitutiveModel {
 
   /* "Calc" Methods
    Methods for calculating the energy density and its derivatives given the
-   data required for these calculations. The constitutive model expects
-   that the input data are up-to-date, but cannot verify this prerequisite. It
-   is the responsibility of the caller to provide up-to-date input data. */
+   deformation gradient and other deformation gradient dependent data required
+   for these calculations.
+   Note that these Calc methods take output parameters
+   instead of returning the output value with the following considerations in
+   mind:
+   1. A typical usage of the return value is not used for initialization (See
+      ElasticityElement::DoComputeData()) and thus RVO can't be used.
+   2. The output value is of type `std::array` for which there is no helpful
+      move semantic.
 
-  /* Calculates the energy density in reference configuration, in unit J/m³,
+   Calculates the energy density in reference configuration in unit of J/m³,
    given the deformation gradient related quantities contained in `data`.
    @pre `Psi != nullptr`. */
   void CalcElasticEnergyDensity(const Data& data,
@@ -57,7 +63,7 @@ class ConstitutiveModel {
     derived().CalcElasticEnergyDensityImpl(data, Psi);
   }
 
-  /* Calculates the First Piola stress, in unit Pa, given the deformation
+  /* Calculates the First Piola stress in unit of Pa, given the deformation
    gradient related quantities contained in `data`.
    @pre `P != nullptr`. */
   void CalcFirstPiolaStress(const Data& data,

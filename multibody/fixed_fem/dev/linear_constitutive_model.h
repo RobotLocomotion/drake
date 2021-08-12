@@ -2,8 +2,8 @@
 
 #include <array>
 
+#include "drake/multibody/fem/constitutive_model.h"
 #include "drake/multibody/fem/linear_constitutive_model_data.h"
-#include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 
 namespace drake {
 namespace multibody {

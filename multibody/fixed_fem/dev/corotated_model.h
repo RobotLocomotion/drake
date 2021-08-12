@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "drake/multibody/fixed_fem/dev/constitutive_model.h"
+#include "drake/multibody/fem/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/corotated_model_data.h"
 
 namespace drake {
