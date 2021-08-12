@@ -46,7 +46,13 @@ class ConstitutiveModel {
    Methods for calculating the energy density and its derivatives given the
    data required for these calculations. The constitutive model expects
    that the input data are up-to-date, but cannot verify this prerequisite. It
-   is the responsibility of the caller to provide up-to-date input data. */
+   is the responsibility of the caller to provide up-to-date input data.
+   Note that these Calc methods take output parameters instead of returning the
+   output value with the following considerations in mind:
+   1. A typical usage of the return value is not used for initialization (See
+      ElasticityElement::DoComputeData()) and thus RVO can't be used.
+   2. The output value is of type `std::array` for which there is no helpful
+      move semantic. */
 
   /* Calculates the energy density in reference configuration, in unit J/m³,
    given the deformation gradient related quantities contained in `data`.
