@@ -22,6 +22,7 @@ bazel-bin/multibody/fixed_fem/dev/run_cantilever_beam
 
 #include <gflags/gflags.h>
 
+#include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/fixed_fem/dev/deformable_body_config.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_manager.h"
@@ -63,8 +64,8 @@ int DoMain() {
   const double dt = 1.0 / 60.0;
   DRAKE_DEMAND(FLAGS_dx > 0);
   const double dx = std::min(0.1, FLAGS_dx);
-  auto* plant = builder.AddSystem<MultibodyPlant<double>>(dt);
-  auto deformable_model = std::make_unique<DeformableModel<double>>(plant);
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, dt);
+  auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
   const geometry::Box box(1.5, 0.2, 0.2);
   /* A dummy proximity property that's used since there is no contact in this
    demo. */
@@ -118,13 +119,13 @@ int DoMain() {
   auto* visualizer = builder.AddSystem<DeformableVisualizer>(
       1.0 / 60.0, deformable_model->names(), reference_meshes);
   const DeformableModel<double>* deformable_model_ptr = deformable_model.get();
-  plant->AddPhysicalModel(std::move(deformable_model));
-  plant->Finalize();
-  /* Creates a DeformableRigidManager with no contact solver assigned as there
-   is no contact in this demo. */
+  plant.AddPhysicalModel(std::move(deformable_model));
+  plant.Finalize();
   auto deformable_rigid_manager =
-      std::make_unique<DeformableRigidManager<double>>();
-  plant->SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
+      std::make_unique<DeformableRigidManager<double>>(
+          std::make_unique<
+              multibody::contact_solvers::internal::PgsSolver<double>>());
+  plant.SetDiscreteUpdateManager(std::move(deformable_rigid_manager));
   builder.Connect(deformable_model_ptr->get_vertex_positions_output_port(),
                   visualizer->get_input_port());
   auto diagram = builder.Build();

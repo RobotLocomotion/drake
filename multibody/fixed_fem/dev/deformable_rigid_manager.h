@@ -32,13 +32,23 @@ class DeformableRigidManager final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableRigidManager)
 
-  DeformableRigidManager() = default;
+  /** Constructs a %DeformableRigidManager that takes ownership of the given
+   `contact_solver` to solve for contacts.
+   @pre contact_solver != nullptr. */
+  DeformableRigidManager(
+      std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
+          contact_solver)
+      : contact_solver_(std::move(contact_solver)) {
+    DRAKE_DEMAND(contact_solver_ != nullptr);
+  }
 
   /** Sets the given `contact_solver` as the solver that `this`
-    %DeformableRigidManager uses to solve contact. */
+   %DeformableRigidManager uses to solve contact.
+   @pre contact_solver != nullptr. */
   void SetContactSolver(
       std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
           contact_solver) {
+    DRAKE_DEMAND(contact_solver != nullptr);
     contact_solver_ = std::move(contact_solver);
   }
 
@@ -143,25 +153,6 @@ class DeformableRigidManager final
   void CalcTwoWayCoupledContactSolverResults(
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
-
-  /* Calculates all contact quantities needed by the contact solver and the
-   TAMSI solver from the given `context` and `rigid_contact_pairs`.
-   @pre All pointer parameters are non-null.
-   @pre The size of `v` and `minus_tau` are equal to the number of rigid
-        generalized velocities.
-   @pre `M` is square and has rows and columns equal to the number of rigid
-        generalized velocities.
-   @pre `mu`, `phi`, `fn`, `stiffness`, `damping`, and `rigid_contact_pairs`
-        have the same size. */
-  void CalcContactQuantities(
-      const systems::Context<T>& context,
-      const std::vector<multibody::internal::DiscreteContactPair<T>>&
-          rigid_contact_pairs,
-      multibody::internal::ContactJacobians<T>* rigid_contact_jacobians,
-      EigenPtr<VectorX<T>> v, EigenPtr<MatrixX<T>> M,
-      EigenPtr<VectorX<T>> minus_tau, EigenPtr<VectorX<T>> mu,
-      EigenPtr<VectorX<T>> phi, EigenPtr<VectorX<T>> fn,
-      EigenPtr<VectorX<T>> stiffness, EigenPtr<VectorX<T>> damping) const;
 
   // TODO(xuchenhan-tri): Implement this once AccelerationKinematicsCache
   //  also caches acceleration for deformable dofs.
