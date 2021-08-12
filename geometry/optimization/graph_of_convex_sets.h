@@ -1,8 +1,10 @@
 #pragma once
 
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -56,6 +58,7 @@ class GraphOfConvexSets {
   class Edge;  // forward declaration.
 
   using VertexId = Identifier<class VertexTag>;
+  using EdgeId = Identifier<class EdgeTag>;
 
   /** Each vertex in the graph has a corresponding ConvexSet, and a std::string
   name. */
@@ -110,6 +113,9 @@ class GraphOfConvexSets {
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Edge)
 
     ~Edge();
+
+    /** Returns the unique identifier associated with this Edge. */
+    EdgeId id() const { return id_; }
 
     /** Returns the string name associated with this edge. */
     const std::string& name() const { return name_; }
@@ -179,6 +185,15 @@ class GraphOfConvexSets {
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
+    /** Adds a constraint on the binary variable associated with this edge.
+    @note We intentionally do not return a binding to the constraint created by
+    this call, as that would allow the caller to make nonsensical modifications
+    to its bounds (i.e. requiring phi == 0.5). */
+    void AddPhiConstraint(bool phi_value);
+
+    /** Removes any constraints added with AddPhiConstraint. */
+    void ClearPhiConstraints();
+
     /** Returns the sum of the costs associated with this edge in a
     MathematicalProgramResult. */
     double GetSolutionCost(
@@ -186,8 +201,9 @@ class GraphOfConvexSets {
 
    private:
     // Constructs a new edge.
-    Edge(const Vertex* u, const Vertex* v, std::string name);
+    Edge(const EdgeId& id, const Vertex* u, const Vertex* v, std::string name);
 
+    const EdgeId id_{};
     const Vertex* const u_{};
     const Vertex* const v_{};
     symbolic::Variables allowed_vars_{};
@@ -205,6 +221,7 @@ class GraphOfConvexSets {
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
     std::unordered_set<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
   };
@@ -233,7 +250,7 @@ class GraphOfConvexSets {
 
   /** Returns pointers to the edges stored in the graph.  Note that the order of
   the elements is not guaranteed. */
-  std::unordered_set<Edge*> Edges() const;
+  std::unordered_set<Edge*> Edges();
 
   // TODO(russt): std::string GetGraphvizString(const
   // std::optional<solvers::MathematicalProgramResult>& = std::nullopt) const;
@@ -270,8 +287,8 @@ class GraphOfConvexSets {
       bool convex_relaxation = false) const;
 
  private:
-  std::unordered_map<VertexId, std::unique_ptr<Vertex>> vertices_{};
-  std::unordered_set<std::unique_ptr<Edge>> edges_{};
+  std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
+  std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
 };
 
 }  // namespace optimization
