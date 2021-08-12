@@ -1,8 +1,9 @@
+#include "drake/multibody/fem/constitutive_model.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/fem/deformation_gradient_data.h"
-#include "drake/multibody/fem/constitutive_model.h"
 
 namespace drake {
 namespace multibody {
