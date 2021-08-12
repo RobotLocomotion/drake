@@ -50,6 +50,11 @@ std::unique_ptr<Joint<symbolic::Expression>> ScrewJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+void ScrewJoint<T>::DoLock(systems::Context<T>* context) const {
+  set_translational_velocity(context, T(0));
+}
+
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.

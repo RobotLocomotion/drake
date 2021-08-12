@@ -4016,6 +4016,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex joint_locking_constraint_matrix;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4233,12 +4234,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context0,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+
   // Eval version of the method CalcContactSolverResults().
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_solver_results)
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
+  }
+
+  // Computes a logical matrix L that can be used to remove the velocities
+  // constrained by joint or floating body locking:
+  //  v' = Lᵀ * v
+  //
+  // Given a full-width velocity vector v, the new result vector v' contains
+  // only the velocities not locked under the currently configured lock
+  // constraints.
+  //
+  // The returned matrix L will have num_velocities() rows and at most
+  // num_velocities() columns. Informally, it can be visualized as an identity
+  // matrix of num_velocities() size, with columns corresponding to
+  // lock-constrained velocities removed.
+  void CalcJointLockingConstraintMatrix(const systems::Context<T>& context,
+                                        MatrixX<T>* L) const;
+
+  // Eval version of the method CalcJointLockingConstraintMatrix().
+  const MatrixX<T>& EvalJointLockingConstraintMatrix(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.joint_locking_constraint_matrix)
+        .template Eval<MatrixX<T>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.

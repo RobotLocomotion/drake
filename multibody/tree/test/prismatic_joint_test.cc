@@ -56,7 +56,7 @@ class PrismaticJointTest : public ::testing::Test {
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model));
+        std::move(model), true/* is_discrete */);
     context_ = system_->CreateDefaultContext();
   }
 
@@ -120,6 +120,10 @@ TEST_F(PrismaticJointTest, ContextDependentAccess) {
   // Translation rate access:
   joint1_->set_translation_rate(context_.get(), some_value);
   EXPECT_EQ(joint1_->get_translation_rate(*context_), some_value);
+
+  // Joint locking.
+  joint1_->Lock(context_.get());
+  EXPECT_EQ(joint1_->get_translation_rate(*context_), 0.);
 }
 
 // Tests API to apply torques to a joint.

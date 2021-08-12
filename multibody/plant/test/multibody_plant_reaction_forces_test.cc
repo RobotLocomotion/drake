@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
@@ -60,14 +61,14 @@ namespace {
 // We perform this test for both continuous and discrete models.
 class LadderTest : public ::testing::Test {
  protected:
-  void BuildLadderModel(double discrete_update_period) {
+  void BuildLadderModel(double discrete_update_period, bool locked_joint) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(
         &builder,
         std::make_unique<MultibodyPlant<double>>(discrete_update_period));
 
     AddWall();
-    AddPinnedLadder();
+    AddPinnedLadder(locked_joint);
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
     plant_->Finalize();
@@ -92,6 +93,10 @@ class LadderTest : public ::testing::Test {
     // Fix the actuation.
     const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
     plant_->get_actuation_input_port().FixValue(plant_context_, tau_actuation);
+
+    if (locked_joint) {
+        weld_->Lock(plant_context_);
+    }
   }
 
   // Adds the model for a wall anchored to the wall.
@@ -109,7 +114,7 @@ class LadderTest : public ::testing::Test {
   }
 
   // Adds the model for the ladder pinned to the ground at the origin.
-  void AddPinnedLadder() {
+  void AddPinnedLadder(bool locked_joint) {
     // We split the ladder into two halves and join them with a weld joint so
     // that we can evaluate the reaction force right at the middle.
     // We define body frame Bl and Bu for the lower and upper portions of the
@@ -160,14 +165,20 @@ class LadderTest : public ::testing::Test {
 
     // Weld the two halves.
     const RigidTransformd X_BlBu(Vector3d(0.0, 0.0, kLadderLength / 2.0));
-    weld_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
-                                ladder_upper_->body_frame(), X_BlBu);
+    if (locked_joint) {
+      weld_ = &plant_->AddJoint<RevoluteJoint>("Weld", *ladder_lower_, X_BlBu,
+                                               *ladder_upper_, {},
+                                               Vector3d::UnitY(), 0.0);
+    } else {
+      weld_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
+                                  ladder_upper_->body_frame(), X_BlBu);
+    }
 
     // Add actuation.
     plant_->AddJointActuator("PinActuator", *pin_);
   }
 
-  void VerifyJointReactionForces() {
+  void VerifyJointReactionForces(bool locked_joint) {
     // We validate the numerical results to be within this tolerance value,
     // which is chosen consistently with the time the system is left to reach
     // steady state and the integration accuracy (for the continuous model).
@@ -175,7 +186,7 @@ class LadderTest : public ::testing::Test {
 
     // Sanity check model size.
     ASSERT_EQ(plant_->num_bodies(), 3);
-    ASSERT_EQ(plant_->num_velocities(), 1);
+    ASSERT_EQ(plant_->num_velocities(), locked_joint ? 2 : 1);
     ASSERT_EQ(plant_->num_actuated_dofs(), 1);
 
     // We run a simulation to steady state so that contact forces balance
@@ -295,22 +306,39 @@ class LadderTest : public ::testing::Test {
   const RigidBody<double>* ladder_lower_{nullptr};
   const RigidBody<double>* ladder_upper_{nullptr};
   const RevoluteJoint<double>* pin_{nullptr};
-  const WeldJoint<double>* weld_{nullptr};
+  const Joint<double>* weld_{nullptr};
   std::unique_ptr<Diagram<double>> diagram_;
   std::unique_ptr<Context<double>> diagram_context_;
   Context<double>* plant_context_{nullptr};
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
-  BuildLadderModel(0);
+  static constexpr bool kIsJointLocked = false;
+  BuildLadderModel(0, kIsJointLocked);
   ASSERT_FALSE(plant_->is_discrete());
-  VerifyJointReactionForces();
+  VerifyJointReactionForces(kIsJointLocked);
 }
 
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
-  BuildLadderModel(1.0e-3);
+  static constexpr bool kIsJointLocked = false;
+  BuildLadderModel(1.0e-3, kIsJointLocked);
   ASSERT_TRUE(plant_->is_discrete());
-  VerifyJointReactionForces();
+  VerifyJointReactionForces(kIsJointLocked);
+}
+
+// TODO(joemasterjohn) Expand the continuous locked joint test when continuous
+// joint locking is implemented.
+TEST_F(LadderTest, PinReactionForcesLockedJointContinuous) {
+  static constexpr bool kIsJointLocked = true;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      BuildLadderModel(0, kIsJointLocked), ".*is_state_discrete.*");
+}
+
+TEST_F(LadderTest, PinReactionForcesLockedJointDiscrete) {
+  static constexpr bool kIsJointLocked = true;
+  BuildLadderModel(1.0e-3, kIsJointLocked);
+  ASSERT_TRUE(plant_->is_discrete());
+  VerifyJointReactionForces(kIsJointLocked);
 }
 
 // This test verifies the computation of joint reaction forces for a case in

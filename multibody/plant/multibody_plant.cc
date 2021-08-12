@@ -2220,6 +2220,20 @@ void MultibodyPlant<T>::CalcContactSolverResults(
       EvalDiscreteContactPairs(context0);
   const int num_contacts = contact_pairs.size();
 
+  // Joint locking: quick exit if everything is locked.
+  const MatrixX<T>& L = EvalJointLockingConstraintMatrix(context0);
+  if (L.cols() == 0) {
+    // Everything is locked! Return a result that indicates no movement.
+    results->Resize(nv, num_contacts);
+    results->v_next.setZero();
+    results->fn.setZero();
+    results->ft.setZero();
+    results->vn.setZero();
+    results->vt.setZero();
+    results->tau_contact.setZero();
+    return;
+  }
+
   // Compute normal and tangential velocity Jacobians at t0.
   const internal::ContactJacobians<T>& contact_jacobians =
       EvalContactJacobians(context0);
@@ -2247,14 +2261,97 @@ void MultibodyPlant<T>::CalcContactSolverResults(
     phi0[i] = contact_pairs[i].phi0;
   }
 
+  // Joint locking: reduce solver inputs.
+  // TODO(joemasterjohn): See if storing L_transpose in the cache adds any
+  // benefit.
+  MatrixX<T> L_T = L.transpose();
+
+  MatrixX<T> M0_locked = L_T * M0 * L;
+  VectorX<T> minus_tau_locked = L_T * minus_tau;
+  MatrixX<T> Jn_locked = contact_jacobians.Jn * L;
+  MatrixX<T> Jt_locked = contact_jacobians.Jt * L;
+  MatrixX<T> Jc_locked = contact_jacobians.Jc * L;
+
+  VectorX<T> v0_locked = L_T * v0;
+
+  // TAMSI is initialized with num_velocities(). Resize the internal solver
+  // workspace if needed.
+  tamsi_solver_->ResizeIfNeeded(L.cols());
+
+
+  contact_solvers::internal::ContactSolverResults<T> results_locked;
+  results_locked.Resize(L.cols(), num_contacts);
+
   if (contact_solver_ != nullptr) {
-    CallContactSolver(contact_solver_.get(), context0.get_time(), v0, M0,
-                      minus_tau, phi0, contact_jacobians.Jc, stiffness, damping,
-                      mu, results);
+    CallContactSolver(contact_solver_.get(), context0.get_time(), v0_locked,
+                      M0_locked, minus_tau_locked, phi0, Jc_locked, stiffness,
+                      damping, mu, &results_locked);
   } else {
-    CallTamsiSolver(context0.get_time(), v0, M0, minus_tau, fn0,
-                    contact_jacobians.Jn, contact_jacobians.Jt, stiffness,
-                    damping, mu, results);
+    CallTamsiSolver(context0.get_time(), v0_locked, M0_locked, minus_tau_locked,
+                    fn0, Jn_locked, Jt_locked, stiffness, damping, mu,
+                    &results_locked);
+  }
+
+  // Joint locking: expand reduced outputs.
+  results->v_next = L * results_locked.v_next;
+  results->tau_contact = contact_jacobians.Jn.transpose() * results_locked.fn;
+  results->tau_contact = results->tau_contact +
+                         contact_jacobians.Jt.transpose() * results_locked.ft;
+
+  results->fn = results_locked.fn;
+  results->ft = results_locked.ft;
+  results->vn = results_locked.vn;
+  results->vt = results_locked.vt;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcJointLockingConstraintMatrix(
+    const systems::Context<T>& context, MatrixX<T>* L) const {
+  DRAKE_DEMAND(L != nullptr);
+  // Track where the 1-valued pivots should go; index is the column,
+  // pivots[index] is the row. If anything is locked, some of the vector will go
+  // unused.
+  std::vector<int> pivots(num_velocities());
+
+  int velocity_cursor = 0;
+  int unlocked_cursor = 0;
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if (joint.is_locked(context)) {
+      velocity_cursor += joint.num_velocities();
+    } else {
+      for (int k = 0; k < joint.num_velocities(); k++) {
+        pivots[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (!body.is_floating()) {
+      continue;
+    }
+    if (body.is_locked(context)) {
+      velocity_cursor += 6;
+    } else {
+      for (int k = 0; k < 6; k++) {
+        pivots[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+  DRAKE_ASSERT(velocity_cursor == num_velocities());
+  DRAKE_ASSERT(unlocked_cursor <= num_velocities());
+
+  // If no joints or bodies are locked, just return identity.
+  if (unlocked_cursor == num_velocities()) {
+    *L = MatrixX<T>::Identity(num_velocities(), num_velocities());
+    return;
+  }
+
+  *L = MatrixX<T>::Zero(num_velocities(), unlocked_cursor);
+
+  for (int k = 0; k < unlocked_cursor; k++) {
+    (*L)(pivots[k], k) = 1.;
   }
 }
 
@@ -2974,6 +3071,15 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
+
+  // Cache joint locking constraint matrix
+  const auto& joint_locking_constraint_matrix_cache_entry =
+      this->DeclareCacheEntry("Joint Locking Constraint Matrix.",
+                              MatrixX<T>(num_velocities(), num_velocities()),
+                              &MultibodyPlant::CalcJointLockingConstraintMatrix,
+                              {this->all_parameters_ticket()});
+  cache_indexes_.joint_locking_constraint_matrix =
+      joint_locking_constraint_matrix_cache_entry.cache_index();
 }
 
 template <typename T>

@@ -322,6 +322,8 @@ class PlanarJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const final;
 
+  void DoLock(systems::Context<T>*) const final;
+
   // Make PlanarJoint templated on every other scalar type a friend of
   // PlanarJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of PlanarJoint<T>.
