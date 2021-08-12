@@ -11,11 +11,17 @@ namespace solvers {
 /// An implementation of SolverInterface for the IBEX solver
 /// (http://www.ibex-lib.org/)
 ///
-/// For now, this solver only supports the following constraints / costs:
-///  - kGenericConstraint
-///  - kLinearConstraint
-///  - kGenericCost
-///  - kQuadraticCost
+/// This solver supports the following constraints / costs:
+///  - ExponentialConeConstraint
+///  - GenericConstraint
+///  - LinearComplementarityConstraint
+///  - LinearConstraint
+///  - LinearEqualityConstraint
+///  - LorentzConeConstraint
+///  - RotatedLorentzConeConstraint
+///  - GenericCost
+///  - LinearCost
+///  - QuadraticCost
 ///
 /// @note Only costs and constraints that support symbolic evaluation are
 /// compatible with this solver.
