@@ -13,8 +13,8 @@ using Eigen::Vector3d;
 
 template<typename T>
 AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
-    double mass, double I, double J, double g)
-    : MultibodyPlant<T>(0.0), mass_(mass), I_(I), J_(J), g_(g) {
+    double mass, double I, double J, double g, double time_step)
+    : MultibodyPlant<T>(time_step), mass_(mass), I_(I), J_(J), g_(g) {
 
   // Create the MultibodyPlant model.
   // Create the spatial inertia M_Bcm of body B, about Bcm, expressed in B.
