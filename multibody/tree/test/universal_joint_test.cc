@@ -60,7 +60,7 @@ class UniversalJointTest : public ::testing::Test {
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model));
+        std::move(model), true/* is_discrete */);
     context_ = system_->CreateDefaultContext();
   }
 
@@ -125,6 +125,10 @@ TEST_F(UniversalJointTest, ContextDependentAccess) {
   // Angular rate access:
   joint_->set_angular_rates(context_.get(), some_value);
   EXPECT_EQ(joint_->get_angular_rates(*context_), some_value);
+
+  // Joint locking.
+  joint_->Lock(context_.get());
+  EXPECT_EQ(joint_->get_angular_rates(*context_), Vector2d(0., 0.));
 }
 
 // Tests API to apply torques to individual dof of joint.
