@@ -117,6 +117,16 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
   return result.GetSolution(x);
 }
 
+HPolyhedron HPolyhedron::CartesianProduct(const HPolyhedron& other) const {
+  MatrixXd A_product = MatrixXd::Zero(A_.rows() + other.A().rows(),
+                                      A_.cols() + other.A().cols());
+  A_product.topLeftCorner(A_.rows(), A_.cols()) = A_;
+  A_product.bottomRightCorner(other.A().rows(), other.A().cols()) = other.A();
+  VectorXd b_product(b_.size() + other.b().size());
+  b_product << b_, other.b();
+  return {A_product, b_product};
+}
+
 HPolyhedron HPolyhedron::CartesianPower(int n) const {
   MatrixXd A_power = MatrixXd::Zero(n * A_.rows(), n * A_.cols());
   for (int i{0}; i < n; ++i) {
