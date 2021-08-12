@@ -109,9 +109,11 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlane) {
   const VolumeElementIndex first_element_in_field0{0};
   const VolumeElementIndex first_element_in_field1{0};
   const RigidTransformd identity_X_MN = RigidTransformd::Identity();
-  Plane<double> plane_M =
-      CalcEquilibriumPlane(first_element_in_field0, field0_M_,
-                           first_element_in_field1, field1_N_, identity_X_MN);
+  Plane<double> plane_M{Vector3d::UnitZ(), Vector3d::Zero()};
+  bool success = CalcEquilibriumPlane(first_element_in_field0, field0_M_,
+                                      first_element_in_field1, field1_N_,
+                                      identity_X_MN, &plane_M);
+  ASSERT_TRUE(success);
 
   // Verify that the equilibrium plane is the X-Y plane in frame M.
   // This is the because the two fields are:
@@ -202,8 +204,7 @@ class FieldIntersectionHighLevelTest : public ::testing::Test {
 };
 
 TEST_F(FieldIntersectionHighLevelTest, FieldIntersection) {
-  const math::RigidTransform<double> X_MN =
-      math::RigidTransform<double>::Identity();
+  const RigidTransformd X_MN = RigidTransformd::Identity();
   std::unique_ptr<SurfaceMesh<double>> surface_MN_M;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_MN_M;
   std::vector<Vector3<double>> grad_eM_Ms;
@@ -227,28 +228,31 @@ class FieldIntersectionVizTest : public ::testing::Test {
   FieldIntersectionVizTest()
       : box_mesh0_M_(MakeBoxVolumeMeshWithMa<double>(box_)),
         box_field0_M_(MakeBoxPressureField<double>(box_, &box_mesh0_M_,
-                                                   kBoxElasitcModulus_)),
+                                                   kBoxElasticModulus_)),
         box_bvh0_M_(box_mesh0_M_),
         ball_mesh1_N_(MakeSphereVolumeMesh<double>(
             sphere_, sphere_.radius() / 4.0,
             TessellationStrategy::kSingleInteriorVertex)),
         ball_field1_N_(MakeSpherePressureField<double>(sphere_, &ball_mesh1_N_,
                                                        kBallElasticModulus_)),
-        ball_bvh1_N_(ball_mesh1_N_) {}
+        ball_bvh1_N_(ball_mesh1_N_),
+        box2_mesh2_L_(MakeBoxVolumeMeshWithMa<double>(box2_)),
+        box2_field2_L_(MakeBoxPressureField<double>(box2_, &box2_mesh2_L_,
+                                                    kBoxElasticModulus_)),
+        box2_bvh2_L_(box2_mesh2_L_) {}
 
  protected:
   void SetUp() override {
     WriteVolumeMeshFieldLinearToVtk(
         "box_field0_M.vtk", box_field0_M_,
         "Pressure field in a compliant box in frame M");
-    WriteVolumeMeshFieldLinearToVtk(
-        "ball_field1_N.vtk", ball_field1_N_,
-        "Pressure field in a compliant ball in frame N");
+//    WriteVolumeMeshFieldLinearToVtk(
+//        "ball_field1_N.vtk", ball_field1_N_,
+//        "Pressure field in a compliant ball in frame N");
   }
 
-  VolumeMesh<double> TransformVolumeMesh(
-      const math::RigidTransform<double>& X_MN,
-      const VolumeMesh<double>& mesh_N) {
+  VolumeMesh<double> TransformVolumeMesh(const RigidTransformd& X_MN,
+                                         const VolumeMesh<double>& mesh_N) {
     std::vector<VolumeVertex<double>> vertices_M;
     for (const VolumeVertex<double>& p_NV : mesh_N.vertices()) {
       vertices_M.emplace_back(X_MN * p_NV.r_MV());
@@ -261,7 +265,7 @@ class FieldIntersectionVizTest : public ::testing::Test {
 
   // Geometry 0 and its field.
   const Box box_{0.06, 0.10, 0.14};  // 6cm-thick compliant pad.
-  const double kBoxElasitcModulus_{1.0e5};
+  const double kBoxElasticModulus_{1.0e5};
   const VolumeMesh<double> box_mesh0_M_;
   const VolumeMeshFieldLinear<double, double> box_field0_M_;
   const Bvh<Obb, VolumeMesh<double>> box_bvh0_M_;
@@ -273,34 +277,69 @@ class FieldIntersectionVizTest : public ::testing::Test {
   const VolumeMeshFieldLinear<double, double> ball_field1_N_;
   const Bvh<Obb, VolumeMesh<double>> ball_bvh1_N_;
 
-  const math::RigidTransform<double> X_MN_{Vector3d(0.04, 0, 0)};
+  // Gemetry 2 and its field.
+  const Box box2_{0.03, 0.05, 0.07};  // Half of the first box_.
+  const VolumeMesh<double> box2_mesh2_L_;
+  const VolumeMeshFieldLinear<double, double> box2_field2_L_;
+  const Bvh<Obb, VolumeMesh<double>> box2_bvh2_L_;
+
+  const RigidTransformd X_MN_{Vector3d(0.04, 0, 0)};
 };
 
 TEST_F(FieldIntersectionVizTest, FieldIntersection_BoxBall) {
-  VolumeMesh<double> ball_mesh1_M = TransformVolumeMesh(X_MN_, ball_mesh1_N_);
+  const VolumeMesh<double> ball_mesh1_M =
+      TransformVolumeMesh(X_MN_, ball_mesh1_N_);
   std::vector<double> field_values = ball_field1_N_.values();
   const VolumeMeshFieldLinear<double, double> ball_field1_M(
       ball_field1_N_.name(), std::move(field_values), &ball_mesh1_M);
 
-  WriteVolumeMeshFieldLinearToVtk(
-      "ball_field1_M.vtk", ball_field1_M,
-      "Pressure field in a compliant ball in frame M");
+//  WriteVolumeMeshFieldLinearToVtk(
+//      "ball_field1_M.vtk", ball_field1_M,
+//      "Pressure field in a compliant ball in frame M");
 
   std::unique_ptr<SurfaceMesh<double>> surface_01_M;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_01_M;
   std::vector<Vector3<double>> grad_e0_Ms;
   std::vector<Vector3<double>> grad_e1_Ms;
 
-  FieldIntersection(box_field0_M_, ball_field1_M,
-                    math::RigidTransform<double>::Identity(), &surface_01_M,
-                    &e_01_M, &grad_e0_Ms, &grad_e1_Ms);
+  FieldIntersection(box_field0_M_, ball_field1_M, RigidTransformd::Identity(),
+                    &surface_01_M, &e_01_M, &grad_e0_Ms, &grad_e1_Ms);
 
   EXPECT_TRUE(surface_01_M);
 
+//  // Visualization.
+//  if (surface_01_M) {
+//    WriteSurfaceMeshFieldLinearToVtk(
+//        "box_ball_field_intersection.vtk", *e_01_M,
+//        "Pressure distribution on compliant-compliant contact patch.");
+//  }
+}
+
+TEST_F(FieldIntersectionVizTest, FieldIntersection_BoxBox) {
+  const VolumeMesh<double> box2_mesh2_M = TransformVolumeMesh(
+      RigidTransformd((box_.height() / 2) * Vector3d::UnitZ()), box2_mesh2_L_);
+  std::vector<double> field_values = box2_field2_L_.values();
+  const VolumeMeshFieldLinear<double, double> box2_field2_M(
+      box2_field2_L_.name(), std::move(field_values), &box2_mesh2_M);
+
+  WriteVolumeMeshFieldLinearToVtk(
+      "box2_field2_M.vtk", box2_field2_M,
+      "Pressure field in the second compliant box in frame M");
+
+  std::unique_ptr<SurfaceMesh<double>> surface_02_M;
+  std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_02_M;
+  std::vector<Vector3<double>> grad_e0_Ms;
+  std::vector<Vector3<double>> grad_e2_Ms;
+
+  FieldIntersection(box_field0_M_, box2_field2_M, RigidTransformd::Identity(),
+                    &surface_02_M, &e_02_M, &grad_e0_Ms, &grad_e2_Ms);
+
+  EXPECT_TRUE(surface_02_M);
+
   // Visualization.
-  if (surface_01_M) {
+  if (surface_02_M) {
     WriteSurfaceMeshFieldLinearToVtk(
-        "box_ball_field_intersection.vtk", *e_01_M,
+        "box_box_field_intersection.vtk", *e_02_M,
         "Pressure distribution on compliant-compliant contact patch.");
   }
 }
@@ -312,28 +351,28 @@ TEST_F(FieldIntersectionVizTest, HackCompliantBoxRigidBall) {
       ConvertVolumeToSurfaceMesh(TransformVolumeMesh(X_MN_, ball_mesh1_N_));
   const Bvh<Obb, SurfaceMesh<double>> ball_surface_bvh1_M(ball_surface_mesh1_M);
 
-  WriteSurfaceMeshToVtk("rigid_ball_surface_mesh1_M.vtk", ball_surface_mesh1_M,
-                        "Surface mesh of a rigid ball in frame M");
+//  WriteSurfaceMeshToVtk("rigid_ball_surface_mesh1_M.vtk",
+//                        ball_surface_mesh1_M,
+//                        "Surface mesh of a rigid ball in frame M");
 
   // TODO(DamrongGuoy): Remove #include mesh_intersection.h when we don't
   //  need this.
   std::unique_ptr<ContactSurface<double>> contact_M =
       ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          GeometryId(), box_field0_M_, box_bvh0_M_,
-          math::RigidTransform<double>::Identity(), GeometryId(),
-          ball_surface_mesh1_M, ball_surface_bvh1_M,
-          math::RigidTransform<double>::Identity(),
+          GeometryId(), box_field0_M_, box_bvh0_M_, RigidTransformd::Identity(),
+          GeometryId(), ball_surface_mesh1_M, ball_surface_bvh1_M,
+          RigidTransformd::Identity(),
           ContactPolygonRepresentation::kCentroidSubdivision);
 
   EXPECT_TRUE(contact_M);
 
-  // Visualization.
-  if (contact_M) {
-    WriteSurfaceMeshFieldLinearToVtk(
-        "compliant_box_rigid_ball_contact.vtk", contact_M->e_MN(),
-        "Pressure distribution on contact patch between a compliant "
-        "box and a rigid ball");
-  }
+//  // Visualization.
+//  if (contact_M) {
+//    WriteSurfaceMeshFieldLinearToVtk(
+//        "compliant_box_rigid_ball_contact.vtk", contact_M->e_MN(),
+//        "Pressure distribution on contact patch between a compliant "
+//        "box and a rigid ball");
+//  }
 }
 
 TEST_F(FieldIntersectionVizTest, HackRigidBoxCompliantBall) {
@@ -342,8 +381,8 @@ TEST_F(FieldIntersectionVizTest, HackRigidBoxCompliantBall) {
   const SurfaceMesh<double> box_surface_mesh0_M =
       ConvertVolumeToSurfaceMesh(box_mesh0_M_);
   Bvh<Obb, SurfaceMesh<double>> box_surface_bvh0_M(box_surface_mesh0_M);
-  WriteSurfaceMeshToVtk("rigid_box_surface_mesh0_M.vtk", box_surface_mesh0_M,
-                        "Surface mesh of a rigid box in frame M");
+//  WriteSurfaceMeshToVtk("rigid_box_surface_mesh0_M.vtk", box_surface_mesh0_M,
+//                        "Surface mesh of a rigid box in frame M");
 
   VolumeMesh<double> ball_mesh1_M = TransformVolumeMesh(X_MN_, ball_mesh1_N_);
   std::vector<double> field_values = ball_field1_N_.values();
@@ -355,21 +394,20 @@ TEST_F(FieldIntersectionVizTest, HackRigidBoxCompliantBall) {
   //  need this.
   std::unique_ptr<ContactSurface<double>> contact_M =
       ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          GeometryId(), ball_field1_M, ball_bvh1_M,
-          math::RigidTransform<double>::Identity(), GeometryId(),
-          box_surface_mesh0_M, box_surface_bvh0_M,
-          math::RigidTransform<double>::Identity(),
+          GeometryId(), ball_field1_M, ball_bvh1_M, RigidTransformd::Identity(),
+          GeometryId(), box_surface_mesh0_M, box_surface_bvh0_M,
+          RigidTransformd::Identity(),
           ContactPolygonRepresentation::kCentroidSubdivision);
 
   EXPECT_TRUE(contact_M);
 
-  // Visualization.
-  if (contact_M) {
-    WriteSurfaceMeshFieldLinearToVtk(
-        "rigid_box_compliant_ball_contact.vtk", contact_M->e_MN(),
-        "Pressure distribution on contact patch between a rigid "
-        "box and a compliant ball");
-  }
+//  // Visualization.
+//  if (contact_M) {
+//    WriteSurfaceMeshFieldLinearToVtk(
+//        "rigid_box_compliant_ball_contact.vtk", contact_M->e_MN(),
+//        "Pressure distribution on contact patch between a rigid "
+//        "box and a compliant ball");
+//  }
 }
 
 }  // namespace

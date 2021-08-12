@@ -19,12 +19,12 @@ using Eigen::Vector3d;
 // Sets up the equilibrium plane between the two linear functions from the
 // two tetrahedra.
 template <typename T>
-Plane<T> CalcEquilibriumPlane(
-    VolumeElementIndex element0,
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    VolumeElementIndex element1,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const math::RigidTransform<T>& X_MN) {
+bool CalcEquilibriumPlane(VolumeElementIndex element0,
+                          const VolumeMeshFieldLinear<double, double>& field0_M,
+                          VolumeElementIndex element1,
+                          const VolumeMeshFieldLinear<double, double>& field1_N,
+                          const math::RigidTransform<T>& X_MN,
+                          Plane<T>* plane_M) {
   const Vector3d df0_M = field0_M.EvaluateGradient(element0);
   const Vector3d p_MMo = Vector3d::Zero();
   const double f0_Mo = field0_M.EvaluateCartesian(element0, p_MMo);
@@ -46,13 +46,18 @@ Plane<T> CalcEquilibriumPlane(
   // Therefore, a vector n_M perpendicular to the equilibrium plane is:
   //             n_M = df0_M - df1_M.                     (4)
   const Vector3<T> n_M = df0_M - df1_M;
+  if (n_M.norm() == 0) {
+    return false;
+  }
+
   // Using n_M in the plane equation (3), we have the plane equation:
   //   n_M.dot(p_MQ) = f1_Mo - f0_Mo,                     (5)
   // and a possible point on that plane is:
   //            p_MQ = (f1_Mo - f0_Mo)*n_M/n_M.dot(n_M).  (6)
   const Vector3<T> p_MQ = (f1_Mo - f0_Mo) * n_M / n_M.dot(n_M);
 
-  return {n_M, p_MQ};
+  *plane_M = Plane<T>{n_M, p_MQ};
+  return true;
 }
 
 // TODO(DamrongGuoy): Refactor ClipPolygonByHalfSpace() to share between
@@ -101,8 +106,12 @@ std::vector<Vector3<T>> IntersectTetrahedra(
     VolumeElementIndex element1,
     const VolumeMeshFieldLinear<double, double>& field1_N,
     const math::RigidTransform<T>& X_MN, Vector3<T>* polygon_normal_M) {
-  const Plane<T> equilibrium_plane_M =
-      CalcEquilibriumPlane(element0, field0_M, element1, field1_N, X_MN);
+  Plane<T> equilibrium_plane_M(Vector3<T>::UnitZ(), Vector3<T>::Zero());
+  bool success = CalcEquilibriumPlane(element0, field0_M, element1, field1_N,
+                                      X_MN, &equilibrium_plane_M);
+  if (!success) {
+    return {};
+  }
   // TODO(DamrongGuoy): Check which side the normal of the polygon points to.
   //   Is it 0 into 1, or 1 into 0?
   *polygon_normal_M = equilibrium_plane_M.normal();

@@ -16,13 +16,12 @@ namespace geometry {
 namespace internal {
 
 template <typename T>
-Plane<T> CalcEquilibriumPlane(
-    VolumeElementIndex element0,
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    VolumeElementIndex element1,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const math::RigidTransform<T>& X_MN);
-
+bool CalcEquilibriumPlane(VolumeElementIndex element0,
+                          const VolumeMeshFieldLinear<double, double>& field0_M,
+                          VolumeElementIndex element1,
+                          const VolumeMeshFieldLinear<double, double>& field1_N,
+                          const math::RigidTransform<T>& X_MN,
+                          Plane<T>* plane_M);
 template <typename T>
 void IntersectPlaneTetrahedron(
     VolumeElementIndex tetrahedron,
