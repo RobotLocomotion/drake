@@ -81,6 +81,9 @@ DeformableBodyConfig<double> MakeDeformableBodyConfig() {
   return config;
 }
 
+// TODO(xuchenhan-tri): This test can be strengthened by adding a case where a
+//  deformable object is in contact with a fixed collision geometry and no rigid
+//  dofs exist.
 /* Set up a scene with a deformable octahedron and a rigid unit cube to
  faciliate testing of the contact solver. */
 class DeformableRigidContactSolverTest : public ::testing::Test {
@@ -104,12 +107,11 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
         MakeDefaultProximityProperties());
     plant_->Finalize();
 
-    auto owned_deformable_rigid_manager =
-        std::make_unique<DeformableRigidManager<double>>();
     auto pgs_solver = std::make_unique<PgsSolver<double>>();
     pgs_solver->set_parameters(
         {kRelaxationFactor, kTolerance, kTolerance, kMaxIterations});
-    owned_deformable_rigid_manager->SetContactSolver(std::move(pgs_solver));
+    auto owned_deformable_rigid_manager =
+        std::make_unique<DeformableRigidManager<double>>(std::move(pgs_solver));
     deformable_rigid_manager_ = owned_deformable_rigid_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(owned_deformable_rigid_manager));
     deformable_rigid_manager_->RegisterCollisionObjects(*scene_graph_);

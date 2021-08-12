@@ -511,6 +511,7 @@ drake_cc_binary(
         ":mesh_utilities",
         "//common:add_text_logging_gflags",
         "//math:geometric_transform",
+        "//multibody/contact_solvers:pgs_solver",
         "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram_builder",
     ],
@@ -656,7 +657,6 @@ drake_cc_googletest(
         ":deformable_rigid_manager",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
         "//geometry/proximity:make_box_mesh",
         "//multibody/contact_solvers:pgs_solver",
         "//systems/analysis:simulator",
@@ -830,6 +830,19 @@ drake_cc_googletest(
     deps = [
         ":permute_block_sparse_matrix",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_update_test",
+    deps = [
+        ":deformable_rigid_manager",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/multibody/rolling_sphere:make_rolling_sphere_plant",
+        "//math:geometric_transform",
+        "//multibody/contact_solvers:pgs_solver",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
     ],
 )
 

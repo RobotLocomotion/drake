@@ -65,34 +65,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.CalcCombinedFrictionCoefficients(context, contact_pairs);
   }
 
-  static void CalcNonContactForces(const MultibodyPlant<T>& plant,
-                                   const systems::Context<T>& context,
-                                   bool discrete, MultibodyForces<T>* forces) {
-    plant.CalcNonContactForces(context, discrete, forces);
-  }
-
-  static void CallTamsiSolver(
-      const MultibodyPlant<T>& plant, const T& time0, const VectorX<T>& v0,
-      const MatrixX<T>& M0, const VectorX<T>& minus_tau, const VectorX<T>& fn0,
-      const MatrixX<T>& Jn, const MatrixX<T>& Jt, const VectorX<T>& stiffness,
-      const VectorX<T>& damping, const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) {
-    plant.CallTamsiSolver(time0, v0, M0, minus_tau, fn0, Jn, Jt, stiffness,
-                          damping, mu, results);
-  }
-
-  static void CallContactSolver(
-      const MultibodyPlant<T>& plant,
-      contact_solvers::internal::ContactSolver<T>* contact_solver,
-      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-      const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
-      const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) {
-    plant.CallContactSolver(contact_solver, time0, v0, M0, minus_tau, phi0, Jc,
-                            stiffness, damping, mu, results);
-  }
-
   static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
                                         const systems::Context<T>& context,
                                         MultibodyForces<T>* forces) {

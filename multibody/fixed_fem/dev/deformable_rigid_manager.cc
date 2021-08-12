@@ -261,48 +261,30 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
 template <typename T>
 void DeformableRigidManager<T>::DoCalcContactSolverResults(
     const systems::Context<T>& context,
-    ContactSolverResults<T>* results) const {
-  /* Assert this method was called on a context storing discrete state. */
-  this->plant().ValidateContext(context);
-  DRAKE_ASSERT(context.num_continuous_states() == 0);
-  const int nv = this->plant().num_velocities();
-
-  // TODO(xuchenhan-tri): This is not true when there are deformable dofs.
-  //  Modify it when deformable-rigid contact is supported.
-  /* Quick exit if there are no moving objects. */
-  if (nv == 0) return;
-
-  // TODO(xuchenhan-tri): Incorporate deformable-rigid contact pairs.
-  /* Compute all rigid-rigid contact pairs, including both penetration pairs
-   and quadrature pairs for discrete hydroelastic. */
-  const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs =
-      this->EvalDiscreteContactPairs(context);
-  const int num_rigid_contacts = rigid_contact_pairs.size();
-
-  /* Extract all information needed by the contact/TAMSI solver. */
-  multibody::internal::ContactJacobians<T> rigid_contact_jacobians;
-  VectorX<T> v(nv);
-  MatrixX<T> M(nv, nv);
-  VectorX<T> minus_tau(nv);
-  VectorX<T> mu(num_rigid_contacts);
-  VectorX<T> phi(num_rigid_contacts);
-  VectorX<T> fn(num_rigid_contacts);
-  VectorX<T> stiffness(num_rigid_contacts);
-  VectorX<T> damping(num_rigid_contacts);
-  CalcContactQuantities(context, rigid_contact_pairs, &rigid_contact_jacobians,
-                        &v, &M, &minus_tau, &mu, &phi, &fn, &stiffness,
-                        &damping);
-
-  /* Call the contact solver if one exists. Otherwise, invoke the TAMSI
-   solver. */
-  if (contact_solver_ != nullptr) {
-    this->CallContactSolver(contact_solver_.get(), context.get_time(), v, M,
-                            minus_tau, phi, rigid_contact_jacobians.Jc,
-                            stiffness, damping, mu, results);
+    ContactSolverResults<T>* rigid_results) const {
+  DRAKE_DEMAND(rigid_results != nullptr);
+  /* Extract the results related to the rigid dofs from the full two-way coupled
+   deformable-rigid results. */
+  const ContactSolverResults<T>& two_way_coupled_results =
+      EvalTwoWayCoupledContactSolverResults(context);
+  const int nc = two_way_coupled_results.vn.size();
+  const int nv_rigid = this->plant().num_velocities();
+  rigid_results->Resize(nv_rigid, nc);
+  if (nc > 0) {
+    /* If contact exists, extract the results for rigid dofs from the two-way
+     coupled results. */
+    rigid_results->v_next = two_way_coupled_results.v_next.head(nv_rigid);
+    rigid_results->tau_contact =
+        two_way_coupled_results.tau_contact.head(nv_rigid);
+    rigid_results->fn = two_way_coupled_results.fn.head(nc);
+    rigid_results->ft = two_way_coupled_results.ft.head(2 * nc);
+    rigid_results->vn = two_way_coupled_results.vn.head(nc);
+    rigid_results->vt = two_way_coupled_results.vt.head(2 * nc);
   } else {
-    this->CallTamsiSolver(
-        context.get_time(), v, M, minus_tau, fn, rigid_contact_jacobians.Jn,
-        rigid_contact_jacobians.Jt, stiffness, damping, mu, results);
+    /* If no contact exists, the post-contact velocity is the same as the free
+     motion velocity and the generalized contact forces are zero. */
+    rigid_results->v_next = EvalFreeMotionRigidVelocities(context);
+    rigid_results->tau_contact.setZero();
   }
 }
 
@@ -349,83 +331,6 @@ void DeformableRigidManager<T>::CalcTwoWayCoupledContactSolverResults(
   const VectorX<T>& v0 = EvalParticipatingVelocities(context);
   contact_solver_->SolveWithGuess(this->plant().time_step(), dynamics_data,
                                   contact_data, v0, results);
-}
-
-template <typename T>
-void DeformableRigidManager<T>::CalcContactQuantities(
-    const systems::Context<T>& context,
-    const std::vector<DiscreteContactPair<T>>& rigid_contact_pairs,
-    multibody::internal::ContactJacobians<T>* rigid_contact_jacobians,
-    EigenPtr<VectorX<T>> v, EigenPtr<MatrixX<T>> M,
-    EigenPtr<VectorX<T>> minus_tau, EigenPtr<VectorX<T>> mu,
-    EigenPtr<VectorX<T>> phi, EigenPtr<VectorX<T>> fn,
-    EigenPtr<VectorX<T>> stiffness, EigenPtr<VectorX<T>> damping) const {
-  DRAKE_DEMAND(v != nullptr);
-  DRAKE_DEMAND(M != nullptr);
-  DRAKE_DEMAND(minus_tau != nullptr);
-  DRAKE_DEMAND(mu != nullptr);
-  DRAKE_DEMAND(phi != nullptr);
-  DRAKE_DEMAND(fn != nullptr);
-  DRAKE_DEMAND(stiffness != nullptr);
-  DRAKE_DEMAND(damping != nullptr);
-  /* Compute the contact Jacobians for the rigid dofs. */
-  *rigid_contact_jacobians = this->EvalContactJacobians(context);
-
-  /* Compute the generalized velocities. */
-  auto x =
-      context.get_discrete_state(this->multibody_state_index()).get_value();
-  const int nv = this->plant().num_velocities();
-  DRAKE_DEMAND(v->size() == nv);
-  DRAKE_DEMAND(M->rows() == nv);
-  DRAKE_DEMAND(M->cols() == nv);
-  DRAKE_DEMAND(minus_tau->size() == nv);
-  *v = x.bottomRows(nv);
-
-  /* Compute the mass matrix. */
-  this->plant().CalcMassMatrix(context, M);
-
-  /* Computes the negative generalized non-contact forces on the rigid dofs,
-   `minus_tau`. */
-  MultibodyForces<T> forces(this->internal_tree());
-  this->CalcNonContactForces(context, true /* discrete */, &forces);
-  /* Workspace for inverse dynamics: Bodies' accelerations, ordered by
-   BodyNodeIndex. */
-  std::vector<SpatialAcceleration<T>> A_WB_array(this->plant().num_bodies());
-  /* Generalized accelerations. */
-  const VectorX<T> vdot = VectorX<T>::Zero(nv);
-  /* Body forces (alias to forces). */
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
-  /* With vdot = 0, this computes:
-     -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W. */
-  *minus_tau = forces.mutable_generalized_forces();
-  this->internal_tree().CalcInverseDynamics(
-      context, vdot, F_BBo_W_array, *minus_tau, &A_WB_array,
-      &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
-      minus_tau);
-
-  /* Computes friction coefficient. Static friction is ignored by the time
-   stepping scheme. */
-  const int num_contacts = rigid_contact_pairs.size();
-  DRAKE_DEMAND(mu->size() == num_contacts);
-  std::vector<CoulombFriction<double>> combined_friction_pairs =
-      this->CalcCombinedFrictionCoefficients(context, rigid_contact_pairs);
-  std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
-                 mu->data(),
-                 [](const CoulombFriction<double>& coulomb_friction) {
-                   return coulomb_friction.dynamic_friction();
-                 });
-
-  /* Compute penetration, normal contact force, stiffness, and damping. */
-  DRAKE_DEMAND(phi->size() == num_contacts);
-  DRAKE_DEMAND(fn->size() == num_contacts);
-  DRAKE_DEMAND(stiffness->size() == num_contacts);
-  DRAKE_DEMAND(damping->size() == num_contacts);
-  for (int i = 0; i < num_contacts; ++i) {
-    (*phi)[i] = rigid_contact_pairs[i].phi0;
-    (*fn)[i] = rigid_contact_pairs[i].fn0;
-    (*stiffness)[i] = rigid_contact_pairs[i].stiffness;
-    (*damping)[i] = rigid_contact_pairs[i].damping;
-  }
 }
 
 template <typename T>
@@ -683,7 +588,7 @@ BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactJacobian(
   //  using contact graph for rigid dofs.
   /* For now, all rigid dofs are viewed as a single column block in the contact
    jacobian. */
-  const int num_rigid_block_cols = 1;
+  const int num_rigid_block_cols = (this->plant().num_velocities() > 0) ? 1 : 0;
   /* For now, all rigid-rigid contacts (if they exist) are viewed as a single
    row block in the contact jacobian. */
   const int num_rigid_block_rows = rigid_contact_pairs.empty() ? 0 : 1;
@@ -713,7 +618,6 @@ BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactJacobian(
   /* The block columns corresponding to deformable dofs start after the
    rigid dofs. */
   int col_block_deformable = num_rigid_block_cols;
-  const int col_block_rigid = 0;
 
   for (const internal::DeformableContactData<T>& contact_data :
        deformable_contact_data) {
@@ -721,8 +625,11 @@ BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactJacobian(
     if (contact_data.num_contact_points() == 0) {
       continue;
     }
-    builder.PushBlock(row_block, col_block_rigid,
-                      CalcContactJacobianRigidBlock(context, contact_data));
+    if (num_rigid_block_cols > 0) {
+      const int col_block_rigid = 0;
+      builder.PushBlock(row_block, col_block_rigid,
+                        CalcContactJacobianRigidBlock(context, contact_data));
+    }
     builder.PushBlock(row_block, col_block_deformable,
                       CalcContactJacobianDeformableBlock(contact_data));
     ++row_block;
@@ -923,20 +830,22 @@ BlockSparseMatrix<T> DeformableRigidManager<T>::CalcContactTangentMatrix(
 
   // TODO(xuchenhan-tri): The mass matrix of the rigid dofs is treated as a
   //  single block. Exploit its branch-induced sparsity in the future.
-  const int num_rigid_blocks = 1;
+  const int num_rigid_dofs = this->plant().num_velocities();
+  const int num_rigid_blocks = (num_rigid_dofs == 0) ? 0 : 1;
   const int num_deformable_blocks = num_deformable_body_in_contact;
   const int num_blocks = num_rigid_blocks + num_deformable_blocks;
   BlockSparseMatrixBuilder<T> builder(num_blocks, num_blocks, num_blocks);
 
-  const int num_rigid_dofs = this->plant().num_velocities();
-  MatrixX<T> M(num_rigid_dofs, num_rigid_dofs);
-  this->plant().CalcMassMatrix(context, &M);
-  /* The rigid dofs come before the deformable dofs in the contact formulation,
-   so we put the rigid block on the top-left corner. */
-  builder.PushBlock(0, 0, M);
+  if (num_rigid_blocks > 0) {
+    MatrixX<T> M(num_rigid_dofs, num_rigid_dofs);
+    this->plant().CalcMassMatrix(context, &M);
+    /* The rigid dofs come before the deformable dofs in the contact
+     formulation, so we put the rigid block on the top-left corner. */
+    builder.PushBlock(0, 0, M);
+  }
 
   /* Now start building the deformable blocks. */
-  int block_index = 1;
+  int block_index = num_rigid_blocks;
   DRAKE_DEMAND(deformable_model_ != nullptr);
   for (DeformableBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
     /* Skip deformable bodies not in contact. */
