@@ -71,6 +71,7 @@ template <typename>
 class MultibodyPlantModelAttorney;
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
+
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -4026,6 +4027,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex joint_locking_data;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4240,12 +4242,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context0,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+
   // Eval version of the method CalcContactSolverResults().
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_solver_results)
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
+  }
+
+
+  // Computes the array of indices of velocities that are not locked in the
+  // current configuration. The resulting index values in @p
+  // unlocked_velocity_indices will be in ascending order, in the range [0,
+  // num_velocities()), with the indices of the locked velocities removed.
+  void CalcJointLockingIndices(
+      const systems::Context<T>& context,
+      std::vector<int>* unlocked_velocity_indices) const;
+
+  // Eval version of the method CalcJointLockingIndices().
+  const std::vector<int>& EvalJointLockingIndices(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.joint_locking_data)
+        .template Eval<std::vector<int>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.

@@ -52,7 +52,7 @@ class ScrewJointTest : public ::testing::Test {
         Vector1d::Constant(kAccelerationUpperLimit));
 
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
-        std::move(model));
+        std::move(model), true/* is_discrete */);
     context_ = system_->CreateDefaultContext();
   }
 
@@ -123,6 +123,11 @@ TEST_F(ScrewJointTest, ContextDependentAccess) {
   EXPECT_EQ(joint_->get_translational_velocity(*context_), translation1);
   joint_->set_angular_velocity(context_.get(), angle1);
   EXPECT_EQ(joint_->get_angular_velocity(*context_), angle1);
+
+  // Joint locking.
+  joint_->Lock(context_.get());
+  EXPECT_EQ(joint_->get_translational_velocity(*context_), 0.);
+  EXPECT_EQ(joint_->get_angular_velocity(*context_), 0.);
 }
 
 // Tests API to apply torques to individual dof of joint. Ensures that adding

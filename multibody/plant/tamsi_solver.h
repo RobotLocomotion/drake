@@ -511,6 +511,20 @@ class TamsiSolver {
   /// @throws std::exception if nv is non-positive.
   explicit TamsiSolver(int nv);
 
+  /// Change the working size of the solver to use `nv` generalized
+  /// velocities. This can be used to either shrink or grow the workspaces.
+  /// @throws std::exception if nv is non-positive.
+  // TODO(#15674): this method is a stop-gap until proper thread-safe handling
+  // of workspaces is implemented.
+  void ResizeIfNeeded(int nv) const {
+    DRAKE_THROW_UNLESS(nv > 0);
+    if (nv != nv_) {
+      nv_ = nv;
+      fixed_size_workspace_ = FixedSizeWorkspace(nv);
+      variable_size_workspace_ = VariableSizeWorkspace(128, nv);
+    }
+  }
+
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
   /// class's documentation: <pre>
@@ -1134,12 +1148,16 @@ class TamsiSolver {
   // s = ‖v‖ / vₛ.
   static T RegularizedFrictionDerivative(const T& speed_BcAc, const T& mu);
 
-  int nv_;  // Number of generalized velocities.
+  // TODO(#15674): Adding mutability here is in part a consequence of
+  // thread-unsafe integration elsewhere.
+  mutable int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
   TamsiSolverParameters parameters_;
   ProblemDataAliases problem_data_aliases_;
+  // TODO(#15674): Adding mutability here is in part a consequence of
+  // thread-unsafe integration elsewhere.
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
 

@@ -755,10 +755,17 @@ class TestPlant(unittest.TestCase):
             float)
 
     @numpy_compare.check_all_types
-    def test_multibody_tree_kinematics(self, T):
+    def test_multibody_tree_kinematics_continuous(self, T):
+        self.do_test_multibody_tree_kinematics(T, 0.0)
+
+    @numpy_compare.check_all_types
+    def test_multibody_tree_kinematics_discrete(self, T):
+        self.do_test_multibody_tree_kinematics(T, 0.001)
+
+    def do_test_multibody_tree_kinematics(self, T, time_step):
         RigidTransform = RigidTransform_[T]
         SpatialVelocity = SpatialVelocity_[T]
-        plant_f = MultibodyPlant_[float](0.0)
+        plant_f = MultibodyPlant_[float](time_step)
 
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
@@ -776,6 +783,13 @@ class TestPlant(unittest.TestCase):
         free_bodies = plant.GetFloatingBaseBodies()
         self.assertEqual(len(free_bodies), 1)
         self.assertTrue(base.index() in free_bodies)
+
+        self.assertFalse(base.is_locked(context))
+        if time_step:
+            base.Lock(context)
+            self.assertTrue(base.is_locked(context))
+            base.Unlock(context)
+            self.assertFalse(base.is_locked(context))
 
         p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
@@ -1540,8 +1554,8 @@ class TestPlant(unittest.TestCase):
             make_weld_joint,
         ]
 
-        def loop_body(make_joint):
-            plant = MultibodyPlant_[T](0.0)
+        def loop_body(make_joint, time_step):
+            plant = MultibodyPlant_[T](time_step)
             child = plant.AddRigidBody("Child", SpatialInertia_[float]())
             joint = make_joint(
                 plant=plant, P=plant.world_frame(), C=child.body_frame())
@@ -1572,6 +1586,13 @@ class TestPlant(unittest.TestCase):
                 type=Variable.Type.RANDOM_UNIFORM)
 
             context = plant.CreateDefaultContext()
+            self.assertFalse(joint.is_locked(context))
+            if time_step:
+                joint.Lock(context)
+                self.assertTrue(joint.is_locked(context))
+                joint.Unlock(context)
+                self.assertFalse(joint.is_locked(context))
+
             if joint.name() == "ball_rpy":
                 joint.damping()
                 set_point = array_T([1., 2., 3.])
@@ -1691,7 +1712,8 @@ class TestPlant(unittest.TestCase):
 
         for make_joint in make_joint_list:
             with self.subTest(make_joint=make_joint):
-                loop_body(make_joint)
+                loop_body(make_joint, 0.0)
+                loop_body(make_joint, 0.001)
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):

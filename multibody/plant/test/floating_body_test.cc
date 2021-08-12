@@ -320,6 +320,51 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
                               MatrixCompareType::relative));
 }
 
+// This test verifies that locking the free body sets its spatial velocities to
+// 0. Perhaps this could have been a RigidBody unit test, but the necessary
+// fixtures are most conveniently available here.
+GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
+  // Since these tests are purely kinematic, we use an arbitrary values for the
+  // rotational inertias, mass and, gravity in order to instantiate the model.
+  const double kInertia = 0.05;
+  const double kMass = 1.0;
+  const double acceleration_of_gravity = 9.81;
+
+  // Instantiate the model for the free body in space.
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
+      kMass, kInertia, kInertia, acceleration_of_gravity,
+      0.001/* time_step */);
+  const internal::MultibodyTree<double>& model =
+      internal::GetInternalTree(free_body_plant);
+
+  systems::Simulator<double> simulator(free_body_plant);
+  systems::Context<double>& context = simulator.get_mutable_context();
+
+  // Set velocities.
+  const Vector3d w_WB(1.0, 2.0, 3.0);
+  const Vector3d v_WB(-1.0, 4.0, -0.5);
+  const auto& free_body = free_body_plant.body();
+  DRAKE_EXPECT_NO_THROW(
+      model.SetFreeBodySpatialVelocityOrThrow(
+          free_body, {w_WB, v_WB}, &context));
+
+  free_body.Lock(&context);
+  EXPECT_TRUE(free_body.is_locked(context));
+  auto velocity = free_body.EvalSpatialVelocityInWorld(context);
+  EXPECT_EQ(velocity.rotational(), Vector3d::Zero());
+  EXPECT_EQ(velocity.translational(), Vector3d::Zero());
+
+  simulator.Initialize();
+  simulator.AdvanceTo(1.0);
+
+  velocity = free_body.EvalSpatialVelocityInWorld(context);
+  EXPECT_EQ(velocity.rotational(), Vector3d::Zero());
+  EXPECT_EQ(velocity.translational(), Vector3d::Zero());
+
+  free_body.Unlock(&context);
+  EXPECT_FALSE(free_body.is_locked(context));
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace multibody
