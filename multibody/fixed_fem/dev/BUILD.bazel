@@ -35,18 +35,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "constitutive_model",
-    hdrs = [
-        "constitutive_model.h",
-    ],
-    deps = [
-        ":fem_indexes",
-        "//common:essential",
-        "//multibody/fem:deformation_gradient_data",
-    ],
-)
-
-drake_cc_library(
     name = "constitutive_model_utilities",
     hdrs = [
         "constitutive_model_utilities.h",
@@ -62,12 +50,12 @@ drake_cc_library(
         "corotated_model.h",
     ],
     deps = [
-        ":constitutive_model",
         ":constitutive_model_utilities",
         ":corotated_model_data",
         ":matrix_utilities",
         "//common:autodiff",
         "//common:essential",
+        "//multibody/fem:constitutive_model",
     ],
 )
 
@@ -265,10 +253,10 @@ drake_cc_library(
         "elasticity_element.h",
     ],
     deps = [
-        ":constitutive_model",
         ":fem_element",
         "//common:essential",
         "//common:unused",
+        "//multibody/fem:constitutive_model",
         "//multibody/fem:isoparametric_element",
         "//multibody/fem:quadrature",
     ],
@@ -400,10 +388,10 @@ drake_cc_library(
         "linear_constitutive_model.h",
     ],
     deps = [
-        ":constitutive_model",
         ":constitutive_model_utilities",
         "//common:autodiff",
         "//common:essential",
+        "//multibody/fem:constitutive_model",
         "//multibody/fem:linear_constitutive_model_data",
     ],
 )
@@ -586,7 +574,6 @@ drake_cc_library(
     srcs = ["test/constitutive_model_test_utilities.cc"],
     hdrs = ["test/constitutive_model_test_utilities.h"],
     deps = [
-        ":constitutive_model",
         ":corotated_model",
         ":linear_constitutive_model",
         ":test_utilities",
@@ -594,6 +581,7 @@ drake_cc_library(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
+        "//multibody/fem:constitutive_model",
     ],
 )
 
@@ -745,15 +733,6 @@ drake_cc_googletest(
         ":fem_element",
         ":fem_state",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "hyperelastic_constitutive_model_test",
-    deps = [
-        ":constitutive_model",
-        "//common/test_utilities:expect_throws_message",
-        "//multibody/fem:deformation_gradient_data",
     ],
 )
 

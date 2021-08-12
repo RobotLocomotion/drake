@@ -1,5 +1,9 @@
 #pragma once
 
+/** @file
+ This file provides utilities that facilitates testing the subclasses of
+ ConstitutiveModel instead of the ConstitutiveModel class itself. */
+
 #include <array>
 
 #include "drake/common/autodiff.h"
