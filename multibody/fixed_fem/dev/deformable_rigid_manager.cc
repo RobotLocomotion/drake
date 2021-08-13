@@ -2,6 +2,7 @@
 
 #include "drake/multibody/contact_solvers/block_sparse_linear_operator.h"
 #include "drake/multibody/fixed_fem/dev/inverse_spd_operator.h"
+#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
 #include "drake/multibody/fixed_fem/dev/permute_block_sparse_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -256,6 +257,16 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
           {systems::System<T>::all_sources_ticket()});
   two_way_coupled_contact_solver_results_cache_index_ =
       two_way_coupled_contact_solver_results_cache_entry.cache_index();
+
+  const auto& deformable_contact_solver_results_cache_entry =
+      this->DeclareCacheEntry(
+          "Contact solver results for participating deformable dofs",
+          systems::ValueProducer(
+              this,
+              &DeformableRigidManager<T>::CalcDeformableContactSolverResults),
+          {two_way_coupled_contact_solver_results_cache_entry.ticket()});
+  deformable_contact_solver_results_cache_index_ =
+      deformable_contact_solver_results_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -331,6 +342,109 @@ void DeformableRigidManager<T>::CalcTwoWayCoupledContactSolverResults(
   const VectorX<T>& v0 = EvalParticipatingVelocities(context);
   contact_solver_->SolveWithGuess(this->plant().time_step(), dynamics_data,
                                   contact_data, v0, results);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcDeformableContactSolverResults(
+    const systems::Context<T>& context,
+    ContactSolverResults<T>* deformable_results) const {
+  DRAKE_DEMAND(deformable_results != nullptr);
+  /* Extract the results related to the deformable dofs from the full two-way
+   coupled deformable-rigid results. */
+  const ContactSolverResults<T>& two_way_coupled_results =
+      EvalTwoWayCoupledContactSolverResults(context);
+  const std::vector<internal::DeformableContactData<T>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+
+  /* Find the total number of deformable contacts and the number of deformable
+   participating dofs. */
+  int nc = 0;
+  int nv_participating = 0;
+  for (const auto& data : deformable_contact_data) {
+    nc += data.num_contact_points();
+    nv_participating += 3 * data.num_vertices_in_contact();
+  }
+  deformable_results->Resize(deformable_model_->NumDofs(), nc);
+  /* Write to all per contact point results. The deformable-rigid contact point
+   results are stored at the end of the two-way coupled results. */
+  deformable_results->fn = two_way_coupled_results.fn.tail(nc);
+  deformable_results->ft = two_way_coupled_results.ft.tail(2 * nc);
+  deformable_results->vn = two_way_coupled_results.vn.tail(nc);
+  deformable_results->vt = two_way_coupled_results.vt.tail(2 * nc);
+
+  /* Calculate post-contact velocity and contact impulse for *all* deformable
+   dofs from participating deformable dofs. */
+  const auto participating_deformable_velocities =
+      two_way_coupled_results.v_next.tail(nv_participating);
+  const auto participating_deformable_tau =
+      two_way_coupled_results.tau_contact.tail(nv_participating);
+  int dof_offset = 0;
+  int participating_dof_offset = 0;
+  for (DeformableBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
+    const FemStateBase<T>& fem_state_star =
+        EvalFreeMotionFemStateBase(context, i);
+    const VectorX<T>& v_star = fem_state_star.qdot();
+    const int num_dofs_i = v_star.size();
+    const auto& contact_data_i = deformable_contact_data[i];
+    if (contact_data_i.num_contact_points() == 0) {
+      /* If the deformable body is not in contact, then the free motion velocity
+      is the final velocity. */
+      deformable_results->v_next.segment(dof_offset, num_dofs_i) = v_star;
+      deformable_results->tau_contact.segment(dof_offset, num_dofs_i).setZero();
+    } else {
+      VectorX<T> permuted_v_star = internal::PermuteBlockVector<T>(
+          v_star, contact_data_i.permuted_vertex_indexes());
+      const int num_participating_dofs_i =
+          3 * contact_data_i.num_vertices_in_contact();
+      /* Calculate the velocitiy changes for participating dofs and store them
+       in `participating_delta_v`. */
+      const auto participating_v_star =
+          permuted_v_star.head(num_participating_dofs_i);
+      const auto participating_v = participating_deformable_velocities.segment(
+          participating_dof_offset, num_participating_dofs_i);
+      const VectorX<T> participating_delta_v =
+          participating_v - participating_v_star;
+      /* Use Schur complement to calculate the velocitiy changes for
+        non-participating dofs and store them in `nonparticipating_delta_v`. */
+      const internal::SchurComplement<T>& schur_complement =
+          EvalFreeMotionTangentMatrixSchurComplement(context, i);
+      const VectorX<T> nonparticipating_delta_v =
+          schur_complement.SolveForY(participating_delta_v);
+      /* Calculate v = v* + dv for nonparticipating dofs. */
+      const auto nonparticipating_v_star =
+          permuted_v_star.tail(num_dofs_i - num_participating_dofs_i);
+      const VectorX<T> nonparticipating_v =
+          nonparticipating_v_star + nonparticipating_delta_v;
+      /* We use `permuted_v` to store the velocity of the body i in permuted
+       order at the next time step. */
+      VectorX<T> permuted_v(num_dofs_i);
+      permuted_v << participating_v, nonparticipating_v;
+      /* Restore the velocities to their original order and write to
+       `deformable_results`. */
+      deformable_results->v_next.segment(dof_offset, num_dofs_i) =
+          internal::PermuteBlockVector<T>(
+              permuted_v, contact_data_i.permuted_to_original_indexes());
+      /* We use `permuted_tau` to store the contact impulse of the body i in
+       permuted order at the next time step. */
+      VectorX<T> permuted_tau = VectorX<T>::Zero(num_dofs_i);
+      /* Extract `tau` for participating dofs. Non-participating dofs have zero
+       `tau`. */
+      permuted_tau.head(num_participating_dofs_i) =
+          participating_deformable_tau.segment(participating_dof_offset,
+                                               num_participating_dofs_i);
+      /* Restore the contact impulses to their original order and write to
+       `deformable_results`. */
+      deformable_results->tau_contact.segment(dof_offset, num_dofs_i) =
+          internal::PermuteBlockVector<T>(
+              permuted_tau, contact_data_i.permuted_to_original_indexes());
+
+      participating_dof_offset += num_participating_dofs_i;
+    }
+    dof_offset += num_dofs_i;
+  }
+  /* Sanity check that all dofs and participating dofs are accounted for. */
+  DRAKE_DEMAND(dof_offset == deformable_model_->NumDofs());
+  DRAKE_DEMAND(participating_dof_offset == nv_participating);
 }
 
 template <typename T>
