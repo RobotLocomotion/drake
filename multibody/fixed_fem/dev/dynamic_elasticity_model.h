@@ -34,8 +34,8 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
    */
   explicit DynamicElasticityModel(double dt)
       : ElasticityModel<Element>(
-            std::make_unique<internal::AccelerationNewmarkScheme<T>>(dt, 0.5,
-                                                                     0.25)) {}
+            std::make_unique<internal::AccelerationNewmarkScheme<T>>(dt, 1.0,
+                                                                     0.5)) {}
 
   ~DynamicElasticityModel() = default;
 
