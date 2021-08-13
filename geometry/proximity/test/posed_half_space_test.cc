@@ -72,12 +72,12 @@ GTEST_TEST(PosedHalfSpaceTest, MixedScalar) {
   const Vector3d p_FB_d{0.25, 0.5, -1};
   PosedHalfSpace<double> hs_F_d(nhat_F_d, p_FB_d);
 
-  const Vector3<AutoDiffXd> p_FB_ad = math::initializeAutoDiff(p_FB_d);
+  const Vector3<AutoDiffXd> p_FB_ad = math::InitializeAutoDiff(p_FB_d);
   PosedHalfSpace<AutoDiffXd> hs_F_ad(nhat_F_d.cast<AutoDiffXd>(), p_FB_ad);
 
   const double expected_distance = 0.125;
   const Vector3d p_FQ_d = p_FB_d + expected_distance * nhat_F_d;
-  const Vector3<AutoDiffXd> p_FQ_ad_derivs = math::initializeAutoDiff(p_FQ_d);
+  const Vector3<AutoDiffXd> p_FQ_ad_derivs = math::InitializeAutoDiff(p_FQ_d);
   const Vector3<AutoDiffXd> p_FQ_ad_no_derivs = p_FQ_d.cast<AutoDiffXd>();
 
   {

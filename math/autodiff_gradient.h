@@ -1,6 +1,6 @@
-/// @file
-/// Utilities that relate simultaneously to both autodiff matrices and
-/// gradient matrices.
+/** @file
+Utilities that relate simultaneously to both autodiff matrices and
+gradient matrices. */
 
 #pragma once
 
@@ -17,6 +17,20 @@
 namespace drake {
 namespace math {
 
+/** (Advanced) Determines the appropriate return type for the ExtractGradient()
+function which extracts the `derivatives()` portion from an m x n matrix of
+AutoDiffScalar entries. We expect the template parameter `Derived` to be that
+matrix type. The `type` declaration here will then be an nr x nq Eigen matrix
+with `nr = m * n` and `nq = Eigen::Dynamic` but to be allocated to the number
+of derivatives for each of the nr entries. The returned matrix type has
+entries of the Scalar type from the AutoDiffScalar (commonly, but not
+necessarily, `double`).
+
+@tparam Derived An Eigen type representing a matrix with AutoDiffScalar
+    entries. In practice this will be the same type as was inferred for
+    an ExtractGradient() call site.
+
+@see AutoDiffToValueMatrix, Gradient */
 template <typename Derived>
 struct AutoDiffToGradientMatrix {
   typedef typename Gradient<
@@ -25,30 +39,49 @@ struct AutoDiffToGradientMatrix {
       Eigen::Dynamic>::type type;
 };
 
+/** Extracts the `derivatives()` portion from a matrix of AutoDiffScalar
+entries. (Each entry contains a value and derivatives.)
+
+@param auto_diff_matrix An object whose Eigen type represents a matrix of
+    AutoDiffScalar entries.
+@param num_derivatives (Optional) The number of derivatives to return in case
+    the input matrix has none, which we interpret as `num_derivatives` zeroes.
+@retval gradient_matrix An Eigen::Matrix with number of rows equal to the
+    total size (rows x cols) of the input matrix and number of columns equal
+    to the number of derivatives. Each output row corresponds to one entry of
+    the input matrix, in input row order.
+
+@tparam Derived An Eigen type representing a matrix with AutoDiffScalar
+    entries. The type will be inferred from the type of the `auto_diff_scalar`
+    parameter at the call site.
+
+@throws std::exception if `num_derivatives` is specified but the input matrix
+has a different, non-zero number of derivatives. */
 template <typename Derived>
-typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
+typename AutoDiffToGradientMatrix<Derived>::type ExtractGradient(
     const Eigen::MatrixBase<Derived>& auto_diff_matrix,
-    int num_variables = Eigen::Dynamic) {
-  int num_variables_from_matrix = 0;
+    int num_derivatives = Eigen::Dynamic) {
+  int num_derivatives_from_matrix = 0;
   for (int i = 0; i < auto_diff_matrix.size(); ++i) {
-    num_variables_from_matrix =
-        std::max(num_variables_from_matrix,
+    num_derivatives_from_matrix =
+        std::max(num_derivatives_from_matrix,
                  static_cast<int>(auto_diff_matrix(i).derivatives().size()));
   }
-  if (num_variables == Eigen::Dynamic) {
-    num_variables = num_variables_from_matrix;
-  } else if (num_variables_from_matrix != 0 &&
-             num_variables_from_matrix != num_variables) {
+  if (num_derivatives == Eigen::Dynamic) {
+    num_derivatives = num_derivatives_from_matrix;
+  } else if (num_derivatives_from_matrix != 0 &&
+             num_derivatives_from_matrix != num_derivatives) {
     std::stringstream buf;
-    buf << "Input matrix has derivatives w.r.t " << num_variables_from_matrix
-        << " variables, whereas num_variables is " << num_variables << ".\n";
-    buf << "Either num_variables_from_matrix should be zero, or it should "
-           "match num_variables.";
+    buf << "Input matrix has " << num_derivatives_from_matrix
+        << " derivatives, whereas num_derivatives was specified as "
+        << num_derivatives << ".\n";
+    buf << "Either the input matrix should have zero derivatives, or the"
+           " number should match num_derivatives.";
     throw std::runtime_error(buf.str());
   }
 
   typename AutoDiffToGradientMatrix<Derived>::type gradient(
-      auto_diff_matrix.size(), num_variables);
+      auto_diff_matrix.size(), num_derivatives);
   for (int row = 0; row < auto_diff_matrix.rows(); row++) {
     for (int col = 0; col < auto_diff_matrix.cols(); col++) {
       auto gradient_row =
@@ -63,64 +96,104 @@ typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
   return gradient;
 }
 
-/** \brief Initializes an autodiff matrix given a matrix of values and gradient
- * matrix
- * \param[in] val value matrix
- * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
- * row j of the gradient matrix.
- * \param[out] autodiff_matrix matrix of AutoDiffScalars with the same size as
- * \p val
- */
-template <typename Derived, typename DerivedGradient, typename DerivedAutoDiff>
-void initializeAutoDiffGivenGradientMatrix(
-    const Eigen::MatrixBase<Derived>& val,
+template <typename Derived>
+// TODO(sherm1) DRAKE_DEPRECATED("2021-12-01", "Use ExtractGradient().")
+typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
+    const Eigen::MatrixBase<Derived>& auto_diff_matrix,
+    int num_variables = Eigen::Dynamic) {
+  return ExtractGradient(auto_diff_matrix, num_variables);
+}
+
+/** Initializes an AutoDiff matrix given a matrix of values and a gradient
+matrix.
+
+@param[in] value The value matrix. Will be accessed with a single index.
+@param[in] gradient The gradient matrix. The number of rows must match the
+    total size (nrow x ncol) of the value matrix. Derivatives of value(j) should
+    be stored in row j of the gradient matrix.
+@param[out] autodiff_matrix The matrix of AutoDiffScalars. Will be resized as
+    needed to have the same dimensions as the value matrix.
+@exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
+template <typename DerivedValue, typename DerivedGradient,
+          typename DerivedAutoDiff>
+void InitializeAutoDiff(
+    const Eigen::MatrixBase<DerivedValue>& value,
     const Eigen::MatrixBase<DerivedGradient>& gradient,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
-  static_assert(static_cast<int>(Derived::SizeAtCompileTime) ==
+    Eigen::MatrixBase<DerivedAutoDiff>* auto_diff_matrix) {
+  // Verify either that we have conformant fixed-sized matrices, or that they
+  // are dynamically sized.
+  static_assert(static_cast<int>(DerivedValue::SizeAtCompileTime) ==
                     static_cast<int>(DerivedGradient::RowsAtCompileTime),
                 "gradient has wrong number of rows at compile time");
-  DRAKE_ASSERT(val.size() == gradient.rows() &&
-               "gradient has wrong number of rows at runtime");
-  typedef AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime>
-      ExpectedAutoDiffType;
+  using ExpectedAutoDiffType =
+      AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>;
   static_assert(static_cast<int>(ExpectedAutoDiffType::RowsAtCompileTime) ==
                     static_cast<int>(DerivedAutoDiff::RowsAtCompileTime),
                 "auto diff matrix has wrong number of rows at compile time");
   static_assert(static_cast<int>(ExpectedAutoDiffType::ColsAtCompileTime) ==
                     static_cast<int>(DerivedAutoDiff::ColsAtCompileTime),
                 "auto diff matrix has wrong number of columns at compile time");
+
+  // Verify that the Scalar types of the Value matrix and AutoDiff result
+  // are the same.
   static_assert(std::is_same_v<typename DerivedAutoDiff::Scalar,
                                typename ExpectedAutoDiffType::Scalar>,
                 "wrong auto diff scalar type");
 
-  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
-  auto_diff_matrix.resize(val.rows(), val.cols());
+  DRAKE_DEMAND(auto_diff_matrix != nullptr);
+  DRAKE_DEMAND(value.size() == gradient.rows() &&
+               "gradient has wrong number of rows at runtime");
+
+  using Index = typename Eigen::MatrixBase<DerivedGradient>::Index;
+  auto_diff_matrix->resize(value.rows(), value.cols());
   auto num_derivs = gradient.cols();
-  for (Index row = 0; row < auto_diff_matrix.size(); row++) {
-    auto_diff_matrix(row).value() = val(row);
-    auto_diff_matrix(row).derivatives().resize(num_derivs, 1);
-    auto_diff_matrix(row).derivatives() = gradient.row(row).transpose();
+  for (Index row = 0; row < auto_diff_matrix->size(); row++) {
+    (*auto_diff_matrix)(row).value() = value(row);
+    (*auto_diff_matrix)(row).derivatives().resize(num_derivs, 1);
+    (*auto_diff_matrix)(row).derivatives() = gradient.row(row).transpose();
   }
 }
 
-/** \brief Creates and initializes an autodiff matrix given a matrix of values
- * and gradient matrix
- * \param[in] val value matrix
- * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
- * row j of the gradient matrix.
- * \return autodiff_matrix matrix of AutoDiffScalars with the same size as \p
- * val
- */
-template <typename Derived, typename DerivedGradient>
-AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime>
-initializeAutoDiffGivenGradientMatrix(
-    const Eigen::MatrixBase<Derived>& val,
+template <typename DerivedValue, typename DerivedGradient,
+          typename DerivedAutoDiff>
+// TODO(sherm1) DRAKE_DEPRECATED("2021-12-01", "Use InitializeAutoDiff().")
+void initializeAutoDiffGivenGradientMatrix(
+    const Eigen::MatrixBase<DerivedValue>& value,
+    const Eigen::MatrixBase<DerivedGradient>& gradient,
+    // NOLINTNEXTLINE(runtime/references).
+    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
+  InitializeAutoDiff(value, gradient, &auto_diff_matrix);
+}
+
+/** Returns an AutoDiff matrix given a matrix of values and a gradient
+matrix.
+
+@param[in] value The value matrix. Will be accessed with a single index.
+@param[in] gradient The gradient matrix. The number of rows must match the
+    total size (nrow x ncol) of the value matrix. Derivatives of value(j) should
+    be stored in row j of the gradient matrix.
+@retval autodiff_matrix The matrix of AutoDiffScalars. Will be resized as
+    needed to have the same dimensions as the value matrix.
+@pydrake_mkdoc_identifier{value_and_gradient} */
+template <typename DerivedValue, typename DerivedGradient>
+AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
+InitializeAutoDiff(
+    const Eigen::MatrixBase<DerivedValue>& value,
     const Eigen::MatrixBase<DerivedGradient>& gradient) {
-  AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> ret(
-      val.rows(), val.cols());
-  initializeAutoDiffGivenGradientMatrix(val, gradient, ret);
-  return ret;
+  AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
+      auto_diff_matrix(value.rows(), value.cols());
+  InitializeAutoDiff(value, gradient, &auto_diff_matrix);
+  return auto_diff_matrix;
+}
+
+template <typename DerivedValue, typename DerivedGradient>
+// TODO(sherm1) DRAKE_DEPRECATED("2021-12-01",
+//     "Use InitializeAutoDiff() instead")
+AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
+initializeAutoDiffGivenGradientMatrix(
+    const Eigen::MatrixBase<DerivedValue>& value,
+    const Eigen::MatrixBase<DerivedGradient>& gradient) {
+  return InitializeAutoDiff(value, gradient);
 }
 
 template <typename DerivedGradient, typename DerivedAutoDiff>
@@ -128,7 +201,7 @@ DRAKE_DEPRECATED("2021-12-01",
     "Apparently unused. File a Drake issue on GitHub if you need this method.")
 void gradientMatrixToAutoDiff(
     const Eigen::MatrixBase<DerivedGradient>& gradient,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    // NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
   typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
   auto nx = gradient.cols();
@@ -142,23 +215,21 @@ void gradientMatrixToAutoDiff(
 }
 
 /** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
- * AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
- * the gradient matrix is empty or zero.  For a matrix of type, e.g.
- * `MatrixX<AutoDiffXd> A`, the comparable operation
- *   `B = A.cast<double>()`
- * should (and does) fail to compile.  Use `DiscardZeroGradient(A)` if you want
- * to force the cast (and the check).
- *
- * This method is overloaded to permit the user to call it for double types and
- * AutoDiffScalar types (to avoid the calling function having to handle the
- * two cases differently).
- *
- * @param precision is passed to Eigen's isZero(precision) to evaluate whether
- * the gradients are zero.
- * @throws std::exception if the gradients were not empty nor zero.
- *
- * @see DiscardGradient
- */
+AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
+the gradient matrix is empty or zero.  For a matrix of type, e.g.
+`MatrixX<AutoDiffXd> A`, the comparable operation
+  `B = A.cast<double>()`
+should (and does) fail to compile.  Use `DiscardZeroGradient(A)` if you want
+to force the cast (and the check).
+
+This method is overloaded to permit the user to call it for double types and
+AutoDiffScalar types (to avoid the calling function having to handle the
+two cases differently).
+
+@param precision is passed to Eigen's isZero(precision) to evaluate whether
+the gradients are zero.
+@throws std::exception if the gradients were not empty nor zero.
+@see DiscardGradient() */
 template <typename Derived>
 typename std::enable_if_t<
     !std::is_same_v<typename Derived::Scalar, double>,
@@ -170,15 +241,15 @@ DiscardZeroGradient(
     const typename Eigen::NumTraits<
         typename Derived::Scalar::Scalar>::Real& precision =
         Eigen::NumTraits<typename Derived::Scalar::Scalar>::dummy_precision()) {
-  const auto gradients = autoDiffToGradientMatrix(auto_diff_matrix);
+  const auto gradients = ExtractGradient(auto_diff_matrix);
   if (gradients.size() == 0 || gradients.isZero(precision)) {
-    return autoDiffToValueMatrix(auto_diff_matrix);
+    return ExtractValue(auto_diff_matrix);
   }
   throw std::runtime_error(
       "Casting AutoDiff to value but gradients are not zero.");
 }
 
-/// @see DiscardZeroGradient().
+/** @see DiscardZeroGradient(). */
 template <typename Derived>
 typename std::enable_if_t<std::is_same_v<typename Derived::Scalar, double>,
                           const Eigen::MatrixBase<Derived>&>
@@ -188,7 +259,7 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
   return matrix;
 }
 
-/// @see DiscardZeroGradient().
+/** @see DiscardZeroGradient(). */
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 typename std::enable_if_t<
     !std::is_same_v<_Scalar, double>,
@@ -201,7 +272,7 @@ DiscardZeroGradient(
       DiscardZeroGradient(auto_diff_transform.matrix(), precision));
 }
 
-/// @see DiscardZeroGradient().
+/** @see DiscardZeroGradient(). */
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 typename std::enable_if_t<
     std::is_same_v<_Scalar, double>,
