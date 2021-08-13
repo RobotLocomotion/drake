@@ -154,6 +154,21 @@ class DeformableRigidManager final
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+  /* Eval version of CalcDeformableContactSolverResults(). */
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalDeformableContactSolverResults(const systems::Context<T>& context) const {
+    return this->plant()
+        .get_cache_entry(deformable_contact_solver_results_cache_index_)
+        .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
+            context);
+  }
+
+  /* Calculates the contact solver results for the deformable dofs only. */
+  void CalcDeformableContactSolverResults(
+      const systems::Context<T>& context,
+      contact_solvers::internal::ContactSolverResults<T>* deformable_results)
+      const;
+
   // TODO(xuchenhan-tri): Implement this once AccelerationKinematicsCache
   //  also caches acceleration for deformable dofs.
   void DoCalcAccelerationKinematicsCache(
@@ -480,6 +495,9 @@ class DeformableRigidManager final
   systems::CacheIndex participating_free_motion_velocities_cache_index_;
   /* Cached two-way coupled contact solver results. */
   systems::CacheIndex two_way_coupled_contact_solver_results_cache_index_;
+  /* Cached contact solver results for deformable dofs only. */
+  systems::CacheIndex deformable_contact_solver_results_cache_index_;
+
   /* Solvers for all deformable bodies. */
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
