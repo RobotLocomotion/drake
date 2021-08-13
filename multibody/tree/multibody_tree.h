@@ -755,6 +755,9 @@ class MultibodyTree {
   // the model.
   // @{
 
+  // See MultibodyPlant method.
+  int NumBodiesWithName(std::string_view name) const;
+
   // @returns `true` if a body named `name` was added to the model.
   // @see AddRigidBody().
   //
