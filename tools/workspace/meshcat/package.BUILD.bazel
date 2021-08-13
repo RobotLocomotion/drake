@@ -11,7 +11,7 @@ VIEWER_FILES = [
 
 exports_files(
     VIEWER_FILES,
-    visibility = ["@meshcat_python//:__pkg__"],
+    visibility = ["//visibility:public"],
 )
 
 install_files(

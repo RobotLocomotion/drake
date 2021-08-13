@@ -24,6 +24,7 @@ liblapack3
 libldl2
 liblz4-1
 liblzma5
+libmsgpackc2
 libmumps-seq-5.1.2
 libnetcdf13
 libnlopt0
