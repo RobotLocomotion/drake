@@ -191,11 +191,11 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   for (int i = 0; i < bundle.get_num_poses(); i++) {
     EXPECT_TRUE(
         CompareMatrices(bundle.get_transform(i).GetAsMatrix4(),
-                        math::autoDiffToValueMatrix(
+                        math::ExtractValue(
                             autodiff_bundle.get_transform(i).GetAsMatrix4())));
     EXPECT_TRUE(
         CompareMatrices(bundle.get_velocity(i).get_value(),
-                        math::autoDiffToValueMatrix(
+                        math::ExtractValue(
                             autodiff_bundle.get_velocity(i).get_value())));
     EXPECT_EQ(bundle.get_name(i), autodiff_bundle.get_name(i));
     EXPECT_EQ(bundle.get_model_instance_id(i),

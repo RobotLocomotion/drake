@@ -371,7 +371,7 @@ class VisualizationCallback : public EvaluatorBase {
               AutoDiffVecXd* y) const override {
     DRAKE_ASSERT(x.size() == num_vars());
     y->resize(0);
-    callback_(math::autoDiffToValueMatrix(x));
+    callback_(math::ExtractValue(x));
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,

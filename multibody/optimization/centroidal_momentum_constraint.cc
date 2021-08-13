@@ -70,7 +70,7 @@ void CentroidalMomentumConstraint::DoEval(
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
     Eval(x.cast<AutoDiffXd>(), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     // Implement this part once we support computing the Jacobian of centroidal
     // momentum with MBP<double>
