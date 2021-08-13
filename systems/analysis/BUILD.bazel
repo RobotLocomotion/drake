@@ -591,6 +591,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "monte_carlo_test",
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in MonteCarloSimulation.
+    tags = ["cpu:2"],
     deps = [
         ":monte_carlo",
         "//systems/primitives:constant_vector_source",

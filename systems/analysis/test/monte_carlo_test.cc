@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/monte_carlo.h"
 
 #include <cmath>
+#include <thread>
 
 #include <gtest/gtest.h>
 
@@ -15,6 +16,32 @@ namespace drake {
 namespace systems {
 namespace analysis {
 namespace {
+// Only use two threads during testing. This value should match the "cpu" tag
+// in BUILD.bazel defining this test.
+constexpr int kTestConcurrency = 2;
+
+GTEST_TEST(SelectNumberOfThreadsToUseTest, BasicTest) {
+  const int hardware_concurrency =
+      static_cast<int>(std::thread::hardware_concurrency());
+
+  // When kNoConcurrency is selected, only one thread should be used.
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(kNoConcurrency), 1);
+
+  // If kUseHardwareConcurrency is specified, the number of threads should
+  // match std::thread::hardware_concurrency().
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(kUseHardwareConcurrency),
+            hardware_concurrency);
+
+  // If a value greater than zero is specified, it selects the number of threads
+  // to use.
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(1), 1);
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(10), 10);
+  EXPECT_EQ(internal::SelectNumberOfThreadsToUse(100), 100);
+
+  // Zero and negative values (that are not kUseHardwareConcurrency) throw.
+  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(0), std::exception);
+  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(-10), std::exception);
+}
 
 // Checks that RandomSimulation repeatedly produces the same output sample
 // when given the same RandomGenerator, but produces different output samples
@@ -146,27 +173,103 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
     return std::make_unique<Simulator<double>>(std::move(system));
   };
   const double final_time = 0.1;
-  const int num_samples = 10;
-  const auto results = MonteCarloSimulation(make_simulator, &GetScalarOutput,
-                                            final_time, num_samples);
+  const int num_samples = 100;
 
-  EXPECT_EQ(results.size(), num_samples);
+  const RandomGenerator prototype_generator;
+  RandomGenerator serial_generator(prototype_generator);
+  RandomGenerator parallel_generator(prototype_generator);
 
-  // Check that the results were all different.
-  std::unordered_set<double> outputs;
-  for (const auto& result : results) {
-    outputs.emplace(result.output);
+  const auto serial_results = MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &serial_generator, kNoConcurrency);
+  const auto parallel_results = MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &parallel_generator, kTestConcurrency);
+
+  EXPECT_EQ(serial_results.size(), num_samples);
+  EXPECT_EQ(parallel_results.size(), num_samples);
+
+  // Check that the results were all different. We only check the serial results
+  // since we check later that serial and parallel results are identical.
+  std::unordered_set<double> serial_outputs;
+  for (const auto& serial_result : serial_results) {
+    serial_outputs.emplace(serial_result.output);
   }
-  EXPECT_EQ(outputs.size(), results.size());
+  EXPECT_EQ(serial_outputs.size(), serial_results.size());
 
-  // Confirm that we can reproduce all of the results using RandomSimulation.
-  // Walk through the results in reverse, just for good measure.
-  for (auto it = results.rbegin(); it != results.rend(); ++it) {
-    RandomGenerator generator(it->generator_snapshot);
+  // Confirm that serial and parallel MonteCarloSimulation produce the same
+  // results, and that they are both reproducible.
+  for (int sample = 0; sample < num_samples; ++sample) {
+    const auto& serial_result = serial_results.at(sample);
+    const auto& parallel_result = parallel_results.at(sample);
+
+    EXPECT_EQ(serial_result.output, parallel_result.output);
+
+    RandomGenerator serial_reproduction_generator(
+        serial_result.generator_snapshot);
+    RandomGenerator parallel_reproduction_generator(
+        parallel_result.generator_snapshot);
+
     EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
-                               &generator),
-              it->output);
+                               &serial_reproduction_generator),
+              serial_result.output);
+    EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
+                               &parallel_reproduction_generator),
+              parallel_result.output);
   }
+}
+
+// Simple system that outputs constant scalar, where this scalar is stored in
+// the discrete state of the system.  The scalar value is randomized in
+// SetRandomState(). If the state value (cast to int) is odd, DoCalcVectorOutput
+// throws.
+class ThrowingRandomContextSystem : public VectorSystem<double> {
+ public:
+  ThrowingRandomContextSystem() : VectorSystem(0, 1) {
+    this->DeclareDiscreteState(1);
+  }
+
+ private:
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                      RandomGenerator* generator) const override {
+    std::normal_distribution<> distribution;
+    state->get_mutable_discrete_state(0).SetAtIndex(0,
+                                                    distribution(*generator));
+  }
+
+  void DoCalcVectorOutput(
+      const Context<double>& context,
+      const Eigen::VectorBlock<const VectorX<double>>& input,
+      const Eigen::VectorBlock<const VectorX<double>>& state,
+      Eigen::VectorBlock<VectorX<double>>* output) const override {
+    if ((static_cast<int>(state(0)) % 2) != 0) {
+      throw std::runtime_error("State value is odd");
+    } else {
+      *output = state;
+    }
+  }
+};
+
+GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
+  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
+    auto system = std::make_unique<ThrowingRandomContextSystem>();
+    return std::make_unique<Simulator<double>>(std::move(system));
+  };
+  const double final_time = 0.1;
+  const int num_samples = 10;
+
+  const RandomGenerator prototype_generator;
+  RandomGenerator serial_generator(prototype_generator);
+  RandomGenerator parallel_generator(prototype_generator);
+
+  EXPECT_THROW(MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &serial_generator, kNoConcurrency),
+      std::exception);
+  EXPECT_THROW(MonteCarloSimulation(
+      make_simulator, &GetScalarOutput, final_time, num_samples,
+      &parallel_generator, kTestConcurrency),
+      std::exception);
 }
 
 }  // namespace

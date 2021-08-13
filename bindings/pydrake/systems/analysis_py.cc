@@ -248,17 +248,20 @@ PYBIND11_MODULE(analysis, m) {
         m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
         .def_readwrite("output", &RandomSimulationResult::output,
             doc.RandomSimulationResult.output.doc)
-        .def_readonly("generator_snapshot",
+        .def_readwrite("generator_snapshot",
             &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
+    // Note: parallel simulation must be disabled in the binding via
+    // num_parallel_executions=kNoConcurrency, since parallel execution of
+    // Python systems in multiple threads is not supported.
     m.def("MonteCarloSimulation",
         WrapCallbacks([](const SimulatorFactory make_simulator,
                           const ScalarSystemFunction& output, double final_time,
                           int num_samples, RandomGenerator* generator)
                           -> std::vector<RandomSimulationResult> {
-          return MonteCarloSimulation(
-              make_simulator, output, final_time, num_samples, generator);
+          return MonteCarloSimulation(make_simulator, output, final_time,
+              num_samples, generator, kNoConcurrency);
         }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("num_samples"), py::arg("generator"),

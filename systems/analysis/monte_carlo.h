@@ -10,6 +10,24 @@
 namespace drake {
 namespace systems {
 namespace analysis {
+/**
+ * Definition to specify the desired concurrency for MonteCarloSimulation.
+ * Use only a single thread, equivalent to num_parallel_executions = 1.
+ */
+constexpr int kNoConcurrency = 1;
+/**
+ * Definition to specify the desired concurrency for MonteCarloSimulation.
+ * Equivalent to num_parallel_executions = std::thread::hardware_concurrency().
+ */
+constexpr int kUseHardwareConcurrency = -1;
+
+namespace internal {
+/*
+ * Internal helper used by MonteCarloSimulation to select number of threads to
+ * use.
+ */
+int SelectNumberOfThreadsToUse(int num_parallel_executions);
+}  // namespace internal
 
 /***
  * Defines a factory method that constructs a Simulator (with an owned System)
@@ -98,16 +116,18 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
  * Standard Template Library <a href=
  *   "https://en.cppreference.com/w/cpp/named_req/RandomNumberEngine">
  * RandomNumberEngine concept</a>, if you wish to serialize the results.
- * Note that the generator "snapshots" are returned as const, because any
- * non-const operations on that object may advance the state of the
- * generator (making it no-longer valuable in reproducing the simulation).
+ * Note that performing any non-const operations on generator_snapshot may
+ * advance the state of the generator and make it no longer capable of
+ * reproducing the simulation.
  */
 struct RandomSimulationResult {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomSimulationResult)
+
   explicit RandomSimulationResult(const RandomGenerator& generator,
                                   double value = 0.0)
       : generator_snapshot(generator), output(value) {}
 
-  const RandomGenerator generator_snapshot;
+  RandomGenerator generator_snapshot;
   double output{};
 };
 
@@ -138,16 +158,35 @@ struct RandomSimulationResult {
  * future call to MonteCarloSimulation, you should make repeated uses of the
  * same RandomGenerator object.
  *
+ * @param num_parallel_executions Specify number of parallel executions to use
+ * while performing `num_samples` simulations. The default value,
+ * kNoConcurrency, specifies that simulations should be executed in serial. To
+ * use the default concurrency available on your hardware (equivalent to
+ * num_parallel_executions=std::thread::hardware_concurrency()), use value
+ * kUseHardwareConcurrency. Otherwise, num_parallel_executions must be >= 1.
+ *
  * @returns a list of RandomSimulationResult's.
+ *
+ * Thread safety when parallel execution is specified:
+ * - @p make_simulator and @p generator are only accessed from the main thread.
+ *
+ * - Each simulator created by @p make_simulator and its context are only
+ *   accessed from within a single worker thread; however, any resource shared
+ *   between these simulators must be safe for concurrent use.
+ *
+ * - @p output is called from within worker threads performing simulation with
+ *   the simulator and context belonging to each worker thread. It must be safe
+ *   to make concurrent calls to @p output (i.e. any mutable state inside the
+ *   function must be safe for concurrent use).
  *
  * @ingroup analysis
  */
 // TODO(russt): Consider generalizing this with options (e.g. setting the
-// number of simulators, number of samples per simulator, number of parallel
-// threads, ...).
+// number of simulators, number of samples per simulator, ...).
 std::vector<RandomSimulationResult> MonteCarloSimulation(
     const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    double final_time, int num_samples, RandomGenerator* generator = nullptr);
+    double final_time, int num_samples, RandomGenerator* generator = nullptr,
+    int num_parallel_executions = kNoConcurrency);
 
 }  // namespace analysis
 }  // namespace systems
