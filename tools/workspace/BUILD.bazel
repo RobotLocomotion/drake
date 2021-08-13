@@ -59,6 +59,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "sdformat",
     "spdlog",
     "tinyobjloader",
+    "usockets",
+    "uwebsockets",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "cds",
