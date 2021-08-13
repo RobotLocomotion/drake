@@ -3483,6 +3483,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().HasBodyNamed(name);
   }
 
+  /// @returns The total number of bodies with the given name.
+  int NumBodiesWithName(std::string_view name) const {
+    return internal_tree().NumBodiesWithName(name);
+  }
+
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant
   /// in @p model_instance.
   /// @see AddRigidBody().
