@@ -26,7 +26,7 @@ Matrix3<double> MakeArbitraryMatrix() {
 Matrix3<AutoDiffXd> MakeAutoDiffMatrix() {
   const Matrix3<double> A = MakeArbitraryMatrix();
   Matrix3<AutoDiffXd> A_ad;
-  math::initializeAutoDiff(A, A_ad);
+  math::InitializeAutoDiffFromValueMatrix(A, &A_ad);
   return A_ad;
 }
 

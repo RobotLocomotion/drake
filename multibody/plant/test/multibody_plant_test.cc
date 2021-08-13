@@ -2309,7 +2309,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         context_->get_continuous_state().get_generalized_velocity().
             CopyToVector();
     VectorX<AutoDiffXd> v_autodiff(plant_.num_velocities());
-    math::initializeAutoDiff(v, v_autodiff);
+    math::InitializeAutoDiffFromValueMatrix(v, &v_autodiff);
     context_autodiff->get_mutable_continuous_state().
         get_mutable_generalized_velocity().SetFromVector(v_autodiff);
 
@@ -2481,7 +2481,7 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalAndTangentJacobian) {
   VectorX<AutoDiffXd> vn_autodiff = CalcNormalVelocities(
       *plant_autodiff, *context_autodiff, penetrations_);
   const MatrixX<double> vn_derivs =
-      math::autoDiffToGradientMatrix(vn_autodiff);
+      math::ExtractGradientMatrixFromAutoDiff(vn_autodiff);
 
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
@@ -2492,7 +2492,7 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalAndTangentJacobian) {
   VectorX<AutoDiffXd> vt_autodiff = CalcTangentVelocities(
       *plant_autodiff, *context_autodiff, penetrations_, R_WC_set);
   const MatrixX<double> vt_derivs =
-      math::autoDiffToGradientMatrix(vt_autodiff);
+      math::ExtractGradientMatrixFromAutoDiff(vt_autodiff);
 
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
@@ -3427,7 +3427,8 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   Matrix2<AutoDiffXd> mass_matrix;
   plant_autodiff->CalcMassMatrix(*context_autodiff, &mass_matrix);
 
-  const auto& mass_matrix_grad = math::autoDiffToGradientMatrix(mass_matrix);
+  const auto& mass_matrix_grad =
+      math::ExtractGradientMatrixFromAutoDiff(mass_matrix);
 
   // Verify numerical derivative matches analytic solution.
   // In the starting configuration q = (0, 0).

@@ -39,7 +39,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
   const Eigen::RowVectorXd ddistance_dq = nhat_BA_W.transpose() * Jq_v_BCa_W;
   distance_autodiff->value() = distance;
   distance_autodiff->derivatives() =
-      ddistance_dq * math::autoDiffToGradientMatrix(q);
+      ddistance_dq * math::ExtractGradientMatrixFromAutoDiff(q);
 }
 
 void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>&,

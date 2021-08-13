@@ -102,10 +102,11 @@ GTEST_TEST(CalculateQuaternionDtFromAngularVelocityExpressedInBTest, testA) {
 
   // Verify Drake's quatDt versus MotionGenesis (MG) results.
   const Eigen::Vector4d quatDt_MG =
-                                   GetQuaternionDtAssociatedWith30DegRotation();
-  const Eigen::Vector4d quatDt_numerical = math::autoDiffToValueMatrix(quatDt);
+      GetQuaternionDtAssociatedWith30DegRotation();
+  const Eigen::Vector4d quatDt_numerical =
+      math::ExtractValueMatrixFromAutoDiff(quatDt);
   const double epsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(quatDt_numerical, quatDt_MG, 8*epsilon));
+  EXPECT_TRUE(CompareMatrices(quatDt_numerical, quatDt_MG, 8 * epsilon));
 
   // Test Drake partials of quatDt with respect to [e0, e1, e2, e3, wx, wy, wz].
   const Vector7d e0Dt_partials = quatDt(0).derivatives();
@@ -165,7 +166,7 @@ GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
   const double wy_MG = +2.029080460490301;
   const double wz_MG = -4.443441112511214;
   const Eigen::Vector3d w_MG(wx_MG, wy_MG, wz_MG);
-  const Eigen::Vector3d w_numerical = math::autoDiffToValueMatrix(w);
+  const Eigen::Vector3d w_numerical = math::ExtractValueMatrixFromAutoDiff(w);
   const double epsilon = std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(w_numerical, w_MG, 8*epsilon));
 

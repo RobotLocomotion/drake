@@ -91,7 +91,7 @@ GTEST_TEST(EigenConjugateGradientSolverTest, AutoDiffSolverTestRhs) {
   /* Build the right hand side b. */
   const Vector<double, kD> b = MakeRhs();
   Vector<T, kD> b_autodiff;
-  math::initializeAutoDiff(b, b_autodiff);
+  math::InitializeAutoDiffFromValueMatrix(b, &b_autodiff);
   /* Build the solve and solve for x. */
   EigenConjugateGradientSolver<T> solver(&A_op, kTol);
   solver.Compute();
@@ -120,13 +120,13 @@ GTEST_TEST(EigenConjugateGradientSolverTest, AutoDiffSolverTestLhs) {
   ```
   const Eigen::Matrix<double, kD, kD> A = MakeSpdMatrix();
   Eigen::Matrix<T, kD, kD> A_autodiff;
-  math::initializeAutoDiff(A, A_autodiff);
+  math::InitializeAutoDiffFromValueMatrix(A, A_autodiff);
   ```
   because then dA is not guaranteed to be symmetric. */
   using T = AutoDiffXd;
   const Eigen::Matrix<double, kD, kD> B = MakeMatrix();
   Eigen::Matrix<T, kD, kD> B_autodiff;
-  math::initializeAutoDiff(B, B_autodiff);
+  math::InitializeAutoDiffFromValueMatrix(B, &B_autodiff);
   /* A = Bᵀ * B + ε * I₄ is guaranteed to be symmetric positive definite. */
   Eigen::Matrix<T, kD, kD> A_autodiff =
       B_autodiff.transpose() * B_autodiff +

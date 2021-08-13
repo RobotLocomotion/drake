@@ -8,11 +8,12 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
   if (a.rows() != b.rows()) {
     return false;
   }
-  if (math::autoDiffToValueMatrix(a) != math::autoDiffToValueMatrix(b)) {
+  if (math::ExtractValueMatrixFromAutoDiff(a) !=
+      math::ExtractValueMatrixFromAutoDiff(b)) {
     return false;
   }
-  const Eigen::MatrixXd a_gradient = math::autoDiffToGradientMatrix(a);
-  const Eigen::MatrixXd b_gradient = math::autoDiffToGradientMatrix(b);
+  const Eigen::MatrixXd a_gradient = math::ExtractGradientMatrixFromAutoDiff(a);
+  const Eigen::MatrixXd b_gradient = math::ExtractGradientMatrixFromAutoDiff(b);
   if (a_gradient.rows() != b_gradient.rows() ||
       a_gradient.cols() != b_gradient.cols()) {
     return false;
@@ -33,7 +34,7 @@ void UpdateContextConfiguration(drake::systems::Context<double>* context,
                                 const MultibodyPlant<double>& plant,
                                 const Eigen::Ref<const AutoDiffVecXd>& q) {
   return UpdateContextConfiguration(context, plant,
-                                    math::autoDiffToValueMatrix(q));
+                                    math::ExtractValueMatrixFromAutoDiff(q));
 }
 
 void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
@@ -57,8 +58,8 @@ void UpdateContextPositionsAndVelocities(
 void UpdateContextPositionsAndVelocities(
     systems::Context<double>* context, const MultibodyPlant<double>& plant,
     const Eigen::Ref<const AutoDiffVecXd>& q_v) {
-  return UpdateContextPositionsAndVelocities(context, plant,
-                                             math::autoDiffToValueMatrix(q_v));
+  return UpdateContextPositionsAndVelocities(
+      context, plant, math::ExtractValueMatrixFromAutoDiff(q_v));
 }
 
 void UpdateContextPositionsAndVelocities(

@@ -19,7 +19,7 @@ def initializeAutoDiffTuple(*args):
     elements of the first input argument (traversed first by row, then by
     column), and so on for subsequent arguments.
 
-    This is a pythonic implementation of drake::math::initializeAutoDiffTuple
+    This is a pythonic implementation of drake::math::InitializeAutoDiffTuple
     in C++.
     """
 
