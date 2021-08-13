@@ -55,7 +55,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   Eigen::VectorXd q(plant_autodiff_->num_positions());
   // Arbitrary joint angles.
   q << 0.1, 0.2, 0.3, 0.4, 0.5, -0.3, -0.2;
-  AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q);
+  AutoDiffVecXd q_autodiff = math::InitializeAutoDiffFromValueMatrix(q);
   AutoDiffVecXd y_autodiff;
   constraint->Eval(q_autodiff, &y_autodiff);
 
@@ -68,7 +68,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 
   // Test with non-identity gradient for q_autodiff.
-  q_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+  q_autodiff = math::InitializeAutoDiffFromValueAndGradientMatrix(
       q, MatrixX<double>::Ones(q.size(), 2));
   plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
       q_autodiff;
