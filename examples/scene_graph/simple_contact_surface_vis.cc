@@ -57,6 +57,7 @@ using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::QueryObject;
+using geometry::Role;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
@@ -246,6 +247,9 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_msg.model1_name =
           ModelInstanceName(inspector.GetFrameGroup(f_id1));
       surface_msg.geometry1_name = inspector.GetName(id1);
+      surface_msg.body1_unique = true;
+      surface_msg.collision_count1 = inspector.NumGeometriesForFrameWithRole(
+          inspector.GetFrameId(id1), Role::kProximity);
 
       const GeometryId id2 = surfaces[i].id_N();
       const FrameId f_id2 = inspector.GetFrameId(id2);
@@ -253,6 +257,9 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_msg.model2_name =
           ModelInstanceName(inspector.GetFrameGroup(f_id2));
       surface_msg.geometry2_name = inspector.GetName(id2);
+      surface_msg.body2_unique = true;
+      surface_msg.collision_count2 = inspector.NumGeometriesForFrameWithRole(
+          inspector.GetFrameId(id2), Role::kProximity);
 
       const SurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
       surface_msg.num_triangles = mesh_W.num_faces();
