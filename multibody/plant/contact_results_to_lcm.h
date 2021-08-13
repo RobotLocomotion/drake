@@ -23,15 +23,28 @@ namespace multibody {
 namespace internal {
 
 /* Stores the "full" name of a body *in contact*: its model instance name, body
- name, and geometry name. This assumes that `model_name` is guaranteed to be
+ name, and geometry name. This assumes that `model` name is guaranteed to be
  unique within MBP. So, for two bodies which may be identically named (body
  name), they *must* differ by model name. For a body that has multiple collision
  geometries, we rely on the fact that every collision geometry for a single
- frame must be uniquely named. */
+ frame must be uniquely named.
+
+ This includes further information to allow visualizers to make streamlining
+ decisions. It reports if the body name is unique across the entire plant
+ (body_name_is_unique) and the number of collision geometries associated
+ with the body.
+
+ If the body name is unique, the visualizer can display only the body
+ name without fear of introducing ambiguity. Furthermore, with the number
+ collision geometries per body, the visualizer can draw conclusions about
+ the possible number of contact patches between bodies and streamline
+ accordingly. */
 struct FullBodyName {
   std::string model;
   std::string body;
   std::string geometry;
+  bool body_name_is_unique;
+  int geometry_count;
 };
 
 /* Facilitate unit testing. See ContactResultsToLcmSystem::Equals(). */
