@@ -72,9 +72,9 @@ class StaticElasticityModelTest : public ::testing::Test {
   FemState<ElementType> MakeDeformedState() const {
     FemState<ElementType> state = model_.MakeFemState();
     const Vector<double, kNumDofs> perturbed_q =
-        math::autoDiffToValueMatrix(state.q()) + perturbation();
+        math::ExtractValue(state.q()) + perturbation();
     Vector<T, kNumDofs> perturbed_q_autodiff;
-    math::initializeAutoDiff(perturbed_q, perturbed_q_autodiff);
+    math::InitializeAutoDiff(perturbed_q, &perturbed_q_autodiff);
     state.SetQ(perturbed_q_autodiff);
     return state;
   }
