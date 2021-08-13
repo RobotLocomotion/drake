@@ -17,7 +17,9 @@ namespace internal {
 
 bool operator==(const FullBodyName& n1, const FullBodyName& n2) {
   return n1.model == n2.model && n1.body == n2.body &&
-         n1.geometry == n2.geometry;
+         n1.geometry == n2.geometry &&
+         n1.body_name_is_unique == n2.body_name_is_unique &&
+         n1.geometry_count == n2.geometry_count;
 }
 
 }  // namespace internal
@@ -100,8 +102,23 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
          GetCollisionGeometriesForBody(plant, body, use_default_namer)) {
       const std::string& model_name =
           plant.GetModelInstanceName(body.model_instance());
-      geometry_id_to_body_name_map_[geometry_id] = {model_name, body.name(),
-                                                    namer(geometry_id)};
+      const bool body_name_is_unique =
+          plant.NumBodiesWithName(body.name()) == 1;
+      // TODO(SeanCurtis-TRI): collision geometries can be added to SceneGraph
+      //  after the plant has been finalized. Those geometries will not be found
+      //  in this map. What *should* happen is that this should *also* be
+      //  connected to SceneGraph's query object output port and it should ask
+      //  scene graph about things like this when evaluating the output port.
+      //  However, this is not an immediate problem for *this* system, because
+      //  MultibodyPlant is authored such that if someone were to add such a
+      //  geometry and it participated in collision, MultibodyPlant would have
+      //  already thrown an exception in computing the contact. Until MbP gets
+      //  out of the way, there's no reason to update here.
+      const int collision_count =
+          static_cast<int>(plant.GetCollisionGeometriesForBody(body).size());
+      geometry_id_to_body_name_map_[geometry_id] = {
+          model_name, body.name(), namer(geometry_id),
+          body_name_is_unique, collision_count};
     }
   }
 }
@@ -181,11 +198,16 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_msg.body1_name = name1.body;
     surface_msg.model1_name = name1.model;
     surface_msg.geometry1_name = name1.geometry;
+    surface_msg.body1_unique = name1.body_name_is_unique;
+    surface_msg.collision_count1 = name1.geometry_count;
+
     const FullBodyName& name2 = geometry_id_to_body_name_map_.at(
         hydroelastic_contact_info.contact_surface().id_N());
     surface_msg.body2_name = name2.body;
     surface_msg.model2_name = name2.model;
     surface_msg.geometry2_name = name2.geometry;
+    surface_msg.body2_unique = name2.body_name_is_unique;
+    surface_msg.collision_count2 = name2.geometry_count;
 
     const geometry::ContactSurface<T>& contact_surface =
         hydroelastic_contact_info.contact_surface();
