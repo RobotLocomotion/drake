@@ -1,20 +1,36 @@
-# It confusing to have both drake-the-workspace and drake-the-lcmtypes-package
-# on sys.path at the same time via Bazel's py_library(imports = ...).
+# As a deprecation afforfance, if @drake//lcmtypes:lcmtypes_drake_py is a
+# declared Bazel dependency of a Python library or binary, then we need to
+# provide drake.lcmt_foo names as aliases for pydrake.lcmtypes.lcmt_foo.
 #
-# To prevent that confusion, and possibly also import errors, in our
-# //lcmtypes:lcmtypes_drake_py rule we use add_current_package_to_imports =
-# False, and then here in drake-the-workspace's package initialization we use
-# __path__ editing to fold the two directories into the same package.
-#
-# We need to do it on a best-effort basis, because not all of our py_binary
-# rules use lcmtypes -- sometimes the lcmtypes will be absent from runfiles.
+# To do that, we first conditionally import drake.lcmtypes; if that succeeds,
+# then we know the dependency exists, so we'll import the alias names.
 #
 # Note that this file should NOT be installed (`//:install` should not touch
-# it).  The `//lcmtypes`-supplied init file is the correct file to install.
+# it); it is for use by Bazel builds only.
+#
+# TODO(jwnimmer-tri) When deprecated drake.lcmt_foo is removed on or after
+# 2021-12-01, we should remove the code from this file, leaving it as only
+# the usual "Empty file to make this a module" boilerplate.
 
+_USES_DEPRECATED_LCMTYPES = False
 try:
-    import drake.lcmtypes
-    __path__.append(list(drake.lcmtypes.__path__)[0] + "/drake")
-    from drake.lcmtypes.drake import *
+    # Check if @drake//lcmtypes:lcmtypes_drake_py is a declared dependency.
+    from drake.lcmtypes import _MARKER
+    _USES_DEPRECATED_LCMTYPES = True
 except ImportError:
     pass
+
+
+# If yes, then alias pydrake.lcmtypes.lcmt_foo as drake.lcmt_foo.
+if _USES_DEPRECATED_LCMTYPES:
+    from pydrake.lcmtypes import *
+
+    # Warn the user about the pending removal.
+    import warnings as _warnings
+    _warnings.warn(
+        "Drake's lcmtypes for Python are now named pydrake.lcmtypes.lcmt_foo"
+        " instead of drake.lcmt_foo. The 'drake' module name is deprecated."
+        " Please adjust your import statements to match the new name, and"
+        " remove the BUILD dependency on @drake//lcmtypes:lcmtypes_drake_py."
+        " The old module will be removed from Drake on or after 2021-12-01.",
+        category=DeprecationWarning)

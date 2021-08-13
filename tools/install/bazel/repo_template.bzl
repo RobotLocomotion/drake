@@ -78,6 +78,9 @@ def _drake_impl(repo_ctx):
     for relpath in _MANIFEST["runfiles"]["drake"]:
         repo_ctx.symlink(str(share_drake) + "/" + relpath, relpath)
 
+    # TODO(jwnimmer-tri) When deprecated drake.lcmt_foo is removed on or after
+    # 2021-12-01, we should also remove this entire stanza (the next 10 lines).
+    #
     # Symlink all drake LCM types to this repository's root package, since it
     # should be named `drake` (see bazelbuild/bazel#3998).
     if repo_ctx.name != "drake":

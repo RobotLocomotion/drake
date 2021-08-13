@@ -20,6 +20,7 @@ from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import DrakeVisualizer
+from pydrake.lcmtypes import lcmt_image_array
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -36,8 +37,6 @@ from pydrake.systems.planar_scenegraph_visualizer import \
     ConnectPlanarSceneGraphVisualizer
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
-
-from drake import lcmt_image_array
 
 
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.

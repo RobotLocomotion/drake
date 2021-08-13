@@ -42,7 +42,7 @@ drake_py_library(
     srcs = ["call_python_client.py"],
     imports = ["."],
     deps = [
-        "//lcmtypes:lcmtypes_drake_py",
+        "//bindings/pydrake/lcmtypes",
     ],
 )
 

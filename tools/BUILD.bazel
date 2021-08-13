@@ -26,9 +26,8 @@ py_binary(
     ],
     main = "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",
     deps = [
-        "//lcmtypes:lcmtypes_drake_py",
+        "//bindings/pydrake/lcmtypes",
         "//tools/workspace/drake_visualizer:builtin_scripts_py",
-        "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],

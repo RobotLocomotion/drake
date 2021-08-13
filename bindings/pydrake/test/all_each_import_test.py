@@ -16,10 +16,25 @@ class TestAllEachImport(unittest.TestCase):
         self._expected_non_native_modules = [
             # A standalone 'import pydrake' should not trigger native code.
             "pydrake",
-            # Another example of a module we'd want to be non-native would be
-            # pydrake.lcmtypes, but we don't have such a module (yet).
+            # Our lcmtypes have no native dependencies.
+            "pydrake.lcmtypes",
+            "pydrake.lcmtypes.**",
         ]
         self._temp_dir = temp_directory()
+
+    def _is_expected_non_native_module(self, name):
+        for x in self._expected_non_native_modules:
+            # Exact match?
+            if name == x:
+                return True
+            # Glob match with "foo.**"?
+            tokens = x.split("**")
+            assert 1 <= len(tokens) <= 2
+            if len(tokens) == 2:
+                assert tokens[1] == ""
+                if name.startswith(tokens[0]):
+                    return True
+        return False
 
     def test_each_import(self):
         """For all known pydrake modules, checks that they can be imported on
@@ -42,7 +57,8 @@ class TestAllEachImport(unittest.TestCase):
                 self._check_module(name)
 
         for name in self._expected_non_native_modules:
-            self.assertIn(name, names)
+            if "**" not in name:
+                self.assertIn(name, names)
 
     def _check_module(self, name):
         """Runs a new interpreter to prove that we can import the module in
@@ -66,7 +82,7 @@ class TestAllEachImport(unittest.TestCase):
         self.assertIsNotNone(has_common)
 
         # Check for required presence / absence of native code.
-        if name in self._expected_non_native_modules:
+        if self._is_expected_non_native_module(name):
             self.assertFalse(
                 has_common,
                 f"The module {name} is not supposed to induce a load-time"

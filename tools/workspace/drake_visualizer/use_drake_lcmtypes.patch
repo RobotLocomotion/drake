@@ -22,8 +22,8 @@ Respell the imported lcmtypes to match Drake's build system.
 -    HAVE_PYDRAKE = True
 -except ImportError:
 -    HAVE_PYDRAKE = False
-+import drake
 +import pydrake
++import pydrake.lcmtypes as drake
  
  from PythonQt import QtGui
  

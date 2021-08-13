@@ -7,12 +7,12 @@ from math import pi
 
 import numpy as np
 
-from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
+from pydrake.lcmtypes import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.math import RigidTransform, RigidTransform_
 from pydrake.solvers.mathematicalprogram import MathematicalProgram
 from pydrake.systems.analysis import (

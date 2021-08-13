@@ -5,6 +5,7 @@ package(default_visibility = ["//visibility:public"])
 load(
     "@drake//tools/install:install.bzl",
     "install",
+    "install_files",
 )
 load(
     "@drake//tools/skylark:drake_cc.bzl",
@@ -18,13 +19,12 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 load(
     "@drake//tools/skylark:drake_lcm.bzl",
     "drake_lcm_cc_library",
     "drake_lcm_java_library",
-    "drake_lcm_py_library",
 )
 load(":defs.bzl", "ALL_LCM_SRCS")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -275,24 +275,43 @@ drake_lcm_cc_library(
     ],
 )
 
-# Generate the *.py sources, but keep __init__.py separate, so that it doesn't
-# get installed.  The install will use this (private) library.  Users should
-# depend on ":lcmtypes_drake_py", immediately below.
-drake_lcm_py_library(
-    name = "_generated_lcmtypes_drake_py",
-    # We'll rely on the //:module_py path munging instead.
-    add_current_package_to_imports = False,
-    lcm_package = "drake",
-    lcm_srcs = ALL_LCM_SRCS,
-    visibility = ["//visibility:private"],
-)
-
+# This makes "from drake import lcmt_foo" work via the magic of our top-level
+# //:__init__.py file (in Bazel workspace only).
+#
+# TODO(jwnimmer-tri) When deprecated drake.lcmt_foo is removed on or after
+# 2021-12-01, we should remove this rule.
 drake_py_library(
     name = "lcmtypes_drake_py",
     srcs = ["__init__.py"],
-    deps = [
-        ":_generated_lcmtypes_drake_py",
+    deprecation = "".join([
+        "Drake's lcmtypes for Python are now named pydrake.lcmtypes.lcmt_foo",
+        " instead of drake.lcmt_foo. The 'drake' package name is deprecated.",
+        " Please adjust your import statements to match the new name, and",
+        " your bazel label to say @drake//bindings/pydrake/lcmtypes instead",
+        " of @drake//lcmtypes:lcmtypes_drake_py. The deprecated code will be",
+        " removed from Drake on or after 2021-12-01.",
+    ]),
+    tags = [
+        # Marked manual to prevent "bazel build //..." from emitting warnings.
+        "manual",
+        # The import hijinks are too squirrely to pass the linter. We'll just
+        # nerf it, since the file is trivial and soon to disappear anyway.
+        "nolint",
     ],
+    deps = [
+        "//bindings/pydrake/lcmtypes",
+    ],
+)
+
+# This makes "from drake import lcmt_foo" work (in an installed prefix only).
+#
+# TODO(jwnimmer-tri) When deprecated drake.lcmt_foo is removed on or after
+# 2021-12-01, we should remove this rule.
+install_files(
+    name = "install_python_module_shim",
+    dest = "@PYTHON_SITE_PACKAGES@",
+    files = ["drake/__init__.py"],
+    visibility = ["//visibility:private"],
 )
 
 drake_lcm_java_library(
@@ -369,7 +388,6 @@ install(
     name = "install",
     install_tests = [":test/drake-lcm-spy_install_test.py"],
     targets = [
-        ":_generated_lcmtypes_drake_py",
         ":drake-lcm-spy",
         ":drake-lcm-spy-launcher",
         ":lcmtypes_drake_java",
@@ -380,14 +398,16 @@ install(
     },
     deps = [
         ":install_drake_cc_headers",
+        ":install_python_module_shim",
         "//tools/workspace/optitrack_driver:install",
         "@lcm//:install",
     ],
 )
 
 # === test/ ===
-drake_py_test(
-    name = "nested_types_test",
+
+drake_py_unittest(
+    name = "acceptance_test",
     deps = [
         ":lcmtypes_drake_py",
     ],
@@ -395,6 +415,7 @@ drake_py_test(
 
 add_lint_tests(
     python_lint_extra_srcs = [
+        ":drake/__init__.py",
         ":test/drake-lcm-spy_install_test.py",
     ],
 )

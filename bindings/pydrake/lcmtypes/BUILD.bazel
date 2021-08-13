@@ -1,0 +1,114 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
+load(
+    "@drake//tools/skylark:drake_lcm.bzl",
+    "drake_lcm_py_library",
+)
+load("//lcmtypes:defs.bzl", "ALL_LCM_SRCS")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+package(default_visibility = ["//visibility:private"])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
+
+# TODO(jwnimmer-tri) The various genrules in this package are all just to work
+# around lcm-gen lacking sufficient configurability. We should consider trying
+# improve its configurability (or our wrappers) to simplify these rules.
+
+# Copy all of our *.lcm source files from //lcmtypes into this package, while
+# respelling their LCM package name.
+[
+    genrule(
+        name = "_{}_copy_genrule".format(filename),
+        srcs = ["//lcmtypes:{}".format(filename)],
+        outs = [":{}".format(filename)],
+        cmd = "sed -e 's#^package drake#package pydrake.lcmtypes#g;' $< > $@",
+        tags = ["nolint"],
+    )
+    for filename in ALL_LCM_SRCS
+]
+
+# The list of generated *.py files (sans any directory names).
+_GENERATED_SRCS = [
+    "__init__.py",
+] + [
+    x.replace(".lcm", ".py")
+    for x in ALL_LCM_SRCS
+]
+
+# Generate the python sources using lcm-gen, but never use this py_library.
+# This will create the files listed in _GENERATED_SRCS but in the wrong folder.
+# Instead, we'll extract the python source code, below.
+drake_lcm_py_library(
+    name = "_create_python_sources_genrule",
+    add_current_package_to_imports = False,
+    lcm_package = "pydrake.lcmtypes",
+    lcm_srcs = ALL_LCM_SRCS,
+)
+
+# Copy the generated code into the correct (current) directory.
+genrule(
+    name = "_copy_python_sources_genrule",
+    srcs = [
+        ":pydrake/lcmtypes/" + x
+        for x in _GENERATED_SRCS
+    ],
+    outs = _GENERATED_SRCS,
+    cmd = "cp $(SRCS) $(RULEDIR)",
+    tags = ["nolint"],
+)
+
+# Collect all of the generated python sources into a library. Unlike most other
+# sub-modules of pydrake, this one is marked with public visibility. Most sub-
+# sub-modules of pydrake are visible only via the top-level //bindings/pydrake/
+# label, but here since the lcmtypes are often used without native code, we've
+# decided to buck that trend and offer `//bindings/pydrake/lcmtypes` as public,
+# so that it can remain lightweight.
+drake_py_library(
+    name = "lcmtypes",
+    srcs = _GENERATED_SRCS,
+    tags = ["nolint"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake:module_py",
+    ],
+)
+
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    visibility = ["//bindings/pydrake:__pkg__"],
+    deps = [":lcmtypes"],
+)
+
+drake_py_unittest(
+    name = "acceptance_test",
+    deps = [
+        ":lcmtypes",
+    ],
+)
+
+install(
+    name = "install",
+    targets = [
+        ":lcmtypes",
+        ":all_py",
+    ],
+    py_dest = PACKAGE_INFO.py_dest,
+    visibility = ["//bindings/pydrake:__pkg__"],
+)
+
+add_lint_tests_pydrake()
