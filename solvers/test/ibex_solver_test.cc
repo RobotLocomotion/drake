@@ -47,7 +47,11 @@ TEST_F(IbexSolverTest, IbexEasyEx3_1_3) {
   prog_.AddConstraint(x_[0] + x_[1] <= 6);
   prog_.AddConstraint(x_[0] + x_[1] >= 2);
   if (solver_.available()) {
-    auto result = solver_.Solve(prog_);
+    SolverOptions solver_options;
+    // Print to console. We can only test this doesn't cause any runtime error.
+    // We can't test if the logging message is actually printed to the console.
+    solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+    auto result = solver_.Solve(prog_, {}, solver_options);
     ASSERT_TRUE(result.is_success());
     // f* in  [-310.31,-310]
     //  (best bound)
