@@ -246,6 +246,28 @@ void FieldIntersection(
       calculate_gradient);
 }
 
+std::unique_ptr<ContactSurface<double>>
+ComputeContactSurfaceFromCompliantVolumes(
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
+    const math::RigidTransform<double>& X_WF,
+    GeometryId id1, const VolumeMeshFieldLinear<double, double>& field1_G,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
+    const math::RigidTransform<double>& X_WG,
+    ContactPolygonRepresentation representation) {
+  unused(id0);
+  unused(field0_F);
+  unused(bvh0_F);
+  unused(X_WF);
+  unused(id1);
+  unused(field1_G);
+  unused(bvh1_G);
+  unused(X_WG);
+  unused(representation);
+
+  return nullptr;
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
   &IntersectTetrahedra<T>
 ))

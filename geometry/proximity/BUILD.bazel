@@ -201,11 +201,14 @@ drake_cc_library(
     srcs = ["field_intersection.cc"],
     hdrs = ["field_intersection.h"],
     deps = [
+        ":bvh",
+        ":contact_surface_utility",
         ":mesh_field",
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":posed_half_space",
         "//common:default_scalars",
+        "//geometry/query_results:contact_surface",
     ],
 )
 

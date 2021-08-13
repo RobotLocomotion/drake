@@ -171,13 +171,15 @@ class FieldIntersectionHighLevelTest : public ::testing::Test {
       : box_mesh0_M_(MakeBoxVolumeMeshWithMa<double>(box_)),
         box_field0_M_(MakeBoxPressureField<double>(box_, &box_mesh0_M_,
                                                    kBoxElasitcModulus_)),
+        box_bvh0_M_(box_mesh0_M_),
         // Get a mesh of an octahedron from a sphere specification by
         // specifying very coarse resolution hint.
         octahedron_mesh1_N_(MakeSphereVolumeMesh<double>(
             sphere_, 10 * sphere_.radius(),
             TessellationStrategy::kSingleInteriorVertex)),
         octahedron_field1_N_(MakeSpherePressureField<double>(
-            sphere_, &octahedron_mesh1_N_, kOctahedronElasticModulus_)) {}
+            sphere_, &octahedron_mesh1_N_, kOctahedronElasticModulus_)),
+        octahedron_bvh1_N_(octahedron_mesh1_N_) {}
 
  protected:
   void SetUp() override {
@@ -195,12 +197,14 @@ class FieldIntersectionHighLevelTest : public ::testing::Test {
   const double kBoxElasitcModulus_{1.0e5};
   const VolumeMesh<double> box_mesh0_M_;
   const VolumeMeshFieldLinear<double, double> box_field0_M_;
+  const Bvh<Obb, VolumeMesh<double>> box_bvh0_M_;
 
   // Geometry 1 and its field.
   const Sphere sphere_{0.03};  // 3cm-radius (6cm-diameter) finger tip.
   const double kOctahedronElasticModulus_{1.0e5};
   const VolumeMesh<double> octahedron_mesh1_N_;
   const VolumeMeshFieldLinear<double, double> octahedron_field1_N_;
+  const Bvh<Obb, VolumeMesh<double>> octahedron_bvh1_N_;
 };
 
 TEST_F(FieldIntersectionHighLevelTest, FieldIntersection) {
@@ -222,6 +226,22 @@ TEST_F(FieldIntersectionHighLevelTest, FieldIntersection) {
 //        "Pressure distribution on compliant-compliant contact patch.");
 //  }
 }
+
+TEST_F(FieldIntersectionHighLevelTest,
+       ComputeContactSurfaceFromCompliantVolumes) {
+  const RigidTransformd X_WM = RigidTransformd::Identity();
+  const RigidTransformd X_WN = RigidTransformd::Identity();
+  ComputeContactSurfaceFromCompliantVolumes(
+      GeometryId(), box_field0_M_, box_bvh0_M_, X_WM, GeometryId(),
+      octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+      ContactPolygonRepresentation::kCentroidSubdivision);
+}
+
+//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+//  Tested by human via visualization.  This section will not go into master.
+//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 
 class FieldIntersectionVizTest : public ::testing::Test {
  public:
