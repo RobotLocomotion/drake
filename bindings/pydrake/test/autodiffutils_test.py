@@ -1,8 +1,18 @@
 import pydrake.autodiffutils as mut
+
+from pydrake.autodiffutils import (
+    AutoDiffXd,
+    ExtractGradientMatrixFromAutoDiff,
+    ExtractValueMatrixFromAutoDiff,
+    InitializeAutoDiffFromValueAndGradientMatrix,
+    InitializeAutoDiffFromValueMatrix,
+    InitializeAutoDiffTuple,
+)
+
+# TODO(sherm1) To deprecated asap.
 from pydrake.autodiffutils import (
     autoDiffToGradientMatrix,
     autoDiffToValueMatrix,
-    AutoDiffXd,
     initializeAutoDiff,
     initializeAutoDiffGivenGradientMatrix,
     initializeAutoDiffTuple,
@@ -236,6 +246,31 @@ class TestAutoDiffXd(unittest.TestCase):
         np.testing.assert_equal(numpy_compare.to_float(Xinv), Xinv_float)
 
     def test_math_utils(self):
+        a = InitializeAutoDiffFromValueMatrix([1, 2, 3])
+        np.testing.assert_array_equal(ExtractValueMatrixFromAutoDiff(a),
+                                      np.array([[1, 2, 3]]).T)
+        np.testing.assert_array_equal(ExtractGradientMatrixFromAutoDiff(a),
+                                      np.eye(3))
+
+        a, b = InitializeAutoDiffTuple([1], [2, 3])
+        np.testing.assert_array_equal(ExtractValueMatrixFromAutoDiff(a),
+                                      np.array([[1]]))
+        np.testing.assert_array_equal(ExtractValueMatrixFromAutoDiff(b),
+                                      np.array([[2, 3]]).T)
+        np.testing.assert_array_equal(ExtractGradientMatrixFromAutoDiff(a),
+                                      np.eye(1, 3))
+        np.testing.assert_array_equal(ExtractGradientMatrixFromAutoDiff(b),
+                                      np.hstack((np.zeros((2, 1)), np.eye(2))))
+
+        c_grad = [[2, 4, 5], [1, -1, 0]]
+        c = InitializeAutoDiffFromValueAndGradientMatrix([2, 3], c_grad)
+        np.testing.assert_array_equal(ExtractValueMatrixFromAutoDiff(c),
+                                      np.array([2, 3]).reshape((2, 1)))
+        np.testing.assert_array_equal(ExtractGradientMatrixFromAutoDiff(c),
+                                      np.array(c_grad))
+
+    # TODO(sherm1) To be deprecated asap.
+    def test_deprecated_math_utils(self):
         a = initializeAutoDiff([1, 2, 3])
         np.testing.assert_array_equal(autoDiffToValueMatrix(a),
                                       np.array([[1, 2, 3]]).T)

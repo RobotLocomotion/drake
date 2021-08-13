@@ -4,7 +4,7 @@
 import numpy as np
 
 
-def initializeAutoDiffTuple(*args):
+def InitializeAutoDiffTuple(*args):
     """Given a series of array_like input arguments, create a tuple of
     corresponding AutoDiff matrices with values equal to the input matrices
     and properly initialized derivative vectors.
@@ -19,7 +19,7 @@ def initializeAutoDiffTuple(*args):
     elements of the first input argument (traversed first by row, then by
     column), and so on for subsequent arguments.
 
-    This is a pythonic implementation of drake::math::initializeAutoDiffTuple
+    This is a pythonic implementation of drake::math::InitializeAutoDiffTuple
     in C++.
     """
 
@@ -30,9 +30,24 @@ def initializeAutoDiffTuple(*args):
     autodiff_tuple = []
     deriv_num_start = 0
     for arg in args:
-        autodiff_tuple.append(initializeAutoDiff(arg,
-                                                 num_derivatives,
-                                                 deriv_num_start))
+        autodiff_tuple.append(InitializeAutoDiffFromValueMatrix(arg,
+                              num_derivatives, deriv_num_start))
+        deriv_num_start += np.asarray(arg).size
+
+    return tuple(autodiff_tuple)
+
+
+# TODO(sherm1) To be deprecated asap.
+def initializeAutoDiffTuple(*args):
+    num_derivatives = 0
+    for arg in args:
+        num_derivatives += np.asarray(arg).size
+
+    autodiff_tuple = []
+    deriv_num_start = 0
+    for arg in args:
+        autodiff_tuple.append(InitializeAutoDiffFromValueMatrix(arg,
+                              num_derivatives, deriv_num_start))
         deriv_num_start += np.asarray(arg).size
 
     return tuple(autodiff_tuple)

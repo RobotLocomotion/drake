@@ -52,7 +52,7 @@ void InitializeY(const Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd* y,
 
 void InitializeY(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y,
                  double y_value) {
-  (*y) = math::initializeAutoDiffGivenGradientMatrix(
+  (*y) = math::InitializeAutoDiffFromValueAndGradientMatrix(
       Vector1d(y_value), Eigen::RowVectorXd::Zero(x(0).derivatives().size()));
 }
 
@@ -74,10 +74,10 @@ void Penalty(const AutoDiffXd& value, double minimum_value,
                    &dpenalty_dscaled_value);
 
   const Vector1<AutoDiffXd> penalty_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(
+      math::InitializeAutoDiffFromValueAndGradientMatrix(
           Vector1d(penalty),
           dpenalty_dscaled_value *
-              math::autoDiffToGradientMatrix(
+              math::ExtractGradientMatrixFromAutoDiff(
                   Vector1<AutoDiffXd>{scaled_value_autodiff}));
   *y = penalty_autodiff(0);
 }
@@ -156,8 +156,8 @@ VectorX<double> MinimumValueConstraint::Values(
     const Eigen::Ref<const VectorX<double>>& x) const {
   return value_function_double_
              ? value_function_double_(x, influence_value_)
-             : math::autoDiffToValueMatrix(value_function_(
-                   math::initializeAutoDiff(x), influence_value_));
+             : math::ExtractValueMatrixFromAutoDiff(value_function_(
+          math::InitializeAutoDiffFromValueMatrix(x), influence_value_));
 }
 
 template <>

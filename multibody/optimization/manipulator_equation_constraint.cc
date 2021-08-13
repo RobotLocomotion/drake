@@ -40,7 +40,7 @@ void ManipulatorEquationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_autodiff(num_constraints());
   DoEval(x.cast<AutoDiffXd>(), &y_autodiff);
-  *y = math::autoDiffToValueMatrix(y_autodiff);
+  *y = math::ExtractValueMatrixFromAutoDiff(y_autodiff);
 }
 
 // The format of the input to the Eval() function is a vector containing:
