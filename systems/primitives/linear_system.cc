@@ -138,7 +138,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     u0 = system.get_input_port(input_port->get_index()).Eval(context);
   }
 
-  auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
+  auto autodiff_args = math::InitializeAutoDiffTuple(x0, u0);
   if (input_port) {
     VectorX<AutoDiffXd> input_vector = std::get<1>(autodiff_args);
     input_port->FixValue(autodiff_context.get(), input_vector);
@@ -157,12 +157,12 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
       const Eigen::MatrixXd AB =
-          math::autoDiffToGradientMatrix(autodiff_xdot_vec);
+          math::ExtractGradientMatrixFromAutoDiff(autodiff_xdot_vec);
       A = AB.leftCols(num_states);
       B = AB.rightCols(num_inputs);
 
       const Eigen::VectorXd xdot0 =
-          math::autoDiffToValueMatrix(autodiff_xdot_vec);
+          math::ExtractValueMatrixFromAutoDiff(autodiff_xdot_vec);
 
       if (equilibrium_check_tolerance &&
           !xdot0.isZero(*equilibrium_check_tolerance)) {
@@ -186,11 +186,12 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       auto autodiff_x1_vec = autodiff_x1->get_value();
 
       const Eigen::MatrixXd AB =
-          math::autoDiffToGradientMatrix(autodiff_x1_vec);
+          math::ExtractGradientMatrixFromAutoDiff(autodiff_x1_vec);
       A = AB.leftCols(num_states);
       B = AB.rightCols(num_inputs);
 
-      const Eigen::VectorXd x1 = math::autoDiffToValueMatrix(autodiff_x1_vec);
+      const Eigen::VectorXd x1 =
+          math::ExtractValueMatrixFromAutoDiff(autodiff_x1_vec);
 
       if (equilibrium_check_tolerance &&
           !(x1 - x0).isZero(*equilibrium_check_tolerance)) {
@@ -215,11 +216,12 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   if (output_port) {
     const auto& autodiff_y0 = output_port->Eval(*autodiff_context);
-    const Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0);
+    const Eigen::MatrixXd CD =
+        math::ExtractGradientMatrixFromAutoDiff(autodiff_y0);
     C = CD.leftCols(num_states);
     D = CD.rightCols(num_inputs);
 
-    const Eigen::VectorXd y = math::autoDiffToValueMatrix(autodiff_y0);
+    const Eigen::VectorXd y = math::ExtractValueMatrixFromAutoDiff(autodiff_y0);
 
     // Note: No tolerance check needed here.  We have defined that the output
     // for the system produced by Linearize is in the coordinates (y-y0).
