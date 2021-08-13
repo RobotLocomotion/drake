@@ -100,8 +100,10 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   // Query if elements exist in the model.
   for (const std::string& link_name : kLinkNames) {
     EXPECT_TRUE(model.HasBodyNamed(link_name));
+    EXPECT_EQ(model.NumBodiesWithName(link_name), 1);
   }
   EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
+  EXPECT_EQ(model.NumBodiesWithName(kInvalidName), 0);
 
   for (const std::string& frame_name : kFrameNames) {
     EXPECT_TRUE(model.HasFrameNamed(frame_name));
@@ -268,6 +270,9 @@ GTEST_TEST(MultibodyTree, RetrievingAmbiguousNames) {
       model->AddRigidBody(link_name, world_model_instance(),
                           SpatialInertia<double>()));
   EXPECT_NO_THROW(model->Finalize());
+
+  // Link name is ambiguous, there are more than one bodies that use the name.
+  EXPECT_GT(model->NumBodiesWithName(link_name), 1);
 
   // Checking if the name exists throws (unfortunately), unless we specify the
   // intended model instance.

@@ -303,6 +303,11 @@ const auto& GetElementByName(
 }  // namespace
 
 template <typename T>
+int MultibodyTree<T>::NumBodiesWithName(std::string_view name) const {
+  return static_cast<int>(body_name_to_index_.count(name));
+}
+
+template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(std::string_view name) const {
   return HasElementNamed(*this, name, std::nullopt, body_name_to_index_);
 }
