@@ -54,6 +54,7 @@ filegroup(
         # https://developer.mozilla.org/en-US/docs/Web/Manifest
         "site.webmanifest",
     ],
+    visibility = ["//visibility:public"],
 )
 
 filegroup(

@@ -21,6 +21,7 @@ libjsoncpp-dev
 liblapack-dev
 liblz4-dev
 liblzma-dev
+libmsgpack-dev
 libmumps-seq-dev
 libnlopt-dev
 libpng-dev
