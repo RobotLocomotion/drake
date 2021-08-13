@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
@@ -29,6 +30,8 @@ const CoulombFriction kFriction{0.3, 0.2};
 constexpr double kTolerance = 1e-6;
 constexpr int kMaxIterations = 100;
 constexpr double kRelaxationFactor = 1.0;
+constexpr int kNumCubeVertices = 8;
+constexpr int kNumOctahedronVertices = 7;
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -36,6 +39,8 @@ using Eigen::VectorXd;
 using geometry::GeometryId;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
+using geometry::VolumeMesh;
+using geometry::VolumeMeshFieldLinear;
 using math::RigidTransformd;
 using multibody::contact_solvers::internal::BlockSparseMatrix;
 using multibody::contact_solvers::internal::ContactSolverResults;
@@ -81,11 +86,22 @@ DeformableBodyConfig<double> MakeDeformableBodyConfig() {
   return config;
 }
 
+internal::ReferenceDeformableGeometry<double> MakeUnitCubeDeformableGeometry() {
+  auto mesh = std::make_unique<VolumeMesh<double>>(
+      geometry::internal::MakeBoxVolumeMesh<double>(
+          geometry::Box(1.0, 1.0, 1.0), 1.0));
+  std::vector<double> dummy_signed_distances(kNumCubeVertices, 0.0);
+  auto mesh_field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
+      "Dummy signed distances", std::move(dummy_signed_distances), mesh.get(),
+      false);
+  return {std::move(mesh), std::move(mesh_field)};
+}
+
 // TODO(xuchenhan-tri): This test can be strengthened by adding a case where a
 //  deformable object is in contact with a fixed collision geometry and no rigid
 //  dofs exist.
-/* Set up a scene with a deformable octahedron and a rigid unit cube to
- faciliate testing of the contact solver. */
+/* Set up a scene with a deformable octahedron, a deformable cube, and a rigid
+ unit cube to faciliate testing of the contact solver. */
 class DeformableRigidContactSolverTest : public ::testing::Test {
  protected:
   /* Set up a scene with a deformable octahedron and one rigid cube. */
@@ -94,7 +110,10 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     /* Add a deformable octahedron. */
     auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
-    deformable_index_ = deformable_model->RegisterDeformableBody(
+    deformable_cube_ = deformable_model->RegisterDeformableBody(
+        MakeUnitCubeDeformableGeometry(), "deformable unit cube",
+        MakeDeformableBodyConfig(), MakeDefaultProximityProperties());
+    deformable_octahedron_ = deformable_model->RegisterDeformableBody(
         MakeOctahedronDeformableGeometry<double>(), "deformable octahedron",
         MakeDeformableBodyConfig(), MakeDefaultProximityProperties());
     plant_->AddPhysicalModel(std::move(deformable_model));
@@ -157,10 +176,34 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
         context);
   }
 
+  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix(). */
+  const Eigen::SparseMatrix<double>& EvalFreeMotionTangentMatrix(
+      const Context<double>& context, DeformableBodyIndex index) const {
+    return deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context,
+                                                                  index);
+  }
+
+  /* Calls DeformableRigidManager::EvalDeformableContactSolverResults(). */
+  const ContactSolverResults<double>& EvalDeformableContactSolverResults(
+      const Context<double>& context) const {
+    return deformable_rigid_manager_->EvalDeformableContactSolverResults(
+        context);
+  }
+
+  /* Calls DiscreteUpdateManager::CalcContactSolverResults() and returns the
+   output. */
+  const ContactSolverResults<double> CalcContactSolverResults(
+      const Context<double>& context) const {
+    ContactSolverResults<double> results;
+    deformable_rigid_manager_->CalcContactSolverResults(context, &results);
+    return results;
+  }
+
   SceneGraph<double>* scene_graph_{nullptr};
   MultibodyPlant<double>* plant_{nullptr};
   const DeformableRigidManager<double>* deformable_rigid_manager_{nullptr};
-  DeformableBodyIndex deformable_index_;
+  DeformableBodyIndex deformable_octahedron_;
+  DeformableBodyIndex deformable_cube_;
   BodyIndex rigid_index_;
   GeometryId rigid_geometry_index_;
   std::unique_ptr<systems::Diagram<double>> diagram_{nullptr};
@@ -191,20 +234,22 @@ TEST_F(DeformableRigidContactSolverTest, NoContact) {
   EXPECT_EQ(results.tau_contact.size(), 0);
 }
 
-/* Verifies that when the deformable body and the rigid body are in contact and
- have opposing velocity EvalTwoWayCoupledContactSolverResults() returns an
- expected result. The test setup looks like the following in the yz-plane:
-                 +Z
+/* Verifies that when the deformable octahedron and the rigid cube are in
+ contact and have opposing velocity EvalTwoWayCoupledContactSolverResults()
+ returns an expected result. The test setup looks like the following in the
+ yz-plane:
+                  +Z
                   |
                   ●
                 ⁄  | ＼  deformable
-              ⁄    |   ＼  octahedron
-            ⁄      |     ＼
-   -Y-----●-------●-------●----+Y
-            \     |      ⁄
+              ⁄----+---＼  octahedron/cube
+            ⁄  |   |   | ＼
+   -Y-----●---+---●---+---●----+Y
+            \ |   |   |  ⁄
               \---|----⁄
-              | \ |  ⁄ |
+              --\-|--⁄--
               |   ●   |
+              |   |   |
               |   |   |
               ----|---- rigid cube
                   |
@@ -212,7 +257,9 @@ TEST_F(DeformableRigidContactSolverTest, NoContact) {
 TEST_F(DeformableRigidContactSolverTest, InContact) {
   Context<double>& plant_context =
       plant_->GetMyMutableContextFromRoot(diagram_context_.get());
-  const Vector3d p_WB(0, 0, -1);
+  /* Set the position of the rigid cube so that it is in contact with the
+   deformable octahedron but not the deformable cube. */
+  const Vector3d p_WB(0, 0, -1.25);
   const math::RigidTransformd X_WB(p_WB);
   plant_->SetFreeBodyPose(&plant_context, plant_->get_body(rigid_index_), X_WB);
   /* Introduce some arbitrary spatial velocity for the rigid cube to make the
@@ -276,6 +323,95 @@ TEST_F(DeformableRigidContactSolverTest, InContact) {
   EXPECT_TRUE((results.fn.array() >= 0).all());
   EXPECT_TRUE(CompareMatrices(results.vn.cwiseProduct(results.fn),
                               VectorXd::Zero(nc), kTolerance));
+}
+
+/* Verifies that the deformable contact solver results obtained through the
+ Schur complement matches expectation. In particular,
+ 1. the results at the contact points (i.e. contact forces and contact
+    velocities) match their rigid counterparts, and
+ 2. the equation A⋅Δv = Jcᵀ⋅γ is satisfied for *all* (not just participating)
+    deformable dofs. */
+TEST_F(DeformableRigidContactSolverTest, DeformableResults) {
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* The test setup looks like the following in the yz-plane:
+                  +Z
+                  |
+                  ●
+                ⁄  | ＼  deformable
+              ⁄----+---＼  octahedron/cube
+            ⁄  |   |   | ＼
+   -Y-----●---+---●---+---●----+Y
+            \ |   |   |  ⁄
+              \---|----⁄
+              --\-|--⁄--
+              |   ●   |
+              |   |   |
+              |   |   |
+              ----|---- rigid cube
+                  |
+                 -Z                    */
+  /* We set the position of the rigid cube so that it is in contact with the
+   deformable octahedron but not the deformable cube. By doing so, the test
+   covers the post-contact deformable results for both bodies that are in
+   contact and those that aren't. */
+  const Vector3d p_WB(0, 0, -1.25);
+  const math::RigidTransformd X_WB(p_WB);
+  plant_->SetFreeBodyPose(&plant_context, plant_->get_body(rigid_index_), X_WB);
+  /* Set up spatial velocities for the rigid cube so that the contact solver
+   does some meaningful computation. I.e. the contact constraints aren't
+   satisfied in the absense of contact forces. */
+  const Vector3d w_WB(0.1, 0.2, 0.3);
+  const Vector3d v_WB(0.4, 0.5, 0.6);
+  const SpatialVelocity<double> V_WB(w_WB, v_WB);
+  plant_->SetFreeBodySpatialVelocity(&plant_context,
+                                     plant_->get_body(rigid_index_), V_WB);
+  const ContactSolverResults<double>& deformable_results =
+      EvalDeformableContactSolverResults(plant_context);
+  const ContactSolverResults<double> rigid_results =
+      CalcContactSolverResults(plant_context);
+
+  /* Verifies the first documented test. Since there are only deformable-rigid
+   contact and no rigid-rigid contact, the contact forces and velocities
+   should be the same for the rigid results and the deformable results. */
+  EXPECT_TRUE(CompareMatrices(deformable_results.fn, rigid_results.fn));
+  EXPECT_TRUE(CompareMatrices(deformable_results.ft, rigid_results.ft));
+  EXPECT_TRUE(CompareMatrices(deformable_results.vn, rigid_results.vn));
+  EXPECT_TRUE(CompareMatrices(deformable_results.vt, rigid_results.vt));
+
+  /* Verifies the second documented test. */
+  /* The cube is not in contact, so v = v* (dv = 0) and tau = 0. */
+  const FemStateBase<double>& cube_state_star =
+      EvalFreeMotionFemStateBase(plant_context, deformable_cube_);
+  const VectorXd& cube_v_star = cube_state_star.qdot();
+  /* N.B. Deformable dofs are in the order deformable bodies are added. In this
+   case the deformable cube was added to the model before the deformable
+   octahedron and thus the deformable cube's dofs come first. */
+  const VectorXd& cube_v = deformable_results.v_next.head(3 * kNumCubeVertices);
+  EXPECT_TRUE(CompareMatrices(cube_v, cube_v_star));
+  const VectorXd cube_tau =
+      deformable_results.tau_contact.head(3 * kNumCubeVertices);
+  EXPECT_TRUE(CompareMatrices(cube_tau, VectorXd::Zero(3 * kNumCubeVertices)));
+
+  /* The octahedron is in contact, and we verify that A⋅Δv = Jcᵀ⋅γ. */
+  const FemStateBase<double>& octahedron_state_star =
+      EvalFreeMotionFemStateBase(plant_context, deformable_octahedron_);
+  const VectorXd& octahedron_v_star = octahedron_state_star.qdot();
+  const VectorXd& octahedron_v =
+      deformable_results.v_next.tail(3 * kNumOctahedronVertices);
+  const VectorXd dv = octahedron_v - octahedron_v_star;
+  const MatrixXd A(
+      EvalFreeMotionTangentMatrix(plant_context, deformable_octahedron_));
+  const VectorXd Adv = A * dv;
+  /* This `tau` is given by Jcᵀ⋅γ. */
+  const VectorXd octahedron_tau =
+      deformable_results.tau_contact.tail(3 * kNumOctahedronVertices);
+  /* Verify that A⋅Δv = Jcᵀ⋅γ. */
+  constexpr double kEpsilon = 1e-13;
+  EXPECT_TRUE(CompareMatrices(Adv, octahedron_tau, kEpsilon));
+  /* Confirm that the contact problem is non-trivial by checking the contact
+   impulse is non-zero. */
+  EXPECT_GE(octahedron_tau.norm(), kEpsilon);
 }
 
 }  // namespace
