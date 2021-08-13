@@ -316,8 +316,16 @@ TEST_F(FieldIntersectionVizTest, FieldIntersection_BoxBall) {
 }
 
 TEST_F(FieldIntersectionVizTest, FieldIntersection_BoxBox) {
-  const VolumeMesh<double> box2_mesh2_M = TransformVolumeMesh(
-      RigidTransformd((box_.height() / 2) * Vector3d::UnitZ()), box2_mesh2_L_);
+  // // Face contact.
+  // const RigidTransformd X_ML((box_.height() / 2) * Vector3d::UnitZ());
+  // // Edge contact.
+  // const RigidTransformd X_ML {
+  //     Vector3d(box_.width() / 2, box_.depth() / 2, 0)};
+  // Corner contact.
+  const RigidTransformd X_ML{
+      Vector3d(box_.width() / 2, box_.depth() / 2, box_.height() / 2)};
+  const VolumeMesh<double> box2_mesh2_M =
+      TransformVolumeMesh(X_ML, box2_mesh2_L_);
   std::vector<double> field_values = box2_field2_L_.values();
   const VolumeMeshFieldLinear<double, double> box2_field2_M(
       box2_field2_L_.name(), std::move(field_values), &box2_mesh2_M);
