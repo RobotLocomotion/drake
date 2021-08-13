@@ -549,12 +549,12 @@ GTEST_TEST(RotationalInertia, CastToAutoDiff) {
 
   // Check that the values were preserved.
   EXPECT_TRUE(CompareMatrices(
-      drake::math::autoDiffToValueMatrix(I_cast_matrix),
+      drake::math::ExtractValueMatrixFromAutoDiff(I_cast_matrix),
       I_double.CopyToFullMatrix3()));
 
   // Check that the gradients are all empty.
   EXPECT_TRUE(CompareMatrices(
-      drake::math::autoDiffToGradientMatrix(I_cast_matrix),
+      drake::math::ExtractGradientMatrixFromAutoDiff(I_cast_matrix),
       Eigen::MatrixXd(9, 0)));
 }
 

@@ -110,32 +110,34 @@ PYBIND11_MODULE(autodiffutils, m) {
       "initializeAutoDiff",
       [](const Eigen::MatrixXd& mat, Eigen::DenseIndex num_derivatives,
           Eigen::DenseIndex deriv_num_start) {
-        return initializeAutoDiff(mat, num_derivatives, deriv_num_start);
+        return InitializeAutoDiffFromValueMatrix(
+            mat, num_derivatives, deriv_num_start);
       },
       py::arg("mat"), py::arg("num_derivatives") = -1,
-      py::arg("deriv_num_start") = 0, doc.initializeAutoDiff.doc_3args);
+      py::arg("deriv_num_start") = 0,
+      doc.InitializeAutoDiffFromValueMatrix.doc_3args);
 
   m.def(
       "autoDiffToValueMatrix",
       [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
-        return autoDiffToValueMatrix(autodiff_matrix);
+        return ExtractValueMatrixFromAutoDiff(autodiff_matrix);
       },
-      py::arg("autodiff_matrix"), doc.autoDiffToValueMatrix.doc);
+      py::arg("autodiff_matrix"), doc.ExtractValueMatrixFromAutoDiff.doc);
 
   m.def(
       "autoDiffToGradientMatrix",
       [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
-        return autoDiffToGradientMatrix(autodiff_matrix);
+        return ExtractGradientMatrixFromAutoDiff(autodiff_matrix);
       },
-      py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
+      py::arg("autodiff_matrix"), doc.ExtractGradientMatrixFromAutoDiff.doc);
 
   m.def(
       "initializeAutoDiffGivenGradientMatrix",
       [](const Eigen::VectorXd& val, const Eigen::MatrixXd& gradient) {
-        return initializeAutoDiffGivenGradientMatrix(val, gradient);
+        return InitializeAutoDiffFromValueAndGradientMatrix(val, gradient);
       },
       py::arg("val"), py::arg("gradient"),
-      doc.initializeAutoDiffGivenGradientMatrix.doc_2args);
+      doc.InitializeAutoDiffFromValueAndGradientMatrix.doc_2args);
 
   ExecuteExtraPythonCode(m);
 }

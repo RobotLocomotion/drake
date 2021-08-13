@@ -42,7 +42,7 @@ void TestDummySystemConstraint(const SystemConstraintWrapper& constraint,
   Eigen::Matrix3Xd val_gradient(3, 2);
   val_gradient << 1, 2, 3, 4, 5, 6;
   const auto val_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(val, val_gradient);
+      math::InitializeAutoDiffFromValueAndGradientMatrix(val, val_gradient);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(val_autodiff, &y_autodiff);
 
@@ -54,12 +54,12 @@ void TestDummySystemConstraint(const SystemConstraintWrapper& constraint,
   AutoDiffVecXd y_autodiff_expected;
   DummySystemConstraintCalc<AutoDiffXd>(*context_autodiff,
                                         &y_autodiff_expected);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
-                              math::autoDiffToValueMatrix(y_autodiff_expected),
-                              tol));
   EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToGradientMatrix(y_autodiff),
-      math::autoDiffToGradientMatrix(y_autodiff_expected), tol));
+      math::ExtractValueMatrixFromAutoDiff(y_autodiff),
+      math::ExtractValueMatrixFromAutoDiff(y_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(
+      math::ExtractGradientMatrixFromAutoDiff(y_autodiff),
+      math::ExtractGradientMatrixFromAutoDiff(y_autodiff_expected), tol));
 }
 
 GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
@@ -108,7 +108,7 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
   Eigen::Matrix<double, 7, Eigen::Dynamic> x_gradient(7, 2);
   x_gradient << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
   const auto x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x_double, x_gradient);
+      math::InitializeAutoDiffFromValueAndGradientMatrix(x_double, x_gradient);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
 
@@ -125,12 +125,12 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
   plant_autodiff->get_constraint(constraint.constraint_index())
       .Calc(*context_autodiff, &y_autodiff_expected);
 
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
-                              math::autoDiffToValueMatrix(y_autodiff_expected),
-                              3 * kEps));
   EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToGradientMatrix(y_autodiff),
-      math::autoDiffToGradientMatrix(y_autodiff_expected), 3 * kEps));
+      math::ExtractValueMatrixFromAutoDiff(y_autodiff),
+      math::ExtractValueMatrixFromAutoDiff(y_autodiff_expected), 3 * kEps));
+  EXPECT_TRUE(CompareMatrices(
+      math::ExtractGradientMatrixFromAutoDiff(y_autodiff),
+      math::ExtractGradientMatrixFromAutoDiff(y_autodiff_expected), 3 * kEps));
 }
 
 TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {

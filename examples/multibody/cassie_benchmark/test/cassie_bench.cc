@@ -196,7 +196,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
   MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
-  auto x_autodiff = math::initializeAutoDiff(x_);
+  auto x_autodiff = math::InitializeAutoDiffFromValueMatrix(x_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
 
@@ -229,9 +229,11 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
   VectorXd desired_vdot = VectorXd::Zero(nv_);
   multibody::MultibodyForces<AutoDiffXd> external_forces_autodiff(
       *plant_autodiff_);
-  auto x_autodiff = math::initializeAutoDiff(x_, nq_ + 2 * nv_);
+  auto x_autodiff = math::InitializeAutoDiffFromValueMatrix(x_, nq_ + 2 * nv_);
   auto vdot_autodiff =
-      math::initializeAutoDiff(desired_vdot, nq_ + 2 * nv_, nq_ + nv_);
+      math::InitializeAutoDiffFromValueMatrix(desired_vdot,
+                                              nq_ + 2 * nv_,
+                                              nq_ + nv_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
 
@@ -264,12 +266,14 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
   auto derivatives_autodiff = plant_autodiff_->AllocateTimeDerivatives();
-  auto u_autodiff = math::initializeAutoDiff(u_, nq_ + nv_ + nu_, nq_ + nv_);
+  auto u_autodiff =
+      math::InitializeAutoDiffFromValueMatrix(u_, nq_ + nv_ + nu_, nq_ + nv_);
   auto& port_value = plant_autodiff_->get_actuation_input_port().FixValue(
       context_autodiff_.get(), u_autodiff);
-  auto x_autodiff = math::initializeAutoDiff(x_, nq_ + nv_ + nu_);
+  auto x_autodiff =
+      math::InitializeAutoDiffFromValueMatrix(x_, nq_ + nv_ + nu_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-      x_autodiff);
+                                             x_autodiff);
 
   auto compute = [&]() {
     InvalidateState();

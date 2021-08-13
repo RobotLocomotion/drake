@@ -73,7 +73,7 @@ class AutodiffTest : public ::testing::Test {
 
 // Tests that ToValueMatrix extracts the values from the autodiff.
 TEST_F(AutodiffTest, ToValueMatrix) {
-  const VectorXd values = autoDiffToValueMatrix(output_calculation_);
+  const VectorXd values = ExtractValueMatrixFromAutoDiff(output_calculation_);
   VectorXd expected(3);
   expected[0] = cos(v0_) + sin(v0_) * cos(v0_) / v1_;
   expected[1] = sin(v0_) + v1_;
@@ -85,7 +85,7 @@ TEST_F(AutodiffTest, ToValueMatrix) {
 
 // Tests that ToGradientMatrix extracts the gradients from the autodiff.
 TEST_F(AutodiffTest, ToGradientMatrix) {
-  MatrixXd gradients = autoDiffToGradientMatrix(output_calculation_);
+  MatrixXd gradients = ExtractGradientMatrixFromAutoDiff(output_calculation_);
 
   MatrixXd expected(3, 2);
   // Shorthand notation: Denote v0 = vec_[0], v1 = vec_[1].
@@ -163,11 +163,11 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   // (so even compiling is a success).
   Eigen::Vector3d test3out = DiscardZeroGradient(test3);
   EXPECT_TRUE(CompareMatrices(test3out, test2));
-  test3 =
-      initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Zero(3, 2));
+  test3 = InitializeAutoDiffFromValueAndGradientMatrix(
+      test2, Eigen::MatrixXd::Zero(3, 2));
   EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test3), test2));
-  test3 =
-      initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Ones(3, 2));
+  test3 = InitializeAutoDiffFromValueAndGradientMatrix(
+      test2, Eigen::MatrixXd::Ones(3, 2));
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
   DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
 
@@ -195,7 +195,7 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
 // Make sure that casting to autodiff always results in zero gradients.
 GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   Vector2<AutoDiffXd> dynamic = Vector2d::Ones().cast<AutoDiffXd>();
-  const auto dynamic_gradients = autoDiffToGradientMatrix(dynamic);
+  const auto dynamic_gradients = ExtractGradientMatrixFromAutoDiff(dynamic);
   EXPECT_EQ(dynamic_gradients.rows(), 2);
   EXPECT_EQ(dynamic_gradients.cols(), 0);
 
@@ -203,13 +203,14 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   using AutoDiffUpTo16d = Eigen::AutoDiffScalar<VectorUpTo16d>;
   Vector2<AutoDiffUpTo16d> dynamic_max =
       Vector2d::Ones().cast<AutoDiffUpTo16d>();
-  const auto dynamic_max_gradients = autoDiffToGradientMatrix(dynamic_max);
+  const auto dynamic_max_gradients =
+      ExtractGradientMatrixFromAutoDiff(dynamic_max);
   EXPECT_EQ(dynamic_max_gradients.rows(), 2);
   EXPECT_EQ(dynamic_max_gradients.cols(), 0);
 
   Vector2<AutoDiffScalar<Vector3d>> fixed =
       Vector2d::Ones().cast<AutoDiffScalar<Vector3d>>();
-  const auto fixed_gradients = autoDiffToGradientMatrix(fixed);
+  const auto fixed_gradients = ExtractGradientMatrixFromAutoDiff(fixed);
   EXPECT_EQ(fixed_gradients.rows(), 2);
   EXPECT_EQ(fixed_gradients.cols(), 3);
   EXPECT_TRUE(fixed_gradients.isZero(0.));
