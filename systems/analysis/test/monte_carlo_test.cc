@@ -39,8 +39,8 @@ GTEST_TEST(SelectNumberOfThreadsToUseTest, BasicTest) {
   EXPECT_EQ(internal::SelectNumberOfThreadsToUse(100), 100);
 
   // Zero and negative values (that are not kUseHardwareConcurrency) throw.
-  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(0), std::runtime_error);
-  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(-10), std::runtime_error);
+  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(0), std::exception);
+  EXPECT_THROW(internal::SelectNumberOfThreadsToUse(-10), std::exception);
 }
 
 // Checks that RandomSimulation repeatedly produces the same output sample
@@ -265,11 +265,11 @@ GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
   EXPECT_THROW(MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
       &serial_generator, kNoConcurrency),
-      std::runtime_error);
+      std::exception);
   EXPECT_THROW(MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
       &parallel_generator, kTestConcurrency),
-      std::runtime_error);
+      std::exception);
 }
 
 }  // namespace
