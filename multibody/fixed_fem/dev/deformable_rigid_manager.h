@@ -16,6 +16,7 @@
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
 #include "drake/multibody/fixed_fem/dev/schur_complement.h"
+#include "drake/multibody/fixed_fem/dev/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 
@@ -208,6 +209,21 @@ class DeformableRigidManager final
   void CalcFreeMotionFemStateBase(const systems::Context<T>& context,
                                   DeformableBodyIndex id,
                                   FemStateBase<T>* fem_state_star) const;
+
+  /* Eval version of CalcNextFemStateBase(). */
+  const FemStateBase<T>& EvalNextFemStateBase(
+      const systems::Context<T>& context,
+      DeformableBodyIndex body_index) const {
+    return this->plant()
+        .get_cache_entry(next_fem_state_cache_indexes_[body_index])
+        .template Eval<FemStateBase<T>>(context);
+  }
+
+  /* Calculates the FEM state at the next time step for the deformable body with
+   the given `body_index`. */
+  void CalcNextFemStateBase(const systems::Context<T>& context,
+                            DeformableBodyIndex body_index,
+                            FemStateBase<T>* fem_state) const;
 
   /* Eval version of CalcFreeMotionTangentMatrix(). */
   const Eigen::SparseMatrix<T>& EvalFreeMotionTangentMatrix(
@@ -476,6 +492,7 @@ class DeformableRigidManager final
   /* Cached FEM state quantities. */
   std::vector<systems::CacheIndex> fem_state_cache_indexes_;
   std::vector<systems::CacheIndex> free_motion_cache_indexes_;
+  std::vector<systems::CacheIndex> next_fem_state_cache_indexes_;
   std::vector<systems::CacheIndex> tangent_matrix_cache_indexes_;
   std::vector<systems::CacheIndex>
       tangent_matrix_schur_complement_cache_indexes_;
@@ -502,6 +519,7 @@ class DeformableRigidManager final
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   std::unique_ptr<multibody::contact_solvers::internal::ContactSolver<T>>
       contact_solver_{nullptr};
+  std::unique_ptr<internal::VelocityNewmarkScheme<T>> velocity_newmark_;
 
   /* Geometries temporarily managed by DeformableRigidManager. In the future,
    SceneGraph will manage all the geometries. */
