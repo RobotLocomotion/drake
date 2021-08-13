@@ -114,6 +114,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "bspline_graph_of_convex_sets_test",
+    # TODO(avalenzu): Remove this once IPOPT flakiness is resolved. See note in
+    # bspline_graph_of_convex_sets.cc.
+    flaky = True,
     deps = [
         ":bspline_graph_of_convex_sets",
         "//common/test_utilities:eigen_matrix_compare",

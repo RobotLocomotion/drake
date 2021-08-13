@@ -4,11 +4,23 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
+
+namespace {
+  bool MixedIntegerSolverAvailable() {
+    return (solvers::MosekSolver::is_available() &&
+            solvers::MosekSolver::is_enabled()) ||
+           (solvers::GurobiSolver::is_available() &&
+            solvers::GurobiSolver::is_enabled());
+  }
+}
 
 using Eigen::Vector2d;
 using trajectories::BsplineTrajectory;
@@ -73,17 +85,34 @@ GTEST_TEST(BsplineTrajectoryThroughUnionOfHPolyhedraTests, Solve) {
   // Check that solving the mixed-integer program directly works.
   BsplineTrajectoryThroughUnionOfHPolyhedra problem = MakeSimpleProblem();
   problem.set_max_velocity(Eigen::Vector2d(1, 1));
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
   std::optional<BsplineTrajectory<double>> solution_trajectory =
       problem.Solve();
   EXPECT_TRUE(solution_trajectory.has_value());
   EXPECT_EQ(solution_trajectory->InitialValue(), problem.source());
   EXPECT_EQ(solution_trajectory->FinalValue(), problem.target());
-  // Check that solving with rounding works as well.
-  std::optional<BsplineTrajectory<double>> rounding_solution_trajectory =
+}
+
+// TODO(avalenzu): This is flaky when solving with IPOPT - sometimes IPOPT fails
+// to find a solution. Current guess is that the ordering of edge constraints in
+// graph_of_convex_sets.cc might be the issue.
+GTEST_TEST(BsplineTrajectoryThroughUnionOfHPolyhedraTests, SolveWithRounding) {
+  // Check that solving with rounding works.
+  BsplineTrajectoryThroughUnionOfHPolyhedra problem = MakeSimpleProblem();
+  problem.set_max_velocity(Eigen::Vector2d(1, 1));
+  std::optional<BsplineTrajectory<double>> solution_trajectory =
       problem.Solve(true);
-  EXPECT_TRUE(rounding_solution_trajectory.has_value());
-  EXPECT_EQ(rounding_solution_trajectory->InitialValue(), problem.source());
-  EXPECT_EQ(rounding_solution_trajectory->FinalValue(), problem.target());
+  EXPECT_TRUE(solution_trajectory.has_value());
+  EXPECT_TRUE(
+      CompareMatrices(solution_trajectory->InitialValue(), problem.source(),
+                      std::sqrt(std::numeric_limits<double>::epsilon())));
+  EXPECT_TRUE(
+      CompareMatrices(solution_trajectory->FinalValue(), problem.target(),
+                      std::sqrt(std::numeric_limits<double>::epsilon())));
 }
 
 }  // namespace optimization
