@@ -90,8 +90,8 @@ class MinimumValueConstraint final : public solvers::Constraint {
   same values as `value_function` but for double rather than AutoDiffXd. If
   omitted, `value_function` will be called (and the gradients discarded) when
   this constraint is evaluated for doubles.
-  @pre `value_function_double(math::autoDiffToValueMatrix(x), v_influence) ==
-  math::autoDiffToValueMatrix(value_function(x, v_influence))` for all x.
+  @pre `value_function_double(ExtractValue(x), v_influence) ==
+  ExtractValue(value_function(x, v_influence))` for all x.
   @pre `value_function(x).size() <= max_num_values` for all x.
   @throws std::exception if influence_value_offset = ∞.
   @throws std::exception if influence_value_offset ≤ 0.

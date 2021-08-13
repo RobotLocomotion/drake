@@ -1,8 +1,18 @@
 import pydrake.autodiffutils as mut
+
+from pydrake.autodiffutils import (
+    AutoDiffXd,
+    ExtractGradient,
+    ExtractValue,
+    InitializeAutoDiff,
+    InitializeAutoDiffFromValueMatrix,
+    InitializeAutoDiffTuple,
+)
+
+# TODO(sherm1) To be deprecated asap.
 from pydrake.autodiffutils import (
     autoDiffToGradientMatrix,
     autoDiffToValueMatrix,
-    AutoDiffXd,
     initializeAutoDiff,
     initializeAutoDiffGivenGradientMatrix,
     initializeAutoDiffTuple,
@@ -236,6 +246,31 @@ class TestAutoDiffXd(unittest.TestCase):
         np.testing.assert_equal(numpy_compare.to_float(Xinv), Xinv_float)
 
     def test_math_utils(self):
+        a = InitializeAutoDiffFromValueMatrix([1, 2, 3])
+        np.testing.assert_array_equal(ExtractValue(a),
+                                      np.array([[1, 2, 3]]).T)
+        np.testing.assert_array_equal(ExtractGradient(a),
+                                      np.eye(3))
+
+        a, b = InitializeAutoDiffTuple([1], [2, 3])
+        np.testing.assert_array_equal(ExtractValue(a),
+                                      np.array([[1]]))
+        np.testing.assert_array_equal(ExtractValue(b),
+                                      np.array([[2, 3]]).T)
+        np.testing.assert_array_equal(ExtractGradient(a),
+                                      np.eye(1, 3))
+        np.testing.assert_array_equal(ExtractGradient(b),
+                                      np.hstack((np.zeros((2, 1)), np.eye(2))))
+
+        c_grad = [[2, 4, 5], [1, -1, 0]]
+        c = InitializeAutoDiff([2, 3], c_grad)
+        np.testing.assert_array_equal(ExtractValue(c),
+                                      np.array([2, 3]).reshape((2, 1)))
+        np.testing.assert_array_equal(ExtractGradient(c),
+                                      np.array(c_grad))
+
+    # TODO(sherm1) To be deprecated asap.
+    def test_deprecated_math_utils(self):
         a = initializeAutoDiff([1, 2, 3])
         np.testing.assert_array_equal(autoDiffToValueMatrix(a),
                                       np.array([[1, 2, 3]]).T)
