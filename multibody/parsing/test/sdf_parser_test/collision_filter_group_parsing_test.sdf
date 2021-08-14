@@ -147,22 +147,22 @@
       </collision>
     </link>
     <drake:collision_filter_group name="group_link14">
-      <drake:member link="link1"/>
-      <drake:member link="link4"/>
-      <drake:ignored_collision_filter_group name="group_link14"/>
+      <drake:member>link1</drake:member>
+      <drake:member>link4</drake:member>
+      <drake:ignored_collision_filter_group>group_link14</drake:ignored_collision_filter_group>
     </drake:collision_filter_group>
     <drake:collision_filter_group name="group_link2">
-      <drake:member link="link2"/>
-      <drake:ignored_collision_filter_group name="group_link3"/>
+      <drake:member>link2</drake:member>
+      <drake:ignored_collision_filter_group>group_link3</drake:ignored_collision_filter_group>
     </drake:collision_filter_group>
     <drake:collision_filter_group ignore="true" name="group_link24">
-      <drake:member link="link2"/>
-      <drake:member link="link4"/>
-      <drake:ignored_collision_filter_group name="group_link24"/>
+      <drake:member>link2</drake:member>
+      <drake:member>link4</drake:member>
+      <drake:ignored_collision_filter_group>group_link24</drake:ignored_collision_filter_group>
     </drake:collision_filter_group>
     <drake:collision_filter_group name="group_link3">
-      <drake:member link="link3"/>
-      <drake:ignored_collision_filter_group name="group_link14"/>
+      <drake:member>link3</drake:member>
+      <drake:ignored_collision_filter_group>group_link14</drake:ignored_collision_filter_group>
     </drake:collision_filter_group>
   </model>
 </sdf>

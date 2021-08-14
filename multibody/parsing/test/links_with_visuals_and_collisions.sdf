@@ -133,8 +133,8 @@
       <pose>0.7 0.8 0.9 0 0 0</pose>
     </frame>
     <drake:collision_filter_group name="filter_group1">
-      <drake:member link="link1"/>
-      <drake:member link="link2"/>
+      <drake:member>link1</drake:member>
+      <drake:member>link2</drake:member>
     </drake:collision_filter_group>
   </model>
 </sdf>

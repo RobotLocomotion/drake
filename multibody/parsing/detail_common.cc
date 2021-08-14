@@ -104,14 +104,17 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 // @param read_bool_attribute          Function that reads a boolean attribute
 //                                     with the name provided in the
 //                                     ElementNode provided.
+// @param read_tag_string          Function that reads a tag value
+//                                     using the specific semantics of the
+//                                     source file format.
 // @param[out] collision_filter_groups Map of collision filter group names to
 //                                     its geometry sets representing the
 //                                     constituent members.
 // @param[out] collision_filter_pairs  Filter group pairs between whom
 //                                     collisions will be excluded.
 void CollectCollisionFilterGroup(
-    ModelInstanceIndex model_instance,
-    const MultibodyPlant<double>& plant, const ElementNode& group_node,
+    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant,
+    const ElementNode& group_node,
     std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
     std::set<SortedPair<std::string>>* collision_filter_pairs,
     const std::function<ElementNode(const ElementNode&, const char*)>&
@@ -122,19 +125,14 @@ void CollectCollisionFilterGroup(
     const std::function<std::string(const ElementNode&, const char*)>&
         read_string_attribute,
     const std::function<bool(const ElementNode&, const char*)>&
-        read_bool_attribute) {
+        read_bool_attribute,
+    const std::function<std::string(const ElementNode&, const char*)>&
+        read_tag_string) {
   DRAKE_DEMAND(plant.geometry_source_is_registered());
   if (has_attribute(group_node, "ignore")) {
     if (read_bool_attribute(group_node, "ignore")) {
       return;
     }
-  }
-
-  if (!has_attribute(group_node, "name")) {
-    throw std::runtime_error(
-        fmt::format("'{}':'{}': The <drake::collision_filter_group>"
-                    "is missing the \"name\" attribute.",
-                    __FILE__, __func__));
   }
   const std::string group_name = read_string_attribute(group_node, "name");
 
@@ -144,14 +142,7 @@ void CollectCollisionFilterGroup(
            ? std::get<sdf::ElementPtr>(member_node) != nullptr
            : std::get<tinyxml2::XMLElement*>(member_node) != nullptr;
        member_node = next_sibling_element(member_node, "drake:member")) {
-    if (!has_attribute(member_node, "link")) {
-      throw std::runtime_error(
-          fmt::format("'{}':'{}': The <drake::collision_filter_group> "
-                      "provides the member named '{}' without specifying"
-                      " the \"link\" attribute.",
-                      __FILE__, __func__, group_name.c_str()));
-    }
-    const std::string body_name = read_string_attribute(member_node, "link");
+    const std::string body_name = read_tag_string(member_node, "link");
 
     const auto& body = plant.GetBodyByName(body_name.c_str(), model_instance);
     collision_filter_geometry_set.Add(
@@ -166,14 +157,7 @@ void CollectCollisionFilterGroup(
            : std::get<tinyxml2::XMLElement*>(ignore_node) != nullptr;
        ignore_node =
            next_sibling_element(ignore_node, "drake:collision_filter_group")) {
-    if (!has_attribute(ignore_node, "name")) {
-      throw std::runtime_error(
-          fmt::format("'{}':'{}': The <drake::collision_filter_group> "
-                      "provides a <drake:ignored_collision_filter_group> "
-                      "without specifying the \"name\" attribute.",
-                      __FILE__, __func__));
-    }
-    const std::string target_name = read_string_attribute(ignore_node, "name");
+    const std::string target_name = read_tag_string(ignore_node, "name");
 
     // These two group names are allowed to be identical, which means the
     // bodies inside this collision filter group should be collision excluded
@@ -194,7 +178,9 @@ void ParseCollisionFilterGroupCommon(
     const std::function<std::string(const ElementNode&, const char*)>&
         read_string_attribute,
     const std::function<bool(const ElementNode&, const char*)>&
-        read_bool_attribute) {
+        read_bool_attribute,
+    const std::function<std::string(const ElementNode&, const char*)>&
+        read_tag_string) {
   DRAKE_DEMAND(plant->geometry_source_is_registered());
   std::map<std::string, geometry::GeometrySet> collision_filter_groups;
   std::set<SortedPair<std::string>> collision_filter_pairs;
@@ -209,7 +195,8 @@ void ParseCollisionFilterGroupCommon(
     CollectCollisionFilterGroup(
         model_instance, *plant, group_node, &collision_filter_groups,
         &collision_filter_pairs, next_child_element, next_sibling_element,
-        has_attribute, read_string_attribute, read_bool_attribute);
+        has_attribute, read_string_attribute, read_bool_attribute,
+        read_tag_string);
   }
 
   for (const auto& [name_a, name_b] : collision_filter_pairs) {

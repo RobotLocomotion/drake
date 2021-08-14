@@ -130,6 +130,9 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 //                              provided.
 // @param has_attribute         Function that checks if an attribute exists
 //                              in the ElementNode provided.
+// @param read_tag_string          Function that reads a tag value
+//                                     using the specific semantics of the
+//                                     source file format.
 // @param read_string_attribute Function that reads a string attribute with the
 //                              name provided in the ElementNoded provided.
 // @param read_bool_attribute   Function that reads a boolean attribute with
@@ -145,7 +148,9 @@ void ParseCollisionFilterGroupCommon(
     const std::function<std::string(const ElementNode&, const char*)>&
         read_string_attribute,
     const std::function<bool(const ElementNode&, const char*)>&
-        read_bool_attribute);
+        read_bool_attribute,
+    const std::function<std::string(const ElementNode&, const char*)>&
+        read_tag_string);
 
 }  // namespace internal
 }  // namespace multibody

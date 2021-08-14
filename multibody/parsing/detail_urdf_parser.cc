@@ -184,8 +184,14 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
   auto get_string_attribute = [](const ElementNode& data_element,
                                  const char* attribute_name) {
     std::string attribute_value;
-    ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
-                         attribute_name, &attribute_value);
+    if (!ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
+                              attribute_name, &attribute_value)) {
+      throw std::runtime_error(fmt::format(
+          "'{}':'{}':'{}': Collision filter group does not specify the required"
+          "attribute \"{}\" at line {}.",
+          __FILE__, __func__, __LINE__, attribute_name,
+          std::get<tinyxml2::XMLElement*>(data_element)->GetLineNum()));
+    }
     return attribute_value;
   };
   auto get_bool_attribute = [](const ElementNode& data_element,
@@ -195,9 +201,10 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
                          attribute_name, &attribute_value);
     return attribute_value == std::string("true") ? true : false;
   };
-  ParseCollisionFilterGroupCommon(
-      model_instance, node, plant, next_child_element, next_sibling_element,
-      has_attribute, get_string_attribute, get_bool_attribute);
+  ParseCollisionFilterGroupCommon(model_instance, node, plant,
+                                  next_child_element, next_sibling_element,
+                                  has_attribute, get_string_attribute,
+                                  get_bool_attribute, get_string_attribute);
 }
 
 // Parses a joint URDF specification to obtain the names of the joint, parent

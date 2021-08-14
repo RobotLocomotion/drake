@@ -883,6 +883,15 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
   };
   auto get_string_attribute = [](const ElementNode& data_element,
                                  const char* attribute_name) {
+    if (!std::get<sdf::ElementPtr>(data_element)
+             ->HasAttribute(attribute_name)) {
+      throw std::runtime_error(fmt::format(
+          "'{}':'{}':'{}': Collision filter group provides the element:\n"
+          "{} without the requried  attribute \"{}\"",
+          __FILE__, __func__, __LINE__,
+          std::get<sdf::ElementPtr>(data_element)->ToString(""),
+          attribute_name));
+    }
     return std::get<sdf::ElementPtr>(data_element)
         ->Get<std::string>(attribute_name);
   };
@@ -890,10 +899,21 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
                                const char* attribute_name) {
     return std::get<sdf::ElementPtr>(data_element)->Get<bool>(attribute_name);
   };
+  auto read_tag_string = [](const ElementNode& data_element, const char*) {
+    sdf::ParamPtr param = std::get<sdf::ElementPtr>(data_element)->GetValue();
+    if (param == nullptr) {
+      throw std::runtime_error(
+          fmt::format("'{}':'{}':'{}': Collision filter group provides the "
+                      "{} tag with a required empty value.",
+                      __FILE__, __func__, __LINE__,
+                      std::get<sdf::ElementPtr>(data_element)->ToString("")));
+    }
+    return param->GetAsString();
+  };
   ParseCollisionFilterGroupCommon(model_instance, model.Element(), plant,
                                   next_child_element, next_sibling_element,
                                   has_attribute, get_string_attribute,
-                                  get_bool_attribute);
+                                  get_bool_attribute, read_tag_string);
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
