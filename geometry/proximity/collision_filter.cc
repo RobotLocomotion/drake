@@ -11,7 +11,7 @@ using std::unordered_set;
 
 void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
                             const CollisionFilter::ExtractIds& extract_ids,
-                            bool is_permanent) {
+                            bool is_invariant) {
   using Operation = CollisionFilterDeclaration::StatementOp;
   for (const auto& statement : declaration.statements()) {
     switch (statement.operation) {
@@ -23,11 +23,11 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
         break;
       case Operation::kExcludeWithin:
         AddFiltersBetween(statement.set_A, statement.set_A, extract_ids,
-                          is_permanent);
+                          is_invariant);
         break;
       case Operation::kExcludeBetween:
         AddFiltersBetween(statement.set_A, statement.set_B, extract_ids,
-                          is_permanent);
+                          is_invariant);
         break;
     }
   }
@@ -77,13 +77,13 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
 
 void CollisionFilter::AddFiltersBetween(
     const GeometrySet& set_A, const GeometrySet& set_B,
-    const CollisionFilter::ExtractIds& extract_ids, bool is_permanent) {
+    const CollisionFilter::ExtractIds& extract_ids, bool is_invariant) {
   const std::unordered_set<GeometryId> ids_A = extract_ids(set_A);
   const std::unordered_set<GeometryId>& ids_B =
       &set_A == &set_B ? ids_A : extract_ids(set_B);
   for (GeometryId id_A : ids_A) {
     for (GeometryId id_B : ids_B) {
-      AddFilteredPair(id_A, id_B, is_permanent);
+      AddFilteredPair(id_A, id_B, is_invariant);
     }
   }
 }
@@ -102,15 +102,15 @@ void CollisionFilter::RemoveFiltersBetween(
 }
 
 void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
-                                      bool is_permanent) {
+                                      bool is_invariant) {
   DRAKE_ASSERT(filter_state_.count(id_A) == 1 &&
                filter_state_.count(id_B) == 1);
 
   if (id_A == id_B) return;
   PairFilterState& pair_state =
       id_A < id_B ? filter_state_[id_A][id_B] : filter_state_[id_B][id_A];
-  if (pair_state == kLockedFiltered) return;
-  pair_state = is_permanent ? kLockedFiltered : kFiltered;
+  if (pair_state == kInvariantFilter) return;
+  pair_state = is_invariant ? kInvariantFilter : kFiltered;
 }
 
 void CollisionFilter::RemoveFilteredPair(GeometryId id_A, GeometryId id_B) {
@@ -119,7 +119,7 @@ void CollisionFilter::RemoveFilteredPair(GeometryId id_A, GeometryId id_B) {
   if (id_A == id_B) return;
   PairFilterState& pair_state =
       id_A < id_B ? filter_state_[id_A][id_B] : filter_state_[id_B][id_A];
-  if (pair_state == kLockedFiltered) return;
+  if (pair_state == kInvariantFilter) return;
   pair_state = kUnfiltered;
 }
 

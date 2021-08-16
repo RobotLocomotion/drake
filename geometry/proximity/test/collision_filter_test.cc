@@ -65,9 +65,9 @@ class CollisionFilterTest : public ::testing::Test {
   /* Apply collision filters between geometries in the list. */
   static void FilterAllPairs(CollisionFilter* filter,
                              std::initializer_list<GeometryId> ids,
-                             bool is_permanent) {
+                             bool is_invariant) {
     filter->Apply(CollisionFilterDeclaration().ExcludeWithin(GeometrySet(ids)),
-                  get_extract_ids_functor(), is_permanent);
+                  get_extract_ids_functor(), is_invariant);
 
     for (GeometryId id_A : ids) {
       for (GeometryId id_B : ids) {
@@ -85,20 +85,20 @@ class CollisionFilterTest : public ::testing::Test {
 /* Tests that declaration statements that allow collisions between geometries
  in different sets are properly handled. */
 TEST_F(CollisionFilterTest, AllowBetween) {
-  for (bool is_permanent : {true, false}) {
+  for (bool is_invariant : {true, false}) {
     CollisionFilter filters;
     auto [id_A, id_B, id_C] = this->InitIds(&filters);
 
     /* To test Allowing, we have to start with filters. Filter everything. */
-    this->FilterAllPairs(&filters, {id_A, id_B, id_C}, is_permanent);
+    this->FilterAllPairs(&filters, {id_A, id_B, id_C}, is_invariant);
 
     filters.Apply(CollisionFilterDeclaration().AllowBetween(
                       GeometrySet(id_A), GeometrySet({id_B, id_C})),
                   this->get_extract_ids_functor());
-    /* Our ability to remove the filter depends on whether it was permanent when
+    /* Our ability to remove the filter depends on whether it was invariant when
      added. */
-    EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_permanent);
-    EXPECT_EQ(filters.CanCollideWith(id_A, id_C), !is_permanent);
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_invariant);
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_C), !is_invariant);
     EXPECT_FALSE(filters.CanCollideWith(id_B, id_C));
   }
 }
@@ -106,21 +106,21 @@ TEST_F(CollisionFilterTest, AllowBetween) {
 /* Tests that declaration statements that allow collisions between geometries
  in a single set are properly handled. */
 TEST_F(CollisionFilterTest, AllowWithin) {
-  for (bool is_permanent : {true, false}) {
+  for (bool is_invariant : {true, false}) {
     CollisionFilter filters;
     auto [id_A, id_B, id_C] = this->InitIds(&filters);
 
     /* To test Allowing, we have to start with filters. Filter everything. */
-    this->FilterAllPairs(&filters, {id_A, id_B, id_C}, is_permanent);
+    this->FilterAllPairs(&filters, {id_A, id_B, id_C}, is_invariant);
 
     filters.Apply(CollisionFilterDeclaration()
                       .AllowWithin(GeometrySet({id_A, id_B}))
                       .AllowWithin(GeometrySet({id_A, id_C})),
                   this->get_extract_ids_functor());
-    /* Our ability to remove the filter depends on whether it was permanent when
+    /* Our ability to remove the filter depends on whether it was invariant when
      added. */
-    EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_permanent);
-    EXPECT_EQ(filters.CanCollideWith(id_A, id_C), !is_permanent);
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_B), !is_invariant);
+    EXPECT_EQ(filters.CanCollideWith(id_A, id_C), !is_invariant);
     EXPECT_FALSE(filters.CanCollideWith(id_B, id_C));
   }
 }

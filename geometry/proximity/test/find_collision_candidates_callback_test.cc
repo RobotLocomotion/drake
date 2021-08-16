@@ -67,7 +67,7 @@ GTEST_TEST(Callback, RespectsCollisionFilter) {
   };
   collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
                              GeometrySet{data_A.id(), data_B.id()}),
-                         extract, false /* is_permanent */);
+                         extract, false /* is_invariant */);
 
   CollisionObjectd box_A(make_shared<Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);

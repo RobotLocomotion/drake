@@ -867,7 +867,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
     };
     engine.collision_filter().Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
-        extract_ids, false /* is_permanent */);
+        extract_ids, false /* is_invariant */);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
         std::runtime_error,
@@ -2407,7 +2407,7 @@ TEST_F(SimplePenetrationTest, WithCollisionFilters) {
   };
   engine_.collision_filter().Apply(CollisionFilterDeclaration().ExcludeWithin(
                                        GeometrySet{origin_id, collide_id}),
-                                   extract_ids, false /* is_permanent */);
+                                   extract_ids, false /* is_invariant */);
 
   EXPECT_FALSE(
       engine_.collision_filter().CanCollideWith(origin_id, collide_id));

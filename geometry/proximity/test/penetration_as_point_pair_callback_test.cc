@@ -183,7 +183,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     };
     collision_filter_.Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A_, id_B_}),
-        extract, false /* is_permanent */);
+        extract, false /* is_invariant */);
 
     EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
     EXPECT_EQ(point_pairs.size(), 0u);
