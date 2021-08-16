@@ -217,7 +217,7 @@ class TestScene {
     };
     collision_filter_.Apply(CollisionFilterDeclaration().ExcludeWithin(
                                 GeometrySet{data_A.id(), data_B.id()}),
-                            extract, false /* is_permanent */);
+                            extract, false /* is_invariant */);
   }
 
   // Note: these are non const because the callback takes non-const pointers

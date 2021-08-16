@@ -720,14 +720,14 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       }
 
       // Apply collision filter between geometry id and any geometries that have
-      // been identifiied. If none have been identified, this makes no changes.
+      // been identified. If none have been identified, this makes no changes.
       geometry_engine_->collision_filter().Apply(
           CollisionFilterDeclaration().ExcludeBetween(GeometrySet(geometry_id),
                                                       ids_for_filtering),
           [this](const GeometrySet& set) {
             return this->CollectIds(set, Role::kProximity);
           },
-          true /* is_permanent */);
+          true /* is_invariant */);
     } break;
     case RoleAssign::kReplace:
       // Give the engine a chance to compare properties before and after.

@@ -93,8 +93,8 @@ class CollisionFilterManager {
    @throws std::exception if the `declaration` references invalid ids. */
   void Apply(const CollisionFilterDeclaration& declaration) {
     /* Modifications made via this API are by the user. Only the internals can
-     make "permanent" declarations. */
-    filter_->Apply(declaration, extract_ids_, false /* is_permanent */);
+     declare filters to be "invariant". */
+    filter_->Apply(declaration, extract_ids_, false /* is_invariant */);
   }
 
   // TODO(SeanCurtis-TRI) SceneGraphInspector includes the method

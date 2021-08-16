@@ -633,7 +633,7 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   };
   collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
                              GeometrySet{data_A.id(), data_B.id()}),
-                         extract, false /* is_permanent */);
+                         extract, false /* is_invariant */);
 
   const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {id_A, RigidTransform<T>::Identity()},
@@ -686,7 +686,7 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   };
   collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
                              GeometrySet{data_A.id(), data_B.id()}),
-                         extract, false /* is_permanent */);
+                         extract, false /* is_invariant */);
   results.clear();
   threshold = std::numeric_limits<double>::max();
   Callback<double>(&sphere_A, &sphere_B, &data, threshold);

@@ -111,7 +111,7 @@ GTEST_TEST(CollisionsExistCallback, RespectsCollisionFilter) {
   };
   collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
                              GeometrySet{data_A.id(), data_B.id()}),
-                         extract, false /* is_permanent */);
+                         extract, false /* is_invariant */);
 
   // Make sure the pair no longer collides.
   CallbackData data_after(&collision_filter);
