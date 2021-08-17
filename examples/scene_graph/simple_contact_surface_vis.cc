@@ -8,6 +8,7 @@
  and anchored) and their properties to see the effect on contact surface.  */
 
 #include <memory>
+#include <unordered_map>
 
 #include <gflags/gflags.h>
 
@@ -84,6 +85,15 @@ DEFINE_bool(rigid_cylinders, true,
             "hydroelastic representation");
 DEFINE_bool(hybrid, false, "Set to true to run hybrid hydroelastic");
 
+/* To help simulate MultibodyPlant; we're going to assign frames "frame groups"
+ that correlate with MBP's "model instance indices". We're defining the indices
+ here and hard-coding a look-up table to map index to model instance name. */
+constexpr int kBallModelInstance = 1;
+constexpr int kCylinderModelInstance = 2;
+const std::unordered_map<int, std::string> kModelInstanceNames(
+    {{kBallModelInstance, "MovingBall"},
+     {kCylinderModelInstance, "FixedCylinders"}});
+
 /** Places a ball at the world's origin and defines its velocity as being
  sinusoidal in time in the z direction.
 
@@ -102,8 +112,8 @@ class MovingBall final : public LeafSystem<double> {
 
     // Add geometry for a ball that moves based on sinusoidal derivatives.
     source_id_ = scene_graph->RegisterSource("moving_ball");
-    frame_id_ =
-        scene_graph->RegisterFrame(source_id_, GeometryFrame("moving_frame"));
+    frame_id_ = scene_graph->RegisterFrame(
+        source_id_, GeometryFrame("moving_frame", kBallModelInstance));
     geometry_id_ = scene_graph->RegisterGeometry(
         source_id_, frame_id_,
         make_unique<GeometryInstance>(RigidTransformd(),
@@ -186,6 +196,12 @@ class ContactResultMaker final : public LeafSystem<double> {
   }
 
  private:
+  static std::string ModelInstanceName(int frame_group) {
+    auto iter = kModelInstanceNames.find(frame_group);
+    if (iter == kModelInstanceNames.end()) return "DefaultModelInstance";
+    return iter->second;
+  }
+
   void CalcContactResults(const Context<double>& context,
                           lcmt_contact_results_for_viz* results) const {
     const auto& query_object =
@@ -213,13 +229,30 @@ class ContactResultMaker final : public LeafSystem<double> {
       dest[2] = src(2);
     };
 
+    const auto& inspector = query_object.inspector();
+
     // Contact surfaces.
     for (int i = 0; i < num_surfaces; ++i) {
       lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
           msg.hydroelastic_contacts[i];
 
-      surface_msg.body1_name = "Id_" + to_string(surfaces[i].id_M());
-      surface_msg.body2_name = "Id_" + to_string(surfaces[i].id_N());
+      // We'll simulate MBP's model instance/body paradigm. We have a look up
+      // function to define a model instance. The body name will be the frame
+      // name as there is a 1-to-1 correspondence between MBP bodies and
+      // geometry frames. The geometry will use the name stored in SceneGraph.
+      const GeometryId id1 = surfaces[i].id_M();
+      const FrameId f_id1 = inspector.GetFrameId(id1);
+      surface_msg.body1_name = inspector.GetName(f_id1);
+      surface_msg.model1_name =
+          ModelInstanceName(inspector.GetFrameGroup(f_id1));
+      surface_msg.geometry1_name = inspector.GetName(id1);
+
+      const GeometryId id2 = surfaces[i].id_N();
+      const FrameId f_id2 = inspector.GetFrameId(id2);
+      surface_msg.body2_name = inspector.GetName(inspector.GetFrameId(id2));
+      surface_msg.model2_name =
+          ModelInstanceName(inspector.GetFrameGroup(f_id2));
+      surface_msg.geometry2_name = inspector.GetName(id2);
 
       const SurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
       surface_msg.num_triangles = mesh_W.num_faces();
@@ -325,15 +358,21 @@ int do_main() {
   // Add two cylinders to bang into -- if the rigid_cylinders flag is set to
   // false, this should crash in strict hydroelastic mode, but report point
   // contact in non-strict mode.
-  // The purpose of having two cylinders instead of one is to verify that the
-  // duplicated contact patch visualization issue in #14578 is fixed.
+
+  // We provide two cylinders to more robustly exercise the logic. Ultimately,
+  // because they are affixed to the same dynamic frame, we are exploring how
+  // the visualizer supports multiple contacts between two bodies.
+  // (Historically, the second can was used to test the fix for #14578 -- but
+  // that is less relevant than originally.)
+  const FrameId can_frame_id = scene_graph.RegisterFrame(
+      source_id, GeometryFrame("double_can", kCylinderModelInstance));
   const RigidTransformd X_WC1(Vector3d{-0.5, 0, 3});
   const RigidTransformd X_WC2(Vector3d{0.5, 0, 3});
-  const GeometryId can1_id = scene_graph.RegisterAnchoredGeometry(
-      source_id, make_unique<GeometryInstance>(
+  const GeometryId can1_id = scene_graph.RegisterGeometry(
+      source_id, can_frame_id, make_unique<GeometryInstance>(
                      X_WC1, make_unique<Cylinder>(0.5, 1.0), "can1"));
-  const GeometryId can2_id = scene_graph.RegisterAnchoredGeometry(
-      source_id, make_unique<GeometryInstance>(
+  const GeometryId can2_id = scene_graph.RegisterGeometry(
+      source_id, can_frame_id, make_unique<GeometryInstance>(
                      X_WC2, make_unique<Cylinder>(0.5, 1.0), "can2"));
   ProximityProperties proximity_cylinder;
   if (FLAGS_rigid_cylinders) {
@@ -367,6 +406,12 @@ int do_main() {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
+  systems::Context<double>& diagram_context = simulator.get_mutable_context();
+  systems::Context<double>& sg_context =
+      scene_graph.GetMyMutableContextFromRoot(&diagram_context);
+  scene_graph.get_source_pose_port(source_id).FixValue(
+      &sg_context,
+      geometry::FramePoseVector<double>{{can_frame_id, RigidTransformd{}}});
 
   simulator.get_mutable_integrator().set_maximum_step_size(0.002);
   simulator.set_target_realtime_rate(FLAGS_real_time ? 1.f : 0.f);
