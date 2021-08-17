@@ -67,7 +67,7 @@ class DeformableContactData {
   /* Returns the inverse mapping of `permuted_vertex_indexes()`. For the example
    above, the returned vector would be {1, 2, 5, 0, 3, 4}. */
   const std::vector<int>& permuted_to_original_indexes() const {
-    return permuted_vertex_indexes_;
+    return permuted_to_original_indexes_;
   }
 
   /* Returns a vector of *approximations* of signed distances at all contact
