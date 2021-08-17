@@ -2,7 +2,7 @@
 
 #include "drake/multibody/contact_solvers/block_sparse_linear_operator.h"
 #include "drake/multibody/fixed_fem/dev/inverse_spd_operator.h"
-#include "drake/multibody/fixed_fem/dev/permute_block_sparse_matrix.h"
+#include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
