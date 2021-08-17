@@ -12,6 +12,20 @@ package(
 )
 
 drake_cc_library(
+    name = "acceleration_newmark_scheme",
+    srcs = [
+        "acceleration_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "acceleration_newmark_scheme.h",
+    ],
+    deps = [
+        ":newmark_scheme",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
     name = "collision_objects",
     srcs = [
         "collision_objects.cc",
@@ -231,9 +245,9 @@ drake_cc_library(
         "dynamic_elasticity_model.h",
     ],
     deps = [
+        ":acceleration_newmark_scheme",
         ":damping_model",
         ":elasticity_model",
-        ":newmark_scheme",
         "//geometry/proximity:volume_mesh",
     ],
 )
@@ -552,6 +566,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "velocity_newmark_scheme",
+    srcs = [
+        "velocity_newmark_scheme.cc",
+    ],
+    hdrs = [
+        "velocity_newmark_scheme.h",
+    ],
+    deps = [
+        ":newmark_scheme",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
     name = "zeroth_order_state_updater",
     hdrs = [
         "zeroth_order_state_updater.h",
@@ -568,6 +596,16 @@ drake_cc_library(
     hdrs = ["test/test_utilities.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acceleration_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":dummy_element",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -796,15 +834,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "newmark_scheme_test",
-    deps = [
-        ":dummy_element",
-        ":newmark_scheme",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "permute_block_sparse_matrix_test",
     deps = [
         ":permute_block_sparse_matrix",
@@ -859,6 +888,16 @@ drake_cc_googletest(
         "//geometry/proximity:make_box_mesh",
         "//multibody/fem:linear_simplex_element",
         "//multibody/fem:simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "velocity_newmark_scheme_test",
+    deps = [
+        ":acceleration_newmark_scheme",
+        ":dummy_element",
+        ":velocity_newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

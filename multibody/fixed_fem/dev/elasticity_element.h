@@ -197,7 +197,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    @param[in] reference_positions    The positions (in world frame) of the nodes
    of this element in the reference configuration.
    @param[in] denstiy    The mass density of the element with unit kg/m³.
-   @param[in] gravity    The gravitational accleration (in world frame) for the
+   @param[in] gravity    The gravitational acceleration (in world frame) for the
    new element with unit m/s².
    @pre element_index must be valid.
    @pre density > 0. */
