@@ -13,19 +13,23 @@ namespace multibody {
 namespace fem {
 namespace internal {
 namespace {
-Matrix3<double> MakeArbitraryMatrix() {
-  Matrix3<double> A;
-  // clang-format off
-  A << 1.2, 2.3, 3.4,
-       4.5, 5.6, 6.7,
-       7.8, 8.9, 9.0;
-  // clang-format on
+
+using Eigen::MatrixXd;
+
+/* Returns an arbitrary matrix for testing purpose. */
+MatrixXd MakeMatrix(int rows, int cols) {
+  MatrixXd A(rows, cols);
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      A(i, j) = cols * i + j;
+    }
+  }
   return A;
 }
 
-Matrix3<AutoDiffXd> MakeAutoDiffMatrix() {
-  const Matrix3<double> A = MakeArbitraryMatrix();
-  Matrix3<AutoDiffXd> A_ad;
+MatrixX<AutoDiffXd> MakeAutoDiffMatrix(int rows, int cols) {
+  const MatrixXd A = MakeMatrix(rows, cols);
+  MatrixX<AutoDiffXd> A_ad(rows, cols);
   math::initializeAutoDiff(A, A_ad);
   return A_ad;
 }
@@ -39,7 +43,7 @@ double CalcTolerance(const Matrix3<double>& A) {
 }
 
 GTEST_TEST(MatrixUtilitiesTest, PolarDecompose) {
-  const Matrix3<double> A = MakeArbitraryMatrix();
+  const Matrix3<double> A = MakeMatrix(3, 3);
   Matrix3<double> R, S;
   PolarDecompose<double>(A, &R, &S);
   /* Tests reconstruction. */
@@ -51,7 +55,7 @@ GTEST_TEST(MatrixUtilitiesTest, PolarDecompose) {
 }
 
 GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
-  const Matrix3<AutoDiffXd> F = MakeAutoDiffMatrix();
+  const Matrix3<AutoDiffXd> F = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> R, S;
   PolarDecompose<AutoDiffXd>(F, &R, &S);
   Eigen::Matrix<AutoDiffXd, 9, 9> scaled_dRdF =
@@ -75,7 +79,7 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
 }
 
 GTEST_TEST(MatrixUtilitiesTest, CalcCofactorMatrix) {
-  const Matrix3<double> A = MakeArbitraryMatrix();
+  const Matrix3<double> A = MakeMatrix(3, 3);
   Matrix3<double> C;
   CalcCofactorMatrix<double>(A, &C);
   EXPECT_TRUE(CompareMatrices(
@@ -83,7 +87,7 @@ GTEST_TEST(MatrixUtilitiesTest, CalcCofactorMatrix) {
 }
 
 GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
-  const Matrix3<AutoDiffXd> A = MakeAutoDiffMatrix();
+  const Matrix3<AutoDiffXd> A = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> C;
   CalcCofactorMatrix<AutoDiffXd>(A, &C);
   Eigen::Matrix<AutoDiffXd, 9, 9> scaled_dCdA =
@@ -116,6 +120,31 @@ GTEST_TEST(MatrixUtilitiesTest, PermuteBlockVector) {
   VectorX<double> expected_result(3 * kNumBlocks);
   expected_result << 6, 7, 8, 0, 1, 2, 3, 4, 5;
   EXPECT_TRUE(CompareMatrices(expected_result, permuted_v));
+}
+
+/* Verify that PermuteBlockSparseMatrix provides the expected answer as
+hand-calculated solution on a small problem. The problem consists of 2 blocks
+permuted such that 0->1, 1->0. */
+GTEST_TEST(PermuteBlockSparseMatrix, AnalyticTest) {
+  constexpr int kNumBlocks = 2;
+  constexpr int kSize = kNumBlocks * 3;
+  const MatrixXd A = MakeMatrix(kSize, kSize);
+  const Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+  const std::vector<int> block_permutation = {1, 0};
+  const Eigen::SparseMatrix<double> permuted_A =
+      PermuteBlockSparseMatrix(A_sparse, block_permutation);
+  const MatrixXd permuted_A_dense = permuted_A;
+
+  MatrixXd expected_result(kSize, kSize);
+  /* The new 0-0 block is the same as the old 1-1 block. */
+  expected_result.topLeftCorner<3, 3>() = A.bottomRightCorner<3, 3>();
+  /* The new 0-1 block is the same as the old 1-0 block. */
+  expected_result.topRightCorner<3, 3>() = A.bottomLeftCorner<3, 3>();
+  /* The new 1-0 block is the same as the old 0-1 block. */
+  expected_result.bottomLeftCorner<3, 3>() = A.topRightCorner<3, 3>();
+  /* The new 1-1 block is the same as the old 0-0 block. */
+  expected_result.bottomRightCorner<3, 3>() = A.topLeftCorner<3, 3>();
+  EXPECT_TRUE(CompareMatrices(expected_result, permuted_A_dense));
 }
 
 }  // namespace
