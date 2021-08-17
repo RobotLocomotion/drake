@@ -2,14 +2,14 @@
 
 #include <vector>
 
+#include <Eigen/SparseCore>
+
 #include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
-
-// TODO(xuchenhan-tri): Move implementations to .cc file.
 
 /* Some of the following methods involve calculations about a 4th order tensor
 (call it A) of dimension 3*3*3*3. We follow the following convention to flatten
@@ -33,27 +33,11 @@ Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ
 
 /* Calculates the polar decomposition of a 3-by-3 matrix F = RS where R is a
  rotation matrix and S is a symmetric matrix. The decomposition is unique when F
- is non-singular. */
+ is non-singular.
+ @tparam_nonsymbolic_scalar. */
 template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
-                    EigenPtr<Matrix3<T>> S) {
-  /* According to https://eigen.tuxfamily.org/dox/classEigen_1_1BDCSVD.html,
-   for matrix of size < 16, it's preferred to used JacobiSVD. */
-  const Eigen::JacobiSVD<Matrix3<T>, Eigen::HouseholderQRPreconditioner> svd(
-      F, Eigen::ComputeFullU | Eigen::ComputeFullV);
-  Matrix3<T> U = svd.matrixU();
-  const Matrix3<T>& V = svd.matrixV();
-  Vector3<T> sigma = svd.singularValues();
-  *R = U * V.transpose();
-  /* Ensure that R is a proper rotation. If R is a reflection, flip the sign of
-   the last column of U and the last singular value. */
-  if (R->determinant() < 0) {
-    U.col(2) *= -1.0;
-    sigma(2) *= -1.0;
-    *R = U * V.transpose();
-  }
-  *S = V * sigma.asDiagonal() * V.transpose();
-}
+                    EigenPtr<Matrix3<T>> S);
 
 /* Some notes on derivation on the derivative of the rotation matrix from polar
  decomposition: we start with the result from section 2 of [McAdams, 2011] about
@@ -86,100 +70,31 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
 
 /* Computes the derivative of the rotation matrix from the polar decomposition
  (see PolarDecompose()) with respect to the original matrix.
- @param[in] R The rotation matrix in the polar decomposition F = RS.
- @param[in] S The symmetric matrix in the polar decomposition F = RS.
- @param[in] scale The scalar multiple of the result.
+ @param[in] R            The rotation matrix in the polar decomposition F = RS.
+ @param[in] S            The symmetric matrix in the polar decomposition F = RS.
+ @param[in] scale        The scalar multiple of the result.
  @param[out] scaled_dRdF The variable to which scale * dR/dF is added.
- @pre tr(S)I − S is invertible. */
+ @pre tr(S)I − S is invertible.
+ @tparam_nonsymbolic_scalar. */
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
-    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF) {
-  Matrix3<T> A = -S;
-  A.diagonal().array() += S.trace();
-  const T J = A.determinant();
-  DRAKE_DEMAND(J != 0);
-  const T scale_over_J = scale / J;
-  const Matrix3<T> RA = R * A;
-  const Matrix3<T> sRA = scale_over_J * RA;
-  const Matrix3<T> sRART = sRA * R.transpose();
-  for (int a = 0; a < 3; ++a) {
-    for (int b = 0; b < 3; ++b) {
-      const int column_index = 3 * b + a;
-      for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-          const int row_index = 3 * j + i;
-          (*scaled_dRdF)(row_index, column_index) +=
-              sRART(i, a) * A(j, b) - sRA(i, b) * RA(a, j);
-        }
-      }
-    }
-  }
-}
+    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF);
 
 /* Calculates the cofactor matrix of the given input 3-by-3 matrix M. */
 template <typename T>
-void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor) {
-  (*cofactor)(0, 0) = M(1, 1) * M(2, 2) - M(1, 2) * M(2, 1);
-  (*cofactor)(0, 1) = M(1, 2) * M(2, 0) - M(1, 0) * M(2, 2);
-  (*cofactor)(0, 2) = M(1, 0) * M(2, 1) - M(1, 1) * M(2, 0);
-  (*cofactor)(1, 0) = M(0, 2) * M(2, 1) - M(0, 1) * M(2, 2);
-  (*cofactor)(1, 1) = M(0, 0) * M(2, 2) - M(0, 2) * M(2, 0);
-  (*cofactor)(1, 2) = M(0, 1) * M(2, 0) - M(0, 0) * M(2, 1);
-  (*cofactor)(2, 0) = M(0, 1) * M(1, 2) - M(0, 2) * M(1, 1);
-  (*cofactor)(2, 1) = M(0, 2) * M(1, 0) - M(0, 0) * M(1, 2);
-  (*cofactor)(2, 2) = M(0, 0) * M(1, 1) - M(0, 1) * M(1, 0);
-}
+void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
 
 /* Computes the derivative of the cofactor matrix C of a 3-by-3 matrix M
  with respect to the matrix M itself.
- @param[in] M The input matrix.
- @param[in] scale The scalar multiple of the result.
- @param[out] scaled_dCdF The variable to which scale * dC/dM is added. */
+ @param[in] M            The input matrix.
+ @param[in] scale        The scalar multiple of the result.
+ @param[out] scaled_dCdF The variable to which scale * dC/dM is added.
+ @tparam_nonsymbolic_scalar. */
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
     const Matrix3<T>& M, const T& scale,
-    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dCdM) {
-  /* See the convention for ordering the 9-by-9 derivative at the top of the
-   file. */
-  const Matrix3<T> A = scale * M;
-  (*scaled_dCdM)(4, 0) += A(2, 2);
-  (*scaled_dCdM)(5, 0) += -A(1, 2);
-  (*scaled_dCdM)(7, 0) += -A(2, 1);
-  (*scaled_dCdM)(8, 0) += A(1, 1);
-  (*scaled_dCdM)(3, 1) += -A(2, 2);
-  (*scaled_dCdM)(5, 1) += A(0, 2);
-  (*scaled_dCdM)(6, 1) += A(2, 1);
-  (*scaled_dCdM)(8, 1) += -A(0, 1);
-  (*scaled_dCdM)(3, 2) += A(1, 2);
-  (*scaled_dCdM)(4, 2) += -A(0, 2);
-  (*scaled_dCdM)(6, 2) += -A(1, 1);
-  (*scaled_dCdM)(7, 2) += A(0, 1);
-  (*scaled_dCdM)(1, 3) += -A(2, 2);
-  (*scaled_dCdM)(2, 3) += A(1, 2);
-  (*scaled_dCdM)(7, 3) += A(2, 0);
-  (*scaled_dCdM)(8, 3) += -A(1, 0);
-  (*scaled_dCdM)(0, 4) += A(2, 2);
-  (*scaled_dCdM)(2, 4) += -A(0, 2);
-  (*scaled_dCdM)(6, 4) += -A(2, 0);
-  (*scaled_dCdM)(8, 4) += A(0, 0);
-  (*scaled_dCdM)(0, 5) += -A(1, 2);
-  (*scaled_dCdM)(1, 5) += A(0, 2);
-  (*scaled_dCdM)(6, 5) += A(1, 0);
-  (*scaled_dCdM)(7, 5) += -A(0, 0);
-  (*scaled_dCdM)(1, 6) += A(2, 1);
-  (*scaled_dCdM)(2, 6) += -A(1, 1);
-  (*scaled_dCdM)(4, 6) += -A(2, 0);
-  (*scaled_dCdM)(5, 6) += A(1, 0);
-  (*scaled_dCdM)(0, 7) += -A(2, 1);
-  (*scaled_dCdM)(2, 7) += A(0, 1);
-  (*scaled_dCdM)(3, 7) += A(2, 0);
-  (*scaled_dCdM)(5, 7) += -A(0, 0);
-  (*scaled_dCdM)(0, 8) += A(1, 1);
-  (*scaled_dCdM)(1, 8) += -A(0, 1);
-  (*scaled_dCdM)(3, 8) += -A(1, 0);
-  (*scaled_dCdM)(4, 8) += A(0, 0);
-}
+    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dCdM);
 
 /* Given a size 3N vector with block structure with size 3 block entries Bᵢ
  where i ∈ V = {0, ..., N-1} and a permutation P on V, this method builds the
@@ -193,18 +108,37 @@ permutation will be:
 @param[in] block_permutation  block_permutation[i] gives the index of the
                               permuted block whose original index is `i`.
 @pre v.size() % 3 == 0.
-@pre block_permutation is a permutation of {0, 1, ..., v.size()/3-1}. */
+@pre block_permutation is a permutation of {0, 1, ..., v.size()/3-1}.
+@tparam_nonsymbolic_scalar. */
 template <typename T>
 VectorX<T> PermuteBlockVector(const Eigen::Ref<const VectorX<T>>& v,
-                              const std::vector<int>& block_permutation) {
-  DRAKE_DEMAND(static_cast<int>(block_permutation.size() * 3) == v.size());
-  VectorX<T> permuted_v(v.size());
-  for (int i = 0; i < static_cast<int>(block_permutation.size()); ++i) {
-    permuted_v.template segment<3>(3 * block_permutation[i]) =
-        v.template segment<3>(3 * i);
-  }
-  return permuted_v;
-}
+                              const std::vector<int>& block_permutation);
+
+/* Given a 3N-by-3N Eigen::SparseMatrix with block structure with 3x3 block
+ entries Bᵢⱼ where i, j ∈ V = {0, ..., N-1} and a permutation P on V, this
+ method builds the permuted matrix with 3x3 block entries C's such that
+ Cₚ₍ᵢ₎ₚ₍ⱼ₎ = Bᵢⱼ.
+
+ For example, suppose the input `matrix` is given by
+    B00  B01  B02
+    B10  B11  B12
+    B20  B21  B22,
+ permutation {1, 2, 0} produces
+    B22  B20  B21
+    B02  B00  B01
+    B12  B10  B11.
+
+ @param[in] matrix             The original block sparse matrix to be permuted.
+ @param[in] block_permutation  block_permutation[i] gives the index of the
+                               permuted block whose original index is `i`.
+ @pre matrix.rows() == matrix.cols().
+ @pre matrix.rows() % 3 == 0.
+ @pre block_permutation is a permutation of {0, 1, ..., matrix.rows()/3-1}.
+ @tparam_nonsymbolic_scalar. */
+template <typename T>
+Eigen::SparseMatrix<T> PermuteBlockSparseMatrix(
+    const Eigen::SparseMatrix<T>& matrix,
+    const std::vector<int>& block_permutation);
 
 }  // namespace internal
 }  // namespace fem

@@ -6,22 +6,17 @@ namespace drake {
 namespace multibody {
 namespace fem {
 namespace test {
-/* Calculates an approximation of the condition number for the given matrix A.
-@tparam_nonsymbolic_scalar T. */
+
+/* Calculates the condition number for the given matrix A.
+ The condition number is calculated via
+     k(A) = σₘₐₓ / σₘᵢₙ
+ where σₘₐₓ and σₘᵢₙ are the largest and smallest singular values (in magnitude)
+ of A.
+ @pre A is invertible.
+ @tparam_nonsymbolic_scalar. */
 template <typename T>
-double CalcConditionNumber(const Eigen::Ref<const MatrixX<T>>& A) {
-  Eigen::JacobiSVD<MatrixX<T>> svd(A);
-  /* Prevents division by zero for singular matrix. */
-  const T epsilon = 1e-14;
-  const T cond =
-      svd.singularValues()(0) /
-      (svd.singularValues()(svd.singularValues().size() - 1) + epsilon);
-  if constexpr (std::is_same_v<T, double>) {
-    return cond;
-  } else {
-    return cond.value();
-  }
-}
+double CalcConditionNumber(const Eigen::Ref<const MatrixX<T>>& A);
+
 }  // namespace test
 }  // namespace fem
 }  // namespace multibody
