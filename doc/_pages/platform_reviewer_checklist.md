@@ -21,6 +21,23 @@ clearly an early work-in-progress -- but if it is unassigned for several days,
 you should probably encourage the developer to label it "do not review" for
 clarity.
 
+Here's some sample text to post when a pull request does not have anyone
+assigned yet:
+
+* For PRs by a core Drake Developer:
+
+  Good day, ``@AUTHOR``.  This PR does not yet have a reviewer assigned.
+  Is it ready for review yet?
+  If yes, then please assign a feature reviewer.
+  If no, please label it "status: do not review".
+
+* For PRs by a new or infrequent contributor:
+
+  Good day, ``@AUTHOR``.  I'm assigning ``+@REVIEWER`` as the most relevant
+  team member to review and help out with this pull request.  If you already
+  had a different team member in mind, please let us know.  ``@REVIEWER``,
+  feel free to delegate in case there is someone else more suitable.
+
 For PRs assigned to you that have passed all commit checks (other than needing
 a squash), merge the PR to master on behalf of the author -- unless it is
 labeled "status: do not merge".
