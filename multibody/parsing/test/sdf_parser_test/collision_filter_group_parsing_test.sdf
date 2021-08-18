@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<sdf version='1.7'>
+  <model name='collision_filter_group_parsing_test'>
+    <link name='link1'>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <collision name='link1_sphere'>
+        <pose>0 0 0 1.5708 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_12' type='revolute'>
+      <pose relative_to='link1'>0 0 0.15 0 -0 0</pose>
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1</lower>
+          <upper>2</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='link2'>
+      <pose relative_to='revolute_joint_12'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <collision name='link2_sphere'>
+        <pose>0 0 0 1.5708 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_23' type='revolute'>
+      <pose relative_to='link2'>0 0 0.15 0 -0 0</pose>
+      <parent>link2</parent>
+      <child>link3</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1</lower>
+          <upper>2</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='link3'>
+      <pose relative_to='revolute_joint_23'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <collision name='link3_sphere'>
+        <pose>0 0 0 1.5708 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name='revolute_joint_34' type='revolute'>
+      <pose relative_to='link3'>0 0 0.15 0 -0 0</pose>
+      <parent>link3</parent>
+      <child>link4</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1</lower>
+          <upper>2</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='link4'>
+      <pose relative_to='revolute_joint_34'>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <collision name='link4_sphere'>
+        <pose>0 0 0 1.5708 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <drake:collision_filter_group name="group_link14">
+      <drake:member>link1</drake:member>
+      <drake:member>link4</drake:member>
+      <drake:ignored_collision_filter_group>group_link14</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_link2">
+      <drake:member>link2</drake:member>
+      <drake:ignored_collision_filter_group>group_link3</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group ignore="true" name="group_link24">
+      <drake:member>link2</drake:member>
+      <drake:member>link4</drake:member>
+      <drake:ignored_collision_filter_group>group_link24</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+    <drake:collision_filter_group name="group_link3">
+      <drake:member>link3</drake:member>
+      <drake:ignored_collision_filter_group>group_link14</drake:ignored_collision_filter_group>
+    </drake:collision_filter_group>
+  </model>
+</sdf>

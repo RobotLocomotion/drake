@@ -7,6 +7,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <sdf/sdf.hh>
@@ -862,6 +863,57 @@ bool AreWelded(
   return false;
 }
 
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
+                               const sdf::Model& model,
+                               MultibodyPlant<double>* plant) {
+  auto next_child_element = [](const ElementNode& data_element,
+                               const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetElementImpl(std::string(element_name));
+  };
+  auto next_sibling_element = [](const ElementNode& data_element,
+                                 const char* element_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->GetNextElement(std::string(element_name));
+  };
+  auto has_attribute = [](const ElementNode& data_element,
+                          const char* attribute_name) {
+    return std::get<sdf::ElementPtr>(data_element)
+        ->HasAttribute(std::string(attribute_name));
+  };
+  auto get_string_attribute = [](const ElementNode& data_element,
+                                 const char* attribute_name) {
+    if (!std::get<sdf::ElementPtr>(data_element)
+             ->HasAttribute(attribute_name)) {
+      throw std::runtime_error(fmt::format(
+          "{}:{}:{} The tag <{}> is missing the required attribute \"{}\"",
+          __FILE__, __func__, __LINE__,
+          std::get<sdf::ElementPtr>(data_element)->GetName(),
+          attribute_name));
+    }
+    return std::get<sdf::ElementPtr>(data_element)
+        ->Get<std::string>(attribute_name);
+  };
+  auto get_bool_attribute = [](const ElementNode& data_element,
+                               const char* attribute_name) {
+    return std::get<sdf::ElementPtr>(data_element)->Get<bool>(attribute_name);
+  };
+  auto read_tag_string = [](const ElementNode& data_element, const char*) {
+    sdf::ParamPtr param = std::get<sdf::ElementPtr>(data_element)->GetValue();
+    if (param == nullptr) {
+      throw std::runtime_error(fmt::format(
+          "{}:{}:{} The tag <{}> is missing a required string value.", __FILE__,
+          __func__, __LINE__,
+          std::get<sdf::ElementPtr>(data_element)->GetName()));
+    }
+    return param->GetAsString();
+  };
+  ParseCollisionFilterGroupCommon(model_instance, model.Element(), plant,
+                                  next_child_element, next_sibling_element,
+                                  has_attribute, get_string_attribute,
+                                  get_bool_attribute, read_tag_string);
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
@@ -994,6 +1046,12 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                 joint_name, A, B, link_info.X_WL));
       }
     }
+  }
+
+  // Parses the collision filter groups only if the scene graph is registered.
+  if (plant->geometry_source_is_registered()) {
+    drake::log()->trace("sdf_parser: Add collision filter groups");
+    ParseCollisionFilterGroup(model_instance, model, plant);
   }
 
   return added_model_instances;

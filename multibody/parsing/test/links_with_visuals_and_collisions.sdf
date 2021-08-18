@@ -132,11 +132,9 @@
       <!-- This pose represents `X_MF3`. -->
       <pose>0.7 0.8 0.9 0 0 0</pose>
     </frame>
-    <!-- For now at least, We care only that Drake's custom tag doesn't break
-         parsing the rest of the elements in this file. -->
-    <collision_filter_group name="filter_group1">
-      <member link="link1"/>
-      <member link="link2"/>
-    </collision_filter_group>
+    <drake:collision_filter_group name="filter_group1">
+      <drake:member>link1</drake:member>
+      <drake:member>link2</drake:member>
+    </drake:collision_filter_group>
   </model>
 </sdf>
