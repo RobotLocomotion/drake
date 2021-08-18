@@ -268,6 +268,29 @@ void AddPolygonToMeshData(
 }
 
 template <typename T>
+void AddPolygonToMeshDataAsOnePolygon(
+    const std::vector<Vector3<T>>& polygon_F,
+    std::vector<PolygonalSurfaceFace>* faces,
+    std::vector<SurfaceVertex<T>>* vertices_F) {
+  DRAKE_DEMAND(faces != nullptr);
+  DRAKE_DEMAND(vertices_F != nullptr);
+  DRAKE_DEMAND(polygon_F.size() >= 3);
+
+  int num_vertices_before = vertices_F->size();
+  for (const Vector3<T>& r_FV : polygon_F) {
+    vertices_F->emplace_back(r_FV);
+  }
+  int num_vertices_after = vertices_F->size();
+
+  std::vector<SurfaceVertexIndex> polygon_vertex_indices;
+  for (int v = num_vertices_before; v < num_vertices_after; ++v) {
+    polygon_vertex_indices.emplace_back(v);
+  }
+  faces->emplace_back(polygon_vertex_indices);
+}
+
+
+template <typename T>
 void AddPolygonToMeshDataAsOneTriangle(
     const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& nhat_F,
     std::vector<SurfaceFace>* faces,
@@ -356,6 +379,7 @@ bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &AddPolygonToMeshData<T>,
     &AddPolygonToMeshDataAsOneTriangle<T>,
+    &AddPolygonToMeshDataAsOnePolygon<T>,
     &CalcPolygonArea<T>,
     &IsFaceNormalInNormalDirection<T>,
     /* Use static_cast to disambiguate the two different overloads. */

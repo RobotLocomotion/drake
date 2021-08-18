@@ -10,10 +10,98 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
+#include "drake/multibody/plant/hydroelastic_poly_contact_info.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
 
 namespace drake {
 namespace multibody {
+
+namespace internal {
+
+/* A class to facilitate complex ownership relationships. This helps a
+particular case: a parent container class wants a vector of Foo. The container
+class may or may not own the Foo instances. This vector wraps that varying
+ownership.
+
+The vector starts assuming it owns nothing, and only upon copying the quantity
+does the result own the its own copy of the data.
+
+Note: This is completely defined in the header file to facilitate unit testing.
+If we want to move it out, then we would need to test against
+OwnershipVector<HydroelasticPolyContactInfo<double>> to have an instantiation
+we can link against. */
+template <typename Foo>
+class OwnershipVector {
+ public:
+  /* Constructs the vector in a non-owning configuration. */
+  OwnershipVector() : data_(std::vector<const Foo*>()) {}
+
+  OwnershipVector(const OwnershipVector& results) { *this = results; }
+  OwnershipVector& operator=(const OwnershipVector& source_data) {
+    /* When *copying* data to this instance, we know we have to take ownership.
+     */
+    const int count = source_data.size();
+    if (count == 0) {
+      /* Assigning data that doesn't own anything mean this can continue to not
+       own anything. In fact, if it previously owned data, that data is freed
+       and it goes back to not owning anything. */
+      data_ = std::vector<const Foo*>();
+    } else {
+      data_ = std::vector<Foo>();
+      auto& data = std::get<std::vector<Foo>>(data_);
+      data.reserve(count);
+      for (int i = 0; i < count; ++i) {
+        // This assumes copy constructor.
+        data.push_back(source_data.get(i));
+      }
+    }
+
+    return *this;
+  }
+  OwnershipVector(OwnershipVector&&) = default;
+  OwnershipVector& operator=(OwnershipVector&&) = default;
+
+  /* Reports the number of elements in this vector (regardless of
+   owned/unowned status). */
+  int size() const {
+    size_t s{};
+    if (std::holds_alternative<std::vector<const Foo*>>(data_)) {
+      s = std::get<std::vector<const Foo*>>(data_).size();
+    } else {
+      s = std::get<std::vector<Foo>>(data_).size();
+    }
+    return static_cast<int>(s);
+  }
+
+  /* Gets the ith element.
+   @pre 0 <= i < size(). */
+  const Foo& get(int i) const {
+    if (std::holds_alternative<std::vector<const Foo*>>(data_)) {
+      return *std::get<std::vector<const Foo*>>(data_)[i];
+    } else {
+      return std::get<std::vector<Foo>>(data_)[i];
+    }
+  }
+
+  /* Clears the vector and resets its state to unowned. */
+  void clear() { data_ = std::vector<const Foo*>(); }
+
+  /* Adds an unowned element to this vector. The vector cannot own any of its
+   data, otherwise this throws. */
+  void AddUnowned(const Foo* data_ptr) {
+    if (!std::holds_alternative<std::vector<const Foo*>>(data_)) {
+      throw std::runtime_error("Cannot add unowned data to a concrete copy");
+    }
+    std::get<std::vector<const Foo*>>(data_).push_back(data_ptr);
+  }
+
+ private:
+  /* The owned data is either a vector of pointers to const Foo instances, or
+   a vector of Foo instances. */
+  std::variant<std::vector<const Foo*>, std::vector<Foo>> data_;
+};
+
+}  // namespace internal
 
 /**
  A container class storing the contact results information for each contact
@@ -26,11 +114,9 @@ namespace multibody {
 template <typename T>
 class ContactResults {
  public:
-  ContactResults();
-  ContactResults(const ContactResults&);
-  ContactResults(ContactResults&&) = default;
-  ContactResults& operator=(const ContactResults&);
-  ContactResults& operator=(ContactResults&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactResults)
+
+  ContactResults() = default;
 
   /** Returns the number of point pair contacts. */
   int num_point_pair_contacts() const {
@@ -38,7 +124,14 @@ class ContactResults {
   }
 
   /** Returns the number of hydroelastic contacts. */
-  int num_hydroelastic_contacts() const;
+  int num_hydroelastic_contacts() const {
+    return hydroelastic_contact_info_.size();
+  }
+
+  /** Returns the number of hydroelastic polygonal contacts. */
+  int num_hydroelastic_polygonal_contacts() const {
+    return hydroelastic_poly_contact_info_.size();
+  }
 
   /** Retrieves the ith PointPairContactInfo instance. The input index i
    must be in the range [0, `num_point_pair_contacts()` - 1] or this method
@@ -50,9 +143,15 @@ class ContactResults {
    method aborts. */
   const HydroelasticContactInfo<T>& hydroelastic_contact_info(int i) const;
 
+  /** Retrieves the ith HydroelasticPolyContactInfo instance. The input index i
+   must be in the range [0, `num_hydroelastic_contacts()` - 1] or this
+   method aborts. */
+  const HydroelasticPolyContactInfo<T>& hydroelastic_poly_contact_info(
+      int i) const;
+
   // The following methods should only be called by MultibodyPlant and testing
   // fixtures and are undocumented rather than being made private with friends.
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   /* Clears the set of contact information for when the old data becomes
    invalid. */
   void Clear();
@@ -66,63 +165,28 @@ class ContactResults {
    result of a copy operation (AddContactInfo() asserts that is the case). The
    pointer must remain valid for the lifetime of this object. */
   void AddContactInfo(
-      const HydroelasticContactInfo<T>* hydroelastic_contact_info);
-  #endif
+      const HydroelasticContactInfo<T>* hydroelastic_contact_info) {
+    hydroelastic_contact_info_.AddUnowned(hydroelastic_contact_info);
+  }
+
+  /* Add a new hydroelastic polygonal contact to `this`, assuming that `this` is
+   not the result of a copy operation (AddContactInfo() asserts that is the
+   case). The pointer must remain valid for the lifetime of this object. */
+  void AddContactInfo(
+      const HydroelasticPolyContactInfo<T>* hydroelastic_poly_contact_info) {
+    hydroelastic_poly_contact_info_.AddUnowned(hydroelastic_poly_contact_info);
+  }
+
+#endif
 
  private:
-  enum OwnershipMode { kAliasedPointers, kOwnsCopies };
-
-  OwnershipMode hydroelastic_contact_vector_ownership_mode() const {
-    return std::holds_alternative<
-               std::vector<const HydroelasticContactInfo<T>*>>(
-               hydroelastic_contact_info_)
-               ? kAliasedPointers
-               : kOwnsCopies;
-  }
-
-  const std::vector<const HydroelasticContactInfo<T>*>&
-  hydroelastic_contact_vector_of_pointers() const {
-    return std::get<std::vector<const HydroelasticContactInfo<T>*>>(
-        hydroelastic_contact_info_);
-  }
-
-  std::vector<const HydroelasticContactInfo<T>*>&
-  hydroelastic_contact_vector_of_pointers() {
-    return std::get<std::vector<const HydroelasticContactInfo<T>*>>(
-        hydroelastic_contact_info_);
-  }
-
-  const std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>&
-  hydroelastic_contact_vector_of_unique_ptrs() const {
-    return std::get<std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>(
-        hydroelastic_contact_info_);
-  }
-
-  std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>&
-  hydroelastic_contact_vector_of_unique_ptrs() {
-    return std::get<std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>(
-        hydroelastic_contact_info_);
-  }
-
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
 
-  /* We use a variant type to keep from copying already owned data (from a
-   cache), i.e., the HydroelasticContactInfo, into this data structure, if
-   possible. By default, the variant stores the first type, i.e.,
-   std::vector<const HydroelasticContactInfo<T>*>. If this data structure is
-   copied, however, the variant changes to instead store the second type, a
-   vector of unique pointers. In that case, all of the underlying
-   HydroelasticContactInfo objects are copied and
-   AddContactInfo(const HydroelasticContactInfo*) can no longer be called on the
-   copy (see assertion in AddContactInfo).
-
-   Note that we jump through these hoops because storing ContactResults into
-   a cache entry requires that it be placed into a Value<ContactResults>, which
-   in turn requires that ContactResults be copyable.
-   */
-  std::variant<std::vector<const HydroelasticContactInfo<T>*>,
-               std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
+  internal::OwnershipVector<HydroelasticContactInfo<T>>
       hydroelastic_contact_info_;
+
+  internal::OwnershipVector<HydroelasticPolyContactInfo<T>>
+      hydroelastic_poly_contact_info_;
 };
 
 }  // namespace multibody

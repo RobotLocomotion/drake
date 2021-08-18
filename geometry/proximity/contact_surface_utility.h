@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "drake/geometry/proximity/polygonal_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
@@ -166,6 +167,12 @@ template <typename T>
 void AddPolygonToMeshDataAsOneTriangle(
     const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& nhat_F,
     std::vector<SurfaceFace>* faces, std::vector<SurfaceVertex<T>>* vertices_F);
+
+template <typename T>
+void AddPolygonToMeshDataAsOnePolygon(
+    const std::vector<Vector3<T>>& polygon_F,
+    std::vector<PolygonalSurfaceFace>* faces,
+    std::vector<SurfaceVertex<T>>* vertices_F);
 
 enum class ContactPolygonRepresentation {
   // Each contact polygon is subdivided into triangles sharing the centroid

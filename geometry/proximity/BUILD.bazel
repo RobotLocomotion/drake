@@ -47,6 +47,7 @@ drake_cc_package_library(
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":plane",
+        ":polygonal_surface_mesh",
         ":posed_half_space",
         ":proximity_utilities",
         ":sorted_triplet",
@@ -140,6 +141,7 @@ drake_cc_library(
     srcs = ["contact_surface_utility.cc"],
     hdrs = ["contact_surface_utility.h"],
     deps = [
+        ":polygonal_surface_mesh",
         ":surface_mesh",
         "//common:default_scalars",
     ],
@@ -451,6 +453,7 @@ drake_cc_library(
         ":bvh",
         ":contact_surface_utility",
         ":mesh_field",
+        ":polygonal_surface_mesh",
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
@@ -591,6 +594,18 @@ drake_cc_library(
     hdrs = ["surface_mesh.h"],
     deps = [
         ":mesh_traits",
+        "//common:type_safe_index",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "polygonal_surface_mesh",
+    srcs = ["polygonal_surface_mesh.cc"],
+    hdrs = ["polygonal_surface_mesh.h"],
+    deps = [
+        ":mesh_traits",
+        ":surface_mesh",
         "//common:type_safe_index",
         "//math:geometric_transform",
     ],

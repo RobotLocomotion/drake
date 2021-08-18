@@ -301,7 +301,8 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     ContactPolygonRepresentation representation,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
-    std::vector<Vector3<T>>* grad_eM_Ms) {
+    std::vector<Vector3<T>>* grad_eM_Ms,
+    std::unique_ptr<PolygonalSurfaceMesh<T>>* polygonal_surface_MN_M) {
   DRAKE_DEMAND(surface_MN_M != nullptr);
   DRAKE_DEMAND(e_MN != nullptr);
   DRAKE_DEMAND(grad_eM_Ms != nullptr);
@@ -310,6 +311,9 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   std::vector<SurfaceFace> surface_faces;
   std::vector<SurfaceVertex<T>> surface_vertices_M;
   std::vector<T> surface_e;
+  std::vector<PolygonalSurfaceFace> polygonal_surface_faces;
+  std::vector<SurfaceVertex<T>> polygonal_surface_vertices_M;
+  std::vector<T> polygonal_vertex_values;
   const VolumeMesh<double>& mesh_M = volume_field_M.mesh();
   // We know that each contact polygon has at most 7 vertices because
   // each surface triangle is clipped by four half-spaces of the four
@@ -318,8 +322,11 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   contact_polygon.reserve(7);
 
   const math::RigidTransform<double> X_MN_d = convert_to_double(X_MN);
-  auto callback = [&volume_field_M, &surface_N, &surface_faces,
-                   &surface_vertices_M, &surface_e, &mesh_M, &X_MN_d, &X_MN,
+  auto callback = [&volume_field_M, &surface_N,
+                   &surface_faces, &surface_vertices_M, &surface_e,
+                   &polygonal_surface_faces, &polygonal_surface_vertices_M,
+                   &polygonal_vertex_values,
+                   &mesh_M, &X_MN_d, &X_MN,
                    &contact_polygon, grad_eM_Ms, representation,
                    this](VolumeElementIndex tet_index,
                          SurfaceFaceIndex tri_index) -> BvttCallbackResult {
@@ -369,6 +376,23 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
                                           &surface_faces, &surface_vertices_M);
         break;
     }
+
+    {
+      const int num_polygonal_vertices_before =
+          polygonal_surface_vertices_M.size();
+      AddPolygonToMeshDataAsOnePolygon<T>(polygon_vertices_M,
+                                          &polygonal_surface_faces,
+                                          &polygonal_surface_vertices_M);
+      const int num_polygonal_vertices_after =
+          polygonal_surface_vertices_M.size();
+      for (int v = num_polygonal_vertices_before; v <
+      num_polygonal_vertices_after; ++v) {
+        const Vector3<T>& r_MV = polygonal_surface_vertices_M[v].r_MV();
+        const T field_value = volume_field_M.EvaluateCartesian(tet_index, r_MV);
+        polygonal_vertex_values.push_back(field_value);
+      }
+    }
+
     // TODO(SeanCurtis-TRI) Consider rolling this operation into
     // AddPolygonToMeshData to eliminate the extra pass through triangles.
     const Vector3<double>& grad_eMi_M =
@@ -396,6 +420,13 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
       "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
+
+  DRAKE_DEMAND(polygonal_surface_vertices_M.size() ==
+               polygonal_vertex_values.size());
+  *polygonal_surface_MN_M = std::make_unique<PolygonalSurfaceMesh<T>>(
+      std::move(polygonal_surface_faces),
+      std::move(polygonal_surface_vertices_M),
+      std::move(polygonal_vertex_values));
 }
 
 template <typename T>
@@ -428,10 +459,11 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
   std::vector<Vector3<T>> grad_eS_S;
+  std::unique_ptr<PolygonalSurfaceMesh<T>> polygonal_surface_SR;
 
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(
       field_S, bvh_S, mesh_R, bvh_R, X_SR, representation,
-      &surface_SR, &e_SR, &grad_eS_S);
+      &surface_SR, &e_SR, &grad_eS_S, &polygonal_surface_SR);
 
   if (surface_SR == nullptr) return nullptr;
 
@@ -454,13 +486,16 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     grad_eS_W->emplace_back(X_WS.rotation() * grad_eSi_S);
   }
 
+  polygonal_surface_SR->TransformVertices(X_WS);
+
   // The contact surface is documented as having the normals pointing *out* of
   // the second surface and into the first. This mesh intersection creates a
   // surface mesh with normals pointing out of the rigid surface, so we make
   // sure the ids are ordered so that the rigid is the second id.
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
                                              std::move(e_SR),
-                                             std::move(grad_eS_W), nullptr);
+                                             std::move(grad_eS_W), nullptr,
+                                             std::move(polygonal_surface_SR));
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(

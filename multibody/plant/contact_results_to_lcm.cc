@@ -11,6 +11,7 @@ namespace multibody {
 
 using geometry::GeometryId;
 using internal::FullBodyName;
+using Eigen::Vector3d;
 using systems::Context;
 
 namespace internal {
@@ -149,6 +150,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     dest[2] = ExtractDoubleOrThrow(src(2));
   };
 
+
   for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
     lcmt_point_pair_contact_info_for_viz& info_msg =
         msg.point_pair_contact_info[i];
@@ -165,6 +167,13 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     write_double3(contact_info.point_pair().nhat_BA_W, info_msg.normal);
   }
 
+  // TODO(DamrongGuoy): Refactor the following long `for` loop into a function.
+
+  // Here we enable the standard triangulated contact patches, so the unit
+  // test //multibody/plant:contact_results_to_lcm_test can pass.
+  // However, you might want to switch `#if 1` to `#if 0` when visualizing
+  // the polygonal contact patches instead of the triangulated contact patches.
+#if 1
   for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
     lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
         msg.hydroelastic_contacts[i];
@@ -243,6 +252,97 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
           ExtractDoubleOrThrow(field.EvaluateAtVertex(face.vertex(2)));
     }
   }
+#endif
+
+  // At the moment, some code (plane or halfspace contact) only compute
+  // triangulated contact surfaces without polygonal contact surfaces.
+  // The other code (mesh_intersection) compute both. The number of
+  // hydroleastic contact patches is therefore the upper bound of the
+  // polygonal contact patches.
+  const int max_num_hydroelastic_poly_contacts =
+      contact_results.num_hydroelastic_contacts();
+  // We will count how many polygonal contact patches we have in the `for` loop.
+  msg.num_hydroelastic_poly_contacts = 0;
+  msg.hydroelastic_poly_contacts.resize(max_num_hydroelastic_poly_contacts);
+
+  // TODO(DamrongGuoy): Refactor the following long `for` loop into a function.
+
+  for (int s = 0; s < max_num_hydroelastic_poly_contacts; ++s) {
+    lcmt_hydroelastic_poly_contact_surface_for_viz& poly_message =
+        msg.hydroelastic_poly_contacts[s];
+
+    const HydroelasticContactInfo<T>& hydroelastic_contact_info =
+        contact_results.hydroelastic_contact_info(s);
+
+    // Get the two body names.
+    const FullBodyName& name1 = geometry_id_to_body_name_map_.at(
+        hydroelastic_contact_info.contact_surface().id_M());
+    poly_message.body1_name =
+        "Poly_" + name1.body + "_" + name1.model + "_" + name1.geometry;
+    const FullBodyName& name2 = geometry_id_to_body_name_map_.at(
+        hydroelastic_contact_info.contact_surface().id_N());
+    poly_message.body2_name =
+        "Poly_" + name2.body + "_" + name2.model + "_" + name2.geometry;
+
+    const geometry::ContactSurface<T>& surface =
+        hydroelastic_contact_info.contact_surface();
+
+    write_double3(Vector3<double>(0.0, 0, 0), poly_message.force_C_W);
+    write_double3(Vector3<double>(0, 0, 0), poly_message.moment_C_W);
+
+    if (!surface.HasPolygonalMesh()) {
+      continue;
+    }
+    msg.num_hydroelastic_poly_contacts++;
+
+    const geometry::PolygonalSurfaceMesh<T>& polygonal_mesh_W =
+        surface.polygonal_mesh_W();
+    const int num_vertices = polygonal_mesh_W.num_vertices();
+
+    poly_message.num_vertices = num_vertices;
+    poly_message.p_WV.resize(num_vertices);
+    poly_message.pressure.resize(num_vertices);
+    std::vector<Vector3d> p_WVs(num_vertices);
+    for (int i = 0; i < num_vertices; ++i) {
+      const geometry::SurfaceVertexIndex v(i);
+      double xyz[3];
+      write_double3(polygonal_mesh_W.vertex(v).r_MV(), xyz);
+      double pressure = ExtractDoubleOrThrow(polygonal_mesh_W.vertex_value(v));
+
+      p_WVs[i] = Vector3d(xyz);
+      poly_message.pressure[i] = pressure;
+    }
+    // This is the actual centroid of the fake mesh due to the symmetry of
+    // the two quads.
+    Vector3<double> centroid_W = (p_WVs[0] + 2 * p_WVs[1] + 3 * p_WVs[2] +
+        3 * p_WVs[3] + 2 * p_WVs[4] + p_WVs[5]) /
+        12.0;
+    write_double3(centroid_W, poly_message.centroid_W);
+    for (int i = 0; i < poly_message.num_vertices; ++i) {
+      const auto& p_WV = p_WVs[i];
+      poly_message.p_WV[i] = {p_WV.x(), p_WV.y(), p_WV.z()};
+    }
+
+    const int num_polygons = polygonal_mesh_W.num_faces();
+    // Start as num_polygons + summation of num_vertices_of_polygon later.
+    int poly_data_int_count = num_polygons;
+    for (const geometry::PolygonalSurfaceFace& face :
+        polygonal_mesh_W.faces()) {
+      poly_data_int_count += face.num_vertices();
+    }
+    std::vector<int> poly_data;
+    poly_data.reserve(poly_data_int_count);
+    for (const geometry::PolygonalSurfaceFace& face :
+        polygonal_mesh_W.faces()) {
+      poly_data.emplace_back(face.num_vertices());
+      for (const geometry::SurfaceVertexIndex v : face.vertices()) {
+        poly_data.emplace_back(v);
+      }
+    }
+    poly_message.poly_data_int_count = poly_data_int_count;
+    poly_message.poly_data = poly_data;
+  }
+  msg.hydroelastic_poly_contacts.resize(msg.num_hydroelastic_poly_contacts);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(

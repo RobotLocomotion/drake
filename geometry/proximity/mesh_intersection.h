@@ -7,6 +7,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/proximity/polygonal_surface_mesh.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh_field.h"
@@ -91,7 +92,8 @@ class SurfaceVolumeIntersector {
       ContactPolygonRepresentation representation,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
       std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
-      std::vector<Vector3<T>>* grad_eM_Ms);
+      std::vector<Vector3<T>>* grad_eM_Ms,
+      std::unique_ptr<PolygonalSurfaceMesh<T>>* polygonal_surface_MN_M);
 
  private:
   /* Calculates the intersection point between an infinite straight line

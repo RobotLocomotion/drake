@@ -961,13 +961,14 @@ TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   vector<Vector3<double>> grad_eS_S;
   unique_ptr<SurfaceMesh<double>> surface_S;
   unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
+  unique_ptr<PolygonalSurfaceMesh<double>> polygonal_surface_S;
 
   {
     SCOPED_TRACE("Triangulate each polygon around its centroid.");
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
         *field_S_, *bvh_mesh_S_, *surface_R_, *bvh_surface_R_, X_SR_,
         ContactPolygonRepresentation::kCentroidSubdivision,
-        &surface_S, &e_field, &grad_eS_S);
+        &surface_S, &e_field, &grad_eS_S, &polygonal_surface_S);
 
     EXPECT_EQ(6, surface_S->num_faces());
     VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);
@@ -977,7 +978,7 @@ TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
         *field_S_, *bvh_mesh_S_, *surface_R_, *bvh_surface_R_, X_SR_,
         ContactPolygonRepresentation::kSingleTriangle,
-        &surface_S, &e_field, &grad_eS_S);
+        &surface_S, &e_field, &grad_eS_S, &polygonal_surface_S);
 
     EXPECT_EQ(2, surface_S->num_faces());
     VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);

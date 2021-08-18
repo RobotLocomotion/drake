@@ -6,20 +6,15 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/polygonal_surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
-#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 
-/** The %ContactSurface characterizes the intersection of two geometries M
-  and N as a contact surface with a scalar field and a vector field, whose
-  purpose is to support the hydroelastic pressure field contact model as
-  described in:
+/** The %PolygonalContactSurface characterizes the intersection of two
+  geometries M and N as a contact surface with a scalar field and a vector
+  field, whose purpose is to support the hydroelastic pressure field contact
+  model as described in:
 
       R. Elandt, E. Drumwright, M. Sherman, and Andy Ruina. A pressure
       field model for fast, robust approximation of net contact force
@@ -125,21 +120,20 @@ namespace geometry {
 
   We use the barycentric coordinates to evaluate the field values.
 
-  @tparam_nonsymbolic_scalar
- */
+  @tparam_nonsymbolic_scalar */
 template <typename T>
-class ContactSurface {
+class PolygonalContactSurface {
  public:
-  ContactSurface(const ContactSurface& surface) {
+  PolygonalContactSurface(const PolygonalContactSurface& surface) {
     *this = surface;
   }
 
-  ContactSurface& operator=(const ContactSurface& surface) {
-    if (&surface == this)
-      return *this;
+  PolygonalContactSurface& operator=(const PolygonalContactSurface& surface) {
+    if (&surface == this) return *this;
 
     id_M_ = surface.id_M_;
     id_N_ = surface.id_N_;
+#if 0
     mesh_W_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_W_);
 
     // We can't simply copy the mesh fields; the copies must contain pointers
@@ -155,19 +149,16 @@ class ContactSurface {
       grad_eN_W_ =
           std::make_unique<std::vector<Vector3<T>>>(*surface.grad_eN_W_);
     }
-
-    polygonal_mesh_W_ = (surface.polygonal_mesh_W_ == nullptr)
-                            ? nullptr
-                            : std::make_unique<PolygonalSurfaceMesh<T>>(
-                                  *surface.polygonal_mesh_W_);
-
+#endif
     return *this;
   }
 
-  ContactSurface(ContactSurface&&) = default;
-  ContactSurface& operator=(ContactSurface&&) = default;
-
-  /** Constructs a ContactSurface.
+  PolygonalContactSurface(PolygonalContactSurface&&) = default;
+  PolygonalContactSurface& operator=(PolygonalContactSurface&&) = default;
+  PolygonalContactSurface(GeometryId id_M, GeometryId id_N)
+      : id_M_(id_M), id_N_(id_N) {}
+#if 0
+  /** Constructs a PolygonalContactSurface.
    @param id_M         The id of the first geometry M.
    @param id_N         The id of the second geometry N.
    @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
@@ -176,17 +167,16 @@ class ContactSurface {
    @pre The face normals in `mesh_W` point *out of* geometry N and *into* M.
    @note If `id_M > id_N`, the labels will be swapped and the normals of the
          mesh reversed (to maintain the documented invariants). Comparing the
-         input parameters with the members of the resulting %ContactSurface will
-         reveal if such a swap has occurred.
-   */
-  ContactSurface(GeometryId id_M, GeometryId id_N,
+         input parameters with the members of the resulting
+         %PolygonalContactSurface will reveal if such a swap has occurred. */
+  PolygonalContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<SurfaceMesh<T>> mesh_W,
                  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN)
-      : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN), nullptr,
-                       nullptr) {}
+      : PolygonalContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
+                                nullptr, nullptr) {}
 
-  /** Constructs a ContactSurface with the optional gradients of the constituent
-   scalar fields.
+  /** Constructs a PolygonalContactSurface with the optional gradients of the
+   constituent scalar fields.
    @param id_M         The id of the first geometry M.
    @param id_N         The id of the second geometry N.
    @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
@@ -200,10 +190,9 @@ class ContactSurface {
         ith face in `mesh_W`.
    @note If `id_M > id_N`, the labels will be swapped and the normals of the
          mesh reversed (to maintain the documented invariants). Comparing the
-         input parameters with the members of the resulting %ContactSurface will
-         reveal if such a swap has occurred.
-   */
-  ContactSurface(GeometryId id_M, GeometryId id_N,
+         input parameters with the members of the resulting
+         %PolygonalContactSurface will reveal if such a swap has occurred. */
+  PolygonalContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<SurfaceMesh<T>> mesh_W,
                  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W,
@@ -223,42 +212,18 @@ class ContactSurface {
                            mesh_W_->num_elements());
     if (id_N_ < id_M_) SwapMAndN();
   }
-
-  ContactSurface(GeometryId id_M, GeometryId id_N,
-                 std::unique_ptr<SurfaceMesh<T>> mesh_W,
-                 std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
-                 std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W,
-                 std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W,
-                 std::unique_ptr<PolygonalSurfaceMesh<T>> polygonal_mesh_W)
-      : id_M_(id_M),
-        id_N_(id_N),
-        mesh_W_(std::move(mesh_W)),
-        polygonal_mesh_W_(std::move(polygonal_mesh_W)),
-        e_MN_(std::move(e_MN)),
-        grad_eM_W_(std::move(grad_eM_W)),
-        grad_eN_W_(std::move(grad_eN_W)) {
-    // If defined the gradient values must map 1-to-1 onto elements.
-    DRAKE_THROW_UNLESS(grad_eM_W_ == nullptr ||
-        static_cast<int>(grad_eM_W_->size()) ==
-            mesh_W_->num_elements());
-    DRAKE_THROW_UNLESS(grad_eN_W_ == nullptr ||
-        static_cast<int>(grad_eN_W_->size()) ==
-            mesh_W_->num_elements());
-    if (id_N_ < id_M_) SwapMAndN();
-  }
-
-
+#endif
   /** Returns the geometry id of Geometry M. */
   GeometryId id_M() const { return id_M_; }
 
   /** Returns the geometry id of Geometry N. */
   GeometryId id_N() const { return id_N_; }
-
+#if 0
   /** @name  Evaluation of constituent pressure fields
 
-   The %ContactSurface *provisionally* includes the gradients of the constituent
-   pressure fields (∇eₘ and ∇eₙ) sampled on the contact surface. In order for
-   these values to be included in an instance, the gradient for the
+   The %PolygonalContactSurface *provisionally* includes the gradients of the
+   constituent pressure fields (∇eₘ and ∇eₙ) sampled on the contact surface. In
+   order for these values to be included in an instance, the gradient for the
    corresponding mesh must be well defined. For example a rigid mesh will not
    have a well-defined pressure gradient; as stiffness goes to infinity, the
    geometry becomes rigid and the gradient _direction_ converges to the
@@ -267,11 +232,12 @@ class ContactSurface {
    `<∞, ∞, ∞>`.
 
    Accessing the gradient values must be pre-conditioned on a test that the
-   particular instance of %ContactSurface actually contains the gradient data.
-   The presence of gradient data for each geometry must be confirmed separately.
+   particular instance of %PolygonalContactSurface actually contains the
+   gradient data. The presence of gradient data for each geometry must be
+   confirmed separately.
 
-   The values ∇eₘ and ∇eₘ are piecewise constant over the %ContactSurface and
-   can only be evaluate on a per-triangle basis.  */
+   The values ∇eₘ and ∇eₘ are piecewise constant over the
+   %PolygonalContactSurface and can only be evaluate on a per-triangle basis. */
   //@{
 
   /** @returns `true` if `this` contains values for ∇eₘ.  */
@@ -285,9 +251,9 @@ class ContactSurface {
   const Vector3<T>& EvaluateGradE_M_W(SurfaceFaceIndex index) const {
     if (grad_eM_W_ == nullptr) {
       throw std::runtime_error(
-          "ContactSurface::EvaluateGradE_M_W() invalid; no gradient values "
-          "stored. Mesh M may be rigid, or the constituent gradients weren't "
-          "requested.");
+          "PolygonalContactSurface::EvaluateGradE_M_W() invalid; no gradient "
+          "values stored. Mesh M may be rigid, or the constituent gradients "
+          "weren't requested.");
     }
     return (*grad_eM_W_)[index];
   }
@@ -297,9 +263,9 @@ class ContactSurface {
   const Vector3<T>& EvaluateGradE_N_W(SurfaceFaceIndex index) const {
     if (grad_eN_W_ == nullptr) {
       throw std::runtime_error(
-          "ContactSurface::EvaluateGradE_N_W() invalid; no gradient values "
-          "stored. Mesh N may be rigid, or the constituent gradients weren't "
-          "requested.");
+          "PolygonalContactSurface::EvaluateGradE_N_W() invalid; no gradient "
+          "values stored. Mesh N may be rigid, or the constituent gradients "
+          "weren't requested.");
     }
     return (*grad_eN_W_)[index];
   }
@@ -314,26 +280,19 @@ class ContactSurface {
     return *mesh_W_;
   }
 
-  bool HasPolygonalMesh() const {
-    return polygonal_mesh_W_ != nullptr;
-  }
-
-  const PolygonalSurfaceMesh<T>& polygonal_mesh_W() const {
-    DRAKE_DEMAND(polygonal_mesh_W_ != nullptr);
-    return *polygonal_mesh_W_;
-  }
-
   /** Returns a reference to the scalar field eₘₙ. */
   const SurfaceMeshFieldLinear<T, T>& e_MN() const { return *e_MN_; }
-
+#endif
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
-  /** Checks to see whether the given ContactSurface object is equal via deep
-   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+  /** Checks to see whether the given PolygonalContactSurface object is equal
+   via deep exact comparison. NaNs are treated as not equal as per the IEEE
+   standard.
 
    @param surface The contact surface for comparison.
    @returns `true` if the given contact surface is equal.
    */
-  bool Equal(const ContactSurface<T>& surface) const {
+  bool Equal(const PolygonalContactSurface<T>& surface) const {
+#if 0
     // First check the meshes.
     if (!this->mesh_W().Equal(surface.mesh_W())) return false;
 
@@ -343,7 +302,8 @@ class ContactSurface {
     // TODO(SeanCurtis-TRI) This isn't testing the following quantities:
     //  1. Geometry ids
     //  2. Gradients.
-
+#endif
+    if (id_M_ != surface.id_M_ || id_N_ != surface.id_N_) return false;
     // All checks passed.
     return true;
   }
@@ -352,6 +312,7 @@ class ContactSurface {
   // Swaps M and N (modifying the data in place to reflect the change).
   void SwapMAndN() {
     std::swap(id_M_, id_N_);
+#if 0
     // TODO(SeanCurtis-TRI): Determine if this work is necessary. It is neither
     // documented nor tested that the face winding is guaranteed to be one way
     // or the other. Alternatively, this should be documented and tested.
@@ -359,16 +320,16 @@ class ContactSurface {
 
     // Note: the scalar field does not depend on the order of M and N.
     std::swap(grad_eM_W_, grad_eN_W_);
+#endif
   }
 
   // The id of the first geometry M.
   GeometryId id_M_;
   // The id of the second geometry N.
   GeometryId id_N_;
+#if 0
   // The surface mesh of the contact surface 𝕊ₘₙ between M and N.
   std::unique_ptr<SurfaceMesh<T>> mesh_W_;
-  std::unique_ptr<PolygonalSurfaceMesh<T>> polygonal_mesh_W_;
-
   // TODO(SeanCurtis-TRI): We can only construct from a linear field, so store
   //  it as such for now. This can be promoted once there's a construction that
   //  uses a different derivation.
@@ -381,9 +342,10 @@ class ContactSurface {
   // See class documentation for elaboration.
   std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W_;
   std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W_;
-
+#endif
   // TODO(DamrongGuoy): Remove this when we allow direct access to e_MN.
-  template <typename U> friend class ContactSurfaceTester;
+  template <typename U>
+  friend class PolyPolygonalContactSurfaceTester;
 };
 
 }  // namespace geometry

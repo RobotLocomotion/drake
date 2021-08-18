@@ -11,4 +11,8 @@ struct lcmt_contact_results_for_viz {
   int32_t num_hydroelastic_contacts;
   lcmt_hydroelastic_contact_surface_for_viz hydroelastic_contacts[
       num_hydroelastic_contacts];
+
+  int32_t num_hydroelastic_poly_contacts;
+  lcmt_hydroelastic_poly_contact_surface_for_viz hydroelastic_poly_contacts[
+      num_hydroelastic_poly_contacts];
 }

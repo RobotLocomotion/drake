@@ -1,0 +1,41 @@
+package drake;
+
+struct lcmt_hydroelastic_poly_contact_surface_for_viz {
+  // TODO: As the changes to ContactResultsToLcmSystem hit master, rebase on
+  //  that and modify this message to benefit from model and geometry names.
+
+  // Names of the colliding bodies.
+  string body1_name;
+  string body2_name;
+
+  // The net force acting on the body due to this contact: a force and moment
+  // applied at a point (which happens to be the centroid).
+
+  // The centroid of the contact surface, as an offset vector expressed in the
+  // world frame.
+  double centroid_W[3];
+
+  // The force, expressed in the world frame, that is applied to `body1_name`
+  // at the centroid of the contact surface.
+  double force_C_W[3];
+
+  // The moment, expressed in the world frame, that is applied to `body1_name`
+  // at the centroid of the contact surface.
+  double moment_C_W[3];
+
+  // The vertices.
+  int32_t num_vertices;
+  // TODO: It would be nice to have a simple Vector3 type here.
+  lcmt_point p_WV[num_vertices];
+
+  // Pressure values at each vertex.
+  double pressure[num_vertices];
+
+  // The polygons are encoded in one long stream as
+  // c0, v00, v01, ..., c1, v10, v11, ...
+  // Such that each polygon has a count of vertices ci, followed by ci number
+  // of 0-indexed indices into the vertex set. The total number of integer
+  // values is recorded here.
+  int32_t poly_data_int_count;
+  int32_t poly_data[poly_data_int_count];
+}
