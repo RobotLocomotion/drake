@@ -87,6 +87,7 @@ drake_lcm_cc_library(
     lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
     deps = [
         ":hydroelastic_contact_surface_for_viz",
+        ":hydroelastic_poly_contact_surface_for_viz",
         ":point_pair_contact_info_for_viz",
     ],
 )
@@ -117,6 +118,15 @@ drake_lcm_cc_library(
         ":hydroelastic_contact_surface_tri_for_viz",
         ":hydroelastic_quadrature_per_point_data_for_viz",
     ],
+)
+
+drake_lcm_cc_library(
+    name = "hydroelastic_poly_contact_surface_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_hydroelastic_poly_contact_surface_for_viz.lcm"],
+    deps = [
+        ":point",
+    ]
 )
 
 drake_lcm_cc_library(

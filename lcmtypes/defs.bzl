@@ -20,6 +20,7 @@ ALL_LCM_SRCS = [
     "lcmt_force_torque.lcm",
     "lcmt_header.lcm",
     "lcmt_hydroelastic_contact_surface_for_viz.lcm",
+    "lcmt_hydroelastic_poly_contact_surface_for_viz.lcm",
     "lcmt_hydroelastic_contact_surface_tri_for_viz.lcm",
     "lcmt_hydroelastic_quadrature_per_point_data_for_viz.lcm",
     "lcmt_iiwa_command.lcm",

@@ -11,6 +11,7 @@ namespace multibody {
 
 using geometry::GeometryId;
 using internal::FullBodyName;
+using Eigen::Vector3d;
 using systems::Context;
 
 namespace internal {
@@ -142,6 +143,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
   msg.point_pair_contact_info.resize(msg.num_point_pair_contacts);
   msg.num_hydroelastic_contacts = contact_results.num_hydroelastic_contacts();
   msg.hydroelastic_contacts.resize(msg.num_hydroelastic_contacts);
+  msg.num_hydroelastic_poly_contacts = 1;
+  msg.hydroelastic_poly_contacts.resize(1);
 
   auto write_double3 = [](const Vector3<T>& src, double* dest) {
     dest[0] = ExtractDoubleOrThrow(src(0));
@@ -243,6 +246,57 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
           ExtractDoubleOrThrow(field.EvaluateAtVertex(face.vertex(2)));
     }
   }
+
+  // Until we get actual results out of the input port, we'll hard-code a single
+  // "contact".
+//   for (int i = 0; i < contact_results.num_hydroelastic_poly_contacts(); ++i)
+//   {
+//
+    lcmt_hydroelastic_poly_contact_surface_for_viz& surface_msg =
+        msg.hydroelastic_poly_contacts[0];
+
+    // Get the two body names.
+#if 0
+    const HydroelasticPolyContactInfo<T>& contact_info =
+        contact_results.hydroelastic_poly_contact_info(i);
+
+    surface_msg.body1_name = geometry_id_to_body_name_map_.at(
+            contact_info.contact_surface().id_M());
+    surface_msg.body2_name = geometry_id_to_body_name_map_.at(
+            contact_info.contact_surface().id_N());
+#else
+    surface_msg.body1_name = "Poly body 1";
+    surface_msg.body2_name = "Poly body 2";
+#endif
+
+    // TODO(SeanCurtis-TRI): When there is actually a mesh in the contact
+    //  surface convert it to data here. In fact, until then, we'll simply
+    //  put in a dummy place holder so we can see things are being communicated.
+    // There is currently *no* mesh to support. My PolygonalContactSurface stub
+    // doesn't have a mesh. I'll hard-code a mesh here.
+    write_double3(Vector3d(1.2, 0, 0), surface_msg.force_C_W);
+    write_double3(Vector3d(0, 0, 0.5), surface_msg.moment_C_W);
+
+    surface_msg.num_vertices = 6;
+    surface_msg.p_WV.resize(surface_msg.num_vertices);
+    surface_msg.pressure = std::vector<double>{0, 0, 5e7, 1e8, 0, 0};
+    std::vector<Vector3d> p_WVs{Vector3d{-1, -1, 1}, Vector3d{-1, 1, 1},
+                                Vector3d{0, -1, 0},  Vector3d{0, 1, 0},
+                                Vector3d{1, -1, 1},  Vector3d{1, 1, 1}};
+    // This is the actual centroid of the fake mesh due to the symmetry of
+    // the two quads.
+    Vector3d centroid_W = (p_WVs[0] + 2 * p_WVs[1] + 3 * p_WVs[2] +
+                           3 * p_WVs[3] + 2 * p_WVs[4] + p_WVs[5]) /
+                          12.0;
+    write_double3(centroid_W, surface_msg.centroid_W);
+    for (int i = 0; i < surface_msg.num_vertices; ++i) {
+      const auto& p_WV = p_WVs[i];
+      surface_msg.p_WV[i] = {p_WV.x(), p_WV.y(), p_WV.z()};
+    }
+    // Two quads --> 1 size + 4 indices each.
+    surface_msg.poly_data_int_count = 10;
+    surface_msg.poly_data = std::vector<int>{4, 0, 2, 3, 1, 4, 2, 4, 5, 3};
+//   }
 }
 
 systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(

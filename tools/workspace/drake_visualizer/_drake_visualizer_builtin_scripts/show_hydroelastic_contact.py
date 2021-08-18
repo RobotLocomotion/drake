@@ -1,5 +1,7 @@
 # Note that this script runs in the main context of drake-visualizer,
 # where many modules and variables already exist in the global scope.
+import itertools
+
 from director import lcmUtils
 from director import applogic
 from director import objectmodel as om
@@ -10,11 +12,7 @@ import director.vtkNumpy as vnp
 import numpy as np
 from PythonQt import QtCore, QtGui
 
-from drake import (
-    lcmt_contact_results_for_viz,
-    lcmt_hydroelastic_contact_surface_for_viz,
-    lcmt_viewer_load_robot,
-)
+import drake as lcmdrakemsg
 
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 from _drake_visualizer_builtin_scripts.show_point_pair_contact \
@@ -93,20 +91,6 @@ class _ConfigDialog(QtGui.QDialog):
         layout.setColumnStretch(1, 1)
 
         row = 0
-
-        # Name display - this will go away when we can simply support
-        # "minimally unique names"; see #15555.
-        layout.addWidget(QtGui.QLabel('Use full names'), row, 0)
-        self.use_full_name = QtGui.QCheckBox()
-        self.use_full_name.setChecked(False)
-        self.use_full_name.setToolTip(
-            'Display fully-qualified names for all contact data. Bodies are '
-            'shown as model instance/body and contact data is shown with '
-            'geometry names. This is useful if your simulation has '
-            'identically-named bodies, or bodies with multiple proximity '
-            'geometries.')
-        layout.addWidget(self.use_full_name, row, 1)
-        row += 1
 
         # Color map selection.
         layout.addWidget(QtGui.QLabel('Color map'), row, 0)
@@ -483,307 +467,97 @@ class VisualItem:
         self.user_data = ()
 
 
-class _Contact:
-    """Tracks the contact object model components for a single contact. A
-    single contact is represented by zero or more components: e.g., pressure
-    field, force vectors, etc.). The items are stored in a map associating item
-    name with its corresponding VisualItem."""
-
-    def __init__(self,
-                 surface: lcmt_hydroelastic_contact_surface_for_viz,
-                 folder: om.ContainerItem,
-                 timestamp: int):
-        """Creates an empty Contact for the given surface.
-
-        Args:
-            surface: The contact surface data to add to the object model.
-            folder: The parent container in the model to which to add items.
-            timestamp: The creation timestamp."""
-        self._key = self.make_key(surface)
-        self.folder = folder
-        self.timestamp = timestamp
-        # Maps the item *label* to the VisualItem containing its data.
-        self.items = {}
-
-    @staticmethod
-    def make_key(surface: lcmt_hydroelastic_contact_surface_for_viz):
-        """Creates the key for this contact surface (based on the
-        geometries involved)."""
-        return (surface.geometry1_name, surface.geometry2_name)
-
-    @staticmethod
-    def _contact_label_suffix(key, use_full_name: bool):
-        """Creates a contact label based on the contact key. If we are not
-        using the "full" name, the suffix is empty."""
-        name1, name2 = key
-        if use_full_name:
-            return f' ({name1}, {name2})'
-        return ""
-
-    def set_use_full_name(self, state: bool):
-        """Sets the label to reflect whether we are using full names or not."""
-        self._use_full_name = state
-        suffix = self._contact_label_suffix(self._key, state)
-        for label, vis_item in self.items.items():
-            vis_item.item.rename(label + suffix, renameChildren=False)
-
-    def clear(self):
-        """Clears all the contact data for this contact."""
-        for vis_item in self.items.values():
-            om.removeFromObjectModel(vis_item.item)
-        self.items = {}
-
-    def update_item(self, item_name: str, callback):
-        """Applies the callback to the item in this contact model with the
-        given name (if such an item exists)."""
-        if item_name in self.items:
-            callback(self.items[item_name])
-
-    def set_mesh_data(self, mesh_data: vtk.vtkPolyData, item_name: str,
-                      add_callback, update_callback, view,
-                      use_full_name: bool):
-        """Implements VisualModel.set_contact_mesh_data."""
-        if mesh_data is None:
-            if item_name in self.items:
-                om.removeFromObjectModel(self.items.pop(item_name).item)
-        elif item_name in self.items:
-            vis_item = self.items[item_name]
-            update_callback(vis_item, mesh_data)
-        else:
-            suffix = self._contact_label_suffix(self._key, use_full_name)
-            item = vis.PolyDataItem(item_name + suffix, mesh_data, view)
-            om.addToObjectModel(item, self.folder)
-            vis_item = VisualItem(item)
-            self.items[item_name] = vis_item
-            add_callback(vis_item, mesh_data)
-
-    def set_debug_data(self, item_data: DebugData, item_name: str, view,
-                       use_full_name: bool):
-        """Implements VisualModel.set_contact_debug_data."""
-        # The caller may instantiate an instance of DebugData (based on the
-        # flag *requesting* visualization of some quantity), but find no
-        # values to visualize. In that case, we don't want to add an item.
-        # We detect it because the DebugData.append has no input
-        # connections. This is part of the definition of "well defined"
-        # data.
-        if (item_data is None
-                or item_data.append.GetNumberOfInputConnections(0) == 0):
-            if item_name in self.items:
-                om.removeFromObjectModel(self.items.pop(item_name).item)
-        elif item_name in self.items:
-            self.items[item_name].item.setPolyData(
-                item_data.getPolyData())
-            self.items[item_name].item.colorBy('RGB255')
-        else:
-            suffix = self._contact_label_suffix(self._key, use_full_name)
-            item = vis.PolyDataItem(item_name + suffix,
-                                    item_data.getPolyData(), view)
-            om.addToObjectModel(item, self.folder)
-            item.setProperty('Visible', True)
-            item.setProperty('Alpha', 1.0)
-            item.colorBy('RGB255')
-            self.items[item_name] = VisualItem(item)
-
-
-class _BodyContact:
-    """Tracks the contact model components for each contact between a pair
-    of bodies."""
-    def __init__(self,
-                 surface: lcmt_hydroelastic_contact_surface_for_viz,
-                 root_folder: om.ContainerItem,
-                 use_full_name: bool):
-        """Constructs a BodyContact instance based on the data contained in
-        the given `surface`. A folder (with a name based on the body names
-        -- and governed by use_full_name) will be place inside root_folder.
-
-        Args:
-            surface: The contact surface to add to the object model.
-            root_folder: The parent directory for the contact folder.
-            use_full_name: If True, the folder will use "full" body names
-             (model instance/body)."""
-        self.key = self.make_key(surface)
-        self._folder = om.getOrCreateContainer(
-            self._folder_name(self.key, use_full_name), root_folder)
-
-        # All of the contacts associated with this body pair. Each contact
-        # is keyed by the geometry pair that generated it (see
-        #  _contact_key()).
-        self._contacts = {}
-
-    def add_contact(self,
-                    surface: lcmt_hydroelastic_contact_surface_for_viz,
-                    timestamp: int):
-        """Makes sure there's a Contact for the given surface in this
-        instance (with a timestamp equal to the given value.
-
-        Args:
-            surface: The contact surface to add to the object model.
-            timestamp: The timestamp at the time of creation."""
-        key = _Contact.make_key(surface)
-        if key in self._contacts:
-            self._contacts[key].timestamp = timestamp
-        else:
-            self._contacts[key] = _Contact(surface, self._folder, timestamp)
-
-    @staticmethod
-    def make_key(surface: lcmt_hydroelastic_contact_surface_for_viz):
-        """Given a `surface` returns a key reprepsenting the unique body pair
-        in contact. We use it to organize the object model items and map it to
-        the *folder* name in the object model.
-
-        The folder contains the contact data between two bodies. A folder may
-        contain data for multiple surfaces (when a body is represented with
-        multiple geometries).
-
-        Args:
-            surface: The contact surface to add to the object model."""
-        return ((surface.model1_name, surface.body1_name),
-                (surface.model2_name, surface.body2_name))
-
-    @staticmethod
-    def _folder_name(key, use_full_name: bool):
-        """Given the folder `key` (generated by make_key()), constructs the
-        corresponding folder name (based on `use_full_name`).
-
-        Args:
-            key: The unique key for the *body pair* encoded in a contact.
-            use_full_name: If True, the folder will use "full" body names
-             (model instance/body)."""
-        # TODO(SeanCurtis-TRI): When the lcm message supports a server-side
-        #  generated "minimal unique name", use that instead of the blind
-        #  construction of model/body. See issue #15555 for details.
-        name1 = _BodyContact._body_name_from_key(key, 0, use_full_name)
-        name2 = _BodyContact._body_name_from_key(key, 1, use_full_name)
-        return (f'({name1}, {name2}) Contact Data')
-
-    def set_use_full_name(self, state: bool):
-        """Sets the state of this body-pair contact (and all individual
-        contacts for the body pair) to enable/disable the use of full names
-        based on `state`."""
-        self._folder.rename(self._folder_name(self.key, state), False)
-        for contact in self._contacts.values():
-            contact.set_use_full_name(state)
-
-    def __len__(self):
-        """Reports the number of contacts"""
-        return len(self._contacts)
-
-    def clean(self, timestamp: int):
-        """Removes all contacts that don't match the given timestamp."""
-        to_remove = []
-        for key, contact in self._contacts.items():
-            if contact.timestamp != timestamp:
-                contact.clear()
-                to_remove.append(key)
-        for key in to_remove:
-            del self._contacts[key]
-        if len(self) == 0:
-            self.clear()
-
-    def clear(self):
-        """Clears this body contact."""
-        # Recursively remove all of the model items.
-        om.removeFromObjectModel(self._folder)
-        self._folder = None
-        self._contacts = {}
-
-    def set_debug_data(
-      self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      item_data: DebugData, item_name: str, view, use_full_name: bool):
-        """@pre add_contact() has been called on the given `surface`."""
-        key = _Contact.make_key(surface)
-        self._contacts[key].set_debug_data(item_data, item_name, view,
-                                           use_full_name)
-
-    def set_mesh_data(
-      self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      mesh_data: vtk.vtkPolyData, item_name, add_callback, update_callback,
-      view, use_full_name: bool):
-        """@pre add_contact() has been called on the given `surface`."""
-        key = _Contact.make_key(surface)
-        self._contacts[key].set_mesh_data(mesh_data, item_name, add_callback,
-                                          update_callback, view, use_full_name)
-
-    def update_items(self, item_name: str, callback):
-        for contact in self._contacts.values():
-            contact.update_item(item_name, callback)
-
-    @staticmethod
-    def _body_name_from_key(key, body_index: int, use_full_name: bool):
-        """Generates the name for a body identified by index in the given key
-        (based on whether we want the *full* name or not).
-
-        Args:
-            key: The surface key (derived from a surface).
-            body_index: The index of the body to name (must be 0 or 1).
-            use_full_name: If true, the *full* name is returned (model/body),
-                otherwise, just body."""
-        model, body = key[body_index]
-        if use_full_name:
-            return f'{model}/{body}'
-        return body
-
-    @staticmethod
-    def body_name(surface: lcmt_hydroelastic_contact_surface_for_viz,
-                  body_index: int, use_full_name: bool):
-        """Generates the name for a body identified by index in the given
-        surface (based on whether we want the *full* name or not).
-
-        Args:
-            surface: The surface whose contact body is to be named..
-            body_index: The index of the body to name (must be 0 or 1).
-            use_full_name: If true, the *full* name is returned (model/body),
-                otherwise, just body."""
-        key = _BodyContact.make_key(surface)
-        return _BodyContact._body_name_from_key(key, body_index, use_full_name)
-
-
 class VisualModel:
     """Tracks all of the object model items used in the current model. It
     allows the visualizer to update existing components as messages come in
     rather than strictly rebuilding from scratch. This helps preserve GUI-level
     configurations (like setting something visible)."""
-    def __init__(self, root_folder_name: str):
+    def __init__(self, root_folder_name: str, view):
         """Constructs the visual model.
-        VisualModel.set_view() must be called before any operations updating
-        the view.
 
         Args:
             root_folder_name: The name of the object model folder that
                 contains all hydroelastic visualization data.
+            view: The director view used to instantiate object model items.
         """
         self._root_folder = om.getOrCreateContainer(root_folder_name)
-        self.view = None
-        # All contacts between bodies are stored in this dictionary. The key
-        # is the "body-pair key" (which later becomes a folder name for the
-        # pair of contacting bodies).
-        self._body_contacts = {}
-        self._timestamp = 0
-        self._use_full_name = False
-
-    def set_view(self, view):
-        """Sets the view for the model.
-
-        Args:
-            view: The director view used to instantiate object model items."""
         self.view = view
+        # All contacts are stored in this dictionary where the key is a unique
+        # string (which later becomes a folder in the object model) defined by
+        # the unique identifiers of the geometries in contact.
+        self._contacts = {}
 
-    def set_use_full_name(self, state: bool):
-        if state != self._use_full_name:
-            self._use_full_name = state
-            for body_contact in self._body_contacts.values():
-                body_contact.set_use_full_name(state)
+    class _Contact:
+        """Tracks the contact model components for a single contact. A
+        single contact is represented by a folder in the object model. It can
+        have one or more items (e.g. pressure field, force vectors, etc.).
+        The items are stored in a map associating item name with its
+        corresponding VisualItem."""
+
+        def __init__(self, folder):
+            """Constructs an *empty* contact model with the given folder
+            (generated by om.getOrCreateContainer())."""
+            self.folder = folder
+            self.items = {}
+
+        def update_item(self, item_name, callback):
+            """Applies the callback to the item in this contact model with the
+            given name (if such an item exists)."""
+            if item_name in self.items:
+                callback(self.items[item_name])
+
+        def set_mesh_data(self, mesh_data: vtk.vtkPolyData, item_name: str,
+                          add_callback, update_callback, view):
+            """Implements VisualModel.set_contact_mesh_data."""
+            if mesh_data is None:
+                if item_name in self.items:
+                    om.removeFromObjectModel(self.items.pop(item_name).item)
+                return None
+            elif item_name in self.items:
+                vis_item = self.items[item_name]
+                update_callback(vis_item, mesh_data)
+                return vis_item.item
+            else:
+                item = vis.PolyDataItem(item_name, mesh_data, view)
+                om.addToObjectModel(item, self.folder)
+                vis_item = VisualItem(item)
+                self.items[item_name] = vis_item
+                add_callback(vis_item, mesh_data)
+                return vis_item.item
+
+        def set_debug_data(self, item_data: DebugData, item_name: str, view):
+            """Implements VisualModel.set_contact_debug_data."""
+            # The caller may instantiate an instance of DebugData (based on the
+            # flag *requesting* visualization of some quantity), but find no
+            # values to visualize. In that case, we don't want to add an item.
+            # We detect it because the DebugData.append has no input
+            # connections. This is part of the definition of "well defined"
+            # data.
+            if (item_data is None
+                    or item_data.append.GetNumberOfInputConnections(0) == 0):
+                if item_name in self.items:
+                    om.removeFromObjectModel(self.items.pop(item_name).item)
+            elif item_name in self.items:
+                self.items[item_name].item.setPolyData(
+                    item_data.getPolyData())
+                self.items[item_name].item.colorBy('RGB255')
+            else:
+                item = vis.PolyDataItem(item_name, item_data.getPolyData(),
+                                        view)
+                om.addToObjectModel(item, self.folder)
+                item.setProperty('Visible', True)
+                item.setProperty('Alpha', 1.0)
+                item.colorBy('RGB255')
+                self.items[item_name] = VisualItem(item)
 
     def clear(self):
-        """Clears the entire model - all data for all contact surfaces are
+        """Clears the entire model - all data for all contact surfaces is
         removed."""
-        for body_contact in self._body_contacts.values():
-            body_contact.clear()
-        self._body_contacts = {}
-        self._timestamp = 0
+        # This will recursively remove all items stored in contacts.
+        om.removeFromObjectModel(self._root_folder)
+        self._contacts = {}
 
-    def update_contact_directories(self,
-                                   message: lcmt_contact_results_for_viz):
+    def update_contact_directories(self, message):
         """Given a hydroelastic contact message, updates the visual model's
         knowledge of what contacts are present. Contacts that are not present
         in the message get removed from the model. Contacts new in the message
@@ -791,33 +565,58 @@ class VisualModel:
 
         This does *not* populate any of the contact *items* for the contacts.
         """
-        self._timestamp = self._timestamp + 1
+        # Start by assuming all existing contacts need to be removed. For
+        # every contact found in the message, we remove that contact from the
+        # set.
+        contacts_to_remove = set(self._contacts.keys())
+        # List of contacts to add as a list of 2-tuples (contact key, bool)
+        # where bool is `True` if the contact is polygonal, `False` otherwise.
+        new_contacts = []
         for surface in message.hydroelastic_contacts:
-            body_pair_key = _BodyContact.make_key(surface)
-            if body_pair_key in self._body_contacts:
-                # Add or update a contact for this body pair.
-                self._body_contacts[body_pair_key].add_contact(surface,
-                                                               self._timestamp)
+            contact = self._contact_key(surface)
+            if contact in contacts_to_remove:
+                contacts_to_remove.remove(contact)
             else:
-                body_contact = _BodyContact(surface, self._root_folder,
-                                            self._use_full_name)
-                body_contact.add_contact(surface, self._timestamp)
-                self._body_contacts[body_pair_key] = body_contact
+                new_contacts.append((contact, False))
+        for surface in message.hydroelastic_poly_contacts:
+            # TODO: Do I need to make these live together? Or should I expect
+            #  them to be exclusive?
+            contact = self._contact_key(surface)
+            if contact in contacts_to_remove:
+                contacts_to_remove.remove(contact)
+            else:
+                new_contacts.append((contact, True))
+        for contact in contacts_to_remove:
+            om.removeFromObjectModel(self._contacts[contact].folder)
+            self._contacts.pop(contact)
+        for contact, is_poly in new_contacts:
+            contact_data_folder = om.getOrCreateContainer(
+                    self._contact_name(contact, is_poly), self._root_folder)
+            self._contacts[contact] = self._Contact(contact_data_folder)
 
-        # Remove anything that didn't get persisted from the previous message
-        # (detected by an expired timestamp).
-        folders_to_remove = []
-        for key, body_contact in self._body_contacts.items():
-            body_contact.clean(self._timestamp)
-            if len(body_contact) == 0:
-                folders_to_remove.append(key)
-        for key in folders_to_remove:
-            # Python-ism, this also removes the entry from the dictionary.
-            del self._body_contacts[key]
+    def _contact_name(self, contact_key, is_poly):
+        """Given the `contact_key` (generated by _contact_key()), constructs a
+        "name" for the contact
 
-    def set_contact_debug_data(
-      self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      item_data: DebugData, item_name: str):
+        Args:
+            contact: A 2-tuple of strings consisting of the names of the
+                two bodies in contact: body1 and body2."""
+        prefix = 'C'
+        if is_poly:
+            prefix = "Polygonal c"
+        return (f'{prefix}ontact data between {contact_key[0]} and '
+                f'{contact_key[1]}')
+
+    def _contact_key(self, surface):
+        """Given a `surface` returns a key for use in accessing contact data in
+        `self._contacts`."""
+        return (surface.body1_name, surface.body2_name)
+
+    def contact_folder(self, surface):
+        """Returns the registered folder for the given surface."""
+        return self._contacts[self._contact_key(surface)].folder
+
+    def set_contact_debug_data(self, surface, item_data, item_name):
         """For the contact represented by the given `surface`, adds, updates,
         or removes (as appropriate) the named item with the given data.
 
@@ -835,15 +634,11 @@ class VisualModel:
             item_data: The vtkAppendPolyData to add. It is "well defined"
                 if it is *not* None and has had polygonal data added.
             item_name: The unique name associated with this data."""
-        key = _BodyContact.make_key(surface)
-        body_contact = self._body_contacts[key]
-        body_contact.set_debug_data(surface, item_data, item_name, self.view,
-                                    self._use_full_name)
+        contact = self._contacts[self._contact_key(surface)]
+        contact.set_debug_data(item_data, item_name, self.view)
 
-    def set_contact_mesh_data(
-      self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      mesh_data: vtk.vtkPolyData, item_name: str, add_callback,
-      update_callback):
+    def set_contact_mesh_data(self, surface, mesh_data, item_name,
+                              add_callback, update_callback):
         """For the contact represented by the given `surface`, adds, updates,
         or removes (as appropriate) the named item with the given mesh data.
 
@@ -870,29 +665,18 @@ class VisualModel:
                 `f(item: VisualItem, mesh_data: vtk.vtkPolyData)` called when
                 an item is updated. The mesh_data is the data that has been
                 assigned to the item. It can be used to provide custom
-                configuration."""
-        key = _BodyContact.make_key(surface)
-        body_contact = self._body_contacts[key]
-        body_contact.set_mesh_data(surface, mesh_data, item_name, add_callback,
-                                   update_callback, self.view,
-                                   self._use_full_name)
+                configuration.
+        Returns:
+            The visual item that has been added/updated or None if it has been
+            removed."""
+        contact = self._contacts[self._contact_key(surface)]
+        return contact.set_mesh_data(mesh_data, item_name, add_callback,
+                                     update_callback, self.view)
 
-    def update_items(self, item_name: str, callback):
+    def update_items(self, item_name, callback):
         """Applies the callback to the named contact item in every contact."""
-        for body_contact in self._body_contacts.values():
-            body_contact.update_items(item_name, callback)
-
-    def body_name(
-      self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      body_index: int, use_full_name: bool):
-        """Returns the name of the body referenced in the given contact
-        surface that respects the given full-name configuration setting.
-
-        Args:
-            surface: The contact surface.
-            body_index: The index of the body to name: must be 0 or 1.
-            use_full_name: Controls whether the full name (True) is used."""
-        return _BodyContact.body_name(surface, body_index, use_full_name)
+        for contact in self._contacts.values():
+            contact.update_item(item_name, callback)
 
 
 class HydroelasticContactVisualizer:
@@ -926,7 +710,7 @@ class HydroelasticContactVisualizer:
         self.min_magnitude = 1e-4
         self.texture = create_texture(self.texture_size, FlameMap())
         # Persist the state so we can update without messages.
-        self.visual_model = VisualModel(self._folder_name)
+        self.visual_model = None
         self.message = None
 
         menu_bar = applogic.getMainWindow().menuBar()
@@ -941,7 +725,6 @@ class HydroelasticContactVisualizer:
         self.dlg = _ConfigDialog(self, applogic.getMainWindow())
 
         # Connect all of the widgets in the dialog to callbacks
-        self.dlg.use_full_name.connect('toggled(bool)', self.toggle_full_names)
         self.dlg.color_map_mode.connect("currentIndexChanged(int)",
                                         self.set_color_map)
         self.dlg.min_pressure.connect("editingFinished()",
@@ -980,11 +763,7 @@ class HydroelasticContactVisualizer:
     def show_dialog(self):
         self.dlg.show()
 
-    def toggle_full_names(self, state: bool):
-        """Controls whether short (False) or long names (True) are used."""
-        self.visual_model.set_use_full_name(state)
-
-    def set_color_map(self, new_index: int):
+    def set_color_map(self, new_index):
         """Slot for dialog widget"""
         if new_index != self.color_map_mode:
             self.color_map_mode = new_index
@@ -995,6 +774,10 @@ class HydroelasticContactVisualizer:
                     'Contact surface',
                     lambda vis_item:
                         vis_item.item.actor.SetTexture(self.texture))
+                self.visual_model.update_items(
+                    'Polygonal contact surface',
+                    lambda vis_item:
+                        vis_item.item.actor.SetTexture(self.texture))
                 color_map = self.create_color_map()
                 [r, g, b] = color_map.get_contrasting_color()
                 line_color = [r*255, g*255, b*255]
@@ -1002,14 +785,19 @@ class HydroelasticContactVisualizer:
                     'Mesh edges',
                     lambda vis_item:
                         vis_item.item.actor.GetProperty().SetColor(line_color))
+
+                self.visual_model.update_items(
+                    'Polygonal contact surface',
+                    lambda vis_item:
+                        vis_item.item.actor.GetProperty().SetEdgeColor(line_color))
                 applogic.getCurrentRenderView().render()
 
-    def update_uv_transform(self, xform: vtk.vtkTransformTextureCoords):
+    def update_uv_transform(self, xform):
         """Updates the uv transform to reflect the current pressure range
         settings.
 
         Args:
-            xform: The transform to apply to the texture coordinates."""
+            xform: An instance of vtk.vtkTransformTextureCoords."""
         # Conceptually, we map the interval [min, max] -> [0, 1]. To achieve
         # this we simply translate and scale the pressure domain to the texture
         # coordinate domain. We use the vtkTransformTextureCoords to achieve
@@ -1040,6 +828,8 @@ class HydroelasticContactVisualizer:
 
         if self.visual_model:
             self.visual_model.update_items('Contact surface', update_item)
+            self.visual_model.update_items('Polygonal contact surface',
+                                           update_item)
             applogic.getCurrentRenderView().render()
 
     def set_min_pressure(self):
@@ -1126,12 +916,12 @@ class HydroelasticContactVisualizer:
 
         self._contact_sub = lcmUtils.addSubscriber(
             'CONTACT_RESULTS',
-            messageClass=lcmt_contact_results_for_viz,
+            messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
         print(self._name + ' subscriber added.')
         self._load_sub = lcmUtils.addSubscriber(
             'DRAKE_VIEWER_LOAD_ROBOT',
-            messageClass=lcmt_viewer_load_robot,
+            messageClass=lcmdrakemsg.lcmt_viewer_load_robot,
             callback=self.clear_on_load)
 
     def remove_subscriber(self):
@@ -1222,6 +1012,7 @@ class HydroelasticContactVisualizer:
         message."""
         if self.visual_model is not None:
             self.visual_model.clear()
+            self.visual_model = None
             self.message = None
 
     def handle_message(self, msg):
@@ -1229,8 +1020,9 @@ class HydroelasticContactVisualizer:
         # message handler.
         self._contact_sub.setSpeedLimit(30)
 
-        # Always set the active view, just to be safe.
-        self.visual_model.set_view(applogic.getCurrentRenderView())
+        if self.visual_model is None:
+            view = applogic.getCurrentRenderView()
+            self.visual_model = VisualModel(self._folder_name, view)
         self.visual_model.update_contact_directories(msg)
         self.message = msg
         self.update_visual_data_from_message()
@@ -1362,22 +1154,13 @@ class HydroelasticContactVisualizer:
                         end=point + auto_moment_scale * moment * scale,
                         tubeRadius=0.002,
                         headRadius=0.004, color=[0, 0, 1])
-            # TODO(SeanCurtis-TRI) See show_point_pair_contact.py. But if we
-            #  ever had a single body represented with multiple contact
-            #  geometries, we could end up with body pairs (A, B) and (B, A).
-            #  This is less likely with hydro than with point pair contact, so
-            #  resolving this is less urgent.
-
-            # TODO(SeanCurtis-TRI): This value will *always* use the full name.
-            #  Getting it to update itself based on the configuration setting
-            #  is far too much work. It'll be better resolved when we introduce
-            #  the "minimal unique name" and always display that without
-            #  configuration.
-            # The force is documented as acting on body 1 (out of bodies 1 and
-            # 2) -- so we use index 0.
-            body_name = self.visual_model.body_name(surface, 0, True)
+            # TODO See show_point_pair_contact.py. But if we ever had a single
+            # body represented with multiple contact geometries, we could end
+            # up with body pairs (A, B) and (B, A). This is less likely with
+            # hydro than with point pair contact, so resolving this is less
+            # urgent.
             self.visual_model.set_contact_debug_data(
-                surface, force_data, f"Spatial force on {body_name}")
+                surface, force_data, f"Spatial force on {surface.body1_name}")
 
             # Iterate over all quadrature points, drawing traction and slip
             # velocity vectors.
@@ -1492,6 +1275,110 @@ class HydroelasticContactVisualizer:
                 lambda vis_item, mesh_data:
                     vis_item.item.setPolyData(mesh_data))
 
+        for surface in msg.hydroelastic_poly_contacts:
+            # Draw the spatial force.
+            force_data = None
+            if self.show_spatial_force:
+                force_data = DebugData()
+                point = np.array([surface.centroid_W[0],
+                                  surface.centroid_W[1],
+                                  surface.centroid_W[2]])
+                # This is actually the force on body 1. It is documented as
+                # such in the lcm message.
+                force = np.array([surface.force_C_W[0],
+                                  surface.force_C_W[1],
+                                  surface.force_C_W[2]])
+                moment = np.array([surface.moment_C_W[0],
+                                   surface.moment_C_W[1],
+                                   surface.moment_C_W[2]])
+                force_mag = np.linalg.norm(force)
+                moment_mag = np.linalg.norm(moment)
+
+                # Draw the force arrow if it's of sufficient magnitude.
+                if force_mag > self.min_magnitude:
+                    scale = self.global_scale
+                    if self.magnitude_mode == ContactVisModes.kFixedLength:
+                        # magnitude must be > 0 otherwise this force would be
+                        # skipped.
+                        scale /= force_mag
+
+                    force_data.addArrow(
+                        start=point,
+                        end=point + auto_force_scale * force * scale,
+                        tubeRadius=0.002,
+                        headRadius=0.004, color=[1, 0, 0])
+
+                # Draw the moment arrow if it's of sufficient magnitude.
+                if moment_mag > self.min_magnitude:
+                    scale = self.global_scale
+                    if self.magnitude_mode == ContactVisModes.kFixedLength:
+                        # magnitude must be > 0 otherwise this moment would be
+                        # skipped.
+                        scale /= moment_mag
+
+                    force_data.addArrow(
+                        start=point,
+                        end=point + auto_moment_scale * moment * scale,
+                        tubeRadius=0.002,
+                        headRadius=0.004, color=[0, 0, 1])
+            # TODO See show_point_pair_contact.py. But if we ever had a single
+            # body represented with multiple contact geometries, we could end
+            # up with body pairs (A, B) and (B, A). This is less likely with
+            # hydro than with point pair contact, so resolving this is less
+            # urgent.
+            self.visual_model.set_contact_debug_data(
+                surface, force_data, f"Spatial force on {surface.body1_name}")
+
+            vtk_polydata = None
+            if self.show_pressure or self.show_contact_edges:
+                p_WVs = np.empty((surface.num_vertices, 3))
+                uvs = np.empty((surface.num_vertices, 2))
+                for i in range(surface.num_vertices):
+                    p_WV = surface.p_WV[i]
+                    p_WVs[i, :] = (p_WV.x, p_WV.y, p_WV.z)
+                    uvs[i, :] = (surface.pressure[i], 0)
+
+                vtk_polys = vtk.vtkCellArray()
+                i = 0
+                poly_count = 0
+                while i < surface.poly_data_int_count:
+                    count = surface.poly_data[i]
+                    poly_count += 1
+                    i += count + 1
+                vtk_polys.Allocate(poly_count)
+                i = 0
+                while i < surface.poly_data_int_count:
+                    count = surface.poly_data[i]
+                    i += 1
+                    poly_indices = itertools.islice(surface.poly_data,
+                                                    i, i + count)
+                    poly_indices = surface.poly_data[i : i + count]
+                    vtk_polys.InsertNextCell(count, poly_indices)
+                    i += count
+                vtk_polydata = vtk.vtkPolyData()
+                vtk_polydata.SetPoints(vnp.getVtkPointsFromNumpy(p_WVs))
+                vtk_polydata.SetPolys(vtk_polys)
+                vtk_polydata.GetPointData().SetTCoords(
+                    vnp.getVtkFromNumpy(uvs))
+            item = self.visual_model.set_contact_mesh_data(
+                surface, vtk_polydata, 'Polygonal contact surface',
+                self.add_pressure_mesh_cb, self.update_pressure_mesh_cb)
+            if item:
+                item.actor.GetProperty().SetLighting(self.show_pressure)
+                if self.show_contact_edges:
+                    [r, g, b] = color_map.get_contrasting_color()
+                    line_color = [r*255, g*255, b*255]
+                    item.actor.GetProperty().SetEdgeColor(line_color)
+                    item.actor.GetProperty().SetLineWidth(2)
+                    if self.show_pressure:
+                        item.setProperty('Surface Mode', 'Surface with edges')
+                        item.actor.SetTexture(self.texture)
+                    else:
+                        item.setProperty('Surface Mode', 'Wireframe')
+                        item.actor.SetTexture(None)
+                else:
+                    item.setProperty('Surface Mode', 'Surface')
+
     def add_pressure_mesh_cb(self, vis_item: VisualItem,
                              mesh_data: vtk.vtkPolyData):
         """The callback supplied to the VisualModel for when adding a pressure
@@ -1510,7 +1397,10 @@ class HydroelasticContactVisualizer:
         mapper = item.actor.GetMapper()
         mapper.SetInputData(None)
         mapper.SetInputConnection(xform.GetOutputPort())
-        item.actor.SetTexture(self.texture)
+        if self.show_pressure:
+            item.actor.SetTexture(self.texture)
+        else:
+            item.actor.SetTexture(None)
 
     def update_pressure_mesh_cb(self, vis_item: VisualItem,
                                 mesh_data: vtk.vtkPolyData):

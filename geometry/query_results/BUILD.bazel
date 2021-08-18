@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":contact_surface",
         ":penetration_as_point_pair",
+        ":polygonal_contact_surface",
         ":signed_distance_pair",
         ":signed_distance_to_point",
     ],
@@ -64,6 +65,20 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry/proximity:mesh_field",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "polygonal_contact_surface",
+    srcs = [
+        "polygonal_contact_surface.cc",
+    ],
+    hdrs = [
+        "polygonal_contact_surface.h",
+    ],
+    deps = [
+        "//common",
+        "//geometry:geometry_ids",
     ],
 )
 
