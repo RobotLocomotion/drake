@@ -814,6 +814,9 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
   AddModelFromUrdfFile(full_name, "model2", package_map, &plant, &scene_graph);
 }
 
+// TODO(marcoag) We might want to add some form of feedback for:
+// - ignore_collision_filter_groups with non-existing group names.
+// - Empty collision_filter_groups.
 GTEST_TEST(MultibodyPlantUrdfParserTest,
            CollisionFilterGroupParsingErrorsTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(

@@ -2125,6 +2125,9 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
       full_sdf_filename, "model2", package_map, &plant, &scene_graph);
 }
 
+// TODO(marcoag) We might want to add some form of feedback for:
+// - ignore_collision_filter_groups with non-existing group names.
+// - Empty collision_filter_groups.
 GTEST_TEST(SdfParser, CollisionFilterGroupParsingErrorsTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(R"""(
