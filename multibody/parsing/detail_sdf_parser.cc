@@ -886,10 +886,9 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
     if (!std::get<sdf::ElementPtr>(data_element)
              ->HasAttribute(attribute_name)) {
       throw std::runtime_error(fmt::format(
-          "'{}':'{}':'{}': Collision filter group provides the element:\n"
-          "{} without the requried  attribute \"{}\"",
+          "{}:{}:{} The tag <{}> is missing the required attribute \"{}\"",
           __FILE__, __func__, __LINE__,
-          std::get<sdf::ElementPtr>(data_element)->ToString(""),
+          std::get<sdf::ElementPtr>(data_element)->GetName(),
           attribute_name));
     }
     return std::get<sdf::ElementPtr>(data_element)
@@ -902,11 +901,10 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
   auto read_tag_string = [](const ElementNode& data_element, const char*) {
     sdf::ParamPtr param = std::get<sdf::ElementPtr>(data_element)->GetValue();
     if (param == nullptr) {
-      throw std::runtime_error(
-          fmt::format("'{}':'{}':'{}': Collision filter group provides the "
-                      "{} tag with a required empty value.",
-                      __FILE__, __func__, __LINE__,
-                      std::get<sdf::ElementPtr>(data_element)->ToString("")));
+      throw std::runtime_error(fmt::format(
+          "{}:{}:{} The tag <{}> is missing a required string value.", __FILE__,
+          __func__, __LINE__,
+          std::get<sdf::ElementPtr>(data_element)->GetName()));
     }
     return param->GetAsString();
   };

@@ -2125,6 +2125,43 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingTest) {
       full_sdf_filename, "model2", package_map, &plant, &scene_graph);
 }
 
+GTEST_TEST(SdfParser, CollisionFilterGroupParsingErrorsTest) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
+<model name='error'>
+  <link name='a'/>
+  <drake:collision_filter_group/>
+</model>)"""),
+      std::runtime_error,
+      ".*The tag <drake:collision_filter_group> is "
+      "missing the required attribute "
+      "\"name\".*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
+<model name='error'>
+  <link name='a'/>
+  <drake:collision_filter_group name="group_a">
+    <drake:member></drake:member>
+  </drake:collision_filter_group>
+</model>)"""),
+      std::runtime_error,
+      ".*The tag <drake:member> is missing a required string value.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"""(
+<model name='error'>
+  <link name='a'/>
+  <drake:collision_filter_group name="group_a">
+    <drake:ignored_collision_filter_group>
+    </drake:ignored_collision_filter_group>
+  </drake:collision_filter_group>
+</model>)"""),
+      std::runtime_error,
+      ".*The tag <drake:ignored_collision_filter_group> is missing a "
+      "required string value.*");
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

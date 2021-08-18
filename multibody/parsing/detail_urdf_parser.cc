@@ -187,9 +187,10 @@ void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
     if (!ParseStringAttribute(std::get<tinyxml2::XMLElement*>(data_element),
                               attribute_name, &attribute_value)) {
       throw std::runtime_error(fmt::format(
-          "'{}':'{}':'{}': Collision filter group does not specify the required"
-          "attribute \"{}\" at line {}.",
-          __FILE__, __func__, __LINE__, attribute_name,
+          "{}:{}:{} The tag <{}> does not specify the required attribute"
+          " \"{}\" at line {}.", __FILE__, __func__, __LINE__,
+          std::get<tinyxml2::XMLElement*>(data_element)->Value(),
+          attribute_name,
           std::get<tinyxml2::XMLElement*>(data_element)->GetLineNum()));
     }
     return attribute_value;

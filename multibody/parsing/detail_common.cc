@@ -82,36 +82,7 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
       bushing_force_stiffness, bushing_force_damping);
 }
 
-// Collects collision filter groups from a reading interface in a URDF/SDF
-// agnostic manner.
-// @param model_instance               Model Instance that contains the bodies
-//                                     involved in the collision filter groups.
-// @param plant                        MultibodyPlant used to register the
-//                                     collision filter groups.
-// @param group_node                   Node corresponding to the
-//                                     collision_gilter_group.
-// @param next_child_element           Function that returns the next child
-//                                     element with the specified tag in the
-//                                     ElementNode provided.
-// @param next_sibling_element         Function that returns the next sibling
-//                                     element with the specified tag in the
-//                                     ElementNode provided.
-// @param has_attribute                Function that checks if an attribute
-//                                     exists in the ElementNode provided.
-// @param read_string_attribute        Function that reads a string attribute
-//                                     with the name provided in the
-//                                     ElementNode provided.
-// @param read_bool_attribute          Function that reads a boolean attribute
-//                                     with the name provided in the
-//                                     ElementNode provided.
-// @param read_tag_string          Function that reads a tag value
-//                                     using the specific semantics of the
-//                                     source file format.
-// @param[out] collision_filter_groups Map of collision filter group names to
-//                                     its geometry sets representing the
-//                                     constituent members.
-// @param[out] collision_filter_pairs  Filter group pairs between whom
-//                                     collisions will be excluded.
+// See ParseCollisionFilterGroupCommon at header for documentation
 void CollectCollisionFilterGroup(
     ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant,
     const ElementNode& group_node,

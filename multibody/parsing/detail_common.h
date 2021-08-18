@@ -116,12 +116,12 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 // Populates collision filter groups from a reading interface in a URDF/SDF
 // agnostic manner. Through this, the API to specify the collision_filter_group
 // tag in both SDF and URDF can be controlled/modified in a single function.
+// Functors are allowed to throw an exception when the requested quantities
+// are not available.
 // @param model_instance        Model Instance that contains the bodies involved
 //                              in the collision filter groups.
 // @param model_node            Node used to parse for the
 //                              collision_gilter_group tag.
-// @param plant                 MultibodyPlant used to register the collision
-//                              filter groups.
 // @param next_child_element    Function that returns the next child element
 //                              with the specified tag in the ElementNode
 //                              provided.
@@ -130,13 +130,16 @@ const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
 //                              provided.
 // @param has_attribute         Function that checks if an attribute exists
 //                              in the ElementNode provided.
-// @param read_tag_string          Function that reads a tag value
-//                                     using the specific semantics of the
-//                                     source file format.
+// @param read_tag_string       Function that provides a common interface
+//                              to extract a tag value. In SDF it will be a
+//                              tag "value" (the attribute "name" will not be
+//                              used), in URDF it will be a named attribute.
 // @param read_string_attribute Function that reads a string attribute with the
 //                              name provided in the ElementNoded provided.
 // @param read_bool_attribute   Function that reads a boolean attribute with
 //                              the name provided in the ElementNode provided.
+// @param plant                 MultibodyPlant used to register the collision
+//                              filter groups.
 void ParseCollisionFilterGroupCommon(
     ModelInstanceIndex model_instance, const ElementNode& model_node,
     MultibodyPlant<double>* plant,
