@@ -11,6 +11,7 @@
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/fixed_fem/dev/deformable_contact_data.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
@@ -272,10 +273,26 @@ internal::DeformableContactData<double> MakeDeformableContactData(
 }
 
 GTEST_TEST(DeformableContactTest, DeformableContactData) {
-  /* Move the rigid pyramid down, so only its square base intersects the top
-   pyramidal region of the deformable octahedron. As a result, all vertices
-   except v5 are participating in contact. */
-  const auto X_DR = math::RigidTransformd(Vector3<double>(0, 0, -1.5));
+  /* Recall that the octahedron looks like.
+                  +Z   -X
+                   |   /
+                v5 ●  ● v3
+                   | /
+         v4     v0 |/
+    -Y----●--------●------●----+Y
+                  /|      v2
+                 / |
+             v1 ●  ● v6
+               /   |
+             +X    |
+                  -Z
+   Rotate the the rigid pyramid around x-axis by -90 degrees (right-handed) and
+   then shift it along the positive y-axis so that only its square base
+   intersects the right pyramidal region of the deformable octahedron. As a
+   result, all vertices except v4 are participating in contact. */
+  const auto X_DR = math::RigidTransformd(
+      math::RotationMatrix<double>::MakeXRotation(-M_PI / 2),
+      Vector3<double>(0, 0.5, 0));
   DeformableContactSurface<double> contact_surface =
       MakeDeformableContactSurface<double>(X_DR);
   const internal::DeformableContactData<double> contact_data =
@@ -283,10 +300,10 @@ GTEST_TEST(DeformableContactTest, DeformableContactData) {
                                 MakeOctahedronDeformableGeometry<double>());
 
   EXPECT_EQ(contact_data.num_contact_pairs(), 1);
-  /* v0, v1, v2, v3, v4, v6 are participating in contact so they get new indexes
-   0, 1, 2, 3, 4, 5. v5 is not participating in contact and gets new index 6. */
+  /* v0, v1, v2, v3, v5, v6 are participating in contact so they get new indexes
+   0, 1, 2, 3, 4, 5. v4 is not participating in contact and gets new index 6. */
   EXPECT_EQ(contact_data.num_vertices_in_contact(), 6);
-  const std::vector<int> permuted_vertex_indexes = {0, 1, 2, 3, 4, 6, 5};
+  const std::vector<int> permuted_vertex_indexes = {0, 1, 2, 3, 6, 4, 5};
   EXPECT_EQ(contact_data.permuted_vertex_indexes(), permuted_vertex_indexes);
   /* Verify that permuted_vertex_indexes() and permuted_to_original_indexes()
    are inverses to each other. */
