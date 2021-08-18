@@ -13,6 +13,10 @@ load(
     "check_lists_consistency",
 )
 load(
+    "@drake//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
+    "cc_whole_archive_library",
+)
+load(
     "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
@@ -169,11 +173,13 @@ public_headers = public_headers_no_gen + [
     "include/ignition/math.hh",
 ]
 
-# Generates the library exported to users.  The explicitly listed srcs= matches
-# upstream's explicitly listed sources plus private headers.  The explicitly
-# listed hdrs= matches upstream's public headers.
-cc_binary(
-    name = "libdrake_ignition_math.so",
+# Generates the library.  The explicitly listed srcs= matches upstream's
+# explicitly listed sources plus private headers.  The explicitly listed
+# hdrs= matches upstream's public headers.
+# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
+# we should rename this to `name = "ignition_math"`, i.e., take over its name.
+cc_library(
+    name = "ignition_math_static",
     srcs = [
         "src/Angle.cc",
         "src/AxisAlignedBox.cc",
@@ -200,15 +206,35 @@ cc_binary(
         "src/Vector3Stats.cc",
     ] + private_headers + public_headers,
     copts = [
-        "-fvisibility-inlines-hidden",
+        # TODO(jwnimmer-tri) Ideally, we should use hidden visibility for the
+        # private builds of our dependencies.
         "-w",
     ],
+    linkstatic = True,
     includes = ["include"],
+)
+
+# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
+# we should also remove this target.
+cc_whole_archive_library(
+    name = "ignition_math_static_whole_archive",
+    deps = [":ignition_math_static"],
+    visibility = ["//visibility:private"],
+)
+
+# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
+# we should also remove this target.
+cc_binary(
+    name = "libdrake_ignition_math.so",
+    deps = [
+        ":ignition_math_static_whole_archive",
+    ],
     linkopts = select({
         ":linux": ["-Wl,-soname,libdrake_ignition_math.so"],
         "//conditions:default": [],
     }),
     linkshared = 1,
+    linkstatic = 1,
     visibility = [],
 )
 
@@ -217,11 +243,15 @@ cc_library(
     srcs = ["libdrake_ignition_math.so"],
     hdrs = public_headers,
     includes = ["include"],
-    visibility = ["//visibility:public"],
+    deprecation = "DRAKE DEPRECATED: The @ignition_math external is becoming private to Drake. The shared library will no longer be available nor installed from Drake on or after 2021-12-01.",  # noqa
 )
 
+# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
+# we should also remove this constant.
 CMAKE_PACKAGE = "ignition-math%d" % (PROJECT_MAJOR)
 
+# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
+# we should also remove this target. Be sure to remove the *-cps.py file, also.
 cmake_config(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/ignition_math:package-create-cps.py",
@@ -231,6 +261,8 @@ cmake_config(
 # Creates rule :install_cmake_config.
 install_cmake_config(package = CMAKE_PACKAGE)
 
+# TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
+# this target should remove all of its attributes other than "name" and "docs".
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,

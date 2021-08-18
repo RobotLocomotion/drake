@@ -16,11 +16,6 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "ignition-math6": {
-      "Version": "6.4",
-      "Hints": ["@prefix@/lib/cmake/ignition-math6"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "lcm": {
       "Version": "1.4",
       "Hints": ["@prefix@/lib/cmake/lcm"],
@@ -52,7 +47,6 @@
         ":drake-marker",
         "Eigen3:Eigen",
         "fmt:fmt-header-only",
-        "ignition-math6:ignition-math6",
         "lcm:lcm",
         "optitrack:optitrack-lcmtypes-cpp",
         "spdlog:spdlog",

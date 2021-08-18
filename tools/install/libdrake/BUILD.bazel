@@ -233,7 +233,6 @@ cc_library(
         ":vtk_deps",
         ":x11_deps",
         "//common:drake_marker_shared_library",
-        "@ignition_math",
         "@lcm",
         "@spdlog",
         "@tinyxml2",
