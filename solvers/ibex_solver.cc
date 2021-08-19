@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <ibex.h>
 
 #include "drake/common/text_logging.h"
@@ -22,6 +23,143 @@ using symbolic::Formula;
 using symbolic::Variable;
 
 namespace {
+
+struct IbexOptions {
+  // Relative precision on the objective. See
+  // http://www.ibex-lib.org/doc/optim.html?highlight=eps#objective-precision-criteria
+  // for details.
+  double rel_eps_f{ibex::Optimizer::default_rel_eps_f};
+
+  // Absolute precision on the objective. See
+  // http://www.ibex-lib.org/doc/optim.html?highlight=eps#objective-precision-criteria
+  // for details.
+  double abs_eps_f{ibex::Optimizer::default_abs_eps_f};
+
+  // Equality relaxation value. See
+  // http://www.ibex-lib.org/doc/optim.html?highlight=eps#the-output-of-ibexopt
+  // for details.
+  double eps_h{ibex::NormalizedSystem::default_eps_h};
+
+  // Activate rigor mode (certify feasibility of equations). See
+  // http://www.ibex-lib.org/doc/optim.html?highlight=rigor#return-status for
+  // details.
+  bool rigor{false};
+
+  // Random seed (useful for reproducibility).
+  double random_seed{ibex::DefaultOptimizer::default_random_seed};
+
+  // Precision on the variable.
+  double eps_x{ibex::Optimizer::default_eps_x};
+
+  // Activate trace. Updates of loup/uplo are printed while minimizing.
+  // - 0 (by default): nothing is printed.
+  // - 1:              prints every loup/uplo update.
+  // - 2:              also prints each handled node.
+  int trace{0};
+
+  // Timeout (time in seconds). 0.0 indicates +∞.
+  double timeout{0.0};
+};
+
+IbexOptions ParseOptions(const SolverOptions& merged_options) {
+  IbexOptions options;
+
+  for (const auto& it : merged_options.GetOptionsDouble(IbexSolver::id())) {
+    if (it.first == "rel_eps_f") {
+      if (it.second <= 0) {
+        throw std::runtime_error{fmt::format(
+            "IbexSolver: '{option}' option should have a positive value but "
+            "'{value}' was provided.",
+            fmt::arg("option", it.first), fmt::arg("value", it.second))};
+      }
+      options.rel_eps_f = it.second;
+      continue;
+    }
+    if (it.first == "abs_eps_f") {
+      if (it.second <= 0) {
+        throw std::runtime_error{fmt::format(
+            "IbexSolver: '{option}' option should have a positive value but "
+            "'{value}' was provided.",
+            fmt::arg("option", it.first), fmt::arg("value", it.second))};
+      }
+      options.abs_eps_f = it.second;
+      continue;
+    }
+    if (it.first == "eps_h") {
+      if (it.second <= 0) {
+        throw std::runtime_error{fmt::format(
+            "IbexSolver: '{option}' option should have a positive value but "
+            "'{value}' was provided.",
+            fmt::arg("option", it.first), fmt::arg("value", it.second))};
+      }
+      options.eps_h = it.second;
+      continue;
+    }
+    if (it.first == "random_seed") {
+      options.random_seed = it.second;
+      continue;
+    }
+    if (it.first == "eps_x") {
+      if (it.second <= 0) {
+        throw std::runtime_error{fmt::format(
+            "IbexSolver: '{option}' option should have a positive value but "
+            "'{value}' was provided.",
+            fmt::arg("option", it.first), fmt::arg("value", it.second))};
+      }
+      options.eps_x = it.second;
+      continue;
+    }
+    if (it.first == "timeout") {
+      if (it.second < 0) {
+        throw std::runtime_error{fmt::format(
+            "IbexSolver: '{option}' option should have a non-negative value "
+            "but '{value}' was provided.",
+            fmt::arg("option", it.first), fmt::arg("value", it.second))};
+      }
+      options.timeout = it.second;
+      continue;
+    }
+    throw std::runtime_error{fmt::format(
+        "IbexSolver: unsupported option '{option}' with double value "
+        "'{value}'.",
+        fmt::arg("option", it.first), fmt::arg("value", it.second))};
+  }
+
+  // Handles kPrintToConsole.
+  if (merged_options.get_print_to_console()) {
+    options.trace = 1;
+  }
+
+  for (const auto& it : merged_options.GetOptionsInt(IbexSolver::id())) {
+    if (it.first == "rigor") {
+      options.rigor = it.second != 0;
+      continue;
+    }
+    if (it.first == "trace") {
+      const int value{it.second};
+      if (value < 0 || value > 2) {
+        throw std::runtime_error{
+            fmt::format("IbexSolver: cannot set IBEX Solver option 'trace' "
+                        "to value '{value}'. It should be 0, 1, or, 2.",
+                        fmt::arg("value", value))};
+      }
+      options.trace = value;
+      continue;
+    }
+    throw std::runtime_error{fmt::format(
+        "IbexSolver: unsupported option '{option}' with int value '{value}'.",
+        fmt::arg("option", it.first), fmt::arg("value", it.second))};
+  }
+
+  for (const auto& it : merged_options.GetOptionsStr(IbexSolver::id())) {
+    throw std::runtime_error{fmt::format(
+        "IbexSolver: unsupported option '{option}' with string value "
+        "'{value}'.",
+        fmt::arg("option", it.first), fmt::arg("value", it.second))};
+  }
+
+  return options;
+}
 
 // Adds `f` into `factory` using `ibex_converter` and `expr_ctrs`.
 //
@@ -56,26 +194,14 @@ VectorXd ExtractMidpoints(const ibex::IntervalVector& iv) {
   return v;
 }
 
-void DoOptimize(const ibex::System& sys,
+void DoOptimize(const ibex::System& sys, const IbexOptions& options,
                 MathematicalProgramResult* const result) {
-  // TODO(soonho): Make the followings as solver options.
-  const double rel_eps_f = ibex::Optimizer::default_rel_eps_f;
-  const double abs_eps_f = ibex::Optimizer::default_abs_eps_f;
-  const double eps_h = ibex::NormalizedSystem::default_eps_h;
-  const bool rigor = false;
   const bool in_hc4 = !(sys.nb_ctr > 0 && sys.nb_ctr < sys.f_ctrs.image_dim());
-  const double random_seed = ibex::DefaultOptimizer::default_random_seed;
-  const double eps_x = ibex::Optimizer::default_eps_x;
-  const double timeout = 30.0; /* sec */
-  // - 0 (by default): nothing is printed
-  // - 1:              prints every loup/uplo update.
-  // - 2:              prints also each handled node
-  const int trace = 0;
-
-  ibex::DefaultOptimizer o(sys, rel_eps_f, abs_eps_f, eps_h, rigor, in_hc4,
-                           random_seed, eps_x);
-  o.trace = trace;
-  o.timeout = timeout;
+  ibex::DefaultOptimizer o(sys, options.rel_eps_f, options.abs_eps_f,
+                           options.eps_h, options.rigor, in_hc4,
+                           options.random_seed, options.eps_x);
+  o.trace = options.trace;
+  o.timeout = options.timeout;
   const ibex::Optimizer::Status status = o.optimize(sys.box);
 
   switch (status) {
@@ -143,10 +269,7 @@ void IbexSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   unused(initial_guess);
-  unused(merged_options);
-
-  // TODO(soonho): Throw an exception when there are options that we do not
-  // handle yet.
+  const IbexOptions options{ParseOptions(merged_options)};
 
   // Creates a converter. Internally, it creates ibex variables.
   internal::IbexConverter ibex_converter(prog.decision_variables());
@@ -242,7 +365,7 @@ void IbexSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   ibex::System sys(factory);
-  DoOptimize(sys, result);
+  DoOptimize(sys, options, result);
 }
 
 }  // namespace solvers
