@@ -40,18 +40,20 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
   // options.
   MathematicalProgram prog;
   auto x = prog.NewBinaryVariables<1>();
-  if (GurobiSolver::is_available() &&
-      ChooseBestSolver(prog) == GurobiSolver::id()) {
+  auto y = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(y(0) + y(1) == 1);
+  if (GurobiSolver::is_available()) {
+    ASSERT_TRUE(ChooseBestSolver(prog) == GurobiSolver::id());
     SolverOptions solver_options;
     // Presolve and Heuristics would each independently solve
     // this problem inside of the Gurobi solver, but without
     // consulting the initial guess.
     solver_options.SetOption(GurobiSolver::id(), "Presolve", 0);
     solver_options.SetOption(GurobiSolver::id(), "Heuristics", 0.0);
-    Eigen::VectorXd x_expected(1);
-    x_expected(0) = 1;
-    MathematicalProgramResult result = Solve(prog, x_expected, solver_options);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
+    Eigen::VectorXd vars_init(3);
+    vars_init << 1, 0, 1;
+    MathematicalProgramResult result = Solve(prog, vars_init, solver_options);
+    EXPECT_NEAR(result.GetSolution(x)(0), vars_init(0), 1E-6);
   }
 }
 }  // namespace solvers
