@@ -44,7 +44,6 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   DrakeLcm(std::string lcm_url, bool defer_initialization);
 
-
   /**
    * A destructor that forces the receive thread to be stopped.
    */
@@ -57,15 +56,14 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   ::lcm::LCM* get_lcm_instance();
 
-  /**
-   * Returns the LCM URL.
-   */
-  std::string get_lcm_url() const;
 
   void Publish(const std::string&, const void*, int,
                std::optional<double>) override;
+  std::string get_lcm_url() const override;
   std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string&, HandlerFunction) override;
+  std::shared_ptr<DrakeSubscriptionInterface> SubscribeAllChannels(
+      MultichannelHandlerFunction) override;
   int HandleSubscriptions(int) override;
 
  private:
