@@ -199,9 +199,15 @@ bool IsNLP(const MathematicalProgram& prog) {
       0;
   const bool no_binary_variable = prog.required_capabilities().count(
                                       ProgramAttribute::kBinaryVariable) == 0;
-  return (no_binary_variable &&
-          (has_generic_cost || has_nonconvex_quadratic_cost ||
-           has_generic_constraint));
+  const bool has_linear_complementarity_constraint =
+      prog.required_capabilities().count(
+          ProgramAttribute::kLinearComplementarityConstraint) > 0;
+  const bool is_LCP =
+      SatisfiesProgramType(GetRequirementsLCP(), prog.required_capabilities());
+  return (no_binary_variable && !is_LCP &&
+          ((has_generic_cost || has_nonconvex_quadratic_cost ||
+            has_generic_constraint) ||
+           (has_linear_complementarity_constraint)));
 }
 }  // namespace
 
