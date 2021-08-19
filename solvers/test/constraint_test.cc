@@ -71,9 +71,8 @@ GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   EXPECT_EQ(y_sym.size(), 2);
   EXPECT_PRED2(ExprEqual, y_sym[0], x_sym[0]);
   EXPECT_PRED2(ExprEqual, y_sym[1], x_sym[1]);
-  EXPECT_PRED2(
-      FormulaEqual, constraint.CheckSatisfied(x_sym),
-      1 <= x_sym[0] && x_sym[0] <= 1 && 2 <= x_sym[1] && x_sym[1] <= 2);
+  EXPECT_PRED2(FormulaEqual, constraint.CheckSatisfied(x_sym),
+               1 == x_sym[0] && 2 == x_sym[1]);
 
   // Update with a new matrix A2 with three columns. This should cause a runtime
   // error, since the number of variables do not match.
