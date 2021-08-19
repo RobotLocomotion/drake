@@ -86,6 +86,13 @@ notes.  To aid the human editor in making that determination, you must add the
 tag ``release notes: breaking change`` to any PR that makes a breaking change
 without a deprecation period.
 
+Commits that change deprecations receive special attention in the release notes.
+To aid the human editor in making that determination, you must add the tag
+``release notes: newly deprecated`` to any PR that adds new deprecations, or
+``release notes: removal of deprecated`` to any PR that removes deprecated
+code whose date has passed.  Removing deprecated code is not considered to be a
+breaking change, so do not add ``release notes: breaking change``.
+
 # Joint Feature and Platform review
 
 For a review to be considered complete, both Feature Review and Platform Review
