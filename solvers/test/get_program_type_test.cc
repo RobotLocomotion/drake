@@ -123,6 +123,28 @@ GTEST_TEST(GetProgramTypeTest, NLP) {
     auto b = prog.NewBinaryVariables<2>();
     EXPECT_NE(GetProgramType(prog), ProgramType::kNLP);
   }
+  {
+    // problem with linear complementarity constraint and a cost.
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    prog.AddConstraint(std::make_shared<LinearComplementarityConstraint>(
+                           Eigen::Matrix2d::Identity(), Eigen::Vector2d(1, 1)),
+                       x);
+    prog.AddLinearCost(x(0) + x(1));
+    EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+  }
+  {
+    // problem with  linear complementarity constraint and a lorentz cone
+    // constraint.
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<3>();
+    prog.AddConstraint(
+        std::make_shared<LinearComplementarityConstraint>(
+            Eigen::Matrix3d::Identity(), Eigen::Vector3d(1, 1, 0)),
+        x);
+    prog.AddLorentzConeConstraint(x);
+    EXPECT_EQ(GetProgramType(prog), ProgramType::kNLP);
+  }
 }
 
 GTEST_TEST(GetProgramTypeTest, LCP) {
