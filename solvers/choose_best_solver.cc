@@ -4,10 +4,12 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/get_program_type.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
@@ -94,44 +96,166 @@ bool IsMatch(const MathematicalProgram& prog) {
       SomeSolver::ProgramAttributesSatisfied(prog);
 }
 
+template <typename SomeSolver, typename... SomeSolvers>
+SolverId ChooseFirstMatchingSolver(
+    const MathematicalProgram& prog,
+    std::string_view additional_error_message = "") {
+  if (IsMatch<SomeSolver>(prog)) {
+    return SomeSolver::id();
+  } else {
+    if constexpr (sizeof...(SomeSolvers) > 0) {
+      return ChooseFirstMatchingSolver<SomeSolvers...>(
+          prog, additional_error_message);
+    } else {
+      throw std::invalid_argument(fmt::format(
+          "There is no available solver for the optimization program{}",
+          additional_error_message));
+    }
+  }
+}
+
 }  // namespace
 
 SolverId ChooseBestSolver(const MathematicalProgram& prog) {
-  if (IsMatch<LinearSystemSolver>(prog)) {
-    return LinearSystemSolver::id();
-  } else if (IsMatch<EqualityConstrainedQPSolver>(prog)) {
-    return EqualityConstrainedQPSolver::id();
-  } else if (IsMatch<MosekSolver>(prog)) {
-    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
-    // faster than Gurobi for convex optimization problem. But we should run
-    // a more thorough comparison.
-    return MosekSolver::id();
-  } else if (IsMatch<GurobiSolver>(prog)) {
-    return GurobiSolver::id();
-  } else if (IsMatch<OsqpSolver>(prog)) {
-    // For a QP, we prioritize OSQP over CLP.
-    // For an LP, we prioritize CLP, and don't allow solving LP with OSQP.
-    return OsqpSolver::id();
-  } else if (IsMatch<ClpSolver>(prog)) {
-    return ClpSolver::id();
-  } else if (IsMatch<MobyLCPSolver<double>>(prog)) {
-    return MobyLcpSolverId::id();
-  } else if (IsMatch<SnoptSolver>(prog)) {
-    return SnoptSolver::id();
-  } else if (IsMatch<IpoptSolver>(prog)) {
-    return IpoptSolver::id();
-  } else if (IsMatch<NloptSolver>(prog)) {
-    return NloptSolver::id();
-  } else if (IsMatch<CsdpSolver>(prog)) {
-    return CsdpSolver::id();
-  } else if (IsMatch<ScsSolver>(prog)) {
-    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
-    // modest accuracy quite fast, but then slows down significantly if the user
-    // wants high accuracy.
-    return ScsSolver::id();
+  const ProgramType program_type = GetProgramType(prog);
+  switch (program_type) {
+    case ProgramType::kLP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          // LinearSystemSolver solves a specific type of problem A*x=b, we put
+          // the more specific solver ahead of other general solvers.
+          // The order between Mosek and Gurobi can be changed. According to
+          // the benchmark http://plato.asu.edu/bench.html, Gurobi is slightly
+          // faster than Mosek (as of 07-26-2021), but the difference is not
+          // significant.
+          // Clp is slower than Gurobi and Mosek (with the barrier method).
+          LinearSystemSolver, GurobiSolver, MosekSolver, ClpSolver,
+          // Dispreferred (generic nonlinear solvers).
+          // I generally find SNOPT faster than IPOPT. Nlopt is less reliable.
+          SnoptSolver, IpoptSolver, NloptSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
+          // Dispreferred (ADMM, low accuracy).
+          ScsSolver>(prog);
+    }
+    case ProgramType::kQP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          // EqualityConstrainedQPSolver solves a specific QP with only linear
+          // equality constraints. We put the more specific solver ahead of the
+          // general solvers.
+          // According to http://plato.asu.edu/ftp/cconvex.html, Mosek is
+          // slightly faster than Gurobi. In practice, I find their performance
+          // comparable, so the order between these two can be switched.
+          EqualityConstrainedQPSolver, MosekSolver, GurobiSolver,
+          // Dispreferred (ADMM, low accuracy).
+          // Although both OSQP and SCS use ADMM, I find OSQP to be more
+          // accurate than SCS. Oftentime I find OSQP generates solution with
+          // reasonable accuracy, so I put it before SNOPT/IPOPT/NLOPT (which
+          // are often slower than OSQP).
+          OsqpSolver,
+          // TODO(hongkai.dai): add CLP to this list when we resolve the memory
+          // issue in CLP. Dispreferred (generic nonlinear solvers). I find
+          // SNOPT often faster than IPOPT. NLOPT is less reliable.
+          SnoptSolver, IpoptSolver, NloptSolver,
+          // Dispreferred (ADMM, low accuracy).
+          ScsSolver>(prog);
+    }
+    case ProgramType::kSOCP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          // According to http://plato.asu.edu/ftp/socp.html, Mosek is slightly
+          // faster than Gurobi for SOCP, but the difference is small.
+          MosekSolver, GurobiSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
+          // Dispreferred (ADMM, low accuracy).
+          ScsSolver,
+          // Dispreferred (generic nonlinear solvers).
+          // I strongly suggest NOT to use these solvers for SOCP. These
+          // gradient-based solvers ignore the convexity of the problem, and
+          // also these solvers require smooth gradient, while the second-order
+          // cone constraint is not differentiable at the tip of the cone.
+          SnoptSolver, IpoptSolver, NloptSolver>(prog);
+    }
+    case ProgramType::kSDP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          MosekSolver,
+          // Dispreferred (cannot handle free variables).
+          CsdpSolver,
+          // Dispreferred (ADMM, low accuracy).
+          ScsSolver,
+          // Dispreferred (generic nonlinear solvers).
+          // I strongly suggest NOT to use these solvers for SDP. These
+          // gradient-based solvers ignore the convexity of the problem, and
+          // also these solvers require smooth gradient, while the semidefinite
+          // cone constraint is not differentiable everywhere (when the minimal
+          // eigen value is not unique).
+          SnoptSolver, IpoptSolver, NloptSolver>(prog);
+    }
+    case ProgramType::kGP:
+    case ProgramType::kCGP: {
+      // TODO(hongkai.dai): These types of programs should not be called GP or
+      // CGP. GP are programs with posynomial constraints. Find the right name
+      // of these programs with exponential cones, and add to the documentation
+      // in https://drake.mit.edu/doxygen_cxx/group__solvers.html
+      return ChooseFirstMatchingSolver<
+          // Preferred solver.
+          MosekSolver,
+          // Dispreferred solver, low accuracy (with ADMM method).
+          ScsSolver>(prog);
+    }
+    case ProgramType::kMILP:
+    case ProgramType::kMIQP:
+    case ProgramType::kMISOCP: {
+      // According to http://plato.asu.edu/ftp/misocp.html, Gurobi is a lot
+      // faster than Mosek for MISOCP. The benchmark doesn't compare Mosek
+      // against Gurobi for MILP and MIQP.
+      return ChooseFirstMatchingSolver<GurobiSolver, MosekSolver>(
+          prog,
+          ", please manually instantiate MixedIntegerBranchAndBound and solve "
+          "the problem if the problem size is small, typically with less than "
+          "a dozen of binary variables.");
+    }
+    case ProgramType::kMISDP: {
+      throw std::runtime_error(
+          "ChooseBestSolver():The MISDP problem is not well-supported yet. You "
+          "can try Drake's implementation MixedIntegerBranchAndBound for small "
+          "sized MISDP.");
+    }
+    case ProgramType::kQuadraticCostConicConstraint: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solvers.
+          // I don't know if Mosek is better than Gurobi for this type of
+          // programs.
+          MosekSolver, GurobiSolver,
+          // Dispreferred solver (ADMM, low accuracy).
+          ScsSolver>(prog);
+    }
+    case ProgramType::kNLP: {
+      // I find SNOPT often faster than IPOPT. NLOPT is less reliable.
+      return ChooseFirstMatchingSolver<SnoptSolver, IpoptSolver, NloptSolver>(
+          prog);
+    }
+    case ProgramType::kLCP: {
+      return ChooseFirstMatchingSolver<
+          // Preferred solver.
+          MobyLCPSolver<double>,
+          // Dispreferred solver (generic nonlinear solver).
+          SnoptSolver, IpoptSolver, NloptSolver>(prog);
+    }
+    case ProgramType::kUnknown: {
+      // The order of solvers listed here is an approximation of a total order,
+      // drawn from all of the partial orders given throughout the other case
+      // statements shown above.
+      return ChooseFirstMatchingSolver<
+          LinearSystemSolver, EqualityConstrainedQPSolver, MosekSolver,
+          GurobiSolver, OsqpSolver, ClpSolver, MobyLCPSolver<double>,
+          SnoptSolver, IpoptSolver, NloptSolver, CsdpSolver, ScsSolver>(prog);
+    }
   }
-  throw std::invalid_argument(
-      "There is no available solver for the optimization program");
+  DRAKE_UNREACHABLE();
 }
 
 const std::set<SolverId>& GetKnownSolvers() {

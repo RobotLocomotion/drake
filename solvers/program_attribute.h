@@ -54,6 +54,12 @@ std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
 std::string to_string(const ProgramAttributes&);
 std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
 
+/**
+ * A coarse categorization of the optimization problem based on the type of
+ * constraints/costs/variables.
+ * Notice that Drake chooses the solver based on a finer category; for example
+ * we have a specific solver for equality-constrained convex QP.
+ */
 enum class ProgramType {
   kLP,       ///< Linear Programming, with a linear cost and linear constraints.
   kQP,       ///< Quadratic Programming, with a convex quadratic cost and linear
