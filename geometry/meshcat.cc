@@ -1,14 +1,16 @@
-#include "drake/geometry/dev/meshcat.h"
+#include "drake/geometry/meshcat.h"
 
 #include <fstream>
 #include <future>
+#include <map>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <unordered_map>
+#include <tuple>
 #include <utility>
 
 #include <App.h>
+#include <fmt/format.h>
 #include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
@@ -16,11 +18,11 @@
 #include "drake/common/unused.h"
 
 namespace {
-std::string LoadFile(const std::string& filename) {
-  const std::string resource = drake::FindResourceOrThrow(filename);
+std::string LoadResource(const std::string& resource_name) {
+  const std::string resource = drake::FindResourceOrThrow(resource_name);
   std::ifstream file(resource.c_str(), std::ios::in);
   if (!file.is_open())
-    throw std::runtime_error("Error opening file: " + filename);
+    throw std::runtime_error("Error opening resource: " + resource_name);
   std::stringstream content;
   content << file.rdbuf();
   file.close();
@@ -45,29 +47,45 @@ class Meshcat::WebSocketPublisher {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WebSocketPublisher);
 
-  WebSocketPublisher() : app_future(app_promise.get_future()) {}
+  WebSocketPublisher()
+      : main_thread_id_(std::this_thread::get_id()),
+        app_future_(app_promise_.get_future()) {}
+
+  void SetWebSocketThreadId(std::thread::id id) {
+    websocket_thread_id_ = id;
+  }
 
   // Call this from websocket thread.
-  void SetAppPromise(uWS::App* app, uWS::Loop* loop) {
-    app_promise.set_value(std::make_pair(app, loop));
+  void SetAppPromise(uWS::App* app, uWS::Loop* loop, int port,
+                     us_listen_socket_t* listen_socket) {
+    DRAKE_DEMAND(std::this_thread::get_id() == websocket_thread_id_);
+    app_promise_.set_value(std::make_tuple(app, loop, port, listen_socket));
   }
 
   // Call this from main thread.
   void GetAppFuture() {
-    std::tie(app_, loop_) = app_future.get();
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    std::tie(app_, loop_, port_, listen_socket_) = app_future_.get();
+  }
+
+  int port() const {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(port_ > 0);
+    return port_;
   }
 
   template <typename T>
-  void SetProperty(const std::string& path, const std::string& property,
+  void SetProperty(std::string_view path, std::string_view property,
                    const T& value) {
-    DRAKE_ASSERT(app_ != nullptr);
-    DRAKE_ASSERT(loop_ != nullptr);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
 
     std::stringstream message;
 
     msgpack::zone z;
-    msgpack::pack(message, std::unordered_map<std::string, msgpack::object>(
-                              {{"type", msgpack::object("set_property", z)},
+    msgpack::pack(message, std::map<std::string, msgpack::object>(
+                               {{"type", msgpack::object("set_property", z)},
                                 {"path", msgpack::object(path, z)},
                                 {"property", msgpack::object(property, z)},
                                 {"value", msgpack::object(value, z)}}));
@@ -76,11 +94,12 @@ class Meshcat::WebSocketPublisher {
     // scope.
     loop_->defer([this, path, property, msg = message.str()]() {
       app_->publish("all", msg, uWS::OpCode::BINARY, false);
-      set_properties_[path + "/" + property] = msg;
+      set_properties_[fmt::format("{}/{}", path, property)] = msg;
     });
   }
 
   void SendTree(WebSocket* ws) {
+    DRAKE_DEMAND(std::this_thread::get_id() == websocket_thread_id_);
     // TODO(russt): Generalize this to publishing the entire scene tree.
     for (const auto& [key, msg] : set_properties_) {
       unused(key);
@@ -88,18 +107,34 @@ class Meshcat::WebSocketPublisher {
     }
   }
 
+  void StartShutdown() {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    // Pass by value.
+    loop_->defer([socket = listen_socket_]() {
+      us_listen_socket_close(0, socket);
+    });
+  }
+
  private:
-  std::promise<std::pair<uWS::App*, uWS::Loop*>> app_promise{};
-  std::future<std::pair<uWS::App*, uWS::Loop*>> app_future{};
+  std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
+      app_promise_{};
+
+  // These variables should only be accessed in the main thread.
+  std::thread::id main_thread_id_{};
+  std::future<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
+      app_future_{};
+  int port_{-1};
+  us_listen_socket_t* listen_socket_{nullptr};
+
+  // These variables should only be accessed in the websocket thread.
+  std::thread::id websocket_thread_id_{};
+  uWS::App* app_{nullptr};
+  std::map<std::string, std::string> set_properties_{};
 
   // Only loop_->defer() should be called from outside the websocket_thread. See
   // the documentation for uWebSockets for further details:
   // https://github.com/uNetworking/uWebSockets/blob/d94bf2cd43bed5e0de396a8412f156e15c141e98/misc/READMORE.md#threading
   uWS::Loop* loop_{nullptr};
-
-  // The remaining variables should only be accessed from the websocket_thread.
-  uWS::App* app_{nullptr};
-  std::unordered_map<std::string, std::string> set_properties_{};
 };
 
 Meshcat::Meshcat() {
@@ -111,23 +146,36 @@ Meshcat::Meshcat() {
   publisher_->GetAppFuture();
 }
 
-Meshcat::~Meshcat() = default;
+Meshcat::~Meshcat() {
+  publisher_->StartShutdown();
+  websocket_thread_.join();
+}
+
+std::string Meshcat::web_url() const {
+  return fmt::format("http://localhost:{}", publisher_->port());
+}
+
+std::string Meshcat::ws_url() const {
+  return fmt::format("ws://localhost:{}", publisher_->port());
+}
 
 void Meshcat::JoinWebSocketThread() { websocket_thread_.join(); }
 
-void Meshcat::SetProperty(const std::string& path, const std::string& property,
+void Meshcat::SetProperty(std::string_view path, std::string_view property,
                           bool value) {
   publisher_->SetProperty(path, property, value);
 }
 
 void Meshcat::WebsocketMain() {
+  publisher_->SetWebSocketThreadId(std::this_thread::get_id());
+
   // Preload the three files we will serve (always).
   static const drake::never_destroyed<std::string> index_html(
-      LoadFile("drake/external/meshcat/dist/index.html"));
+      LoadResource("drake/external/meshcat/dist/index.html"));
   static const drake::never_destroyed<std::string> main_min_js(
-      LoadFile("drake/external/meshcat/dist/main.min.js"));
+      LoadResource("drake/external/meshcat/dist/main.min.js"));
   static const drake::never_destroyed<std::string> favicon_ico(
-      LoadFile("drake/doc/favicon.ico"));
+      LoadResource("drake/doc/favicon.ico"));
   int port = 7001;
   const int kMaxPort = 7099;
 
@@ -152,26 +200,23 @@ void Meshcat::WebsocketMain() {
                })
           .ws<PerSocketData>("/*", std::move(behavior));
 
-  bool listening = false;
+  us_listen_socket_t* listen_socket = nullptr;
   do {
     app.listen(
         port, LIBUS_LISTEN_EXCLUSIVE_PORT,
-        [port, &listening](us_listen_socket_t* listenSocket) {
-          if (listenSocket) {
+        [port, &listen_socket](us_listen_socket_t* socket) {
+          if (socket) {
             std::cout
                 << "Meshcat listening for connections at http://127.0.0.1:"
                 << port << std::endl;
-            listening = true;
+            listen_socket = socket;
           }
         });
-  } while (!listening && port++ <= kMaxPort);
+  } while (listen_socket == nullptr && port++ <= kMaxPort);
 
-  publisher_->SetAppPromise(&app, uWS::Loop::get());
+  publisher_->SetAppPromise(&app, uWS::Loop::get(), port, listen_socket);
 
   app.run();
-
-  // run() should not terminate.  If it does, then we've failed.
-  throw std::runtime_error("Meshcat websocket thread failed");
 }
 
 }  // namespace geometry
