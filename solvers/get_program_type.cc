@@ -3,6 +3,8 @@
 #include <initializer_list>
 #include <vector>
 
+#include "drake/solvers/program_attribute.h"
+
 namespace drake {
 namespace solvers {
 namespace {
