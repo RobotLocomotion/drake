@@ -2,9 +2,14 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -30,6 +35,7 @@ drake_cc_package_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":meshcat",
         ":proximity_engine",
         ":proximity_properties",
         ":rgba",
@@ -334,6 +340,48 @@ drake_cc_library(
     deps = [
         "//common",
     ],
+)
+
+drake_cc_library(
+    name = "meshcat",
+    srcs = ["meshcat.cc"],
+    hdrs = ["meshcat.h"],
+    data = [
+        "//doc:favicon",
+        "@meshcat//:dist/index.html",
+        "@meshcat//:dist/main.min.js",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:find_resource",
+        "//common:unused",
+        "@msgpack",
+        "@uwebsockets",
+    ],
+)
+
+drake_cc_binary(
+    name = "meshcat_manual_test",
+    testonly = True,
+    srcs = ["test/meshcat_manual_test.cc"],
+    visibility = ["//visibility:private"],
+    deps = [":meshcat"],
+)
+
+drake_py_binary(
+    name = "meshcat_websocket_client",
+    testonly = True,
+    srcs = ["test/meshcat_websocket_client.py"],
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "meshcat_test",
+    data = [":meshcat_websocket_client"],
+    # Disable valgrind because it currently fails on the system call to python.
+    # TODO(russt): Make it possible to pass --trace-children=no to valgrind.sh.
+    tags = ["no_memcheck"],
+    deps = [":meshcat"],
 )
 
 # -----------------------------------------------------
