@@ -83,18 +83,18 @@
  * <tr><td> <a href="https://github.com/coin-or/Clp">
  *    CLP</a></td>
  *    <td align="center">♦</td>
- *    <td align="center">♦</td>
+ *    <td></td>
  *    <td></td>
  *    <td></td>
  *    <td></td>
  * </tr>
  * <tr><td> <a href="https://github.com/coin-or/Csdp">
  *     CSDP</a></td>
- *     <td align="center">♦</td>
+ *     <td align="center">⟡</td>
  *     <td></td>
- *     <td align="center">♦</td>
- *     <td align="center">♦</td>
- *     <td align="center">♦</td>
+ *     <td align="center">⟡</td>
+ *     <td align="center">⟡</td>
+ *     <td align="center">⟡</td>
  * </tr>
  * <tr><td><a href="https://github.com/cvxgrp/scs">
  *    SCS</a></td>
@@ -116,24 +116,24 @@
  *    SNOPT</a> † ‡</td>
  *     <td align="center">▢</td>
  *     <td align="center">▢</td>
- *     <td></td>
- *     <td></td>
- *     <td></td>
+ *     <td align="center">⬘</td>
+ *     <td align="center">⬘</td>
+ *     <td align="center">⬘</td>
  * </tr>
  * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td>
  *     <td align="center">▢</td>
  *     <td align="center">▢</td>
- *     <td></td>
- *     <td></td>
- *     <td></td>
+ *     <td align="center">⬘</td>
+ *     <td align="center">⬘</td>
+ *     <td align="center">⬘</td>
  * </tr>
  * <tr><td>
  *   <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLopt</a></td>
  *     <td align="center">▢</td>
  *     <td align="center">▢</td>
- *     <td></td>
- *     <td></td>
- *     <td></td>
+ *     <td align="center">⬘</td>
+ *     <td align="center">⬘</td>
+ *     <td align="center">⬘</td>
  * </tr>
  * </table>
  *
@@ -146,12 +146,23 @@
  *
  * ♦ A preferred solver for the given category.
  *
+ * ⟡ The native CSDP solver cannot handle free variables (namely all variables
+ * have to be constrained within a cone). In Drake we apply special techniques
+ * to handle free variables (refer to RemoveFreeVariableMethod for more
+ * details). These heuristics can make the problem expensive to solve or
+ * poorly conditioned.
+ *
  * △ These solvers are not accurate. They implement ADMM algorithm, which
  * converges quickly to a low-accuracy solution, and requires many iterations to
  * achieve high accuracy.
  *
  * ▢ These solvers can solve the convex problems, but are not good at it. They
  * treat the convex problems as general nonlinear optimization problems.
+ *
+ * ⬘ These gradient-based solvers expect smooth gradients. These problems don't
+ * have smooth gradients everywhere, hence even though the problem is convex,
+ * these gradient-bases solvers might not converge to the globally optimal
+ * solution.
  *
  * <h2>Mixed-Integer Convex Optimization</h2>
  *
@@ -210,16 +221,16 @@
  * <tr><td><a href="https://ccom.ucsd.edu/~optimizers/solvers/snopt/">
  *    SNOPT</a> † ‡</td></tr>
  *    <td align="center">♦</td>
- *    <td></td>
+ *    <td>⟐</td>
  *    <td></td>
  * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td></tr>
  *    <td align="center">♦</td>
- *    <td></td>
+ *    <td>⟐</td>
  *    <td></td>
  * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
  *    NLopt</a></td></tr>
  *    <td align="center">♦</td>
- *    <td></td>
+ *    <td>⟐</td>
  *    <td></td>
  * <tr><td><a href="https://github.com/PositronicsLab/Moby">
  *    Moby LCP</a></td>
@@ -241,6 +252,8 @@
  * require a license when invoked via Drake's SnoptSolver wrapper class.
  *
  * ♦ A preferred solver for the given category.
+ * ⟐ SNOPT/IPOPT/NLOPT might be able to solve LCP, but they are not the
+ * preferred solver.
  *
  * @}
  */
