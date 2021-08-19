@@ -8,6 +8,10 @@ is also required.
 The local testing consists largely of informal prodding: run an application
 which exercises meshcat and confirm that is reasonably well behaved.
 
+Required:
+  - drake/geometry:meshcat_manual_test
+    - See the documentation at the top of that file for the expected behavior.
+
 Possible options:
 
   - drake/manipulation/util/show_model.py
