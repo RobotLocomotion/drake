@@ -1,0 +1,30 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # Apache 2.0
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "usockets",
+    hdrs = ["src/libusockets.h"],
+    srcs = glob([
+        "src/*.c",
+        "src/eventing/*.c",
+        "src/crypto/*.c",
+        "src/**/*.h",
+    ]),
+    includes = ["src"],
+    copts = ["-DLIBUS_NO_SSL"],
+    linkstatic = 1,
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

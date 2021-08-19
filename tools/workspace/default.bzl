@@ -52,6 +52,7 @@ load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("@drake//tools/workspace/meshcat_python:repository.bzl", "meshcat_python_repository")  # noqa
 load("@drake//tools/workspace/models:repository.bzl", "models_repository")
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
+load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
@@ -79,6 +80,8 @@ load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_reposito
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
+load("@drake//tools/workspace/usockets:repository.bzl", "usockets_repository")  # noqa
+load("@drake//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_repository")  # noqa
 load("@drake//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/x11:repository.bzl", "x11_repository")
@@ -198,6 +201,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         models_repository(name = "models", mirrors = mirrors)
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
+    if "msgpack" not in excludes:
+        msgpack_repository(name = "msgpack")
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlopt" not in excludes:
@@ -252,6 +257,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml2_repository(name = "tinyxml2")
     if "uritemplate_py" not in excludes:
         uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
+    if "usockets" not in excludes:
+        usockets_repository(name = "usockets", mirrors = mirrors)
+    if "uwebsockets" not in excludes:
+        uwebsockets_repository(name = "uwebsockets", mirrors = mirrors)
     if "voxelized_geometry_tools" not in excludes:
         voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:
