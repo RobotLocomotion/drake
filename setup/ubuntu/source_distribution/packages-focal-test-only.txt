@@ -1,4 +1,5 @@
 kcov
+libcurl4
 libstdc++6-10-dbg
 llvm-9
 python3-dateutil
@@ -16,6 +17,7 @@ python3-scipy-dbg
 python3-six
 python3-tk-dbg
 python3-uritemplate
+python3-websockets
 python3-yaml-dbg
 python3-zmq-dbg
 valgrind
