@@ -1326,6 +1326,7 @@ drake_cc_googletest(
         ":generic_trivial_cost",
         ":ibex_solver",
         ":mathematical_program",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
