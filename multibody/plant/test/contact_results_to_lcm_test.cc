@@ -1,17 +1,20 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
-#include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/plant/contact_results.h"
-#include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -23,119 +26,682 @@ using geometry::GeometryId;
 using geometry::MeshFieldLinear;
 using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
+using geometry::Sphere;
 using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
-using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using multibody::benchmarks::acrobot::AcrobotParameters;
-// TODO(edrumwri) Remove the next line and the corresponding #include when
-// hydroelastic contact results are factored out into test utilities.
-using multibody::internal::HydroelasticTractionCalculator;
+using std::make_unique;
+using std::move;
+using std::nullopt;
+using std::optional;
+using std::string;
+using std::unique_ptr;
+using std::unordered_map;
+using std::vector;
+using symbolic::Expression;
 using systems::Context;
-using systems::Diagram;
 using systems::DiagramBuilder;
 
 namespace multibody {
+
+/* Friend class to expose the internals of ContactResultsToLcmSystem. */
+class ContactResultsToLcmTester {
+ public:
+  ContactResultsToLcmTester() = delete;
+
+  template <typename T>
+  static unordered_map<GeometryId, string>& get_geometry_id_to_body_map(
+      ContactResultsToLcmSystem<T>* system) {
+    return system->geometry_id_to_body_name_map_;
+  }
+
+  template <typename T>
+  static void AddToGeometryBodyMap(
+      ContactResultsToLcmSystem<T>* system,
+      std::initializer_list<unordered_map<GeometryId, string>::value_type>
+          items) {
+    system->geometry_id_to_body_name_map_.insert(items);
+  }
+
+  template <typename T>
+  static vector<string>& get_body_names(ContactResultsToLcmSystem<T>* system) {
+    return system->body_names_;
+  }
+
+  template <typename T>
+  static void AddToBodyNames(ContactResultsToLcmSystem<T>* system,
+                             std::initializer_list<string> items) {
+    system->body_names_.insert(system->body_names_.end(), items);
+  }
+
+  template <typename T, typename U>
+  static bool Equals(const ContactResultsToLcmSystem<T>& system_T,
+                     const ContactResultsToLcmSystem<U>& system_U) {
+    return system_T.Equals(system_U);
+  }
+};
+
 namespace {
 
-// Confirm that an empty multibody plant produces an empty lcm message.
-GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
-  MultibodyPlant<double> plant(0.0);
-  plant.Finalize();
-  ContactResultsToLcmSystem<double> lcm_system(plant);
-  auto lcm_context = lcm_system.AllocateContext();
-  lcm_system.get_contact_result_input_port().FixValue(lcm_context.get(),
-                                                      ContactResults<double>());
+/* The fixed number of faces in the test mesh for hydroleastic contact. */
+constexpr int kNumFaces = 2;
+constexpr int kNumPointPerTri = 3;
 
-  Value<lcmt_contact_results_for_viz> lcm_message_value;
-  lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
-                                                &lcm_message_value);
+/* Creates an arbitrary contact surface representing contact between the
+ geometries identified by `id_M` and `id_N`. The surface data (vertex positions,
+ pressure field) are largely garbage. The value aren't used in math, only to
+ be copied and compared. The underlying mesh's vertex positions can be offset
+ by the given `offset` value so that we can distinguish between two "different"
+ meshes. */
+template <typename T>
+ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
+                                     const Vector3<T>& offset) {
+  /* Create the surface mesh first. It is simply two triangles (make sure we're
+   looping through elements). The position of the vertices is offset by offset.
+   The position of the vertices is irrelevant -- the mesh is just a collection
+   of doubles that get copied. */
+  vector<SurfaceVertex<T>> vertices;
+  vector<SurfaceFace> faces;
+  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5) + offset);
+  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5) + offset);
+  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5) + offset);
+  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5) + offset);
+  faces.emplace_back(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
+                     SurfaceVertexIndex(2));
+  faces.emplace_back(SurfaceVertexIndex(2), SurfaceVertexIndex(3),
+                     SurfaceVertexIndex(0));
+  auto mesh = make_unique<SurfaceMesh<T>>(move(faces), move(vertices));
 
-  const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.get_value();
+  /* Create the "e" field values (i.e., "hydroelastic pressure") - simply
+   increasing values at each vertex. */
+  vector<T> e_MN(mesh->num_vertices());
+  std::iota(e_MN.begin(), e_MN.end(), 1);
 
-  // We haven't stepped, so we should assume the time is the context's default
-  // value.
-  EXPECT_EQ(lcm_message.timestamp, 0);
-  EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
-  EXPECT_EQ(lcm_message.num_hydroelastic_contacts, 0);
+  SurfaceMesh<T>* mesh_pointer = mesh.get();
+  EXPECT_EQ(mesh->num_faces(), kNumFaces);
+  return ContactSurface<T>(id_M, id_N, move(mesh),
+                           make_unique<MeshFieldLinear<T, SurfaceMesh<T>>>(
+                               "e_MN", move(e_MN), mesh_pointer));
 }
 
-// Common case: confirm that the reported contacts map to the right lcm message.
-// In this test, we're using a MBP that doesn't actually have collision
-// geometry, but simulates collision results by reporting that two bodies are
-// colliding. That is enough to test the ContactResultsToLcmSystem.
-GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
-  using std::to_string;
-  const AcrobotParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> plant =
-      MakeAcrobotPlant(parameters, true /* finalize */);
+/* Makes quadrature data sufficient for the ContactSurface generated by
+ MakeContactSurface(). */
+template <typename T>
+vector<HydroelasticQuadraturePointData<T>> MakeQuadratureData(
+    const Vector3<T>& offset) {
+  /* We'll pick *three* quadrature points per triangle, to make sure we get
+   proper loop iteration. For simplicitly, we'll explicitly define the first
+   quadrature point and then express the others in terms of the first. */
+  constexpr int kNumPoints = kNumFaces * kNumPointPerTri;
+  vector<HydroelasticQuadraturePointData<T>> quadrature_point_data(kNumPoints);
 
-  ContactResultsToLcmSystem<double> lcm_system(*plant);
-
-  // Create ContactResults with single reported contact.
-  ContactResults<double> contacts;
-  // NOTE: The values in penetration_data are irrelevant except for nhat_BA_W.
-  // So, only that value is set; all other values are left as default.
-  PenetrationAsPointPair<double> penetration_data;
-  penetration_data.nhat_BA_W << 1, 2, 3;
-  const auto& link1 = plant->GetBodyByName(parameters.link1_name());
-  const BodyIndex index1 = link1.index();
-  const ModelInstanceIndex model_instance = link1.model_instance();
-  const std::string name1 =
-      parameters.link1_name() + "(" + to_string(model_instance) + ")";
-  const BodyIndex index2 =
-      plant->GetBodyByName(parameters.link2_name()).index();
-  // Assume that link1 and link2 belong to the same model instance.
-  const std::string name2 =
-      parameters.link2_name() + "(" + to_string(model_instance) + ")";
-  const Vector3<double> f_BC_W = Vector3<double>{1, 2, 3};
-  const Vector3<double> p_WC = Vector3<double>{-1, -2, -2};
-  const double separation_speed = 0.25;
-  const double slip_speed = 0.5;
-  PointPairContactInfo<double> pair_info{
-      index1,           index2,     f_BC_W,          p_WC,
-      separation_speed, slip_speed, penetration_data};
-  contacts.AddContactInfo(pair_info);
-  auto lcm_context = lcm_system.AllocateContext();
-  lcm_system.get_contact_result_input_port().FixValue(lcm_context.get(),
-                                                      contacts);
-
-  Value<lcmt_contact_results_for_viz> lcm_message_value;
-  lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
-                                                &lcm_message_value);
-  const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.get_value();
-
-  // We haven't stepped, so we should assume the time is the context's default
-  // value.
-  EXPECT_EQ(lcm_message.timestamp, 0);
-  ASSERT_EQ(lcm_message.num_point_pair_contacts, 1);
-  EXPECT_EQ(lcm_message.num_hydroelastic_contacts, 0);
-  const lcmt_point_pair_contact_info_for_viz& info_msg =
-      lcm_message.point_pair_contact_info[0];
-  EXPECT_EQ(info_msg.timestamp, 0);
-  EXPECT_EQ(info_msg.body1_name, name1);
-  EXPECT_EQ(info_msg.body2_name, name2);
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(info_msg.contact_point), p_WC, 0,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(info_msg.contact_force), f_BC_W,
-                              0, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(info_msg.normal),
-                              penetration_data.nhat_BA_W, 0,
-                              MatrixCompareType::absolute));
+  quadrature_point_data[0].p_WQ = Vector3<double>(1, 3, 5) + offset;
+  quadrature_point_data[0].vt_BqAq_W = Vector3<double>(7, 11, 13) + offset;
+  quadrature_point_data[0].traction_Aq_W = Vector3<double>(17, 19, 23) + offset;
+  quadrature_point_data[0].face_index = SurfaceFaceIndex(0);
+  for (int i = 1; i < kNumPoints; ++i) {
+    quadrature_point_data[i].p_WQ = quadrature_point_data[i - 1].p_WQ + offset;
+    quadrature_point_data[i].vt_BqAq_W =
+        quadrature_point_data[i - 1].vt_BqAq_W + offset;
+    quadrature_point_data[i].traction_Aq_W =
+        quadrature_point_data[i - 1].traction_Aq_W + offset;
+    quadrature_point_data[i].face_index = SurfaceFaceIndex(i / kNumPointPerTri);
+  }
+  return quadrature_point_data;
 }
 
-// Confirm that the system can be transmogrified to other supported scalars.
-GTEST_TEST(ContactResultsToLcmSystem, Transmogrify) {
+/* Retrieves a set of fixed geometry ids -- always the same N values for a given
+ N. */
+template <int N>
+const std::array<GeometryId, N>& GetGeometryIds() {
+  static bool initialized = false;
+  static std::array<GeometryId, N> ids;
+  if (!initialized) {
+    initialized = true;
+    for (int i = 0; i < N; ++i) {
+      ids[i] = GeometryId::get_new_id();
+    }
+  }
+  return ids;
+}
+
+/* ContactResultsToLcmSystem basically does two things:
+
+  - Upon construction, save a bunch of data about the population of the given
+    MultibodyPlant into one or more tables.
+  - In calculating its output value (lcm message), combine input ContactResults
+    with the stored tables to make the messages.
+
+ The testing exploits this structure directly. To test the constructor, we'll
+ use friend access to examine the internal tables directly -- in other words,
+ answer the question: given a plant, do we correctly populate the tables?
+
+ Independently, we'll test the output calculation by asking, given a known
+ set of tables, and a known contact result, do we get the expected message?
+
+ Finally, we need to test its scalar support: both in constructing a system as
+ well as transmogrifying it. This test harness and the supporting functions are
+ all designed to support this testing strategy.
+
+ When constructing T-valued ContactResults, we only use constant values. When
+ T = symbolic::Expression, we do not have values that are symbolic::Variables.
+ As constants, the tests pass as is, with Variables, they would throw (can't
+ extract a double value from a Variable without an environment). This throwing
+ behavior is not explicitly tested.
+
+ ContactResults contains various vectors of data (e.g., vertex positions,
+ quadrature point data, etc.) The test is *assuming* that the order of the
+ data in the input is the order of the data on the output. It simplifies the
+ test and only fails if the serialization perturbs the order. */
+template <typename T>
+class ContactResultsToLcmTest : public ::testing::Test {
+ protected:
+  void SetUp() {
+    if constexpr (std::is_same_v<T, Expression>) {
+      /* SceneGraph<symbolic::Expression> is *not* supported. */
+      plant_ = builder_.template AddSystem<MultibodyPlant<T>>(0.0);
+    } else {
+      SceneGraph<T>* scene_graph;
+      std::tie(plant_, scene_graph) =
+          AddMultibodyPlantSceneGraph(&builder_, 0.0);
+    }
+    test_model_index_ = plant_->AddModelInstance("TestInstance");
+  }
+
+  void AddBody(const std::string& name, MultibodyPlant<T>* plant,
+               unordered_map<GeometryId, string>* id_to_body_map,
+               vector<string>* body_names,
+               optional<ModelInstanceIndex> opt_model_index = nullopt) {
+    const ModelInstanceIndex model_index =
+        opt_model_index.has_value() ? *opt_model_index : test_model_index_;
+    const auto& body =
+        plant->AddRigidBody(name, model_index, SpatialInertia<double>());
+    body_names->push_back(fmt::format("{}({})", name, model_index));
+    if constexpr (!std::is_same_v<T, Expression>) {
+      // We can only register geometry for T != Expression.
+      const GeometryId id = plant->RegisterCollisionGeometry(
+          body, RigidTransform<double>{}, Sphere(0.5), name + "_sphere",
+          CoulombFriction<double>());
+      id_to_body_map->insert({id, name});
+    }
+  }
+
+  MultibodyPlant<T>& get_plant(bool finalize = false) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    if (finalize) plant_->Finalize();
+    return *plant_;
+  }
+
+  /* Adds fake point-pair contact results to the given set of contact `results`.
+   Also adds names to the given `lcm_system`'s "body names" table so that the
+   body indices stored in the point-pair results map to names (if `lcm_system`
+   is not nullptr). This doesn't affect the geometry id -> body name map.
+
+   @pre The given `lcm_system` has a *single* entry in its body_names look-up
+        table. */
+  template <typename U = T>
+  static void AddFakePointPairContact(ContactResultsToLcmSystem<U>* lcm_system,
+                                      ContactResults<U>* results) {
+    if (lcm_system != nullptr) {
+      ASSERT_EQ(ContactResultsToLcmTester::get_body_names(lcm_system).size(),
+                1);
+
+      ContactResultsToLcmTester::AddToBodyNames(
+          lcm_system, {"Body1", "Body2", "Body3", "Unreferenced"});
+    }
+
+    /* We don't need to populate the GeometryId->Body map because that is only
+     used for hydroelastic contacts. */
+    const BodyIndex b0{1};
+    const BodyIndex b1{2};
+    const BodyIndex b2{3};
+
+    static const never_destroyed<PointPairContactInfo<U>> pair1(
+        b0, b1, Vector3<U>{1.1, 2.2, 3.3}, Vector3<U>{4.4, 5.5, 6.6}, 7.7, 8.8,
+        PenetrationAsPointPair<U>{
+            GeometryId::get_new_id(), GeometryId::get_new_id(),
+            Vector3<U>{11.1, 22.2, 33.3}, Vector3<U>{44.4, 55.5, 66.6},
+            Vector3<U>{77.7, 88.8, 99.9}, 101.1});
+    results->AddContactInfo(pair1.access());
+    static const never_destroyed<PointPairContactInfo<U>> pair2(
+        b1, b2, Vector3<U>{1.2, 2.3, 3.4}, Vector3<U>{4.5, 5.6, 6.7}, 7.8, 8.9,
+        PenetrationAsPointPair<U>{
+            GeometryId::get_new_id(), GeometryId::get_new_id(),
+            Vector3<U>{11.2, 22.3, 33.4}, Vector3<U>{44.5, 55.6, 66.7},
+            Vector3<U>{77.8, 88.9, 99.1}, 101.1});
+    results->AddContactInfo(pair2.access());
+  }
+
+  /* Adds fake hydro contact results to the given set of contact `results`.
+   Also adds entries to the given `lcm_system`'s geometry id -> body name map so
+   that the ids stored in the results map to names (if `lcm_system` is not
+   nullptr). This doesn't affect the simple body_names vector. */
+  template <typename U = T>
+  static void AddFakeHydroContact(ContactResultsToLcmSystem<U>* lcm_system,
+                                  ContactResults<U>* results) {
+    /* Everything here is static because the ContactResults really doesn't own
+     any of its data; it keeps pointers to data stored elsewhere. So, we need
+     this data to persist, so we keep it function static so it persists through
+     the duration of the test. */
+    const std::array<GeometryId, 4>& ids = GetGeometryIds<4>();
+
+    if (lcm_system != nullptr) {
+      ContactResultsToLcmTester::AddToGeometryBodyMap(
+          lcm_system, {{ids[0], "G0's body"},
+                       {ids[1], "G1's body"},
+                       {ids[2], "G2's body"},
+                       {ids[3], "G3's body"},
+                       {GeometryId::get_new_id(), "Unreferenced body"}});
+    }
+
+    /* In creating this fake contact data, what matters *most* is that the body
+     indices used map to values in the names we've added above. All other values
+     can be meaningless garbage. All that matters is that they are unique values
+     such that we can confirm that the right value got written to the right
+     field. */
+    static const never_destroyed<ContactSurface<U>> surface1(
+        MakeContactSurface<U>(ids[0], ids[1], Vector3<U>{1, 2, 3}));
+    static const never_destroyed<HydroelasticContactInfo<U>> pair1(
+        &surface1.access(),
+        SpatialForce<U>(Vector3<U>(1.1, 2.2, 3.3), Vector3<U>(4.4, 5.5, 6.6)),
+        MakeQuadratureData<U>(Vector3<U>{1, 2, 3}));
+    results->AddContactInfo(&pair1.access());
+
+    static const never_destroyed<ContactSurface<U>> surface2(
+        MakeContactSurface<U>(ids[2], ids[3], Vector3<U>{-3, -1, 2}));
+    static const never_destroyed<HydroelasticContactInfo<U>> pair2(
+        &surface2.access(),
+        SpatialForce<U>(Vector3<U>(1.2, 2.3, 3.4), Vector3<U>(4.5, 5.6, 6.7)),
+        MakeQuadratureData<U>(Vector3<U>{-3, -1, -2}));
+    results->AddContactInfo(&pair2.access());
+  }
+
+  DiagramBuilder<T> builder_;
+  MultibodyPlant<T>* plant_{};
+  ModelInstanceIndex test_model_index_{};
+};
+
+using ScalarTypes = ::testing::Types<double, AutoDiffXd, Expression>;
+TYPED_TEST_SUITE(ContactResultsToLcmTest, ScalarTypes);
+
+/* We construct a plant with known contents, instantiate an
+ ContactResultsToLcmSystem on it and confirm the internal tables are populated
+ as we expect them to be. */
+TYPED_TEST(ContactResultsToLcmTest, Constructor) {
+  using T = TypeParam;
+
+  /* These mirror the internal data tables in ContactResultsToLcmSystem. We'll
+   populate them as we populate MBP and confirm that the resulting tables match
+   the tables we build by hand. */
+  unordered_map<GeometryId, string> expected_geo_body_map;
+  /* The world body will always be the first listed. */
+  vector<string> expected_body_names{{"WorldBody(0)"}};
+
+  MultibodyPlant<T>& plant = this->get_plant();
+  /* Body 1 and 2 go to the same model instance (the "default" for this test).
+   */
+  this->AddBody("body1", &plant, &expected_geo_body_map, &expected_body_names);
+  this->AddBody("body2", &plant, &expected_geo_body_map, &expected_body_names);
+  const ModelInstanceIndex model3 = plant.AddModelInstance("JustForBody3");
+  this->AddBody("body3", &plant, &expected_geo_body_map, &expected_body_names,
+                model3);
+  plant.Finalize();
+
+  /* Construction should populate tables about bodies. */
+  ContactResultsToLcmSystem<T> lcm(plant);
+
+  /* Examine the constructed tables. */
+  const auto& body_names = ContactResultsToLcmTester::get_body_names(&lcm);
+  const auto& id_to_body_map =
+      ContactResultsToLcmTester::get_geometry_id_to_body_map(&lcm);
+  EXPECT_EQ(body_names, expected_body_names);
+  EXPECT_EQ(id_to_body_map, expected_geo_body_map);
+
+  /* We'll further confirm that the system has its default name and ports
+   available. */
+  EXPECT_EQ(lcm.get_name(), "ContactResultsToLcmSystem");
+  EXPECT_NO_THROW(lcm.get_contact_result_input_port());
+  EXPECT_NO_THROW(lcm.get_lcm_message_output_port());
+}
+
+/* Confirms that empty ContactResults produces an empty message. */
+TYPED_TEST(ContactResultsToLcmTest, EmptyContactResults) {
+  using T = TypeParam;
+
+  /* We're not going to populate the plant, because we're going to set the
+   internal tables by hand and fix the input for the context. */
+  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  ContactResultsToLcmSystem<T> lcm(plant);
+  const unique_ptr<Context<T>> context = lcm.AllocateContext();
+
+  const double kTime = 1.5;
+  context->SetTime(kTime);
+  lcm.get_contact_result_input_port().FixValue(context.get(),
+                                               ContactResults<T>{});
+
+  /* We'll do this twice, once with *empty* internal tables, and once with
+   tables with values. We want to make sure that empty contact, even with
+   populated tables is not a problem. */
+  auto confirm_empty = [&lcm, &context = *context, kTime]() {
+    const auto& message =
+        lcm.get_lcm_message_output_port()
+            .template Eval<lcmt_contact_results_for_viz>(context);
+
+    // Message time is an integer number of microseconds.
+    const double kTimeMicroSec = static_cast<int64_t>(kTime * 1e6);
+    EXPECT_EQ(message.timestamp, kTimeMicroSec);
+    EXPECT_EQ(message.num_point_pair_contacts, 0);
+    EXPECT_EQ(message.point_pair_contact_info.size(), 0);
+    EXPECT_EQ(message.num_hydroelastic_contacts, 0);
+    EXPECT_EQ(message.hydroelastic_contacts.size(), 0);
+  };
+
+  {
+    SCOPED_TRACE("With empty tables");
+    confirm_empty();
+  }
+
+  /* Add some content to the tables and try again. The actual content is
+   arbitrary garbage. */
+  {
+    ContactResultsToLcmTester::AddToBodyNames(
+        &lcm, {"A body", "Another body", "and more"});
+    ContactResultsToLcmTester::AddToGeometryBodyMap(
+        &lcm,
+        {{GeometryId::get_new_id(), "A body"},
+         {GeometryId::get_new_id(), "The names don't even have to match"}});
+    SCOPED_TRACE("With populated tables");
+    confirm_empty();
+  }
+}
+
+/* Tests the case where ContactResults contains *only* point-pair data. This
+ test bears primary responsibility to make sure that point pair data is
+ serialized correctly.
+
+ Translation of point pair contact results to lcm message is straightforward.
+ There are *three* things that this system does in the process:
+
+   - Extracts double values from T-Valued quantities.
+   - Looks up body names based on *body indices*.
+   - Writes various Vector3 quantities (forces, positions, etc. -- all Vector3-
+     valued data, but with different semantics). We'll want to make sure that
+     each Vector3-valued quantity gets mapped to the right part of the message,
+     because type checking isn't going to do it for us.
+
+ As such, we don't need much for this test. We'll do two point-pair contacts
+ with unique values to confirm successful iteration and copying. */
+TYPED_TEST(ContactResultsToLcmTest, PointPairContactOnly) {
+  using T = TypeParam;
+
+  /* We're not going to populate the plant, because we're going to set the
+   internal tables by hand and fix the input for the context. */
+  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  ContactResultsToLcmSystem<T> lcm(plant);
+  const unique_ptr<Context<T>> context = lcm.AllocateContext();
+
+  /* The time *also* gets set inside the per-point-pair messages. We want to
+   detect that. */
+  const double kTime = 1.5;
+  context->SetTime(kTime);
+  ContactResults<T> contacts;
+  this->AddFakePointPairContact(&lcm, &contacts);
+  lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
+
+  const auto& message =
+      lcm.get_lcm_message_output_port()
+          .template Eval<lcmt_contact_results_for_viz>(*context);
+
+  EXPECT_EQ(message.num_point_pair_contacts, 2);
+  EXPECT_EQ(message.point_pair_contact_info.size(), 2);
+  EXPECT_EQ(message.num_hydroelastic_contacts, 0);
+  EXPECT_EQ(message.hydroelastic_contacts.size(), 0);
+
+  /* Test the message for a point pair contact against the input point pair
+   data. */
+  const auto& body_names = ContactResultsToLcmTester::get_body_names(&lcm);
+  auto confirm_message = [kTime, &body_names](
+                             const lcmt_contact_results_for_viz& message_in,
+                             const ContactResults<T>& contacts_in, int i) {
+    // Message time is an integer number of microseconds.
+    const double kTimeMicroSec = static_cast<int64_t>(kTime * 1e6);
+    const auto& pair_message = message_in.point_pair_contact_info[i];
+    const auto& pair_data = contacts_in.point_pair_contact_info(i);
+
+    EXPECT_EQ(pair_message.timestamp, kTimeMicroSec);
+    EXPECT_EQ(pair_message.body1_name, body_names[pair_data.bodyA_index()]);
+    EXPECT_EQ(pair_message.body2_name, body_names[pair_data.bodyB_index()]);
+    // clang-format off
+    EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(pair_message.contact_point),
+        ExtractDoubleOrThrow(pair_data.contact_point())));
+    EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(pair_message.contact_force),
+        ExtractDoubleOrThrow(pair_data.contact_force())));
+    EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(pair_message.normal),
+        ExtractDoubleOrThrow(pair_data.point_pair().nhat_BA_W)));
+    // clang-format on
+    /* None of the rest of the pair data makes it to the message. */
+  };
+
+  for (int c = 0; c < 2; ++c) {
+    SCOPED_TRACE(fmt::format("Penetration point pair {} out of 2", (c + 1)));
+    confirm_message(message, contacts, c);
+  }
+}
+
+/* Tests the case where ContactResults contains *only* hydroleastic data. This
+ test bears primary responsibility to make sure that hydroleastic data is
+ serialized correctly.
+
+ Translation of hydroleastic contact results to lcm message is straightforward.
+ There are *three* things that this system does in the process:
+
+   - Extracts double values from T-Valued quantities.
+   - Looks up body names based on geometry ids.
+   - Writes various Vector3 quantities (forces, positions, etc. -- all Vector3-
+     valued data, but with different semantics). We'll want to make sure that
+     each Vector3-valued quantity gets mapped to the right part of the message,
+     because type checking isn't going to do it for us.
+
+ As such, we don't need much for this test. We'll do two hydroelastic contacts
+ with unique values to confirm successful iteration and copying. */
+TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
+  using T = TypeParam;
+
+  /* We're not going to populate the plant, because we're going to set the
+   internal tables by hand and fix the input for the context. */
+  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  ContactResultsToLcmSystem<T> lcm(plant);
+  const unique_ptr<Context<T>> context = lcm.AllocateContext();
+
+  /* Hydroelastic contact doesn't store time; so we'll leave it alone. */
+  ContactResults<T> contacts;
+  this->AddFakeHydroContact(&lcm, &contacts);
+  lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
+
+  const auto& message =
+      lcm.get_lcm_message_output_port()
+          .template Eval<lcmt_contact_results_for_viz>(*context);
+
+  EXPECT_EQ(message.num_point_pair_contacts, 0);
+  EXPECT_EQ(message.point_pair_contact_info.size(), 0);
+  EXPECT_EQ(message.num_hydroelastic_contacts, 2);
+  EXPECT_EQ(message.hydroelastic_contacts.size(), 2);
+
+  /* Test the message for hydro contact against the input hydro data. */
+  const auto& geo_to_body_map =
+      ContactResultsToLcmTester::get_geometry_id_to_body_map(&lcm);
+  auto confirm_message = [&geo_to_body_map](
+                             const lcmt_contact_results_for_viz& message_in,
+                             const ContactResults<T>& contacts_in, int i) {
+    const auto& pair_message = message_in.hydroelastic_contacts[i];
+    const auto& pair_data = contacts_in.hydroelastic_contact_info(i);
+    const auto& surface = pair_data.contact_surface();
+    const auto& mesh = surface.mesh_W();
+
+    EXPECT_EQ(pair_message.body1_name, geo_to_body_map.at(surface.id_M()));
+    EXPECT_EQ(pair_message.body2_name, geo_to_body_map.at(surface.id_N()));
+
+    /* Mesh aggregate results: centroid, force, moment. */
+    // clang-format off
+    EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(pair_message.centroid_W),
+        ExtractDoubleOrThrow(mesh.centroid())));
+    EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(pair_message.force_C_W),
+        ExtractDoubleOrThrow(pair_data.F_Ac_W().translational())));
+    EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(pair_message.moment_C_W),
+        ExtractDoubleOrThrow(pair_data.F_Ac_W().rotational())));
+    // clang-format on
+
+    /* Compare meshes and pressure fields. */
+    EXPECT_EQ(pair_message.num_triangles, mesh.num_faces());
+    EXPECT_EQ(pair_message.triangles.size(), mesh.num_faces());
+    const auto& field = surface.e_MN();
+    for (SurfaceFaceIndex f(0); f < mesh.num_faces(); ++f) {
+      const auto& tri_message = pair_message.triangles[f];
+      const auto& tri_data = mesh.element(f);
+      // clang-format off
+      EXPECT_TRUE(CompareMatrices(
+          Vector3<double>(tri_message.p_WA),
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(0)).r_MV())));
+      EXPECT_TRUE(CompareMatrices(
+          Vector3<double>(tri_message.p_WB),
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(1)).r_MV())));
+      EXPECT_TRUE(CompareMatrices(
+          Vector3<double>(tri_message.p_WC),
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(2)).r_MV())));
+      // clang-format on
+      EXPECT_EQ(
+          tri_message.pressure_A,
+          ExtractDoubleOrThrow(field.EvaluateAtVertex(tri_data.vertex(0))));
+      EXPECT_EQ(
+          tri_message.pressure_B,
+          ExtractDoubleOrThrow(field.EvaluateAtVertex(tri_data.vertex(1))));
+      EXPECT_EQ(
+          tri_message.pressure_C,
+          ExtractDoubleOrThrow(field.EvaluateAtVertex(tri_data.vertex(2))));
+    }
+
+    /* Compare quadrature data. */
+    const auto& data_quads = pair_data.quadrature_point_data();
+    const auto& message_quads = pair_message.quadrature_point_data;
+    EXPECT_EQ(pair_message.num_quadrature_points, data_quads.size());
+    EXPECT_EQ(message_quads.size(), data_quads.size());
+    EXPECT_EQ(pair_message.num_quadrature_points,
+              mesh.num_faces() * kNumPointPerTri);
+    for (int q = 0; q < static_cast<int>(data_quads.size()); ++q) {
+      // clang-format off
+      EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(message_quads[q].p_WQ),
+        ExtractDoubleOrThrow(data_quads[q].p_WQ)));
+      EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(message_quads[q].vt_BqAq_W),
+        ExtractDoubleOrThrow(data_quads[q].vt_BqAq_W)));
+      EXPECT_TRUE(CompareMatrices(
+        Vector3<double>(message_quads[q].traction_Aq_W),
+        ExtractDoubleOrThrow(data_quads[q].traction_Aq_W)));
+      // clang-format on
+    }
+  };
+
+  for (int c = 0; c < 2; ++c) {
+    SCOPED_TRACE(fmt::format("Hydro contact {} out of 2", (c + 1)));
+    confirm_message(message, contacts, c);
+  }
+}
+
+/* Tests the case where ContactResults contains mixed data. This test assumes
+ that point and hydro data, if represented *at all*, are represented correctly.
+ It just attempts to confirm that the two result types don't interfere.
+ Correctness of the serialization of each type relies on previous tests. */
+TYPED_TEST(ContactResultsToLcmTest, MixedContactData) {
+  using T = TypeParam;
+
+  /* We're not going to populate the plant, because we're going to set the
+   internal tables by hand and fix the input for the context. */
+  MultibodyPlant<T>& plant = this->get_plant(true /* finalize */);
+  ContactResultsToLcmSystem<T> lcm(plant);
+  const unique_ptr<Context<T>> context = lcm.AllocateContext();
+
+  ContactResults<T> contacts;
+  this->AddFakePointPairContact(&lcm, &contacts);
+  this->AddFakeHydroContact(&lcm, &contacts);
+  lcm.get_contact_result_input_port().FixValue(context.get(), contacts);
+
+  const auto& message =
+      lcm.get_lcm_message_output_port()
+          .template Eval<lcmt_contact_results_for_viz>(*context);
+
+  EXPECT_EQ(message.num_point_pair_contacts, 2);
+  EXPECT_EQ(message.point_pair_contact_info.size(), 2);
+  EXPECT_EQ(message.num_hydroelastic_contacts, 2);
+  EXPECT_EQ(message.hydroelastic_contacts.size(), 2);
+  /* Knowing that we have the right *numbers* of contact results suffices. We
+   assume if the serialization got that far, it did the right thing at the
+   detail level based on previous tests. */
+}
+
+/* Previous tests confirmed that construction ContactResultsToLcmSystem for
+ various T works. This confirms that transmogrifying from double likewise
+ works.
+
+ ContactResultsToLcmSystem provides a private Equal() method to compare systems.
+ This is a good minimum condition, but we also use a smoke test that things are
+ correct -- we want to make sure the transmogrified result is *functional*.
+
+ Starting with a double-valued system, we'll transmogrify it, allocate a
+ context, fix a non-empty contact result to the input port, evaluate the output
+ port, and make sure things got serialized. */
+TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
+  using T = TypeParam;
+
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
-  ContactResultsToLcmSystem<double> lcm_system(plant);
+  ContactResultsToLcmSystem<double> lcm_double(plant);
 
-  ContactResultsToLcmSystem<AutoDiffXd> lcm_system_ad(lcm_system);
+  /* We don't care about double-valued results, we're just using it to
+    populate the tables in lcm_double. These will get copied over. */
+  ContactResults<double> contacts_double;
+  this->AddFakePointPairContact(&lcm_double, &contacts_double);
+  this->AddFakeHydroContact(&lcm_double, &contacts_double);
+
+  auto system_T = [&lcm_double]() {
+    if constexpr (std::is_same_v<T, double>) {
+      /* We support AutoDiffXd -> double. So, when T is double, we'll convert to
+       AutoDiffXd and *back*. Obviously if double -> AutoDiffXd is broken both
+       that specific test and this test will fail. */
+      return lcm_double.ToAutoDiffXd()->ToScalarType<double>();
+    } else {
+      return lcm_double.ToScalarType<T>();
+    }
+  }();
+  ContactResultsToLcmSystem<T>* lcm_T =
+      dynamic_cast<ContactResultsToLcmSystem<T>*>(system_T.get());
+  ASSERT_NE(lcm_T, nullptr);
+
+  EXPECT_TRUE(ContactResultsToLcmTester::Equals(lcm_double, *lcm_T));
+
+  ContactResults<T> contacts;
+  this->template AddFakePointPairContact<T>(nullptr, &contacts);
+  this->template AddFakeHydroContact<T>(nullptr, &contacts);
+  const unique_ptr<Context<T>> context = lcm_T->AllocateContext();
+  lcm_T->get_contact_result_input_port().FixValue(context.get(), contacts);
+
+  const auto& message =
+      lcm_T->get_lcm_message_output_port()
+          .template Eval<lcmt_contact_results_for_viz>(*context);
+
+  EXPECT_EQ(message.num_point_pair_contacts, 2);
+  EXPECT_EQ(message.point_pair_contact_info.size(), 2);
+  EXPECT_EQ(message.num_hydroelastic_contacts, 2);
+  EXPECT_EQ(message.hydroelastic_contacts.size(), 2);
 }
 
 GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
@@ -154,7 +720,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   // Check that the publishing event was set as documented.
   auto periodic_events = publisher->GetPeriodicEvents();
   EXPECT_EQ(periodic_events.size(), 1);
-  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
+  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
 }
 
 GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
@@ -168,7 +734,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   plant->Finalize();
 
   builder.ExportOutput(plant->get_contact_results_output_port(),
-      "contact_results");
+                       "contact_results");
 
   auto diagram = builder.AddSystem(builder.Build());
 
@@ -181,273 +747,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   // Check that the publishing event was set as documented.
   auto periodic_events = publisher->GetPeriodicEvents();
   EXPECT_EQ(periodic_events.size(), 1);
-  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
-}
-
-// TODO(edrumwri) Refactor these helper functions to be more
-// broadly available to unit tests that depend on them.
-
-// Returns a distinct spatial force.
-SpatialForce<double> MakeSpatialForce() {
-  return SpatialForce<double>(Vector3<double>(1, 2, 3),
-                              Vector3<double>(4, 5, 6));
-}
-
-// Creates a surface mesh.
-std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
-  std::vector<SurfaceVertex<double>> vertices;
-  std::vector<SurfaceFace> faces;
-
-  // Create the vertices, all of which are offset vectors defined in the
-  // halfspace body frame.
-  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
-
-  // Create the face comprising two triangles.
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
-
-  return std::make_unique<SurfaceMesh<double>>(
-      std::move(faces), std::move(vertices));
-}
-
-// Returns two distinct quadrature points.
-std::vector<HydroelasticQuadraturePointData<double>> MakeQuadraturePointData() {
-  // Note that the setup of the face indices will indicate exactly one
-  // quadrature point per triangle given a mesh of two triangles. Verify this.
-  DRAKE_DEMAND(CreateSurfaceMesh()->num_faces() == 2);
-
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data;
-  quadrature_point_data.resize(2);
-  quadrature_point_data[0].p_WQ = Vector3<double>(1, 3, 5);
-  quadrature_point_data[0].vt_BqAq_W = Vector3<double>(7, 11, 13);
-  quadrature_point_data[0].traction_Aq_W = Vector3<double>(17, 19, 23);
-  quadrature_point_data[0].face_index = SurfaceFaceIndex(0);
-  quadrature_point_data[1].p_WQ = Vector3<double>(29, 31, 37);
-  quadrature_point_data[1].vt_BqAq_W = Vector3<double>(41, 43, 47);
-  quadrature_point_data[1].traction_Aq_W = Vector3<double>(51, 53, 57);
-  quadrature_point_data[1].face_index = SurfaceFaceIndex(1);
-  return quadrature_point_data;
-}
-
-// Creates a contact surface between the two given geometries.
-std::unique_ptr<ContactSurface<double>> CreateContactSurface(
-    GeometryId halfspace_id, GeometryId block_id) {
-  // Create the surface mesh first.
-  auto mesh = CreateSurfaceMesh();
-
-  // Create the "e" field values (i.e., "hydroelastic pressure") using
-  // the absolute value of the sum of the "x" and "y" values.
-  std::vector<double> e_MN(mesh->num_vertices());
-  for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    e_MN[i] = std::abs(mesh->vertex(i).r_MV()[0] + mesh->vertex(i).r_MV()[1]);
-
-  SurfaceMesh<double>* mesh_pointer = mesh.get();
-  return std::make_unique<ContactSurface<double>>(
-      halfspace_id, block_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
-}
-
-ContactResults<double> GenerateHydroelasticContactResults(
-    const MultibodyPlant<double>& plant,
-    std::unique_ptr<ContactSurface<double>>* contact_surface,
-    std::unique_ptr<HydroelasticContactInfo<double>>* contact_info) {
-  // Get the geometries for the two bodies.
-  DRAKE_DEMAND(plant.num_bodies() == 2);
-  const Body<double>& world_body = plant.world_body();
-  const Body<double>& block_body = plant.GetBodyByName("BodyB");
-  const std::vector<geometry::GeometryId>& world_geoms =
-      plant.GetCollisionGeometriesForBody(world_body);
-  const std::vector<geometry::GeometryId>& block_geoms =
-      plant.GetCollisionGeometriesForBody(block_body);
-  DRAKE_DEMAND(world_geoms.size() == 1);
-  DRAKE_DEMAND(block_geoms.size() == 1);
-
-  // Create the contact surface using an arbitrary geometry from each body.
-  *contact_surface =
-      CreateContactSurface(world_geoms.front(), block_geoms.front());
-
-  multibody::SpatialForce<double> F_Ac_W = MakeSpatialForce();
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data =
-      MakeQuadraturePointData();
-  ContactResults<double> output;
-  *contact_info = std::make_unique<HydroelasticContactInfo<double>>(
-      contact_surface->get(), F_Ac_W, std::move(quadrature_point_data));
-  output.AddContactInfo(contact_info->get());
-  return output;
-}
-
-double square(double x) { return x * x; }
-
-// Computes the distance between two triangles, which we define as the largest
-// norm between two corresponding vertices. The first triangle is given
-// by the vertices p_WA, p_WB, and p_WC. The second triangle is specified using
-// the array `vertices_W` as well as the permutation array that describes how
-// `vertices` should be indexed.
-double ComputeDistanceBetweenTriangles(
-    const double p_WA[3], const double p_WB[3], const double p_WC[3],
-    const std::array<Vector3<double>, 3>& vertices_W,
-    const std::array<int, 3>& vertex_vector_permutation) {
-  double sq_dist_A = 0.0, sq_dist_B = 0.0, sq_dist_C = 0.0;
-
-  for (int j = 0; j < 3; ++j) {  // Loop over the three dimensions.
-    sq_dist_A += square(p_WA[j] - vertices_W[vertex_vector_permutation[0]][j]);
-    sq_dist_B += square(p_WB[j] - vertices_W[vertex_vector_permutation[1]][j]);
-    sq_dist_C += square(p_WC[j] - vertices_W[vertex_vector_permutation[2]][j]);
-  }
-
-  return std::sqrt(std::max(sq_dist_A, std::max(sq_dist_B, sq_dist_C)));
-}
-
-// Searches for a permutation of the vertices of each triangle T in `mesh_W`
-// such that a T is found to be equivalent to the triangle (p_WA, p_WB, p_WC).
-void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
-                                 const double p_WC[3],
-                                 const SurfaceMesh<double>& mesh_W,
-                                 double tol) {
-  double closest_distance = std::numeric_limits<double>::max();
-
-  for (geometry::SurfaceFaceIndex i(0); i < mesh_W.num_faces(); ++i) {
-    // Get the triangle as three vertices measured and expressed in the world
-    // frame.
-    const std::array<Vector3<double>, 3> vertices_W = {
-        mesh_W.vertex(mesh_W.element(i).vertex(0)).r_MV(),
-        mesh_W.vertex(mesh_W.element(i).vertex(1)).r_MV(),
-        mesh_W.vertex(mesh_W.element(i).vertex(2)).r_MV()};
-
-    // Set a vector of indices into the vector of vertices.
-    std::array<int, 3> indices = { 0, 1, 2 };
-
-    // Compute the distance using the various permutations.
-    do {
-      double distance = ComputeDistanceBetweenTriangles(p_WA, p_WB, p_WC,
-                                                        vertices_W, indices);
-      closest_distance = std::min(distance, closest_distance);
-      if (closest_distance < tol)
-        break;
-    } while (std::next_permutation(indices.begin(), indices.end()));
-  }
-
-  EXPECT_LT(closest_distance, tol);
-}
-
-// Verifies that the LCM message is consistent with the hydroelastic contact
-// surface that we create.
-GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
-  // Note: the plant will never be connected in the Diagram. It is used only to
-  // set up the ContactResultsToLcmSystem. SceneGraph is necessary for
-  // AddInclinedPlaneWithBlockToPlant() to work properly.
-  DiagramBuilder<double> builder;
-  MultibodyPlant<double>* plant;
-  geometry::SceneGraph<double>* scene_graph;
-  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder, 0.0);
-
-  // We need some geometries for this test. Parameters below are selected
-  // arbitrarily and do not affect this test.
-  const double gravity = 0.0;
-  const double plane_angle = 0.0;
-  const CoulombFriction<double> mu_plane;
-  const CoulombFriction<double> mu_block;
-  const double block_mass = 1.0;
-  const Vector3<double> block_dim(1.0, 1.0, 1.0);
-  benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
-      gravity, plane_angle, {} /* default plane "dimensions" */,
-      mu_plane, mu_block, block_mass, block_dim, false /* no spheres */,
-      plant);
-  plant->Finalize();
-
-  ContactResultsToLcmSystem<double> contact_results_to_lcm_system(*plant);
-
-  const systems::InputPort<double>& contact_results_input_port =
-      contact_results_to_lcm_system.get_contact_result_input_port();
-  const systems::OutputPortIndex
-      lcm_hydroelastic_contact_surface_output_port_index =
-          contact_results_to_lcm_system.get_lcm_message_output_port()
-              .get_index();
-
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  std::unique_ptr<HydroelasticContactInfo<double>> contact_info;
-  std::unique_ptr<Context<double>> context =
-      contact_results_to_lcm_system.CreateDefaultContext();
-  contact_results_input_port.FixValue(
-      context.get(), GenerateHydroelasticContactResults(
-                         *plant, &contact_surface, &contact_info));
-
-  // Get the LCM message that corresponds to the contact results.
-  Value<lcmt_contact_results_for_viz> lcm_message_value;
-  contact_results_to_lcm_system.get_output_port(
-      lcm_hydroelastic_contact_surface_output_port_index).Calc(
-          *context, &lcm_message_value);
-  const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.get_value();
-
-  EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
-  ASSERT_EQ(lcm_message.num_hydroelastic_contacts, 1);
-  const lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
-      lcm_message.hydroelastic_contacts[0];
-  EXPECT_EQ(surface_msg.body1_name, "WorldBody");
-  EXPECT_EQ(surface_msg.body2_name, "BodyB");
-
-  // Verify that the quadrature point data matches that expected.
-  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data =
-      MakeQuadraturePointData();
-  ASSERT_EQ(quadrature_point_data.size(), surface_msg.num_quadrature_points);
-  for (int i = 0; i < surface_msg.num_quadrature_points; ++i) {
-    const lcmt_hydroelastic_quadrature_per_point_data_for_viz& quadrature_msg =
-        surface_msg.quadrature_point_data[i];
-    const Vector3<double> p_WQ(quadrature_msg.p_WQ[0], quadrature_msg.p_WQ[1],
-                               quadrature_msg.p_WQ[2]);
-    const Vector3<double> vt_BqAq_W(quadrature_msg.vt_BqAq_W[0],
-                                    quadrature_msg.vt_BqAq_W[1],
-                                    quadrature_msg.vt_BqAq_W[2]);
-    const Vector3<double> traction_Aq_W(quadrature_msg.traction_Aq_W[0],
-                                        quadrature_msg.traction_Aq_W[1],
-                                        quadrature_msg.traction_Aq_W[2]);
-    EXPECT_EQ(p_WQ, quadrature_point_data[i].p_WQ);
-    EXPECT_EQ(vt_BqAq_W, quadrature_point_data[i].vt_BqAq_W);
-    EXPECT_EQ(traction_Aq_W, quadrature_point_data[i].traction_Aq_W);
-  }
-
-  // Verify that the spatial forces match.
-  const Vector3<double> force_C_W(surface_msg.force_C_W[0],
-                                  surface_msg.force_C_W[1],
-                                  surface_msg.force_C_W[2]);
-  const Vector3<double> moment_C_W(surface_msg.moment_C_W[0],
-                                   surface_msg.moment_C_W[1],
-                                   surface_msg.moment_C_W[2]);
-  EXPECT_EQ(force_C_W, MakeSpatialForce().translational());
-  EXPECT_EQ(moment_C_W, MakeSpatialForce().rotational());
-
-  // Verify that the total number of triangles match.
-  ASSERT_EQ(surface_msg.num_triangles, contact_surface->mesh_W().num_faces());
-
-  // Verify that the contact surface has the expected vertex locations.
-  for (int i = 0; i < surface_msg.num_triangles; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      ValidateCloseToMeshTriangle(
-          surface_msg.triangles[i].p_WA, surface_msg.triangles[i].p_WB,
-          surface_msg.triangles[i].p_WC, contact_surface->mesh_W(),
-          10 * std::numeric_limits<double>::epsilon());
-    }
-  }
-
-  // Verify that the pressure values match those set.
-  for (int i = 0; i < surface_msg.num_triangles; ++i) {
-    EXPECT_EQ(surface_msg.triangles[i].pressure_A,
-              std::abs(surface_msg.triangles[i].p_WA[0] +
-                       surface_msg.triangles[i].p_WA[1]));
-    EXPECT_EQ(surface_msg.triangles[i].pressure_B,
-              std::abs(surface_msg.triangles[i].p_WB[0] +
-                       surface_msg.triangles[i].p_WB[1]));
-    EXPECT_EQ(surface_msg.triangles[i].pressure_C,
-              std::abs(surface_msg.triangles[i].p_WC[0] +
-                       surface_msg.triangles[i].p_WC[1]));
-  }
+  EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
 }
 
 }  // namespace
