@@ -189,27 +189,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
 
-  void CalcNonContactForces(const systems::Context<T>& context, bool discrete,
-                            MultibodyForces<T>* forces) const;
-
-  // TODO(xuchenhan-tri): Remove the following calls to MbP solvers (which only
-  //  solves for rigid-rigid contact) when the deformable-rigid two-way coupled
-  //  contact solver is implemented.
-  void CallTamsiSolver(
-      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-      const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
-      const MatrixX<T>& Jt, const VectorX<T>& stiffness,
-      const VectorX<T>& damping, const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
-  void CallContactSolver(
-      contact_solvers::internal::ContactSolver<T>* contact_solver,
-      const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-      const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
-      const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
   void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
                                  MultibodyForces<T>* forces) const;
 

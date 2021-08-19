@@ -96,38 +96,6 @@ DiscreteUpdateManager<T>::CalcCombinedFrictionCoefficients(
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::CalcNonContactForces(
-    const systems::Context<T>& context, bool discrete,
-    MultibodyForces<T>* forces) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcNonContactForces(
-      plant(), context, discrete, forces);
-}
-
-template <typename T>
-void DiscreteUpdateManager<T>::CallTamsiSolver(
-    const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
-    const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
-    const MatrixX<T>& Jt, const VectorX<T>& stiffness,
-    const VectorX<T>& damping, const VectorX<T>& mu,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CallTamsiSolver(
-      plant(), time0, v0, M0, minus_tau, fn0, Jn, Jt, stiffness, damping, mu,
-      results);
-}
-
-template <typename T>
-void DiscreteUpdateManager<T>::CallContactSolver(
-    contact_solvers::internal::ContactSolver<T>* contact_solver, const T& time0,
-    const VectorX<T>& v0, const MatrixX<T>& M0, const VectorX<T>& minus_tau,
-    const VectorX<T>& phi0, const MatrixX<T>& Jc, const VectorX<T>& stiffness,
-    const VectorX<T>& damping, const VectorX<T>& mu,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CallContactSolver(
-      plant(), contact_solver, time0, v0, M0, minus_tau, phi0, Jc, stiffness,
-      damping, mu, results);
-}
-
-template <typename T>
 void DiscreteUpdateManager<T>::AddInForcesFromInputPorts(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
