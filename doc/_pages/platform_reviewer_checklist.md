@@ -13,13 +13,30 @@ Search for [issues without an assigned individual](https://github.com/RobotLocom
 and assign an owner.  When in doubt, assign [the lead](/issues.html#team)
 associated with the issue's ``team`` label.
 
-Search for [pull requests that need review](https://github.com/RobotLocomotion/drake/pulls?q=is%3Aopen+is%3Apr+no%3Aassignee+-label%3A%22status%3A+do+not+review%22)
-and (probably) assign a feature reviewer.  This is intended to make sure that
+Search for [pull requests with no assignee](https://github.com/RobotLocomotion/drake/pulls?q=is%3Aopen+is%3Apr+no%3Aassignee+-label%3A%22status%3A+do+not+review%22)
+and assign a Drake Developer.  This is intended to make sure that
 requests from outside developers receive timely attention.  For a pull request
 by a core Drake Developer, leaving it unassigned may be acceptable when it is
 clearly an early work-in-progress -- but if it is unassigned for several days,
 you should probably encourage the developer to label it "do not review" for
 clarity.
+
+Here's some sample text to post when a pull request does not have anyone
+assigned yet:
+
+* For PRs opened by a core Drake Developer:
+
+  > Good day, ``@AUTHOR``.  This PR does not yet have a reviewer assigned.
+  > Is it ready for review yet?
+  > If yes, then please assign a feature reviewer.
+  > If not, then please label it "status: do not review".
+
+* For PRs opened by a new or infrequent contributor:
+
+  > Good day, ``@AUTHOR``.  I'm assigning ``+@ASSIGNEE`` as the most relevant
+  > team member to assist with this pull request.  If you already had a
+  > different team member in mind, please let us know.  To ``@ASSIGNEE``,
+  > feel free to delegate in case there is someone else more suitable.
 
 For PRs assigned to you that have passed all commit checks (other than needing
 a squash), merge the PR to master on behalf of the author -- unless it is
