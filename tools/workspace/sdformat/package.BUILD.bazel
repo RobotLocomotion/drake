@@ -265,7 +265,7 @@ cc_library(
     linkstatic = 1,
     deps = [
         ":urdfdom",
-        "@ignition_math",
+        "@ignition_math//:ignition_math_static",
         "@ignition_utils",
         "@tinyxml2",
     ],
