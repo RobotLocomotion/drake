@@ -982,9 +982,11 @@ void DoScalarIndependentDefinitions(py::module m) {
     AddValueInstantiation<Rgba>(m);
   }
 
+  BindIdentifier<FilterId>(m, "FilterId", doc.FilterId.doc);
   BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
+
   // CollisionFilterDeclaration.
   {
     using Class = CollisionFilterDeclaration;
@@ -1007,7 +1009,15 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = CollisionFilterManager;
     constexpr auto& cls_doc = doc.CollisionFilterManager;
     py::class_<Class>(m, "CollisionFilterManager", cls_doc.doc)
-        .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc);
+        .def("Apply", &Class::Apply, py::arg("declaration"), cls_doc.Apply.doc)
+        .def("ApplyTransient", &Class::ApplyTransient, py::arg("declaration"),
+            cls_doc.ApplyTransient.doc)
+        .def("RemoveDeclaration", &Class::RemoveDeclaration,
+            py::arg("filter_id"), cls_doc.RemoveDeclaration.doc)
+        .def("has_transient_history", &Class::has_transient_history,
+            cls_doc.has_transient_history.doc)
+        .def("IsActive", &Class::IsActive, py::arg("filter_id"),
+            cls_doc.IsActive.doc);
   }
 
   // Role enumeration

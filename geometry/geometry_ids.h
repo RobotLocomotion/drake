@@ -10,6 +10,10 @@ namespace internal {
 class EncodedData;
 }  // namespace internal
 
+/** Type used to identify transient collision filter declarations in SceneGraph.
+ */
+using FilterId = drake::Identifier<class FilterTag>;
+
 /** Type used to identify geometry sources in SceneGraph. */
 using SourceId = drake::Identifier<class SourceTag>;
 

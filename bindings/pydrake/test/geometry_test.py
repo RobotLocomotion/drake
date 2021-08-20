@@ -377,6 +377,7 @@ class TestGeometry(unittest.TestCase):
     def test_identifier_api(self):
         cls_list = [
             mut_testing.FakeId,
+            mut.FilterId,
             mut.SourceId,
             mut.FrameId,
             mut.GeometryId,
@@ -764,33 +765,33 @@ class TestGeometry(unittest.TestCase):
         sg_context = sg.CreateDefaultContext()
         geometries = mut.GeometrySet()
 
-        # Mutate SceneGraph model
-        dut = sg.collision_filter_manager()
-        dut.Apply(
-            mut.CollisionFilterDeclaration().ExcludeBetween(
-                geometries, geometries))
-        dut.Apply(
-            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
-        dut.Apply(
-            mut.CollisionFilterDeclaration().AllowBetween(
-                set_A=geometries, set_B=geometries))
-        dut.Apply(
-            mut.CollisionFilterDeclaration().AllowWithin(
-                geometry_set=geometries))
+        # Confirm that both invocations provide access.
+        for dut in (sg.collision_filter_manager(),
+                    sg.collision_filter_manager(sg_context)):
+            self.assertIsInstance(dut, mut.CollisionFilterManager)
 
-        # Mutate context data
+        # We'll test against the Context-variant, assuming that if the API
+        # works for an instance from one source, it'll work for both.
         dut = sg.collision_filter_manager(sg_context)
         dut.Apply(
-            mut.CollisionFilterDeclaration().ExcludeBetween(
+            declaration=mut.CollisionFilterDeclaration().ExcludeBetween(
                 geometries, geometries))
         dut.Apply(
-            mut.CollisionFilterDeclaration().ExcludeWithin(geometries))
+            declaration=mut.CollisionFilterDeclaration().ExcludeWithin(
+                geometries))
         dut.Apply(
-            mut.CollisionFilterDeclaration().AllowBetween(
+            declaration=mut.CollisionFilterDeclaration().AllowBetween(
                 set_A=geometries, set_B=geometries))
         dut.Apply(
-            mut.CollisionFilterDeclaration().AllowWithin(
+            declaration=mut.CollisionFilterDeclaration().AllowWithin(
                 geometry_set=geometries))
+
+        id = dut.ApplyTransient(
+            declaration=mut.CollisionFilterDeclaration().ExcludeWithin(
+                geometries))
+        self.assertTrue(dut.has_transient_history())
+        self.assertTrue(dut.IsActive(filter_id=id))
+        self.assertTrue(dut.RemoveDeclaration(filter_id=id))
 
         # TODO(2021-11-01) Remove these with deprecation resolution.
         # Legacy API
