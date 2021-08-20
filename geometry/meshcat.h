@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <thread>
 
 #include "drake/common/drake_copyable.h"
 
@@ -18,8 +17,8 @@ this server is running.
 
 Note: This code is currently a skeleton implementation; it only allows you to
 set (boolean) properties as a minimal demonstration of sending data from C++ to
-the viewer.  It is the result of the first PR in a train of PRs that will
-establish the full Meshcat functionality.  See #13038.
+the viewer.  It is the result of the second PR in a train of PRs that will
+establish the full Meshcat functionality. See #13038.
 */
 class Meshcat {
  public:
@@ -31,23 +30,22 @@ class Meshcat {
 
   ~Meshcat();
 
-  /** The thread run by this class will run for the lifetime of the Meshcat
-  instance.  We provide this method as a simple way to block the main thread
-  to allow users to open their browser and work with the Meshcat scene. */
-  void JoinWebSocketThread();
+  /** Returns the hosted http URL. */
+  std::string web_url() const;
+
+  /** (Advanced) Returns the ws:// URL for direct connection to the websocket
+  interface.  Most users should connect via a browser opened to web_url(). */
+  std::string ws_url() const;
 
   /** Forwards a set_property(...) message to the meshcat viewers. For example,
   @verbatim
   meshcat.SetProperty("/Background", "visible", false);
   @endverbatim
   will turn off the background. */
-  void SetProperty(const std::string& path, const std::string& property,
+  void SetProperty(std::string_view path, std::string_view property,
                    bool value);
 
  private:
-  void WebsocketMain();
-  std::thread websocket_thread_{};
-
   // Provides PIMPL encapsulation of websocket types.
   class WebSocketPublisher;
   std::unique_ptr<WebSocketPublisher> publisher_;
