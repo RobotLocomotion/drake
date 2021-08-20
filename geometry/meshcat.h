@@ -4,21 +4,19 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/rgba.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 
-/** Provides an interface to https://github.com/rdeits/meshcat.
+/** Provides an interface to Meshcat (https://github.com/rdeits/meshcat).
 
 Each instance of this class spawns a thread which runs an http/websocket server.
 Users can navigate their browser to the hosted URL to visualize the Meshcat
 scene.  Note that, unlike many visualizers, one cannot open the visualizer until
 this server is running.
-
-Note: This code is currently a skeleton implementation; it only allows you to
-set (boolean) properties as a minimal demonstration of sending data from C++ to
-the viewer.  It is the result of the second PR in a train of PRs that will
-establish the full Meshcat functionality. See #13038.
 */
 class Meshcat {
  public:
@@ -37,14 +35,102 @@ class Meshcat {
   interface.  Most users should connect via a browser opened to web_url(). */
   std::string ws_url() const;
 
-  /** Forwards a set_property(...) message to the meshcat viewers. For example,
+  /** Sets the 3D object at a given path in the scene tree.
+  @param path a "/"-separated string indicating the path in the scene tree.
+  @param shape a Shape that specifies the geometry of the object.
+  @param rgba an Rgba that specifies the (solid) color of the object.
+  */
+  void SetObject(std::string_view path, const Shape& shape,
+                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
+
+  // TODO(russt): SetObject with texture map.
+
+  /** Set the RigidTransform for a given path in the scene tree. An object's
+  pose is the concatenation of all of the transforms along its path, so setting
+  the transform of "/foo" will move the objects at "/foo/box1" and
+  "/foo/robots/HAL9000".
+  @param path a "/"-separated string indicating the path in the scene tree.
+  @param X_PathParent the relative transform from the path to it's immediate
+  parent.
+  */
+  void SetTransform(std::string_view path,
+                    const math::RigidTransformd& X_PathParent);
+
+  /** Deletes the object at the given path as well as all of its children.
+  Deleting a path that does not exist in the current tree does nothing. Deleting
+  the root node (`path` == "" or "/") does nothing.
+
+  @param path a "/"-separated string indicating the path in the scene tree. */
+  void Delete(std::string_view path);
+
+  /** Sets a single named property of the object at the given path. For example,
   @verbatim
   meshcat.SetProperty("/Background", "visible", false);
   @endverbatim
-  will turn off the background. */
+  will turn off the background.
+
+  Note: Meshcat appends an extra path element with the name <object> to every
+  item created with SetObject, so if you want to modify a property of the object
+  itself, rather than the group containing it, you should ensure that your path
+  is of the form /meshcat/foo/<object>.
+
+  @param path a "/"-separated string indicating the path in the scene tree.
+  @param property the string name of the property to set
+  @param value the new value.
+  */
   void SetProperty(std::string_view path, std::string_view property,
                    bool value);
 
+  /** Sets a single named property of the object at the given path.
+
+  Note: Meshcat appends an extra path element with the name <object> to every
+  item created with SetObject, so if you want to modify a property of the object
+  itself, rather than the group containing it, you should ensure that your path
+  is of the form /meshcat/foo/<object>. For example,
+  @verbatim
+  meshcat.SetProperty("/Cameras/default/rotated/<object>", "zoom", 2.0);
+  meshcat.SetProperty("/Lights/DirectionalLight/<object>", "intensity", 1.0);
+  @endverbatim
+
+  @param path a "/"-separated string indicating the path in the scene tree.
+  @param property the string name of the property to set
+  @param value the new value.
+  */
+  void SetProperty(std::string_view path, std::string_view property,
+                   double value);
+
+  // TODO(russt): Implement SetAnimation().
+  // TODO(russt): Implement SetButton() and SetSlider() as wrappers on
+  // set_control.
+
+  /** @name (Advanced)
+
+  These methods are intended to primarily for testing. These calls
+  must safely acquire the data from the websocket thread and will block
+  execution waiting for that data to be acquired. */
+  //@{
+
+  /** Returns true iff `path` exists in the current internal (server) tree.
+  Note that the javascript client maintains its own tree, which may contain
+  elements that are not in the server tree. */
+  bool HasPath(std::string_view path) const;
+
+  /** Returns the msgpack representation of the object stored in the internal
+  (server) tree at `path`, or the empty string if `path` does not exist or no
+  object has been set at `path`. */
+  std::string GetPackedObject(std::string_view path) const;
+
+  /** Returns the msgpack representation of the transform stored in the internal
+  (server) tree at `path`, or the empty string if `path` does not exist or no
+  transform has been set at `path`. */
+  std::string GetPackedTransform(std::string_view path) const;
+
+  /** Returns the msgpack representation of the `property` stored in the
+  internal (server) tree at `path`, or the empty string if `path` does not
+  exist or `property` has not been set at `path`. */
+  std::string GetPackedProperty(std::string_view path,
+                                std::string_view property) const;
+  //@}
  private:
   // Provides PIMPL encapsulation of websocket types.
   class WebSocketPublisher;
