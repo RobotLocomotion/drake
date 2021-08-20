@@ -32,6 +32,7 @@ class PyObjectValue : public drake::Value<Object> {
 void AddPrimitiveValueInstantiations(py::module m) {
   AddValueInstantiation<std::string>(m);            // Value[str]
   AddValueInstantiation<bool>(m);                   // Value[bool]
+  AddValueInstantiation<double>(m);                 // Value[float]
   AddValueInstantiation<Object, PyObjectValue>(m);  // Value[object]
 }
 

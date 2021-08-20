@@ -33,6 +33,12 @@ from pydrake.systems.sensors import (
     RgbdSensor,
 )
 
+PROPERTY_CLS_LIST = [
+    mut.ProximityProperties,
+    mut.IllustrationProperties,
+    mut.PerceptionProperties,
+]
+
 
 class TestGeometry(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
@@ -609,18 +615,33 @@ class TestGeometry(unittest.TestCase):
             20)
 
         # Property copying.
-        for PropertyType in [mut.ProximityProperties,
-                             mut.IllustrationProperties,
-                             mut.PerceptionProperties]:
-            props = PropertyType()
+        for property_cls in PROPERTY_CLS_LIST:
+            props = property_cls()
             props.AddProperty("g", "p", 10)
             self.assertTrue(props.HasProperty("g", "p"))
-            props_copy = PropertyType(other=props)
+            props_copy = property_cls(other=props)
             self.assertTrue(props_copy.HasProperty("g", "p"))
             props_copy2 = copy.copy(props)
             self.assertTrue(props_copy2.HasProperty("g", "p"))
             props_copy3 = copy.deepcopy(props)
             self.assertTrue(props_copy3.HasProperty("g", "p"))
+
+    def test_geometry_properties_cpp_types(self):
+        """
+        Confirms that types stored in properties in python, resolve to expected
+        types in C++ (with particular emphasis on python built in types as per
+        issue #15640).
+        """
+        # TODO(sean.curtis): Clean up test, reduce any possible redundancies.
+        for property_cls in PROPERTY_CLS_LIST:
+            for T in [str, bool, float]:
+                props = property_cls()
+                value = T()
+                props.AddProperty("g", "p", value)
+                # Ensure that direct C++ type access is preserved.
+                value_2 = mut_testing.GetPropertyCpp[T](props, "g", "p")
+                self.assertIsInstance(value_2, T)
+                self.assertEqual(value, value_2)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
