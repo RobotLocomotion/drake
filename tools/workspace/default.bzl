@@ -75,6 +75,7 @@ load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
 load("@drake//tools/workspace/sdformat:repository.bzl", "sdformat_repository")
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
+load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
@@ -247,6 +248,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         snopt_repository(name = "snopt")
     if "spdlog" not in excludes:
         spdlog_repository(name = "spdlog", mirrors = mirrors)
+    if "stduuid" not in excludes:
+        stduuid_repository(name = "stduuid", mirrors = mirrors)
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "suitesparse" not in excludes:
