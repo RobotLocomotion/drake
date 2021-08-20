@@ -5,13 +5,18 @@
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/meshcat_types.h"
 
 namespace drake {
 namespace geometry {
 namespace {
 
+using Eigen::Vector3d;
+using math::RigidTransformd;
 using ::testing::HasSubstr;
 
 // A small wrapper around std::system to ensure correct argument passing.
@@ -26,7 +31,7 @@ int SystemCall(const std::vector<std::string>& argv) {
 }
 
 GTEST_TEST(MeshcatTest, TestHttp) {
-  drake::geometry::Meshcat meshcat;
+  Meshcat meshcat;
   // Note: The server doesn't respect all requests; unfortunately we can't use
   // curl --head and wget --spider nor curl --range to avoid downloading the
   // full file.
@@ -42,8 +47,8 @@ GTEST_TEST(MeshcatTest, TestHttp) {
 }
 
 GTEST_TEST(MeshcatTest, ConstructMultiple) {
-  drake::geometry::Meshcat meshcat;
-  drake::geometry::Meshcat meshcat2;
+  Meshcat meshcat;
+  Meshcat meshcat2;
 
   EXPECT_THAT(meshcat.web_url(), HasSubstr("http://localhost:"));
   EXPECT_THAT(meshcat.ws_url(), HasSubstr("ws://localhost:"));
@@ -52,8 +57,178 @@ GTEST_TEST(MeshcatTest, ConstructMultiple) {
   EXPECT_NE(meshcat.web_url(), meshcat2.web_url());
 }
 
-void CheckCommand(const drake::geometry::Meshcat& meshcat, int message_num,
-                  const std::string& desired_command_json) {
+// The correctness of this is established with meshcat_manual_test.  Here we
+// simply aim to provide code coverage for CI (e.g., no segfaults).
+GTEST_TEST(MeshcatTest, SetObjectWithShape) {
+  Meshcat meshcat;
+  EXPECT_TRUE(meshcat.GetPackedObject("sphere").empty());
+  meshcat.SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("sphere").empty());
+  meshcat.SetObject("cylinder", Cylinder(.25, .5), Rgba(0.0, 1.0, 0, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("cylinder").empty());
+  // HalfSpaces are not supported yet; this should only log a warning.
+  meshcat.SetObject("halfspace", HalfSpace());
+  EXPECT_TRUE(meshcat.GetPackedObject("halfspace").empty());
+  meshcat.SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("box").empty());
+  meshcat.SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("ellipsoid").empty());
+  // Capsules are not supported yet; this should only log a warning.
+  meshcat.SetObject("capsule", Capsule(.25, .5));
+  EXPECT_TRUE(meshcat.GetPackedObject("capsule").empty());
+  meshcat.SetObject(
+      "mesh", Mesh(FindResourceOrThrow(
+                       "drake/systems/sensors/test/models/meshes/box.obj"),
+                   .25));
+  EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
+  meshcat.SetObject(
+      "convex", Convex(FindResourceOrThrow(
+                           "drake/systems/sensors/test/models/meshes/box.obj"),
+                       .25));
+  EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
+  // Bad filename (no extension).  Should only log a warning.
+  meshcat.SetObject("bad", Mesh("test"));
+  EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
+  // Bad filename (file doesn't exist).  Should only log a warning.
+  meshcat.SetObject("bad", Mesh("test.obj"));
+  EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetTransform) {
+  Meshcat meshcat;
+  EXPECT_FALSE(meshcat.HasPath("transform"));
+  EXPECT_TRUE(meshcat.GetPackedTransform("transform").empty());
+  const RigidTransformd X_PathParent{math::RollPitchYawd(.5, .26, -3),
+                                     Vector3d{.9, -2., .12}};
+  meshcat.SetTransform("transform", X_PathParent);
+
+  std::string transform = meshcat.GetPackedTransform("transform");
+  msgpack::object_handle oh =
+      msgpack::unpack(transform.data(), transform.size());
+  auto data = oh.get().as<internal::SetTransformData>();
+  EXPECT_EQ(data.type, "set_transform");
+  EXPECT_EQ(data.path, "/drake/transform");
+  Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
+  EXPECT_TRUE(CompareMatrices(matrix, X_PathParent.GetAsMatrix4()));
+}
+
+GTEST_TEST(MeshcatTest, Delete) {
+  Meshcat meshcat;
+  // Ok to delete an empty tree.
+  meshcat.Delete();
+  EXPECT_FALSE(meshcat.HasPath(""));
+  EXPECT_FALSE(meshcat.HasPath("transform"));
+  meshcat.SetTransform("transform", RigidTransformd{});
+  EXPECT_TRUE(meshcat.HasPath(""));
+  EXPECT_TRUE(meshcat.HasPath("transform"));
+  EXPECT_TRUE(meshcat.HasPath("/" + meshcat.prefix() + "/transform"));
+  // Deleting a random string does nothing.
+  meshcat.Delete("bad");
+  EXPECT_TRUE(meshcat.HasPath("transform"));
+  meshcat.Delete("transform");
+  EXPECT_FALSE(meshcat.HasPath("transform"));
+
+  // Deleting a parent directory deletes all children.
+  meshcat.SetTransform("test/transform", RigidTransformd{});
+  meshcat.SetTransform("test/transform2", RigidTransformd{});
+  meshcat.SetTransform("test/another/transform", RigidTransformd{});
+  EXPECT_TRUE(meshcat.HasPath("test/transform"));
+  EXPECT_TRUE(meshcat.HasPath("test/transform2"));
+  EXPECT_TRUE(meshcat.HasPath("test/another/transform"));
+  meshcat.Delete("test");
+  EXPECT_FALSE(meshcat.HasPath("test/transform"));
+  EXPECT_FALSE(meshcat.HasPath("test/transform2"));
+  EXPECT_FALSE(meshcat.HasPath("test/another/transform"));
+  EXPECT_TRUE(meshcat.HasPath("/" + meshcat.prefix()));
+
+  // Deleting the empty string deletes the prefix.
+  meshcat.SetTransform("test/transform", RigidTransformd{});
+  meshcat.SetTransform("test/transform2", RigidTransformd{});
+  meshcat.SetTransform("test/another/transform", RigidTransformd{});
+  EXPECT_TRUE(meshcat.HasPath("test/transform"));
+  EXPECT_TRUE(meshcat.HasPath("test/transform2"));
+  EXPECT_TRUE(meshcat.HasPath("test/another/transform"));
+  meshcat.Delete();
+  EXPECT_FALSE(meshcat.HasPath("test/transform"));
+  EXPECT_FALSE(meshcat.HasPath("test/transform2"));
+  EXPECT_FALSE(meshcat.HasPath("test/another/transform"));
+  EXPECT_FALSE(meshcat.HasPath("/" + meshcat.prefix()));
+}
+
+GTEST_TEST(MeshcatTest, Prefix) {
+  Meshcat meshcat;
+  EXPECT_EQ(meshcat.prefix(), "drake");
+  meshcat.SetTransform("transform", RigidTransformd{});
+  EXPECT_TRUE(meshcat.HasPath("transform"));
+  EXPECT_TRUE(meshcat.HasPath("/drake/transform"));
+  meshcat.set_prefix("mytest");
+  EXPECT_FALSE(meshcat.HasPath("transform"));
+  EXPECT_TRUE(meshcat.HasPath("/drake/transform"));
+  meshcat.SetTransform("transform", RigidTransformd{});
+  EXPECT_TRUE(meshcat.HasPath("transform"));
+  EXPECT_TRUE(meshcat.HasPath("/mytest/transform"));
+  // Delete() only deletes the new prefix.
+  meshcat.Delete();
+  EXPECT_TRUE(meshcat.HasPath("/drake/transform"));
+  EXPECT_FALSE(meshcat.HasPath("/mytest/transform"));
+
+  // Check that setting occurs as documented.
+  meshcat.set_prefix("/pre/");
+  EXPECT_EQ(meshcat.prefix(), "pre");
+  meshcat.set_prefix("pre/");
+  EXPECT_EQ(meshcat.prefix(), "pre");
+  meshcat.set_prefix("/pre");
+  EXPECT_EQ(meshcat.prefix(), "pre");
+
+  // Ok to have multi-level prefix.
+  meshcat.set_prefix("pre/fix");
+  EXPECT_EQ(meshcat.prefix(), "pre/fix");
+
+  // Ok to set the prefix to empty.
+  meshcat.set_prefix("");
+  EXPECT_EQ(meshcat.prefix(), "");
+  meshcat.SetTransform("transform", RigidTransformd{});
+  EXPECT_TRUE(meshcat.HasPath("/transform"));
+}
+
+GTEST_TEST(MeshcatTest, SetPropertyBool) {
+  Meshcat meshcat;
+  EXPECT_FALSE(meshcat.HasPath("/Grid"));
+  EXPECT_TRUE(meshcat.GetPackedProperty("/Grid", "visible").empty());
+  meshcat.SetProperty("/Grid", "visible", false);
+  EXPECT_TRUE(meshcat.HasPath("/Grid"));
+
+  std::string property = meshcat.GetPackedProperty("/Grid", "visible");
+  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
+  auto data = oh.get().as<internal::SetPropertyData<bool>>();
+  EXPECT_EQ(data.type, "set_property");
+  EXPECT_EQ(data.path, "/Grid");
+  EXPECT_EQ(data.property, "visible");
+  EXPECT_FALSE(data.value);
+}
+
+GTEST_TEST(MeshcatTest, SetPropertyDouble) {
+  Meshcat meshcat;
+  EXPECT_FALSE(meshcat.HasPath("/Cameras/default/rotated/<object>"));
+  EXPECT_TRUE(
+      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "zoom")
+          .empty());
+  meshcat.SetProperty("/Cameras/default/rotated/<object>", "zoom", 2.0);
+  EXPECT_TRUE(meshcat.HasPath("/Cameras/default/rotated/<object>"));
+
+  std::string property =
+      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "zoom");
+  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
+  auto data = oh.get().as<internal::SetPropertyData<double>>();
+  EXPECT_EQ(data.type, "set_property");
+  EXPECT_EQ(data.path, "/Cameras/default/rotated/<object>");
+  EXPECT_EQ(data.property, "zoom");
+  EXPECT_EQ(data.value, 2.0);
+}
+
+void CheckWebsocketCommand(const drake::geometry::Meshcat& meshcat,
+                           int message_num,
+                           const std::string& desired_command_json) {
   EXPECT_EQ(SystemCall(
                 {FindResourceOrThrow("drake/geometry/meshcat_websocket_client"),
                  meshcat.ws_url(), std::to_string(message_num),
@@ -61,30 +236,30 @@ void CheckCommand(const drake::geometry::Meshcat& meshcat, int message_num,
             0);
 }
 
-GTEST_TEST(MeshcatTest, SetProperty) {
-  drake::geometry::Meshcat meshcat;
+GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
+  Meshcat meshcat;
   meshcat.SetProperty("/Background", "visible", false);
-  CheckCommand(meshcat, 1, R"""({
-              "property": "visible",
-              "value": false,
-              "path": "/Background",
-              "type": "set_property"
-              })""");
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_property",
+      "path": "/Background",
+      "property": "visible",
+      "value": false
+    })""");
   meshcat.SetProperty("/Grid", "visible", false);
   // Note: The order of the messages is due to "/Background" < "/Grid" in the
   // std::map, not due to the order that SetProperty was called.
-  CheckCommand(meshcat, 1, R"""({
-              "property": "visible",
-              "value": false,
-              "path": "/Background",
-              "type": "set_property"
-              })""");
-  CheckCommand(meshcat, 2, R"""({
-              "property": "visible",
-              "value": false,
-              "path": "/Grid",
-              "type": "set_property"
-              })""");
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_property",
+      "path": "/Background",
+      "property": "visible",
+      "value": false
+    })""");
+  CheckWebsocketCommand(meshcat, 2, R"""({
+      "type": "set_property",
+      "path": "/Grid",
+      "property": "visible",
+      "value": false
+    })""");
 }
 
 }  // namespace
