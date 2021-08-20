@@ -20,6 +20,8 @@ from director import lcmUtils
 
 import drake as lcmdrake
 
+print("DRAKE DEPRECATED: This script will be removed from Drake on or after 2021-12-01.")
+
 def sendGripperCommand(targetPositionMM, force):
     msg = lcmdrake.lcmt_schunk_wsg_command()
     msg.utime = int(time.time()*1e6)

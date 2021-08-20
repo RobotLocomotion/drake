@@ -5,4 +5,8 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# TODO(jwnimmer-tri) Once the deprecation date of 2021-12-01 is reached
+# and this whole package is removed, also remove jsoncpp from the list
+# of operating system packages under drake/setup.
+
 add_lint_tests()

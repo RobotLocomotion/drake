@@ -19,5 +19,6 @@ def jsoncpp_repository(
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        extra_deprecation = "DRAKE DEPRECATED: The @jsoncpp external will be removed from Drake on or after 2021-12-01.",  # noqa
         **kwargs
     )

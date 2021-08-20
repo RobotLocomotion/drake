@@ -14,6 +14,9 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning "DRAKE DEPRECATED: This header file and all of its helper types are deprecated.  With Drake's supported C++ compilers, there are no special rules required when using the the standard library's collections.  This header will be removed from Drake on or after 2021-12-01."
+
 namespace drake {
 
 /// A std::map that uses Eigen::aligned_allocator so that the

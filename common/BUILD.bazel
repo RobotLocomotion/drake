@@ -820,6 +820,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "eigen_stl_types_test",
+    copts = ["-Wno-cpp"],
     deps = [
         ":essential",
     ],
