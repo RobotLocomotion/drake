@@ -339,6 +339,18 @@ GTEST_TEST(SystemScalarConverterTest, Remove) {
       dut.Convert<AutoDiffXd, double>(system)));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(SystemScalarConverterTest, DeprecatedAddIfSupported) {
+  // The deprecated function AddIfSupported no longer serves any useful purpose,
+  // because there are no public functions that allow us to observe its effects,
+  // but we should ensure that it at least _compiles_ if someone does try to use
+  // it.
+  SystemScalarConverter dut(SystemTypeTag<FromDoubleSystem>{});
+  dut.AddIfSupported<FromDoubleSystem, double, float>();
+}
+#pragma GCC diagnostic pop
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
