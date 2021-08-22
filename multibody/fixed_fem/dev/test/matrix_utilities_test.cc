@@ -13,19 +13,23 @@ namespace multibody {
 namespace fem {
 namespace internal {
 namespace {
-Matrix3<double> MakeArbitraryMatrix() {
-  Matrix3<double> A;
-  // clang-format off
-  A << 1.2, 2.3, 3.4,
-       4.5, 5.6, 6.7,
-       7.8, 8.9, 9.0;
-  // clang-format on
+
+using Eigen::MatrixXd;
+
+/* Returns an arbitrary matrix for testing purpose. */
+MatrixXd MakeMatrix(int rows, int cols) {
+  MatrixXd A(rows, cols);
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      A(i, j) = cols * i + j;
+    }
+  }
   return A;
 }
 
-Matrix3<AutoDiffXd> MakeAutoDiffMatrix() {
-  const Matrix3<double> A = MakeArbitraryMatrix();
-  Matrix3<AutoDiffXd> A_ad;
+MatrixX<AutoDiffXd> MakeAutoDiffMatrix(int rows, int cols) {
+  const MatrixXd A = MakeMatrix(rows, cols);
+  MatrixX<AutoDiffXd> A_ad(rows, cols);
   math::initializeAutoDiff(A, A_ad);
   return A_ad;
 }
@@ -34,12 +38,13 @@ const double kTol = 1e-14;
 
 /* Calculates the absolute tolerance kTol scaled by the condition number of the
  input matrix A. */
-double CalcTolerance(const Matrix3<double>& A) {
-  return test::CalcConditionNumber<double>(A) * kTol;
+template <typename T>
+double CalcTolerance(const Matrix3<T>& A) {
+  return test::CalcConditionNumber<T>(A) * kTol;
 }
 
 GTEST_TEST(MatrixUtilitiesTest, PolarDecompose) {
-  const Matrix3<double> A = MakeArbitraryMatrix();
+  const Matrix3<double> A = MakeMatrix(3, 3);
   Matrix3<double> R, S;
   PolarDecompose<double>(A, &R, &S);
   /* Tests reconstruction. */
@@ -51,7 +56,7 @@ GTEST_TEST(MatrixUtilitiesTest, PolarDecompose) {
 }
 
 GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
-  const Matrix3<AutoDiffXd> F = MakeAutoDiffMatrix();
+  const Matrix3<AutoDiffXd> F = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> R, S;
   PolarDecompose<AutoDiffXd>(F, &R, &S);
   Eigen::Matrix<AutoDiffXd, 9, 9> scaled_dRdF =
@@ -61,21 +66,21 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       Matrix3<double> scaled_dRijdF;
-      for (int k = 0; k < kSpaceDimension; ++k) {
-        for (int l = 0; l < kSpaceDimension; ++l) {
+      for (int k = 0; k < 3; ++k) {
+        for (int l = 0; l < 3; ++l) {
           scaled_dRijdF(k, l) = scaled_dRdF(3 * j + i, 3 * l + k).value();
         }
       }
       EXPECT_TRUE(
           CompareMatrices(scale * Eigen::Map<const Matrix3<double>>(
                                       R(i, j).derivatives().data(), 3, 3),
-                          scaled_dRijdF, CalcTolerance(scaled_dRijdF)));
+                          scaled_dRijdF, CalcTolerance(R)));
     }
   }
 }
 
 GTEST_TEST(MatrixUtilitiesTest, CalcCofactorMatrix) {
-  const Matrix3<double> A = MakeArbitraryMatrix();
+  const Matrix3<double> A = MakeMatrix(3, 3);
   Matrix3<double> C;
   CalcCofactorMatrix<double>(A, &C);
   EXPECT_TRUE(CompareMatrices(
@@ -83,7 +88,7 @@ GTEST_TEST(MatrixUtilitiesTest, CalcCofactorMatrix) {
 }
 
 GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
-  const Matrix3<AutoDiffXd> A = MakeAutoDiffMatrix();
+  const Matrix3<AutoDiffXd> A = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> C;
   CalcCofactorMatrix<AutoDiffXd>(A, &C);
   Eigen::Matrix<AutoDiffXd, 9, 9> scaled_dCdA =
@@ -93,15 +98,15 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       Matrix3<double> scaled_dCijdA;
-      for (int k = 0; k < kSpaceDimension; ++k) {
-        for (int l = 0; l < kSpaceDimension; ++l) {
+      for (int k = 0; k < 3; ++k) {
+        for (int l = 0; l < 3; ++l) {
           scaled_dCijdA(k, l) = scaled_dCdA(3 * j + i, 3 * l + k).value();
         }
       }
       EXPECT_TRUE(
           CompareMatrices(scale * Eigen::Map<const Matrix3<double>>(
                                       C(i, j).derivatives().data(), 3, 3),
-                          scaled_dCijdA, CalcTolerance(scaled_dCijdA)));
+                          scaled_dCijdA, CalcTolerance(A)));
     }
   }
 }
@@ -116,6 +121,30 @@ GTEST_TEST(MatrixUtilitiesTest, PermuteBlockVector) {
   VectorX<double> expected_result(3 * kNumBlocks);
   expected_result << 6, 7, 8, 0, 1, 2, 3, 4, 5;
   EXPECT_TRUE(CompareMatrices(expected_result, permuted_v));
+}
+
+/* Verify that `PermuteBlockSparseMatrix()` provides the expected answer on a
+ 3x3 block matrix. We choose a 3x3 block test case so that the permutation is
+ neither the identity nor a self-inverse. */
+GTEST_TEST(MatrixUtilitiesTest, PermuteBlockSparseMatrix) {
+  constexpr int kNumBlocks = 3;
+  constexpr int kSize = kNumBlocks * 3;
+  const MatrixXd A = MakeMatrix(kSize, kSize);
+  const Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+  const std::vector<int> block_permutation = {1, 2, 0};
+  const Eigen::SparseMatrix<double> permuted_A =
+      PermuteBlockSparseMatrix(A_sparse, block_permutation);
+  const MatrixXd permuted_A_dense = permuted_A;
+
+  MatrixXd expected_result(kSize, kSize);
+  for (int i = 0; i < kNumBlocks; ++i) {
+    for (int j = 0; j < kNumBlocks; ++j) {
+      expected_result.block<3, 3>(3 * block_permutation[i],
+                                  3 * block_permutation[j]) =
+          A.block<3, 3>(3 * i, 3 * j);
+    }
+  }
+  EXPECT_TRUE(CompareMatrices(expected_result, permuted_A_dense));
 }
 
 }  // namespace

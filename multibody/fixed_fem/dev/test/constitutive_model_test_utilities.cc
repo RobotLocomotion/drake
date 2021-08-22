@@ -160,7 +160,7 @@ void TestdPdFIsDerivativeOfP() {
         EXPECT_TRUE(CompareMatrices(
             Eigen::Map<const Matrix3d>(P[q](i, j).derivatives().data(), 3, 3),
             dPijdF,
-            fem::test::CalcConditionNumber<double>(dPijdF) * kTolerance));
+            fem::test::CalcConditionNumber<AutoDiffXd>(P[q]) * kTolerance));
       }
     }
   }

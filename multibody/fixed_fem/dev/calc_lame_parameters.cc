@@ -1,17 +1,12 @@
-#pragma once
+#include "drake/multibody/fixed_fem/dev/calc_lame_parameters.h"
 
-#include <utility>
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
-/* Verifies that the given Young's modulus and Poisson ratio are valid. If so,
- calculates the Lamé parameters from the Young's modulus and the Poisson
- ratio. If not, throw.
- @tparam_nonsymbolic_scalar T.
- @throw std::exception if `youngs_modulus` is negative or if `poisson_ratio` is
- not in (-1, 0.5). */
+
 template <typename T>
 std::pair<T, T> CalcLameParameters(const T& youngs_modulus,
                                    const T& poisson_ratio) {
@@ -26,6 +21,10 @@ std::pair<T, T> CalcLameParameters(const T& youngs_modulus,
              ((1.0 + poisson_ratio) * (1.0 - 2.0 * poisson_ratio));
   return std::make_pair(lambda, mu);
 }
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&CalcLameParameters<T>))
+
 }  // namespace internal
 }  // namespace fem
 }  // namespace multibody

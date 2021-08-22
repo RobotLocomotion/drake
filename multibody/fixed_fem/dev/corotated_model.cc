@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "drake/common/autodiff.h"
-#include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
+#include "drake/multibody/fixed_fem/dev/calc_lame_parameters.h"
 
 namespace drake {
 namespace multibody {

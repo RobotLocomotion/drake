@@ -49,9 +49,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "constitutive_model_utilities",
+    name = "calc_lame_parameters",
+    srcs = [
+        "calc_lame_parameters.cc",
+    ],
     hdrs = [
-        "constitutive_model_utilities.h",
+        "calc_lame_parameters.h",
+    ],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 
@@ -64,7 +70,7 @@ drake_cc_library(
         "corotated_model.h",
     ],
     deps = [
-        ":constitutive_model_utilities",
+        ":calc_lame_parameters",
         ":corotated_model_data",
         ":matrix_utilities",
         "//common:autodiff",
@@ -193,7 +199,7 @@ drake_cc_library(
         ":deformable_rigid_contact_pair",
         ":fem_solver",
         ":inverse_spd_operator",
-        ":permute_block_sparse_matrix",
+        ":matrix_utilities",
         ":schur_complement",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_linear_operator",
@@ -415,7 +421,7 @@ drake_cc_library(
         "linear_constitutive_model.h",
     ],
     deps = [
-        ":constitutive_model_utilities",
+        ":calc_lame_parameters",
         "//common:autodiff",
         "//common:essential",
         "//multibody/fem:constitutive_model",
@@ -436,10 +442,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "matrix_utilities",
+    srcs = [
+        "matrix_utilities.cc",
+    ],
     hdrs = [
         "matrix_utilities.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -470,20 +480,6 @@ drake_cc_library(
     ],
     deps = [
         ":state_updater",
-    ],
-)
-
-drake_cc_library(
-    name = "permute_block_sparse_matrix",
-    srcs = [
-        "permute_block_sparse_matrix.cc",
-    ],
-    hdrs = [
-        "permute_block_sparse_matrix.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
     ],
 )
 
@@ -594,8 +590,10 @@ drake_cc_library(
 drake_cc_library(
     name = "test_utilities",
     testonly = 1,
+    srcs = ["test/test_utilities.cc"],
     hdrs = ["test/test_utilities.h"],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -830,14 +828,6 @@ drake_cc_googletest(
     deps = [
         ":mesh_utilities",
         "//geometry/proximity:proximity_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "permute_block_sparse_matrix_test",
-    deps = [
-        ":permute_block_sparse_matrix",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
