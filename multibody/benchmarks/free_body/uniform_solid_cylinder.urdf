@@ -16,11 +16,6 @@
       </geometry>
       <material name="darkRed"/>
     </visual>
-    <collision>
-      <geometry>
-        <cylinder length="0.6" radius="0.2"/>
-      </geometry>
-    </collision>
     <inertial>
       <origin xyz="0 0 0"/>
       <mass value="1.0"/>

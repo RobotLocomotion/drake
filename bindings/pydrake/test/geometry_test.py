@@ -608,18 +608,36 @@ class TestGeometry(unittest.TestCase):
             20)
 
         # Property copying.
-        for PropertyType in [mut.ProximityProperties,
-                             mut.IllustrationProperties,
-                             mut.PerceptionProperties]:
-            props = PropertyType()
+        property_cls_list = [
+            mut.ProximityProperties,
+            mut.IllustrationProperties,
+            mut.PerceptionProperties,
+        ]
+        for property_cls in property_cls_list:
+            props = property_cls()
             props.AddProperty("g", "p", 10)
             self.assertTrue(props.HasProperty("g", "p"))
-            props_copy = PropertyType(other=props)
+            props_copy = property_cls(other=props)
             self.assertTrue(props_copy.HasProperty("g", "p"))
             props_copy2 = copy.copy(props)
             self.assertTrue(props_copy2.HasProperty("g", "p"))
             props_copy3 = copy.deepcopy(props)
             self.assertTrue(props_copy3.HasProperty("g", "p"))
+
+        # C++ plumbing.
+        for property_cls in property_cls_list:
+            for T in [str, bool, float]:
+                props = property_cls()
+                value = T()
+                props.AddProperty("g", "p", value)
+                # Ensure type-erased approach recovers value.
+                value_2 = props.GetProperty("g", "p")
+                self.assertIsInstance(value_2, T)
+                self.assertEqual(value, value_2)
+                # Ensure that direct C++ type access is preserved.
+                value_3 = mut_testing.GetPropertyCpp[T](props, "g", "p")
+                self.assertIsInstance(value_3, T)
+                self.assertEqual(value, value_3)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.

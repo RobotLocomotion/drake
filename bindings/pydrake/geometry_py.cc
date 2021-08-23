@@ -1513,6 +1513,15 @@ void def_geometry_optimization(py::module m) {
       py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
 }
 
+template <typename T>
+void DefGetPropertyCpp(py::module m) {
+  auto func = [](const geometry::GeometryProperties& properties,
+                  const std::string& group, const std::string& name) {
+    return properties.GetProperty<T>(group, name);
+  };
+  AddTemplateFunction(m, "GetPropertyCpp", func, GetPyParam<T>());
+}
+
 void def_geometry_testing(py::module m) {
   class FakeTag;
   using FakeId = Identifier<FakeTag>;
@@ -1522,6 +1531,12 @@ void def_geometry_testing(py::module m) {
   FakeId fake_id_constant{FakeId::get_new_id()};
   m.def("get_fake_id_constant",
       [fake_id_constant]() { return fake_id_constant; });
+
+  // Ensures that Value[T] is registered and properly plumbed through in C++
+  // and Python.
+  DefGetPropertyCpp<std::string>(m);
+  DefGetPropertyCpp<bool>(m);
+  DefGetPropertyCpp<double>(m);
 }
 
 void def_geometry_all(py::module m) {

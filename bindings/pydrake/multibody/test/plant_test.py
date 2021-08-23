@@ -79,7 +79,6 @@ from pydrake.geometry import (
     Box,
     GeometryId,
     GeometrySet,
-    HalfSpace,
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
@@ -2103,26 +2102,3 @@ class TestPlant(unittest.TestCase):
         contact_info.contact_surface().id_N()
         contact_info.contact_surface().mesh_W().centroid()
         contact_info.F_Ac_W().get_coeffs()
-
-    def test_issue_15640(self):
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-4)
-        proximity = ProximityProperties()
-        friction = CoulombFriction_[float](0.1, 0.1)
-        proximity.AddProperty("material", "coulomb_friction", friction)
-        proximity.AddProperty("material", "hunt_crossley_dissipation", 0.5)
-        # Add a body with collision.
-        file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf")
-        Parser(plant).AddModelFromFile(file_name)
-        plant.RegisterCollisionGeometry(
-            plant.world_body(),
-            RigidTransform(),
-            HalfSpace(),
-            "ground",
-            proximity)
-        plant.Finalize()
-        diagram = builder.Build()
-        diagram_context = diagram.CreateDefaultContext()
-        sim = Simulator_[float](diagram)
-        sim.AdvanceTo(0.0)
