@@ -178,7 +178,7 @@ const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
     lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
   return AddToBuilder(builder, scene_graph.get_query_output_port(), lcm,
-                      params);
+                      std::move(params));
 }
 
 template <typename T>
@@ -187,7 +187,7 @@ const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     const systems::OutputPort<T>& query_object_port,
     lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
   auto& visualizer =
-      *builder->template AddSystem<DrakeVisualizer<T>>(lcm, params);
+      *builder->template AddSystem<DrakeVisualizer<T>>(lcm, std::move(params));
   builder->Connect(query_object_port, visualizer.query_object_input_port());
   return visualizer;
 }
