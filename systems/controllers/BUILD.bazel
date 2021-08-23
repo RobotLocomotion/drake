@@ -275,6 +275,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "setpoint_test",
     srcs = ["test/setpoint_test.cc"],
+    # TODO(ggould-tri) This test hit kcov#339; untag when we have kcov>=40.
+    tags = ["no_kcov"],
     deps = [
         ":setpoint",
         "//common/test_utilities:eigen_matrix_compare",
