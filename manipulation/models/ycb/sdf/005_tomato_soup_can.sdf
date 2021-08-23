@@ -53,9 +53,6 @@
             <length>0.099900</length>
           </cylinder>
         </geometry>
-        <material>
-          <diffuse>0 1 0 1.0</diffuse>
-        </material>
       </collision>
       <collision name="point_collision1">
         <pose>0.016425 0.050450 0.016425 0 0 0 </pose>
