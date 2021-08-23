@@ -27,7 +27,11 @@ LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
     : lcm_(lcm) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
   this->set_name(fmt::format(
-      "LcmInterfaceSystem(lcm_url={})", lcm_->get_lcm_url()));
+      // Include Unique ID as diagrams sometimes have multiple interfaces to
+      // the same URL and we don't want them to have name collisions.
+      "LcmInterfaceSystem(lcm_url={},uid={})",
+      lcm_->get_lcm_url(),
+      GetGraphvizId()));
 }
 
 LcmInterfaceSystem::~LcmInterfaceSystem() = default;
