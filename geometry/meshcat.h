@@ -72,8 +72,6 @@ in the visualizer.
 - All user objects can easily be cleared by a single, parameter-free call to
 Delete(). You are welcome to use absolute paths to organize your data, but the
 burden on tracking and cleaning them up lie on you.
-
-
 */
 class Meshcat {
  public:
@@ -97,7 +95,7 @@ class Meshcat {
   @ref meshcat_path.  Any objects previously set at this `path` will be
   replaced.
   @param path a "/"-delimited string indicating the path in the scene tree.
-              See @ref meshcat_path for the semantics.
+              See @ref meshcat_path "Meshcat paths" for the semantics.
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
   */
@@ -111,7 +109,7 @@ class Meshcat {
   the transform of "/foo" will move the objects at "/foo/box1" and
   "/foo/robots/HAL9000".
   @param path a "/"-delimited string indicating the path in the scene tree.
-              See @ref meshcat_path for the semantics.
+              See @ref meshcat_path "Meshcat paths" for the semantics.
   @param X_ParentPath the relative transform from the path to its immediate
   parent.
   */
@@ -126,8 +124,8 @@ class Meshcat {
   @verbatim
   meshcat.SetProperty("/Background", "visible", false);
   @endverbatim
-  will turn off the background. See @ref meshcat_path for more details about
-  these properties and how to address them.
+  will turn off the background. See @ref meshcat_path "Meshcat paths" for more
+  details about these properties and how to address them.
 
   @param path a "/"-delimited string indicating the path in the scene tree.
               See @ref meshcat_path for the semantics.
@@ -141,8 +139,8 @@ class Meshcat {
   meshcat.SetProperty("/Cameras/default/rotated/<object>", "zoom", 2.0);
   meshcat.SetProperty("/Lights/DirectionalLight/<object>", "intensity", 1.0);
   @endverbatim
-  See @ref meshcat_path for more details about these properties and how to
-  address them.
+  See @ref meshcat_path "Meshcat paths" for more details about these properties
+  and how to address them.
 
   @param path a "/"-delimited string indicating the path in the scene tree.
               See @ref meshcat_path for the semantics.
