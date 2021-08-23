@@ -11,6 +11,10 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+namespace {
+static int next_unique_id = 0;
+}  // namespace
+
 using drake::lcm::DrakeLcm;
 using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeSubscriptionInterface;
@@ -24,10 +28,15 @@ LcmInterfaceSystem::LcmInterfaceSystem(std::unique_ptr<DrakeLcmInterface> owned)
 }
 
 LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
-    : lcm_(lcm) {
+    : lcm_(lcm),
+      id_number_(next_unique_id++) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
   this->set_name(fmt::format(
-      "LcmInterfaceSystem(lcm_url={})", lcm_->get_lcm_url()));
+      // Include ID number as diagrams sometimes have multiple interfaces to
+      // the same URL and we don't want them to have name collisions.
+      "LcmInterfaceSystem(lcm_url={},id={})",
+      lcm_->get_lcm_url(),
+      id_number_));
 }
 
 LcmInterfaceSystem::~LcmInterfaceSystem() = default;

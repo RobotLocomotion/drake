@@ -121,6 +121,15 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
   thread.reset();
 }
 
+// Test that multiple LcmInterfaceSystems on the same URL do not cause a name
+// collision.
+TEST_F(LcmInterfaceSystemTest, NameCollisionTest) {
+  DiagramBuilder<double> builder;
+  builder.AddSystem<LcmInterfaceSystem>();
+  builder.AddSystem<LcmInterfaceSystem>();
+  builder.Build();
+}
+
 INSTANTIATE_TEST_SUITE_P(test, LcmInterfaceSystemTest,
                         ::testing::Values(0, 1, 2));
 

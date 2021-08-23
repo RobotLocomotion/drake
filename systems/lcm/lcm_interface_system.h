@@ -78,6 +78,7 @@ class LcmInterfaceSystem final
 
   std::unique_ptr<drake::lcm::DrakeLcmInterface> owned_lcm_;
   drake::lcm::DrakeLcmInterface* const lcm_{};
+  int id_number_{};  // Unique ID for use in system name.
 };
 
 }  // namespace lcm
