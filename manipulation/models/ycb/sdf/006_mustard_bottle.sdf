@@ -54,9 +54,6 @@
             <size>0.090000 0.160300 0.052200</size>
           </box>
         </geometry>
-        <material>
-          <diffuse>0 1 0 1.0</diffuse>
-        </material>
       </collision>
       <collision name="point_collision1">
         <pose>0.045500 0.093150 0.026600 0 0 0 </pose>
