@@ -1,8 +1,12 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/simulator.h"
 
 /**  To test, you must manually run `bazel run //geometry:meshcat_manual_test`,
 then follow the instructions on your console. */
@@ -65,7 +69,42 @@ Open up your browser to the URL above.
 
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  std::cout << "All done." << std::endl;
+
+  meshcat.SetProperty("/Lights/AmbientLight/<object>", "intensity", 0.6);
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+  multibody::Parser(&plant).AddModelFromFile(
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
+                          "iiwa14_no_collision.urdf"));
+  plant.WeldFrames(plant.world_frame(),
+                   plant.GetBodyByName("base").body_frame());
+  plant.Finalize();
+
+  builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
+  MeshcatVisualizerParams params;
+  params.delete_prefix_on_initialization_event = false;
+  MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, &meshcat, params);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+  diagram->get_input_port().FixValue(context.get(), Eigen::VectorXd::Zero(7));
+
+  diagram->Publish(*context);
+  std::cout
+      << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
+      << std::endl;
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::cout << "Finally we'll run the simulation (you should see the robot "
+               "fall down) and exit."
+            << std::endl;
+
+  systems::Simulator<double> simulator(*diagram, std::move(context));
+  simulator.set_target_realtime_rate(1.0);
+  simulator.AdvanceTo(4.0);
 
   return 0;
 }

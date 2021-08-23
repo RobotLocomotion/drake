@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat.h"
 
+#include <exception>
 #include <fstream>
 #include <future>
 #include <map>
@@ -67,6 +68,7 @@ struct PerSocketData {
 };
 using WebSocket = uWS::WebSocket<kSsl, kIsServer, PerSocketData>;
 using MsgPackMap = std::map<std::string, msgpack::object>;
+constexpr static double kMaxBackPressure{50 * 1024 * 1024};
 
 class SceneTreeElement {
  public:
@@ -187,7 +189,8 @@ class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
-  explicit MeshcatShapeReifier(std::string uuid) : uuid_(std::move(uuid)) {}
+  explicit MeshcatShapeReifier(std::string uuid)
+      : uuid_(std::move(uuid)) {}
 
   ~MeshcatShapeReifier() = default;
 
@@ -225,6 +228,8 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const HalfSpace&, void*) override {
+    // TODO(russt): Use PlaneGeometry with fields width, height,
+    // widthSegments, heightSegments
     drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
   }
 
@@ -292,6 +297,12 @@ class MeshcatShapeReifier : public ShapeReifier {
     // We simply dump the binary contents of the file into the data field of the
     // message.  The javascript meshcat takes care of the rest.
     int size = input.tellg();
+    if (size > kMaxBackPressure) {
+      throw std::runtime_error(fmt::format(
+          "The meshfile at {} is too large for the current websocket setup.  "
+          "Size {} is greater than the max backpressure {}.",
+          mesh.filename(), size, kMaxBackPressure));
+    }
     input.seekg(0, std::ios::beg);
     geometry.data.resize(size);
     input.read(geometry.data.data(), size);
@@ -553,6 +564,11 @@ class Meshcat::WebSocketPublisher {
       // Update this new connection with previously published data.
       SendTree(ws);
     };
+    // TODO(russt): I could increase this more if necessary (when it was too
+    // low, some SetObject messages were dropped).  But at some point the real
+    // fix is to actually throttle the sending (e.g. by slowing down the main
+    // thread).
+    behavior.maxBackpressure = kMaxBackPressure;
 
     uWS::App app =
         uWS::App()
