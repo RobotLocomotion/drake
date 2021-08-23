@@ -189,6 +189,12 @@ class SceneGraphInspector {
     return state_->GetCollisionCandidates();
   }
 
+  /** Returns the geometry version that can be used to detect changes
+   to the geometry data associated with geometry roles. The reference returned
+   should not be persisted. If it needs to be persisted, it should be copied. */
+  const GeometryVersion& geometry_version() const {
+    return state_->geometry_version();
+  }
   //@}
 
   /** @name                Sources and source-related data  */
@@ -495,13 +501,6 @@ class SceneGraphInspector {
    geometry.  */
   std::unique_ptr<GeometryInstance>
   CloneGeometryInstance(GeometryId geometry_id) const;
-
-  /** Returns the geometry version that can be used to detect changes
-   to the geometry data associated with geometry roles. The reference returned
-   should not be persisted. If it needs to be persisted, it should be copied. */
-  const GeometryVersion& geometry_version() const {
-    return state_->geometry_version();
-  }
   //@}
 
  private:
