@@ -222,7 +222,7 @@ bool FindClosestCollision(const multibody::MultibodyPlant<Expression>& plant,
   setA.AddPointInSetConstraints(&prog, p_AA);
   setB.AddPointInSetConstraints(&prog, p_BB);
 
-  plant.SetPositions(context, q);
+  plant.SetPositions(context, q.cast<Expression>());
   const math::RigidTransform<Expression>& X_WA =
       plant.EvalBodyPoseInWorld(*context, bodyA);
   const math::RigidTransform<Expression>& X_WB =

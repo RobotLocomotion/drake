@@ -608,10 +608,9 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   SetFreeBodyPoseInWorldFrame(context, body, X_WB);
 }
 
-template<typename T>
+template <typename T>
 void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
-    const systems::Context<T>& context,
-    const VectorX<T>& known_vdot,
+    const systems::Context<T>& context, const VectorX<T>& known_vdot,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
