@@ -26,8 +26,6 @@ LcmInterfaceSystem::LcmInterfaceSystem(std::unique_ptr<DrakeLcmInterface> owned)
 LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
     : lcm_(lcm) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
-  this->set_name(fmt::format(
-      "LcmInterfaceSystem(lcm_url={})", lcm_->get_lcm_url()));
 }
 
 LcmInterfaceSystem::~LcmInterfaceSystem() = default;
