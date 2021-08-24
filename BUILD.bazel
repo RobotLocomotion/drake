@@ -16,6 +16,7 @@ exports_files([
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
+    "package.xml",
 ])
 
 # Drake's top-level module; all drake_py_stuff rules add this to deps.
@@ -40,6 +41,7 @@ alias(
 # that in below in the final :install target.
 install(
     name = "all_install_targets_except_bazel",
+    data = ["package.xml"],
     docs = ["LICENSE.TXT"],
     visibility = ["//tools/install/bazel:__pkg__"],
     deps = [

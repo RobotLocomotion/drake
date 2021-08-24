@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <initializer_list>
 #include <optional>
 #include <sstream>
 #include <utility>
@@ -12,6 +13,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
@@ -23,7 +25,12 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-PackageMap::PackageMap() {}
+PackageMap::PackageMap()
+    : PackageMap{FindResourceOrThrow("drake/package.xml")} {}
+
+PackageMap PackageMap::MakeEmpty() {
+  return PackageMap(std::initializer_list<std::string>());
+}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
   if (!AddPackageIfNew(package_name, package_path)) {
@@ -225,6 +232,12 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
 
   // Search the directory containing the model_file and "upstream".
   PopulateUpstreamToDrakeHelper(model_dir, drake_path);
+}
+
+PackageMap::PackageMap(std::initializer_list<std::string> manifest_paths) {
+  for (const auto& manifest_path : manifest_paths) {
+    AddPackageXml(manifest_path);
+  }
 }
 
 void PackageMap::CrawlForPackages(const string& path) {

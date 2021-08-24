@@ -1,5 +1,6 @@
 #pragma once
 
+#include <initializer_list>
 #include <map>
 #include <string>
 #include <vector>
@@ -16,8 +17,12 @@ class PackageMap final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PackageMap)
 
-  /// A constructor that initializes an empty map.
+  /// A constructor that initializes a default map containing only the top-
+  /// level `drake` manifest.
   PackageMap();
+
+  /// A factory method that initializes an empty map.
+  static class PackageMap MakeEmpty();
 
   /// Adds package @p package_name and its path, @p package_path.
   /// Throws if @p package_name is already present in this PackageMap with a
@@ -88,6 +93,10 @@ class PackageMap final {
                                   const PackageMap& package_map);
 
  private:
+  // A constructor that initializes a map by parsing a list of package.xml
+  // file paths.
+  PackageMap(std::initializer_list<std::string> manifest_paths);
+
   // Recursively crawls through @p path looking for package.xml files. Adds
   // the packages defined by these package.xml files to this PackageMap.
   // Multiple paths can be searched by separating them using the ':' symbol. In

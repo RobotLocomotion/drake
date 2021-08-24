@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="cube_robot">
+    <link name="link0">
+      <visual name="cube">
+        <geometry>
+          <mesh>
+            <uri>package://drake/multibody/parsing/test/tri_cube.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="weld_link0" type="fixed">
+      <parent>world</parent>
+      <child>link0</child>
+    </joint>
+  </model>
+</sdf>

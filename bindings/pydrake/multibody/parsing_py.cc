@@ -49,7 +49,8 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
         .def("PopulateUpstreamToDrake", &Class::PopulateUpstreamToDrake,
-            py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc);
+            py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc)
+        .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
   }
 
   // Parser

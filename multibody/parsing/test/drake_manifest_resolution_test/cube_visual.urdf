@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<robot name="cube_robot">
+  <link name="link0">
+    <inertial>
+      <mass value="1"/>
+    </inertial>
+    <visual name="cube">
+      <geometry>
+        <mesh filename="package://drake/multibody/parsing/test/tri_cube.obj"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
