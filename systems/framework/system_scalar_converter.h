@@ -135,7 +135,7 @@ class SystemScalarConverter {
   DRAKE_DEPRECATED("2021-10-01",
       "User-defined scalar types cannot be added.")
   void AddIfSupported() {
-    AddIfSupported<S, T, U>(GuaranteedSubtypePreservation::kEnabled);
+    MaybeAddConstructor<true, S, T, U>();
   }
 
   /// Removes from this converter all pairs where `other.IsConvertible<T, U>`
