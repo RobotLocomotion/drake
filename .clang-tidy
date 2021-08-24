@@ -1,4 +1,5 @@
 ---
+# This file is not used by CI and the checks included are not part of the Drake style guide
 Checks: >
         clang-analyzer-*,
         clang-diagnostic-*,
