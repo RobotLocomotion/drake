@@ -81,9 +81,14 @@ symbolic::Formula Constraint::DoCheckSatisfied(
   DoEval(x, &y);
   symbolic::Formula f{symbolic::Formula::True()};
   for (int i = 0; i < num_constraints(); ++i) {
-    // Add lbᵢ ≤ yᵢ ≤ ubᵢ.
-    f = f && MakeLowerBound(lower_bound_[i], y[i]) &&
-        MakeUpperBound(y[i], upper_bound_[i]);
+    if (lower_bound_[i] == upper_bound_[i]) {
+      // Add 'lbᵢ = yᵢ' to f.
+      f = f && lower_bound_[i] == y[i];
+    } else {
+      // Add 'lbᵢ ≤ yᵢ ≤ ubᵢ' to f.
+      f = f && MakeLowerBound(lower_bound_[i], y[i]) &&
+          MakeUpperBound(y[i], upper_bound_[i]);
+    }
   }
   return f;
 }

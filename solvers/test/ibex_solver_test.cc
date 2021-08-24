@@ -2,11 +2,13 @@
 
 #include <cmath>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
@@ -47,7 +49,11 @@ TEST_F(IbexSolverTest, IbexEasyEx3_1_3) {
   prog_.AddConstraint(x_[0] + x_[1] <= 6);
   prog_.AddConstraint(x_[0] + x_[1] >= 2);
   if (solver_.available()) {
-    auto result = solver_.Solve(prog_);
+    SolverOptions solver_options;
+    // Print to console. We can only test this doesn't cause any runtime error.
+    // We can't test if the logging message is actually printed to the console.
+    solver_options.SetOption(CommonSolverOption::kPrintToConsole, 1);
+    auto result = solver_.Solve(prog_, {}, solver_options);
     ASSERT_TRUE(result.is_success());
     // f* in  [-310.31,-310]
     //  (best bound)
@@ -253,8 +259,280 @@ TEST_F(IbexSolverTest, LinearComplementarityConstraint) {
   }
 }
 
-}  // namespace
+TEST_F(IbexSolverTest, WrongOptions) {
+  if (solver_.available()) {
+    {
+      // Test a double option.
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "eps_H" /* typo of eps_h */, 0.1);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: unsupported option 'eps_H' with double value '0.1'.");
+    }
 
+    {
+      // Test an int option.
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "rigoor" /* typo of rigor */, 1);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: unsupported option 'rigoor' with int value '1'.");
+    }
+
+    // 'trace' should be in {0, 1, 2}.
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "trace", -1);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: cannot set IBEX Solver option 'trace' to value '-1'. It "
+          "should be 0, 1, or, 2.");
+    }
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "trace", 3);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: cannot set IBEX Solver option 'trace' to value '3'. It "
+          "should be 0, 1, or, 2.");
+    }
+
+    // No string options.
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "trace", "1" /* should be int */);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: unsupported option 'trace' with string value '1'.");
+    }
+  }
+}
+
+TEST_F(IbexSolverTest, InvalidValues) {
+  if (solver_.available()) {
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "rel_eps_f",
+                               -3.1 /* should be positive */);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: 'rel_eps_f' option should have a "
+          "positive value but '-3.1' was provided.");
+    }
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "abs_eps_f",
+                               -3.1 /* should be positive */);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: 'abs_eps_f' option should have a "
+          "positive value but '-3.1' was provided.");
+    }
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "eps_h",
+                               -3.1 /* should be positive */);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: 'eps_h' option should have a positive "
+          "value but '-3.1' was provided.");
+    }
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "eps_x",
+                               -3.1 /* should be positive */);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: 'eps_x' option should have a positive "
+          "value but '-3.1' was provided.");
+    }
+    {
+      SolverOptions solver_options;
+      solver_options.SetOption(solver_.id(), "timeout",
+                               -3.1 /* should be non-negative */);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          solver_.Solve(prog_, {}, solver_options),
+          "IbexSolver: 'timeout' option should have a non-negative "
+          "value but '-3.1' was provided.");
+    }
+  }
+}
+
+class IbexSolverOptionTest1 : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    x_ = prog_.NewContinuousVariables(3, "x");
+    const auto& x0{x_(0)};
+    const auto& x1{x_(1)};
+    const auto& x2{x_(2)};
+    prog_.AddConstraint(x0, -5, 5);
+    prog_.AddConstraint(x1, -5, 5);
+    prog_.AddConstraint(x2, -5, 5);
+    prog_.AddConstraint(2 * x0 - 3 * x1 + 4 * x2 <= 1.0);
+    prog_.AddConstraint(2 * x0 - 3 * x1 + 4 * x2 >= 1.0);
+    prog_.AddCost(x_(1));
+  }
+
+  MathematicalProgram prog_;
+  VectorXDecisionVariable x_;
+  IbexSolver solver_;
+};
+
+// Checks if using two different options causes IBEX to generate different
+// results. Note that it requires that IBEX solves the problem successfully with
+// option1.
+::testing::AssertionResult CheckIfIbexBehavesDifferently(
+    const IbexSolver& solver, const MathematicalProgram& prog,
+    const SolverOptions& options1, const SolverOptions& options2) {
+  if (!solver.available()) {
+    return ::testing::AssertionSuccess();
+  }
+  // Solve with options1.
+  const auto result1 = solver.Solve(prog, {}, options1);
+  if (!result1.is_success()) {
+    return ::testing::AssertionFailure() << "IBEX failed with options1.";
+  }
+
+  // Solve with options2.
+  const auto result2 = solver.Solve(prog, {}, options2);
+  if (!result2.is_success()) {
+    // IBEX failed with option2 => OK.
+    return ::testing::AssertionSuccess();
+  }
+
+  // result1 and result2 should be different.
+  const auto x_val_1 = result1.GetSolution(prog.decision_variables());
+  const auto x_val_2 = result2.GetSolution(prog.decision_variables());
+  if (x_val_1 != x_val_2) {
+    return ::testing::AssertionSuccess();
+  } else {
+    return ::testing::AssertionFailure()
+           << "Result 1 and Result 2 are the same " << x_val_1 << ".";
+  }
+}
+
+TEST_F(IbexSolverOptionTest1, RelEpsF) {
+  const SolverOptions options1;  // defaults.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "rel_eps_f", 1.0);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+TEST_F(IbexSolverOptionTest1, AbsEpsF) {
+  const SolverOptions options1;  // defaults.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "abs_eps_f", 1.0);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+TEST_F(IbexSolverOptionTest1, RandomSeed) {
+  const SolverOptions options1;  // defaults.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "random_seed", 7.0);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+TEST_F(IbexSolverOptionTest1, EpsX) {
+  const SolverOptions options1;  // defaults.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "eps_x", 1.0);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+// The following Trace0, Trace1, and Trace2 test cases run the solver with
+// different 'trace' option values. We cannot check messages written to the
+// console; we're simply testing exception-free execution.
+TEST_F(IbexSolverOptionTest1, Trace0) {
+  if (solver_.available()) {
+    SolverOptions solver_options;
+    solver_options.SetOption(solver_.id(), "trace", 0);
+    EXPECT_NO_THROW(solver_.Solve(prog_, {}, solver_options));
+  }
+}
+
+TEST_F(IbexSolverOptionTest1, Trace1) {
+  if (solver_.available()) {
+    SolverOptions solver_options;
+    solver_options.SetOption(solver_.id(), "trace", 1);
+    EXPECT_NO_THROW(solver_.Solve(prog_, {}, solver_options));
+  }
+}
+
+TEST_F(IbexSolverOptionTest1, Trace2) {
+  if (solver_.available()) {
+    SolverOptions solver_options;
+    solver_options.SetOption(solver_.id(), "trace", 2);
+    EXPECT_NO_THROW(solver_.Solve(prog_, {}, solver_options));
+  }
+}
+
+TEST_F(IbexSolverOptionTest1, Timeout) {
+  const SolverOptions options1;  // defaults.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "timeout", 1e-30);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+// We introduce another program to show that 'rigor' and 'eps_h' options change
+// the behavior of IBEX.
+class IbexSolverOptionTest2 : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // From
+    // https://github.com/ibex-team/ibex-lib/blob/master/benchs/optim/easy/wall.bch
+    x_ = prog_.NewContinuousVariables(6, "x");
+    const auto& x1{x_(0)};
+    const auto& x2{x_(1)};
+    const auto& x3{x_(2)};
+    const auto& x4{x_(3)};
+    const auto& x5{x_(4)};
+    const auto& x6{x_(5)};
+
+    prog_.AddBoundingBoxConstraint(-1.0e-8, 1.0e+8, x1);
+    prog_.AddBoundingBoxConstraint(-1.0e-8, 1.0e+8, x2);
+    prog_.AddBoundingBoxConstraint(-1.0e-8, 1.0e+8, x3);
+    prog_.AddBoundingBoxConstraint(-1.0e-8, 1.0e+8, x4);
+    prog_.AddBoundingBoxConstraint(-1.0e-8, 1.0e+8, x5);
+    prog_.AddBoundingBoxConstraint(-1.0e-8, 1.0e+8, x6);
+
+    prog_.AddConstraint(x1 * x2 - 1 == 0);
+    prog_.AddConstraint(x3 / x1 / x4 - 4.8 == 0);
+    prog_.AddConstraint(x5 / x2 / x6 - 0.98 == 0);
+    prog_.AddConstraint(x6 * x4 - 1 == 0);
+    prog_.AddConstraint(x1 - x2 + 1.e-7 * x3 - 1.e-5 * x5 == 0);
+    prog_.AddConstraint(
+        2 * x1 - 2 * x2 + 1.e-7 * x3 - 0.01 * x4 - 1.e-5 * x5 + 0.01 * x6 == 0);
+
+    prog_.AddCost(x1);
+  }
+
+  MathematicalProgram prog_;
+  VectorXDecisionVariable x_;
+  IbexSolver solver_;
+};
+
+TEST_F(IbexSolverOptionTest2, EpsH) {
+  const SolverOptions options1;  // defaults.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "eps_h", 1e-3);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+TEST_F(IbexSolverOptionTest2, Rigor) {
+  const SolverOptions options1;  // default, rigor = 0.
+  SolverOptions options2;
+  options2.SetOption(solver_.id(), "rigor", 1);
+  EXPECT_TRUE(
+      CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
+}
+
+}  // namespace
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

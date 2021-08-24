@@ -52,6 +52,12 @@ namespace solvers {
  * Note that Drake only supports a subset of the options listed in the
  * reference. @see DrealSolver for the subset of these options supported by the
  * solver interface.
+ *
+ * "IBEX" -- Parameter name and values as specified in IBEX Reference
+ * http://www.ibex-lib.org/doc/optim.html?highlight=eps#options.
+ * Note that Drake only supports a subset of the options listed in the
+ * reference. @see IbexSolver for the subset of these options supported by the
+ * solver interface.
  */
 class SolverOptions {
  public:
