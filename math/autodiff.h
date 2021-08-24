@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -169,6 +170,8 @@ AutoDiffMatrixType<Derived, Nq> initializeAutoDiff(
   return ret;
 }
 
+// TODO(sherm1) DRAKE_DEPRECATED("2021-12-01") Remove this internal:: block when
+//  resizeDerivativesToMatchScalar() below is removed.
 namespace internal {
 template <typename Derived, typename Scalar>
 struct ResizeDerivativesToMatchScalarImpl {
@@ -206,6 +209,8 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
  * \param scalar scalar to match the derivative size vector against.
  */
 template <typename Derived>
+DRAKE_DEPRECATED("2021-12-01",
+    "Apparently unused. File a Drake issue on GitHub if you need this method.")
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
                                     const typename Derived::Scalar& scalar) {
