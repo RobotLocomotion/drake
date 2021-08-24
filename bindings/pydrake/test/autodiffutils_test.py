@@ -9,6 +9,7 @@ from pydrake.autodiffutils import (
 )
 
 import copy
+import itertools
 import unittest
 
 import numpy as np
@@ -300,3 +301,66 @@ class TestAutoDiffXd(unittest.TestCase):
         self.assertFalse(
             mut.autodiff_equal_to(empty_deriv, nonzero_deriv2, semantic=True)
         )
+
+    def test_vectorized_binary_operator_type_combinatorics(self):
+        """
+        Tests vectorized binary operator via brute-force combinatorics per
+        #15549.
+
+        This complements test with the same name in ``symbolic_test.py``.
+        """
+
+        def expand_values(value):
+            return (
+                # Scalar.
+                value,
+                # Scalar array.
+                np.array(value),
+                # Size-1 array.
+                np.array([value]),
+                # Size-2 array.
+                np.array([value, value]),
+            )
+
+        operators = drake_math._OPERATORS
+        operators_reverse = drake_math._OPERATORS_REVERSE
+
+        x = AD(2.0, [1.0, 2.0])
+        y = AD(0.0, [3.0, 4.0])
+        T_operands_x = expand_values(x)
+        T_operands_y = expand_values(y)
+
+        numeric_operands = (
+            # Float.
+            # - Native.
+            expand_values(1.0)
+            # - np.generic
+            + expand_values(np.float64(1.0))
+            # Int.
+            # - Native.
+            + expand_values(1)
+            # - np.generic
+            + expand_values(np.int64(1.0))
+        )
+
+        def check_operands(op, lhs_operands, rhs_operands):
+            operand_combinatorics_iter = itertools.product(
+                lhs_operands, rhs_operands
+            )
+            op_reverse = operators_reverse[op]
+            for lhs, rhs in operand_combinatorics_iter:
+                hint_for_error = f"{op.__doc__}: {repr(lhs)}, {repr(rhs)}"
+                with numpy_compare.soft_sub_test(hint_for_error):
+                    value = op(lhs, rhs)
+                    reverse_value = op_reverse(rhs, lhs)
+                    numpy_compare.assert_equal(value, reverse_value)
+
+        # Combinations (unordered) that we're interested in.
+        operand_combinations = (
+            (T_operands_x, T_operands_y),
+            (T_operands_x, numeric_operands),
+        )
+        for op in operators:
+            for (op_a, op_b) in operand_combinations:
+                check_operands(op, op_a, op_b)
+                check_operands(op, op_b, op_a)

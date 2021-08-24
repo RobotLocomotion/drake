@@ -225,6 +225,9 @@ def install_numpy_warning_filters(force=False):
     warnings.filterwarnings(
         "error", category=DeprecationWarning,
         message="elementwise == comparison failed")
+    warnings.filterwarnings(
+        "error", category=DeprecationWarning,
+        message="elementwise != comparison failed")
     # Error changed in 1.16.0
     warnings.filterwarnings(
         "error", category=DeprecationWarning,
