@@ -845,13 +845,6 @@ MultibodyPlant<symbolic::Expression>::member_scene_graph() {
 }
 
 template <typename T>
-void MultibodyPlant<T>::CheckValidState(const systems::State<T>* state) const {
-  DRAKE_THROW_UNLESS(state != nullptr);
-  DRAKE_THROW_UNLESS(
-      is_discrete() == (state->get_discrete_state().num_groups() > 0));
-}
-
-template <typename T>
 void MultibodyPlant<T>::FilterAdjacentBodies() {
   DRAKE_DEMAND(geometry_source_is_registered());
   // Disallow collisions between adjacent bodies. Adjacency is implied by the

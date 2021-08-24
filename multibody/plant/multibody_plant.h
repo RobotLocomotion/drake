@@ -1906,7 +1906,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       const systems::Context<T>& context, systems::State<T>* state) const {
     this->ValidateContext(context);
-    DRAKE_ASSERT_VOID(CheckValidState(state));
+    this->ValidateCreatedForThisSystem(state);
     return internal_tree().get_mutable_positions(state);
   }
 
@@ -1949,8 +1949,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                     systems::State<T>* state, ModelInstanceIndex model_instance,
                     const Eigen::Ref<const VectorX<T>>& q_instance) const {
     this->ValidateContext(context);
+    this->ValidateCreatedForThisSystem(state);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
-    CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
@@ -2007,7 +2007,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       const systems::Context<T>& context, systems::State<T>* state) const {
     this->ValidateContext(context);
-    DRAKE_ASSERT_VOID(CheckValidState(state));
+    this->ValidateCreatedForThisSystem(state);
     return internal_tree().get_mutable_velocities(state);
   }
 
@@ -2051,8 +2051,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                      ModelInstanceIndex model_instance,
                      const Eigen::Ref<const VectorX<T>>& v_instance) const {
     this->ValidateContext(context);
+    this->ValidateCreatedForThisSystem(state);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
-    CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
@@ -2066,7 +2066,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     this->ValidateContext(context);
-    CheckValidState(state);
+    this->ValidateCreatedForThisSystem(state);
     internal_tree().SetDefaultState(context, state);
     for (const BodyIndex& index : GetFloatingBaseBodies()) {
       SetFreeBodyPose(
@@ -2086,7 +2086,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                       RandomGenerator* generator) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     this->ValidateContext(context);
-    CheckValidState(state);
+    this->ValidateCreatedForThisSystem(state);
     internal_tree().SetRandomState(context, state, generator);
   }
 
@@ -2228,7 +2228,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
     this->ValidateContext(context);
-    CheckValidState(state);
+    this->ValidateCreatedForThisSystem(state);
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
@@ -2278,7 +2278,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const SpatialVelocity<T>& V_WB) const {
     this->ValidateContext(context);
-    CheckValidState(state);
+    this->ValidateCreatedForThisSystem(state);
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
   }
@@ -4116,9 +4116,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return prop->GetProperty<CoulombFriction<double>>(
         geometry::internal::kMaterialGroup, geometry::internal::kFriction);
   }
-
-  // Checks that the provided State is consistent with this plant.
-  void CheckValidState(const systems::State<T>*) const;
 
   // Helper method to apply collision filters based on body-adjacency. By
   // default, we don't consider collisions between geometries affixed to
