@@ -43,8 +43,8 @@ TEST_P(DrakeManifestResolutionTest, ResolvesMeshUris) {
   // mesh URIs in the SDF model could not be resolved or loaded.
   EXPECT_NO_THROW(Parser(&plant).AddModelFromFile(filename));
 
-  // Sanity checks
-  // Ensure there was exactly one model instance added for the new model.
+  // Sanity checks to ensure there was exactly one model instance and one
+  // geometry added for the new model.
   EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);
   EXPECT_EQ(inspector.num_geometries() - default_num_geometries, 1);
 }
