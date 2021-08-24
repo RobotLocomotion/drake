@@ -11,6 +11,7 @@ Prefer comparisons in the following order:
 # TODO(eric.cousineau): Make custom assert-vectorize which will output
 # coordinates and stuff.
 
+from contextlib import contextmanager
 from collections import namedtuple
 import functools
 from itertools import product
@@ -258,6 +259,8 @@ def _register_symbolic():
 
     _registry.register_to_float(Expression, Expression.Evaluate)
     _registry.register_comparator(Formula, str, _str_eq, _str_ne)
+    _registry.register_comparator(
+        Formula, Formula, Formula.__eq__, Formula.__ne__)
     # Ensure that we can do simple boolean comparison, e.g. in lieu of
     # `unittest.TestCase.assertTrue`, use
     # `numpy_compare.assert_equal(f, True)`.
@@ -307,3 +310,21 @@ def check_nonsymbolic_types(check_func):
         check_func(*args, T=AutoDiffXd, **kwargs)
 
     return wrapper
+
+
+@contextmanager
+def soft_sub_test(hint_for_error):
+    """
+    Prints out a message when an exception is raised.
+
+    Useful for providing debug information for combinatorics tests.
+
+    With unittest's ``--failfast`` option (at least on Python 3.6), an error in
+    ``unittest.TestCase.subTest`` does not stop execution, making it difficult
+    to digest errors. We use this workaround instead.
+    """
+    try:
+        yield
+    except Exception:
+        print(f"soft_sub_test failure:\n  {hint_for_error}")
+        raise
