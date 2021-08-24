@@ -92,6 +92,8 @@ class TestValue(unittest.TestCase):
     def test_abstract_value_make(self):
         value = AbstractValue.Make("Hello world")
         self.assertIsInstance(value, Value[str])
+        value = AbstractValue.Make(1.0)
+        self.assertIsInstance(value, Value[float])
         value = AbstractValue.Make(MoveOnlyType(10))
         self.assertIsInstance(value, Value[MoveOnlyType])
         value = AbstractValue.Make({"x": 10})

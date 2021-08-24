@@ -1523,7 +1523,19 @@ void def_geometry_optimization(py::module m) {
       py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
 }
 
-void def_geometry_testing(py::module m) {
+// Test-only code.
+namespace testing {
+// For use with `test_geometry_properties_cpp_types`.
+template <typename T>
+void DefGetPropertyCpp(py::module m) {
+  auto func = [](const geometry::GeometryProperties& properties,
+                  const std::string& group, const std::string& name) {
+    return properties.GetProperty<T>(group, name);
+  };
+  AddTemplateFunction(m, "GetPropertyCpp", func, GetPyParam<T>());
+}
+
+void def_testing_module(py::module m) {
   class FakeTag;
   using FakeId = Identifier<FakeTag>;
 
@@ -1532,7 +1544,13 @@ void def_geometry_testing(py::module m) {
   FakeId fake_id_constant{FakeId::get_new_id()};
   m.def("get_fake_id_constant",
       [fake_id_constant]() { return fake_id_constant; });
+
+  // For use with `test_geometry_properties_cpp_types`.
+  DefGetPropertyCpp<std::string>(m);
+  DefGetPropertyCpp<bool>(m);
+  DefGetPropertyCpp<double>(m);
 }
+}  // namespace testing
 
 void def_geometry_all(py::module m) {
   py::dict vars = m.attr("__dict__");
@@ -1552,8 +1570,8 @@ PYBIND11_MODULE(geometry, m) {
   def_geometry(m);
   def_geometry_render(m.def_submodule("render"));
   def_geometry_optimization(m.def_submodule("optimization"));
-  def_geometry_testing(m.def_submodule("_testing"));
   def_geometry_all(m.def_submodule("all"));
+  testing::def_testing_module(m.def_submodule("_testing"));
 }
 
 }  // namespace
