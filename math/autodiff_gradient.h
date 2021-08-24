@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
@@ -123,6 +124,8 @@ initializeAutoDiffGivenGradientMatrix(
 }
 
 template <typename DerivedGradient, typename DerivedAutoDiff>
+DRAKE_DEPRECATED("2021-12-01",
+    "Apparently unused. File a Drake issue on GitHub if you need this method.")
 void gradientMatrixToAutoDiff(
     const Eigen::MatrixBase<DerivedGradient>& gradient,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
