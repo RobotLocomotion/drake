@@ -131,7 +131,7 @@ int do_main() {
 
   // Set contact model and parameters.
   if (FLAGS_contact_model == "hydroelastic") {
-    plant.set_contact_model(ContactModel::kHydroelasticsOnly);
+    plant.set_contact_model(ContactModel::kHydroelastic);
     plant.Finalize();
   } else if (FLAGS_contact_model == "point") {
     // Plant must be finalized before setting the penetration allowance.

@@ -1907,9 +1907,12 @@ class TestPlant(unittest.TestCase):
     def test_contact_model(self):
         plant = MultibodyPlant_[float](0.1)
         models = [
+            ContactModel.kHydroelastic,
+            ContactModel.kPoint,
+            ContactModel.kHydroelasticWithFallback,
+            # Also test the legacy aliases.
             ContactModel.kHydroelasticsOnly,
             ContactModel.kPointContactOnly,
-            ContactModel.kHydroelasticWithFallback,
         ]
         for model in models:
             plant.set_contact_model(model)
@@ -2082,7 +2085,7 @@ class TestPlant(unittest.TestCase):
         Parser(plant).AddModelFromFile(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
-        plant.set_contact_model(ContactModel.kHydroelasticsOnly)
+        plant.set_contact_model(ContactModel.kHydroelastic)
         plant.Finalize()
 
         diagram = builder.Build()
