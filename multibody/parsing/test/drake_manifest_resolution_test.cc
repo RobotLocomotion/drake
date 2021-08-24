@@ -35,15 +35,21 @@ TEST_P(DrakeManifestResolutionTest, ResolvesMeshUris) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   // Record the default number of models before a new model is added.
   const int default_num_models = plant.num_model_instances();
+  const auto& inspector = scene_graph.model_inspector();
+  const int default_num_geometries = inspector.num_geometries();
 
   // Check to ensure model is parsable.
+  // The call to AddModelFromFile should throw an exception if any of the
+  // mesh URIs in the SDF model could not be resolved or loaded.
   EXPECT_NO_THROW(Parser(&plant).AddModelFromFile(filename));
 
+  // Sanity checks
   // Ensure there was exactly one model instance added for the new model.
   EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);
+  EXPECT_EQ(inspector.num_geometries() - default_num_geometries, 1);
 }
 
-INSTANTIATE_TEST_SUITE_P(DRAKE_URI_MODEL, DrakeManifestResolutionTest,
+INSTANTIATE_TEST_SUITE_P(DrakeUriModel, DrakeManifestResolutionTest,
   testing::Values("cube_visual.sdf", "cube_visual.urdf"));
 
 }  // namespace
