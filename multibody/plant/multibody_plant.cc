@@ -1239,11 +1239,11 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   if (num_collision_geometries() == 0) return;
 
   switch (contact_model_) {
-    case ContactModel::kPointContactOnly:
+    case ContactModel::kPoint:
       CalcContactResultsContinuousPointPair(context, contact_results);
       break;
 
-    case ContactModel::kHydroelasticsOnly:
+    case ContactModel::kHydroelastic:
       AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
 
@@ -1403,11 +1403,11 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
   if (num_collision_geometries() == 0) return;
 
   switch (contact_model_) {
-    case ContactModel::kPointContactOnly:
+    case ContactModel::kPoint:
       CalcContactResultsDiscretePointPair(context, contact_results);
       break;
 
-    case ContactModel::kHydroelasticsOnly:
+    case ContactModel::kHydroelastic:
       // N.B. We are simply computing the hydro force as function of the state,
       // not the actual discrete approximation used by the contact solver.
       AppendContactResultsContinuousHydroelastic(context, contact_results);
@@ -1978,13 +1978,13 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
     // We guard for case (2) since EvalPointPairPenetrations() cannot be called
     // when point contact is not used and would otherwise throw an exception.
     int num_point_pairs = 0;  // The number of point contact pairs.
-    if (contact_model_ == ContactModel::kPointContactOnly ||
+    if (contact_model_ == ContactModel::kPoint ||
         contact_model_ == ContactModel::kHydroelasticWithFallback) {
       num_point_pairs = EvalPointPairPenetrations(context).size();
     }
 
     int num_quadrature_pairs = 0;
-    if (contact_model_ == ContactModel::kHydroelasticsOnly ||
+    if (contact_model_ == ContactModel::kHydroelastic ||
         contact_model_ == ContactModel::kHydroelasticWithFallback) {
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
@@ -2471,14 +2471,14 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
 
   // Compute the spatial forces on each body from contact.
   switch (contact_model_) {
-    case ContactModel::kPointContactOnly:
+    case ContactModel::kPoint:
       // Note: consider caching the results from the following method (in which
       // case we would also want to introduce the Eval... naming convention for
       // the method).
       CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
       break;
 
-    case ContactModel::kHydroelasticsOnly:
+    case ContactModel::kHydroelastic:
       *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
       break;
 
@@ -2893,7 +2893,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
   const bool use_hydroelastic =
-      contact_model_ == ContactModel::kHydroelasticsOnly ||
+      contact_model_ == ContactModel::kHydroelastic ||
       contact_model_ == ContactModel::kHydroelasticWithFallback;
   if (use_hydroelastic) {
     auto& contact_info_and_body_spatial_forces_cache_entry =

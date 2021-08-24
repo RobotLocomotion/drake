@@ -63,11 +63,11 @@ class HydroelasticModelTests : public ::testing::Test {
                        kFrictionCoefficient);
 
     // The default contact model today is point contact.
-    EXPECT_EQ(plant_->get_contact_model(), ContactModel::kPointContactOnly);
+    EXPECT_EQ(plant_->get_contact_model(), ContactModel::kPoint);
 
     // Tell the plant to use the hydroelastic model.
-    plant_->set_contact_model(ContactModel::kHydroelasticsOnly);
-    ASSERT_EQ(plant_->get_contact_model(), ContactModel::kHydroelasticsOnly);
+    plant_->set_contact_model(ContactModel::kHydroelastic);
+    ASSERT_EQ(plant_->get_contact_model(), ContactModel::kHydroelastic);
 
     plant_->Finalize();
 
@@ -499,7 +499,7 @@ class ContactModelTest : public ::testing::Test {
 };
 
 TEST_F(ContactModelTest, PointPairContact) {
-  this->Configure(ContactModel::kPointContactOnly);
+  this->Configure(ContactModel::kPoint);
   const ContactResults<double>& contact_results = GetContactResults();
   ASSERT_EQ(contact_results.num_point_pair_contacts(), 2);
   ASSERT_EQ(contact_results.num_hydroelastic_contacts(), 0);
@@ -523,7 +523,7 @@ TEST_F(ContactModelTest, PointPairContact) {
 }
 
 TEST_F(ContactModelTest, HydroelasticOnly) {
-  this->Configure(ContactModel::kHydroelasticsOnly);
+  this->Configure(ContactModel::kHydroelastic);
   // Rigid-rigid contact precludes successful evaluation.
   DRAKE_EXPECT_THROWS_MESSAGE(GetContactResults(), std::logic_error,
                               "Requested contact between two rigid objects .+");
@@ -572,7 +572,7 @@ TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
 //  inheritance and consider using parameter-value tests.
 
 // Tests MultibodyPlant::CalcContactSurfaces() which is used in
-// kHydroelasticsOnly contact model for both continuous systems and discrete
+// kHydroelastic contact model for both continuous systems and discrete
 // systems. Tests the experimental option to request low-resolution
 // contact surfaces too.
 //
@@ -587,7 +587,7 @@ class CalcContactSurfacesTest : public ContactModelTest {
     const bool connect_scene_graph = true;
     // No rigid-rigid contact. Only the rigid-compliant contact.
     bool are_rigid_spheres_in_contact = false;
-    ContactModelTest::Configure(ContactModel::kHydroelasticsOnly,
+    ContactModelTest::Configure(ContactModel::kHydroelastic,
                                 connect_scene_graph, time_step,
                                 are_rigid_spheres_in_contact,
                                 use_low_resolution_contact_surface);
