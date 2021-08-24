@@ -79,18 +79,25 @@ class MultibodyPlantDiscreteUpdateManagerAttorney;
 enum class ContactModel {
   /// Contact forces are computed using the Hydroelastic model. Conctact between
   /// unsupported geometries will cause a runtime exception.
-  kHydroelasticsOnly,
+  kHydroelasticContact,
 
   /// Contact forces are computed using a point contact model, see @ref
   /// point_contact_approximation "Numerical Approximation of Point Contact".
-  kPointContactOnly,
+  kPointContact,
 
   /// Contact forces are computed using the hydroelastic model, where possible.
   /// For most other unsupported colliding pairs, the point model from
-  /// kPointContactOnly is used. See
-  /// geometry::QueryObject:ComputeContactSurfacesWithFallback for more
+  /// kPointContact is used. See
+  /// geometry::QueryObject::ComputeContactSurfacesWithFallback for more
   /// details.
-  kHydroelasticWithFallback
+  kHydroelasticContactWithFallback,
+
+  /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
+  kHydroelasticsOnly = kHydroelasticContact,
+  /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
+  kPointContactOnly = kPointContact,
+  /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
+  kHydroelasticWithFallback = kHydroelasticContactWithFallback,
 };
 
 /// @cond
@@ -1591,7 +1598,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Sets the contact model to be used by `this` %MultibodyPlant, see
   /// ContactModel for available options.
-  /// The default contact model is ContactModel::kPointContactOnly.
+  /// The default contact model is ContactModel::kPointContact.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
 
@@ -2429,14 +2436,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize. See Finalize().
   const std::vector<geometry::PenetrationAsPointPair<T>>&
   EvalPointPairPenetrations(const systems::Context<T>& context) const {
+    // TODO(jwnimmer-tri) This function is too large to be inline.
+    // Move its definition to the cc file.
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     this->ValidateContext(context);
     switch (contact_model_) {
-      case ContactModel::kPointContactOnly:
+      case ContactModel::kPointContact:
         return this->get_cache_entry(cache_indexes_.point_pairs)
             .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
-      case ContactModel::kHydroelasticWithFallback: {
+      case ContactModel::kHydroelasticContactWithFallback: {
         const auto& data =
             this->get_cache_entry(cache_indexes_.hydro_fallback)
                 .template Eval<internal::HydroelasticFallbackCacheData<T>>(
@@ -4249,16 +4258,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval version of the method CalcContactSurfaces().
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const {
+    // TODO(jwnimmer-tri) This function is too large to be inline.
+    // Move its definition to the cc file.
     this->ValidateContext(context);
     switch (contact_model_) {
-      case ContactModel::kHydroelasticWithFallback: {
+      case ContactModel::kHydroelasticContactWithFallback: {
         const auto& data =
             this->get_cache_entry(cache_indexes_.hydro_fallback)
                 .template Eval<internal::HydroelasticFallbackCacheData<T>>(
                     context);
         return data.contact_surfaces;
       }
-      case ContactModel::kHydroelasticsOnly:
+      case ContactModel::kHydroelasticContact:
         return this->get_cache_entry(cache_indexes_.contact_surfaces)
             .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
       default:
@@ -4768,7 +4779,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
   // The model used by the plant to compute contact forces.
-  ContactModel contact_model_{ContactModel::kPointContactOnly};
+  ContactModel contact_model_{ContactModel::kPointContact};
 
   bool use_low_resolution_contact_surface_{false};
 

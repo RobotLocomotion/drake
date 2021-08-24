@@ -131,7 +131,7 @@ int do_main() {
 
   // Set contact model and parameters.
   if (FLAGS_contact_model == "hydroelastic") {
-    plant.set_contact_model(ContactModel::kHydroelasticsOnly);
+    plant.set_contact_model(ContactModel::kHydroelasticContact);
     plant.Finalize();
   } else if (FLAGS_contact_model == "point") {
     // Plant must be finalized before setting the penetration allowance.
@@ -139,7 +139,7 @@ int do_main() {
     // Set how much penetration (in meters) we are willing to accept.
     plant.set_penetration_allowance(0.001);
   } else if (FLAGS_contact_model == "hybrid") {
-    plant.set_contact_model(ContactModel::kHydroelasticWithFallback);
+    plant.set_contact_model(ContactModel::kHydroelasticContactWithFallback);
     plant.Finalize();
     plant.set_penetration_allowance(0.001);
   } else {

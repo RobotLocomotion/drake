@@ -1199,10 +1199,19 @@ PYBIND11_MODULE(plant, m) {
     using Class = ContactModel;
     constexpr auto& cls_doc = doc.ContactModel;
     py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+        .value("kHydroelasticContact", Class::kHydroelasticContact,
+            cls_doc.kHydroelasticContact.doc)
+        .value("kPointContact", Class::kPointContact, cls_doc.kPointContact.doc)
+        .value("kHydroelasticContactWithFallback",
+            Class::kHydroelasticContactWithFallback,
+            cls_doc.kHydroelasticContactWithFallback.doc)
+        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
         .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
             cls_doc.kHydroelasticsOnly.doc)
+        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
         .value("kPointContactOnly", Class::kPointContactOnly,
             cls_doc.kPointContactOnly.doc)
+        // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
             cls_doc.kHydroelasticWithFallback.doc);
   }
