@@ -760,8 +760,6 @@ drake_cc_library(
         "//conditions:default": ["ibex_converter.h"],
         "//tools:no_dreal": [],
     }),
-    # Disable this test in valgrind build. See #15662.
-    tags = ["no_memcheck"],
     deps = [
         ":mathematical_program",
         ":mathematical_program_result",
@@ -1323,6 +1321,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "ibex_solver_test",
+    # Disable this test in valgrind build. See #15662.
+    tags = ["no_memcheck"],
     deps = [
         ":generic_trivial_constraint",
         ":generic_trivial_cost",
