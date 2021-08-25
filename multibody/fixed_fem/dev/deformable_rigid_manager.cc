@@ -256,6 +256,16 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
           {systems::System<T>::all_sources_ticket()});
   two_way_coupled_contact_solver_results_cache_index_ =
       two_way_coupled_contact_solver_results_cache_entry.cache_index();
+
+  const auto& deformable_contact_solver_results_cache_entry =
+      this->DeclareCacheEntry(
+          "Contact solver results for participating deformable dofs",
+          systems::ValueProducer(
+              this,
+              &DeformableRigidManager<T>::CalcDeformableContactSolverResults),
+          {two_way_coupled_contact_solver_results_cache_entry.ticket()});
+  deformable_contact_solver_results_cache_index_ =
+      deformable_contact_solver_results_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -331,6 +341,111 @@ void DeformableRigidManager<T>::CalcTwoWayCoupledContactSolverResults(
   const VectorX<T>& v0 = EvalParticipatingVelocities(context);
   contact_solver_->SolveWithGuess(this->plant().time_step(), dynamics_data,
                                   contact_data, v0, results);
+}
+
+template <typename T>
+void DeformableRigidManager<T>::CalcDeformableContactSolverResults(
+    const systems::Context<T>& context,
+    ContactSolverResults<T>* deformable_results) const {
+  DRAKE_DEMAND(deformable_results != nullptr);
+  /* Extract the results related to the deformable dofs from the full two-way
+   coupled deformable-rigid results. */
+  const ContactSolverResults<T>& two_way_coupled_results =
+      EvalTwoWayCoupledContactSolverResults(context);
+  const std::vector<internal::DeformableContactData<T>>&
+      deformable_contact_data = EvalDeformableRigidContact(context);
+
+  /* Find the total number of deformable contacts and the number of deformable
+   participating dofs. */
+  int nc = 0;
+  int nv_participating = 0;
+  for (const auto& data : deformable_contact_data) {
+    nc += data.num_contact_points();
+    nv_participating += 3 * data.num_vertices_in_contact();
+  }
+  deformable_results->Resize(deformable_model_->NumDofs(), nc);
+  /* Write to all per contact point results. The deformable-rigid contact point
+   results are stored at the end of the two-way coupled results. */
+  deformable_results->fn = two_way_coupled_results.fn.tail(nc);
+  deformable_results->ft = two_way_coupled_results.ft.tail(2 * nc);
+  deformable_results->vn = two_way_coupled_results.vn.tail(nc);
+  deformable_results->vt = two_way_coupled_results.vt.tail(2 * nc);
+
+  /* Calculate post-contact velocity and contact impulse for *all* deformable
+   dofs using the results on participating deformable dofs. */
+  const auto participating_deformable_velocities =
+      two_way_coupled_results.v_next.tail(nv_participating);
+  const auto participating_deformable_tau =
+      two_way_coupled_results.tau_contact.tail(nv_participating);
+  int dofs_offset = 0;
+  int participating_dofs_offset = 0;
+  for (DeformableBodyIndex body(0); body < deformable_model_->num_bodies();
+       ++body) {
+    const FemStateBase<T>& fem_state_star =
+        EvalFreeMotionFemStateBase(context, body);
+    const VectorX<T>& v_star = fem_state_star.qdot();
+    const int body_num_dofs = v_star.size();
+    const auto& body_contact_data = deformable_contact_data[body];
+    if (body_contact_data.num_contact_points() == 0) {
+      /* If the deformable body is not in contact, then the free motion velocity
+      is the final velocity. */
+      deformable_results->v_next.segment(dofs_offset, body_num_dofs) = v_star;
+      deformable_results->tau_contact.segment(dofs_offset, body_num_dofs)
+          .setZero();
+    } else {
+      const VectorX<T> permuted_v_star = internal::PermuteBlockVector<T>(
+          v_star, body_contact_data.permuted_vertex_indexes());
+      const int body_num_participating_dofs =
+          3 * body_contact_data.num_vertices_in_contact();
+      /* Calculate the velocitiy changes for participating dofs and store them
+       in `participating_delta_v`. */
+      const auto participating_v_star =
+          permuted_v_star.head(body_num_participating_dofs);
+      const auto participating_v = participating_deformable_velocities.segment(
+          participating_dofs_offset, body_num_participating_dofs);
+      const VectorX<T> participating_delta_v =
+          participating_v - participating_v_star;
+      /* Use Schur complement to calculate the velocitiy changes for
+        non-participating dofs and store them in `nonparticipating_delta_v`. */
+      const internal::SchurComplement<T>& schur_complement =
+          EvalFreeMotionTangentMatrixSchurComplement(context, body);
+      const VectorX<T> nonparticipating_delta_v =
+          schur_complement.SolveForY(participating_delta_v);
+      /* Calculate v = v* + dv for nonparticipating dofs. */
+      const auto nonparticipating_v_star =
+          permuted_v_star.tail(body_num_dofs - body_num_participating_dofs);
+      const VectorX<T> nonparticipating_v =
+          nonparticipating_v_star + nonparticipating_delta_v;
+      /* We use `permuted_v` to store the velocity of the body i in permuted
+       order at the next time step. */
+      VectorX<T> permuted_v(body_num_dofs);
+      permuted_v << participating_v, nonparticipating_v;
+      /* Restore the velocities to their original order and write to
+       `deformable_results`. */
+      deformable_results->v_next.segment(dofs_offset, body_num_dofs) =
+          internal::PermuteBlockVector<T>(
+              permuted_v, body_contact_data.permuted_to_original_indexes());
+      /* We use `permuted_tau` to store the contact impulse of the body i in
+       permuted order at the next time step. */
+      VectorX<T> permuted_tau = VectorX<T>::Zero(body_num_dofs);
+      /* Extract `tau` for participating dofs. Non-participating dofs have zero
+       `tau`. */
+      permuted_tau.head(body_num_participating_dofs) =
+          participating_deformable_tau.segment(participating_dofs_offset,
+                                               body_num_participating_dofs);
+      /* Restore the contact impulses to their original order and write to
+       `deformable_results`. */
+      deformable_results->tau_contact.segment(dofs_offset, body_num_dofs) =
+          internal::PermuteBlockVector<T>(
+              permuted_tau, body_contact_data.permuted_to_original_indexes());
+
+      participating_dofs_offset += body_num_participating_dofs;
+    }
+    dofs_offset += body_num_dofs;
+  }
+  /* Sanity check that all dofs and participating dofs are accounted for. */
+  DRAKE_DEMAND(dofs_offset == deformable_model_->NumDofs());
+  DRAKE_DEMAND(participating_dofs_offset == nv_participating);
 }
 
 template <typename T>
@@ -984,16 +1099,16 @@ void DeformableRigidManager<T>::CalcVelocities(
   const int num_deformable_velocities = deformable_model_->NumDofs();
   v->resize(num_rigid_velocities + num_deformable_velocities);
   v->head(num_rigid_velocities) = this->plant().GetVelocities(context);
-  int dof_offset = num_rigid_velocities;
+  int dofs_offset = num_rigid_velocities;
   for (DeformableBodyIndex deformable_index(0);
        deformable_index < deformable_model_->num_bodies(); ++deformable_index) {
     const VectorX<T>& deformable_v =
         EvalFemStateBase(context, deformable_index).qdot();
-    v->segment(dof_offset, deformable_v.size()) = deformable_v;
-    dof_offset += deformable_v.size();
+    v->segment(dofs_offset, deformable_v.size()) = deformable_v;
+    dofs_offset += deformable_v.size();
   }
   /* Sanity check that all entries in `v` have been filled. */
-  DRAKE_DEMAND(dof_offset == v->size());
+  DRAKE_DEMAND(dofs_offset == v->size());
 }
 
 template <typename T>
@@ -1004,16 +1119,16 @@ void DeformableRigidManager<T>::CalcFreeMotionVelocities(
   const int num_deformable_velocities = deformable_model_->NumDofs();
   v_star->resize(num_rigid_velocities + num_deformable_velocities);
   v_star->head(num_rigid_velocities) = EvalFreeMotionRigidVelocities(context);
-  int dof_offset = num_rigid_velocities;
+  int dofs_offset = num_rigid_velocities;
   for (DeformableBodyIndex deformable_index(0);
        deformable_index < deformable_model_->num_bodies(); ++deformable_index) {
     const VectorX<T>& deformable_v_star =
         EvalFreeMotionFemStateBase(context, deformable_index).qdot();
-    v_star->segment(dof_offset, deformable_v_star.size()) = deformable_v_star;
-    dof_offset += deformable_v_star.size();
+    v_star->segment(dofs_offset, deformable_v_star.size()) = deformable_v_star;
+    dofs_offset += deformable_v_star.size();
   }
   /* Sanity check that all entries in `v_star` have been filled. */
-  DRAKE_DEMAND(dof_offset == v_star->size());
+  DRAKE_DEMAND(dofs_offset == v_star->size());
 }
 
 }  // namespace fem
