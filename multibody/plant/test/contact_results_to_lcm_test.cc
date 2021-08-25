@@ -729,6 +729,7 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
     return fmt::format("String that must be copied to match {}", id);
   };
   ContactResultsToLcmSystem<double> lcm_double(plant, custom_names);
+  lcm_double.set_name("Ad hoc name");
 
   /* We don't care about double-valued results, we're just using it to
    populate the tables in lcm_double. These will get copied over. */
