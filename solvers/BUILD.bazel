@@ -760,6 +760,8 @@ drake_cc_library(
         "//conditions:default": ["ibex_converter.h"],
         "//tools:no_dreal": [],
     }),
+    # Disable this test in valgrind build. See #15662.
+    tags = ["no_memcheck"],
     deps = [
         ":mathematical_program",
         ":mathematical_program_result",
