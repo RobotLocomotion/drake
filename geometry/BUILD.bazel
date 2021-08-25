@@ -343,6 +343,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "meshcat_types",
+    hdrs = ["meshcat_types.h"],
+    install_hdrs_exclude = ["meshcat_types.h"],
+    tags = [
+        "exclude_from_libdrake",
+        "exclude_from_package",
+    ],
+    deps = ["@msgpack"],
+)
+
+drake_cc_library(
     name = "meshcat",
     srcs = ["meshcat.cc"],
     hdrs = ["meshcat.h"],
@@ -352,10 +363,15 @@ drake_cc_library(
         "@meshcat//:dist/main.min.js",
     ],
     deps = [
+        ":meshcat_types",
+        ":rgba",
+        ":shape_specification",
         "//common:essential",
         "//common:find_resource",
         "//common:unused",
+        "//math:geometric_transform",
         "@msgpack",
+        "@stduuid",
         "@uwebsockets",
     ],
 )
@@ -364,6 +380,7 @@ drake_cc_binary(
     name = "meshcat_manual_test",
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
+    data = ["//systems/sensors:test_models"],
     visibility = ["//visibility:private"],
     deps = [":meshcat"],
 )
@@ -377,11 +394,17 @@ drake_py_binary(
 
 drake_cc_googletest(
     name = "meshcat_test",
-    data = [":meshcat_websocket_client"],
+    data = [
+        ":meshcat_websocket_client",
+        "//systems/sensors:test_models",
+    ],
     # Disable valgrind because it currently fails on the system call to python.
     # TODO(russt): Make it possible to pass --trace-children=no to valgrind.sh.
     tags = ["no_memcheck"],
-    deps = [":meshcat"],
+    deps = [
+        ":meshcat",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
 )
 
 # -----------------------------------------------------
