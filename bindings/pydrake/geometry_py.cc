@@ -539,10 +539,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.get_query_output_port.doc)
         .def("model_inspector", &Class::model_inspector,
             py_rvp::reference_internal, cls_doc.model_inspector.doc)
-        .def("geometry_name_lookup", &Class::geometry_name_lookup,
-            // Keep alive, reference: `return` keeps `self` alive.
-            py::keep_alive<0, 1>(),  // BR
-            cls_doc.geometry_name_lookup.doc)
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &Class::RegisterSource),

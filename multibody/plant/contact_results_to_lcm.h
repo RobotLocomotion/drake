@@ -50,54 +50,54 @@ bool operator==(const FullBodyName& n1, const FullBodyName& n2);
  systems::Diagram with a %ContactResultsToLcmSystem can be scalar converted to
  symbolic::Expression without error, but not necessarily evaluated.
 
- @tparam_default_scalar */
+ <h3>Constructing instances</h3>
+
+ Generally, you shouldn't construct a %ContactResultsToLcmSystem instances
+ directly. We recommend using one of the overloaded
+ @ref contact_result_vis_creation "ConnectContactResultsToDrakeVisualizer()"
+ methods to add contact visualization to your diagram.
+
+ <h3>How contacts are described in visualization</h3>
+
+ In the visualizer, each contact between two bodies is uniquely characterized
+ by two triples of names: (model instance name, body name, geometry name).
+ These triples help distinguish contacts which might otherwise be ambiguous
+ (e.g., contact with two bodies, both called "box" but part of different model
+ instances).
+
+ %ContactResultsToLcmSystem gets the model instance and body names from an
+ instance of MultibodyPlant, but *geometry* names are not available from the
+ plant. By default, %ContactResultsToLcmSystem will *generate* a unique name
+ based on a geometry's unique id (e.g., "Id(7)"). For many applications
+ (those cases where each body has only a single collision geometry), this is
+ perfectly acceptable. However, in cases where a body has multiple collision
+ geometries, those default names may not be helpful when viewing the visualized
+ results. Instead, %ContactResultsToLcmSystem can use the names associated with
+ the id in a geometry::SceneGraph instance. The *preferred* method for doing
+ this is via the @ref contact_result_vis_creation
+ "ConnectContactResultsToDrakeVisualizer()" methods.
+
+ @tparam_default_scalar
+ @ingroup visualization */
 template <typename T>
 class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultsToLcmSystem)
 
-  /** Constructs a system that serializes ContactResults into an lcm message
-   for visualization.
+  /** Constructors an instance with *default* geometry names (e.g., "Id(7)").
 
-   In the visualizer, each contact between two bodies is uniquely characterized
-   by two triples of names: (model instance name, body name, geometry name).
-   In the visualizer, these triples will help distinguish contacts which might
-   otherwise be ambiguous (i.e., contact with two bodies, both called "box" but
-   part of different model instances).
-
-   The name of each collision geometry is determined by the
-   `geometry_name_lookup` functor. If omitted, each geometry will have a name
-   based on the stringified version of its GeometryId (i.e., "Id(7)") in the
-   visualizer. This behavior can be modified by providing a lookup functor. The
-   most common source would be by passing in
-   geometry::SceneGraph::geometry_name_lookup() as the value for
-   `geometry_name_lookup` (which will guarantee the geometry names in
-   visualization match the names in SceneGraph).
-
-   @param plant                 The MultibodyPlant that the ContactResults are
-                                generated from.
-   @param geometry_name_lookup  An *optional* functor for mapping GeometryId
-                                values to names.
-   @throws std::exception if a GeometryId found in `plant` is not recognized by
-                          the functor `geometry_name_lookup` and it chooses to
-                          throw.
+   @param plant   The MultibodyPlant that the ContactResults are generated from.
    @pre The `plant` parameter (or a fully equivalent plant) connects to `this`
         system's input port .
    @pre The `plant` parameter is finalized. */
-  ContactResultsToLcmSystem(
-      const MultibodyPlant<T>& plant,
-      const std::function<std::string(geometry::GeometryId)>&
-          geometry_name_lookup = nullptr);
+  explicit ContactResultsToLcmSystem(const MultibodyPlant<T>& plant);
 
-  /** Scalar-converting copy constructor.  */
+  /** Scalar-converting copy constructor. */
   template <typename U>
   explicit ContactResultsToLcmSystem(const ContactResultsToLcmSystem<U>& other)
       : ContactResultsToLcmSystem<T>(true) {
     geometry_id_to_body_name_map_ = other.geometry_id_to_body_name_map_;
     body_names_ = other.body_names_;
-    /* While we set a default name, in case the user has set it, we want to
-     persist it. */
-    this->set_name(other.get_name());
   }
 
   const systems::InputPort<T>& get_contact_result_input_port() const;
@@ -105,6 +105,13 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
  private:
   friend class ContactResultsToLcmTester;
+  // The connection function gets friend access so it can call the name-look up
+  // functor constructor.
+  friend systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
+      systems::DiagramBuilder<double>*, const MultibodyPlant<double>&,
+      const systems::OutputPort<double>&,
+      const std::function<std::string(geometry::GeometryId)>&,
+      lcm::DrakeLcmInterface*);
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -113,6 +120,12 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   // Special constructor that handles configuring ports. Used by both public
   // constructor and scalar-converting copy constructor.
   explicit ContactResultsToLcmSystem(bool);
+
+  // Constructs the system using the given geometry id -> name look up functor.
+  ContactResultsToLcmSystem(
+      const MultibodyPlant<T>& plant,
+      const std::function<std::string(geometry::GeometryId)>&
+          geometry_name_lookup);
 
   void CalcLcmContactOutput(const systems::Context<T>& context,
                             lcmt_contact_results_for_viz* output) const;
@@ -149,70 +162,91 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   std::vector<std::string> body_names_;
 };
 
-// TODO(SeanCurtis-TRI): This is, strictly speaking, a styleguide infraction.
-//  https://drake.mit.edu/styleguide/cppguide.html#Inputs_and_Outputs
-//  "put all input-only parameters before any output parameters". However,
-//  because of the nature of default parameters, by appending the optional
-//  functor to the end, all current call sites will continue to work without
-//  any deprecation actions. Consider going through deprecation to change the
-//  order to match the style.
-/** Extends a Diagram with the required components to publish contact results
- to drake_visualizer. This must be called _during_ Diagram building and
- uses the given `builder` to add relevant subsystems and connections.
+/** @name Visualizing contact results
+ @anchor contact_result_vis_creation
 
- This is a convenience method to simplify some common boilerplate for adding
- contact results visualization capability to a Diagram. What it does is:
+ These methods extend a Diagram with the required components to publish contact
+ results (as reported by MultibodyPlant) to drake_visualizer. We recommend
+ using these methods instead of assembling the requisite components by hand.
 
- - adds systems ContactResultsToLcmSystem and LcmPublisherSystem to
-   the Diagram and connects the draw message output to the publisher input,
- - connects the `multibody_plant` contact results output to the
+ These must be called _during_ Diagram building and uses the given `builder` to
+ add relevant subsystems and connections. This includes:
+
+ - adds systems ContactResultsToLcmSystem and LcmPublisherSystem to the Diagram
+   and connects the draw message output to the publisher input,
+ - connects a ContactResults<double>-valued output port to the
    ContactResultsToLcmSystem system, and
  - sets the publishing rate to 1/60 of a second (simulated time).
 
+ The four variants differ in the following ways:
+
+  - Two overloads take a SceneGraph and two don't. Those that do will ensure
+    that the geometry names communicated in the lcm messages match the names
+    used in SceneGraph. Those that don't default to the naming convention
+    documented in ContactResultsToLcmSystem.
+  - Two overloads take an OutputPort and two don't. This determines what is
+    connected to the ContactResultsToLcmSystem input port. The overloads that
+    specify an OutputPort will attempt to connect that port. Those that don't
+    will connect the given plant's contact results output port.
+
+ The parameters have the following semantics:
+
  @param builder                The diagram builder being used to construct the
-                               Diagram.
- @param multibody_plant        The System in `builder` containing the plant
+                               Diagram. Systems will be added to this builder.
+ @param plant                  The System in `builder` containing the plant
                                whose contact results are to be visualized.
+ @param scene_graph            The SceneGraph that will determine how the
+                               geometry names will appear in the lcm message.
  @param lcm                    An optional lcm interface through which lcm
                                messages will be dispatched. Will be allocated
-                               internally if none is supplied.
- @param geometry_name_lookup   The *optional* functor for mapping GeometryId
-                               values to names. See the
-                               ContactResultsToLcmSystem constructor for more
-                               details.
+                               internally if none is supplied. If one is given,
+                               it must remain alive at least as long as the
+                               diagram built from `builder`.
+ @param contact_results_port   The optional port that will be connected to the
+                               ContactResultsToLcmSystem (as documented above).
 
- @pre The given `multibody_plant` must be contained within the supplied
-      DiagramBuilder.
+ @returns (for all overloads) the LcmPublisherSystem (in case callers, e.g.,
+          need to change the default publishing rate).
 
- @returns the LcmPublisherSystem (in case callers, e.g., need to change the
- default publishing rate).
+ @pre `plant` is contained within the supplied `builder`.
+ @pre `scene_graph` (if given) is contained with the supplied `builder`.
+ @pre `contact_results_port` (if given) belongs to a system that is an immediate
+      child of `builder`. */
+//@{
 
+/** MultibodyPlant-connecting, default-named geometry overload.
  @ingroup visualization */
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& multibody_plant,
-    lcm::DrakeLcmInterface* lcm = nullptr,
-    const std::function<std::string(geometry::GeometryId)>&
-        geometry_name_lookup = nullptr);
+    const MultibodyPlant<double>& plant,
+    lcm::DrakeLcmInterface* lcm = nullptr);
 
-/** Implements ConnectContactResultsToDrakeVisualizer, but using
- explicitly specified `contact_results_port` and `geometry_input_port`
- arguments.  This call is required, for instance, when the MultibodyPlant is
- inside a Diagram, and the Diagram exports the pose bundle port.
-
- @pre contact_results_port must be connected to the contact_results_port of
- @p multibody_plant.
-
- @see ConnectContactResultsToDrakeVisualizer().
-
+/** MultibodyPlant-connecting, SceneGraph-named geometry overload.
  @ingroup visualization */
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& multibody_plant,
+    const MultibodyPlant<double>& plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** OutputPort-connecting, default-named geometry overload.
+ @ingroup visualization */
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr,
-    const std::function<std::string(geometry::GeometryId)>&
-        geometry_name_lookup = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** OutputPort-connecting, SceneGraph-named geometry overload.
+ @ingroup visualization */
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    const systems::OutputPort<double>& contact_results_port,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+//@}
 
 }  // namespace multibody
 }  // namespace drake
