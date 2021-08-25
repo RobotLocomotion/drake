@@ -358,7 +358,9 @@ TEST_F(IbexSolverTest, InvalidValues) {
   }
 }
 
-class IbexSolverOptionTest1 : public ::testing::Test {
+// The tests based on the following class are disabled temporarily due to a
+// memory-leak in IBEX. See #15662.
+class DISABLED_IbexSolverOptionTest1 : public ::testing::Test {
  protected:
   void SetUp() override {
     x_ = prog_.NewContinuousVariables(3, "x");
@@ -411,7 +413,7 @@ class IbexSolverOptionTest1 : public ::testing::Test {
   }
 }
 
-TEST_F(IbexSolverOptionTest1, RelEpsF) {
+TEST_F(DISABLED_IbexSolverOptionTest1, RelEpsF) {
   const SolverOptions options1;  // defaults.
   SolverOptions options2;
   options2.SetOption(solver_.id(), "rel_eps_f", 1.0);
@@ -419,7 +421,7 @@ TEST_F(IbexSolverOptionTest1, RelEpsF) {
       CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
 }
 
-TEST_F(IbexSolverOptionTest1, AbsEpsF) {
+TEST_F(DISABLED_IbexSolverOptionTest1, AbsEpsF) {
   const SolverOptions options1;  // defaults.
   SolverOptions options2;
   options2.SetOption(solver_.id(), "abs_eps_f", 1.0);
@@ -427,7 +429,7 @@ TEST_F(IbexSolverOptionTest1, AbsEpsF) {
       CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
 }
 
-TEST_F(IbexSolverOptionTest1, RandomSeed) {
+TEST_F(DISABLED_IbexSolverOptionTest1, RandomSeed) {
   const SolverOptions options1;  // defaults.
   SolverOptions options2;
   options2.SetOption(solver_.id(), "random_seed", 7.0);
@@ -435,7 +437,7 @@ TEST_F(IbexSolverOptionTest1, RandomSeed) {
       CheckIfIbexBehavesDifferently(solver_, prog_, options1, options2));
 }
 
-TEST_F(IbexSolverOptionTest1, EpsX) {
+TEST_F(DISABLED_IbexSolverOptionTest1, EpsX) {
   const SolverOptions options1;  // defaults.
   SolverOptions options2;
   options2.SetOption(solver_.id(), "eps_x", 1.0);
@@ -446,7 +448,7 @@ TEST_F(IbexSolverOptionTest1, EpsX) {
 // The following Trace0, Trace1, and Trace2 test cases run the solver with
 // different 'trace' option values. We cannot check messages written to the
 // console; we're simply testing exception-free execution.
-TEST_F(IbexSolverOptionTest1, Trace0) {
+TEST_F(DISABLED_IbexSolverOptionTest1, Trace0) {
   if (solver_.available()) {
     SolverOptions solver_options;
     solver_options.SetOption(solver_.id(), "trace", 0);
@@ -454,7 +456,7 @@ TEST_F(IbexSolverOptionTest1, Trace0) {
   }
 }
 
-TEST_F(IbexSolverOptionTest1, Trace1) {
+TEST_F(DISABLED_IbexSolverOptionTest1, Trace1) {
   if (solver_.available()) {
     SolverOptions solver_options;
     solver_options.SetOption(solver_.id(), "trace", 1);
@@ -462,7 +464,7 @@ TEST_F(IbexSolverOptionTest1, Trace1) {
   }
 }
 
-TEST_F(IbexSolverOptionTest1, Trace2) {
+TEST_F(DISABLED_IbexSolverOptionTest1, Trace2) {
   if (solver_.available()) {
     SolverOptions solver_options;
     solver_options.SetOption(solver_.id(), "trace", 2);
@@ -470,7 +472,7 @@ TEST_F(IbexSolverOptionTest1, Trace2) {
   }
 }
 
-TEST_F(IbexSolverOptionTest1, Timeout) {
+TEST_F(DISABLED_IbexSolverOptionTest1, Timeout) {
   const SolverOptions options1;  // defaults.
   SolverOptions options2;
   options2.SetOption(solver_.id(), "timeout", 1e-30);
