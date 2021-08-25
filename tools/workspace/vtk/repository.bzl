@@ -109,7 +109,7 @@ def _impl(repository_ctx):
             archive = "vtk-8.2.0-1-python-3.8.5-qt-5.12.8-focal-x86_64.tar.gz"
             sha256 = "927811bbecb1537c7d46c2eb73112ee7d46caf5ff765b5b8951b624ddf7d2928"  # noqa
         else:
-            fail("Operating system is NOT supported", attr = os_result)
+            fail("Operating system is NOT supported {}".format(os_result))
 
         urls = [
             x.format(archive = archive)
@@ -125,7 +125,7 @@ def _impl(repository_ctx):
         )
 
     else:
-        fail("Operating system is NOT supported", attr = os_result)
+        fail("Operating system is NOT supported {}".format(os_result))
 
     file_content = """# -*- python -*-
 

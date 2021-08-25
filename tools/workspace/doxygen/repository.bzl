@@ -43,7 +43,7 @@ def _impl(repo_ctx):
             type = "tar.gz",
         )
     else:
-        fail("Operating system is NOT supported", attr = os_result)
+        fail("Operating system is NOT supported {}".format(os_result))
 
 doxygen_repository = repository_rule(
     attrs = {
