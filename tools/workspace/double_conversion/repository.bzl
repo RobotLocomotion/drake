@@ -9,29 +9,29 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
+        build_flavor = "macos"
         repository_ctx.symlink(
             "/usr/local/opt/double-conversion/include",
             "include",
         )
-        repository_ctx.symlink(
-            Label(
-                "@drake//tools/workspace/double_conversion:package-macos.BUILD.bazel",  # noqa
-            ),
-            "BUILD.bazel",
-        )
     elif os_result.is_ubuntu:
+        build_flavor = "ubuntu"
         repository_ctx.symlink(
             "/usr/include/double-conversion",
             "include/double-conversion",
         )
-        repository_ctx.symlink(
-            Label(
-                "@drake//tools/workspace/double_conversion:package-ubuntu.BUILD.bazel",  # noqa
-            ),
-            "BUILD.bazel",
-        )
     else:
         fail("Operating system is NOT supported {}".format(os_result))
+
+    repository_ctx.symlink(
+        Label(
+            "@drake//tools/workspace/double_conversion:" +
+            "package-{}.BUILD.bazel".format(
+                build_flavor,
+            ),
+        ),
+        "BUILD.bazel",
+    )
 
 double_conversion_repository = repository_rule(
     local = True,
