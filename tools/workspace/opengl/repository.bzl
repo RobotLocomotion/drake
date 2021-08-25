@@ -30,7 +30,7 @@ def _impl(repository_ctx):
             "BUILD.bazel",
         )
     else:
-        fail("Operating system is NOT supported", attr = os_result)
+        fail("Operating system is NOT supported {}".format(os_result))
 
 opengl_repository = repository_rule(
     local = True,

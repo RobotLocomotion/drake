@@ -53,7 +53,7 @@ def _impl(repository_ctx):
         urls = ubuntu_urls
         sha256 = ubuntu_sha256
     else:
-        fail("Operating system is NOT supported", attr = os_result)
+        fail("Operating system is NOT supported {}".format(os_result))
 
     # Fetch the binary from mirrors.
     output = repository_ctx.path("buildifier")

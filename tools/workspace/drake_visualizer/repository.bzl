@@ -50,7 +50,7 @@ def _impl(repository_ctx):
         sha256 = "282438d7fabd72dddc8a9f5b3b7481b6b6ea53e4355f79f5bda1dae6e258d6be"  # noqa
         python_version = "3.8"
     else:
-        fail("Operating system is NOT supported", attr = os_result)
+        fail("Operating system is NOT supported {}".format(os_result))
 
     urls = [
         x.format(archive = archive)

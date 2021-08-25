@@ -41,7 +41,7 @@ def _impl(repo_ctx):
             ))
         return
     if os_result.ubuntu_release not in ["18.04", "20.04"]:
-        fail("Operating system is NOT supported", attr = os_result)
+        fail("Operating system is NOT supported {}".format(os_result))
     result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
         fail("Unable to complete setup for @{} repository: {}".format(
