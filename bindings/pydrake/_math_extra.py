@@ -24,12 +24,57 @@ As an example::
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
+import functools
 import operator
 
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd as _AutoDiffXd
-from pydrake.symbolic import Expression as _Expression
+import pydrake.symbolic as _sym
+
+_sym_cls_list = (
+    _sym.Expression,
+    _sym.Variable,
+)
+
+
+def _is_elementwise_comparison_error(e):
+    return (
+        # Newer error message (numpy >= 1.16.0).
+        "elementwise comparison failed" in str(e)
+        # Older error messages.
+        or "elementwise == comparison failed" in str(e)
+        or "elementwise != comparison failed" in str(e)
+    )
+
+
+def _best_effort_rich_compare(a, b, *, oper):
+    try:
+        return oper(a, b)
+    except RuntimeError as e:
+        if "not call `__bool__` / `__nonzero__` on `Formula`" in str(e):
+            if isinstance(a, _sym_cls_list):
+                return oper(a, _sym.Expression(b))
+            elif isinstance(b, _sym_cls_list):
+                return oper(_sym.Expression(a), b)
+        raise
+    except DeprecationWarning as e:
+        # N.B. This is only appears to be triggered for symbolic types.
+        if _is_elementwise_comparison_error(e):
+            if isinstance(a, np.generic):
+                a = float(a)
+            elif isinstance(b, np.generic):
+                b = float(b)
+            else:
+                raise RuntimeError("Unexpected condition")
+            return oper(a, b)
+        raise
+
+
+def _drake_vectorize(oper, *, doc):
+    wrapped = functools.partial(_best_effort_rich_compare, oper=oper)
+    return np.vectorize(wrapped, doc=doc)
+
 
 # As mentioned in top-level, add generic logical operators as ufuncs so that we
 # may do comparisons on arrays of any scalar type, without restriction on the
@@ -38,12 +83,24 @@ from pydrake.symbolic import Expression as _Expression
 # type is not bool.
 # N.B. Defined in order listed in Python documentation:
 # https://docs.python.org/3.6/library/operator.html
-lt = np.vectorize(operator.lt)
-le = np.vectorize(operator.le)
-eq = np.vectorize(operator.eq)
-ne = np.vectorize(operator.ne)
-ge = np.vectorize(operator.ge)
-gt = np.vectorize(operator.gt)
+lt = _drake_vectorize(operator.lt, doc="Drake's vectorized `lt`")
+le = _drake_vectorize(operator.le, doc="Drake's vectorized `le`")
+eq = _drake_vectorize(operator.eq, doc="Drake's vectorized `eq`")
+ne = _drake_vectorize(operator.ne, doc="Drake's vectorized `ne`")
+ge = _drake_vectorize(operator.ge, doc="Drake's vectorized `ge`")
+gt = _drake_vectorize(operator.gt, doc="Drake's vectorized `gt`")
+
+# The following values are defined for testing.
+_OPERATORS = (lt, le, eq, ne, ge, gt)
+# - Equivalent expression when operands are reversed.
+_OPERATORS_REVERSE = {
+    lt: gt,
+    le: ge,
+    eq: eq,
+    ne: ne,
+    ge: le,
+    gt: lt,
+}
 
 
 def _indented_repr(o):
@@ -78,7 +135,7 @@ def _rigid_transform_repr(X):
 
 RotationMatrix_[float].__repr__ = _rotation_matrix_repr
 RotationMatrix_[_AutoDiffXd].__repr__ = _rotation_matrix_repr
-RotationMatrix_[_Expression].__repr__ = _rotation_matrix_repr
+RotationMatrix_[_sym.Expression].__repr__ = _rotation_matrix_repr
 RigidTransform_[float].__repr__ = _rigid_transform_repr
 RigidTransform_[_AutoDiffXd].__repr__ = _rigid_transform_repr
-RigidTransform_[_Expression].__repr__ = _rigid_transform_repr
+RigidTransform_[_sym.Expression].__repr__ = _rigid_transform_repr
