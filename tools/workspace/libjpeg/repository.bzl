@@ -9,12 +9,10 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
+        build_flavor = "macos"
         repository_ctx.symlink("/usr/local/opt/jpeg/include", "include")
-        repository_ctx.symlink(
-            Label("@drake//tools/workspace/libjpeg:package-macos.BUILD.bazel"),
-            "BUILD.bazel",
-        )
     elif os_result.is_ubuntu:
+        build_flavor = "ubuntu"
         for hdr in ["jerror.h", "jmorecfg.h", "jpegint.h", "jpeglib.h"]:
             repository_ctx.symlink(
                 "/usr/include/{}".format(hdr),
@@ -24,14 +22,17 @@ def _impl(repository_ctx):
             "/usr/include/x86_64-linux-gnu/jconfig.h",
             "include/jconfig.h",
         )
-        repository_ctx.symlink(
-            Label(
-                "@drake//tools/workspace/libjpeg:package-ubuntu.BUILD.bazel",
-            ),
-            "BUILD.bazel",
-        )
     else:
         fail("Operating system is NOT supported {}".format(os_result))
+
+    repository_ctx.symlink(
+        Label(
+            "@drake//tools/workspace/libjpeg:package-{}.BUILD.bazel".format(
+                build_flavor,
+            ),
+        ),
+        "BUILD.bazel",
+    )
 
 libjpeg_repository = repository_rule(
     local = True,

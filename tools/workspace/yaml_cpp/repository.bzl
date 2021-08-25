@@ -9,29 +9,25 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
+        build_flavor = "macos"
         repository_ctx.symlink(
             "/usr/local/opt/yaml-cpp/include/yaml-cpp",
             "include/yaml-cpp",
         )
-        repository_ctx.symlink(
-            Label(
-                "@drake//tools/workspace/yaml_cpp:package-macos.BUILD.bazel",
-            ),
-            "BUILD.bazel",
-        )
     elif os_result.is_ubuntu:
+        build_flavor = "ubuntu-{}".format(os_result.ubuntu_release)
         repository_ctx.symlink("/usr/include/yaml-cpp", "include/yaml-cpp")
-        repository_ctx.symlink(
-            Label(
-                ("@drake//tools/workspace/yaml_cpp" +
-                 ":package-ubuntu-{}.BUILD.bazel").format(
-                    os_result.ubuntu_release,
-                ),
-            ),
-            "BUILD.bazel",
-        )
     else:
         fail("Operating system is NOT supported {}".format(os_result))
+
+    repository_ctx.symlink(
+        Label(
+            "@drake//tools/workspace/yaml_cpp:package-{}.BUILD.bazel".format(
+                build_flavor,
+            ),
+        ),
+        "BUILD.bazel",
+    )
 
 yaml_cpp_repository = repository_rule(
     local = True,
