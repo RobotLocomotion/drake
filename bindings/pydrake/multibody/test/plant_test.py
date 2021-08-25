@@ -1927,23 +1927,14 @@ class TestPlant(unittest.TestCase):
         plant.set_stiction_tolerance(v_stiction=0.001)
         self.assertIsInstance(
             plant.get_contact_penalty_method_time_scale(), float)
-        # There are two versions of the constructor; one takes a name functor,
-        # one does not. Test both.
-        for use_custom_names in (True, False):
-            if use_custom_names:
-                def make_names(id):
-                    return f"PydrakeTestName{id}"
-                contact_results_to_lcm = ContactResultsToLcmSystem(
-                    plant=plant, geometry_name_lookup=make_names)
-            else:
-                contact_results_to_lcm = ContactResultsToLcmSystem(plant=plant)
-            context = contact_results_to_lcm.CreateDefaultContext()
-            contact_results_to_lcm.get_input_port(0).FixValue(
-                context, ContactResults_[float]())
-            output = contact_results_to_lcm.AllocateOutput()
-            contact_results_to_lcm.CalcOutput(context, output)
-            result = output.get_data(0)
-            self.assertIsInstance(result, AbstractValue)
+        contact_results_to_lcm = ContactResultsToLcmSystem(plant=plant)
+        context = contact_results_to_lcm.CreateDefaultContext()
+        contact_results_to_lcm.get_input_port(0).FixValue(
+            context, ContactResults_[float]())
+        output = contact_results_to_lcm.AllocateOutput()
+        contact_results_to_lcm.CalcOutput(context, output)
+        result = output.get_data(0)
+        self.assertIsInstance(result, AbstractValue)
 
     def test_connect_contact_results(self):
         # There are two versions of the function; one takes a SceneGraph, one
@@ -1952,16 +1943,14 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         for use_custom_names in (True, False):
             builder = DiagramBuilder_[float]()
+            plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
             plant = builder.AddSystem(MultibodyPlant_[float](0.001))
             Parser(plant).AddModelFromFile(file_name)
             plant.Finalize()
 
             if use_custom_names:
-                def make_names(id):
-                    return f"PydrakeTestName{id}"
                 publisher = ConnectContactResultsToDrakeVisualizer(
-                    builder=builder, plant=plant,
-                    geometry_name_lookup=make_names)
+                    builder=builder, plant=plant, scene_graph=scene_graph)
             else:
                 publisher = ConnectContactResultsToDrakeVisualizer(
                     builder=builder, plant=plant)

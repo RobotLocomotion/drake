@@ -419,14 +419,6 @@ TEST_F(SceneGraphTest, ModelInspector) {
   EXPECT_EQ(inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
                                           Role::kUnassigned, "sphere"),
             anchored_id);
-
-  // We'll also test the geometry name lookup as it is closely related to the
-  // model inspector. Simply confirm that it returns the same value as the
-  // corresponding query on the SceneGraphInspector.
-  auto name_lookup = scene_graph_.geometry_name_lookup();
-  for (const GeometryId id : {anchored_id, sphere_1, sphere_2}) {
-    EXPECT_EQ(inspector.GetName(id), name_lookup(id));
-  }
 }
 
 // SceneGraph provides a thin wrapper on the GeometryState renderer

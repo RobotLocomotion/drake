@@ -1143,9 +1143,7 @@ PYBIND11_MODULE(plant, m) {
     constexpr auto& cls_doc = doc.ContactResultsToLcmSystem;
     py::class_<Class, systems::LeafSystem<T>>(
         m, "ContactResultsToLcmSystem", cls_doc.doc)
-        .def(py::init<const MultibodyPlant<T>&,
-                 const std::function<std::string(geometry::GeometryId)>&>(),
-            py::arg("plant"), py::arg("geometry_name_lookup") = nullptr,
+        .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
             cls_doc.ctor.doc)
         .def("get_contact_result_input_port",
             &Class::get_contact_result_input_port, py_rvp::reference_internal,
@@ -1158,40 +1156,41 @@ PYBIND11_MODULE(plant, m) {
   m.def(
       "ConnectContactResultsToDrakeVisualizer",
       [](systems::DiagramBuilder<double>* builder,
-          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm,
-          const std::function<std::string(geometry::GeometryId)>&
-              geometry_name_lookup) {
+          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
-            builder, plant, lcm, geometry_name_lookup);
+            builder, plant, lcm);
       },
       py::arg("builder"), py::arg("plant"), py::arg("lcm") = nullptr,
-      py::arg("geometry_name_lookup") = nullptr, py_rvp::reference,
+      py_rvp::reference,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // Keep alive, transitive: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(),
-      doc.ConnectContactResultsToDrakeVisualizer.doc_4args);
+      doc.ConnectContactResultsToDrakeVisualizer.doc_3args_builder_plant_lcm);
 
   m.def(
       "ConnectContactResultsToDrakeVisualizer",
       [](systems::DiagramBuilder<double>* builder,
-          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm,
-          const std::function<std::string(geometry::GeometryId)>&
-              geometry_name_lookup) {
+          const MultibodyPlant<double>& plant,
+          const geometry::SceneGraph<double>& scene_graph,
+          lcm::DrakeLcmInterface* lcm) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
-            builder, plant, lcm, geometry_name_lookup);
+            builder, plant, scene_graph, lcm);
       },
-      py::arg("builder"), py::arg("plant"), py::arg("lcm") = nullptr,
-      py_rvp::reference, py::arg("geometry_name_lookup") = nullptr,
+      py::arg("builder"), py::arg("plant"), py::arg("scene_graph"),
+      py::arg("lcm") = nullptr, py_rvp::reference,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // Keep alive, transitive: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
-      // Keep alive, transitive: `lcm` keeps `builder` alive.
+      // Keep alive, transitive: `scene_graph` keeps `builder` alive.
       py::keep_alive<3, 1>(),
-      doc.ConnectContactResultsToDrakeVisualizer.doc_5args);
+      // Keep alive, transitive: `lcm` keeps `builder` alive.
+      py::keep_alive<4, 1>(),
+      doc.ConnectContactResultsToDrakeVisualizer
+          .doc_4args_builder_plant_scene_graph_lcm);
 
   {
     using Class = PropellerInfo;

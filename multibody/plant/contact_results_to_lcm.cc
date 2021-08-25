@@ -53,7 +53,31 @@ std::string id_as_label(GeometryId id) {
   return fmt::format("Id({})", id);
 }
 
+std::function<std::string(GeometryId)> make_geometry_names(
+    const geometry::SceneGraph<double>& scene_graph) {
+  return [&inspector = scene_graph.model_inspector()](GeometryId id) {
+    return inspector.GetName(id);
+  };
+}
+
 }  // namespace
+
+template <typename T>
+ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
+    const MultibodyPlant<T>& plant)
+    : ContactResultsToLcmSystem<T>(plant, &id_as_label) {}
+
+template <typename T>
+const systems::InputPort<T>&
+ContactResultsToLcmSystem<T>::get_contact_result_input_port() const {
+  return this->get_input_port(contact_result_input_port_index_);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+ContactResultsToLcmSystem<T>::get_lcm_message_output_port() const {
+  return this->get_output_port(message_output_port_index_);
+}
 
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
@@ -80,18 +104,6 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
                                                     namer(geometry_id)};
     }
   }
-}
-
-template <typename T>
-const systems::InputPort<T>&
-ContactResultsToLcmSystem<T>::get_contact_result_input_port() const {
-  return this->get_input_port(contact_result_input_port_index_);
-}
-
-template <typename T>
-const systems::OutputPort<T>&
-ContactResultsToLcmSystem<T>::get_lcm_message_output_port() const {
-  return this->get_output_port(message_output_port_index_);
 }
 
 template <typename T>
@@ -233,27 +245,19 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
   }
 }
 
-systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
-    systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& multibody_plant, lcm::DrakeLcmInterface* lcm,
-    const std::function<std::string(GeometryId)>& geometry_name_lookup) {
-  return ConnectContactResultsToDrakeVisualizer(
-      builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(), lcm,
-      geometry_name_lookup);
-}
-
-systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm,
-    const std::function<std::string(GeometryId)>& geometry_name_lookup) {
+    const std::function<std::string(GeometryId)>& name_lookup,
+    lcm::DrakeLcmInterface* lcm) {
   DRAKE_DEMAND(builder != nullptr);
 
+  // Note: Can't usee AddSystem<System> or make_unique<System> because neither
+  // of those have access to the private constructor.
   ContactResultsToLcmSystem<double>* contact_to_lcm =
-      builder->template AddSystem<ContactResultsToLcmSystem<double>>(
-          multibody_plant, geometry_name_lookup);
+      builder->AddSystem(std::unique_ptr<ContactResultsToLcmSystem<double>>(
+          new ContactResultsToLcmSystem<double>(multibody_plant, name_lookup)));
   contact_to_lcm->set_name("contact_to_lcm");
 
   auto contact_results_publisher = builder->AddSystem(
@@ -266,6 +270,47 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
   builder->Connect(*contact_to_lcm, *contact_results_publisher);
 
   return contact_results_publisher;
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    lcm::DrakeLcmInterface* lcm) {
+  return ConnectWithNameLookup(
+      builder, multibody_plant,
+      multibody_plant.get_contact_results_output_port(), &id_as_label, lcm);
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm) {
+  return ConnectWithNameLookup(
+      builder, multibody_plant,
+      multibody_plant.get_contact_results_output_port(),
+      make_geometry_names(scene_graph), lcm);
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const systems::OutputPort<double>& contact_results_port,
+    lcm::DrakeLcmInterface* lcm) {
+  return ConnectWithNameLookup(
+      builder, multibody_plant, contact_results_port, &id_as_label, lcm);
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    const systems::OutputPort<double>& contact_results_port,
+    lcm::DrakeLcmInterface* lcm) {
+  return ConnectWithNameLookup(
+      builder, multibody_plant,
+      contact_results_port,
+      make_geometry_names(scene_graph), lcm);
 }
 
 }  // namespace multibody
