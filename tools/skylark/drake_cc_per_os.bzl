@@ -4,6 +4,10 @@
 # @drake_detected_os is somewhat brittle and might present challenges
 # for users exploring novel platforms.
 
+# TODO(jwnimmer-tri) For the moment, these functions are named "ubuntu",
+# but also are armed on "manylinux".  We should probably rework the names
+# and/or documentation to be more clear on this point.
+
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -25,7 +29,7 @@ def drake_cc_googletest_ubuntu_only(
     Because this test is not cross-platform, the visibility defaults to
     private.
     """
-    if DISTRIBUTION == "ubuntu":
+    if DISTRIBUTION in ["ubuntu", "manylinux"]:
         drake_cc_googletest(
             name = name,
             visibility = visibility,
@@ -43,7 +47,7 @@ def drake_cc_library_ubuntu_only(
     Because this library is not cross-platform, the visibility defaults to
     private and the headers are excluded from the installation.
     """
-    if DISTRIBUTION == "ubuntu":
+    if DISTRIBUTION in ["ubuntu", "manylinux"]:
         drake_cc_library(
             name = name,
             hdrs = hdrs,
@@ -61,5 +65,5 @@ def drake_cc_package_library_per_os(
     """
     if DISTRIBUTION == "macos":
         drake_cc_package_library(deps = macos_deps, **kwargs)
-    elif DISTRIBUTION == "ubuntu":
+    elif DISTRIBUTION in ["ubuntu", "manylinux"]:
         drake_cc_package_library(deps = ubuntu_deps, **kwargs)

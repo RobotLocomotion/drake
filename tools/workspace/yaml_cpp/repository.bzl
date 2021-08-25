@@ -17,6 +17,14 @@ def _impl(repository_ctx):
     elif os_result.is_ubuntu:
         build_flavor = "ubuntu-{}".format(os_result.ubuntu_release)
         repository_ctx.symlink("/usr/include/yaml-cpp", "include/yaml-cpp")
+    elif os_result.is_manylinux:
+        build_flavor = "ubuntu-20.04"
+        repository_ctx.symlink(
+            # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
+            # using manylinux.
+            "/opt/drake-dependencies/include/yaml-cpp",
+            "include/yaml-cpp",
+        )
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 

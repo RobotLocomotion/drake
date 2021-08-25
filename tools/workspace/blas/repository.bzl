@@ -19,5 +19,6 @@ def blas_repository(name):
         mapping = {
             "macOS default": ["blas=@openblas"],
             "Ubuntu default": ["blas=@libblas"],
+            "manylinux": ["blas=@libblas"],
         },
     )

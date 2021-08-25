@@ -16,6 +16,7 @@ def _gurobi_impl(repo_ctx):
         # Gurobi must be installed into its standard location.
         gurobi_home = "/Library/gurobi902/mac64"
         repo_ctx.symlink(gurobi_home, "gurobi-distro")
+        build_flavor = "macos"
     else:
         # The default directory for the downloaded gurobi is
         # /opt/gurobi902/linux64. If the user does not use the default
@@ -26,12 +27,13 @@ def _gurobi_impl(repo_ctx):
             gurobi_home or "/opt/gurobi902/linux64",
             "gurobi-distro",
         )
+        build_flavor = "ubuntu"
 
     # Emit the generated BUILD.bazel file.
     repo_ctx.template(
         "BUILD.bazel",
         Label("@drake//tools/workspace/gurobi:" +
-              "package-{}.BUILD.bazel.in".format(os_result.distribution)),
+              "package-{}.BUILD.bazel.in".format(build_flavor)),
         substitutions = {
             "{gurobi_home}": gurobi_home,
         },

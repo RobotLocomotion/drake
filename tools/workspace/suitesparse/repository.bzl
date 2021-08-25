@@ -16,6 +16,11 @@ def _impl(repo_ctx):
     elif os_result.is_macos:
         include = "/usr/local/opt/suite-sparse/include"
         lib = "/usr/local/opt/suite-sparse/lib"
+    elif os_result.is_manylinux:
+        # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
+        # using manylinux.
+        include = "/opt/drake-dependencies/include"
+        lib = "/opt/drake-dependencies/lib"
     else:
         fail("Unknown OS")
 

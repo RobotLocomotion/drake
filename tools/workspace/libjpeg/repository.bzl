@@ -22,6 +22,8 @@ def _impl(repository_ctx):
             "/usr/include/x86_64-linux-gnu/jconfig.h",
             "include/jconfig.h",
         )
+    elif os_result.is_manylinux:
+        build_flavor = "ubuntu"
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
