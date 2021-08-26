@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
