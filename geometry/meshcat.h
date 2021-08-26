@@ -131,6 +131,8 @@ class Meshcat {
               See @ref meshcat_path for the semantics.
   @param property the string name of the property to set
   @param value the new value.
+
+  @pydrake_mkdoc_identifier{bool}
   */
   void SetProperty(std::string_view path, std::string property, bool value);
 
@@ -146,6 +148,8 @@ class Meshcat {
               See @ref meshcat_path for the semantics.
   @param property the string name of the property to set
   @param value the new value.
+
+  @pydrake_mkdoc_identifier{double}
   */
   void SetProperty(std::string_view path, std::string property, double value);
 

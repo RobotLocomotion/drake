@@ -147,7 +147,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
 
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   MeshcatVisualizerParams params;
-  params.delete_prefix_on_initialization_event = true;
+  params.delete_on_intialization_event = true;
   SetUpDiagram(params);
   // Scribble a transform onto the scene tree beneath the visualizer prefix.
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
@@ -163,7 +163,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
 
   // Repeat, but this time with delete prefix disabled.
-  params.delete_prefix_on_initialization_event = false;
+  params.delete_on_intialization_event = false;
   SetUpDiagram(params);
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
                         math::RigidTransformd());

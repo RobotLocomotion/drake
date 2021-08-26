@@ -19,6 +19,8 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_properties.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/iris.h"
@@ -952,6 +954,48 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
             cls_doc.DispatchLoadMessage.doc);
   }
+
+  // MeshcatVisualizer
+  {
+    using Class = MeshcatVisualizer<T>;
+    constexpr auto& cls_doc = doc.MeshcatVisualizer;
+    // Note that we are temporarily re-mapping MeshcatVisualizer =>
+    // MeshcatVisualizerCpp to avoid collisions with the python
+    // MeshcatVisualizer.  See #13038.
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatVisualizerCpp", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(),
+            py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            cls_doc.ctor.doc)
+        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
+                std::shared_ptr<Meshcat>, MeshcatVisualizerParams>(
+                &MeshcatVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("scene_graph"), py::arg("meshcat"),
+            py::arg("params") = MeshcatVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_meshcat_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, std::shared_ptr<Meshcat>,
+                MeshcatVisualizerParams>(&MeshcatVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_4args_builder_query_object_port_meshcat_params);
+  }
 }  // NOLINT(readability/fn_size)
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -1359,6 +1403,54 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("filename"), py::arg("scale") = 1.0,
       // N.B. We have not bound the optional "on_warning" argument.
       doc.ReadObjToSurfaceMesh.doc_3args_filename_scale_on_warning);
+
+  // Meshcat
+  {
+    using Class = Meshcat;
+    constexpr auto& cls_doc = doc.Meshcat;
+    py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("web_url", &Class::web_url, cls_doc.web_url.doc)
+        .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
+        .def("SetObject", &Class::SetObject, py::arg("path"), py::arg("shape"),
+            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc)
+        .def("SetTransform", &Class::SetTransform, py::arg("path"),
+            py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
+        .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
+        .def("SetProperty",
+            py::overload_cast<std::string_view, std::string, bool>(
+                &Class::SetProperty),
+            py::arg("path"), py::arg("property"), py::arg("value"),
+            cls_doc.SetProperty.doc_bool)
+        .def("SetProperty",
+            py::overload_cast<std::string_view, std::string, double>(
+                &Class::SetProperty),
+            py::arg("path"), py::arg("property"), py::arg("value"),
+            cls_doc.SetProperty.doc_double);
+    // Note: we intentionally do not bind the advanced methods (HasProperty and
+    // GetPacked*) which were intended primarily for testing in C++.
+  }
+
+  // MeshcatVisualizerParams
+  {
+    using Class = MeshcatVisualizerParams;
+    constexpr auto& cls_doc = doc.MeshcatVisualizerParams;
+    py::class_<Class>(
+        m, "MeshcatVisualizerParams", py::dynamic_attr(), cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("publish_period",
+            &MeshcatVisualizerParams::publish_period,
+            cls_doc.publish_period.doc)
+        .def_readwrite("role", &MeshcatVisualizerParams::role, cls_doc.role.doc)
+        .def_readwrite("default_color", &MeshcatVisualizerParams::default_color,
+            cls_doc.default_color.doc)
+        .def_readwrite(
+            "prefix", &MeshcatVisualizerParams::prefix, cls_doc.prefix.doc)
+        .def_readwrite("delete_on_intialization_event",
+            &MeshcatVisualizerParams::delete_on_intialization_event,
+            cls_doc.delete_on_intialization_event.doc);
+  }
 }
 
 void def_geometry(py::module m) {
