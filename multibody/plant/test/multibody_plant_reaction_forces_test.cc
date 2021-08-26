@@ -1,5 +1,7 @@
 #include <memory>
+#include <thread>
 
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -80,24 +82,6 @@ class LadderTest : public ::testing::Test {
     ConnectContactResultsToDrakeVisualizer(&builder, *plant_, &lcm_);
 
     diagram_ = builder.Build();
-
-    // Create a context for this system:
-    diagram_context_ = diagram_->CreateDefaultContext();
-    plant_context_ =
-        &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
-
-    // Set initial condition with the ladder leaning against the wall.
-    // We compute the angle in the pin joint for this condition.
-    const double theta = std::asin(kDistanceToWall / kLadderLength);
-    pin_->set_angle(plant_context_, theta);
-
-    // Fix the actuation.
-    const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
-    plant_->get_actuation_input_port().FixValue(plant_context_, tau_actuation);
-
-    if (locked_joint) {
-        joint_->Lock(plant_context_);
-    }
   }
 
   // Adds the model for a wall anchored to the wall.
@@ -181,39 +165,62 @@ class LadderTest : public ::testing::Test {
     plant_->AddJointActuator("PinActuator", *pin_);
   }
 
-  void VerifyJointReactionForces(bool locked_joint) {
-    // We validate the numerical results to be within this tolerance value,
-    // which is chosen consistently with the time the system is left to reach
-    // steady state and the integration accuracy (for the continuous model).
-    const double kTolerance = 1.0e-11;
+  // Build and run a simulator, and return it after simulating.
+  std::unique_ptr<Simulator<double>> Simulate(
+      std::unique_ptr<Context<double>> diagram_context, bool locked_joint) {
+    Context<double>* plant_context =
+        &diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
+
+    // Set initial condition with the ladder leaning against the wall.
+    // We compute the angle in the pin joint for this condition.
+    const double theta = std::asin(kDistanceToWall / kLadderLength);
+    pin_->set_angle(plant_context, theta);
+
+    // Fix the actuation.
+    const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
+    plant_->get_actuation_input_port().FixValue(plant_context, tau_actuation);
+
+    if (locked_joint) {
+        joint_->Lock(plant_context);
+    }
 
     // Sanity check model size.
-    ASSERT_EQ(plant_->num_bodies(), 3);
-    ASSERT_EQ(plant_->num_velocities(), locked_joint ? 2 : 1);
-    ASSERT_EQ(plant_->num_actuated_dofs(), 1);
+    auto sanity_check = [this, &locked_joint]() {
+      ASSERT_EQ(plant_->num_bodies(), 3);
+      ASSERT_EQ(plant_->num_velocities(), locked_joint ? 2 : 1);
+      ASSERT_EQ(plant_->num_actuated_dofs(), 1);
+    };
+    sanity_check();
 
     // We run a simulation to steady state so that contact forces balance
     // gravity and actuation.
-    Simulator<double> simulator(*diagram_, std::move(diagram_context_));
+    auto simulator = std::make_unique<Simulator<double>>(
+        *diagram_, std::move(diagram_context));
     // The default RK3 integrator requires specifying a very high accuracy to
     // reach steady state within kTolerance and therefore it is very costly.
     // However implicit Euler does a much better job with larger time steps.
-    simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>();
-    simulator.get_mutable_integrator().set_maximum_step_size(5e-3);
-    simulator.get_mutable_integrator().set_target_accuracy(1e-6);
-    simulator.Initialize();
+    simulator->reset_integrator<systems::ImplicitEulerIntegrator<double>>();
+    simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
+    simulator->get_mutable_integrator().set_target_accuracy(1e-6);
+    simulator->Initialize();
     const double simulation_time = 1.0;  // seconds.
-    simulator.AdvanceTo(simulation_time);
+    simulator->AdvanceTo(simulation_time);
+    return simulator;
+  }
 
+  void VerifyJointReactionForces(
+      Context<double>* diagram_context, bool locked_joint) {
+    Context<double>* plant_context =
+        &diagram_->GetMutableSubsystemContext(*plant_, diagram_context);
     // Evaluate the reaction forces output port to get the reaction force at the
     // pin joint. Re-express in the world frame W.
     const auto& reaction_forces =
         plant_->get_reaction_forces_output_port()
-            .Eval<std::vector<SpatialForce<double>>>(*plant_context_);
+            .Eval<std::vector<SpatialForce<double>>>(*plant_context);
     ASSERT_EQ(reaction_forces.size(), 2u);
     const SpatialForce<double>& F_Bl_Bl = reaction_forces[pin_->index()];
     const RigidTransformd X_WBl =
-        ladder_lower_->EvalPoseInWorld(*plant_context_);
+        ladder_lower_->EvalPoseInWorld(*plant_context);
     const SpatialForce<double> F_Bl_W = X_WBl.rotation() * F_Bl_Bl;
 
     // We evaluate the contact forces so that we can perform the balance of
@@ -221,7 +228,7 @@ class LadderTest : public ::testing::Test {
     // reaction forces port.
     const ContactResults<double>& contact_results =
         plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
-            *plant_context_);
+            *plant_context);
     // There should be a single contact pair.
     ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
     const PointPairContactInfo<double>& point_pair_contact_info =
@@ -243,7 +250,12 @@ class LadderTest : public ::testing::Test {
 
     // Position of the ladder's center of gravity.
     const Vector3d p_WBcm =
-        plant_->CalcCenterOfMassPositionInWorld(*plant_context_);
+        plant_->CalcCenterOfMassPositionInWorld(*plant_context);
+
+    // We validate the numerical results to be within this tolerance value,
+    // which is chosen consistently with the time the system is left to reach
+    // steady state and the integration accuracy (for the continuous model).
+    const double kTolerance = 1.0e-11;
 
     // The x component of the contact force must counteract the torque due to
     // gravity plus the actuation torque.
@@ -267,7 +279,7 @@ class LadderTest : public ::testing::Test {
 
     // Verify reaction forces at the joint.
     const RigidTransformd X_WBu =
-        ladder_upper_->EvalPoseInWorld(*plant_context_);
+        ladder_upper_->EvalPoseInWorld(*plant_context);
     const SpatialForce<double>& F_Bu_W =
         X_WBu.rotation() * reaction_forces[joint_->index()];
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
@@ -278,6 +290,39 @@ class LadderTest : public ::testing::Test {
         CompareMatrices(F_Bu_W.rotational(), t_Bu_expected, kTolerance));
     EXPECT_TRUE(
         CompareMatrices(F_Bu_W.translational(), f_Bu_expected, kTolerance));
+  }
+
+  void TestWithThreads(double time_step, bool locked_joint) {
+    SCOPED_TRACE(fmt::format("time_step = []", time_step));
+    BuildLadderModel(time_step, locked_joint);
+    ASSERT_EQ(plant_->is_discrete(), (time_step != 0.));
+
+    // Create the threads' contexts by cloning a prototype. This will help
+    // ensure the context deep copy is properly working.
+    auto context_prototype = diagram_->CreateDefaultContext();
+    auto simulator_prototype =
+        Simulate(std::move(context_prototype), locked_joint);
+    VerifyJointReactionForces(
+        &simulator_prototype->get_mutable_context(), locked_joint);
+
+    // Running the simulation in multiple threads here gives us a chance to
+    // check readiness for context-per-thread usage. Even though all threads
+    // are doing the same thing, ThreadSanitizer will be able to detect
+    // potential data races.
+    static constexpr int kThreads = 2;
+    std::vector<std::thread> threads;
+    for (int k = 0; k < kThreads; k++) {
+      threads.push_back(
+          std::thread([this, &simulator_prototype, &locked_joint]() {
+              auto context = simulator_prototype->get_context().Clone();
+              Simulate(std::move(context), locked_joint);
+              // We skip verifying forces here because system evolution
+              // invalidates the expected values used above.
+            }));
+    }
+    for (auto& thread : threads) {
+      thread.join();
+    }
   }
 
   // This problem essentially is two-dimensional.
@@ -315,37 +360,31 @@ class LadderTest : public ::testing::Test {
   const Joint<double>* joint_{nullptr};
 
   std::unique_ptr<Diagram<double>> diagram_;
-  std::unique_ptr<Context<double>> diagram_context_;
-  Context<double>* plant_context_{nullptr};
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
   static constexpr bool kIsJointLocked = false;
-  BuildLadderModel(0, kIsJointLocked);
-  ASSERT_FALSE(plant_->is_discrete());
-  VerifyJointReactionForces(kIsJointLocked);
+  TestWithThreads(0., kIsJointLocked);
 }
 
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
   static constexpr bool kIsJointLocked = false;
-  BuildLadderModel(1.0e-3, kIsJointLocked);
-  ASSERT_TRUE(plant_->is_discrete());
-  VerifyJointReactionForces(kIsJointLocked);
+  TestWithThreads(1.0e-3, kIsJointLocked);
 }
 
 // TODO(joemasterjohn) Expand the continuous locked joint test when continuous
 // joint locking is implemented.
 TEST_F(LadderTest, PinReactionForcesLockedJointContinuous) {
   static constexpr bool kIsJointLocked = true;
+  BuildLadderModel(0, kIsJointLocked);
+  auto context = diagram_->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      BuildLadderModel(0, kIsJointLocked), ".*is_state_discrete.*");
+      Simulate(std::move(context), kIsJointLocked), ".*is_state_discrete.*");
 }
 
 TEST_F(LadderTest, PinReactionForcesLockedJointDiscrete) {
   static constexpr bool kIsJointLocked = true;
-  BuildLadderModel(1.0e-3, kIsJointLocked);
-  ASSERT_TRUE(plant_->is_discrete());
-  VerifyJointReactionForces(kIsJointLocked);
+  TestWithThreads(1.0e-3, kIsJointLocked);
 }
 
 // This test verifies the computation of joint reaction forces for a case in
