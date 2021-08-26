@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
