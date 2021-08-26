@@ -1321,8 +1321,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "ibex_solver_test",
-    # Disable this test in valgrind build. See #15662.
-    tags = ["no_memcheck"],
     deps = [
         ":generic_trivial_constraint",
         ":generic_trivial_cost",

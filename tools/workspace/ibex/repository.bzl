@@ -85,12 +85,12 @@ ibex_repository = repository_rule(
         ),
         "filenames": attr.string_list(
             default = [
-                "libi/libibex-dev/libibex-dev_{}.20210515064156.git6b251454410e5b17655bba63ed3162be7c0d8772~18.04_amd64.deb".format(IBEX_VERSION),  # noqa
+                "libi/libibex-dev/libibex-dev_{}.20210826124156.git26eeeaae51b0f1518cbab9751c872b83801dbec8~18.04_amd64.deb".format(IBEX_VERSION),  # noqa
             ],
         ),
         "sha256s": attr.string_list(
             default = [
-                "cc28d2dee3ff5c44a8535d2d9f913e66d669044ae76953c3b4b31be496fa5ebe",  # noqa
+                "058ba0d538927c0e25b79cd73906abb1a15dc7ffef4f8407d8c6ae4add940e22",  # noqa
             ],
         ),
         "build_file": attr.label(
