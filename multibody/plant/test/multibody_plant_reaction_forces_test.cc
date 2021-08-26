@@ -1,4 +1,5 @@
 #include <memory>
+#include <thread>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -78,20 +79,6 @@ class LadderTest : public ::testing::Test {
     ConnectContactResultsToDrakeVisualizer(&builder, *plant_, &lcm_);
 
     diagram_ = builder.Build();
-
-    // Create a context for this system:
-    diagram_context_ = diagram_->CreateDefaultContext();
-    plant_context_ =
-        &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
-
-    // Set initial condition with the ladder leaning against the wall.
-    // We compute the angle in the pin joint for this condition.
-    const double theta = std::asin(kDistanceToWall / kLadderLength);
-    pin_->set_angle(plant_context_, theta);
-
-    // Fix the actuation.
-    const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
-    plant_->get_actuation_input_port().FixValue(plant_context_, tau_actuation);
   }
 
   // Adds the model for a wall anchored to the wall.
@@ -168,6 +155,20 @@ class LadderTest : public ::testing::Test {
   }
 
   void VerifyJointReactionForces() {
+    // Create a context for this system:
+    std::unique_ptr<Context<double>> diagram_context = diagram_->CreateDefaultContext();
+    Context<double>* plant_context =
+        &diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
+
+    // Set initial condition with the ladder leaning against the wall.
+    // We compute the angle in the pin joint for this condition.
+    const double theta = std::asin(kDistanceToWall / kLadderLength);
+    pin_->set_angle(plant_context, theta);
+
+    // Fix the actuation.
+    const Vector1d tau_actuation = kActuationTorque * Vector1d::Ones();
+    plant_->get_actuation_input_port().FixValue(plant_context, tau_actuation);
+
     // We validate the numerical results to be within this tolerance value,
     // which is chosen consistently with the time the system is left to reach
     // steady state and the integration accuracy (for the continuous model).
@@ -180,7 +181,7 @@ class LadderTest : public ::testing::Test {
 
     // We run a simulation to steady state so that contact forces balance
     // gravity and actuation.
-    Simulator<double> simulator(*diagram_, std::move(diagram_context_));
+    Simulator<double> simulator(*diagram_, std::move(diagram_context));
     // The default RK3 integrator requires specifying a very high accuracy to
     // reach steady state within kTolerance and therefore it is very costly.
     // However implicit Euler does a much better job with larger time steps.
@@ -195,11 +196,11 @@ class LadderTest : public ::testing::Test {
     // pin joint. Re-express in the world frame W.
     const auto& reaction_forces =
         plant_->get_reaction_forces_output_port()
-            .Eval<std::vector<SpatialForce<double>>>(*plant_context_);
+            .Eval<std::vector<SpatialForce<double>>>(*plant_context);
     ASSERT_EQ(reaction_forces.size(), 2u);
     const SpatialForce<double>& F_Bl_Bl = reaction_forces[pin_->index()];
     const RigidTransformd X_WBl =
-        ladder_lower_->EvalPoseInWorld(*plant_context_);
+        ladder_lower_->EvalPoseInWorld(*plant_context);
     const SpatialForce<double> F_Bl_W = X_WBl.rotation() * F_Bl_Bl;
 
     // We evaluate the contact forces so that we can perform the balance of
@@ -207,7 +208,7 @@ class LadderTest : public ::testing::Test {
     // reaction forces port.
     const ContactResults<double>& contact_results =
         plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
-            *plant_context_);
+            *plant_context);
     // There should be a single contact pair.
     ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
     const PointPairContactInfo<double>& point_pair_contact_info =
@@ -229,7 +230,7 @@ class LadderTest : public ::testing::Test {
 
     // Position of the ladder's center of gravity.
     const Vector3d p_WBcm =
-        plant_->CalcCenterOfMassPositionInWorld(*plant_context_);
+        plant_->CalcCenterOfMassPositionInWorld(*plant_context);
 
     // The x component of the contact force must counteract the torque due to
     // gravity plus the actuation torque.
@@ -253,7 +254,7 @@ class LadderTest : public ::testing::Test {
 
     // Verify reaction forces at the weld joint.
     const RigidTransformd X_WBu =
-        ladder_upper_->EvalPoseInWorld(*plant_context_);
+        ladder_upper_->EvalPoseInWorld(*plant_context);
     const SpatialForce<double>& F_Bu_W =
         X_WBu.rotation() * reaction_forces[weld_->index()];
     const Vector3d f_Bu_expected(fc_x, 0.0, weight / 2.0);
@@ -297,8 +298,6 @@ class LadderTest : public ::testing::Test {
   const RevoluteJoint<double>* pin_{nullptr};
   const WeldJoint<double>* weld_{nullptr};
   std::unique_ptr<Diagram<double>> diagram_;
-  std::unique_ptr<Context<double>> diagram_context_;
-  Context<double>* plant_context_{nullptr};
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
@@ -310,7 +309,20 @@ TEST_F(LadderTest, PinReactionForcesContinuous) {
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
   BuildLadderModel(1.0e-3);
   ASSERT_TRUE(plant_->is_discrete());
-  VerifyJointReactionForces();
+
+  auto run = [this]() {
+    VerifyJointReactionForces();
+  };
+
+  static constexpr int kThreads = 2;
+  std::vector<std::thread> threads;
+
+  for (int k = 0; k < kThreads; k++) {
+    threads.push_back(std::thread(run));
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
 }
 
 // This test verifies the computation of joint reaction forces for a case in
