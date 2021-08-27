@@ -8,6 +8,10 @@ def _impl(ctx):
     known_non_runfiles = [
         # These are installed in share/drake, but are not runfiles (at least,
         # not with these paths).
+        "doc/favicon.ico",
+        "external/meshcat/dist/index.html",
+        "external/meshcat/dist/main.min.js",
+        "geometry/meshcat.html",
         "setup/Brewfile",
         "setup/install_prereqs",
         "setup/packages-bionic.txt",

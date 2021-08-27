@@ -38,9 +38,8 @@ const std::string& GetUrlContent(std::string_view url_path) {
       LoadResource("drake/external/meshcat/dist/main.min.js"));
   static const drake::never_destroyed<std::string> favicon_ico(
       LoadResource("drake/doc/favicon.ico"));
-  // TODO(russt): Set the different default background color for Drake.
   static const drake::never_destroyed<std::string> index_html(
-      LoadResource("drake/external/meshcat/dist/index.html"));
+      LoadResource("drake/geometry/meshcat.html"));
   if (url_path == "/main.min.js") {
     return main_min_js.access();
   }
