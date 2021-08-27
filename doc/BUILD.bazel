@@ -12,6 +12,7 @@ load(
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
+load("@drake//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_py_library(
@@ -82,6 +83,13 @@ filegroup(
     ],
 )
 
+# favicon.ico is used by //geometry:meshcat.
+install_files(
+    name = "install_favicon",
+    dest = "share/drake/doc",
+    files = ["favicon.ico"],
+)
+
 enumerate_filegroup(
     name = "pages_input.txt",
     data = [":pages_input"],
@@ -140,6 +148,14 @@ test_suite(
         "//doc/doxygen_cxx:build_test",
         "//doc/pydrake:build_test",
         "//doc/styleguide:build_test",
+    ],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":install_favicon",
     ],
 )
 

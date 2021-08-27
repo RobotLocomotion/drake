@@ -14,15 +14,27 @@ exports_files(
     visibility = ["//visibility:public"],
 )
 
+# This installation is for meshcat-python.
 install_files(
     name = "install_viewer",
     dest = "@PYTHON_SITE_PACKAGES@/meshcat/viewer",
     files = VIEWER_FILES,
 )
 
+# main.min.js is used by //geometry:meshcat, so we additionally install it to a
+# path discoverable by common::FindResource.
+install_files(
+    name = "install_viewer_to_share",
+    dest = "share/drake/external/meshcat",
+    files = ["dist/main.min.js"],
+)
+
 install(
     name = "install",
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
-    deps = [":install_viewer"],
+    deps = [
+        ":install_viewer",
+        ":install_viewer_to_share",
+    ],
 )
