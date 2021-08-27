@@ -39,6 +39,12 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
       },
       py::arg("prog"), py::arg("num_lambda"),
       doc.AddLogarithmicSos1Constraint.doc_2args);
+
+  {
+    py::enum_<IntervalBinning>(m, "IntervalBinning", doc.IntervalBinning.doc)
+        .value("kLogarithmic", IntervalBinning::kLogarithmic)
+        .value("kLinear", IntervalBinning::kLinear);
+  }
 }
 }  // namespace pydrake
 }  // namespace drake
