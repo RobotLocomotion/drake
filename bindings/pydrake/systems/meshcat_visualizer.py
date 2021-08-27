@@ -613,10 +613,11 @@ class MeshcatContactVisualizer(LeafSystem):
                 X_CGeom = tf.identity_matrix()
             else:
                 # Rotates [0,1,0] to contact_force/force_norm.
-                angle_axis = np.cross(np.array([0, 1, 0]),
-                                      contact_info.contact_force()/force_norm)
-                X_CGeom = tf.rotation_matrix(
-                    np.arcsin(np.linalg.norm(angle_axis)), angle_axis)
+                y = np.array([0, 1, 0])
+                f = contact_info.contact_force() / force_norm
+                axis = np.cross(y, f)
+                angle = np.arccos(y @ f)
+                X_CGeom = tf.rotation_matrix(angle, axis)
             X_WC = tf.translation_matrix(contact_info.contact_point())
             cvis.set_transform(X_WC @ X_CGeom)
 
