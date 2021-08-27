@@ -620,7 +620,7 @@ class MeshcatContactVisualizer(LeafSystem):
                 # Practical guess for useful tolerance. Angles smaller than
                 # 1e-3 rad should be invisible for visualization purposes.
                 tol = 1e-3
-                if angle < 1e-3 or (np.pi - angle) < tol:
+                if angle < tol or (np.pi - angle) < tol:
                     X_CGeom = np.eye(4)
                 else:
                     X_CGeom = tf.rotation_matrix(angle, axis)
