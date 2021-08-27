@@ -70,3 +70,23 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         check_val([1, 0], [0, 0, 0, 1], True)
         check_val([1, 0], [0, 0, 1, 0], False)
         check_val([1, 0], [0, 0, 0.5, 0.5], False)
+
+    def test_MixedIntegerRotationConstraintGenerator(self):
+        prog = mp.MathematicalProgram()
+
+        # Sanity check, remove me.
+        self.assertEqual(len(prog.GetAllConstraints()) == 0)
+        
+        R = prog.NewContinuousVariables(3, 3, "R")
+        Generator = mip_util.MixedIntegerRotationConstraintGenerator
+        binning = mip_util.IntervalBinning.kLogarithmic
+        approach = Generator.Approach.kBoth
+        so3_generator = Generator(
+            approach=approach,
+            num_intervals_per_half_axis=2,
+            interval_binning=binning
+        )
+        so3_generator.AddToProgram(R, prog)
+
+        # Check that nonzero constraints got added.
+        self.assertGreater(len(prog.GetAllConstraints()) > 0)

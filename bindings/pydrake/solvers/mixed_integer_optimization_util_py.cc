@@ -46,12 +46,12 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
         .value("kLogarithmic", IntervalBinning::kLogarithmic)
         .value("kLinear", IntervalBinning::kLinear);
     }
-    
+
     {
         using Class = MixedIntegerRotationConstraintGenerator;
         constexpr auto& cls_doc = doc.MixedIntegerRotationConstraintGenerator;
         py::class_<Class> cls(m, "MixedIntegerRotationConstraintGenerator", cls_doc.doc);
-        
+
         using Enum = Class::Approach;
         constexpr auto& enum_doc = cls_doc.Approach;
         py::enum_<Class::Approach>(cls, "Approach", enum_doc.doc)
@@ -62,19 +62,18 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
                 enum_doc.kBilinearMcCormick.doc)
             .value("kBoth", Enum::kBoth,
                 enum_doc.kBoth.doc);
-       
+
         using Struct = Class::ReturnType;
         constexpr auto& struct_doc = cls_doc.ReturnType;
         py::class_<Struct>(cls, "ReturnType", struct_doc.doc);
-        
+
         cls
             .def(py::init<Class::Approach, int, IntervalBinning>(),
                  py::arg("approach"), py::arg("num_intervals_per_half_axis"),
                  py::arg("interval_binning"),
                  cls_doc.ctor.doc)
             .def("AddToProgram", &Class::AddToProgram,
-                 py::arg("R"), py::arg("prog"), cls_doc.AddToProgram.doc) // keep-alive for prog ptr?
-        ;
+                 py::arg("R"), py::arg("prog"), cls_doc.AddToProgram.doc);
     }
   }
 }  // namespace pydrake
