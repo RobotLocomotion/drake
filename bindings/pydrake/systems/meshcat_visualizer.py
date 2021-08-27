@@ -617,9 +617,10 @@ class MeshcatContactVisualizer(LeafSystem):
                 f = contact_info.contact_force() / force_norm
                 axis = np.cross(y, f)
                 angle = np.arccos(y.dot(f))
-                if abs(angle) < 1e-3:
-                    # Practical guess for useful tolerance. Angles smaller than
-                    # 1e-3 rad should be invisible for visualization purposes.
+                # Practical guess for useful tolerance. Angles smaller than
+                # 1e-3 rad should be invisible for visualization purposes.
+                tol = 1e-3
+                if angle < 1e-3 or (np.pi - angle) < tol:
                     X_CGeom = np.eye(4)
                 else:
                     X_CGeom = tf.rotation_matrix(angle, axis)
