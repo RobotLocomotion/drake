@@ -11,6 +11,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
 )
+load("@drake//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -358,8 +359,8 @@ drake_cc_library(
     srcs = ["meshcat.cc"],
     hdrs = ["meshcat.h"],
     data = [
+        "meshcat.html",
         "//doc:favicon",
-        "@meshcat//:dist/index.html",
         "@meshcat//:dist/main.min.js",
     ],
     deps = [
@@ -374,6 +375,12 @@ drake_cc_library(
         "@stduuid",
         "@uwebsockets",
     ],
+)
+
+install_files(
+    name = "install_meshcat_html",
+    dest = "share/drake/geometry",
+    files = ["meshcat.html"],
 )
 
 drake_cc_binary(
@@ -596,6 +603,14 @@ drake_cc_googletest(
     deps = [
         ":rgba",
         "//common/test_utilities",
+    ],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":install_meshcat_html",
     ],
 )
 
