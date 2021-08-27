@@ -20,9 +20,19 @@ install_files(
     files = VIEWER_FILES,
 )
 
+# main.min.js is used by //geometry:meshcat.
+install_files(
+    name = "install_viewer_to_share",
+    dest = "share/drake/external/meshcat",
+    files = VIEWER_FILES,
+)
+
 install(
     name = "install",
     docs = ["LICENSE"],
     visibility = ["//visibility:public"],
-    deps = [":install_viewer"],
+    deps = [
+        ":install_viewer",
+        ":install_viewer_to_share",
+    ],
 )
