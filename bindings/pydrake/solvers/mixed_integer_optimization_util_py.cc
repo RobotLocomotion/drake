@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
+#include "drake/solvers/mixed_integer_rotation_constraint.h"
 
 namespace drake {
 namespace pydrake {
