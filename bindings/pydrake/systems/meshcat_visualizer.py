@@ -617,7 +617,10 @@ class MeshcatContactVisualizer(LeafSystem):
                 f = contact_info.contact_force() / force_norm
                 axis = np.cross(y, f)
                 angle = np.arccos(y.dot(f))
-                X_CGeom = tf.rotation_matrix(angle, axis)
+                if abs(angle) < 1e-3:
+                    X_CGeom = np.eye(4)
+                else:
+                    X_CGeom = tf.rotation_matrix(angle, axis)
             X_WC = tf.translation_matrix(contact_info.contact_point())
             cvis.set_transform(X_WC @ X_CGeom)
 
