@@ -75,8 +75,8 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         prog = mp.MathematicalProgram()
 
         # Sanity check, remove me.
-        self.assertEqual(len(prog.GetAllConstraints()) == 0)
-        
+        self.assertEqual(len(prog.GetAllConstraints()), 0)
+
         R = prog.NewContinuousVariables(3, 3, "R")
         Generator = mip_util.MixedIntegerRotationConstraintGenerator
         binning = mip_util.IntervalBinning.kLogarithmic
@@ -89,4 +89,4 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         so3_generator.AddToProgram(R, prog)
 
         # Check that nonzero constraints got added.
-        self.assertGreater(len(prog.GetAllConstraints()) > 0)
+        self.assertGreater(len(prog.GetAllConstraints()), 0)
