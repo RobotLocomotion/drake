@@ -1275,7 +1275,7 @@ sdf::ParserConfig CreateNewSdfParserConfig(
   parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
   parser_config.SetDeprecatedElementsPolicy(sdf::EnforcementPolicy::WARN);
   // TODO(#15018): Change unrecognized elements policy to become an error on
-  // or after 2021-12-01.
+  // or after 2022-01-01.
   parser_config.SetUnrecognizedElementsPolicy(sdf::EnforcementPolicy::WARN);
   parser_config.SetFindCallback(
     [=](const std::string &_input) {
