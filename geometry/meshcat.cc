@@ -194,8 +194,7 @@ class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
-  explicit MeshcatShapeReifier(std::string uuid)
-      : uuid_(std::move(uuid)) {}
+  explicit MeshcatShapeReifier(std::string uuid) : uuid_(std::move(uuid)) {}
 
   ~MeshcatShapeReifier() = default;
 
@@ -370,8 +369,7 @@ class Meshcat::WebSocketPublisher {
     return port_;
   }
 
-  void SetObject(std::string_view path, const Shape& shape,
-                        const Rgba& rgba) {
+  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
     DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
     DRAKE_DEMAND(app_ != nullptr);
     DRAKE_DEMAND(loop_ != nullptr);
@@ -458,8 +456,7 @@ class Meshcat::WebSocketPublisher {
     loop_->defer([this, data = std::move(data)]() {
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
-      std::string message = message_stream.str();
-      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
       scene_tree_root_.Delete(data.path);
     });
   }
@@ -484,6 +481,173 @@ class Meshcat::WebSocketPublisher {
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.properties()[data.property] = std::move(message);
+    });
+  }
+
+  void AddButton(std::string name) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    internal::SetButtonControl data;
+    data.callback = fmt::format(R"""(
+() => this.connection.send(msgpack.encode({{
+  'type': 'button',
+  'name': '{}'
+}})))""",
+                                name);
+    data.name = std::move(name);
+
+    {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      if (sliders_.find(name) != sliders_.end()) {
+        DeleteSlider(name);
+      }
+      controls_.emplace_back(data.name);
+      buttons_[data.name] = data;
+    }
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() mutable {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+    });
+  }
+
+  int GetButtonClicks(std::string_view name) {
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    auto iter = buttons_.find(name);
+    if (iter == buttons_.end()) {
+      throw std::out_of_range(
+          fmt::format("Meshcat does not have any buttons named {}", name));
+    }
+    return iter->second.num_clicks;
+  }
+
+  void DeleteButton(std::string name) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    internal::DeleteControl data;
+    {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      auto iter = buttons_.find(name);
+      if (iter == buttons_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat does not have any buttons named {}", name));
+      }
+      buttons_.erase(iter);
+      auto c_iter = std::find(controls_.begin(), controls_.end(), name);
+      DRAKE_ASSERT(c_iter != controls_.end());
+      controls_.erase(c_iter);
+      data.name = std::move(name);
+    }
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() mutable {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+    });
+  }
+
+  void AddSlider(std::string name, double min, double max,
+                               double step, double value) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    internal::SetSliderControl data;
+    data.callback = fmt::format(R"""(
+(value) => this.connection.send(msgpack.encode({{
+  'type': 'slider',
+  'name': '{}',
+  'value': value
+}})))""",
+                                name);
+    data.name = std::move(name);
+    data.min = min;
+    data.max = max;
+    data.step = step;
+    data.value = value;
+
+    {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      if (buttons_.find(name) != buttons_.end()) {
+        DeleteButton(name);
+      }
+      controls_.emplace_back(data.name);
+      sliders_[data.name] = data;
+    }
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() mutable {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+    });
+  }
+
+  void SetSliderValue(std::string name, double value) {
+    {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      auto iter = sliders_.find(name);
+      if (iter == sliders_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat does not have any sliders named {}", name));
+      }
+      iter->second.value = value;
+    }
+
+    internal::SetSliderValue data;
+    data.name = std::move(name);
+    data.value = value;
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() mutable {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+    });
+  }
+
+  double GetSliderValue(std::string_view name) {
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    auto iter = sliders_.find(name);
+    if (iter == sliders_.end()) {
+      throw std::out_of_range(
+          fmt::format("Meshcat does not have any sliders named {}", name));
+    }
+    return iter->second.value;
+  }
+
+  void DeleteSlider(std::string name) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    internal::DeleteControl data;
+    {
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      auto iter = sliders_.find(name);
+      if (iter == sliders_.end()) {
+        throw std::out_of_range(
+            fmt::format("Meshcat does not have any sliders named {}", name));
+      }
+      sliders_.erase(iter);
+      auto c_iter = std::find(controls_.begin(), controls_.end(), name);
+      DRAKE_ASSERT(c_iter != controls_.end());
+      controls_.erase(c_iter);
+      data.name = std::move(name);
+    }
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() mutable {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
     });
   }
 
@@ -572,19 +736,70 @@ class Meshcat::WebSocketPublisher {
 
     uWS::App::WebSocketBehavior<PerSocketData> behavior;
     behavior.open = [this](WebSocket* ws) {
+      websockets_.emplace(ws);
       ws->subscribe("all");
       // Update this new connection with previously published data.
       SendTree(ws);
-      websockets_.emplace(ws);
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      for (const auto& c : controls_) {
+        auto b_iter = buttons_.find(c);
+        if (b_iter != buttons_.end()) {
+          std::stringstream message_stream;
+          msgpack::pack(message_stream, b_iter->second);
+          ws->send(message_stream.str());
+        } else {
+          auto s_iter = sliders_.find(c);
+          DRAKE_ASSERT(s_iter != sliders_.end());
+          std::stringstream message_stream;
+          msgpack::pack(message_stream, s_iter->second);
+          ws->send(message_stream.str());
+        }
+      }
     };
     // TODO(russt): I could increase this more if necessary (when it was too
     // low, some SetObject messages were dropped).  But at some point the real
     // fix is to actually throttle the sending (e.g. by slowing down the main
     // thread).
     behavior.maxBackpressure = kMaxBackPressure;
+    behavior.message = [this](WebSocket* ws, std::string_view message,
+                              uWS::OpCode opCode) {
+      unused(ws, opCode);
+      msgpack::object_handle oh =
+          msgpack::unpack(message.data(), message.size());
+      internal::UserInterfaceEvent data;
+      try {
+        oh.get().convert(data);
+      } catch (const std::bad_alloc& e) {
+        // Quietly ignore messages that don't match our expected message type.
+        return;
+      }
+      std::lock_guard<std::mutex> lock(controls_mutex_);
+      if (data.type == "button") {
+        auto iter = buttons_.find(data.name);
+        if (iter != buttons_.end()) {
+          iter->second.num_clicks++;
+        }
+      } else if (data.type == "slider" && data.value.has_value()) {
+        auto iter = sliders_.find(data.name);
+        if (iter != sliders_.end()) {
+          iter->second.value = *data.value;
+          if (websockets_.size() > 1) {
+            // Send SetSliderValue message to all other websockets.
+            internal::SetSliderValue set_slider;
+            set_slider.name = std::move(data.name);
+            set_slider.value = *data.value;
+            std::stringstream message_stream;
+            msgpack::pack(message_stream, set_slider);
+            // ws->publish sends to all but not to ws.
+            ws->publish("all", message_stream.str(), uWS::OpCode::BINARY);
+          }
+        }
+      }
+    };
     behavior.close = [this](WebSocket* ws, int, std::string_view) {
       websockets_.erase(ws);
     };
+
 
     uWS::App app =
         uWS::App()
@@ -638,6 +853,13 @@ class Meshcat::WebSocketPublisher {
 
   std::thread websocket_thread_{};
   const std::string prefix_{};
+
+  // Both threads access controls_, guarded by controls_mutex_.
+  std::mutex controls_mutex_;
+  std::map<std::string, internal::SetButtonControl, std::less<>> buttons_{};
+  std::map<std::string, internal::SetSliderControl, std::less<>> sliders_{};
+  std::vector<std::string> controls_{};  // Names of buttons and sliders in the
+                                         // order they were added.
 
   // These variables should only be accessed in the main thread, where "main
   // thread" is the thread in which this class was constructed.
@@ -700,6 +922,35 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
   publisher_->SetProperty(path, std::move(property), value);
+}
+
+void Meshcat::AddButton(std::string name) {
+  publisher_->AddButton(std::move(name));
+}
+
+int Meshcat::GetButtonClicks(std::string_view name) {
+  return publisher_->GetButtonClicks(name);
+}
+
+void Meshcat::DeleteButton(std::string name) {
+  publisher_->DeleteButton(std::move(name));
+}
+
+void Meshcat::AddSlider(std::string name, double min, double max,
+                               double step, double value) {
+  publisher_->AddSlider(std::move(name), min, max, step, value);
+}
+
+void Meshcat::SetSliderValue(std::string name, double value) {
+  publisher_->SetSliderValue(std::move(name), value);
+}
+
+double Meshcat::GetSliderValue(std::string_view name) {
+  return publisher_->GetSliderValue(name);
+}
+
+void Meshcat::DeleteSlider(std::string name) {
+  publisher_->DeleteButton(std::move(name));
 }
 
 bool Meshcat::HasPath(std::string_view path) const {

@@ -188,6 +188,46 @@ struct SetPropertyData {
   MSGPACK_DEFINE_MAP(type, path, property, value);
 };
 
+struct SetButtonControl {
+  std::string type{"set_control"};
+  int num_clicks{0};
+  std::string name;
+  std::string callback;
+  MSGPACK_DEFINE_MAP(type, name, callback);
+};
+
+struct SetSliderControl {
+  std::string type{"set_control"};
+  std::string name;
+  std::string callback;
+  double value;
+  double min;
+  double max;
+  double step;
+  MSGPACK_DEFINE_MAP(type, name, callback, value, min, max, step);
+};
+
+struct SetSliderValue {
+  std::string type{"set_control_value"};
+  std::string name;
+  double value;
+  bool invoke_callback{false};
+  MSGPACK_DEFINE_MAP(type, name, value, invoke_callback);
+};
+
+struct DeleteControl {
+  std::string type{"delete_control"};
+  std::string name;
+  MSGPACK_DEFINE_MAP(type, name);
+};
+
+struct UserInterfaceEvent {
+  std::string type;
+  std::string name;
+  std::optional<double> value;
+  MSGPACK_DEFINE_MAP(type, name, value);
+};
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

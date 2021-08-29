@@ -88,6 +88,9 @@ Open up your browser to the URL above.
   params.delete_on_intialization_event = false;
   MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat, params);
 
+  meshcat->AddButton("ButtonTest");
+  meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5);
+
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
   diagram->get_input_port().FixValue(context.get(), Eigen::VectorXd::Zero(7));
@@ -100,13 +103,28 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-  std::cout << "Finally we'll run the simulation (you should see the robot "
-               "fall down) and exit."
-            << std::endl;
+  std::cout
+      << "Now we'll run the simulation (you should see the robot fall down)."
+      << std::endl;
 
   systems::Simulator<double> simulator(*diagram, std::move(context));
   simulator.set_target_realtime_rate(1.0);
   simulator.AdvanceTo(4.0);
+
+  std::cout << "I've added a button and a slider to the controls menu.\n";
+  std::cout << "- Click the ButtonTest button a few times.\n";
+  std::cout << "- Move SliderTest slider.\n";
+  std::cout << "- Open a second browser (" << meshcat->web_url()
+            << ") and confirm that moving the slider in one updates the slider "
+               "in the other.\n";
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::cout << "Got " << meshcat->GetButtonClicks("ButtonTest")
+            << " clicks on ButtonTest.\n"
+            << "Got " << meshcat->GetSliderValue("SliderTest")
+            << " value for SliderTest." << std::endl;
 
   std::cout << "Exiting..." << std::endl;
   return 0;
