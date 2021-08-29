@@ -66,7 +66,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    MeshcatVisualizerParams::prefix.  Since this visualizer will only ever add
    geometry under this prefix, this will remove all geometry/transforms added
    by the visualizer, or by a previous instance of this visualizer using the
-   same prefix.  Use MeshcatVisualizer::delete_on_intialization_event
+   same prefix.  Use MeshcatVisualizer::delete_on_initialization_event
    to determine whether this should be called on initialization. */
   void Delete() const;
 

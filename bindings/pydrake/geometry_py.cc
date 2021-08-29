@@ -1594,7 +1594,24 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::overload_cast<std::string_view, std::string, double>(
                 &Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
-            cls_doc.SetProperty.doc_double);
+            cls_doc.SetProperty.doc_double)
+        .def("AddButton", &Class::AddButton, py::arg("name"),
+            cls_doc.AddButton.doc)
+        .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
+            cls_doc.GetButtonClicks.doc)
+        .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
+            cls_doc.DeleteButton.doc)
+        .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
+            py::arg("max"), py::arg("step"), py::arg("value"),
+            cls_doc.AddSlider.doc)
+        .def("SetSliderValue", &Class::SetSliderValue, py::arg("name"),
+            py::arg("value"), cls_doc.SetSliderValue.doc)
+        .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),
+            cls_doc.GetSliderValue.doc)
+        .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
+            cls_doc.DeleteSlider.doc)
+        .def("DeleteAddedControls", &Class::DeleteAddedControls,
+            cls_doc.DeleteAddedControls.doc);
     // Note: we intentionally do not bind the advanced methods (HasProperty and
     // GetPacked*) which were intended primarily for testing in C++.
   }
@@ -1614,9 +1631,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.default_color.doc)
         .def_readwrite(
             "prefix", &MeshcatVisualizerParams::prefix, cls_doc.prefix.doc)
-        .def_readwrite("delete_on_intialization_event",
-            &MeshcatVisualizerParams::delete_on_intialization_event,
-            cls_doc.delete_on_intialization_event.doc);
+        .def_readwrite("delete_on_initialization_event",
+            &MeshcatVisualizerParams::delete_on_initialization_event,
+            cls_doc.delete_on_initialization_event.doc);
   }
 }  // NOLINT(readability/fn_size)
 
