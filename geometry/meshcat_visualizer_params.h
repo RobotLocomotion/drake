@@ -31,7 +31,7 @@ struct MeshcatVisualizerParams {
    initialization event to remove any visualizations e.g. from a previous
    simulation. See @ref declare_initialization_events "Declare initialization
    events" for more information. */
-  bool delete_on_intialization_event{true};
+  bool delete_on_initialization_event{true};
 };
 
 }  // namespace geometry
