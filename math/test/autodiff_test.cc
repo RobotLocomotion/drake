@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
@@ -215,6 +216,124 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   EXPECT_TRUE(fixed_gradients.isZero(0.));
 }
 
+GTEST_TEST(DifferentiateLinearSolving, TestNoGrad) {
+  Eigen::Matrix2d A_val;
+  A_val << 1, 3, 3, 10;
+  Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val);
+  Eigen::Vector2d b_val(3, 5);
+  const auto x = DifferentiateLinearSolving(
+      linear_solver, A_val.cast<AutoDiffXd>(), b_val.cast<AutoDiffXd>());
+  static_assert(decltype(x)::RowsAtCompileTime == 2,
+                "The returned x should have 2 rows");
+  const Eigen::Vector2d x_val = linear_solver.solve(b_val);
+  EXPECT_TRUE(CompareMatrices(autoDiffToValueMatrix(x), x_val));
+  EXPECT_EQ(autoDiffToGradientMatrix(x).size(), 0);
+}
+
+template <typename LinearSolverType, typename DerivedA, typename DerivedB>
+void TestDifferentiateLinearSolving(const LinearSolverType& linear_solver,
+                                    const Eigen::MatrixBase<DerivedA>& A,
+                                    const Eigen::MatrixBase<DerivedB>& b) {
+  const auto x_ad = DifferentiateLinearSolving(linear_solver, A, b);
+  // Now check Ax = z and A*∂x/∂z + ∂A/∂z * x = ∂b/∂z
+  const auto Ax = A * x_ad;
+  EXPECT_TRUE(
+      CompareMatrices(autoDiffToValueMatrix(Ax), autoDiffToValueMatrix(b)));
+  const auto b_grad = autoDiffToGradientMatrix(b);
+  const auto Ax_grad = autoDiffToGradientMatrix(Ax);
+  if (b_grad.size() == 0 && Ax_grad.size() == 0) {
+  } else if (b_grad.size() != 0 && Ax_grad.size() == 0) {
+    EXPECT_TRUE(CompareMatrices(
+        b_grad, Eigen::MatrixXd::Zero(b_grad.rows(), b_grad.cols())));
+  } else if (b_grad.size() == 0 && Ax_grad.size() != 0) {
+    EXPECT_TRUE(CompareMatrices(
+        Ax_grad, Eigen::MatrixXd::Zero(Ax_grad.rows(), Ax_grad.cols())));
+  } else {
+    EXPECT_TRUE(CompareMatrices(Ax_grad, b_grad));
+  }
+}
+
+class DifferentiateLinearSolvingTest : public ::testing::Test {
+ public:
+  DifferentiateLinearSolvingTest() {
+    A_val_ << 1, 3, 3, 10;
+    b_val_ << 3, 5;
+    Eigen::Matrix<double, 2, Eigen::Dynamic> b_grad(2, 3);
+    b_grad << 1, 2, 3, 4, 5, 6;
+    b_ad_ = initializeAutoDiffGivenGradientMatrix(b_val_, b_grad);
+    for (int i = 0; i < 2; ++i) {
+      for (int j = 0; j < 2; ++j) {
+        A_ad_(i, j).value() = A_val_(i, j);
+      }
+    }
+    A_ad_(0, 0).derivatives() = Eigen::Vector3d(1, 2, 3);
+    A_ad_(0, 1).derivatives() = Eigen::Vector3d(4, 5, 6);
+    A_ad_(1, 0).derivatives() = Eigen::Vector3d(7, 8, 9);
+    A_ad_(1, 1).derivatives() = Eigen::Vector3d(10, 11, 12);
+  }
+
+ protected:
+  Eigen::Matrix2d A_val_;
+  Eigen::Vector2d b_val_;
+  Eigen::Matrix<AutoDiffXd, 2, 2> A_ad_;
+  Eigen::Matrix<AutoDiffXd, 2, 1> b_ad_;
+};
+
+TEST_F(DifferentiateLinearSolvingTest, TestBwithGrad) {
+  // Test DifferentiateLinearSolving with A containing empty gradient while b
+  // contains meaningful gradient.
+  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
+
+  TestDifferentiateLinearSolving(linear_solver, A_val_.cast<AutoDiffXd>(),
+                                 b_ad_);
+}
+
+TEST_F(DifferentiateLinearSolvingTest, TestAwithGrad) {
+  // Test DifferentiateLinearSolving with A containing gradient while b contains
+  // no gradient.
+  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
+  TestDifferentiateLinearSolving(linear_solver, A_ad_,
+                                 b_val_.cast<AutoDiffXd>());
+  // If I differentiate the linear solver using AutoDiffXd with the following
+  // code, then it computes different gradient, which I believe is incorrect.
+  // Eigen::LLT<Eigen::Matrix<AutoDiffXd, 2, 2>> linear_solver_ad(A_ad_);
+  // const Vector2<AutoDiffXd> x_ad_expected =
+  //     linear_solver_ad.solve(b_val_.cast<AutoDiffXd>());
+  // const auto Ax = A_ad_ * x_ad_expected;
+  // std::cout << "(A*x) gradient:\n"
+  //           << autoDiffToGradientMatrix(Ax)
+  //           << "\n This gradient should be zero\n";
+}
+
+TEST_F(DifferentiateLinearSolvingTest, TestAbWithGrad) {
+  // Test DifferentiateLinearSolving with both A and b containing gradient.
+  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
+  TestDifferentiateLinearSolving(linear_solver, A_ad_, b_ad_);
+}
+
+TEST_F(DifferentiateLinearSolvingTest, TestWrongGradientSize) {
+  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
+  // A's gradient has inconsistent size.
+  auto A_ad_error = A_ad_;
+  A_ad_error(0, 1).derivatives() = Eigen::Vector2d(1, 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DifferentiateLinearSolving(linear_solver, A_ad_error, b_ad_),
+      ".* has size 2, while another entry has size 3");
+  // b's gradient has inconsistent size.
+  auto b_ad_error = b_ad_;
+  b_ad_error(1).derivatives() = Eigen::Vector2d(1, 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DifferentiateLinearSolving(linear_solver, A_ad_, b_ad_error),
+      ".* has size 2, while another entry has size 3");
+  // A and b have different number of derivatives.
+  auto b_ad_error2 = b_ad_;
+  b_ad_error2(0).derivatives() = Eigen::Vector4d::Ones();
+  b_ad_error2(1).derivatives() = Eigen::Vector4d::Ones();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DifferentiateLinearSolving(linear_solver, A_ad_, b_ad_error2),
+      ".*A contains derivatives for 3 variables, while b contains derivatives "
+      "for 4 variables");
+}
 }  // namespace
 }  // namespace math
 }  // namespace drake
