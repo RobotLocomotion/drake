@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
@@ -211,6 +212,105 @@ DiscardZeroGradient(
     double precision = 0.) {
   unused(precision);
   return transform;
+}
+
+/**
+ * Differentiate a linear solver A * x = b. Where A is an Eigen matrix of
+ * autodiffscalar, and b is an Eigen vector of autodiffscalar.
+ * @tparam LinearSolverType The type of linear solver, for example
+ * Eigen::LLT<Eigen::MatrixXd>. Notice that this is the linear solver for the
+ * double version of A
+ * @tparam DerivedA An Eigen Matrix of autodiffscalars.
+ * @tparam DerivedB An Eigen Vector of autodiffscalars.
+ */
+template <typename LinearSolverType, typename DerivedA, typename DerivedB>
+typename std::enable_if<DerivedB::ColsAtCompileTime == 1,
+                        Eigen::Matrix<typename DerivedA::Scalar,
+                                      DerivedA::RowsAtCompileTime, 1>>::type
+DifferentiateLinearSolving(const LinearSolverType& linear_solver,
+                           const Eigen::MatrixBase<DerivedA>& A,
+                           const Eigen::MatrixBase<DerivedB>& b) {
+  // We differentiate A * x = b directly
+  // A*∂x/∂z + ∂A/∂z * x = ∂b/∂z
+  // So ∂x/∂z = A⁻¹(∂b/∂z - ∂A/∂z * x)
+  // where I use z to denote the variable we take derivatives.
+
+  // The size of the derivatives stored in A and b.
+  int num_z_A = 0;
+  int num_z_b = 0;
+  for (int i = 0; i < A.rows(); ++i) {
+    for (int j = 0; j < A.cols(); ++j) {
+      if (A(i, j).derivatives().size() != 0) {
+        if (num_z_A != 0 && A(i, j).derivatives().size() != 0 &&
+            A(i, j).derivatives().size() != num_z_A) {
+          throw std::runtime_error(fmt::format(
+              "DifferentiateLinearSolving(): A({}, {}).derivatives() has size "
+              "{}, while the other entries have size {}",
+              i, j, A(i, j).derivatives().size(), num_z_A));
+        } else if (A(i, j).derivatives().size() != 0) {
+          num_z_A = A(i, j).derivatives().size();
+        }
+      }
+    }
+    if (b(i).derivatives().size() != 0 && num_z_b != 0 &&
+        b(i).derivatives().size() != num_z_b) {
+      throw std::runtime_error(
+          fmt::format("DifferentiateLinearSolving(): b({}).derivatives() has "
+                      "size {}, while the other entires have size {}",
+                      i, b(i).derivatives().size(), num_z_b));
+    } else if (b(i).derivatives().size() != 0) {
+      num_z_b = b(i).derivatives().size();
+    }
+  }
+  const auto b_val = autoDiffToValueMatrix(b);
+  const Eigen::Matrix<double, DerivedA::RowsAtCompileTime, 1> x_val =
+      linear_solver.solve(b_val);
+  if (num_z_A == 0 && num_z_b == 0) {
+    return x_val.template cast<typename DerivedA::Scalar>();
+  } else if (num_z_A == 0) {
+    // num_z_b != 0
+    const auto b_grad = autoDiffToGradientMatrix(b);
+    Eigen::Matrix<double, DerivedA::RowsAtCompileTime, Eigen::Dynamic> x_grad(
+        A.rows(), num_z_b);
+    for (int i = 0; i < num_z_b; ++i) {
+      x_grad.col(i) = linear_solver.solve(b_grad.col(i));
+    }
+    return initializeAutoDiffGivenGradientMatrix(x_val, x_grad);
+  } else {
+    // num_z_A != 0
+    if (num_z_A != 0 && num_z_b != 0 && num_z_A != num_z_b) {
+      throw std::runtime_error(fmt::format(
+          "DifferentiateLinearSolving(): A contains derivative w.r.t {} "
+          "variables, while b contains derivatives for {} variables",
+          num_z_A, num_z_b));
+    }
+    Eigen::Matrix<double, DerivedA::RowsAtCompileTime, Eigen::Dynamic> x_grad(
+        A.rows(), num_z_A);
+    Eigen::Matrix<double, DerivedA::RowsAtCompileTime, Eigen::Dynamic> dAdzi(
+        A.rows(), A.cols());
+    dAdzi.setZero();
+    Eigen::Matrix<double, DerivedA::RowsAtCompileTime, 1> dbdzi(A.rows());
+    dbdzi.setZero();
+    for (int i = 0; i < num_z_A; ++i) {
+      // So ∂x/∂zᵢ = A⁻¹(∂b/∂zᵢ - ∂A/∂zᵢ * x)
+      for (int j = 0; j < A.rows(); ++j) {
+        for (int k = 0; k < A.cols(); ++k) {
+          if (A(j, k).derivatives().rows() != 0) {
+            dAdzi(j, k) = A(j, k).derivatives()(i);
+          }
+        }
+        if (b(j).derivatives().rows() != 0) {
+          dbdzi(j) = b(j).derivatives()(i);
+        }
+      }
+      if (num_z_b > 0) {
+        x_grad.col(i) = linear_solver.solve(dbdzi - dAdzi * x_val);
+      } else {
+        x_grad.col(i) = linear_solver.solve(-dAdzi * x_val);
+      }
+    }
+    return initializeAutoDiffGivenGradientMatrix(x_val, x_grad);
+  }
 }
 
 }  // namespace math
