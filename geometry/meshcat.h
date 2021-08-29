@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/type_safe_index.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -153,8 +154,18 @@ class Meshcat {
   void SetProperty(std::string_view path, std::string property, double value);
 
   // TODO(russt): Implement SetAnimation().
-  // TODO(russt): Implement SetButton() and SetSlider() as wrappers on
-  // set_control.
+
+  void AddButton(std::string name);
+  int GetButtonClicks(std::string_view name);
+  void DeleteButton(std::string name);
+
+  void AddSlider(std::string name, double min, double max,
+                               double step, double value);
+  void SetSliderValue(std::string name, double value);
+  double GetSliderValue(std::string_view name);
+  void DeleteSlider(std::string name);
+
+  void DeleteAllButtonsAndSliders();
 
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block
