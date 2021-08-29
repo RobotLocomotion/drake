@@ -2,6 +2,7 @@ ipywidgets
 lxml
 matplotlib
 notebook
+Pillow
 pydot
 PyYAML
 pyzmq
