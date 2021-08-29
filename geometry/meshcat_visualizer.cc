@@ -52,7 +52,7 @@ void MeshcatVisualizer<T>::Delete() const {
 }
 
 template <typename T>
-const MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
+MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
     std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {
   return AddToBuilder(builder, scene_graph.get_query_output_port(),
@@ -60,7 +60,7 @@ const MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
 }
 
 template <typename T>
-const MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
+MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& query_object_port,
     std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {

@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/type_safe_index.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -221,8 +222,43 @@ class Meshcat {
                    const std::vector<double>& value);
 
   // TODO(russt): Implement SetAnimation().
-  // TODO(russt): Implement SetButton() and SetSlider() as wrappers on
-  // set_control.
+
+  /** Adds a button with the label `name` to the meshcat browser controls GUI.
+   */
+  void AddButton(std::string name);
+
+  /** Returns the number of times the button `name` has been clicked in the GUI.
+   @throws std::exception if `name` is not a registered button. */
+  int GetButtonClicks(std::string_view name);
+
+  /** Removes the button `name` from the GUI.
+   @throws std::exception if `name` is not a registered button. */
+  void DeleteButton(std::string name);
+
+  /** Adds a slider with the label `name` to the meshcat browser controls GUI.
+   The slider range is given by [`min`, `max`], the resolution is set by `step`.
+   `value` specifies the initial value.
+   */
+  void AddSlider(std::string name, double min, double max,
+                               double step, double value);
+
+  /** Sets the current `value` of the slider `name`.  This will update the
+   slider element in all connected meshcat browsers.
+   @throws std::exception if `name` is not a registered slider. */
+  void SetSliderValue(std::string name, double value);
+
+  /** Gets the current `value` of the slider `name`.
+   @throws std::exception if `name` is not a registered slider. */
+  double GetSliderValue(std::string_view name);
+
+  /** Removes the slider `name` from the GUI.
+   @throws std::exception if `name` is not a registered slider. */
+  void DeleteSlider(std::string name);
+
+  /** Removes all buttons and sliders from the GUI that have been registered by
+   this Meshcat instance. It does *not* clear the default GUI elements set in
+   the meshcat browser (e.g. for cameras and lights). */
+  void DeleteAllButtonsAndSliders();
 
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block

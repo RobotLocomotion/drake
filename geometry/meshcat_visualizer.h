@@ -26,6 +26,13 @@ for impromptu visualizations.
  name: MeshcatVisualizer
  input_ports:
  - query_object
+ output_ports:
+ - [button_output_0]
+ - ...
+ - [button_output_N-1]
+ - [slider_output_0]
+ - ...
+ - [slider_output_N-1]
  @endsystem
 
 The system uses the versioning mechanism provided by SceneGraph to detect
@@ -81,7 +88,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    QueryObject-valued output port. See
    MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
    MeshcatVisualizerParams) for details. */
-  static const MeshcatVisualizer<T>& AddToBuilder(
+  static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
       std::shared_ptr<Meshcat> meshcat,
       MeshcatVisualizerParams params = {});
@@ -89,7 +96,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /** Adds a MescatVisualizer and connects it to the given QueryObject-valued
    output port. See MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
    MeshcatVisualizerParams) for details. */
-  static const MeshcatVisualizer<T>& AddToBuilder(
+  static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
       std::shared_ptr<Meshcat> meshcat,

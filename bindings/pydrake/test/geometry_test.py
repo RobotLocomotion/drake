@@ -386,6 +386,14 @@ class TestGeometry(unittest.TestCase):
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()
+        meshcat.AddButton(name="button")
+        self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
+        meshcat.DeleteButton(name="button")
+        meshcat.AddSlider(name="slider", min=0, max=1, step=0.01, value=0.5)
+        meshcat.SetSliderValue(name="slider", value=0.7)
+        self.assertEqual(meshcat.GetSliderValue(name="slider"), 0.7)
+        meshcat.DeleteSlider(name="slider")
+        meshcat.DeleteAllButtonsAndSliders()
 
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_visualizer(self, T):
