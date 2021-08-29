@@ -138,7 +138,6 @@ class Meshcat {
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
-  meshcat.SetProperty("/Cameras/default/rotated/<object>", "zoom", 2.0);
   meshcat.SetProperty("/Lights/DirectionalLight/<object>", "intensity", 1.0);
   @endverbatim
   See @ref meshcat_path "Meshcat paths" for more details about these properties

@@ -19,10 +19,6 @@ namespace internal {
 // compatible with msgpack, which wants to be able to unpack into the same
 // structure.
 
-// TODO(russt): Can we teach msgpack for std::optional to only add the key if
-// has_value() == true?  This would only be for efficiency, but it would allow
-// us to support more options without any cost.
-
 // TODO(russt): These are taken verbatim from meshcat-python.  We should
 // expose them to the user, but not until we can properly document them.
 // Many are documented here: https://threejs.org/docs/#api/en/materials/Material
@@ -59,10 +55,85 @@ struct GeometryData {
   std::optional<double> radiusBottom;
   std::optional<double> radialSegments;
   std::optional<std::string> format;
-  std::vector<char> data;
-  MSGPACK_DEFINE_MAP(uuid, type, width, height, depth, radius, widthSegments,
-                     heightSegments, radiusTop, radiusBottom, radialSegments,
-                     format, data);
+  std::string data;
+
+  // MSGPACK_DEFINE_MAP sends e.g. 'heightSegments':nil when the optional values
+  // are not set.  This defeats the defaults in three.js.  We have to implement
+  // a custom packer in order to avoid it.
+  // TODO(russt): Could make this fancier with e.g. the template parameter packs
+  // in msgpack-c/include/msgpack/v1/adaptor/detail/cpp11_define_map.hpp
+  template <typename Packer>
+  void msgpack_pack(Packer& o) const
+  {
+    int size=2; // uuid and type are always sent.
+    if (width) size++;
+    if (height) size++;
+    if (depth) size++;
+    if (radius) size++;
+    if (widthSegments) size++;
+    if (heightSegments) size++;
+    if (radiusTop) size++;
+    if (radiusBottom) size++;
+    if (radialSegments) size++;
+    if (format) size++;
+    if (!data.empty()) size++;
+    o.pack_map(size);
+    o.pack("uuid");
+    o.pack(uuid);
+    o.pack("type");
+    o.pack(type);
+    if (width) {
+      o.pack("width");
+      o.pack(*width);
+    }
+    if (height) {
+      o.pack("height");
+      o.pack(*height);
+    }
+    if (depth) {
+      o.pack("depth");
+      o.pack(*depth);
+    }
+    if (radius) {
+      o.pack("radius");
+      o.pack(*radius);
+    }
+    if (widthSegments) {
+      o.pack("widthSegments");
+      o.pack(*widthSegments);
+    }
+    if (heightSegments) {
+      o.pack("heightSegments");
+      o.pack(*heightSegments);
+    }
+    if (radiusTop) {
+      o.pack("radiusTop");
+      o.pack(*radiusTop);
+    }
+    if (radiusBottom) {
+      o.pack("radiusBottom");
+      o.pack(*radiusBottom);
+    }
+    if (radialSegments) {
+      o.pack("radialSegments");
+      o.pack(*radialSegments);
+    }
+    if (format) {
+      o.pack("format");
+      o.pack(*format);
+    }
+    if (!data.empty()) {
+      o.pack("data");
+      o.pack(data);
+    }
+  }
+  void msgpack_unpack(msgpack::object const&)
+  {
+    // Intentionally left blank.
+    // This method must be defined, but the implementation is not needed in the
+    // current workflows.
+  }
+
 };
 
 struct ObjectMetaData {
