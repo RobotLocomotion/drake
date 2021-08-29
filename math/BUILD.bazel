@@ -29,6 +29,7 @@ drake_cc_package_library(
         ":gradient",
         ":gray_code",
         ":jacobian",
+        ":linear_solve",
         ":matrix_util",
         ":orthonormal_basis",
         ":quadratic_form",
@@ -147,6 +148,16 @@ drake_cc_library(
         "//common:essential",
         "//common:is_approx_equal_abstol",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_solve",
+    srcs = ["linear_solve.cc"],
+    hdrs = ["linear_solve.h"],
+    deps = [
+        ":gradient",
+        "//common:symbolic",
     ],
 )
 
@@ -297,6 +308,7 @@ drake_cc_googletest(
         ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -423,6 +435,16 @@ drake_cc_googletest(
     name = "hopf_coordinate_test",
     deps = [
         ":geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_solve_test",
+    deps = [
+        ":linear_solve",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
