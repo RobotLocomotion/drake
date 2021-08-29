@@ -311,8 +311,9 @@ class MeshcatShapeReifier : public ShapeReifier {
           mesh.filename(), size, kMaxBackPressure));
     }
     input.seekg(0, std::ios::beg);
-    geometry.data.resize(size);
-    input.read(geometry.data.data(), size);
+    geometry.data.reserve(size);
+    geometry.data.assign((std::istreambuf_iterator<char>(input)),
+                         std::istreambuf_iterator<char>());
 
     // TODO(russt): Implement textures.  Need to add LumpedData.textures,
     // LumpedData.images, etc.

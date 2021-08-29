@@ -221,8 +221,8 @@ class MeshcatVisualizer(LeafSystem):
         print("Connected to meshcat-server.")
 
         # Set background color (to match drake-visualizer).
-        self.vis['/Background'].set_property("top_color", [242, 242, 255])
-        self.vis['/Background'].set_property("bottom_color", [77, 77, 89])
+        self.vis['/Background'].set_property("top_color", [0.95, 0.95, 1.0])
+        self.vis['/Background'].set_property("bottom_color", [.32, .32, .35])
 
         if open_browser:
             webbrowser.open(self.vis.url())

@@ -20,9 +20,6 @@ using math::RigidTransformd;
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
-  // Turn off the background (it will appear white).
-  meshcat->SetProperty("/Background", "visible", false);
-
   meshcat->SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
   meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-2.0, 0, 0}));
 
@@ -44,7 +41,7 @@ int do_main() {
   std::cout << R"""(
 Open up your browser to the URL above.
 
-- The background should be off (it will appear white).\n";
+- The background should be grey.
 - From back to front along the x axis, you should see:
   - a red sphere
   - a green cylinder (with the long axis in z)
@@ -55,12 +52,17 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
+  // Turn off the background (it will appear white).
+  meshcat->SetProperty("/Background", "visible", false);
+
   meshcat->Delete("box");
   meshcat->SetProperty("/Lights/AmbientLight/<object>", "intensity", 0.1);
 
-  std::cout << "- The blue box should have disappeared and the lights should "
-               "have dimmed."
-            << std::endl;
+  std::cout
+      << "- The blue box should have disappeared\n"
+      << "- The lights should have dimmed."
+      << "- The background should have been disabled (it will appear white)"
+      << std::endl;
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
