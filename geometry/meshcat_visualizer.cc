@@ -30,7 +30,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                                     &MeshcatVisualizer<T>::UpdateMeshcat);
   this->DeclareForcedPublishEvent(&MeshcatVisualizer<T>::UpdateMeshcat);
 
-  if (params_.delete_on_intialization_event) {
+  if (params_.delete_on_initialization_event) {
     this->DeclareInitializationPublishEvent(
         &MeshcatVisualizer<T>::OnInitialization);
   }
