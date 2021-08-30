@@ -102,6 +102,22 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "mixed_integer_rotation_constraint_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_srcs = [
+        "mixed_integer_optimization_util_py.cc",
+        "mixed_integer_rotation_constraint_py.cc",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+    ],
+)
+
 drake_cc_library(
     name = "solvers_pybind",
     hdrs = ["solvers_pybind.h"],
@@ -271,6 +287,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mixed_integer_optimization_util_py",
+    ":mixed_integer_rotation_constraint_py",
     ":mosek_py",
     ":nlopt_py",
     ":osqp_py",
@@ -434,6 +451,16 @@ drake_py_unittest(
     name = "mixed_integer_optimization_util_test",
     deps = [
         ":mixed_integer_optimization_util_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "mixed_integer_rotation_constraint_test",
+    deps = [
+        ":mixed_integer_optimization_util_py",
+        ":mixed_integer_rotation_constraint_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
