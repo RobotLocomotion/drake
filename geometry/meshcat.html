@@ -17,6 +17,9 @@
     // Set background to match Drake Visualizer.
     viewer.set_property(['Background'], 'top_color', [.95, .95, 1.0])
     viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
+    // Set the initial view looking up the y-axis.
+    viewer.set_property(['Cameras','default','rotated','<object>'], 
+                        "position", [0.0, 1.0, 3.0])
     try {
       viewer.connect();
     } catch (e) {

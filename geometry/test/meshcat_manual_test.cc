@@ -42,7 +42,7 @@ int do_main() {
 Open up your browser to the URL above.
 
 - The background should be grey.
-- From back to front along the x axis, you should see:
+- From left to right along the x axis, you should see:
   - a red sphere
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
@@ -51,6 +51,20 @@ Open up your browser to the URL above.
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  meshcat->Set2dRenderMode(math::RigidTransform(Eigen::Vector3d{0, -3, 0}), -3,
+                           3, -2, 2);
+
+  std::cout << "- The scene should have switched to 2d rendering mode.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::cout << "- The scene should have switched back to 3d.\n";
+  meshcat->ResetRenderMode();
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
 
   // Turn off the background (it will appear white).
   meshcat->SetProperty("/Background", "visible", false);

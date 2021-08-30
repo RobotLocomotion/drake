@@ -8,6 +8,7 @@
 
 #include <msgpack.hpp>
 
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/rgba.h"
 #include "drake/math/rigid_transform.h"
 
@@ -163,6 +164,33 @@ struct SetObjectData {
   std::string type{"set_object"};
   std::string path;
   LumpedObjectData object;
+  MSGPACK_DEFINE_MAP(type, path, object);
+};
+
+// TODO: implement an unobtrusive packer for OrthographicCamera directly, rather
+// than subclassing it here.  Then I can also have a single templated version of
+// a single Meshcat::WebSocketServer::SetCamera method, instead of one for each.
+struct OrthographicCameraData : public Meshcat::OrthographicCamera {
+  std::string type{"OrthographicCamera"};
+  MSGPACK_DEFINE_MAP(type, left, right, top, bottom, near, far, zoom);
+};
+
+struct PerspectiveCameraData : public Meshcat::PerspectiveCamera {
+  std::string type{"PerspectiveCamera"};
+  MSGPACK_DEFINE_MAP(type, fov, aspect, near, far);
+};
+
+template <typename CameraData>
+struct LumpedCameraData {
+  CameraData object;
+  MSGPACK_DEFINE_MAP(object);
+};
+
+template <typename CameraData>
+struct SetCameraData {
+  std::string type{"set_object"};
+  std::string path;
+  LumpedCameraData<CameraData> object;
   MSGPACK_DEFINE_MAP(type, path, object);
 };
 
