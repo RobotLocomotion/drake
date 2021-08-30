@@ -117,7 +117,7 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
   return result.GetSolution(x);
 }
 
-HPolyhedron HPolyhedron::CartesianProduct(const HPolyhedron& other) const {
+HPolyhedron HPolyhedron::CalcCartesianProduct(const HPolyhedron& other) const {
   MatrixXd A_product = MatrixXd::Zero(A_.rows() + other.A().rows(),
                                       A_.cols() + other.A().cols());
   A_product.topLeftCorner(A_.rows(), A_.cols()) = A_;
