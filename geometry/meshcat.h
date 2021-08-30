@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/geometry/rgba.h"
@@ -104,6 +106,40 @@ class Meshcat {
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
   // TODO(russt): SetObject with texture map.
+  
+  // TODO(russt): Provide a more general SetObject(std::string_view path,
+  // msgpack::object object) that would allow users to pass through anything
+  // that meshcat.js / three.js can handle.
+
+  struct PerspectiveCamera {
+    double fov{75};   // Camera frustum vertical field of view.
+    double aspect{1}; // Camera frustum aspect ratio.
+    double near{.01}; // Camera frustum near plane.
+    double far{100};  // Camera frustum far plane.
+    double zoom{1};   // The zoom factor of the camera.
+  };
+  void SetCamera(const PerspectiveCamera& camera,
+                 std::string path = "/Cameras/default/rotated");
+
+  struct OrthographicCamera {
+    double left{-1};  // Camera frustum left plane.
+    double right{1};  // Camera frustum right plane.
+    double top{-1};   // Camera frustum top plane.
+    double bottom{1}; // Camera frustum bottom plane.
+    double near{-1000}; // Camera frustum near plane.
+    double far{1000}; // Camera frustum far plane.
+    double zoom{1};   // The zoom factor of the camera.
+  };
+  void SetCamera(const OrthographicCamera& camera,
+                 std::string path = "/Cameras/default/rotated");
+
+  /** Planar yada... */
+  void Set2dRenderMode(const math::RigidTransformd& X_WC =
+                           math::RigidTransformd(Eigen::Vector3d{0, -1, 0}),
+                       double xmin = -1, double xmax = 1, double ymin = -1,
+                       double ymax = 1);
+  /** Back to 3d. */
+  void ResetRenderMode();
 
   /** Set the RigidTransform for a given path in the scene tree. An object's
   pose is the concatenation of all of the transforms along its path, so setting
@@ -152,6 +188,9 @@ class Meshcat {
   @pydrake_mkdoc_identifier{double}
   */
   void SetProperty(std::string_view path, std::string property, double value);
+
+  void SetProperty(std::string_view path, std::string property,
+                   const std::vector<double>& value);
 
   // TODO(russt): Implement SetAnimation().
 
