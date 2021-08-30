@@ -36,6 +36,8 @@ drake_cc_package_library(
         ":internal_frame",
         ":internal_geometry",
         ":meshcat",
+        ":meshcat_visualizer",
+        ":meshcat_visualizer_params",
         ":proximity_engine",
         ":proximity_properties",
         ":rgba",
@@ -380,9 +382,18 @@ drake_cc_binary(
     name = "meshcat_manual_test",
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
-    data = ["//systems/sensors:test_models"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//systems/sensors:test_models",
+    ],
     visibility = ["//visibility:private"],
-    deps = [":meshcat"],
+    deps = [
+        ":meshcat",
+        ":meshcat_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+    ],
 )
 
 drake_py_binary(
@@ -404,6 +415,48 @@ drake_cc_googletest(
     deps = [
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_visualizer_params",
+    hdrs = ["meshcat_visualizer_params.h"],
+    deps = [
+        ":geometry_roles",
+        ":rgba",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_visualizer",
+    srcs = ["meshcat_visualizer.cc"],
+    hdrs = ["meshcat_visualizer.h"],
+    deps = [
+        ":geometry_roles",
+        ":meshcat",
+        ":meshcat_visualizer_params",
+        ":rgba",
+        ":scene_graph",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//systems/framework:context",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_visualizer_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":meshcat_visualizer",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 
