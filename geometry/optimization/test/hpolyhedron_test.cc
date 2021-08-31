@@ -360,6 +360,21 @@ GTEST_TEST(HPolyhedronTest, CartesianPowerTest) {
   EXPECT_TRUE(CompareMatrices(H_3.b(), b_3));
 }
 
+GTEST_TEST(HPolyhedronTest, CartesianProductTest) {
+  HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);
+  VectorXd x_A = VectorXd::Zero(2);
+  EXPECT_TRUE(H_A.PointInSet(x_A));
+
+  HPolyhedron H_B = HPolyhedron::MakeBox(Vector2d(2, 2), Vector2d(4, 4));
+  VectorXd x_B = 3 * VectorXd::Ones(2);
+  EXPECT_TRUE(H_B.PointInSet(x_B));
+
+  HPolyhedron H_C = H_A.CartesianProduct(H_B);
+  VectorXd x_C{x_A.size() + x_B.size()};
+  x_C << x_A, x_B;
+  EXPECT_TRUE(H_C.PointInSet(x_C));
+}
+
 
 }  // namespace optimization
 }  // namespace geometry
