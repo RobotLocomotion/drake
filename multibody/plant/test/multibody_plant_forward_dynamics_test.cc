@@ -7,7 +7,10 @@
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/systems/framework/context.h"
 
+using drake::math::RigidTransformd;
 using drake::systems::Context;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
@@ -185,6 +188,45 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   // test.
   EXPECT_TRUE(CompareMatrices(
       residual, Eigen::VectorXd::Zero(plant.num_multibody_states()), 2e-13));
+}
+
+// Verifies we can do forward dynamics on a model with a zero-sized state.
+GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
+  // Problem parameters.
+  const double kCubeSize = 1.5;  // Size of the box, in meters.
+  const double kBoxMass = 2.0;   // Mass of each box, in Kg.
+  // We use discrete_update_period = 0 to set a continuous model that uses the
+  // Articulated Body Algorithm (ABA) to evaluate forward dynamics.
+  const double discrete_update_period = 0;
+  MultibodyPlant<double> plant(discrete_update_period);
+
+  // Set a model with two boxes anchored to the world via weld joints.
+  const Vector3d p_BoBcm_B = Vector3d::Zero();
+  const UnitInertia<double> G_BBcm =
+      UnitInertia<double>::SolidBox(kCubeSize, kCubeSize, kCubeSize);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::MakeFromCentralInertia(kBoxMass, p_BoBcm_B,
+                                                     G_BBcm);
+  // Create two rigid bodies.
+  const auto& boxA = plant.AddRigidBody("boxA", M_BBo_B);
+  const auto& boxB = plant.AddRigidBody("boxB", M_BBo_B);
+
+  // Desired transformation for the boxes in the world.
+  const RigidTransformd X_WA(Vector3d::Zero());
+  const RigidTransformd X_WB(Vector3d(kCubeSize, 0, 0));
+  const RigidTransformd X_AB = X_WA.inverse() * X_WB;
+
+  // Pin boxA to the world and boxB to boxA with weld joints.
+  plant.WeldFrames(plant.world_body().body_frame(), boxA.body_frame(), X_WA);
+  plant.WeldFrames(boxA.body_frame(), boxB.body_frame(), X_AB);
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  // Evaluate forward dynamics.
+  const VectorXd vdot =
+      MultibodyPlantTester::CalcGeneralizedAccelerations(plant, *context);
+  EXPECT_EQ(vdot.size(), 0);
 }
 
 // TODO(amcastro-tri): Include test with non-zero actuation and external forces.

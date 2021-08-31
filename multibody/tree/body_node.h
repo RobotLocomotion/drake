@@ -867,12 +867,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
         this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
-    DRAKE_DEMAND(start_index_in_v < this->get_parent_tree().num_velocities());
     const int num_velocities = get_topology().num_mobilizer_velocities;
+    DRAKE_DEMAND(num_velocities == 0 ||
+                 start_index_in_v < this->get_parent_tree().num_velocities());
     // The first column of this node's hinge matrix H_PB_W:
-    const Vector6<T>& H_col0 = H_array[start_index_in_v];
+    const T* H_col0 =
+        num_velocities == 0 ? nullptr : H_array[start_index_in_v].data();
     // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<const MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
+    return Eigen::Map<const MatrixUpTo6<T>>(H_col0, 6, num_velocities);
   }
 
   // Mutable version of GetJacobianFromArray().
@@ -881,12 +883,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     DRAKE_DEMAND(static_cast<int>(H_array->size()) ==
                  this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
-    DRAKE_DEMAND(start_index_in_v < this->get_parent_tree().num_velocities());
     const int num_velocities = get_topology().num_mobilizer_velocities;
+    DRAKE_DEMAND(num_velocities == 0 ||
+                 start_index_in_v < this->get_parent_tree().num_velocities());
     // The first column of this node's hinge matrix H_PB_W:
-    Vector6<T>& H_col0 = (*H_array)[start_index_in_v];
+    T* H_col0 =
+        num_velocities == 0 ? nullptr : (*H_array)[start_index_in_v].data();
     // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
+    return Eigen::Map<MatrixUpTo6<T>>(H_col0, 6, num_velocities);
   }
 
   // This method is used by MultibodyTree within a tip-to-base loop to compute
@@ -930,7 +934,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
-    DRAKE_THROW_UNLESS(this->velocity_start() < reflected_inertia.size());
+    DRAKE_THROW_UNLESS(reflected_inertia.size() ==
+                       this->get_parent_tree().num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
