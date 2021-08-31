@@ -83,7 +83,7 @@ Open up your browser to the URL above.
 
   builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
   MeshcatVisualizerParams params;
-  params.delete_prefix_on_initialization_event = false;
+  params.delete_on_intialization_event = false;
   MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat, params);
 
   auto diagram = builder.Build();

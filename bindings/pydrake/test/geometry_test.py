@@ -8,6 +8,7 @@ from math import pi
 import numpy as np
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -363,6 +364,52 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(draw_subscriber.count, 0)
         load_subscriber.clear()
         draw_subscriber.clear()
+
+    def test_meshcat(self):
+        meshcat = mut.Meshcat()
+        self.assertIn("http", meshcat.web_url())
+        self.assertIn("ws", meshcat.ws_url())
+        meshcat.SetObject(path="/test/box",
+                          shape=mut.Box(1, 1, 1),
+                          rgba=mut.Rgba(.5, .5, .5))
+        meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        meshcat.SetProperty(path="/Background",
+                            property="visible",
+                            value=True)
+        meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
+                            property="intensity", value=1.0)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_meshcat_visualizer(self, T):
+        meshcat = mut.Meshcat()
+        params = mut.MeshcatVisualizerParams()
+        params.publish_period = 0.123
+        params.role = mut.Role.kIllustration
+        params.default_color = mut.Rgba(0.5, 0.5, 0.5)
+        params.prefix = "py_visualizer"
+        params.delete_on_intialization_event = False
+        vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
+        vis.Delete()
+        self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
+
+        builder = DiagramBuilder_[T]()
+        scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
+        mut.MeshcatVisualizerCpp_[T].AddToBuilder(builder=builder,
+                                                  scene_graph=scene_graph,
+                                                  meshcat=meshcat,
+                                                  params=params)
+        mut.MeshcatVisualizerCpp_[T].AddToBuilder(
+            builder=builder,
+            query_object_port=scene_graph.get_query_output_port(),
+            meshcat=meshcat,
+            params=params)
+
+    def test_meshcat_visualizer_scalar_conversion(self):
+        meshcat = mut.Meshcat()
+        vis = mut.MeshcatVisualizerCpp(meshcat)
+        vis_autodiff = vis.ToAutoDiffXd()
+        self.assertIsInstance(vis_autodiff,
+                              mut.MeshcatVisualizerCpp_[AutoDiffXd])
 
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
