@@ -8,7 +8,6 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
-from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.tree import (
     BallRpyJoint_,
@@ -1925,14 +1924,13 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant_[float](0.0)
-
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         plant.set_penetration_allowance(penetration_allowance=0.0001)
         plant.set_stiction_tolerance(v_stiction=0.001)
         self.assertIsInstance(
             plant.get_contact_penalty_method_time_scale(), float)
-        contact_results_to_lcm = ContactResultsToLcmSystem(plant=plant)
+        contact_results_to_lcm = ContactResultsToLcmSystem(plant)
         context = contact_results_to_lcm.CreateDefaultContext()
         contact_results_to_lcm.get_input_port(0).FixValue(
             context, ContactResults_[float]())
@@ -1942,32 +1940,18 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(result, AbstractValue)
 
     def test_connect_contact_results(self):
-        # For this test to be meaningful, the sdf file must contain collision
-        # geometries. We'll do a reality check after instantiating.
-        file_name = FindResourceOrThrow(
-            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
-        # Test for owning and non-owning lcm.
-        for lcm in (None, DrakeLcm()):
-            # There are two versions of the function; one takes a SceneGraph,
-            # one does not. Test both.
-            for use_custom_names in (True, False):
-                builder = DiagramBuilder_[float]()
-                plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-                Parser(plant).AddModelFromFile(file_name)
-                plant.Finalize()
-                self.assertGreater(
-                    len(plant.GetCollisionGeometriesForBody(
-                        plant.GetBodyByName("base"))),
-                    0)
+        DiagramBuilder = DiagramBuilder_[float]
+        MultibodyPlant = MultibodyPlant_[float]
 
-                if use_custom_names:
-                    publisher = ConnectContactResultsToDrakeVisualizer(
-                        builder=builder, plant=plant, scene_graph=scene_graph,
-                        lcm=lcm)
-                else:
-                    publisher = ConnectContactResultsToDrakeVisualizer(
-                        builder=builder, plant=plant, lcm=lcm)
-                self.assertIsInstance(publisher, LcmPublisherSystem)
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(0.001))
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
+        self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):
         builder_f = DiagramBuilder_[float]()
