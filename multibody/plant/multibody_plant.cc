@@ -255,6 +255,103 @@ std::string GetScopedName(
   }
 }
 
+// TODO(rpoyner-tri): the Select*() and Expand*() functions below can be
+// removed and replaced with arbitrary indexing once Eigen 3.4 is our minimum
+// required version.
+
+// Valid index arrays are no larger than max_size, are sorted, and contain
+// entries in the range [0, max_size).
+void DemandIndicesValid(const std::vector<int>& indices, int max_size) {
+  DRAKE_DEMAND(static_cast<int>(indices.size()) <= max_size);
+  if (indices.empty()) { return; }
+
+  // Only do the expensive check in debug builds.
+  DRAKE_ASSERT(std::is_sorted(indices.begin(), indices.end()));
+  DRAKE_DEMAND(indices[0] >= 0);
+  DRAKE_DEMAND(indices[indices.size() - 1] < max_size);
+}
+
+// Make a new, possibly smaller square matrix from square matrix @p M, by
+// selecting the rows and columns indexed by @p indices.
+template <typename T>
+MatrixX<T> SelectRowsCols(const MatrixX<T>& M,
+                          const std::vector<int>& indices) {
+  DRAKE_DEMAND(M.rows() == M.cols());
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, M.rows()));
+  const int selected_count = indices.size();
+  if (selected_count == M.rows()) {
+    return M;
+  }
+  MatrixX<T> result(selected_count, selected_count);
+
+  for (int i = 0; i < result.rows(); ++i) {
+    for (int j = 0; j < result.cols(); ++j) {
+      result(i, j) = M(indices[i], indices[j]);
+    }
+  }
+  return result;
+}
+
+// Make a new, possibly smaller matrix from matrix M, by selecting the columns
+// indexed by @p indices.
+template <typename T>
+MatrixX<T> SelectCols(const MatrixX<T>& M,
+                      const std::vector<int>& indices) {
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, M.cols()));
+  const int selected_count = indices.size();
+  if (selected_count == M.cols()) {
+    return M;
+  }
+  MatrixX<T> result(M.rows(), selected_count);
+
+  for (int i = 0; i < result.cols(); ++i) {
+    result.col(i) = M.col(indices[i]);
+  }
+  return result;
+}
+
+// Make a new, possibly smaller vector from vector @p v, by selecting the rows
+// indexed by @p indices.
+template <typename T>
+VectorX<T> SelectRows(const VectorX<T>& v,
+                      const std::vector<int>& indices) {
+  const int selected_count = indices.size();
+  if (selected_count == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(selected_count);
+
+  for (int i = 0; i < result.rows(); ++i) {
+    result(i) = v(indices[i]);
+  }
+  return result;
+}
+
+// Make a new, possibly larger vector of size @p rows_out, by copying rows
+// of @p v to rows indexed by @p indices. New rows are filled with zeros.
+template <typename T>
+VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
+                       const std::vector<int>& indices) {
+  DRAKE_ASSERT(static_cast<int>(indices.size()) == v.rows());
+  DRAKE_ASSERT(rows_out >= v.rows());
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, rows_out));
+  if (rows_out == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(rows_out);
+
+  int index_cursor = 0;
+  for (int i = 0; i < result.rows(); ++i) {
+    if (index_cursor >= v.rows() || i < indices[index_cursor]) {
+      result(i) = 0.;
+    } else {
+      result(indices[index_cursor]) = v(index_cursor);
+      ++index_cursor;
+    }
+  }
+  return result;
+}
+
 }  // namespace
 
 template <typename T>
@@ -2239,15 +2336,101 @@ void MultibodyPlant<T>::CalcContactSolverResults(
     phi0[i] = contact_pairs[i].phi0;
   }
 
-  if (contact_solver_ != nullptr) {
-    CallContactSolver(contact_solver_.get(), context0.get_time(), v0, M0,
-                      minus_tau, phi0, contact_jacobians.Jc, stiffness, damping,
-                      mu, results);
-  } else {
-    CallTamsiSolver(context0.get_time(), v0, M0, minus_tau, fn0,
-                    contact_jacobians.Jn, contact_jacobians.Jt, stiffness,
-                    damping, mu, results);
+  // Joint locking: quick exit if everything is locked.
+  const auto& indices = EvalJointLockingIndices(context0);
+  if (indices.empty()) {
+    // Everything is locked! Return a result that indicates no velocity, but
+    // reports normal forces.
+    results->Resize(nv, num_contacts);
+    results->v_next.setZero();
+    results->fn = fn0;
+    results->ft.setZero();
+    results->vn.setZero();
+    results->vt.setZero();
+    results->tau_contact = contact_jacobians.Jn.transpose() * results->fn;
+    return;
   }
+
+  // Joint locking: reduce solver inputs.
+  MatrixX<T> M0_unlocked = SelectRowsCols(M0, indices);
+  VectorX<T> minus_tau_unlocked = SelectRows(minus_tau, indices);
+  MatrixX<T> Jn_unlocked = SelectCols(contact_jacobians.Jn, indices);
+  MatrixX<T> Jt_unlocked = SelectCols(contact_jacobians.Jt, indices);
+  MatrixX<T> Jc_unlocked = SelectCols(contact_jacobians.Jc, indices);
+
+  VectorX<T> v0_unlocked = SelectRows(v0, indices);
+
+  // TAMSI is initialized with num_velocities(). Resize the internal solver
+  // workspace if needed.
+  tamsi_solver_->ResizeIfNeeded(indices.size());
+
+  contact_solvers::internal::ContactSolverResults<T> results_unlocked;
+  results_unlocked.Resize(indices.size(), num_contacts);
+
+  if (contact_solver_ != nullptr) {
+    CallContactSolver(contact_solver_.get(), context0.get_time(), v0_unlocked,
+                      M0_unlocked, minus_tau_unlocked, phi0, Jc_unlocked,
+                      stiffness, damping, mu, &results_unlocked);
+  } else {
+    CallTamsiSolver(context0.get_time(), v0_unlocked, M0_unlocked,
+                    minus_tau_unlocked, fn0, Jn_unlocked, Jt_unlocked,
+                    stiffness, damping, mu, &results_unlocked);
+  }
+
+  // Joint locking: expand reduced outputs.
+  results->v_next = ExpandRows(results_unlocked.v_next,
+                                num_velocities(), indices);
+  results->tau_contact =
+      contact_jacobians.Jn.transpose() * results_unlocked.fn +
+      contact_jacobians.Jt.transpose() * results_unlocked.ft;
+
+  results->fn = results_unlocked.fn;
+  results->ft = results_unlocked.ft;
+  results->vn = results_unlocked.vn;
+  results->vt = results_unlocked.vt;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcJointLockingIndices(
+    const systems::Context<T>& context,
+    std::vector<int>* unlocked_velocity_indices) const {
+  DRAKE_DEMAND(unlocked_velocity_indices != nullptr);
+  auto& indices = *unlocked_velocity_indices;
+  indices.resize(num_velocities());
+
+  int velocity_cursor = 0;
+  int unlocked_cursor = 0;
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if (joint.is_locked(context)) {
+      velocity_cursor += joint.num_velocities();
+    } else {
+      for (int k = 0; k < joint.num_velocities(); ++k) {
+        indices[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (!body.is_floating()) {
+      continue;
+    }
+    if (body.is_locked(context)) {
+      velocity_cursor += 6;
+    } else {
+      for (int k = 0; k < 6; ++k) {
+        indices[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+  DRAKE_ASSERT(velocity_cursor == num_velocities());
+  DRAKE_ASSERT(unlocked_cursor <= num_velocities());
+
+  // Use size to indicate exactly how many velocities are unlocked.
+  indices.resize(unlocked_cursor);
+  DemandIndicesValid(indices, num_velocities());
+  DRAKE_DEMAND(static_cast<int>(indices.size()) == unlocked_cursor);
 }
 
 template <typename T>
@@ -2966,6 +3149,15 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
+
+  // Cache joint locking indices.
+  const auto& joint_locking_data_cache_entry =
+      this->DeclareCacheEntry("Joint Locking Indices.",
+                              std::vector<int>(),
+                              &MultibodyPlant::CalcJointLockingIndices,
+                              {this->all_parameters_ticket()});
+  cache_indexes_.joint_locking_data =
+      joint_locking_data_cache_entry.cache_index();
 }
 
 template <typename T>
