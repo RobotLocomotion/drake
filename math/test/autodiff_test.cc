@@ -1,6 +1,8 @@
 #include "drake/math/autodiff.h"
 
 #include <Eigen/Dense>
+#include <eigen3/Eigen/src/LU/PartialPivLU.h>
+#include <eigen3/Eigen/src/QR/ColPivHouseholderQR.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -216,46 +218,80 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   EXPECT_TRUE(fixed_gradients.isZero(0.));
 }
 
-GTEST_TEST(DifferentiateLinearSolving, TestNoGrad) {
-  Eigen::Matrix2d A_val;
-  A_val << 1, 3, 3, 10;
-  Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val);
-  Eigen::Vector2d b_val(3, 5);
-  const auto x = DifferentiateLinearSolving(
-      linear_solver, A_val.cast<AutoDiffXd>(), b_val.cast<AutoDiffXd>());
-  static_assert(decltype(x)::RowsAtCompileTime == 2,
-                "The returned x should have 2 rows");
-  const Eigen::Vector2d x_val = linear_solver.solve(b_val);
-  EXPECT_TRUE(CompareMatrices(autoDiffToValueMatrix(x), x_val));
-  EXPECT_EQ(autoDiffToGradientMatrix(x).size(), 0);
+GTEST_TEST(GetDerivativeSize, Test) {
+  // Empty gradient.
+  EXPECT_EQ(GetDerivativeSize(Eigen::Vector2d(1, 2).cast<AutoDiffXd>()), 0);
+  // Non-empty gradient.
+  EXPECT_EQ(GetDerivativeSize(initializeAutoDiffGivenGradientMatrix(
+                Eigen::Vector2d(1, 2), Eigen::Matrix<double, 2, 3>::Ones())),
+            3);
+  // Some derivatives have empty size.
+  Eigen::Matrix<AutoDiffXd, 3, 1> x;
+  x(0).value() = 0;
+  x(0).derivatives() = Eigen::VectorXd(0);
+  x(1).value() = 1;
+  x(1).derivatives() = Eigen::Vector4d::Ones();
+  x(2).value() = 2;
+  x(2).derivatives() = Eigen::VectorXd::Ones(4);
+  EXPECT_EQ(GetDerivativeSize(x), 4);
+
+  // Inconsistent derivative size.
+  x(2).derivatives() = Eigen::VectorXd::Ones(3);
+  DRAKE_EXPECT_THROWS_MESSAGE(GetDerivativeSize(x),
+                              ".* has size 3, while another entry has size 4");
 }
 
-template <typename LinearSolverType, typename DerivedA, typename DerivedB>
-void TestDifferentiateLinearSolving(const LinearSolverType& linear_solver,
-                                    const Eigen::MatrixBase<DerivedA>& A,
-                                    const Eigen::MatrixBase<DerivedB>& b) {
-  const auto x_ad = DifferentiateLinearSolving(linear_solver, A, b);
+template <template <typename> typename LinearSolverType, typename DerivedA,
+          typename DerivedB>
+void TestLinearSolve(const Eigen::MatrixBase<DerivedA>& A,
+                     const Eigen::MatrixBase<DerivedB>& b) {
+  const auto x = LinearSolve<LinearSolverType>(A, b);
+  if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
+                std::is_same_v<typename DerivedB::Scalar, double>) {
+    static_assert(std::is_same_v<typename decltype(x)::Scalar, double>,
+                  "The returned  x should have scalar type = double.");
+  } else {
+    static_assert(!std::is_same_v<typename decltype(x)::Scalar, double>,
+                  "The returned  x should have scalar type as AutoDiffScalar.");
+  }
   // Now check Ax = z and A*∂x/∂z + ∂A/∂z * x = ∂b/∂z
-  const auto Ax = A * x_ad;
-  EXPECT_TRUE(
-      CompareMatrices(autoDiffToValueMatrix(Ax), autoDiffToValueMatrix(b)));
-  const auto b_grad = autoDiffToGradientMatrix(b);
-  const auto Ax_grad = autoDiffToGradientMatrix(Ax);
+  const auto Ax = A * x;
+  Eigen::VectorXd Ax_val, b_val;
+  Eigen::MatrixXd Ax_grad, b_grad;
+  if constexpr (std::is_same_v<typename decltype(Ax)::Scalar, double>) {
+    Ax_val = Ax;
+    Ax_grad = Eigen::Matrix<double, DerivedA::RowsAtCompileTime, 0>::Zero(
+        Ax.rows(), 0);
+  } else {
+    Ax_val = autoDiffToValueMatrix(Ax);
+    Ax_grad = autoDiffToGradientMatrix(Ax);
+  }
+
+  if constexpr (std::is_same_v<typename DerivedB::Scalar, double>) {
+    b_val = b;
+    b_grad = Eigen::Matrix<double, DerivedB::RowsAtCompileTime, 0>::Zero(
+        b.rows(), 0);
+  } else {
+    b_val = autoDiffToValueMatrix(b);
+    b_grad = autoDiffToGradientMatrix(b);
+  }
+  const double tol = 2E-13;
+  EXPECT_TRUE(CompareMatrices(Ax_val, b_val, tol));
   if (b_grad.size() == 0 && Ax_grad.size() == 0) {
   } else if (b_grad.size() != 0 && Ax_grad.size() == 0) {
     EXPECT_TRUE(CompareMatrices(
-        b_grad, Eigen::MatrixXd::Zero(b_grad.rows(), b_grad.cols())));
+        b_grad, Eigen::MatrixXd::Zero(b_grad.rows(), b_grad.cols()), tol));
   } else if (b_grad.size() == 0 && Ax_grad.size() != 0) {
     EXPECT_TRUE(CompareMatrices(
-        Ax_grad, Eigen::MatrixXd::Zero(Ax_grad.rows(), Ax_grad.cols())));
+        Ax_grad, Eigen::MatrixXd::Zero(Ax_grad.rows(), Ax_grad.cols()), tol));
   } else {
-    EXPECT_TRUE(CompareMatrices(Ax_grad, b_grad));
+    EXPECT_TRUE(CompareMatrices(Ax_grad, b_grad, tol));
   }
 }
 
-class DifferentiateLinearSolvingTest : public ::testing::Test {
+class LinearSolveTest : public ::testing::Test {
  public:
-  DifferentiateLinearSolvingTest() {
+  LinearSolveTest() {
     A_val_ << 1, 3, 3, 10;
     b_val_ << 3, 5;
     Eigen::Matrix<double, 2, Eigen::Dynamic> b_grad(2, 3);
@@ -279,67 +315,89 @@ class DifferentiateLinearSolvingTest : public ::testing::Test {
   Eigen::Matrix<AutoDiffXd, 2, 1> b_ad_;
 };
 
-TEST_F(DifferentiateLinearSolvingTest, TestBwithGrad) {
-  // Test DifferentiateLinearSolving with A containing empty gradient while b
+TEST_F(LinearSolveTest, TestDoubleAandb) {
+  // Both A and b are double matrices.
+  TestLinearSolve<Eigen::LLT>(A_val_, b_val_);
+  TestLinearSolve<Eigen::LDLT>(A_val_, b_val_);
+  TestLinearSolve<Eigen::ColPivHouseholderQR>(A_val_, b_val_);
+  TestLinearSolve<Eigen::PartialPivLU>(A_val_, b_val_);
+}
+
+TEST_F(LinearSolveTest, TestAutoDiffAandDoubleB) {
+  // A contains AutoDiffXd and b contains double.
+  TestLinearSolve<Eigen::LLT>(A_ad_, b_val_);
+  TestLinearSolve<Eigen::LDLT>(A_ad_, b_val_);
+  TestLinearSolve<Eigen::ColPivHouseholderQR>(A_ad_, b_val_);
+  TestLinearSolve<Eigen::PartialPivLU>(A_ad_, b_val_);
+}
+
+TEST_F(LinearSolveTest, TestDoubleAandAutoDiffB) {
+  // A contains double and b contains AutoDiffXd.
+  TestLinearSolve<Eigen::LLT>(A_val_, b_ad_);
+  TestLinearSolve<Eigen::LDLT>(A_val_, b_ad_);
+  TestLinearSolve<Eigen::ColPivHouseholderQR>(A_val_, b_ad_);
+  TestLinearSolve<Eigen::PartialPivLU>(A_val_, b_ad_);
+}
+
+TEST_F(LinearSolveTest, TestNoGrad) {
+  // A and b both contain AutoDiffXd but has empty gradient.
+  TestLinearSolve<Eigen::LLT>(A_val_.cast<AutoDiffXd>(),
+                              b_val_.cast<AutoDiffXd>());
+}
+
+TEST_F(LinearSolveTest, TestBwithGrad) {
+  // Test LinearSolve with A containing empty gradient while b
   // contains meaningful gradient.
-  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
-
-  TestDifferentiateLinearSolving(linear_solver, A_val_.cast<AutoDiffXd>(),
-                                 b_ad_);
+  TestLinearSolve<Eigen::LLT>(A_val_.cast<AutoDiffXd>(), b_ad_);
+  TestLinearSolve<Eigen::LDLT>(A_val_.cast<AutoDiffXd>(), b_ad_);
+  TestLinearSolve<Eigen::ColPivHouseholderQR>(A_val_.cast<AutoDiffXd>(), b_ad_);
+  TestLinearSolve<Eigen::PartialPivLU>(A_val_.cast<AutoDiffXd>(), b_ad_);
 }
 
-TEST_F(DifferentiateLinearSolvingTest, TestAwithGrad) {
-  // Test DifferentiateLinearSolving with A containing gradient while b contains
+TEST_F(LinearSolveTest, TestAwithGrad) {
+  // Test LinearSolve with A containing gradient while b contains
   // no gradient.
-  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
-  TestDifferentiateLinearSolving(linear_solver, A_ad_,
-                                 b_val_.cast<AutoDiffXd>());
-  // If I differentiate the linear solver using AutoDiffXd with the following
-  // code, then it computes different gradient, which I believe is incorrect.
-  // Eigen::LLT<Eigen::Matrix<AutoDiffXd, 2, 2>> linear_solver_ad(A_ad_);
-  // const Vector2<AutoDiffXd> x_ad_expected =
-  //     linear_solver_ad.solve(b_val_.cast<AutoDiffXd>());
-  // const auto Ax = A_ad_ * x_ad_expected;
-  // std::cout << "(A*x) gradient:\n"
-  //           << autoDiffToGradientMatrix(Ax)
-  //           << "\n This gradient should be zero\n";
+  TestLinearSolve<Eigen::LLT>(A_ad_, b_val_.cast<AutoDiffXd>());
+  TestLinearSolve<Eigen::LDLT>(A_ad_, b_val_.cast<AutoDiffXd>());
+  TestLinearSolve<Eigen::ColPivHouseholderQR>(A_ad_, b_val_.cast<AutoDiffXd>());
+  TestLinearSolve<Eigen::PartialPivLU>(A_ad_, b_val_.cast<AutoDiffXd>());
 }
 
-TEST_F(DifferentiateLinearSolvingTest, TestAbWithGrad) {
-  // Test DifferentiateLinearSolving with both A and b containing gradient.
-  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
-  TestDifferentiateLinearSolving(linear_solver, A_ad_, b_ad_);
+TEST_F(LinearSolveTest, TestAbWithGrad) {
+  // Test LinearSolve with both A and b containing gradient.
+  TestLinearSolve<Eigen::LLT>(A_ad_, b_ad_);
+  TestLinearSolve<Eigen::LDLT>(A_ad_, b_ad_);
+  TestLinearSolve<Eigen::ColPivHouseholderQR>(A_ad_, b_ad_);
+  TestLinearSolve<Eigen::PartialPivLU>(A_ad_, b_ad_);
 }
 
-TEST_F(DifferentiateLinearSolvingTest, TestAbWithMaybeEmptyGrad) {
-  // Test DifferentiateLinearSolving with both A and b containing gradient in
+TEST_F(LinearSolveTest, TestAbWithMaybeEmptyGrad) {
+  // Test LinearSolve with both A and b containing gradient in
   // some entries, and empty gradient in some other entries.
   A_ad_(1, 0).derivatives() = Eigen::VectorXd(0);
   b_ad_(1).derivatives() = Eigen::VectorXd(0);
-  const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
-  TestDifferentiateLinearSolving(linear_solver, A_ad_, b_ad_);
+  TestLinearSolve<Eigen::LLT>(A_ad_, b_ad_);
+  TestLinearSolve<Eigen::LDLT>(A_ad_, b_ad_);
 }
 
-TEST_F(DifferentiateLinearSolvingTest, TestWrongGradientSize) {
+TEST_F(LinearSolveTest, TestWrongGradientSize) {
   const Eigen::LLT<Eigen::Matrix2d> linear_solver(A_val_);
   // A's gradient has inconsistent size.
   auto A_ad_error = A_ad_;
   A_ad_error(0, 1).derivatives() = Eigen::Vector2d(1, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      DifferentiateLinearSolving(linear_solver, A_ad_error, b_ad_),
-      ".* has size 2, while another entry has size 3");
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_error, b_ad_),
+                              ".* has size 2, while another entry has size 3");
   // b's gradient has inconsistent size.
   auto b_ad_error = b_ad_;
   b_ad_error(1).derivatives() = Eigen::Vector2d(1, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      DifferentiateLinearSolving(linear_solver, A_ad_, b_ad_error),
-      ".* has size 2, while another entry has size 3");
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_, b_ad_error),
+                              ".* has size 2, while another entry has size 3");
   // A and b have different number of derivatives.
   auto b_ad_error2 = b_ad_;
   b_ad_error2(0).derivatives() = Eigen::Vector4d::Ones();
   b_ad_error2(1).derivatives() = Eigen::Vector4d::Ones();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      DifferentiateLinearSolving(linear_solver, A_ad_, b_ad_error2),
+      LinearSolve<Eigen::LLT>(A_ad_, b_ad_error2),
       ".*A contains derivatives for 3 variables, while b contains derivatives "
       "for 4 variables");
 }
