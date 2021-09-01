@@ -33,9 +33,15 @@ class TestCommon(unittest.TestCase):
             'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
             )
 
-    def test_temp_directory(self):
-        self.assertEqual(os.environ.get('TEST_TMPDIR'),
-                         mut.temp_directory())
+    def test_test_temp_directory(self):
+        dir = mut.temp_directory()
+        # Confirm:
+        #  1. Environment variable value is the prefix.
+        #  2. New directory conforms to the expected pattern.
+        #  3. Doesn't end in /.
+        regex = (os.environ.get('TEST_TMPDIR')
+                 + '/robotlocomotion_drake_[^/]{6}$')
+        self.assertRegex(dir, regex)
 
     def test_tolerance_type(self):
         # Simply test the spelling
