@@ -33,9 +33,13 @@ class TestCommon(unittest.TestCase):
             'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
             )
 
-    def test_temp_directory(self):
-        self.assertEqual(os.environ.get('TEST_TMPDIR'),
-                         mut.temp_directory())
+    def test_test_temp_directory(self):
+        temp_dir = mut.temp_directory()
+        # We'll simply confirm that the path *starts* with the TEST_TMPDIR and
+        # that it exists. We'll assume that it otherwise has the documented
+        # properties.
+        self.assertTrue(temp_dir.startswith(os.environ.get('TEST_TMPDIR')))
+        self.assertTrue(os.path.exists(temp_dir))
 
     def test_tolerance_type(self):
         # Simply test the spelling
