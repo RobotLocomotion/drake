@@ -12,7 +12,8 @@ load(
 )
 load(
     "@drake//tools/workspace:os.bzl",
-    "determine_os",)
+    "determine_os",
+)
 
 def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
@@ -27,7 +28,7 @@ def _impl(repo_ctx):
         prefix = "/usr/local/opt/msgpack-cxx/"
         repo_ctx.symlink("{}/include".format(prefix), "msgpack")
 
-        hdrs_patterns = ["msgpack/**/*.hpp",]
+        hdrs_patterns = ["msgpack/**/*.hpp"]
 
         file_content = """# -*- python -*-
 
@@ -52,11 +53,11 @@ cc_library(
         )
 
 msgpack_repository = repository_rule(
-      attrs = {
+    attrs = {
         "modname": attr.string(default = "msgpack"),
         "licenses": attr.string_list(default = ["notice"]),  # Boost-1.0
-      },
+    },
     local = True,
     configure = True,
     implementation = _impl,
-    )
+)
