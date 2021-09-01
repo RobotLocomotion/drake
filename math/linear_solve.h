@@ -13,6 +13,9 @@ namespace math {
  * @tparam LinearSolverType The type of linear solver, for example
  * Eigen::LLT. Notice that this is just specifies the solver type (such as
  * Eigen::LLT), not the matrix type (like Eigen::LLT<Eigen::Matrix2d>).
+ * All Eigen solvers we care about are templated on the matrix type. Some are
+ * further templated on configuration ints. The int... will acount for zero or
+ * more of these ints, providing a common interface for both types of solvers.
  * @tparam DerivedA An Eigen Matrix.
  * @tparam DerivedB An Eigen Vector.
  * @param A The matrix A.
@@ -51,8 +54,8 @@ namespace math {
  * Template specialization for both A and b being double-valued matrices.
  * See @ref linear_solve for more details.
  */
-template <template <typename> typename LinearSolverType, typename DerivedA,
-          typename DerivedB>
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
 typename std::enable_if<
     DerivedB::ColsAtCompileTime == 1 &&
         std::is_same_v<typename DerivedA::Scalar, double> &&
@@ -70,8 +73,8 @@ LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
  * Template specialization for A being double-valued matrix, and b being
  * AutoDiffScalar-valued vector. See @ref linear_solve for more details.
  */
-template <template <typename> typename LinearSolverType, typename DerivedA,
-          typename DerivedB>
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
 typename std::enable_if<DerivedB::ColsAtCompileTime == 1 &&
                             std::is_same_v<typename DerivedA::Scalar, double> &&
                             !std::is_same_v<typename DerivedB::Scalar, double>,
@@ -103,8 +106,8 @@ LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
  * Template specialization when A is a matrix of AutoDiffScalar.
  * See @ref linear_solve for more details.
  */
-template <template <typename> typename LinearSolverType, typename DerivedA,
-          typename DerivedB>
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
 typename std::enable_if<DerivedB::ColsAtCompileTime == 1 &&
                             !std::is_same_v<typename DerivedA::Scalar, double>,
                         Eigen::Matrix<typename DerivedA::Scalar,

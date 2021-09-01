@@ -9,8 +9,8 @@ namespace drake {
 namespace math {
 namespace {
 
-template <template <typename> typename LinearSolverType, typename DerivedA,
-          typename DerivedB>
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
 void TestLinearSolve(const Eigen::MatrixBase<DerivedA>& A,
                      const Eigen::MatrixBase<DerivedB>& b) {
   const auto x = LinearSolve<LinearSolverType>(A, b);
