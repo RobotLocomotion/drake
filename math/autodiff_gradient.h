@@ -188,8 +188,10 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
   return matrix;
 }
 
-/// @see DiscardZeroGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
+DRAKE_DEPRECATED("2021-12-01",
+    "Apparently unused. File a Drake issue on GitHub"
+    " if you need this specialization.")
 typename std::enable_if_t<
     !std::is_same_v<_Scalar, double>,
     Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
@@ -201,8 +203,10 @@ DiscardZeroGradient(
       DiscardZeroGradient(auto_diff_transform.matrix(), precision));
 }
 
-/// @see DiscardZeroGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
+DRAKE_DEPRECATED("2021-12-01",
+    "Apparently unused. File a Drake issue on GitHub"
+    " if you need this specialization.")
 typename std::enable_if_t<
     std::is_same_v<_Scalar, double>,
     const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>
