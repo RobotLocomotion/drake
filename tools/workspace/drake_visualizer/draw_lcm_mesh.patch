@@ -1,0 +1,14 @@
+Correct integer division used in range to draw lcm-defined mesh.
+
+--- a/drakevisualizer.py
++++ b/drakevisualizer.py
+@@ -90,7 +90,7 @@ class Geometry(object):
+
+         assert len(faces) % 3 == 0
+         cells = vtk.vtkCellArray()
+-        for i in range(len(faces)/3):
++        for i in range(len(faces) // 3):
+             tri = vtk.vtkTriangle()
+             tri.GetPointIds().SetId(0, faces[i*3 + 0])
+             tri.GetPointIds().SetId(1, faces[i*3 + 1])
+
