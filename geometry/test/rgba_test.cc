@@ -19,6 +19,11 @@ GTEST_TEST(RgbaTest, Basic) {
   EXPECT_EQ(color.a(), a);
   EXPECT_TRUE(color == Rgba(r, g, b, a));
   EXPECT_TRUE(color != Rgba(r, g, b, 0.));
+  const double kEps = 1e-8;
+  const Rgba color_delta(color.r() + kEps, color.g() - kEps, color.b() + kEps,
+                         color.a() - kEps);
+  EXPECT_TRUE(color.AlmostEqual(color_delta, 1.001 * kEps));
+  EXPECT_FALSE(color.AlmostEqual(color_delta, 0.999 * kEps));
   color.set(1., 1., 1., 0.);
   EXPECT_EQ(color, Rgba(1., 1., 1., 0.));
 }
