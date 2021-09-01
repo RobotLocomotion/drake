@@ -957,6 +957,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("DispatchLoadMessage",
             &DrakeVisualizer<T>::DispatchLoadMessage, py::arg("scene_graph"),
             py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
+            py::arg("work_dir") = std::string(),
             cls_doc.DispatchLoadMessage.doc);
   }
 
@@ -1146,13 +1147,18 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
         .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
             cls_doc.default_color.doc)
+        .def_readwrite("show_hydroelastic",
+            &DrakeVisualizerParams::show_hydroelastic,
+            cls_doc.show_hydroelastic.doc)
         .def("__repr__", [](const Class& self) {
           return py::str(
               "DrakeVisualizerParams("
               "publish_period={}, "
               "role={}, "
-              "default_color={})")
-              .format(self.publish_period, self.role, self.default_color);
+              "default_color={}, "
+              "show_hydroelastic={})")
+              .format(self.publish_period, self.role, self.default_color,
+                  self.show_hydroelastic);
         });
   }
 
