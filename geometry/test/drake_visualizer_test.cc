@@ -1,5 +1,6 @@
 #include "drake/geometry/drake_visualizer.h"
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,6 +10,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -32,6 +34,7 @@ namespace geometry {
 
 using Eigen::Vector3d;
 using lcm::DrakeLcmInterface;
+using math::RigidTransform;
 using math::RigidTransformd;
 using std::make_unique;
 using std::map;
@@ -46,6 +49,11 @@ using systems::Simulator;
 
 class DrakeVisualizerTester {
  public:
+  template <typename T>
+  static std::string work_dir(const DrakeVisualizer<T>& visualizer) {
+    return visualizer.hydro_dir_;
+  }
+
   template <typename T>
   static std::string lcm_url(const DrakeVisualizer<T>& visualizer) {
     return dynamic_cast<lcm::DrakeLcm*>(visualizer.lcm_)->get_lcm_url();
@@ -124,10 +132,7 @@ class DrakeVisualizerTest : public ::testing::Test {
 
   /* Configures the diagram (and raw pointers) with a DrakeVisualizer configured
    by the given parameters.  */
-  void ConfigureDiagram(double period = kPublishPeriod,
-                        Role role = Role::kIllustration,
-                        const Rgba& default_color = Rgba{0.1, 0.2, 0.3, 0.4}) {
-    DrakeVisualizerParams params{period, role, default_color};
+  void ConfigureDiagram(DrakeVisualizerParams params = {}) {
     DiagramBuilder<T> builder;
     scene_graph_ = builder.template AddSystem<SceneGraph<T>>();
     visualizer_ =
@@ -177,9 +182,9 @@ class DrakeVisualizerTest : public ::testing::Test {
                                       "proximity"));
     scene_graph_->AssignRole(source_id_, g2_id, ProximityProperties());
 
-    pose_source_->SetPoses({{f0_id, math::RigidTransform<T>{}},
-                            {f1_id, math::RigidTransform<T>{}},
-                            {proximity_frame_id_, math::RigidTransform<T>{}}});
+    pose_source_->SetPoses({{f0_id, RigidTransform<T>{}},
+                            {f1_id, RigidTransform<T>{}},
+                            {proximity_frame_id_, RigidTransform<T>{}}});
   }
 
   /* Processes the message queue, reporting the number of load and draw messges
@@ -341,7 +346,7 @@ TYPED_TEST_SUITE(DrakeVisualizerTest, ScalarTypes);
 TYPED_TEST(DrakeVisualizerTest, PublishPeriod) {
   using T = TypeParam;
   for (double period : {1 / 30.0, 1 / 10.0}) {
-    this->ConfigureDiagram(period);
+    this->ConfigureDiagram({.publish_period = period});
     Simulator<T> simulator(*(this->diagram_));
     ASSERT_EQ(simulator.get_context().get_time(), 0.0);
 
@@ -438,8 +443,9 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
    diffuse color defined, inherits it.  */
   for (const auto& expected_rgba :
        {Rgba{0.75, 0.25, 0.125, 1.0}, Rgba{0.5, 0.75, 0.875, 0.5}}) {
-    this->ConfigureDiagram(this->kPublishPeriod, Role::kProximity,
-                           expected_rgba);
+    this->ConfigureDiagram({.publish_period = this->kPublishPeriod,
+                            .role = Role::kProximity,
+                            .default_color = expected_rgba});
     const FrameId f_id = this->scene_graph_->RegisterFrame(
         this->source_id_, GeometryFrame("frame", 0));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
@@ -449,7 +455,7 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
     // ProximityProperties will make use of the default diffuse value.
     this->scene_graph_->AssignRole(this->source_id_, g_id,
                                    ProximityProperties());
-    this->pose_source_->SetPoses({{f_id, math::RigidTransform<T>{}}});
+    this->pose_source_->SetPoses({{f_id, RigidTransform<T>{}}});
     Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
     MessageResults results = this->ProcessMessages();
@@ -468,7 +474,8 @@ TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
  provide data for the dynamic frames (i.e., "world" will not be included).  */
 TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   using T = TypeParam;
-  this->ConfigureDiagram(this->kPublishPeriod, Role::kProximity);
+  this->ConfigureDiagram(
+      {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
   const FrameId f_id = this->scene_graph_->RegisterFrame(
       this->source_id_, GeometryFrame("frame", 0));
   const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
@@ -491,7 +498,7 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   this->scene_graph_->AssignRole(this->source_id_, g2_id,
                                  ProximityProperties());
 
-  this->pose_source_->SetPoses({{f_id, math::RigidTransform<T>{}}});
+  this->pose_source_->SetPoses({{f_id, RigidTransform<T>{}}});
 
   Simulator<T> simulator(*(this->diagram_));
   simulator.AdvanceTo(0.0);
@@ -528,7 +535,8 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
       {Role::kPerception, source_name + "::perception"},
       {Role::kProximity, source_name + "::proximity"}};
   for (const auto& [role, name] : expected) {
-    this->ConfigureDiagram(this->kPublishPeriod, role);
+    this->ConfigureDiagram(
+        {.publish_period = this->kPublishPeriod, .role = role});
     this->PopulateScene();
     Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
@@ -548,7 +556,8 @@ TYPED_TEST(DrakeVisualizerTest, TargetRole) {
 
 /* Confirms that a force publish is sufficient.  */
 TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
-  this->ConfigureDiagram(this->kPublishPeriod, Role::kIllustration);
+  this->ConfigureDiagram(
+      {.publish_period = this->kPublishPeriod, .role = Role::kIllustration});
   this->PopulateScene();
   auto context = this->diagram_->CreateDefaultContext();
   const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
@@ -564,7 +573,8 @@ TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
  illustration role with color, that value is used instead of the default.  */
 TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   using T = TypeParam;
-  this->ConfigureDiagram(this->kPublishPeriod, Role::kProximity);
+  this->ConfigureDiagram(
+      {.publish_period = this->kPublishPeriod, .role = Role::kProximity});
   const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
       this->source_id_,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -594,7 +604,8 @@ TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
 TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
   using T = TypeParam;
   for (const Role role : {Role::kProximity, Role::kPerception}) {
-    this->ConfigureDiagram(this->kPublishPeriod, role);
+    this->ConfigureDiagram(
+        {.publish_period = this->kPublishPeriod, .role = role});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -656,7 +667,8 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
   using T = TypeParam;
   for (const Role role :
        {Role::kProximity, Role::kPerception, Role::kIllustration}) {
-    this->ConfigureDiagram(this->kPublishPeriod, role);
+    this->ConfigureDiagram(
+        {.publish_period = this->kPublishPeriod, .role = role});
     const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
         this->source_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
@@ -705,6 +717,175 @@ TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
       EXPECT_EQ(results.num_draw, 1);
     }
   }
+}
+
+/* DrakeVisualizer's ability to visualize hydroleastic representations is
+ predicated on writing temporary files to disk. This test focuses on the
+ *management* of that temporary directory:
+
+ - No work directory is created unless the parameters explicitly call for it.
+   - Hydro dir directory is created *only* for proximity and show_hydroelastic.
+ - Destruction of visualizer leads to elimination of directory.
+   - Works whether the directory has files or not. */
+TYPED_TEST(DrakeVisualizerTest, VisualizeHydroWorkDir) {
+  using T = TypeParam;
+
+  /* Each test will explicitly declare the parameters to avoid order-of-
+   operation dependencies. */
+  DrakeVisualizerParams params;
+
+  /* Only Role::kProximity *and* show_hydroelastic = `true` will create a work
+   directory. */
+  {
+    params.role = Role::kIllustration;
+    params.show_hydroelastic = false;
+    DrakeVisualizer<T> vis(&(this->lcm_), params);
+    EXPECT_TRUE(DrakeVisualizerTester::work_dir(vis).empty());
+  }
+  {
+    params.role = Role::kProximity;
+    params.show_hydroelastic = false;
+    DrakeVisualizer<T> vis(&(this->lcm_), params);
+    EXPECT_TRUE(DrakeVisualizerTester::work_dir(vis).empty());
+  }
+  {
+    params.role = Role::kIllustration;
+    params.show_hydroelastic = true;
+    DrakeVisualizer<T> vis(&(this->lcm_), params);
+    EXPECT_TRUE(DrakeVisualizerTester::work_dir(vis).empty());
+  }
+
+  /* Now we'll create a work directory. */
+  {
+    params.role = Role::kProximity;
+    params.show_hydroelastic = true;
+    filesystem::path work_path;
+    {
+      DrakeVisualizer<T> vis(&(this->lcm_), params);
+      work_path = DrakeVisualizerTester::work_dir(vis);
+      /* The directory was created. */
+      EXPECT_FALSE(work_path.string().empty());
+      EXPECT_TRUE(filesystem::exists(work_path));
+      EXPECT_TRUE(filesystem::is_directory(work_path));
+      /* We'll push a file into the work directory, to make sure that having
+       files in the directory doesn't preclude deletion. */
+      filesystem::path file_path = work_path / "test.txt";
+      std::ofstream file(file_path);
+      ASSERT_TRUE(file);
+      file << "Some non-empty file contents\n";
+      file.close();
+      EXPECT_TRUE(filesystem::exists(file_path));
+    }
+    /* The directory got deleted upon destruction. */
+    EXPECT_FALSE(filesystem::exists(work_path))
+        << "Failed to delete " << work_path;
+  }
+}
+
+/* This tests DrakeVisualizer's ability to replace primitive shape declarations
+ with discrete meshes for proximity geometries with a hydroelastic mesh
+ representation. We expect that the temporary work directory semantics are
+ correct and this test focuses on:
+
+ - Rigid shapes are serialized as mesh (with path to work directory).
+ - Soft shapes are serialized as mesh (with path to work directory).
+ - Rigid HalfSpace does not get replaced.
+ - Soft HalfSpace  does not get replaced
+ - Geometry w/o hydroelastic representation is preserved.
+
+ We'll test this by evaluating a single load message with a SceneGraph populated
+ with:
+  - a rigid cube
+  - a soft sphere
+  - rigid and soft half spaces
+  - an ellipsoid with no hydro representation.
+  - We know exactly what we should expect to see in the message. */
+TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
+  using T = TypeParam;
+
+  DrakeVisualizerParams params;
+  params.role = Role::kProximity;
+  params.show_hydroelastic = true;
+  this->ConfigureDiagram(params);
+
+  FramePoseVector<T> poses;
+  auto add_geometry = [this, &poses](auto shape_u_p, std::string name,
+                                     ProximityProperties properties) {
+    const FrameId f_id = this->scene_graph_->RegisterFrame(
+        this->source_id_, GeometryFrame(move(name), 0));
+    const GeometryId g_id = this->scene_graph_->RegisterGeometry(
+        this->source_id_, f_id,
+        make_unique<GeometryInstance>(RigidTransformd{}, move(shape_u_p),
+                                      name));
+    this->scene_graph_->AssignRole(this->source_id_, g_id, properties);
+    poses.set_value(f_id, RigidTransform<T>{});
+  };
+
+  ProximityProperties props;
+  add_geometry(make_unique<Ellipsoid>(1, 2, 3), "ellipsoid", props);
+
+  /* Populate with rigid hydroelastic properties and add rigid geometries. */
+  using internal::HydroelasticType;
+  props.AddProperty(internal::kHydroGroup, internal::kRezHint, 5.0);
+  props.AddProperty(internal::kHydroGroup, internal::kComplianceType,
+                    HydroelasticType::kRigid);
+  add_geometry(make_unique<Box>(1, 1, 1), "box", props);
+  add_geometry(make_unique<HalfSpace>(), "rigid_half_space", props);
+
+  /* Populate with soft hydroelastic properties and add rigid geometries. */
+  props.AddProperty(internal::kHydroGroup, internal::kSlabThickness, 5.0);
+  props.AddProperty(internal::kMaterialGroup, internal::kElastic, 5.0);
+  props.UpdateProperty(internal::kHydroGroup, internal::kComplianceType,
+                       HydroelasticType::kSoft);
+  add_geometry(make_unique<Sphere>(1), "sphere", props);
+  add_geometry(make_unique<HalfSpace>(), "soft_half_space", props);
+
+  this->pose_source_->SetPoses(move(poses));
+
+  /* Dispatch a load message. */
+  auto context = this->diagram_->CreateDefaultContext();
+  const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
+  this->visualizer_->Publish(vis_context);
+
+  /* Confirm that messages were sent.  */
+  MessageResults results = this->ProcessMessages();
+  ASSERT_EQ(results.num_load, 1);
+  ASSERT_EQ(results.load_message.num_links, 5);
+
+  /* We're going to make sure that:
+    - Where we've converted to a mesh, the lcm message reports mesh type and
+      path to the expected obj file.
+    - We'll make sure the obj file exists.
+    - We're *not* examining the contents of the OBJ file; we'll rely on
+      visual inspection to alert us as to whether the mesh is "correct" or
+      not. */
+  filesystem::path work_path =
+      DrakeVisualizerTester::work_dir(*this->visualizer_);
+  for (int i = 0; i < results.load_message.num_links; ++i) {
+    const auto& link_message = results.load_message.link[i];
+    EXPECT_EQ(link_message.num_geom, 1);
+    const auto& geo_message = link_message.geom[0];
+    if (link_message.name == "box") {
+      EXPECT_EQ(geo_message.type, geo_message.MESH);
+      const filesystem::path expected_obj = work_path / "box_box.obj";
+      EXPECT_EQ(geo_message.string_data, expected_obj.string());
+      EXPECT_TRUE(filesystem::exists(expected_obj));
+    } else if (link_message.name == "sphere") {
+      EXPECT_EQ(geo_message.type, geo_message.MESH);
+      const filesystem::path expected_obj = work_path / "sphere_sphere.obj";
+      EXPECT_EQ(geo_message.string_data, expected_obj.string());
+      EXPECT_TRUE(filesystem::exists(expected_obj));
+    } else if (link_message.name == "soft_half_space") {
+      /* In drake_visualizer, half spaces are big, flat boxes. */
+      EXPECT_EQ(geo_message.type, geo_message.BOX);
+    } else if (link_message.name == "rigid_half_space") {
+      EXPECT_EQ(geo_message.type, geo_message.BOX);
+    } else if (link_message.name == "ellipsoid") {
+      EXPECT_EQ(geo_message.type, geo_message.ELLIPSOID);
+    }
+  }
+
+  /* We don't care about the draw message. */
 }
 
 /* Tests the AddToBuilder method that connects directly to a provided SceneGraph

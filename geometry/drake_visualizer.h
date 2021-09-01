@@ -139,6 +139,8 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   template <typename U>
   explicit DrakeVisualizer(const DrakeVisualizer<U>& other);
 
+  ~DrakeVisualizer() override;
+
   /** Returns the QueryObject-valued input port. It should be connected to
    SceneGraph's QueryObject-valued output port. Failure to do so will cause a
    runtime error when attempting to broadcast messages.  */
@@ -187,10 +189,35 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
    starightforward method for binding lcmtypes in python, this will be replaced
    with an API that will simply generate the lcm *messages* that the caller
    can then do whatever they like with.
+
+   Using *this* API requires extra care if you want to visualize hydroelastic
+   mesh representations of proximity geometries. In order to do so, you must do
+   the following:
+
+     1. Create a work directory that %DrakeVisualizer can write into.
+     2. Set params.role to Role::kProximity.
+     3. Set params.show_hydroelastic to true.
+     4. Pass the path to the work directory.
+
+   If you make changes to the resolution hint of a collision geometry with a
+   hydroelastic mesh representation, you will need to either restart
+   drake_visualizer or provide a new work directory, otherwise drake_visualizer
+   will *not* load the updated mesh representation.
+
+   <!-- TODO(SeanCurtis-TRI): Repeated calls to this where the actual hydro
+    mesh changes from call to call will require restarting drake_visualizer to
+    have it register the changes. See note in MakeHydroMesh. I either need to
+    document that here or fix it there. -->
+
+   @throws std::exception if params are configured correctly (items 2 and 3
+                          above), but `work_dir` is empty or doesn't name a
+                          writable directory.
+
    @pre `lcm != nullptr`.  */
   static void DispatchLoadMessage(const SceneGraph<T>& scene_graph,
                                   lcm::DrakeLcmInterface* lcm,
-                                  DrakeVisualizerParams params = {});
+                                  DrakeVisualizerParams params = {},
+                                  std::string_view work_dir = {});
 
  private:
   friend class DrakeVisualizerTester;
@@ -216,7 +243,7 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       const SceneGraphInspector<T>& inspector,
       const DrakeVisualizerParams& params,
       const std::vector<internal::DynamicFrameData>& dynamic_frames,
-      double time, lcm::DrakeLcmInterface* lcm);
+      double time, lcm::DrakeLcmInterface* lcm, std::string_view work_dir);
 
   /* Dispatches a "draw" message for geometry that is known to have been
    loaded.  */
@@ -245,6 +272,14 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       const SceneGraphInspector<T>& inspector,
       const DrakeVisualizerParams& params,
       std::vector<internal::DynamicFrameData>* frame_data);
+
+  /* Given the geometry id, creates an OBJ file in the temporary directory
+   representing the hydroelastic mesh for the given id. It then returns a Mesh
+   that can be reified for visualization.
+   @pre id has a hydroelastic representation. */
+  static Mesh MakeHydroMesh(GeometryId id,
+                            const SceneGraphInspector<T>& inspector,
+                            std::string_view work_dir);
 
   /* DrakeVisualizer stores a "model" of what it thinks is registered in the
    drake_visualizer application. Because drake_visualizer is not part of the
@@ -280,6 +315,10 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
 
   /* The parameters for the visualizer.  */
   DrakeVisualizerParams params_;
+
+  /* If we're visualizing hydroelastic geometry, this is the directory that
+   contains the geometries. */
+  std::string hydro_dir_;
 };
 
 /** A convenient alias for the DrakeVisualizer class when using the `double`

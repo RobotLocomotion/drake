@@ -1,11 +1,18 @@
 #include "drake/geometry/drake_visualizer.h"
 
+#include <fstream>
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/filesystem.h"
+#include "drake/common/temp_directory.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/value.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
@@ -21,6 +28,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Quaterniond;
+using Eigen::Vector3d;
 using math::RigidTransformd;
 using std::make_unique;
 using std::vector;
@@ -174,6 +182,24 @@ DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
 }
 
 template <typename T>
+DrakeVisualizer<T>::~DrakeVisualizer() {
+  /* This relies on temp_directory()'s promise that I can clean up the directory
+   created. */
+  if (!hydro_dir_.empty()) {
+    filesystem::path temp_path(hydro_dir_);
+    DRAKE_DEMAND(filesystem::is_directory(temp_path));
+    std::error_code error;
+    std::uintmax_t count = filesystem::remove_all(temp_path, error);
+    if (count == static_cast<std::uintmax_t>(-1)) {
+      log()->warn(
+          "DrakeVisualizer is attempting to clean up the directory containing "
+          "temporary mesh files, but failed.\n   {}",
+          hydro_dir_);
+    }
+  }
+}
+
+template <typename T>
 const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
     lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
@@ -195,13 +221,26 @@ const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
 template <typename T>
 void DrakeVisualizer<T>::DispatchLoadMessage(const SceneGraph<T>& scene_graph,
                                              lcm::DrakeLcmInterface* lcm,
-                                             DrakeVisualizerParams params) {
+                                             DrakeVisualizerParams params,
+                                             std::string_view work_dir) {
+  if (params.role == Role::kProximity && params.show_hydroelastic) {
+    filesystem::path temp_dir(work_dir);
+    if (!filesystem::is_directory(temp_dir)) {
+      throw std::runtime_error(
+          fmt::format("DispatchLoadMessage() has been asked to visualize "
+                      "hydroelastic meshes, but the work directory given does "
+                      "not name an existing directory: '{}'.",
+                      work_dir));
+    }
+    // We're not testing write permissions -- we'll simply throw if we needed
+    // them and it didn't work (see MakeHydroMesh()).
+  }
   DRAKE_DEMAND(lcm != nullptr);
   vector<internal::DynamicFrameData> dynamic_frames;
   PopulateDynamicFrameData(scene_graph.model_inspector(), params,
                            &dynamic_frames);
   SendLoadMessage(scene_graph.model_inspector(), params, dynamic_frames, 0,
-                  lcm);
+                  lcm, work_dir);
 }
 
 template <typename T>
@@ -240,6 +279,12 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                               &DrakeVisualizer<T>::CalcDynamicFrameData,
                               {this->nothing_ticket()})
           .cache_index();
+
+  if (params_.role == Role::kProximity && params_.show_hydroelastic) {
+    // The request to visualize hydro proximity geometries requires a temporary
+    // directory.
+    hydro_dir_ = temp_directory();
+  }
 }
 
 template <typename T>
@@ -261,7 +306,7 @@ EventStatus DrakeVisualizer<T>::SendGeometryMessage(
   if (send_load_message) {
     SendLoadMessage(query_object.inspector(), params_,
                     RefreshDynamicFrameData(context),
-                    ExtractDoubleOrThrow(context.get_time()), lcm_);
+                    ExtractDoubleOrThrow(context.get_time()), lcm_, hydro_dir_);
   }
 
   SendDrawMessage(query_object, EvalDynamicFrameData(context),
@@ -275,7 +320,7 @@ void DrakeVisualizer<T>::SendLoadMessage(
     const SceneGraphInspector<T>& inspector,
     const DrakeVisualizerParams& params,
     const std::vector<internal::DynamicFrameData>& dynamic_frames, double time,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm, std::string_view work_dir) {
   lcmt_viewer_load_robot message{};
 
   // Add the world frame if it has geometries with the specified role.
@@ -288,7 +333,7 @@ void DrakeVisualizer<T>::SendLoadMessage(
   message.link.resize(frame_count);
 
   // Helper utility to create lcm geometry description from geometry id.
-  auto make_geometry = [&params, &inspector](GeometryId g_id) {
+  auto make_geometry = [work_dir, &params, &inspector](GeometryId g_id) {
     const GeometryProperties* props =
         inspector.GetProperties(g_id, params.role);
     // We assume that the g_id was obtained by asking for geometries with the
@@ -306,6 +351,15 @@ void DrakeVisualizer<T>::SendLoadMessage(
     }
     const Rgba& color =
         props->GetPropertyOrDefault("phong", "diffuse", default_color);
+    if (params.role == Role::kProximity && params.show_hydroelastic) {
+      auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(g_id);
+      if (!std::holds_alternative<std::monostate>(hydro_mesh)) {
+        // This Shape *definitely* has a mesh associated with it. Replace the
+        // primitive with the mesh hydroelastic mesh.
+        return ShapeToLcm().Convert(MakeHydroMesh(g_id, inspector, work_dir),
+                                    inspector.GetPoseInFrame(g_id), color);
+      }
+    }
     return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), color);
   };
 
@@ -430,6 +484,70 @@ void DrakeVisualizer<T>::PopulateDynamicFrameData(
                                     "::" + inspector.GetName(frame_id)});
     }
   }
+}
+
+template <typename T>
+Mesh DrakeVisualizer<T>::MakeHydroMesh(GeometryId geometry_id,
+                                       const SceneGraphInspector<T>& inspector,
+                                       std::string_view work_dir) {
+  auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(geometry_id);
+  DRAKE_DEMAND(!std::holds_alternative<std::monostate>(hydro_mesh));
+  // SceneGraphInspector guarantees which ever pointer is "held" in the variant
+  // is non-null.
+  const SurfaceMesh<double>& surface_mesh =
+      std::holds_alternative<const SurfaceMesh<double>*>(hydro_mesh)
+          ? *std::get<const SurfaceMesh<double>*>(hydro_mesh)
+          : ConvertVolumeToSurfaceMesh(
+                *std::get<const VolumeMesh<double>*>(hydro_mesh));
+
+  // The file name will simply be framename_geometryname.obj. We're not worried
+  // about drake_visualizer's proclivity for caching meshes based on filename
+  // because every instance of DrakeVisualizer creates a unique temp directory
+  // (and therefore a unique obj *path*). The exception is for users who call
+  // the static DispatchLoadMessage(). They'll probably have problems. If
+  // necessary, we'll append a timestamp to the file name to distinguish
+  // versions.
+  const FrameId frame_id = inspector.GetFrameId(geometry_id);
+  // TODO(SeanCurtis-TRI): Neither geometry nor frame names limit the characters
+  //  to valid file system characters. This *should* guarantee a valid file
+  //  name.
+  const std::string obj_name = fmt::format(
+      "{}_{}.obj", inspector.GetName(frame_id), inspector.GetName(geometry_id));
+
+  filesystem::path obj_path(work_dir);
+  obj_path.append(obj_name);
+  {
+    std::ofstream file(obj_path);
+
+    if (!file) {
+      throw std::runtime_error(fmt::format(
+          "DrakeVisualizer is attempting to visualize a hydroelastic mesh, but "
+          "was unable to create a file in the target working directory: '{}'.",
+          work_dir));
+    }
+
+    file << "# Hydroelastic mesh written by DrakeVisualizer\n";
+    file << "# Frame: '" << inspector.GetName(frame_id) << "'\n";
+    file << "# Geometry: '" << inspector.GetName(geometry_id) << "'\n";
+    file << "\n";
+    for (const auto& v : surface_mesh.vertices()) {
+      const Vector3d& p_MV = v.r_MV();
+      file << "v " << p_MV.x() << " " << p_MV.y() << " " << p_MV.z() << "\n";
+    }
+    for (SurfaceFaceIndex f(0); f < surface_mesh.num_faces(); ++f) {
+      const Vector3d& n_M = surface_mesh.face_normal(f);
+      file << "vn " << n_M.x() << " " << n_M.y() << " " << n_M.z() << "\n";
+    }
+    /* Remember, OBJ files use a 1-indexed scheme. */
+    for (SurfaceFaceIndex f(0); f < surface_mesh.num_faces(); ++f) {
+      const SurfaceFace& face = surface_mesh.element(f);
+      file << "f " << (face.vertex(0) + 1) << "//" << (f + 1) << " "
+           << (face.vertex(1) + 1) << "//" << (f + 1) << " "
+           << (face.vertex(2) + 1) << "//" << (f + 1) << "\n";
+    }
+  }
+
+  return Mesh(obj_path.string(), 1.0);
 }
 
 }  // namespace geometry
