@@ -29,6 +29,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
@@ -1404,6 +1405,41 @@ void DoScalarIndependentDefinitions(py::module m) {
       // N.B. We have not bound the optional "on_warning" argument.
       doc.ReadObjToSurfaceMesh.doc_3args_filename_scale_on_warning);
 
+  m.def("AddRigidHydroelasticProperties",
+      py::overload_cast<double, ProximityProperties*>(
+          &AddRigidHydroelasticProperties),
+      py::arg("resolution_hint"), py::arg("properties"),
+      doc.AddRigidHydroelasticProperties.doc_2args);
+
+  m.def("AddRigidHydroelasticProperties",
+      py::overload_cast<ProximityProperties*>(&AddRigidHydroelasticProperties),
+      py::arg("properties"), doc.AddRigidHydroelasticProperties.doc_1args);
+
+  m.def("AddSoftHydroelasticProperties",
+      py::overload_cast<double, ProximityProperties*>(
+          &AddSoftHydroelasticProperties),
+      py::arg("resolution_hint"), py::arg("properties"),
+      doc.AddSoftHydroelasticProperties.doc_2args);
+
+  m.def("AddSoftHydroelasticProperties",
+      py::overload_cast<ProximityProperties*>(&AddSoftHydroelasticProperties),
+      py::arg("properties"), doc.AddSoftHydroelasticProperties.doc_1args);
+
+  m.def("AddSoftHydroelasticPropertiesForHalfSpace",
+      &AddSoftHydroelasticPropertiesForHalfSpace, py::arg("slab_thickness"),
+      py::arg("properties"), doc.AddSoftHydroelasticPropertiesForHalfSpace.doc);
+
+  m.def("AddContactMaterial",
+      py::overload_cast<const std::optional<double>&,
+          const std::optional<double>&, const std::optional<double>&,
+          const std::optional<multibody::CoulombFriction<double>>&,
+          ProximityProperties*>(&AddContactMaterial),
+      py::arg("elastic_modulus") = std::nullopt,
+      py::arg("dissipation") = std::nullopt,
+      py::arg("point_stiffness") = std::nullopt,
+      py::arg("friction") = std::nullopt, py::arg("properties"),
+      doc.AddContactMaterial.doc_5args);
+
   // Meshcat
   {
     using Class = Meshcat;
@@ -1627,6 +1663,24 @@ void DefGetPropertyCpp(py::module m) {
   AddTemplateFunction(m, "GetPropertyCpp", func, GetPyParam<T>());
 }
 
+// For use with test_proximity_properties. The hydroelastic compliance type is
+// internal. But we want to test that the compliance type has been successfully
+// defined in set of properties. If we ever move HydroelasticType out of
+// internal and bind it, we can eliminate this helper.
+//
+// Return true if the properties indicate soft compliance, false if rigid, and
+// throws if the property isn't set at all (or set to undefined).
+bool PropertiesIndicateSoftHydro(const geometry::ProximityProperties& props) {
+  using geometry::internal::HydroelasticType;
+  const HydroelasticType hydro_type =
+      props.GetPropertyOrDefault(geometry::internal::kHydroGroup,
+          geometry::internal::kComplianceType, HydroelasticType::kUndefined);
+  if (hydro_type == HydroelasticType::kUndefined) {
+    throw std::runtime_error("No specification of rigid or soft");
+  }
+  return hydro_type == HydroelasticType::kSoft;
+}
+
 void def_testing_module(py::module m) {
   class FakeTag;
   using FakeId = Identifier<FakeTag>;
@@ -1636,6 +1690,8 @@ void def_testing_module(py::module m) {
   FakeId fake_id_constant{FakeId::get_new_id()};
   m.def("get_fake_id_constant",
       [fake_id_constant]() { return fake_id_constant; });
+
+  m.def("PropertiesIndicateSoftHydro", &PropertiesIndicateSoftHydro);
 
   // For use with `test_geometry_properties_cpp_types`.
   DefGetPropertyCpp<std::string>(m);

@@ -15,6 +15,7 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
+from pydrake.multibody.plant import CoulombFriction
 from pydrake.solvers.mathematicalprogram import MathematicalProgram
 from pydrake.systems.analysis import (
     Simulator_,
@@ -689,6 +690,77 @@ class TestGeometry(unittest.TestCase):
                 value_2 = mut_testing.GetPropertyCpp[T](props, "g", "p")
                 self.assertIsInstance(value_2, T)
                 self.assertEqual(value, value_2)
+
+    def test_proximity_properties(self):
+        """
+        Tests the utility functions for setting values in ProximityProperties
+        (as defined in proximity_properties.h).
+        """
+        props = mut.ProximityProperties()
+        reference_friction = CoulombFriction(0.25, 0.125)
+        mut.AddContactMaterial(elastic_modulus=1.5,
+                               dissipation=2.7,
+                               point_stiffness=3.9,
+                               friction=reference_friction,
+                               properties=props)
+        self.assertTrue(props.HasProperty("material", "elastic_modulus"))
+        self.assertEqual(props.GetProperty("material", "elastic_modulus"), 1.5)
+        self.assertTrue(
+            props.HasProperty("material", "hunt_crossley_dissipation"))
+        self.assertEqual(
+            props.GetProperty("material", "hunt_crossley_dissipation"), 2.7)
+        self.assertTrue(
+            props.HasProperty("material", "point_contact_stiffness"))
+        self.assertEqual(
+            props.GetProperty("material", "point_contact_stiffness"), 3.9)
+        self.assertTrue(props.HasProperty("material", "coulomb_friction"))
+        stored_friction = props.GetProperty("material", "coulomb_friction")
+        self.assertEqual(stored_friction.static_friction(),
+                         reference_friction.static_friction())
+        self.assertEqual(stored_friction.dynamic_friction(),
+                         reference_friction.dynamic_friction())
+
+        props = mut.ProximityProperties()
+        res_hint = 0.175
+        mut.AddRigidHydroelasticProperties(
+            resolution_hint=res_hint, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
+                         res_hint)
+
+        props = mut.ProximityProperties()
+        mut.AddRigidHydroelasticProperties(properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
+
+        props = mut.ProximityProperties()
+        res_hint = 0.275
+        mut.AddSoftHydroelasticProperties(
+            resolution_hint=res_hint, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
+                         res_hint)
+
+        props = mut.ProximityProperties()
+        mut.AddSoftHydroelasticProperties(properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
+
+        props = mut.ProximityProperties()
+        slab_thickness = 0.275
+        mut.AddSoftHydroelasticPropertiesForHalfSpace(
+            slab_thickness=slab_thickness, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
+        self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
+                         slab_thickness)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
