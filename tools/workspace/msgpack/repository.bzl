@@ -27,7 +27,7 @@ def _impl(repo_ctx):
         prefix = "/usr/local/opt/msgpack-cxx/"
         repo_ctx.symlink("{}/include".format(prefix), "msgpack")
 
-        hdrs_patterns = ["*.hpp", "msgpack/**/*.hpp",]
+        hdrs_patterns = ["msgpack/**/*.hpp",]
 
         file_content = """# -*- python -*-
 
