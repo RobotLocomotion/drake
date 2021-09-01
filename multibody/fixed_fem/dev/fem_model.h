@@ -30,7 +30,7 @@ namespace fem {
  helps eliminate heap allocations.
  @tparam Element    The type of FemElement that makes up this %FemModel.
  This template parameter provides the scalar type and the compile time constants
- such as the natural, spatial and solution dimensions and the number of
+ such as the natural, spatial and solution di}mensions and the number of
  nodes/quadrature points in each element. */
 template <class Element>
 class FemModel : public FemModelBase<typename Element::Traits::T> {

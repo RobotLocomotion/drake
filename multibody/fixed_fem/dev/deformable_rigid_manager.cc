@@ -1,5 +1,7 @@
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_manager.h"
 
+#include <map>
+
 #include "drake/multibody/contact_solvers/block_sparse_linear_operator.h"
 #include "drake/multibody/fixed_fem/dev/inverse_spd_operator.h"
 #include "drake/multibody/fixed_fem/dev/matrix_utilities.h"
@@ -798,6 +800,30 @@ MatrixX<T> DeformableRigidManager<T>::CalcContactJacobianDeformableBlock(
             contact_pair.R_CWs[ic].matrix() * barycentric_weights(j);
       }
       ++contact_point_offset;
+    }
+  }
+
+  /* Set columns correspnding to dofs under dirichlet boundary conditions to
+   zero (if boundary conditions exist). */
+  DeformableBodyIndex deformable_index = contact_data.deformable_index();
+  DRAKE_DEMAND(deformable_index.is_valid());
+  const DirichletBoundaryCondition<T>* bc =
+      deformable_model_->fem_model(deformable_index)
+          .dirichlet_boundary_condition();
+  if (bc == nullptr) {
+    return Jc;
+  }
+  const std::map<DofIndex, VectorX<T>>& bc_map = bc->get_bcs();
+  const std::vector<int>& permuted_to_original_indexes =
+      contact_data.permuted_to_original_indexes();
+  for (int v = 0; v < contact_data.num_vertices_in_contact(); ++v) {
+    const int vertex_index = permuted_to_original_indexes[v];
+    for (int d = 0; d < 3; ++d) {
+      const int dof_index = 3 * vertex_index + d;
+      if (bc_map.find(DofIndex(dof_index)) != bc_map.end()) {
+        const int permuted_dof_index = 3 * v + d;
+        Jc.col(permuted_dof_index).setZero();
+      }
     }
   }
   return Jc;
