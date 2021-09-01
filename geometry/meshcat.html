@@ -15,8 +15,8 @@
   <script>
     var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
     // Set background to match Drake Visualizer.
-    viewer.set_property(['Background'], 'top_color', [242, 242, 255])
-    viewer.set_property(['Background'], "bottom_color", [77, 77, 89])
+    viewer.set_property(['Background'], 'top_color', [.95, .95, 1.0])
+    viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
     try {
       viewer.connect();
     } catch (e) {
