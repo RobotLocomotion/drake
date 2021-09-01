@@ -150,6 +150,12 @@ class FemModelBase {
     dirichlet_bc_ = std::move(dirichlet_bc);
   }
 
+  /** Returns a pointer to the registered Dirichlet boundary condition if one
+   exists and a nullptr otherwise. */
+  const DirichletBoundaryCondition<T>* dirichlet_boundary_condition() const {
+    return dirichlet_bc_.get();
+  }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the concrete types of `this` FemModelBase and the FemStateBase that was
   passed to API method `func`. */

@@ -255,18 +255,19 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   EXPECT_TRUE(CompareMatrices(data.centroid, Vector3d(0, 0, 0), kTol));
 }
 
+
+const DeformableBodyIndex kDeformableBodyIndex(2);
 /* Makes a DeformableContactData with a single contact pair using the given
  `contact_surface`. Unused parameters are set to arbitrary values. */
 internal::DeformableContactData<double> MakeDeformableContactData(
     DeformableContactSurface<double> contact_surface,
     internal::ReferenceDeformableGeometry<double> deformable_geometry) {
   const geometry::GeometryId dummy_rigid_id;
-  const DeformableBodyIndex dummy_deformable_id;
   const double dummy_stiffness = 0;
   const double dummy_dissipation = 0;
   const double dummy_friction = 0;
   const internal::DeformableRigidContactPair<double> contact_pair(
-      std::move(contact_surface), dummy_rigid_id, dummy_deformable_id,
+      std::move(contact_surface), dummy_rigid_id, kDeformableBodyIndex,
       dummy_stiffness, dummy_dissipation, dummy_friction);
   return internal::DeformableContactData<double>({contact_pair},
                                                  deformable_geometry);
@@ -313,6 +314,7 @@ GTEST_TEST(DeformableContactTest, DeformableContactData) {
     EXPECT_EQ(i, permuted_vertex_indexes[permuted_to_original_indexes[i]]);
     EXPECT_EQ(i, permuted_to_original_indexes[permuted_vertex_indexes[i]]);
   }
+  EXPECT_EQ(contact_data.deformable_body_index(), kDeformableBodyIndex);
 }
 
 GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {
