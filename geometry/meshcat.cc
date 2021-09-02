@@ -342,14 +342,14 @@ class Meshcat::WebSocketPublisher {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WebSocketPublisher);
 
-  WebSocketPublisher()
+  explicit WebSocketPublisher(const std::optional<int> port)
       : prefix_("/drake"), main_thread_id_(std::this_thread::get_id()) {
     std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
         app_promise;
     std::future<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
         app_future = app_promise.get_future();
     websocket_thread_ = std::thread(&WebSocketPublisher::WebSocketMain, this,
-                                    std::move(app_promise));
+                                    std::move(app_promise), port);
     std::tie(app_, loop_, port_, listen_socket_) = app_future.get();
   }
 
@@ -803,11 +803,11 @@ class Meshcat::WebSocketPublisher {
  private:
   void WebSocketMain(
       std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
-          app_promise) {
+          app_promise, const std::optional<int>& desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
 
-    int port = 7001;
-    const int kMaxPort = 7099;
+    int port = desired_port ? *desired_port : 7000;
+    const int kMaxPort = desired_port ? *desired_port : 7099;
 
     uWS::App::WebSocketBehavior<PerSocketData> behavior;
     behavior.open = [this](WebSocket* ws) {
@@ -960,17 +960,26 @@ class Meshcat::WebSocketPublisher {
   uWS::Loop* loop_{nullptr};
 };
 
-Meshcat::Meshcat() {
+Meshcat::Meshcat(const std::optional<int>& port) {
   // Fetch the index once to be sure that we preload the content.
   GetUrlContent("/");
 
-  publisher_ = std::make_unique<WebSocketPublisher>();
+  publisher_ = std::make_unique<WebSocketPublisher>(port);
+  web_url_ = fmt::format("http://localhost:{}", publisher_->port());
 }
 
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
-  return fmt::format("http://localhost:{}", publisher_->port());
+  return web_url_;
+}
+
+int Meshcat::port() const {
+  return publisher_->port();
+}
+
+void Meshcat::set_web_url(std::string url) {
+  web_url_ = std::move(url);
 }
 
 std::string Meshcat::ws_url() const {
