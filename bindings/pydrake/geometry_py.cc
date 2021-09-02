@@ -1567,8 +1567,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.Meshcat;
     py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const std::optional<int>&>(),
+            py::arg("port") = std::nullopt, cls_doc.ctor.doc)
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
+        .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
         .def("SetObject", &Class::SetObject, py::arg("path"), py::arg("shape"),
             py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc)
