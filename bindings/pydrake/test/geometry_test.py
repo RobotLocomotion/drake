@@ -367,9 +367,14 @@ class TestGeometry(unittest.TestCase):
         draw_subscriber.clear()
 
     def test_meshcat(self):
-        meshcat = mut.Meshcat()
+        meshcat = mut.Meshcat(port=7051)
+        self.assertEqual(meshcat.port(), 7051)
+        with self.assertRaises(RuntimeError):
+            meshcat2 = mut.Meshcat(port=7051)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
+        meshcat.set_web_url("http://myurl.com")
+        self.assertEqual(meshcat.web_url(), "http://myurl.com")
         meshcat.SetObject(path="/test/box",
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))
