@@ -848,17 +848,6 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
-  // Make a contact solver when the plant is modeled as a discrete system.
-  if (is_discrete()) {
-    tamsi_solver_ =
-        std::make_unique<TamsiSolver<T>>(num_velocities());
-    // Set the stiction tolerance according to the values set by users with
-    // set_stiction_tolerance().
-    TamsiSolverParameters solver_parameters;
-    solver_parameters.stiction_tolerance =
-        friction_model_.stiction_tolerance();
-    tamsi_solver_->set_solver_parameters(solver_parameters);
-  }
   SetUpJointLimitsParameters();
   scene_graph_ = nullptr;  // must not be used after Finalize().
 }
@@ -1931,6 +1920,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
 template<typename T>
 TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
+    TamsiSolver<T>* tamsi_solver,
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
     const VectorX<T>& minus_tau,
@@ -1954,18 +1944,18 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
 
     // Update the data.
-    tamsi_solver_->SetTwoWayCoupledProblemData(
+    tamsi_solver->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
         &p_star_substep, &fn0_substep,
         &stiffness, &damping, &mu);
 
-    info = tamsi_solver_->SolveWithGuess(dt_substep, v0_substep);
+    info = tamsi_solver->SolveWithGuess(dt_substep, v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
     if (info != TamsiSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
-    v0_substep = tamsi_solver_->get_generalized_velocities();
+    v0_substep = tamsi_solver->get_generalized_velocities();
 
     // TAMSI updates each normal force according to:
     //   fₙ = (1 − d vₙ)₊ (fₙ₀ − h k vₙ)₊
@@ -1975,7 +1965,7 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     // We must update fₙ₀ for each substep accordingly, i.e:
     //   fₙ₀(next) = (fₙ₀(previous) − h k vₙ(next))₊
     const auto vn_substep =
-        tamsi_solver_->get_normal_velocities();
+        tamsi_solver->get_normal_velocities();
     fn0_substep = fn0_substep.array() -
                   dt_substep * stiffness.array() * vn_substep.array();
     fn0_substep = fn0_substep.cwiseMax(T(0.0));
@@ -2360,10 +2350,6 @@ void MultibodyPlant<T>::CalcContactSolverResults(
 
   VectorX<T> v0_unlocked = SelectRows(v0, indices);
 
-  // TAMSI is initialized with num_velocities(). Resize the internal solver
-  // workspace if needed.
-  tamsi_solver_->ResizeIfNeeded(indices.size());
-
   contact_solvers::internal::ContactSolverResults<T> results_unlocked;
   results_unlocked.Resize(indices.size(), num_contacts);
 
@@ -2372,9 +2358,28 @@ void MultibodyPlant<T>::CalcContactSolverResults(
                       M0_unlocked, minus_tau_unlocked, phi0, Jc_unlocked,
                       stiffness, damping, mu, &results_unlocked);
   } else {
-    CallTamsiSolver(context0.get_time(), v0_unlocked, M0_unlocked,
-                    minus_tau_unlocked, fn0, Jn_unlocked, Jt_unlocked,
-                    stiffness, damping, mu, &results_unlocked);
+    systems::CacheEntryValue& value =
+        this->get_cache_entry(cache_indexes_.contact_solver_scratch)
+        .get_mutable_cache_entry_value(context0);
+    auto& tamsi_solver =
+        value.GetMutableValueOrThrow<TamsiSolver<T>>();
+    if (tamsi_solver.get_solver_parameters().stiction_tolerance !=
+        friction_model_.stiction_tolerance()) {
+      // Set the stiction tolerance according to the values set by users with
+      // set_stiction_tolerance().
+      TamsiSolverParameters solver_parameters;
+      solver_parameters.stiction_tolerance =
+          friction_model_.stiction_tolerance();
+      tamsi_solver.set_solver_parameters(solver_parameters);
+    }
+
+    // TAMSI is initialized with num_velocities(). Resize the internal solver
+    // workspace if needed.
+    tamsi_solver.ResizeIfNeeded(indices.size());
+
+    CallTamsiSolver(&tamsi_solver, context0.get_time(), v0_unlocked,
+                    M0_unlocked, minus_tau_unlocked, fn0, Jn_unlocked,
+                    Jt_unlocked, stiffness, damping, mu, &results_unlocked);
   }
 
   // Joint locking: expand reduced outputs.
@@ -2435,6 +2440,7 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
 
 template <typename T>
 void MultibodyPlant<T>::CallTamsiSolver(
+    TamsiSolver<T>* tamsi_solver,
     const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
     const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
     const MatrixX<T>& Jt, const VectorX<T>& stiffness,
@@ -2443,11 +2449,11 @@ void MultibodyPlant<T>::CallTamsiSolver(
   // Solve for v and the contact forces.
   TamsiSolverResult info{TamsiSolverResult::kMaxIterationsReached};
 
-  TamsiSolverParameters params = tamsi_solver_->get_solver_parameters();
+  TamsiSolverParameters params = tamsi_solver->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
-  tamsi_solver_->set_solver_parameters(params);
+  tamsi_solver->set_solver_parameters(params);
 
   // We attempt to compute the update during the time interval dt using a
   // progressively larger number of sub-steps (i.e each using a smaller time
@@ -2460,8 +2466,8 @@ void MultibodyPlant<T>::CallTamsiSolver(
   int num_substeps = 0;
   do {
     ++num_substeps;
-    info = SolveUsingSubStepping(num_substeps, M0, Jn, Jt, minus_tau, stiffness,
-                                 damping, mu, v0, fn0);
+    info = SolveUsingSubStepping(tamsi_solver, num_substeps, M0, Jn, Jt,
+                                 minus_tau, stiffness, damping, mu, v0, fn0);
   } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
@@ -2489,12 +2495,12 @@ void MultibodyPlant<T>::CallTamsiSolver(
   // file for analysis.
 
   // Update the results.
-  results->v_next = tamsi_solver_->get_generalized_velocities();
-  results->fn = tamsi_solver_->get_normal_forces();
-  results->ft = tamsi_solver_->get_friction_forces();
-  results->vn = tamsi_solver_->get_normal_velocities();
-  results->vt = tamsi_solver_->get_tangential_velocities();
-  results->tau_contact = tamsi_solver_->get_generalized_contact_forces();
+  results->v_next = tamsi_solver->get_generalized_velocities();
+  results->fn = tamsi_solver->get_normal_forces();
+  results->ft = tamsi_solver->get_friction_forces();
+  results->vn = tamsi_solver->get_normal_velocities();
+  results->vt = tamsi_solver->get_tangential_velocities();
+  results->tau_contact = tamsi_solver->get_generalized_contact_forces();
 }
 
 template <>
@@ -3044,34 +3050,48 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
-  // Cache TamsiSolver computations.
-  auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
-      std::string("Implicit Stribeck solver computations."),
-      &MultibodyPlant<T>::CalcContactSolverResults,
-      // The Correct Solution:
-      // The Implicit Stribeck solver solution S is a function of state x,
-      // actuation input u (and externally applied forces) and even time if any
-      // of the force elements in the model is time dependent. We can write this
-      // as S = S(t, x, u).
-      // Even though this variables can change continuously with time, we want
-      // the solver solution to be updated periodically (with period
-      // time_step()) only. That is, ContactSolverResults should be
-      // handled as an abstract state with periodic updates. In the systems::
-      // framework terminology, we'd like to have an "unrestricted update" with
-      // a periodic event trigger.
-      // The Problem (#10149):
-      // From issue #10149 we know unrestricted updates incur a very noticeably
-      // performance hit that at this stage we are not willing to pay.
-      // The Work Around (#10888):
-      // To emulate the correct behavior until #10149 is addressed we declare
-      // the Implicit Stribeck solver solution dependent only on the discrete
-      // state. This is not the correct solution given these results do depend
-      // on time and (even continuous) inputs. However it does emulate the
-      // discrete update of these values as if zero-order held, which is what we
-      // want.
-      {this->xd_ticket(), this->all_parameters_ticket()});
-  cache_indexes_.contact_solver_results =
-      tamsi_solver_cache_entry.cache_index();
+  if (is_discrete()) {
+    // Cache TamsiSolver computations.
+    auto& tamsi_results_cache_entry = this->DeclareCacheEntry(
+        std::string("Implicit Stribeck solver computations."),
+        &MultibodyPlant<T>::CalcContactSolverResults,
+        // The Correct Solution:
+        // The Implicit Stribeck solver solution S is a function of state x,
+        // actuation input u (and externally applied forces) and even time if
+        // any of the force elements in the model is time dependent. We can
+        // write this as S = S(t, x, u).
+        // Even though this variables can change continuously with time, we
+        // want the solver solution to be updated periodically (with period
+        // time_step()) only. That is, ContactSolverResults should be handled
+        // as an abstract state with periodic updates. In the systems::
+        // framework terminology, we'd like to have an "unrestricted update"
+        // with a periodic event trigger.
+        // The Problem (#10149):
+        // From issue #10149 we know unrestricted updates incur a very
+        // noticeably performance hit that at this stage we are not willing to
+        // pay.
+        // The Work Around (#10888):
+        // To emulate the correct behavior until #10149 is addressed we declare
+        // the Implicit Stribeck solver solution dependent only on the discrete
+        // state. This is not the correct solution given these results do
+        // depend on time and (even continuous) inputs. However it does emulate
+        // the discrete update of these values as if zero-order held, which is
+        // what we want.
+        {this->xd_ticket(), this->all_parameters_ticket()});
+    cache_indexes_.contact_solver_results =
+        tamsi_results_cache_entry.cache_index();
+
+    // This cache entry holds the entire TAMSI solver, since there was no
+    // convenient way to isolate just the scratch data in its current form.
+    auto& tamsi_scratch_cache_entry = this->DeclareCacheEntry(
+        "solver scratch", systems::ValueProducer(
+            TamsiSolver<T>(num_velocities()),
+            &systems::ValueProducer::NoopCalc),
+        {this->nothing_ticket()});
+    cache_indexes_.contact_solver_scratch =
+        tamsi_scratch_cache_entry.cache_index();
+  }
+
 
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
