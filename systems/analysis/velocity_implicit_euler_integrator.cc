@@ -175,7 +175,7 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
       t, y_ad, qk, qn, h, this->qdot_ad_.get(),
       *(this->system_ad_), this->context_ad_.get());
 
-  *Jy = math::autoDiffToGradientMatrix(result);
+  *Jy = math::ExtractGradient(result);
 
   // Sometimes ℓ(y) does not depend on, for example, when ℓ(y) is a constant or
   // when ℓ(y) depends only on t. In this case, make sure that the Jacobian
