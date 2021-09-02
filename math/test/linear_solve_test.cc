@@ -1,5 +1,6 @@
 #include "drake/math/linear_solve.h"
 
+#include <eigen3/Eigen/src/LU/PartialPivLU.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

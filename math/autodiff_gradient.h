@@ -228,15 +228,13 @@ GetDerivativeSize(const Eigen::MatrixBase<Derived>& A) {
   for (int i = 0; i < A.rows(); ++i) {
     for (int j = 0; j < A.cols(); ++j) {
       if (A(i, j).derivatives().size() != 0) {
-        if (num_derivs != 0 && A(i, j).derivatives().size() != 0 &&
-            A(i, j).derivatives().size() != num_derivs) {
+        if (num_derivs != 0 && A(i, j).derivatives().size() != num_derivs) {
           throw std::runtime_error(fmt::format(
               "GetDerivativeSize(): A({}, {}).derivatives() has size "
               "{}, while another entry has size {}",
               i, j, A(i, j).derivatives().size(), num_derivs));
-        } else if (A(i, j).derivatives().size() != 0) {
-          num_derivs = A(i, j).derivatives().size();
         }
+        num_derivs = A(i, j).derivatives().size();
       }
     }
   }
