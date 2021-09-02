@@ -464,39 +464,42 @@ class TestMeshcat(unittest.TestCase):
         vis2.load(vis2.GetMyContextFromRoot(context))
         diagram.Publish(context)
 
-    @unittest.skip("TODO(#15702) Re-enable this test case.")
     def test_warnings_and_errors(self):
         builder = DiagramBuilder()
         sg = builder.AddSystem(SceneGraph())
 
         v2 = builder.AddSystem(
-          MeshcatVisualizer(scene_graph=sg, zmq_url=ZMQ_URL))
+          MeshcatVisualizer(scene_graph=sg, zmq_url=ZMQ_URL,
+                            open_browser=False))
         builder.Connect(sg.get_query_output_port(),
                         v2.get_geometry_query_input_port())
         v2.set_name("v2")
 
         v4 = builder.AddSystem(
-          MeshcatVisualizer(scene_graph=None, zmq_url=ZMQ_URL))
+          MeshcatVisualizer(scene_graph=None, zmq_url=ZMQ_URL,
+                            open_browser=False))
         builder.Connect(sg.get_query_output_port(),
                         v4.get_geometry_query_input_port())
         v4.set_name("v4")
 
-        v5 = ConnectMeshcatVisualizer(builder, scene_graph=sg, zmq_url=ZMQ_URL)
+        v5 = ConnectMeshcatVisualizer(builder, scene_graph=sg, zmq_url=ZMQ_URL,
+                                      open_browser=False)
         v5.set_name("v5")
 
         v7 = ConnectMeshcatVisualizer(
             builder, scene_graph=sg, output_port=sg.get_query_output_port(),
-            zmq_url=ZMQ_URL)
+            zmq_url=ZMQ_URL, open_browser=False)
         v7.set_name("v7")
 
         with self.assertRaises(AssertionError):
             v8 = ConnectMeshcatVisualizer(builder, scene_graph=None,
-                                          output_port=None, zmq_url=ZMQ_URL)
+                                          output_port=None, zmq_url=ZMQ_URL,
+                                          open_browser=False)
             v8.set_name("v8")
 
         v10 = ConnectMeshcatVisualizer(
             builder, scene_graph=None, output_port=sg.get_query_output_port(),
-            zmq_url=ZMQ_URL)
+            zmq_url=ZMQ_URL, open_browser=False)
         v10.set_name("v10")
 
         diagram = builder.Build()
