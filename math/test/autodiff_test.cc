@@ -72,9 +72,8 @@ class AutodiffTest : public ::testing::Test {
   const double v1_ = 9.0;
 };
 
-// Tests that ToValueMatrix extracts the values from the autodiff.
-TEST_F(AutodiffTest, ToValueMatrix) {
-  const VectorXd values = autoDiffToValueMatrix(output_calculation_);
+TEST_F(AutodiffTest, ExtractValue) {
+  const VectorXd values = ExtractValue(output_calculation_);
   VectorXd expected(3);
   expected[0] = cos(v0_) + sin(v0_) * cos(v0_) / v1_;
   expected[1] = sin(v0_) + v1_;
@@ -82,11 +81,14 @@ TEST_F(AutodiffTest, ToValueMatrix) {
   EXPECT_TRUE(
       CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute))
       << values;
+
+  // TODO(sherm1) To be deprecated.
+  EXPECT_TRUE(CompareMatrices(autoDiffToValueMatrix(output_calculation_),
+      values));
 }
 
-// Tests that ToGradientMatrix extracts the gradients from the autodiff.
-TEST_F(AutodiffTest, ToGradientMatrix) {
-  MatrixXd gradients = autoDiffToGradientMatrix(output_calculation_);
+TEST_F(AutodiffTest, ExtractGradient) {
+  MatrixXd gradients = ExtractGradient(output_calculation_);
 
   MatrixXd expected(3, 2);
   // Shorthand notation: Denote v0 = vec_[0], v1 = vec_[1].
@@ -111,6 +113,234 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
   EXPECT_TRUE(
       CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute))
       << gradients;
+
+  // TODO(sherm1) To be deprecated.
+  EXPECT_TRUE(CompareMatrices(autoDiffToGradientMatrix(output_calculation_),
+      gradients));
+
+  // Given an AutoDiff matrix with no derivatives, ExtractGradient() should
+  // return a matrix with zero-length rows, or return with specified-length
+  // rows of all zeroes.
+  Vector3<AutoDiffXd> no_derivatives;
+  const auto gradient_with_no_derivs = ExtractGradient(no_derivatives);
+  EXPECT_EQ(gradient_with_no_derivs.rows(), 3);
+  EXPECT_EQ(gradient_with_no_derivs.cols(), 0);
+
+  const auto gradient_with_three_derivs = ExtractGradient(no_derivatives, 3);
+  EXPECT_TRUE(
+      CompareMatrices(gradient_with_three_derivs, Eigen::Matrix3d::Zero()));
+
+  // Create an AutoDiff matrix with mixed zero-length and consistent, non-zero
+  // length derivatives. ExtractGradient() should be happy with this.
+  Vector3<AutoDiffXd> mixed_good;
+  mixed_good(0) = AutoDiffXd(1.0, VectorXd::Zero(3));
+  mixed_good(1) = AutoDiffXd(2.0, VectorXd());
+  mixed_good(2) = AutoDiffXd(3.0, VectorXd::Zero(3));
+  const auto mixed_good_gradient = ExtractGradient(mixed_good);
+  EXPECT_TRUE(CompareMatrices(mixed_good_gradient, Eigen::Matrix3d::Zero()));
+
+  // Now specify a number of derivatives that matches the actual number.
+  EXPECT_NO_THROW(ExtractGradient(mixed_good, 3));
+
+  // But we should fail if the specified size doesn't match actual.
+  DRAKE_EXPECT_THROWS_MESSAGE(ExtractGradient(mixed_good, 19),
+      "ExtractGradient..: Input matrix has 3.*but.*specified.*19.*"
+      "should have zero.*or.*should match.*");
+
+  // Reject an AutoDiff matrix with inconsistent non-zero length derivatives.
+  Vector3<AutoDiffXd> mixed_bad;
+  mixed_bad(0) = AutoDiffXd(1.0, VectorXd::Zero(3));
+  mixed_bad(1) = AutoDiffXd(2.0, VectorXd());
+  mixed_bad(2) = AutoDiffXd(3.0, VectorXd::Zero(2));
+  DRAKE_EXPECT_THROWS_MESSAGE(ExtractGradient(mixed_bad),
+      "ExtractGradient..: Input matrix.*inconsistent.*3 and 2.*");
+}
+
+// Check the various overloads of InitializeAutoDiff(value). There are a
+// variety of template parameters and various behaviors depending on whether
+// the underlying Eigen matrices are fixed- or dynamic-sized. Sugar functions
+// are available that take common defaults and give results in the function
+// return rather than into a pre-allocated output argument.
+//
+// In some cases we also need to verify that the template meta programming
+// yields the expected types, since that is part of the function documentation.
+GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
+  const auto value = (Eigen::Matrix2d() <<  1.0, 2.0,
+                                            3.0, 4.0).finished();
+
+  // Fixed-size value, fixed-size gradient.
+  Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector4d>, 2, 2> autodiff2;
+  // This is the general method. All the other no-gradient-methods call it.
+  InitializeAutoDiff(value, {}, {}, &autodiff2);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff2), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff2),
+      Eigen::Matrix4d::Identity()));
+
+  // Cursory check of overload that defaults the middle two parameters, exactly
+  // equivalent to the more-general signature as invoked above.
+  Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector4d>, 2, 2> autodiff22;
+  InitializeAutoDiff(2 * value, &autodiff22);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff22), 2 * value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff22),
+      Eigen::Matrix4d::Identity()));
+
+  // Even simpler overload that defaults the middle parameters and puts the
+  // result in the return value. Derivatives are fixed size if a size is
+  // specified as a template argument, dynamic otherwise.
+
+  const auto ad4_return = InitializeAutoDiff<4>(value);  // Fixed derivatives.
+  // Since value was fixed size, ad_return should be also.
+  EXPECT_EQ(decltype(ad4_return)::ColsAtCompileTime, 2);
+  EXPECT_EQ(decltype(ad4_return)::RowsAtCompileTime, 2);
+  EXPECT_EQ(decltype(ad4_return)::Scalar::DerType::RowsAtCompileTime, 4);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(ad4_return), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(ad4_return),
+                              Eigen::Matrix4d::Identity()));
+
+  const auto adX_return = InitializeAutoDiff(value);  // Dynamic derivatives.
+  // Since value was fixed size, adX_return should be also.
+  EXPECT_EQ(decltype(adX_return)::ColsAtCompileTime, 2);
+  EXPECT_EQ(decltype(adX_return)::RowsAtCompileTime, 2);
+  EXPECT_EQ(decltype(adX_return)::Scalar::DerType::RowsAtCompileTime,
+            Eigen::Dynamic);  // But derivatives are dynamically sized.
+  EXPECT_TRUE(CompareMatrices(ExtractValue(adX_return), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(adX_return),
+                              Eigen::Matrix4d::Identity()));
+
+  // Fixed-size value, variable-size gradient.
+  Eigen::Matrix<AutoDiffXd, 2, 2> autodiffX;
+  InitializeAutoDiff(value, {}, {}, &autodiffX);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiffX), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiffX),
+                              Eigen::MatrixXd::Identity(4, 4)));
+
+  // Check that the general method obeys explicit size & start arguments
+  // for the derivatives.
+  InitializeAutoDiff(value, 7, 3, &autodiffX);
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiffX).block<4, 3>(0, 0),
+                              Eigen::Matrix<double, 4, 3>::Zero()));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiffX).block<4, 4>(0, 3),
+                              Eigen::Matrix4d::Identity()));
+
+  // The function return variant can also take specified values for size and
+  // start position within the gradient. We trust it just passes these through
+  // to the general method, but verify anyway.
+  const auto ad_size = InitializeAutoDiff(value, 6, 2);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(ad_size), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(ad_size).block<4, 2>(0, 0),
+                              Eigen::Matrix<double, 4, 2>::Zero()));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(ad_size).block<4, 4>(0, 2),
+                              Eigen::Matrix4d::Identity()));
+
+  // Check that a dynamic-size value yields a dynamic-size result.
+  const MatrixXd dynamic_value(value);
+  const auto dynamic_result = InitializeAutoDiff(dynamic_value);
+  EXPECT_EQ(decltype(dynamic_result)::ColsAtCompileTime, Eigen::Dynamic);
+  EXPECT_EQ(decltype(dynamic_result)::RowsAtCompileTime, Eigen::Dynamic);
+  EXPECT_EQ(dynamic_result.cols(), 2);
+  EXPECT_EQ(dynamic_result.rows(), 2);
+}
+
+// Check the two overloads of InitializeAutoDiff(value, gradient). The
+// most-general method takes an output argument for the result; a sugar method
+// uses that to give the result as the function return.
+GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
+  const Eigen::Matrix2d value = (Eigen::Matrix2d() <<  1.0, 2.0,
+                                                       3.0, 4.0).finished();
+  const Eigen::Matrix4d gradient = 2 * Eigen::Matrix4d::Identity();
+
+  // Fixed-size value, fixed-size gradient.
+  Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector4d>, 2, 2> autodiff2;
+  // This is the general method. The other (value, gradient) signature just
+  // calls it.
+  InitializeAutoDiff(value, gradient, &autodiff2);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff2), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff2), gradient));
+
+  // The other signature should behave identically, including meta-computing a
+  // fixed-size return type.
+  const auto ad2_return = InitializeAutoDiff(value, gradient);
+  EXPECT_EQ(decltype(ad2_return)::ColsAtCompileTime, 2);
+  EXPECT_EQ(decltype(ad2_return)::RowsAtCompileTime, 2);
+  EXPECT_EQ(decltype(ad2_return)::Scalar::DerType::RowsAtCompileTime, 4);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(ad2_return), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(ad2_return), gradient));
+
+  // Repeat the last two tests using dynamically-sized matrices. This should
+  // produce dynamically-sized results.
+  const Eigen::MatrixXd dynamic_value(value);
+  const Eigen::MatrixXd dynamic_gradient(gradient);
+
+  MatrixX<AutoDiffXd> autodiff;
+  InitializeAutoDiff(dynamic_value, dynamic_gradient, &autodiff);
+  EXPECT_EQ(autodiff.cols(), 2);
+  EXPECT_EQ(autodiff.rows(), 2);
+  EXPECT_EQ(autodiff(0, 0).derivatives().size(), 4);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff), gradient));
+
+  const auto autodiff_return =
+      InitializeAutoDiff(dynamic_value, dynamic_gradient);
+  EXPECT_EQ(decltype(autodiff_return)::ColsAtCompileTime, Eigen::Dynamic);
+  EXPECT_EQ(decltype(autodiff_return)::RowsAtCompileTime, Eigen::Dynamic);
+  EXPECT_EQ(decltype(autodiff_return)::Scalar::DerType::RowsAtCompileTime,
+            Eigen::Dynamic);
+  EXPECT_EQ(autodiff_return.cols(), 2);
+  EXPECT_EQ(autodiff_return.rows(), 2);
+  EXPECT_EQ(autodiff_return(0, 0).derivatives().size(), 4);
+  EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff_return), value));
+  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff_return), gradient));
+}
+
+GTEST_TEST(AdditionalAutodiffTest, InitializeAutoDiffTuple) {
+  // When all sizes are known at compile time, the resulting
+  // AutoDiffScalars should have a compile time number of
+  // derivatives.
+  const Eigen::Matrix2d matrix2 = Eigen::Matrix2d::Identity();
+  const Eigen::Vector3d vec3{1., 2., 3.};
+  const Eigen::Vector4d vec4{5., 6., 7., 8.};
+
+  const auto tuple = math::InitializeAutoDiffTuple(matrix2, vec3, vec4);
+  EXPECT_EQ(std::tuple_size_v<decltype(tuple)>, 3);
+
+  EXPECT_EQ(std::get<0>(tuple).rows(), 2);
+  EXPECT_EQ(std::get<0>(tuple).cols(), 2);
+  EXPECT_EQ(std::get<1>(tuple).size(), 3);
+  EXPECT_EQ(std::get<2>(tuple).size(), 4);
+
+  // This is the expected type of the derivatives vector (in every element).
+  const Eigen::Matrix<double, 11, 1>& deriv_12 =
+      std::get<1>(tuple).coeffRef(2).derivatives();
+  // Check that we didn't create a new copy (i.e. we got the right type).
+  EXPECT_EQ(&deriv_12, &std::get<1>(tuple).coeffRef(2).derivatives());
+
+  // Since vec3[2] is the 7th variable, we expect only element 7 of its
+  // derivatives vector to be 1.
+  VectorXd expected(11);
+  expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
+  EXPECT_EQ(deriv_12, expected);
+
+  // Now let's replace vec3 with a dynamic version of the same size.
+  Eigen::VectorXd vec3d(3);
+  vec3d << 10., 11., 12.;
+
+  const auto tupled = math::InitializeAutoDiffTuple(matrix2, vec3d, vec4);
+  EXPECT_EQ(std::tuple_size_v<decltype(tupled)>, 3);
+
+  EXPECT_EQ(std::get<0>(tupled).rows(), 2);
+  EXPECT_EQ(std::get<0>(tupled).cols(), 2);
+  EXPECT_EQ(std::get<1>(tupled).size(), 3);
+  EXPECT_EQ(std::get<2>(tupled).size(), 4);
+
+  // This is the expected type of the derivatives vector (in every element).
+  const Eigen::Matrix<double, Eigen::Dynamic, 1>& deriv_12d =
+      std::get<1>(tupled).coeffRef(2).derivatives();
+  // Check that we didn't create a new copy (i.e. we got the right type).
+  EXPECT_EQ(&deriv_12d, &std::get<1>(tupled).coeffRef(2).derivatives());
+
+  // We should still get the same value at run time.
+  expected << 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
+  EXPECT_EQ(deriv_12d, expected);
 }
 
 // See note in class documentation for our AutoDiffXd specialization in
@@ -175,11 +405,15 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   // (so even compiling is a success).
   Eigen::Vector3d test3out = DiscardZeroGradient(test3);
   EXPECT_TRUE(CompareMatrices(test3out, test2));
-  test3 =
-      initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Zero(3, 2));
+  test3 = InitializeAutoDiff(test2, Eigen::MatrixXd::Zero(3, 2));
   EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test3), test2));
-  test3 =
-      initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Ones(3, 2));
+  test3 = InitializeAutoDiff(test2, Eigen::MatrixXd::Ones(3, 2));
+
+  // TODO(sherm1) To be deprecated.
+  EXPECT_TRUE(CompareMatrices(
+      initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Ones(3, 2)),
+      test3));
+
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
   DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
 
@@ -210,7 +444,7 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
 // Make sure that casting to autodiff always results in zero gradients.
 GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   Vector2<AutoDiffXd> dynamic = Vector2d::Ones().cast<AutoDiffXd>();
-  const auto dynamic_gradients = autoDiffToGradientMatrix(dynamic);
+  const auto dynamic_gradients = ExtractGradient(dynamic);
   EXPECT_EQ(dynamic_gradients.rows(), 2);
   EXPECT_EQ(dynamic_gradients.cols(), 0);
 
@@ -218,13 +452,13 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   using AutoDiffUpTo16d = Eigen::AutoDiffScalar<VectorUpTo16d>;
   Vector2<AutoDiffUpTo16d> dynamic_max =
       Vector2d::Ones().cast<AutoDiffUpTo16d>();
-  const auto dynamic_max_gradients = autoDiffToGradientMatrix(dynamic_max);
+  const auto dynamic_max_gradients = ExtractGradient(dynamic_max);
   EXPECT_EQ(dynamic_max_gradients.rows(), 2);
   EXPECT_EQ(dynamic_max_gradients.cols(), 0);
 
   Vector2<AutoDiffScalar<Vector3d>> fixed =
       Vector2d::Ones().cast<AutoDiffScalar<Vector3d>>();
-  const auto fixed_gradients = autoDiffToGradientMatrix(fixed);
+  const auto fixed_gradients = ExtractGradient(fixed);
   EXPECT_EQ(fixed_gradients.rows(), 2);
   EXPECT_EQ(fixed_gradients.cols(), 3);
   EXPECT_TRUE(fixed_gradients.isZero(0.));
@@ -234,7 +468,7 @@ GTEST_TEST(GetDerivativeSize, Test) {
   // Empty gradient.
   EXPECT_EQ(GetDerivativeSize(Eigen::Vector2d(1, 2).cast<AutoDiffXd>()), 0);
   // Non-empty gradient.
-  EXPECT_EQ(GetDerivativeSize(initializeAutoDiffGivenGradientMatrix(
+  EXPECT_EQ(GetDerivativeSize(InitializeAutoDiff(
                 Eigen::Vector2d(1, 2), Eigen::Matrix<double, 2, 3>::Ones())),
             3);
   // Some derivatives have empty size.
@@ -255,3 +489,4 @@ GTEST_TEST(GetDerivativeSize, Test) {
 }  // namespace
 }  // namespace math
 }  // namespace drake
+
