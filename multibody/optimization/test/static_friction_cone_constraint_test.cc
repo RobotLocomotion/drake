@@ -65,7 +65,7 @@ GTEST_TEST(StaticFrictionConeConstraint, TestEval) {
     dx(i, 0) = i * 2 + 0.1;
     dx(i, 1) = 0.5 * i + 2;
   }
-  auto x_ad = math::initializeAutoDiffGivenGradientMatrix(x_val_satisfied, dx);
+  auto x_ad = math::InitializeAutoDiff(x_val_satisfied, dx);
   AutoDiffVecXd y_ad;
   constraint.Eval(x_ad, &y_ad);
   std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
@@ -74,8 +74,8 @@ GTEST_TEST(StaticFrictionConeConstraint, TestEval) {
                                Eigen::VectorXd* y) { constraint.Eval(x, y); };
   auto dy_dx = math::ComputeNumericalGradient(eval_fun, x_val_satisfied);
   const double gradient_tol = 1E-5;
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_ad), dy_dx * dx,
-                              gradient_tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_ad),
+                              dy_dx * dx, gradient_tol));
 }
 }  // namespace multibody
 }  // namespace drake

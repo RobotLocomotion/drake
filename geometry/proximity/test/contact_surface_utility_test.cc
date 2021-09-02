@@ -605,7 +605,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_3Gon) {
 // coordinate of a vertex.
 GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_AutoDiff) {
   using Vector3ad = Vector3<AutoDiffXd>;
-  const vector<Vector3ad> polygon_F{math::initializeAutoDiff(Vector3d::Zero()),
+  const vector<Vector3ad> polygon_F{math::InitializeAutoDiff(Vector3d::Zero()),
                                     Vector3ad::UnitX(), Vector3ad{1, 1, 0},
                                     Vector3ad::UnitY()};
   const Vector3ad nhat_F = Vector3ad::UnitZ();
@@ -728,9 +728,9 @@ GTEST_TEST(ContactSurfaceUtility, CalcPolygonArea_AutoDiffWithZeroArea) {
   // will use AutoDiff to calculate the area derivative with respect to
   // the position of V₀.
   //
-  // Notice that we initializeAutoDiff() for V₀ only, so we will expect
+  // Notice that we InitializeAutoDiff() for V₀ only, so we will expect
   // derivatives.size() == 3 for the three coordinates of V₀.
-  const vector<Vector3ad> p_FVs{math::initializeAutoDiff(Vector3d::UnitX()),
+  const vector<Vector3ad> p_FVs{math::InitializeAutoDiff(Vector3d::UnitX()),
                                 Vector3ad::UnitX() * 2, Vector3ad::UnitX() * 3};
   const Vector3ad nhat_F = Vector3ad::UnitZ();
 

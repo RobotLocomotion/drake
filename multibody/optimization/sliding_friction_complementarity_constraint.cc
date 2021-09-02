@@ -120,7 +120,7 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_autodiff;
   Eval(x.cast<AutoDiffXd>(), &y_autodiff);
-  *y = math::autoDiffToValueMatrix(y_autodiff);
+  *y = math::ExtractValue(y_autodiff);
 }
 
 void SlidingFrictionComplementarityNonlinearConstraint::DoEval(

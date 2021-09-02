@@ -30,7 +30,7 @@ MatrixXd MakeMatrix(int rows, int cols) {
 MatrixX<AutoDiffXd> MakeAutoDiffMatrix(int rows, int cols) {
   const MatrixXd A = MakeMatrix(rows, cols);
   MatrixX<AutoDiffXd> A_ad(rows, cols);
-  math::initializeAutoDiff(A, A_ad);
+  math::InitializeAutoDiff(A, &A_ad);
   return A_ad;
 }
 

@@ -7,7 +7,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
-using drake::math::initializeAutoDiff;
 using Eigen::AutoDiffScalar;
 using Eigen::Matrix3d;
 using Eigen::Vector4d;
@@ -19,13 +18,13 @@ namespace {
 // Converts the given quaternion to an expmap and back. Asserts that the
 // two expressions are equivalent.
 void ConvertQuaternionToExpmapAndBack(const Vector4d& quat) {
-  auto quat_autodiff = initializeAutoDiff(quat);
+  auto quat_autodiff = InitializeAutoDiff(quat);
   auto expmap_autodiff = quat2expmap(quat_autodiff);
-  auto expmap = autoDiffToValueMatrix(expmap_autodiff);
-  auto expmap_grad = autoDiffToGradientMatrix(expmap_autodiff);
-  auto quat_back_autodiff = expmap2quat(initializeAutoDiff(expmap));
-  auto quat_back = autoDiffToValueMatrix(quat_back_autodiff);
-  auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
+  auto expmap = ExtractValue(expmap_autodiff);
+  auto expmap_grad = ExtractGradient(expmap_autodiff);
+  auto quat_back_autodiff = expmap2quat(InitializeAutoDiff(expmap));
+  auto quat_back = ExtractValue(quat_back_autodiff);
+  auto quat_back_grad = ExtractGradient(quat_back_autodiff);
 
   EXPECT_NEAR(std::abs(quat.dot(quat_back)), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();

@@ -79,9 +79,9 @@ GTEST_TEST(ArticulatedBodyInertia, CastToAutoDiff) {
 
   // Value and gradient of the matrix.
   const auto& matrix_autodiff = P_autodiff.CopyToFullMatrix6();
-  auto matrix_value = math::autoDiffToValueMatrix(matrix_autodiff);
+  auto matrix_value = math::ExtractValue(matrix_autodiff);
   EXPECT_TRUE(matrix_value.isApprox(P_double.CopyToFullMatrix6(), kEpsilon));
-  MatrixXd matrix_gradient = math::autoDiffToGradientMatrix(matrix_autodiff);
+  MatrixXd matrix_gradient = math::ExtractGradient(matrix_autodiff);
   ASSERT_EQ(matrix_gradient.size(), 0);
 }
 

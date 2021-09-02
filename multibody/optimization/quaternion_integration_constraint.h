@@ -98,14 +98,13 @@ template <typename T>
 T DifferentiableNorm(const Vector3<T>& x) {
   const double kEps = std::numeric_limits<double>::epsilon();
   if constexpr (std::is_same_v<T, AutoDiffXd>) {
-    const Eigen::Vector3d x_val = math::autoDiffToValueMatrix(x);
+    const Eigen::Vector3d x_val = math::ExtractValue(x);
     const double norm_val = x_val.norm();
     if (norm_val > 100 * kEps) {
       return x.norm();
     } else {
-      return AutoDiffXd(norm_val,
-                        math::autoDiffToGradientMatrix(x).transpose() * x_val /
-                            (norm_val + 10 * kEps));
+      return AutoDiffXd(norm_val, math::ExtractGradient(x).transpose() * x_val /
+                                      (norm_val + 10 * kEps));
     }
   } else {
     return x.norm();
