@@ -173,16 +173,6 @@ class TestSensors(unittest.TestCase):
             np.testing.assert_array_equal(data, channel_default)
             np.testing.assert_array_equal(mutable_data, channel_default)
 
-    def test_constants(self):
-        # Simply ensure we can access the constants.
-        values = [
-            mut.InvalidDepth.kTooFar,
-            mut.InvalidDepth.kTooClose,
-            mut.Label.kNoBody,
-            mut.Label.kFlatTerrain,
-        ]
-        self.assertTrue(values)
-
     def test_camera_info(self):
         width = 640
         height = 480
