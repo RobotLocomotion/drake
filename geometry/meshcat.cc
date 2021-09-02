@@ -343,15 +343,21 @@ class Meshcat::WebSocketPublisher {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WebSocketPublisher);
 
-  WebSocketPublisher()
+  explicit WebSocketPublisher(const std::optional<int> port)
       : prefix_("/drake"), main_thread_id_(std::this_thread::get_id()) {
+    DRAKE_DEMAND(!port.has_value() || *port >= 1024);
     std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
         app_promise;
     std::future<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
         app_future = app_promise.get_future();
     websocket_thread_ = std::thread(&WebSocketPublisher::WebSocketMain, this,
-                                    std::move(app_promise));
+                                    std::move(app_promise), port);
     std::tie(app_, loop_, port_, listen_socket_) = app_future.get();
+
+    if (listen_socket_ == nullptr) {
+      websocket_thread_.join();
+      throw std::runtime_error("Meshcat failed to open a websocket port.");
+    }
   }
 
   ~WebSocketPublisher() {
@@ -564,11 +570,11 @@ class Meshcat::WebSocketPublisher {
  private:
   void WebSocketMain(
       std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
-          app_promise) {
+          app_promise, const std::optional<int>& desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
 
-    int port = 7001;
-    const int kMaxPort = 7099;
+    int port = desired_port ? *desired_port : 7000;
+    const int kMaxPort = desired_port ? *desired_port : 7099;
 
     uWS::App::WebSocketBehavior<PerSocketData> behavior;
     behavior.open = [this](WebSocket* ws) {
@@ -608,14 +614,12 @@ class Meshcat::WebSocketPublisher {
           });
     } while (listen_socket == nullptr && port++ < kMaxPort);
 
-    if (listen_socket == nullptr) {
-      throw std::runtime_error("Meshcat failed to open a websocket port.");
-    }
-
     app_promise.set_value(
         std::make_tuple(&app, uWS::Loop::get(), port, listen_socket));
 
-    app.run();
+    if (listen_socket != nullptr) {
+      app.run();
+    }
   }
 
   void SendTree(WebSocket* ws) {
@@ -663,17 +667,21 @@ class Meshcat::WebSocketPublisher {
   uWS::Loop* loop_{nullptr};
 };
 
-Meshcat::Meshcat() {
+Meshcat::Meshcat(const std::optional<int>& port) {
   // Fetch the index once to be sure that we preload the content.
   GetUrlContent("/");
 
-  publisher_ = std::make_unique<WebSocketPublisher>();
+  publisher_ = std::make_unique<WebSocketPublisher>(port);
 }
 
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
   return fmt::format("http://localhost:{}", publisher_->port());
+}
+
+int Meshcat::port() const {
+  return publisher_->port();
 }
 
 std::string Meshcat::ws_url() const {
