@@ -11,7 +11,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-using Seed = RandomSourced::Seed;
+using Seed = RandomSource<double>::Seed;
 
 // Stores exactly one of the three supported distribution objects.  Note that
 // the distribution objects hold computational state; they are not just pure
@@ -73,49 +73,47 @@ Seed get_next_seed() {
 
 }  // namespace
 
-namespace internal {
 template <typename T>
-RandomSourceT<T>::RandomSourceT(RandomDistribution distribution,
-                                int num_outputs, double sampling_interval_sec)
-    : LeafSystem<T>(
-          SystemScalarConverter::MakeWithoutSubtypeChecking<RandomSourceT>()),
+RandomSource<T>::RandomSource(RandomDistribution distribution,
+                              int num_outputs, double sampling_interval_sec)
+    : LeafSystem<T>(SystemTypeTag<RandomSource>()),
       distribution_(distribution),
       sampling_interval_sec_{sampling_interval_sec},
       instance_seed_{get_next_seed()} {
   auto discrete_state_index = this->DeclareDiscreteState(num_outputs);
   this->DeclareAbstractState(Value<SampleGenerator>());
   this->DeclarePeriodicUnrestrictedUpdateEvent(
-      sampling_interval_sec, 0., &RandomSourceT<T>::UpdateSamples);
+      sampling_interval_sec, 0., &RandomSource<T>::UpdateSamples);
   this->DeclareStateOutputPort("output", discrete_state_index);
 }
 
 template <typename T>
-RandomSourceT<T>::~RandomSourceT() {}
+RandomSource<T>::~RandomSource() {}
 
 template <typename T>
 template <typename U>
-RandomSourceT<T>::RandomSourceT(const RandomSourceT<U>& other)
-    : RandomSourceT<T>(other.get_distribution(),
-                       other.get_output_port(0).size(),
-                       other.sampling_interval_sec_) {}
+RandomSource<T>::RandomSource(const RandomSource<U>& other)
+    : RandomSource<T>(other.get_distribution(),
+                      other.get_output_port(0).size(),
+                      other.sampling_interval_sec_) {}
 
 template <typename T>
-Seed RandomSourceT<T>::get_seed(const Context<double>& context) const {
+Seed RandomSource<T>::get_seed(const Context<double>& context) const {
   const auto& source = context.template get_abstract_state<SampleGenerator>(0);
   return source.seed();
 }
 
 template <typename T>
-void RandomSourceT<T>::SetDefaultState(const Context<T>& context,
-                                       State<T>* state) const {
+void RandomSource<T>::SetDefaultState(const Context<T>& context,
+                                      State<T>* state) const {
   const Seed seed = fixed_seed_.value_or(instance_seed_);
   SetSeed(seed, context, state);
 }
 
 template <typename T>
-void RandomSourceT<T>::SetRandomState(const Context<T>& context,
-                                      State<T>* state,
-                                      RandomGenerator* seed_generator) const {
+void RandomSource<T>::SetRandomState(const Context<T>& context,
+                                     State<T>* state,
+                                     RandomGenerator* seed_generator) const {
   const Seed fresh_seed = (*seed_generator)();
   const Seed seed = fixed_seed_.value_or(fresh_seed);
   SetSeed(seed, context, state);
@@ -124,8 +122,8 @@ void RandomSourceT<T>::SetRandomState(const Context<T>& context,
 // Writes the given seed into abstract state (replacing the existing
 // SampleGenerator) and then does `UpdateSamples`.
 template <typename T>
-void RandomSourceT<T>::SetSeed(Seed seed, const Context<T>& context,
-                               State<T>* state) const {
+void RandomSource<T>::SetSeed(Seed seed, const Context<T>& context,
+                              State<T>* state) const {
   state->template get_mutable_abstract_state<SampleGenerator>(0) =
       SampleGenerator(seed, distribution_);
   UpdateSamples(context, state);
@@ -135,37 +133,12 @@ void RandomSourceT<T>::SetSeed(Seed seed, const Context<T>& context,
 // from the abstract state.  (Note that the generator's abstract state is also
 // mutated as a side effect of this method.)
 template <typename T>
-void RandomSourceT<T>::UpdateSamples(const Context<T>&, State<T>* state) const {
+void RandomSource<T>::UpdateSamples(const Context<T>&, State<T>* state) const {
   auto& source = state->template get_mutable_abstract_state<SampleGenerator>(0);
   auto& samples = state->get_mutable_discrete_state(0);
   for (int i = 0; i < samples.size(); ++i) {
     samples[i] = T(source.GenerateNext());
   }
-}
-
-}  // namespace internal
-
-RandomSource::RandomSource(RandomDistribution distribution, int num_outputs,
-                           double sampling_interval_sec)
-    : internal::RandomSourceT<double>(distribution, num_outputs,
-                                      sampling_interval_sec) {}
-
-RandomSource::~RandomSource() {}
-
-RandomDistribution RandomSource::get_distribution() const {
-  return internal::RandomSourceT<double>::get_distribution();
-}
-
-Seed RandomSource::get_seed(const Context<double>& context) const {
-  return internal::RandomSourceT<double>::get_seed(context);
-}
-
-std::optional<Seed> RandomSource::get_fixed_seed() const {
-  return internal::RandomSourceT<double>::get_fixed_seed();
-}
-
-void RandomSource::set_fixed_seed(const std::optional<Seed>& seed) {
-  return internal::RandomSourceT<double>::set_fixed_seed(seed);
 }
 
 template <typename T>
@@ -185,15 +158,8 @@ int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder) {
         continue;
       }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      using Source =
-          typename std::conditional_t<std::is_same_v<T, double>, RandomSource,
-                                      internal::RandomSourceT<T>>;
-      const auto* const source = builder->template AddSystem<Source>(
+      const auto* const source = builder->template AddSystem<RandomSource<T>>(
           port.get_random_type().value(), port.size(), sampling_interval_sec);
-#pragma GCC diagnostic pop
-
       builder->Connect(source->get_output_port(0), port);
       ++count;
     }
@@ -209,4 +175,4 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::internal::RandomSourceT)
+    class ::drake::systems::RandomSource)
