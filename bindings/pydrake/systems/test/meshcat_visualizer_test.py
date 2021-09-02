@@ -464,6 +464,7 @@ class TestMeshcat(unittest.TestCase):
         vis2.load(vis2.GetMyContextFromRoot(context))
         diagram.Publish(context)
 
+    @unittest.skip("TODO(#15702) Re-enable this test case.")
     def test_warnings_and_errors(self):
         builder = DiagramBuilder()
         sg = builder.AddSystem(SceneGraph())
