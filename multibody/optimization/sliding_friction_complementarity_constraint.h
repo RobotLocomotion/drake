@@ -119,7 +119,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
   /*
    * Return the sparsity pattern of the constraint, when we compute the gradient
    * of the constraint w.r.t the variable itself (namely when
-   * autoDiffToGradientMatrix(x) = Identity in DoEval(x, y)).
+   * ExtractGradient(x) = Identity in DoEval(x, y)).
    * @return gradient_sparsity_pattern. The pairs
    * (gradient_sparsity_pattern[i].first, gradient_sparsity_pattern[i].second)
    * contain all the (row, column) index pairs of the non-zero entries in the

@@ -24,12 +24,11 @@ GTEST_TEST(UnitQuaternionConstraintTest, Test) {
   Eigen::Matrix<double, 4, Eigen::Dynamic> x_grad(4, 2);
   x_grad << 1, 2, 3, 4, 5, 6, 7, 8;
   const AutoDiffVecXd x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x_val, x_grad);
+      math::InitializeAutoDiff(x_val, x_grad);
   AutoDiffVecXd y_autodiff;
   dut.Eval(x_autodiff, &y_autodiff);
-  EXPECT_TRUE(
-      CompareMatrices(math::autoDiffToValueMatrix(y_autodiff), Vector1d(30)));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), Vector1d(30)));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
                               2 * x_val.transpose() * x_grad));
 
   const symbolic::Variable z0("z0");

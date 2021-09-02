@@ -67,12 +67,12 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
 
   // Ensure that value is correct.
   auto value_expected = quadratic_form(x);
-  auto value = autoDiffToValueMatrix(jac_chunk_size_default);
+  auto value = ExtractValue(jac_chunk_size_default);
   EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
                               MatrixCompareType::absolute));
 
   // Ensure that Jacobian is correct.
-  auto jac = autoDiffToGradientMatrix(jac_chunk_size_default);
+  auto jac = ExtractGradient(jac_chunk_size_default);
   auto jac_expected = (x.transpose() * (A + A.transpose())).eval();
   EXPECT_TRUE(
       CompareMatrices(jac_expected, jac, 1e-12, MatrixCompareType::absolute));
@@ -131,15 +131,15 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
 
   // Ensure that value is correct.
   auto value_expected = quadratic_function(x);
-  auto value_autodiff = autoDiffToValueMatrix(hess_chunk_size_default);
-  auto value = autoDiffToValueMatrix(value_autodiff);
+  auto value_autodiff = ExtractValue(hess_chunk_size_default);
+  auto value = ExtractValue(value_autodiff);
   EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
                               MatrixCompareType::absolute));
 
   // Ensure that the two ways of computing the Jacobian from AutoDiff match.
-  auto jac_autodiff = autoDiffToGradientMatrix(hess_chunk_size_default);
-  auto jac1 = autoDiffToValueMatrix(jac_autodiff);
-  auto jac2 = autoDiffToGradientMatrix(value_autodiff);
+  auto jac_autodiff = ExtractGradient(hess_chunk_size_default);
+  auto jac1 = ExtractValue(jac_autodiff);
+  auto jac2 = ExtractGradient(value_autodiff);
   EXPECT_TRUE(jac1 == jac2);
 
   // Ensure that the Jacobian is correct.
@@ -152,7 +152,7 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   // Ensure that the Hessian is correct.
   auto hess_expected =
       (A.transpose() * C * D + D.transpose() * C.transpose() * A).eval();
-  auto hess = autoDiffToGradientMatrix(jac_autodiff);
+  auto hess = ExtractGradient(jac_autodiff);
   EXPECT_TRUE(
       CompareMatrices(hess_expected, hess, 1e-12, MatrixCompareType::absolute));
 }

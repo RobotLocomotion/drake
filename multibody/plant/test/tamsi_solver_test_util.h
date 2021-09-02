@@ -162,14 +162,14 @@ MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
     double dt, double v_stiction, double epsilon_v,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
-  math::initializeAutoDiff(v, v_autodiff);
+  math::InitializeAutoDiff(v, &v_autodiff);
   // Empty vector for data not used by the two-way coupled scheme.
   const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
       M, Jn, Jt, p_star, x0, mu, not_used, stiffness, dissipation,
       dt, v_stiction, epsilon_v, true,
       v_autodiff);
-  return math::autoDiffToGradientMatrix(residual);
+  return math::ExtractGradient(residual);
 }
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the one-way coupled scheme
@@ -184,14 +184,14 @@ MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     double dt, double v_stiction, double epsilon_v,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
-  math::initializeAutoDiff(v, v_autodiff);
+  math::InitializeAutoDiff(v, &v_autodiff);
   // Empty vector for data not used by the one-way coupled scheme.
   const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
       M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used,
       dt, v_stiction, epsilon_v, false,
       v_autodiff);
-  return math::autoDiffToGradientMatrix(residual);
+  return math::ExtractGradient(residual);
 }
 
 }  // namespace test

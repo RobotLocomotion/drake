@@ -695,16 +695,15 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
   // Initialize v_autodiff to have values v and so that it is the independent
   // variable of the problem.
   VectorX<AutoDiffXd> v_autodiff(kNumPositions);
-  math::initializeAutoDiff(v, v_autodiff);
+  math::InitializeAutoDiff(v, &v_autodiff);
   context_autodiff_->get_mutable_continuous_state().
       get_mutable_generalized_velocity().SetFromVector(v_autodiff);
 
   const Vector3<AutoDiffXd> v_WE_autodiff =
       CalcEndEffectorVelocity(tree_autodiff(), *context_autodiff_);
 
-  const Vector3<double> v_WE_value = math::autoDiffToValueMatrix(v_WE_autodiff);
-  const MatrixX<double> v_WE_derivs =
-      math::autoDiffToGradientMatrix(v_WE_autodiff);
+  const Vector3<double> v_WE_value = math::ExtractValue(v_WE_autodiff);
+  const MatrixX<double> v_WE_derivs = math::ExtractGradient(v_WE_autodiff);
 
   // Values obtained with <AutoDiffXd> should match those computed with
   // <double>.
@@ -755,9 +754,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityA) {
 
   // The derivative with respect to time should equal v_WE.
   const VectorX<AutoDiffXd> q_autodiff =
-      // For reasons beyond my understanding, we need to pass MatrixXd to
-      // math::initializeAutoDiffGivenGradientMatrix().
-      math::initializeAutoDiffGivenGradientMatrix(MatrixXd(q), MatrixXd(v));
+      // For reasons beyond my understanding, we need to pass a MatrixXd as the
+      // gradient for math::InitializeAutoDiff(). Eigen complains otherwise.
+      math::InitializeAutoDiff(q, MatrixXd(v));
   v_autodiff = v.cast<AutoDiffXd>();
   context_autodiff_->get_mutable_continuous_state().
       get_mutable_generalized_position().SetFromVector(q_autodiff);
@@ -816,7 +815,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
 
   // Initialize v_autodiff to have values v and so that v is the independent
   // variable of the problem.
-  VectorX<AutoDiffXd> v_autodiff = drake::math::initializeAutoDiff(v);
+  VectorX<AutoDiffXd> v_autodiff = drake::math::InitializeAutoDiff(v);
   context_autodiff_->get_mutable_continuous_state()
       .get_mutable_generalized_velocity()
       .SetFromVector(v_autodiff);
@@ -824,9 +823,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
   const Vector3<AutoDiffXd> v_WE_autodiff =
       CalcEndEffectorVelocity(tree_autodiff(), *context_autodiff_);
 
-  const Vector3<double> v_WE_value = math::autoDiffToValueMatrix(v_WE_autodiff);
-  const MatrixX<double> v_WE_derivs =
-      math::autoDiffToGradientMatrix(v_WE_autodiff);
+  const Vector3<double> v_WE_value = math::ExtractValue(v_WE_autodiff);
+  const MatrixX<double> v_WE_derivs = math::ExtractGradient(v_WE_autodiff);
 
   // Values from <AutoDiffXd> should match those computed with <double>.
   EXPECT_TRUE(CompareMatrices(v_WE_value, v_WE, kTolerance,
@@ -875,7 +873,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
 
   // The derivative with respect to time should equal v_WE.
   const VectorX<AutoDiffXd> q_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
+      math::InitializeAutoDiff(q, MatrixXd(v));
   v_autodiff = v.cast<AutoDiffXd>();
   tree_autodiff().GetMutablePositionsAndVelocities(context_autodiff_.get())
       << q_autodiff, v_autodiff;
@@ -929,9 +927,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   // Note: here we pass MatrixXd(v) so that the return gradient uses AutoDiffXd
   // (for which we do have explicit instantiations) instead of
   // AutoDiffScalar<Matrix1d>.
-  auto q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
-  auto v_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+  auto q_autodiff = math::InitializeAutoDiff(q, MatrixXd(v));
+  auto v_autodiff = math::InitializeAutoDiff(v, MatrixXd(vdot));
 
   VectorX<AutoDiffXd> x_autodiff(2 * kNumPositions);
   x_autodiff << q_autodiff, v_autodiff;
@@ -959,8 +956,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
       &p_WPi_autodiff, &Jv_WHp_autodiff);
 
   // Extract time derivatives:
-  MatrixX<double> Jv_WHp_derivs =
-      math::autoDiffToGradientMatrix(Jv_WHp_autodiff);
+  MatrixX<double> Jv_WHp_derivs = math::ExtractGradient(Jv_WHp_autodiff);
   Jv_WHp_derivs.resize(3 * kNumPoints, kNumPositions);
 
   // Compute the expected value of the bias terms using the time derivatives
@@ -1064,7 +1060,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
   // Initialize q to have values qvalue and so that it is the independent
   // variable of the problem.
   VectorX<AutoDiffXd> q_autodiff(kNumPositions);
-  math::initializeAutoDiff(q0, q_autodiff);
+  math::InitializeAutoDiff(q0, &q_autodiff);
   context_autodiff_->get_mutable_continuous_state().
       get_mutable_generalized_position().SetFromVector(q_autodiff);
 
@@ -1077,10 +1073,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityC) {
       p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 
   // Extract values and derivatives:
-  const Matrix3X<double> p_WPi_value =
-      math::autoDiffToValueMatrix(p_WPi_autodiff);
-  const MatrixX<double> p_WPi_derivs =
-      math::autoDiffToGradientMatrix(p_WPi_autodiff);
+  const Matrix3X<double> p_WPi_value = math::ExtractValue(p_WPi_autodiff);
+  const MatrixX<double> p_WPi_derivs = math::ExtractGradient(p_WPi_autodiff);
 
   // Some sanity checks:
   // Values obtained with <AutoDiffXd> should match those computed with
@@ -1242,9 +1236,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   // Note: here we pass MatrixXd(v) so that the return gradient uses AutoDiffXd
   // (for which we do have explicit instantiations) instead of
   // AutoDiffScalar<Matrix1d>.
-  auto q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
-  auto v_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+  auto q_autodiff = math::InitializeAutoDiff(q, MatrixXd(v));
+  auto v_autodiff = math::InitializeAutoDiff(v, MatrixXd(vdot));
 
   VectorX<AutoDiffXd> x_autodiff(2 * kNumVelocities);
   x_autodiff << q_autodiff, v_autodiff;
@@ -1269,8 +1262,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
       tree_autodiff(), *context_autodiff_, p_HPo_autodiff, &Jv_WHp_autodiff);
 
   // Extract time derivatives:
-  MatrixX<double> Jv_WHp_derivs =
-      math::autoDiffToGradientMatrix(Jv_WHp_autodiff);
+  MatrixX<double> Jv_WHp_derivs = math::ExtractGradient(Jv_WHp_autodiff);
   Jv_WHp_derivs.resize(6, kNumVelocities);
 
   // Compute the expected value of the bias terms using the time derivatives

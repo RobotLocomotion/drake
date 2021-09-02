@@ -255,7 +255,7 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
   const VectorX<AutoDiffXd> final_additional_state_autodiff =
       model->get_vector_output_port().Eval(simulator.get_context());
   const VectorXd final_additional_state =
-      math::autoDiffToValueMatrix(final_additional_state_autodiff);
+      math::ExtractValue(final_additional_state_autodiff);
   EXPECT_EQ(final_additional_state.size(), kNumAdditionalDofs);
   EXPECT_TRUE(
       CompareMatrices(final_additional_state,

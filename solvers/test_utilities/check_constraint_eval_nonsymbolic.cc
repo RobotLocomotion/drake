@@ -12,13 +12,12 @@ namespace test {
 void CheckConstraintEvalNonsymbolic(
     const Constraint& constraint,
     const Eigen::Ref<const AutoDiffVecXd>& x_autodiff, double tol) {
-  const Eigen::VectorXd x_double{math::autoDiffToValueMatrix(x_autodiff)};
+  const Eigen::VectorXd x_double{math::ExtractValue(x_autodiff)};
   Eigen::VectorXd y_double;
   constraint.Eval(x_double, &y_double);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
-  EXPECT_TRUE(
-      CompareMatrices(y_double, math::autoDiffToValueMatrix(y_autodiff), tol));
+  EXPECT_TRUE(CompareMatrices(y_double, math::ExtractValue(y_autodiff), tol));
   std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
                      Eigen::VectorXd*)>
       constraint_eval =
@@ -27,8 +26,8 @@ void CheckConstraintEvalNonsymbolic(
   const auto J = math::ComputeNumericalGradient(
       constraint_eval, x_double,
       math::NumericalGradientOption{math::NumericalGradientMethod::kCentral});
-  EXPECT_TRUE(CompareMatrices(J * math::autoDiffToGradientMatrix(x_autodiff),
-                              math::autoDiffToGradientMatrix(y_autodiff),
+  EXPECT_TRUE(CompareMatrices(J * math::ExtractGradient(x_autodiff),
+                              math::ExtractGradient(y_autodiff),
                               std::sqrt(tol)));
 }
 }  // namespace test

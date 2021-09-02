@@ -74,10 +74,10 @@ void EvalPointToPointDistanceConstraintGradient(
   Eigen::MatrixXd Jq_V_B1P2(6, plant.num_positions());
   plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frame2,
                                     p_B2P2, frame1, frame1, &Jq_V_B1P2);
-  *y = math::initializeAutoDiffGivenGradientMatrix(
-      Vector1d(p_P1P2_B1.squaredNorm()), 2 * p_P1P2_B1.transpose() *
-                                             Jq_V_B1P2.bottomRows<3>() *
-                                             math::autoDiffToGradientMatrix(x));
+  *y = math::InitializeAutoDiff(Vector1d(p_P1P2_B1.squaredNorm()),
+                                2 * p_P1P2_B1.transpose() *
+                                    Jq_V_B1P2.bottomRows<3>() *
+                                    math::ExtractGradient(x));
 }
 
 template <typename T, typename S>
@@ -102,8 +102,8 @@ void PointToPointDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
-    Eval(math::initializeAutoDiff(x), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    Eval(math::InitializeAutoDiff(x), &y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, frame1_index_, p_B1P1_,
                   frame2_index_, p_B2P2_, x, y);

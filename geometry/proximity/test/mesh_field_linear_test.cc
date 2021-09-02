@@ -332,10 +332,10 @@ class ScalarMixingTest : public ::testing::Test {
       p_WQ_d_ += mesh_d_->vertex(v).r_MV();
     }
     p_WQ_d_ /= 3;
-    p_WQ_ad_ = math::initializeAutoDiff(p_WQ_d_);
+    p_WQ_ad_ = math::InitializeAutoDiff(p_WQ_d_);
 
     b_d_ = Vector3d(1, 1, 1) / 3.0;
-    b_ad_ = math::initializeAutoDiff(b_d_);
+    b_ad_ = math::InitializeAutoDiff(b_d_);
 
     centroid_value_ = 0;
     for (SurfaceVertexIndex v(0); v < 3; ++v) {

@@ -27,13 +27,13 @@ GTEST_TEST(MidPointIntegrationConstraintTest, Test) {
   EXPECT_TRUE(CompareMatrices(constraint_y, y_expected, 1E-14));
 
   // Now check the gradient sparsity pattern.
-  const auto x_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+  const auto x_autodiff = math::InitializeAutoDiff(
       constraint_x,
       Eigen::MatrixXd::Identity(constraint_x.rows(), constraint_x.rows()));
 
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
-  const Eigen::MatrixXd y_grad = math::autoDiffToGradientMatrix(y_autodiff);
+  const Eigen::MatrixXd y_grad = math::ExtractGradient(y_autodiff);
   // y_grad_sparse only contains the non-zero entries in y_grad. The non-zero
   // entries are stored in constraint.gradient_sparsity_pattern().
   Eigen::MatrixXd y_grad_sparse(constraint.num_constraints(),

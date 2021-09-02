@@ -93,28 +93,28 @@ GTEST_TEST(testCost, testLinearCost) {
   Eigen::Matrix2Xd x_grad(2, 1);
   x_grad << 5, 6;
   const AutoDiffVecXd x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x0, x_grad);
+      math::InitializeAutoDiff(x0, x_grad);
   AutoDiffVecXd y_autodiff;
   cost->Eval(x_autodiff, &y_autodiff);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
                               Vector1<double>(obj_expected), tol));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff),
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
                               a.transpose() * x_grad, tol));
   // Test Eval with identity gradient.
-  const AutoDiffVecXd x_autodiff_identity = math::initializeAutoDiff(x0);
+  const AutoDiffVecXd x_autodiff_identity = math::InitializeAutoDiff(x0);
   AutoDiffVecXd y_autodiff_identity;
   cost->Eval(x_autodiff_identity, &y_autodiff_identity);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff_identity),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff_identity),
                               Vector1<double>(obj_expected), tol));
-  EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToGradientMatrix(y_autodiff_identity), a.transpose(), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff_identity),
+                              a.transpose(), tol));
   // Test Eval with empty gradient.
   const AutoDiffVecXd x_autodiff_empty = x0.cast<AutoDiffXd>();
   AutoDiffVecXd y_autodiff_empty;
   cost->Eval(x_autodiff_empty, &y_autodiff_empty);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff_empty),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff_empty),
                               Vector1<double>(obj_expected), tol));
-  EXPECT_EQ(math::autoDiffToGradientMatrix(y_autodiff_empty).size(), 0);
+  EXPECT_EQ(math::ExtractGradient(y_autodiff_empty).size(), 0);
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
@@ -168,31 +168,31 @@ GTEST_TEST(TestQuadraticCost, NonconvexCost) {
   Eigen::Matrix2Xd x_grad(2, 1);
   x_grad << 5, 6;
   const AutoDiffVecXd x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x0, x_grad);
+      math::InitializeAutoDiff(x0, x_grad);
   AutoDiffVecXd y_autodiff;
   cost->Eval(x_autodiff, &y_autodiff);
   const AutoDiffXd y_autodiff_expected =
       0.5 * x_autodiff.dot(Q * x_autodiff) + b.dot(x_autodiff);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
                               Vector1<double>(obj_expected), tol));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff),
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
                               y_autodiff_expected.derivatives(), tol));
   // Test Eval with identity gradient.
-  const AutoDiffVecXd x_autodiff_identity = math::initializeAutoDiff(x0);
+  const AutoDiffVecXd x_autodiff_identity = math::InitializeAutoDiff(x0);
   AutoDiffVecXd y_autodiff_identity;
   cost->Eval(x_autodiff_identity, &y_autodiff_identity);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff_identity),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff_identity),
                               Vector1<double>(obj_expected), tol));
   EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToGradientMatrix(y_autodiff_identity),
+      math::ExtractGradient(y_autodiff_identity),
       x0.transpose() * (Q + Q.transpose()) / 2 + b.transpose(), tol));
   // Test Eval with empty gradient.
   const AutoDiffVecXd x_autodiff_empty = x0.cast<AutoDiffXd>();
   AutoDiffVecXd y_autodiff_empty;
   cost->Eval(x_autodiff_empty, &y_autodiff_empty);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff_empty),
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff_empty),
                               Vector1<double>(obj_expected), tol));
-  EXPECT_EQ(math::autoDiffToGradientMatrix(y_autodiff_empty).size(), 0);
+  EXPECT_EQ(math::ExtractGradient(y_autodiff_empty).size(), 0);
 
   // Test Eval/CheckSatisfied using Expression.
   {
@@ -385,13 +385,13 @@ GTEST_TEST(TestL2NormCost, Eval) {
 
   // Test AutoDiffXd.
   {
-    const Vector4<AutoDiffXd> x = math::initializeAutoDiff(x0);
+    const Vector4<AutoDiffXd> x = math::InitializeAutoDiff(x0);
     VectorX<AutoDiffXd> y;
     cost.Eval(x, &y);
-    EXPECT_NEAR(z.norm(), math::autoDiffToValueMatrix(y)[0], 1e-16);
+    EXPECT_NEAR(z.norm(), math::ExtractValue(y)[0], 1e-16);
     const Matrix<double, 1, 4> grad_expected =
         (x0.transpose() * A.transpose() * A + b.transpose() * A) / (z.norm());
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y),
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y),
                                 grad_expected, 1e-15));
   }
 

@@ -652,7 +652,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   HydroelasticTractionCalculator<AutoDiffXd> calculator;
 
   RigidTransform<AutoDiffXd> X_WA(
-      math::initializeAutoDiff(Vector3<double>(0, 0, 1)));
+      math::InitializeAutoDiff(Vector3<double>(0, 0, 1)));
   RigidTransform<AutoDiffXd> X_WB;
 
   // For this test, we need just enough contact surface so that the mesh can
@@ -727,13 +727,12 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // This not only confirms that we get well-defined (non-NaN) derivatives but
   // also that values propagate correctly.
   const Matrix3<double> zeros = Matrix3<double>::Zero();
-  EXPECT_TRUE(
-      CompareMatrices(math::autoDiffToGradientMatrix(nhat_W), zeros, 1e-15));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(nhat_W), zeros, 1e-15));
   EXPECT_EQ(point_data.traction_Aq_W.x().derivatives().size(), 3);
   EXPECT_EQ(point_data.traction_Aq_W.y().derivatives().size(), 3);
   EXPECT_EQ(point_data.traction_Aq_W.z().derivatives().size(), 3);
   const Matrix3<double> grad_traction_Aq_W =
-      math::autoDiffToGradientMatrix(point_data.traction_Aq_W);
+      math::ExtractGradient(point_data.traction_Aq_W);
 
   // N.B. Since p_WB = 0, then p_WC = p_WA / 2.
   // For this simple case the expression for the traction traction_Aq_W is:
@@ -741,8 +740,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // Therefore the derivative of along p_WA[2] is:
   //   dtdz = 0.5 * E / h * nhat_W
   // The remaining 8 components of the gradient are trivially zero.
-  const Vector3<double> dtdz =
-      0.5 * E / h * math::autoDiffToValueMatrix(nhat_W);
+  const Vector3<double> dtdz = 0.5 * E / h * math::ExtractValue(nhat_W);
   Matrix3<double> expected_grad_traction_Aq_W = Matrix3<double>::Zero();
   expected_grad_traction_Aq_W.col(2) = dtdz;
   EXPECT_TRUE(CompareMatrices(grad_traction_Aq_W, expected_grad_traction_Aq_W));

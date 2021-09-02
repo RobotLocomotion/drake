@@ -96,8 +96,7 @@ void EvalConstraintGradient(
        2 * (p_dot_n * n_A - cos_cone_half_angle_squared_times_p).transpose())
           .finished();
 
-  *y = math::initializeAutoDiffGivenGradientMatrix(
-      g, Jp_g * Jq_p * math::autoDiffToGradientMatrix(x));
+  *y = math::InitializeAutoDiff(g, Jp_g * Jq_p * math::ExtractGradient(x));
 }
 
 template <typename T, typename S>
@@ -133,8 +132,8 @@ void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   Eigen::VectorXd* y) const {
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
-    Eval(math::initializeAutoDiff(x), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    Eval(math::InitializeAutoDiff(x), &y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, frameA_index_, frameB_index_,
                   p_AS_, n_A_, p_BT_, cos_cone_half_angle_, x, y);
