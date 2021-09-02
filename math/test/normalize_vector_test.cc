@@ -22,16 +22,16 @@ void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   NormalizeVector(x, x_normalized, &dx_normalized, &ddx_normalized);
 
   // Now computes the gradient from autodiff.
-  auto x_autodiff = initializeAutoDiff(x);
+  auto x_autodiff = InitializeAutoDiff(x);
   auto x_norm = x_autodiff.norm();
   auto x_normalized_autodiff = x_autodiff / x_norm;
 
-  EXPECT_TRUE(CompareMatrices(x_normalized,
-                              autoDiffToValueMatrix(x_normalized_autodiff),
-                              1E-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(dx_normalized,
-                              autoDiffToGradientMatrix(x_normalized_autodiff),
-                              1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      x_normalized, ExtractValue(x_normalized_autodiff),
+      1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      dx_normalized, ExtractGradient(x_normalized_autodiff),
+      1E-10, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(NormalizeVectorTest, NormalizeVector) {
