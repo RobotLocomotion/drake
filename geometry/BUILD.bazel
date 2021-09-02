@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":internal_frame",
         ":internal_geometry",
         ":meshcat",
+        ":meshcat_types",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
         ":proximity_engine",
@@ -349,10 +350,6 @@ drake_cc_library(
     name = "meshcat_types",
     hdrs = ["meshcat_types.h"],
     install_hdrs_exclude = ["meshcat_types.h"],
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-    ],
     deps = ["@msgpack"],
 )
 
