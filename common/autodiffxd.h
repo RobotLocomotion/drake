@@ -70,6 +70,10 @@ class AutoDiffScalar<VectorXd>
   using Base::operator+;
   using Base::operator*;
 
+  // TODO(sherm1) Consider initializing the value to NaN here. Performance
+  //   should not be an issue since an empty VectorXd for the derivative has to
+  //   be initialized anyway. If that change is made, also remove the warning
+  //   suppression and TODO on the assignment operator below.
   AutoDiffScalar() {}
 
   AutoDiffScalar(const Scalar& value, int nbDer, int derNumber)
@@ -119,8 +123,20 @@ class AutoDiffScalar<VectorXd>
     return *this;
   }
 
+  // TODO(sherm1) g++ 7.5 (standard with Ubuntu Bionic) issues a spurious
+  //   "maybe uninitialized" warning here when invoked from the unit test for
+  //   InitializeAutoDiffTuple() in autodiff_test.cc. Clang and g++ 9 in
+  //   Ubuntu Focal analyze this correctly and do not issue the warning.
+  //   Remove this suppression when we drop Bionic support, or if we start
+  //   initializing the value component of AutoDiffXd in its default
+  //   constructor (that eliminates the warning).
   inline AutoDiffScalar& operator=(const AutoDiffScalar& other) {
+#pragma GCC diagnostic push
+#if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ == 7)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     m_value = other.value();
+#pragma GCC diagnostic pop
     m_derivatives = other.derivatives();
     return *this;
   }
