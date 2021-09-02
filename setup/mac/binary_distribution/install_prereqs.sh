@@ -51,7 +51,7 @@ export HOMEBREW_NO_INSTALL_CLEANUP=1
 binary_distribution_called_update=0
 
 if [[ "${with_update}" -eq 1 ]]; then
-  # TODO(jamiesnape): Remove the below brew tap commands on or after 2021-09-01.
+  # TODO(jamiesnape): Remove the below brew tap commands on or after 2021-11-01.
   brew tap robotlocomotion/director
   brew tap --repair robotlocomotion/director
 
