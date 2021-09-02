@@ -22,7 +22,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
@@ -1105,33 +1104,6 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
-
-  /**
-   * Adds a cost term of the form | Ax - b |^2.
-   */
-  DRAKE_DEPRECATED("2021-09-01", "Please use Add2NormSquaredCost instead")
-  Binding<QuadraticCost> AddL2NormCost(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b, const VariableRefList& vars) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
-#pragma GCC diagnostic pop
-  }
-
-  /**
-   * Adds a cost term of the form | Ax - b |^2.
-   */
-  DRAKE_DEPRECATED("2021-09-01", "Please use Add2NormSquaredCost instead")
-  Binding<QuadraticCost> AddL2NormCost(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b,
-      const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return AddCost(MakeL2NormCost(A, b), vars);
-#pragma GCC diagnostic pop
-  }
 
   /**
    * Adds a quadratic cost of the form |Ax-b|²=(Ax-b)ᵀ(Ax-b)
