@@ -201,7 +201,6 @@ drake_cc_library(
         ":inverse_spd_operator",
         ":matrix_utilities",
         ":schur_complement",
-        ":velocity_newmark_scheme",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_linear_operator",
         "//multibody/contact_solvers:block_sparse_matrix",
@@ -641,18 +640,6 @@ drake_cc_googletest(
     deps = [
         ":constitutive_model_test_utilities",
         ":corotated_model",
-    ],
-)
-
-drake_cc_googletest(
-    name = "deformable_box_test",
-    deps = [
-        ":deformable_rigid_manager",
-        ":deformable_visualizer",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//geometry:drake_visualizer",
-        "//multibody/contact_solvers:pgs_solver",
-        "//systems/analysis:simulator",
     ],
 )
 

@@ -131,11 +131,10 @@ class DeformableRigidManagerTest : public ::testing::Test {
                                              MakeDefaultProximityProperties());
     deformable_model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
-    /* Add a collision geometry. Make sure it is *not* in contact with the
-     deformable cube. */
+    /* Add a collision geometry. */
     plant_->RegisterCollisionGeometry(
-        plant_->world_body(), math::RigidTransform<double>(Vector3d(0, -2, 0)),
-        MakeUnitCube(), "collision", MakeDefaultProximityProperties());
+        plant_->world_body(), math::RigidTransform<double>(), MakeUnitCube(),
+        "collision", MakeDefaultProximityProperties());
     plant_->Finalize();
     auto deformable_rigid_manager =
         std::make_unique<DeformableRigidManager<double>>(
@@ -214,10 +213,13 @@ TEST_F(DeformableRigidManagerTest, CalcDiscreteValue) {
   EXPECT_EQ(current_positions.size(), 1);
   EXPECT_EQ(current_positions[0].size(), kNumVertices * 3);
 
-  /* For the default Newmark scheme used by DynamicElasticityModel,
-       x = xₙ + dt ⋅ vₙ + dt² ⋅ 0.5 ⋅ a.
-   In this test case vₙ is 0, so x - xₙ is given by 0.5 ⋅ a ⋅ dt². */
-  const Vector3<double> expected_displacement(0, 0, 0.5 * kGravity * kDt * kDt);
+  /* The factor of 0.25 seems strange but is correct. For the default
+   mid-point rule used by DynamicElasticityModel,
+       x = xₙ + dt ⋅ vₙ + dt² ⋅ (0.25 ⋅ a + 0.25 ⋅ aₙ).
+   In this test case vₙ and aₙ are both 0, so x - xₙ is given by 0.25 ⋅ a ⋅ dt².
+  */
+  const Vector3<double> expected_displacement(0, 0,
+                                              0.25 * kGravity * kDt * kDt);
   const double kTol = 1e-14;
   for (int i = 0; i < kNumVertices; ++i) {
     const Vector3<double> displacement =
