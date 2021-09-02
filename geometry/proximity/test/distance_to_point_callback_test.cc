@@ -74,7 +74,7 @@ class PointShapeAutoDiffSignedDistanceTester {
     bool error = false;
 
     // We take the gradient of the signed distance query w.r.t p_WQ.
-    Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
+    Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
     // The size of the variables we take gradient with (p_WQ) is 3.
     const int grad_size = 3;
     DistanceToPoint<AutoDiffXd> distance_to_point(
@@ -99,7 +99,7 @@ class PointShapeAutoDiffSignedDistanceTester {
       failure << "Test distance has no derivatives";
     }
     const Vector3d ddistance_dp_WQ = result.distance.derivatives();
-    const Vector3d grad_W_val = math::autoDiffToValueMatrix(result.grad_W);
+    const Vector3d grad_W_val = math::ExtractValue(result.grad_W);
     if (grad_W_val.array().isNaN().any()) {
       if (error) failure << "\n";
       error = true;
@@ -135,8 +135,8 @@ class PointShapeAutoDiffSignedDistanceTester {
     const Vector3<AutoDiffXd> p_WQ_ad_expected =
         p_WN_ad + result.distance * result.grad_W;
     auto p_WQ_val_compare = CompareMatrices(
-        math::autoDiffToValueMatrix(p_WQ_ad),
-        math::autoDiffToValueMatrix(p_WQ_ad_expected), tolerance_);
+        math::ExtractValue(p_WQ_ad),
+        math::ExtractValue(p_WQ_ad_expected), tolerance_);
     if (!p_WQ_val_compare) {
       if (error) failure << "\n";
       error = true;
@@ -148,8 +148,9 @@ class PointShapeAutoDiffSignedDistanceTester {
     // unique.
     if (is_grad_W_unique) {
       auto p_WQ_derivative_compare = CompareMatrices(
-          math::autoDiffToGradientMatrix(p_WQ_ad),
-          math::autoDiffToGradientMatrix(p_WQ_ad_expected), tolerance_);
+          math::ExtractGradient(p_WQ_ad),
+          math::ExtractGradient(p_WQ_ad_expected),
+          tolerance_);
       if (!p_WQ_derivative_compare) {
         if (error) failure << "\n";
         error = true;

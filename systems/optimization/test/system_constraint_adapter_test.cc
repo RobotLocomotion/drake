@@ -136,9 +136,9 @@ GTEST_TEST(SystemConstraintAdapterTest,
   double c_val = 4;
   double t_val = 5;
 
-  AutoDiffVecXd abct_autodiff = math::initializeAutoDiffGivenGradientMatrix(
-      Eigen::Vector4d(a_val, b_val, c_val, t_val),
-      Eigen::Matrix4Xd::Identity(4, 4));
+  AutoDiffVecXd abct_autodiff =
+      math::InitializeAutoDiff(Eigen::Vector4d(a_val, b_val, c_val, t_val),
+                               Eigen::Matrix4Xd::Identity(4, 4));
 
   // Implicitly relying on auto to all resolve to the same type.
   auto set_bound_variable_value = [&a, &b, &c, &t](
@@ -198,11 +198,11 @@ GTEST_TEST(SystemConstraintAdapterTest,
                                abct_autodiff(3)),
       &constraint_autodiff);
   EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToValueMatrix(constraint_autodiff),
-      math::autoDiffToValueMatrix(constraint_autodiff_expected), tol));
+      math::ExtractValue(constraint_autodiff),
+      math::ExtractValue(constraint_autodiff_expected), tol));
   EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToGradientMatrix(constraint_autodiff),
-      math::autoDiffToGradientMatrix(constraint_autodiff_expected), tol));
+      math::ExtractGradient(constraint_autodiff),
+      math::ExtractGradient(constraint_autodiff_expected), tol));
 
   // If the context contains complicated symbolic expressions (other than a
   // variable and a constant), the adapter won't be able to create the generic

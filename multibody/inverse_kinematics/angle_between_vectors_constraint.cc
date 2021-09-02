@@ -96,10 +96,10 @@ void EvalConstraintGradient(
                                     Eigen::Vector3d::Zero() /* p_BQ */, frameA,
                                     frameA, &Jq_V_AB);
   const Eigen::Vector3d b_unit_A = R_AB * b_unit_B;
-  *y = math::initializeAutoDiffGivenGradientMatrix(
-      a_unit_A.transpose() * b_unit_A, b_unit_A.cross(a_unit_A).transpose() *
-                                           Jq_V_AB.topRows<3>() *
-                                           math::autoDiffToGradientMatrix(x));
+  *y = math::InitializeAutoDiff(
+      a_unit_A.transpose() * b_unit_A,
+      b_unit_A.cross(a_unit_A).transpose() * Jq_V_AB.topRows<3>() *
+          math::ExtractGradient(x));
 }
 
 template <typename T, typename S>
@@ -130,8 +130,8 @@ void AngleBetweenVectorsConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
-    Eval(math::initializeAutoDiff(x), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    Eval(math::InitializeAutoDiff(x), &y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, frameA_index_, frameB_index_,
                   a_unit_A_, b_unit_B_, x, y);

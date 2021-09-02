@@ -3001,7 +3001,7 @@ GTEST_TEST(TestMathematicalProgram, TestAddVisualizationCallback) {
 
   // Call it directly via the autodiff interface.
   const VectorX<AutoDiffXd> test_x_autodiff =
-      math::initializeAutoDiff(VectorXd{test_x});
+      math::InitializeAutoDiff(VectorXd{test_x});
   VectorX<AutoDiffXd> test_y_autodiff(0);
   was_called = false;
   b.evaluator()->Eval(test_x_autodiff, &test_y_autodiff);

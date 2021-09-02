@@ -64,7 +64,7 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   const VectorX<AutoDiffXd> result =
       this->EvalTimeDerivatives(*adiff_system, *adiff_context).CopyToVector();
 
-  *J = math::autoDiffToGradientMatrix(result);
+  *J = math::ExtractGradient(result);
 
   // Sometimes the system's derivatives f(t, x) do not depend on its states, for
   // example, when f(t, x) = constant or when f(t, x) depends only on t. In this

@@ -93,9 +93,9 @@ void EvalConstraintGradient(
   // Jq_w_AB = Jq_w_AbarBbar_A.
   const Eigen::MatrixXd Jq_w_AB =
       R_AbarA.inverse().matrix() * Jq_V_AbarBbar.topRows<3>();
-  *y = math::initializeAutoDiffGivenGradientMatrix(
+  *y = math::InitializeAutoDiff(
       Vector1d(R_AB.matrix().trace()),
-      r_AB.transpose() * Jq_w_AB * math::autoDiffToGradientMatrix(x));
+      r_AB.transpose() * Jq_w_AB * math::ExtractGradient(x));
 }
 
 template <typename T, typename S>
@@ -133,8 +133,8 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    Eigen::VectorXd* y) const {
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
-    Eval(math::initializeAutoDiff(x), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    Eval(math::InitializeAutoDiff(x), &y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, frameAbar_index_,
                   frameBbar_index_, R_AbarA_, R_BbarB_, x, y);

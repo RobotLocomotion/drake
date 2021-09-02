@@ -50,8 +50,7 @@ void TestIiwa(const MultibodyPlant<T>* plant,
 
   Eigen::MatrixXd dqdz(7, 2);
   dqdz << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4;
-  VectorX<AutoDiffXd> q_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(q, dqdz);
+  VectorX<AutoDiffXd> q_autodiff = math::InitializeAutoDiff(q, dqdz);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
   plant_autodiff->SetPositions(plant_context_autodiff, q_autodiff);

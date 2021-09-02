@@ -50,7 +50,7 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
   solvers::MathematicalProgram prog;
 
   const VectorXd phi0 =
-      math::autoDiffToValueMatrix(basis_functions(V_zero_state));
+      math::ExtractValue(basis_functions(V_zero_state));
   const int num_parameters = phi0.size();
   DRAKE_DEMAND(num_parameters > 0);
 
@@ -84,15 +84,15 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
   for (int si = 0; si < num_samples; si++) {
     state = state_samples.col(si);
 
-    math::initializeAutoDiff(state, autodiff_state, state_size);
+    math::InitializeAutoDiff(state, &autodiff_state);
     const VectorX<AutoDiffXd> phi = basis_functions(autodiff_state);
-    const Expression V = params.dot(math::autoDiffToValueMatrix(phi));
+    const Expression V = params.dot(math::ExtractValue(phi));
 
     context_state.SetFromVector(state);
     system.CalcTimeDerivatives(*my_context, derivatives.get());
 
     const Eigen::VectorXd phidot =
-        math::autoDiffToGradientMatrix(phi) * derivatives->CopyToVector();
+        math::ExtractGradient(phi) * derivatives->CopyToVector();
     const Expression Vdot = params.dot(phidot);
 
     // ∀xᵢ, V(xᵢ) ≥ 0

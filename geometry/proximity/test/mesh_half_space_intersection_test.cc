@@ -1443,7 +1443,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     for (const auto& config : configurations) {
       const RotationMatrixd R_WR_d = X_WS_d.rotation() * config.R_SR_d;
       const Vector3d p_WR_d = X_WS_d * config.p_SR_d;
-      const Vector3<AutoDiffXd> p_WR = math::initializeAutoDiff(p_WR_d);
+      const Vector3<AutoDiffXd> p_WR = math::InitializeAutoDiff(p_WR_d);
       const RigidTransform<AutoDiffXd> X_WR{R_WR_d.cast<AutoDiffXd>(), p_WR};
 
       auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
@@ -1576,9 +1576,9 @@ TEST_F(MeshHalfSpaceDerivativesTest, Area) {
       const Vector3d p_WA = convert_to_double(p_WA_ad);
       const Vector3d p_WB = convert_to_double(p_WB_ad);
       const Vector3d p_WC = convert_to_double(p_WC_ad);
-      const Matrix3<double> dA_dRo = math::autoDiffToGradientMatrix(p_WA_ad);
-      const Matrix3<double> dB_dRo = math::autoDiffToGradientMatrix(p_WB_ad);
-      const Matrix3<double> dC_dRo = math::autoDiffToGradientMatrix(p_WC_ad);
+      const Matrix3<double> dA_dRo = math::ExtractGradient(p_WA_ad);
+      const Matrix3<double> dB_dRo = math::ExtractGradient(p_WB_ad);
+      const Matrix3<double> dC_dRo = math::ExtractGradient(p_WC_ad);
 
       const Vector3d p_AB_W = p_WB - p_WA;
       const Vector3d p_AC_W = p_WC - p_WA;
@@ -1716,7 +1716,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
          it is not the centroid), this must be one of mesh_R's vertices inside
          the half space. It is rigidly affixed to R so the derivatives are just
          the identity. */
-        const Matrix3<double> J_W = math::autoDiffToGradientMatrix(p_WV_ad);
+        const Matrix3<double> J_W = math::ExtractGradient(p_WV_ad);
         ASSERT_TRUE(CompareMatrices(J_W, Matrix3<double>::Identity(), kEps));
         continue;
       }
@@ -1729,7 +1729,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
       // clang-format on
       const Matrix3<double> expected_J_W =
           R_WS * (expected_J_S * R_SW.matrix());
-      const Matrix3<double> J_W = math::autoDiffToGradientMatrix(p_WV_ad);
+      const Matrix3<double> J_W = math::ExtractGradient(p_WV_ad);
       ASSERT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
     }
 
@@ -1741,12 +1741,11 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
          three vertices' derivatives. */
         Matrix3<double> expected_J_W = Matrix3<double>::Zero();
         for (VIndex v(0); v < 3; ++v) {
-          expected_J_W +=
-              math::autoDiffToGradientMatrix(mesh_W.vertex(v).r_MV());
+          expected_J_W += math::ExtractGradient(mesh_W.vertex(v).r_MV());
         }
         expected_J_W /= 3;
         const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3)).r_MV();
-        const Matrix3<double> J_W = math::autoDiffToGradientMatrix(p_WC);
+        const Matrix3<double> J_W = math::ExtractGradient(p_WC);
         EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
         break;
       }
@@ -1768,7 +1767,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtPosition) {
     const Matrix3<double> zero_matrix = Matrix3<double>::Zero();
     for (SurfaceFaceIndex t(0); t < surface.mesh_W().num_elements(); ++t) {
       const Vector3<AutoDiffXd> n_W = surface.mesh_W().face_normal(t);
-      EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(n_W),
+      EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n_W),
                                   zero_matrix, 32 * kEps));
     }
   };
@@ -1829,14 +1828,14 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
     ASSERT_GT(surface->mesh_W().num_elements(), 0);
 
     /* Test dn̂/dθ = v̂ × n̂  = v̂ × Ry. */
-    const Vector3d Ry_W = math::autoDiffToValueMatrix(X_WR.rotation().col(1));
+    const Vector3d Ry_W = math::ExtractValue(X_WR.rotation().col(1));
     const Vector3d expected_deriv = v_W.cross(Ry_W);
     for (SurfaceFaceIndex t(0); t < surface->mesh_W().num_elements(); ++t) {
       const auto& n = surface->mesh_W().face_normal(t);
       /* Precision decreases as the mesh gets closer to lying parallel to the
        half space surface. This simple switch accounts for the observed
        behavior in this test. */
-      EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(n),
+      EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n),
                                   expected_deriv, theta > 1.3 ? 1e-13 : 5e-15));
     }
   }
@@ -1864,7 +1863,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, Pressure) {
     const Vector3d& n_W = X_WS.rotation().col(2);
     for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
       const auto& p_WV = surface.mesh_W().vertex(v).r_MV();
-      const Matrix3<double> dV_dRo = math::autoDiffToGradientMatrix(p_WV);
+      const Matrix3<double> dV_dRo = math::ExtractGradient(p_WV);
       const Vector3d expected_dp_dRo = -E * n_W.transpose() * dV_dRo;
       const AutoDiffXd& p = surface.e_MN().EvaluateAtVertex(v);
       EXPECT_TRUE(

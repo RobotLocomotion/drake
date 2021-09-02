@@ -151,7 +151,7 @@ class TestScene {
     if constexpr (std::is_same_v<T, double>) {
       return RotationMatrix<T>(RollPitchYaw<T>(rpy));
     } else {
-      const Vector3<T> rpy_ad = math::initializeAutoDiff(rpy);
+      const Vector3<T> rpy_ad = math::InitializeAutoDiff(rpy);
       return RotationMatrix<T>(RollPitchYaw<T>(rpy_ad));
     }
   }

@@ -118,12 +118,12 @@ class TwoFreeSpheresTest : public ::testing::Test {
     x_autodiff << q_autodiff, lambda_autodiff;
     AutoDiffVecXd y_autodiff;
     static_equilibrium_binding.evaluator()->Eval(x_autodiff, &y_autodiff);
-    EXPECT_TRUE(CompareMatrices(
-        math::autoDiffToValueMatrix(y_autodiff),
-        math::autoDiffToValueMatrix(y_autodiff_expected), 100 * kEps));
-    EXPECT_TRUE(CompareMatrices(
-        math::autoDiffToGradientMatrix(y_autodiff),
-        math::autoDiffToGradientMatrix(y_autodiff_expected), 100 * kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
+                                math::ExtractValue(y_autodiff_expected),
+                                100 * kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
+                                math::ExtractGradient(y_autodiff_expected),
+                                100 * kEps));
 
     // Use a std::function instead of auto eval_fun as a lambda. This is
     // explained in ComputeNumericalGradient.
@@ -136,9 +136,8 @@ class TwoFreeSpheresTest : public ::testing::Test {
         };
 
     const auto J = math::ComputeNumericalGradient(
-        eval_fun, math::autoDiffToValueMatrix(x_autodiff));
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff), J, 1e-5));
+        eval_fun, math::ExtractValue(x_autodiff));
+    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff), J, 1e-5));
   }
 
  protected:
@@ -215,13 +214,13 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   lambda_val.setZero();
   Eigen::VectorXd x_val(23);
   x_val << q_val, lambda_val;
-  auto x_autodiff = math::initializeAutoDiff(x_val);
+  auto x_autodiff = math::InitializeAutoDiff(x_val);
   CheckStaticEquilibriumConstraintEval(
       static_equilibrium_binding, x_autodiff.head<14>(), x_autodiff.tail<9>());
   // Test lambda != 0
   lambda_val << 2, 3, 4, 5, 6, 7, 8, 9, 10;
   x_val << q_val, lambda_val;
-  x_autodiff = math::initializeAutoDiff(x_val);
+  x_autodiff = math::InitializeAutoDiff(x_val);
   CheckStaticEquilibriumConstraintEval(
       static_equilibrium_binding, x_autodiff.head<14>(), x_autodiff.tail<9>());
 

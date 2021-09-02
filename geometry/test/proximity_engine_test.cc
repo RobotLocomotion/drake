@@ -269,7 +269,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
         // We'll set the derivatives on p_WGo for the first geometry; all others
         // we'll pass through.
         const Vector3<AutoDiffXd> p_WGo =
-            math::initializeAutoDiff(X_WG_d.translation());
+            math::InitializeAutoDiff(X_WG_d.translation());
         X_WGs_ad[id] = RigidTransform<AutoDiffXd>(
             X_WG_d.rotation().cast<AutoDiffXd>(), p_WGo);
         added_derivatives = true;
@@ -4114,7 +4114,7 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffAnchored) {
   const Vector3d p_SQ_W{2.0, 3.0, 6.0};
   const Vector3d p_WS_W{0.5, 1.25, -2};
   const Vector3d p_WQ{p_SQ_W + p_WS_W};
-  Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
+  Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
 
   // An empty world inherently produces no results.
   {
@@ -4153,7 +4153,7 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffAnchored) {
       // The analytical `grad_W` value should match the autodiff-computed
       // gradient.
       const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-      const Vector3d grad_W = math::autoDiffToValueMatrix(distance_data.grad_W);
+      const Vector3d grad_W = math::ExtractValue(distance_data.grad_W);
       EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
     }
   }
@@ -4174,7 +4174,7 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffDynamic) {
   const Vector3d p_SQ{2.0, 3.0, 6.0};
   const Vector3d p_WS{0.5, 1.25, -2};
   const Vector3d p_WQ{p_SQ + p_WS};
-  Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
+  Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
 
   // Against a dynamic sphere.
   const GeometryId id = GeometryId::get_new_id();
@@ -4205,7 +4205,7 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffDynamic) {
     // The analytical `grad_W` value should match the autodiff-computed
     // gradient.
     const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-    const Vector3d grad_W = math::autoDiffToValueMatrix(distance_data.grad_W);
+    const Vector3d grad_W = math::ExtractValue(distance_data.grad_W);
     EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
   }
 }
@@ -4223,7 +4223,7 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
   const Vector3d p_SQ{2.0, 3.0, 6.0};
   const Vector3d p_WS{0.5, 1.25, -2};
   const Vector3d p_WQ{p_SQ + p_WS};
-  Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
+  Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
 
   // Add a pair of dynamic spheres. We'll differentiate w.r.t. the pose of the
   // first sphere.
@@ -4251,7 +4251,7 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
   // The hand-computed `grad_W` value should match the autodiff-computed
   // gradient.
   const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-  const Vector3d grad_w = math::autoDiffToValueMatrix(distance_data.nhat_BA_W);
+  const Vector3d grad_w = math::ExtractValue(distance_data.nhat_BA_W);
   EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_w, kEps));
 }
 

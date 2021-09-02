@@ -50,7 +50,7 @@ TEST_F(TwoFreeSpheresTest, TestEval) {
       CompareMatrices(y, Vector1d(y_expected),
                       1E-12 /* tolerance is chosen as about 1E4 * eps*/));
 
-  Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
+  Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::InitializeAutoDiff(q);
   CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
 
   // Now check if constraint constructed from MBP<ADS> gives the same result

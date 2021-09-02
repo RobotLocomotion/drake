@@ -56,7 +56,7 @@ class StaticElasticityElementTest : public ::testing::Test {
     Vector<double, kNumDofs> x;
     x << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67;
     Vector<T, kNumDofs> x_autodiff;
-    math::initializeAutoDiff(x, x_autodiff);
+    math::InitializeAutoDiff(x, &x_autodiff);
     state_ = std::make_unique<FemState<ElementType>>(x_autodiff);
     state_->MakeElementData(elements_);
   }

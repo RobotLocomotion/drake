@@ -22,10 +22,10 @@ void CompareAutoDiff(const AutoDiffXd& x1, const AutoDiffXd& x2, double tol) {
 
 void CompareAutoDiff(const Eigen::Ref<const AutoDiffVecXd>& x1,
                      const Eigen::Ref<const AutoDiffVecXd>& x2, double tol) {
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(x1),
-                              math::autoDiffToValueMatrix(x2), tol));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(x1),
-                              math::autoDiffToGradientMatrix(x2), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(x1),
+                              math::ExtractValue(x2), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(x1),
+                              math::ExtractGradient(x2), tol));
 }
 
 template <typename T>
@@ -116,7 +116,7 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
     x_grad(i, 1) = 0.3 * std::sin(i) - 0.2;
   }
   const AutoDiffVecXd x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x_val, x_grad);
+      math::InitializeAutoDiff(x_val, x_grad);
 
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
@@ -169,15 +169,14 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
 
   // Check the gradient sparsity pattern.
   // The gradient in x_autodiff2 is identity.
-  const AutoDiffVecXd x_autodiff2 = math::initializeAutoDiff(x_val);
+  const AutoDiffVecXd x_autodiff2 = math::InitializeAutoDiff(x_val);
   AutoDiffVecXd y_autodiff2;
   constraint.Eval(x_autodiff2, &y_autodiff2);
   // We take a zero matrix y_grad, set y_grad(i, j) = y_grad_expected(i, j) if
   // the pair (i, j) is in gradient_sparsity_pattern, and then compare y_grad
   // against y_grad_expected. This way we make sure that
   // gradient_sparsity_pattern doesn't miss any entry.
-  const Eigen::MatrixXd y_grad_expected =
-      math::autoDiffToGradientMatrix(y_autodiff2);
+  const Eigen::MatrixXd y_grad_expected = math::ExtractGradient(y_autodiff2);
   Eigen::MatrixXd y_grad(y_grad_expected.rows(), y_grad_expected.cols());
   y_grad.setZero();
   const auto gradient_sparsity_pattern =
@@ -234,9 +233,8 @@ GTEST_TEST(SlidingFrictionComplementarityConstraintTest, AddConstraint) {
   internal::ComputeRelativeMotion<AutoDiffXd>(
       &spheres, q_val.cast<AutoDiffXd>(), v_val.cast<AutoDiffXd>(),
       sphere2_spec.radius, &nhat_SaSb_W_autodiff, &v_SaCb_W_autodiff);
-  Eigen::Vector3d nhat_SaSb_W =
-      math::autoDiffToValueMatrix(nhat_SaSb_W_autodiff);
-  Eigen::Vector3d v_SaCb_W = math::autoDiffToValueMatrix(v_SaCb_W_autodiff);
+  Eigen::Vector3d nhat_SaSb_W = math::ExtractValue(nhat_SaSb_W_autodiff);
+  Eigen::Vector3d v_SaCb_W = math::ExtractValue(v_SaCb_W_autodiff);
 
   Eigen::Vector3d v_tangential_SaCb_W =
       (Eigen::Matrix3d::Identity() - nhat_SaSb_W * nhat_SaSb_W.transpose()) *

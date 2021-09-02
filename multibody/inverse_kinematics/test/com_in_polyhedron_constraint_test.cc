@@ -65,13 +65,13 @@ void TestComInPolyhedronConstraint(
   Eigen::VectorXd y;
   constraint.Eval(q_val, &y);
 
-  AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q_val);
+  AutoDiffVecXd q_autodiff = math::InitializeAutoDiff(q_val);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
   // Make sure the double version and the autodiff version compute the same
   // value.
   const double tol{1E-14};
-  EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_autodiff), tol));
+  EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_autodiff), tol));
   // Now compare the autodiff computed from Eval versus the autodiff computed
   // from EvalComInPolyhedronConstraintAutoDiff.
   plant_autodiff->GetMutablePositions(plant_context_autodiff) = q_autodiff;
@@ -98,7 +98,7 @@ void TestComInPolyhedronConstraint(
     q_grad(i, 0) = 0.1 * i + 1;
     q_grad(i, 1) = -0.2 * i - 0.5;
   }
-  q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q_val, q_grad);
+  q_autodiff = math::InitializeAutoDiff(q_val, q_grad);
   plant_autodiff->GetMutablePositions(plant_context_autodiff) = q_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalComInPolyhedronConstraintAutoDiff(

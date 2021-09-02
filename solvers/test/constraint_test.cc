@@ -171,20 +171,19 @@ void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   dx_test.col(1) = Eigen::VectorXd::LinSpaced(x_test.rows(), 1, 2);
 
   const AutoDiffVecXd x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x_test, dx_test);
+      math::InitializeAutoDiff(x_test, dx_test);
 
   AutoDiffVecXd y_autodiff1, y_autodiff2;
   cnstr1.Eval(x_autodiff, &y_autodiff1);
   cnstr2.Eval(x_autodiff, &y_autodiff2);
-  EXPECT_TRUE(CompareMatrices(y_expected,
-                              math::autoDiffToValueMatrix(y_autodiff1), 1e-12));
-  EXPECT_TRUE(CompareMatrices(y_expected,
-                              math::autoDiffToValueMatrix(y_autodiff2), 1e-12));
+  EXPECT_TRUE(
+      CompareMatrices(y_expected, math::ExtractValue(y_autodiff1), 1e-12));
+  EXPECT_TRUE(
+      CompareMatrices(y_expected, math::ExtractValue(y_autodiff2), 1e-12));
   // With eval_type = kConvexSmooth, we approximate the gradient with some
   // smooth function, which introduces larger error (2e-12).
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff1),
-                              math::autoDiffToGradientMatrix(y_autodiff2),
-                              2e-12));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff1),
+                              math::ExtractGradient(y_autodiff2), 2e-12));
 }
 
 // Tests if the Lorentz Cone constraint (with non-convex eval) is imposed
@@ -219,13 +218,13 @@ void TestLorentzConeEvalNonconvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   EXPECT_THAT(os.str(), HasSubstr("pow"));
   EXPECT_THAT(os.str(), Not(HasSubstr("sqrt")));
 
-  auto tx = drake::math::initializeAutoDiff(x_test);
+  auto tx = drake::math::InitializeAutoDiff(x_test);
   AutoDiffVecXd x_taylor = tx;
   AutoDiffVecXd y_taylor;
   // Test Eval with AutoDiff.
   cnstr.Eval(x_taylor, &y_taylor);
 
-  EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
+  EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_taylor)));
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 
   // Test Eval/CheckSatisfied using Expression.
@@ -259,12 +258,12 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
   EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
   // Eval with taylor var.
-  auto tx = drake::math::initializeAutoDiff(x_test);
+  auto tx = drake::math::InitializeAutoDiff(x_test);
   AutoDiffVecXd x_taylor = tx;
   AutoDiffVecXd y_taylor;
   cnstr.Eval(x_taylor, &y_taylor);
 
-  EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
+  EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_taylor)));
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 
   std::ostringstream os;
@@ -335,10 +334,9 @@ GTEST_TEST(testConstraint, testLorentzConeConstraintAtZeroZ) {
   LorentzConeConstraint cnstr(A, b,
                               LorentzConeConstraint::EvalType::kConvexSmooth);
   AutoDiffVecXd y_autodiff;
-  cnstr.Eval(math::initializeAutoDiff(x), &y_autodiff);
-  EXPECT_TRUE(
-      CompareMatrices(math::autoDiffToValueMatrix(y_autodiff), Vector1d(0)));
-  const Eigen::MatrixXd y_gradient = math::autoDiffToGradientMatrix(y_autodiff);
+  cnstr.Eval(math::InitializeAutoDiff(x), &y_autodiff);
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), Vector1d(0)));
+  const Eigen::MatrixXd y_gradient = math::ExtractGradient(y_autodiff);
   // The gradient of dy/dz is [1, 0, 0], so the dy/dx = dy/dz * dz/dx = dy/dz *
   // A = A.row(0).
   EXPECT_TRUE(CompareMatrices(y_gradient, A.row(0)));
@@ -477,7 +475,7 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
 
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 
-  AutoDiffVecXd x_autodiff = drake::math::initializeAutoDiff(x);
+  AutoDiffVecXd x_autodiff = drake::math::InitializeAutoDiff(x);
   AutoDiffVecXd y_autodiff;
   Eigen::Matrix<double, 2, 3> y_gradient_expected;
   // clang-format off
@@ -486,10 +484,9 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
   // clang-format on
   constraint.Eval(x_autodiff, &y_autodiff);
 
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), y_expected));
   EXPECT_TRUE(
-      CompareMatrices(math::autoDiffToValueMatrix(y_autodiff), y_expected));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff),
-                              y_gradient_expected));
+      CompareMatrices(math::ExtractGradient(y_autodiff), y_gradient_expected));
 
   // Test Eval/CheckSatisfied using Expression.
   VectorX<Expression> y_sym;
@@ -632,8 +629,8 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   // Check autodiff evaluation.
   Eigen::MatrixXd dx(2, 1);
   dx << 1, 1;
-  const auto x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(Eigen::VectorXd(x), dx);
+  const auto x_autodiff = math::InitializeAutoDiff(
+      Eigen::VectorXd(x), dx);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
   // Now compute the gradient manually.
@@ -642,11 +639,10 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   y_autodiff_expected(0) =
       z_autodiff(0) - z_autodiff(1) * exp(z_autodiff(2) / z_autodiff(1));
   y_autodiff_expected(1) = z_autodiff(1);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
-                              y_expected, tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), y_expected, tol));
   EXPECT_TRUE(CompareMatrices(
-      math::autoDiffToGradientMatrix(y_autodiff),
-      math::autoDiffToGradientMatrix(y_autodiff_expected), tol));
+      math::ExtractGradient(y_autodiff),
+      math::ExtractGradient(y_autodiff_expected), tol));
 }
 
 }  // namespace

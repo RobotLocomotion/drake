@@ -47,7 +47,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
     Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
-        math::initializeAutoDiff(q);
+        math::InitializeAutoDiff(q);
     AutoDiffVecXd y_autodiff(1);
     constraint.Eval(q_autodiff, &y_autodiff);
 
@@ -71,7 +71,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
     Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
-        math::initializeAutoDiff(q);
+        math::InitializeAutoDiff(q);
     AutoDiffVecXd y_autodiff(1);
     constraint.Eval(q_autodiff, &y_autodiff);
 
@@ -93,7 +93,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
     Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
-        math::initializeAutoDiff(q);
+        math::InitializeAutoDiff(q);
     AutoDiffVecXd y_autodiff(1);
     constraint.Eval(q_autodiff, &y_autodiff);
 
@@ -188,7 +188,7 @@ GTEST_TEST(MinimumDistanceConstraintTest, MultibodyPlantWithoutCollisionPairs) {
                                              plant_context);
 
   Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
-      math::initializeAutoDiff(
+      math::InitializeAutoDiff(
           Eigen::VectorXd::Zero(kNumPositionsForTwoFreeBodies));
   AutoDiffVecXd y_autodiff(1);
   constraint.Eval(q_autodiff, &y_autodiff);
@@ -245,7 +245,7 @@ TEST_F(BoxSphereTest, Test) {
                       const Eigen::MatrixXd& q_gradient, double tol,
                       const Eigen::Vector3d& box_size, double radius) {
           AutoDiffVecXd x_autodiff =
-              math::initializeAutoDiffGivenGradientMatrix(q_val, q_gradient);
+              math::InitializeAutoDiff(q_val, q_gradient);
 
           CheckConstraintEvalNonsymbolic(constraint, x_autodiff, tol);
         };

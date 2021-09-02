@@ -70,11 +70,11 @@ void CentroidalMomentumConstraintTester(
         plant, model_instances, plant_context, angular_only,
         q.cast<AutoDiffXd>(), v.cast<AutoDiffXd>(),
         momentum_val.cast<AutoDiffXd>());
-    EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_expected)));
+    EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_expected)));
   }
 
   // Now check Eval with AutoDiffXd, where the gradient in x is identity.
-  AutoDiffVecXd x_autodiff = math::initializeAutoDiff(x);
+  AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x);
   AutoDiffVecXd y_autodiff;
   dut.Eval(x_autodiff, &y_autodiff);
   VectorX<AutoDiffXd> y_autodiff_expected = EvalConstraint<AutoDiffXd>(
@@ -91,7 +91,7 @@ void CentroidalMomentumConstraintTester(
     x_grad(i, 0) = 0.5 * i - 1;
     x_grad(i, 1) = 0.9 * i + 0.5;
   }
-  x_autodiff = math::initializeAutoDiffGivenGradientMatrix(x, x_grad);
+  x_autodiff = math::InitializeAutoDiff(x, x_grad);
   dut.Eval(x_autodiff, &y_autodiff);
   y_autodiff_expected = EvalConstraint<AutoDiffXd>(
       plant_autodiff, model_instances, plant_context_autodiff, angular_only,

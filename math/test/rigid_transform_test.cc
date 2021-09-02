@@ -832,8 +832,7 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(-0.33, 0.17, 0.9);
   const Vector3<AutoDiffXd> xyz_autodiff(-17, 987, 6.5432);
   xyz_expected_string = "xyz = -17.* 987.* 6.5432.*";
-  const Vector3<double> rpy_values =
-      autoDiffToValueMatrix(rpy_autodiff.vector());
+  const Vector3<double> rpy_values = ExtractValue(rpy_autodiff.vector());
   VerifyStreamInsertionOperator(
       RigidTransform<AutoDiffXd>(rpy_autodiff, xyz_autodiff), rpy_values,
       xyz_expected_string);

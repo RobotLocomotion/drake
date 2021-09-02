@@ -545,7 +545,7 @@ class ScalarMixingTest : public ::testing::Test {
     // triangle 0 *must* have derivatives, but triangle 1 may not have them.
     std::vector<SurfaceVertex<AutoDiffXd>> vertices;
     vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)).r_MV());
-    vertices.emplace_back(math::initializeAutoDiff(
+    vertices.emplace_back(math::InitializeAutoDiff(
         mesh_d_->vertex(SurfaceVertexIndex(1)).r_MV()));
     vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(2)).r_MV());
     vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(3)).r_MV());
@@ -559,10 +559,10 @@ class ScalarMixingTest : public ::testing::Test {
       p_WQ_d_ += mesh_d_->vertex(v).r_MV();
     }
     p_WQ_d_ /= 3;
-    p_WQ_ad_ = math::initializeAutoDiff(p_WQ_d_);
+    p_WQ_ad_ = math::InitializeAutoDiff(p_WQ_d_);
 
     b_expected_d_ = Vector3d(1, 1, 1) / 3.0;
-    b_expected_ad_ = math::initializeAutoDiff(b_expected_d_);
+    b_expected_ad_ = math::InitializeAutoDiff(b_expected_d_);
   }
 
   std::unique_ptr<SurfaceMesh<double>> mesh_d_;
@@ -594,8 +594,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected_d_, kEps));
   }
 
   {
@@ -605,8 +604,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b1(0).derivatives().size(), 3);
     EXPECT_EQ(b1(1).derivatives().size(), 3);
     EXPECT_EQ(b1(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b1), b_expected_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b1), b_expected_d_, kEps));
 
     // AutoDiffXd-valued mesh with double-valued point on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
@@ -624,8 +622,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected_d_, kEps));
   }
 }
 
@@ -647,8 +644,7 @@ TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
     EXPECT_EQ(p_WC(0).derivatives().size(), 3);
     EXPECT_EQ(p_WC(1).derivatives().size(), 3);
     EXPECT_EQ(p_WC(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(p_WC), p_WQ_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WC), p_WQ_d_, kEps));
   }
 
   {
@@ -659,8 +655,7 @@ TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
     EXPECT_EQ(p_WC1(0).derivatives().size(), 3);
     EXPECT_EQ(p_WC1(1).derivatives().size(), 3);
     EXPECT_EQ(p_WC1(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(p_WC1), p_WQ_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WC1), p_WQ_d_, kEps));
 
     // AutoDiffXd-valued mesh with double-valued point on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
@@ -680,8 +675,7 @@ TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
     EXPECT_EQ(p_WC(0).derivatives().size(), 3);
     EXPECT_EQ(p_WC(1).derivatives().size(), 3);
     EXPECT_EQ(p_WC(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(p_WC), p_WQ_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WC), p_WQ_d_, kEps));
   }
 }
 

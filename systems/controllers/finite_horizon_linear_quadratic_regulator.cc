@@ -97,17 +97,17 @@ class RiccatiSystem : public LeafSystem<double> {
     // Get (time-varying) linearization of the plant.
     const double system_time = -context.get_time();
     context_->SetTime(system_time);
-    auto autodiff_args = math::initializeAutoDiffTuple(x0_.value(system_time),
+    auto autodiff_args = math::InitializeAutoDiffTuple(x0_.value(system_time),
                                                        u0_.value(system_time));
     context_->SetContinuousState(std::get<0>(autodiff_args));
     input_port_->FixValue(context_.get(), std::get<1>(autodiff_args));
     const VectorX<AutoDiffXd> autodiff_xdot0 =
         system_->EvalTimeDerivatives(*context_).CopyToVector();
-    const Eigen::MatrixXd AB = math::autoDiffToGradientMatrix(autodiff_xdot0);
+    const Eigen::MatrixXd AB = math::ExtractGradient(autodiff_xdot0);
     const Eigen::Ref<const Eigen::MatrixXd>& A = AB.leftCols(num_states_);
     const Eigen::Ref<const Eigen::MatrixXd>& B = AB.rightCols(num_inputs_);
-    const Eigen::VectorXd c = math::autoDiffToValueMatrix(autodiff_xdot0) -
-                              x0_.EvalDerivative(system_time, 1);
+    const Eigen::VectorXd c =
+        math::ExtractValue(autodiff_xdot0) - x0_.EvalDerivative(system_time, 1);
 
     // Desired trajectories relative to the nominal.
     const Eigen::VectorXd xd0 =
@@ -183,11 +183,10 @@ class RiccatiSystem : public LeafSystem<double> {
         context_->SetTime(time);
         context_->SetContinuousState(x0_.value(time).cast<AutoDiffXd>().eval());
         input_port_->FixValue(context_.get(),
-                              math::initializeAutoDiff(u0_.value(time)));
+                              math::InitializeAutoDiff(u0_.value(time)));
         const VectorX<AutoDiffXd> autodiff_xdot0 =
             system_->EvalTimeDerivatives(*context_).CopyToVector();
-        const Eigen::MatrixXd B =
-            math::autoDiffToGradientMatrix(autodiff_xdot0);
+        const Eigen::MatrixXd B = math::ExtractGradient(autodiff_xdot0);
 
         // Desired trajectories relative to the nominal.
         const Eigen::VectorXd xd0 =
