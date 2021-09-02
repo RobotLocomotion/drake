@@ -35,7 +35,7 @@ AutoDiffVecXd MakeInputAutoDiffVec(const MathematicalProgram& prog,
                                    const VectorXDecisionVariable& vars) {
   const int num_vars = vars.rows();
 
-  auto tx = math::initializeAutoDiff(xvec);
+  auto tx = math::InitializeAutoDiff(xvec);
   AutoDiffVecXd this_x(num_vars);
 
   for (int i = 0; i < num_vars; ++i) {
@@ -61,7 +61,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
   prog->EvalVisualizationCallbacks(xvec);
 
-  auto tx = math::initializeAutoDiff(xvec);
+  auto tx = math::InitializeAutoDiff(xvec);
   AutoDiffVecXd ty(1);
   AutoDiffVecXd this_x;
 
