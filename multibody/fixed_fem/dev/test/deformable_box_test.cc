@@ -158,7 +158,7 @@ TEST_F(DeformableRigidContactSolverTest, SteadyState) {
   /* Verify the system has reached steady state. */
   const FemStateBase<double>& fem_state =
       EvalFemStateBase(plant_context, deformable_index_);
-  constexpr double kSteadyStateThreshold = 2e-4;  // unit: m/s.
+  constexpr double kSteadyStateThreshold = 2e-3;  // unit: m/s.
   const VectorXd& v = fem_state.qdot();
   EXPECT_TRUE(
       CompareMatrices(v, VectorXd::Zero(v.size()), kSteadyStateThreshold));
@@ -179,7 +179,7 @@ TEST_F(DeformableRigidContactSolverTest, SteadyState) {
   const Vector3d expected_contact_force =
       kVolume * kDensity * (-plant_->gravity_field().gravity_vector());
   const Vector3d expected_contact_impulse = expected_contact_force * kDt;
-  EXPECT_TRUE(CompareMatrices(expected_contact_impulse, contact_impulse, 1e-5));
+  EXPECT_TRUE(CompareMatrices(expected_contact_impulse, contact_impulse, 5e-5));
 }
 
 }  // namespace
