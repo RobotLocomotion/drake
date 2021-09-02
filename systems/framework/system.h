@@ -1693,13 +1693,6 @@ class System : public SystemBase {
     return system_scalar_converter_;
   }
 
-  template <template <typename> class Clazz>
-  DRAKE_DEPRECATED("2021-09-01",
-                   "Please use ValidateCreatedForThisSystem instead.")
-  void ValidateChildOfContext(const Clazz<T>* object) const {
-    ValidateCreatedForThisSystem(object);
-  }
-
  private:
   // For any T1 & T2, System<T1> considers System<T2> a friend, so that System
   // can safely and efficiently convert scalar types. See for example

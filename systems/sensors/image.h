@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/systems/sensors/pixel_types.h"
 
@@ -154,37 +153,6 @@ class Image {
   reset_after_move<int> width_;
   reset_after_move<int> height_;
   std::vector<T> data_;
-};
-
-/// Set of constants used to represent invalid depth values.
-/// Note that in the case that a depth is not measurable, the constants defined
-/// here are not used. Instead we set the depth to NaN.
-class DRAKE_DEPRECATED("2021-09-01",
-    "Use ImageTraits<PixelType::kDepth32F> instead.")
-InvalidDepth {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
-
-  /// The depth value when the max sensing range is exceeded.
-  static constexpr float kTooFar =
-      ImageTraits<PixelType::kDepth32F>::kTooFar;
-
-  /// The depth value when the min sensing range is exceeded.
-  static constexpr float kTooClose =
-      ImageTraits<PixelType::kDepth32F>::kTooClose;
-};
-
-/// Set of labels used for label image.
-class DRAKE_DEPRECATED("2021-09-01",
-    "There is no replacement; these values are unused within Drake.")
-Label {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
-  /// The label used for pixels correspond to nothing.
-  static constexpr int16_t kNoBody{std::numeric_limits<int16_t>::max()};
-  /// The label used for pixels correspond to the flat terrain.
-  static constexpr int16_t kFlatTerrain{
-    std::numeric_limits<int16_t>::max() - 1};
 };
 
 }  // namespace sensors
