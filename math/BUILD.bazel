@@ -157,6 +157,7 @@ drake_cc_library(
     hdrs = ["linear_solve.h"],
     deps = [
         ":gradient",
+        "//common:symbolic",
     ],
 )
 
@@ -443,6 +444,7 @@ drake_cc_googletest(
         ":linear_solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
