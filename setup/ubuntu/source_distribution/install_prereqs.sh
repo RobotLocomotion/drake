@@ -168,6 +168,6 @@ EOF
 )
 
 dpkg_install_from_wget \
-  bazel 4.1.0 \
-  https://releases.bazel.build/4.1.0/release/bazel_4.1.0-linux-x86_64.deb \
-  ce403656e027d0099187908c272c612fcebd1c5cca1b074357f0088beb15cd9c
+  bazel 4.2.1 \
+  https://releases.bazel.build/4.2.1/release/bazel_4.2.1-linux-x86_64.deb \
+  67447658b8313316295cd98323dfda2a27683456a237f7a3226b68c9c6c81b3a
