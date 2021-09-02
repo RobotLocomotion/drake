@@ -28,14 +28,14 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
   using ConstitutiveModel = typename Element::Traits::ConstitutiveModel;
 
   // TODO(xuchenhan-tri): Currently the time stepping scheme is hard coded to
-  // the mid-point rule. Consider letting the user configure the time stepping
-  // scheme.
+  //  gamma = 1.0 and beta = 0.5. Consider letting the user configure the time
+  //  stepping scheme.
   /** Creates a new %DynamicElasticityModel with the given discrete time step.
    */
   explicit DynamicElasticityModel(double dt)
       : ElasticityModel<Element>(
-            std::make_unique<internal::AccelerationNewmarkScheme<T>>(dt, 0.5,
-                                                                     0.25)) {}
+            std::make_unique<internal::AccelerationNewmarkScheme<T>>(dt, 1.0,
+                                                                     0.5)) {}
 
   ~DynamicElasticityModel() = default;
 
