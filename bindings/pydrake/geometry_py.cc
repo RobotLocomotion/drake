@@ -1112,30 +1112,62 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefClone(&shape_cls);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
-        .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
+        .def("radius", &Sphere::radius, doc.Sphere.radius.doc)
+        .def(py::pickle([](const Sphere& self) { return self.radius(); },
+            [](const double radius) { return Sphere(radius); }));
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc)
         .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
-        .def("length", &Cylinder::length, doc.Cylinder.length.doc);
+        .def("length", &Cylinder::length, doc.Cylinder.length.doc)
+        .def(py::pickle(
+            [](const Cylinder& self) {
+              return std::make_pair(self.radius(), self.length());
+            },
+            [](std::pair<double, double> dims) {
+              return Cylinder(dims.first, dims.second);
+            }));
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)
         .def(py::init<double, double, double>(), py::arg("width"),
             py::arg("depth"), py::arg("height"), doc.Box.ctor.doc)
         .def("width", &Box::width, doc.Box.width.doc)
         .def("depth", &Box::depth, doc.Box.depth.doc)
         .def("height", &Box::height, doc.Box.height.doc)
-        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc);
+        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc)
+        .def(py::pickle(
+            [](const Box& self) {
+              return std::make_tuple(self.width(), self.depth(), self.height());
+            },
+            [](std::tuple<double, double, double> dims) {
+              return Box(
+                  std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
+            }));
     py::class_<Capsule, Shape>(m, "Capsule", doc.Capsule.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Capsule.ctor.doc)
         .def("radius", &Capsule::radius, doc.Capsule.radius.doc)
-        .def("length", &Capsule::length, doc.Capsule.length.doc);
+        .def("length", &Capsule::length, doc.Capsule.length.doc)
+        .def(py::pickle(
+            [](const Capsule& self) {
+              return std::make_pair(self.radius(), self.length());
+            },
+            [](std::pair<double, double> dims) {
+              return Capsule(dims.first, dims.second);
+            }));
     py::class_<Ellipsoid, Shape>(m, "Ellipsoid", doc.Ellipsoid.doc)
         .def(py::init<double, double, double>(), py::arg("a"), py::arg("b"),
             py::arg("c"), doc.Ellipsoid.ctor.doc)
         .def("a", &Ellipsoid::a, doc.Ellipsoid.a.doc)
         .def("b", &Ellipsoid::b, doc.Ellipsoid.b.doc)
-        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc);
+        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc)
+        .def(py::pickle(
+            [](const Ellipsoid& self) {
+              return std::make_tuple(self.a(), self.b(), self.c());
+            },
+            [](std::tuple<double, double, double> dims) {
+              return Ellipsoid(
+                  std::get<0>(dims), std::get<1>(dims), std::get<2>(dims));
+            }));
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc)
         .def_static("MakePose", &HalfSpace::MakePose, py::arg("Hz_dir_F"),
@@ -1144,12 +1176,26 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
-        .def("scale", &Mesh::scale, doc.Mesh.scale.doc);
+        .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
+        .def(py::pickle(
+            [](const Mesh& self) {
+              return std::make_pair(self.filename(), self.scale());
+            },
+            [](std::pair<std::string, double> info) {
+              return Mesh(info.first, info.second);
+            }));
     py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc)
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
-        .def("scale", &Convex::scale, doc.Convex.scale.doc);
+        .def("scale", &Convex::scale, doc.Convex.scale.doc)
+        .def(py::pickle(
+            [](const Convex& self) {
+              return std::make_pair(self.filename(), self.scale());
+            },
+            [](std::pair<std::string, double> info) {
+              return Convex(info.first, info.second);
+            }));
   }
 
   // GeometryFrame
