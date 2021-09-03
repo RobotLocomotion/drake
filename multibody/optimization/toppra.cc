@@ -203,4 +203,31 @@ Eigen::MatrixXd Toppra::ComputeBackwardPass(double s_dot_0, double s_dot_N) {
 
 Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0, Eigen::MatrixXd& K);
 
-PiecewisePolynomial<double> Toppra::Solve() {}
+PiecewisePolynomial<double> Toppra::Solve() {
+  double s_dot_0 = 0;
+  double s_dot_N = 0;
+
+  Eigen::MatrixXd K = ComputeBackwardPass(s_dot_0, s_dot_N);
+  Eigen::VectorXd x_star = ComputeForwardPass(s_dot_0, K);
+  Eigen::VectorXd sd_kmots = x_start.cwiseSqrt();
+  if (sd_knots.hasNaN()) {
+    throw std::runtime_error("Toppra hit numerical issues. Found NaN sdot.");
+  }
+
+  Eigen::VectorXd t_knots(gridpoints_.size());
+  Eigen::MatrixXd q_knots(ptah_.rows(), gridpoints_.size());
+  t_knots(0) = 0;
+  q_knots.col(0) = path_.value(gridpoints_(0));
+  for (int knot = 1; knot < t_knots.size(); knot++) {
+    double delta = gridpoints_(knot) - gridpoints_(knot - 1);
+    double sd_avg = (sd_knots(knot) + sd_knots(knot - 1)) / 2.;
+    double delta_t = delta / sd_avg;
+    t_knots(knot) = t_knots(knot - 1) + delta_t;
+    q_knots.col(knot) = path_.value(gridpoints_(knot));
+  }
+
+  const Eigen::VectorXd v_start = Eigen::VectorXd::Zero(path_.rows());
+  const Eigen::VectorXd v_end = Eigen::VectorXd::Zero(path_.rows());
+  return PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+      t_knots, q_knots, v_start, v_end);
+}
