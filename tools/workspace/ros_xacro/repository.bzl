@@ -11,8 +11,8 @@ def ros_xacro_repository(
         # N.B. Even though 1.13.x series is not the highst-numbered release, we
         # are using it here because it aligns with the ROS Melodic version
         # released for Ubuntu 18.04.
-        commit = "1.13.11",
-        sha256 = "d16c56d3400a281f0e038f18377ce02ff69d3344145a308664d55ae4f54e980a",  # noqa
+        commit = "1.13.12",
+        sha256 = "76cd2c0bc44818f193b3c7e3f8541b07657be2a83ec734736b14758fa2b00197",  # noqa
         build_file = "@drake//tools/workspace/ros_xacro:package.BUILD.bazel",
         patches = [
             "@drake//tools/workspace/ros_xacro:disable-console-print.patch",
