@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include <Eigen/Dense>
 
@@ -67,6 +68,7 @@ class RotationMatrix {
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::exception in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
+  // @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
   explicit RotationMatrix(Matrix3<T>&& R) { set(std::move(R)); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
@@ -359,6 +361,7 @@ class RotationMatrix {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
   }
+  // @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
   void set(Matrix3<T>&& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(std::move(R));

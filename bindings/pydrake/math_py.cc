@@ -163,7 +163,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("b_A"), py::arg("axis_index"),
             cls_doc.MakeFromOneVector.doc)
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
-        .def("set", &Class::set, py::arg("R"), cls_doc.set.doc)
+        .def("set", py::overload_cast<const Matrix3<T>&>(&Class::set),
+            py::arg("R"), cls_doc.set.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
         .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
