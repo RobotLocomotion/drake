@@ -32,6 +32,7 @@ auto BindTypeSafeIndex(
       .def("__repr__", [name](const Class& self) {
         return py::str("{}({})").format(name, static_cast<int>(self));
       });
+  py::implicitly_convertible<int, Class>();
   return cls;
 }
 

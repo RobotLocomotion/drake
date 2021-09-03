@@ -54,11 +54,7 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
 
   SynchronizeGlobalsForPython3(m);
 
-  // TypeSafeIndex<> is not implicitly constructible from an int.
-  // TODO(eric.cousineau): Consider relaxing this to *only* accept `int`s, and
-  // puke if another `TypeSafeIndex<U>` is encountered.
-  ASSERT_THROW(py::eval("pass_thru_index(10)"), std::runtime_error);
-  CheckValue("pass_thru_index(Index(10))", 10);
+  CheckValue("pass_thru_index(10)", Index{10});
   CheckValue("pass_thru_index(Index(10))", Index{10});
 
   struct OtherTag {};
