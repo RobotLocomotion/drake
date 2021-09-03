@@ -5,7 +5,7 @@ load(
     "install",
 )
 
-licenses(["notice"])  # MIT
+licenses(["notice"])  # MIT, ISC
 
 package(
     default_visibility = ["//visibility:public"],
