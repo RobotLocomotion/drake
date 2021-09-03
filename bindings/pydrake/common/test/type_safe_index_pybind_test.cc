@@ -51,16 +51,30 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
     EXPECT_EQ(x, 10);
     return x;
   });
-
   SynchronizeGlobalsForPython3(m);
 
-  // TypeSafeIndex<> is not implicitly constructible from an int.
-  // TODO(eric.cousineau): Consider relaxing this to *only* accept `int`s, and
-  // puke if another `TypeSafeIndex<U>` is encountered.
+  // By default, TypeSafeIndex<> is not implicitly constructible from an int.
   ASSERT_THROW(py::eval("pass_thru_index(10)"), std::runtime_error);
-  CheckValue("pass_thru_index(Index(10))", 10);
   CheckValue("pass_thru_index(Index(10))", Index{10});
 
+  // However, we can permit a specific instantiation to be convertible from an
+  // int in Python.
+  struct ConvertibleTag {};
+  using ConvertibleIndex = TypeSafeIndex<ConvertibleTag>;
+  BindTypeSafeIndex<ConvertibleIndex>(m, "ConvertibleIndex");
+  py::implicitly_convertible<int, ConvertibleIndex>();
+
+  m.def("pass_thru_convertible_index", [](ConvertibleIndex x) {
+    EXPECT_EQ(x, 10);
+    return x;
+  });
+  SynchronizeGlobalsForPython3(m);
+
+  CheckValue("pass_thru_convertible_index(10)", ConvertibleIndex{10});
+  CheckValue("pass_thru_convertible_index(ConvertibleIndex(10))",
+      ConvertibleIndex{10});
+
+  // Ensure that indices do not mix.
   struct OtherTag {};
   using OtherIndex = TypeSafeIndex<OtherTag>;
   BindTypeSafeIndex<OtherIndex>(m, "OtherIndex");
