@@ -107,10 +107,18 @@ class AutoDiffScalar<VectorXd>
   AutoDiffScalar(const AutoDiffScalar& other)
       : m_value(other.value()), m_derivatives(other.derivatives()) {}
 
-  // Move construction and assignment are trivial, but need to be explicitly
-  // requested, since we have user-declared copy and assignment operators.
-  AutoDiffScalar(AutoDiffScalar&&) = default;
-  AutoDiffScalar& operator=(AutoDiffScalar&&) = default;
+  // Explicitly define move construction and assignment, in order to avoid
+  // (possibly spurious?)  maybe-uninitialized errors from release-mode gcc
+  // (not debug, not clang in any mode).
+  AutoDiffScalar(AutoDiffScalar&& other)
+      : m_value(other.value()),
+        m_derivatives(std::move(other.m_derivatives)) {}
+  AutoDiffScalar& operator=(AutoDiffScalar&& other) {
+    if (this == &other) { return *this; }
+    m_value = other.value();
+    m_derivatives = std::exchange(other.m_derivatives, DerType());
+    return *this;
+  }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator=(const AutoDiffScalar<OtherDerType>& other) {
