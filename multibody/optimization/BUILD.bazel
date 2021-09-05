@@ -170,6 +170,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "toppra",
+    srcs = ["toppra.cc"],
+    hdrs = ["toppra.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
 drake_cc_googletest(
     name = "contact_wrench_evaluator_test",
     deps = [

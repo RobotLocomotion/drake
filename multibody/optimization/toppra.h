@@ -4,14 +4,14 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
-using common::trajectories::PiecewisePolynomial;
-using solvers::Binding;
-using solvers::BoundingBoxConstraint;
-using solvers::LinearCost;
-using solvers::LinearConstraint;
-
 namespace drake {
 namespace multibody {
+
+using solvers::Binding;
+using solvers::BoundingBoxConstraint;
+using solvers::LinearConstraint;
+using solvers::LinearCost;
+using trajectories::PiecewisePolynomial;
 
 enum class ToppraDiscretization { kCollocation, kInterpolation };
 
@@ -91,12 +91,6 @@ class Toppra {
   //     const Frame<double>& constraint_frame, const Eigen::VectorXd&
   //     lower_limit, const Eigen::VectorXd upper_limit);
 
-  /** Getter for the optimization program constructed by Toppra. */
-  const solvers::MathematicalProgram& prog() const { return *prog_; }
-
-  /** Getter for the optimization program constructed by Toppra. */
-  solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
-
  private:
   /**
    * Performs the backward pass step of TOPPRA, computing the controllable set
@@ -111,21 +105,21 @@ class Toppra {
   Eigen::VectorXd ComputeForwardPass(double s_dot_0, Eigen::MatrixXd& K);
 
   std::unique_ptr<solvers::MathematicalProgram> backward_prog_;
-  std::unique_ptr<solvers::MathematicalProgram> forward_prog_;
   solvers::VectorXDecisionVariable backward_vars_;
+  Binding<LinearCost> backward_cost_;
+  Binding<LinearConstraint> backward_continuity_con_;
+  std::unique_ptr<solvers::MathematicalProgram> forward_prog_;
   solvers::VectorXDecisionVariable forward_vars_;
-  Bindings<LinearCost> backward_cost_;
-  Bindings<LinearCost> forward_cost_;
-  Bindings<LinearConstraint> backward_continuity_con_;
-  Bindings<LinearConstraint> forward_continuity_con_;
-  std::vector<Binding<BoundingBoxConstraint>> bb_constraint_;
-  std::vector<Binding<LinearConstraint>> backward_lin_constraint_;
-  std::vector<Binding<LinearConstraint>> forward_lin_constraint_;
-  std::vector<ToppraBoundingBoxConstraint> bb_constraint_coeff_;
-  std::vector<ToppraLinearConstraint> lin_constraint_coeff_;
+  Binding<LinearCost> forward_cost_;
+  Binding<LinearConstraint> forward_continuity_con_;
   const PiecewisePolynomial<double>& path_;
   const MultibodyPlant<double>& plant_;
   Eigen::VectorXd gridpoints_;
+  std::vector<Binding<BoundingBoxConstraint>> bb_constraint_;
+  std::vector<ToppraBoundingBoxConstraint> bb_constraint_coeff_;
+  std::vector<Binding<LinearConstraint>> backward_lin_constraint_;
+  std::vector<Binding<LinearConstraint>> forward_lin_constraint_;
+  std::vector<ToppraLinearConstraint> lin_constraint_coeff_;
 };
 }  // namespace multibody
 }  // namespace drake
