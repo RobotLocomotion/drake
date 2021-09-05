@@ -8,6 +8,7 @@
 
 #include <msgpack.hpp>
 
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/rgba.h"
 #include "drake/math/rigid_transform.h"
 
@@ -164,6 +165,20 @@ struct SetObjectData {
   MSGPACK_DEFINE_MAP(type, path, object);
 };
 
+template <typename CameraData>
+struct LumpedCameraData {
+  CameraData object;
+  MSGPACK_DEFINE_MAP(object);
+};
+
+template <typename CameraData>
+struct SetCameraData {
+  std::string type{"set_object"};
+  std::string path;
+  LumpedCameraData<CameraData> object;
+  MSGPACK_DEFINE_MAP(type, path, object);
+};
+
 struct SetTransformData {
   std::string type{"set_transform"};
   std::string path;
@@ -189,3 +204,66 @@ struct SetPropertyData {
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+
+
+// We use the msgpack "non-intrusive" approach for packing types exposed in the
+// public interface. https://github.com/msgpack/msgpack-c/wiki/v2_0_cpp_adaptor
+namespace msgpack {
+MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
+namespace adaptor {
+
+template<>
+struct pack<drake::geometry::Meshcat::OrthographicCamera> {
+  template <typename Stream>
+  packer<Stream>& operator()(
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+      msgpack::packer<Stream>& o,
+      const drake::geometry::Meshcat::OrthographicCamera& v) const {
+    o.pack_map(8);
+    o.pack("type");
+    o.pack("OrthographicCamera");
+    o.pack("left");
+    o.pack(v.left);
+    o.pack("right");
+    o.pack(v.right);
+    o.pack("top");
+    o.pack(v.top);
+    o.pack("bottom");
+    o.pack(v.bottom);
+    o.pack("near");
+    o.pack(v.near);
+    o.pack("far");
+    o.pack(v.far);
+    o.pack("zoom");
+    o.pack(v.zoom);
+    return o;
+  }
+};
+
+template<>
+struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
+  template <typename Stream>
+  packer<Stream>& operator()(
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+      msgpack::packer<Stream>& o,
+      const drake::geometry::Meshcat::PerspectiveCamera& v) const {
+    o.pack_map(5);
+    o.pack("type");
+    o.pack("PerspectiveCamera");
+    o.pack("fov");
+    o.pack(v.fov);
+    o.pack("aspect");
+    o.pack(v.aspect);
+    o.pack("near");
+    o.pack(v.near);
+    o.pack("far");
+    o.pack(v.far);
+    o.pack("zoom");
+    o.pack(v.zoom);
+    return o;
+  }
+};
+
+}  // namespace adaptor
+}  // namespace MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
+}  // namespace msgpack

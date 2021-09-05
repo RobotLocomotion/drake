@@ -132,6 +132,7 @@ drake_pybind_library(
     cc_srcs = ["geometry_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":math_py",
         ":module_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:lcm_py",

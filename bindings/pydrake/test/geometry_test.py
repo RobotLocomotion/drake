@@ -380,6 +380,9 @@ class TestGeometry(unittest.TestCase):
                             value=True)
         meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
                             property="intensity", value=1.0)
+        meshcat.Set2dRenderMode(
+            X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
+        meshcat.ResetRenderMode()
 
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_visualizer(self, T):
