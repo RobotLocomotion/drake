@@ -262,6 +262,82 @@ GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
     })""");
 }
 
+GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
+  Meshcat meshcat;
+  Meshcat::PerspectiveCamera perspective;
+  perspective.fov = 82;
+  perspective.aspect = 1.5;
+  meshcat.SetCamera(perspective, "/my/camera");
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_object",
+      "path": "/my/camera",
+      "object": {
+        "object": {
+          "type": "PerspectiveCamera",
+          "fov": 82.0,
+          "aspect": 1.5,
+          "near": 0.01,
+          "far": 100
+        }
+      }
+    })""");
+}
+
+GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
+  Meshcat meshcat;
+  Meshcat::OrthographicCamera ortho;
+  ortho.left = -1.23;
+  ortho.bottom = .84;
+  meshcat.SetCamera(ortho, "/my/camera");
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_object",
+      "path": "/my/camera",
+      "object": {
+        "object": {
+          "type": "OrthographicCamera",
+          "left": -1.23,
+          "right": 1.0,
+          "top": -1.0,
+          "bottom": 0.84,
+          "near": -1000.0,
+          "far": 1000.0,
+          "zoom": 1.0
+        }
+      }
+    })""");
+}
+
+GTEST_TEST(MeshcatTest, Set2dRenderMode) {
+  Meshcat meshcat;
+  meshcat.Set2dRenderMode();
+  // We simply confirm that all of the objects have been set, and use
+  // meshcat_manual_test to check that the visualizer updates as we expect.
+  EXPECT_FALSE(
+      meshcat.GetPackedObject("/Cameras/default/rotated").empty());
+  EXPECT_FALSE(meshcat.GetPackedTransform("/Cameras/default").empty());
+  EXPECT_FALSE(
+      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "position")
+          .empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
+}
+
+GTEST_TEST(MeshcatTest, ResetRenderMode) {
+  Meshcat meshcat;
+  meshcat.ResetRenderMode();
+  // We simply confirm that all of the objects have been set, and use
+  // meshcat_manual_test to check that the visualizer updates as we expect.
+  EXPECT_FALSE(
+      meshcat.GetPackedObject("/Cameras/default/rotated").empty());
+  EXPECT_FALSE(meshcat.GetPackedTransform("/Cameras/default").empty());
+  EXPECT_FALSE(
+      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "position")
+          .empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
+}
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
