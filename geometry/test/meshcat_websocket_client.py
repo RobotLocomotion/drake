@@ -13,6 +13,7 @@ async def check_command(ws_url, message_number, desired_command):
         message = ''
         for n in range(message_number):
             message = await asyncio.wait_for(websocket.recv(), timeout=10)
+        print(message)
         command = umsgpack.unpackb(message)
         if command != desired_command:
             print("FAILED")
