@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="ball">
+    <link name="ball">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.1</mass>
+        <inertia>
+          <!-- Solid sphere of radius r and mass m has:
+            Inertia tensor = (2/5)mr^2 I_3x3 = 1.6e-5 I_3x3 -->
+          <ixx>1.6e-5</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.6e-5</iyy>
+          <iyz>0</iyz>
+          <izz>1.6e-5</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.02</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.5 1.0 0.0 0.5</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.02</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:point_contact_stiffness>980</drake:point_contact_stiffness>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>5.0e6</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.005</drake:mesh_resolution_hint>
+          <!-- Little dissipation means the ball can bounce off. -->
+          <drake:hunt_crossley_dissipation>
+            0.1
+          </drake:hunt_crossley_dissipation>
+          <!-- Both mu_dynamic and mu_static are used in Continuous system.
+            Only mu_dynamic is used in Discrete system.
+          -->
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
