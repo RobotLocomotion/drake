@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sdf version="1.6" xmlns:drake="drake.mit.edu">
+  <model name="Bushing_As_Revolute_Joint">
+    <!-- *******************************************************
+         Base is regarded as a tall vertical cylinder that is welded to world.
+         Base's origin is coincident with world origin and base is oriented with
+         x horizontally-forward, y horizontally-right, z-vertically upward (opposite gravity).
+         Inertia properties for the base (world body) are irrelevant.
+         ******************************************************* -->
+    <link name="base">
+      <inertial>
+        <mass>1.0</mass>
+        <pose>0 0 0  0 0 0</pose>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0.0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <visual name="base_visual">
+        <pose>0 0 -0.1  0 0 0</pose>
+        <geometry>
+          <capsule>
+            <radius>0.005</radius>
+            <length>0.300</length>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>0.5 0.5 0.5 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <!-- *******************************************************
+         zSlider_body can be modeled as a particle that moves vertically upward (z-direction)
+         relative to base.  Its center of mass location and inertia properties are irrelevant.
+         zSlider_body's origin is initially 0.4 meters directly below the ySlider_body's origin.
+         Its axes are always aligned with both the base and ySliderBody.
+         ******************************************************* -->
+    <link name="zSlider_body">
+      <pose relative_to="base">0 0 -0.2  0 0 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <pose>0 0 0  0 0 0</pose>
+        <inertia>
+          <ixx>1E-6</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>1E-6</iyy>
+          <iyz>0.0</iyz>
+          <izz>1E-6</izz>
+        </inertia>
+      </inertial>
+      <visual name="zSlider_body_visual">
+        <pose>0 0 0  0 1.570796326794897 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.005</radius>
+            <length>0.005</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.1 0.7 0.1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <!-- *******************************************************
+         rod_body is a 0.5 meter rod that is connected inboard via a y-axis
+         revolute joint to zSlider_body and connected outboard to a bushing.
+         rod_body's origin is always coincident with zSlider_body.
+         rodbody's y-unit vector is always equal to ySliderBody's y-unit vector
+         which is always equal to base (and world) y-unit vector.
+         ******************************************************* -->
+    <link name="rod_body">
+      <pose relative_to="zSlider_body">0 0 0  0 0 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <pose>0 0 0.25  0 0 0</pose>
+        <inertia>
+          <ixx>1E-6</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>1E-6</iyy>
+          <iyz>0.0</iyz>
+          <izz>1E-6</izz>
+        </inertia>
+      </inertial>
+      <visual name="rod_body_visual">
+        <pose>0 0 0.25  0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.01  0.01  0.5</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.2 0.2 0.7 0.7</diffuse>
+        </material>
+      </visual>
+    </link>
+    <!-- *******************************************************
+         ySlider_body is a 0.3 meter rod that moves horizontally-right (y-direction) relative to base
+         ySlider_body's origin is initially 0.4 meters directly above the base origin.
+         Its axes are always aligned with both the base and ySliderBody
+    <!-- ******************************************************* -->
+    <link name="ySlider_body">
+      <pose relative_to="base">0 0 0.2  0 0 0</pose>
+      <inertial>
+        <pose>0 -0.15 0  0 0 0</pose>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>1E-6</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>1E-6</iyy>
+          <iyz>0.0</iyz>
+          <izz>1E-6</izz>
+        </inertia>
+      </inertial>
+      <visual name="ySlider_body_visual">
+        <pose>0 -0.15 0  0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.01 0.3 0.01</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.7 0.2 0.2 0.7</diffuse>
+        </material>
+      </visual>
+    </link>
+    <!-- *******************************************************
+         zSlider_joint allows zSlider_body to freely move vertically upward (z-direction) relative to base.
+         ******************************************************* -->
+    <joint name="zSlider_joint" type="prismatic">
+      <child>zSlider_body</child>
+      <parent>base</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1E9</lower>
+          <upper>1E9</upper>
+          <effort>0</effort>
+        </limit>
+      </axis>
+    </joint>
+    <!-- *******************************************************
+         ySlider_joint controls how ySlider_body moves
+         horizontally-right (y-direction) relative to base.
+         ******************************************************* -->
+    <joint name="ySlider_joint" type="prismatic">
+      <child>ySlider_body</child>
+      <parent>base</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1E9</lower>
+          <upper>1E9</upper>
+          <effort>1.0</effort>
+        </limit>
+      </axis>
+    </joint>
+    <!-- *******************************************************
+         rod_revolute_joint allows rod_body to rotate about
+         x-vector relative to zSlider_body.
+         ******************************************************* -->
+    <joint name="rod_revolute_joint" type="revolute">
+      <child>rod_body</child>
+      <parent>zSlider_body</parent>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+      </axis>
+    </joint>
+    <!-- *******************************************************
+         A bushing attaches frameA on ySlider_body to frameC on rod_body.
+         ******************************************************* -->
+    <frame attached_to="ySlider_body" name="frameA">
+      <pose relative_to="ySlider_body">0 -0.3 0  0 0 0</pose>
+    </frame>
+    <frame attached_to="rod_body" name="frameC">
+      <pose relative_to="rod_body">0 0 0.5  0 0 0</pose>
+    </frame>
+    <drake:linear_bushing_rpy>
+      <drake:bushing_frameA>frameA</drake:bushing_frameA>
+      <drake:bushing_frameC>frameC</drake:bushing_frameC>
+      <drake:bushing_torque_stiffness>0 0 0</drake:bushing_torque_stiffness>
+      <drake:bushing_torque_damping>0 0 0</drake:bushing_torque_damping>
+      <drake:bushing_force_stiffness>7000 7000 7000</drake:bushing_force_stiffness>
+      <drake:bushing_force_damping>10.1 10.1 10.1</drake:bushing_force_damping>
+    </drake:linear_bushing_rpy>
+  </model>
+</sdf>
+
