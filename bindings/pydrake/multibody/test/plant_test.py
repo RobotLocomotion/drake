@@ -832,6 +832,12 @@ class TestPlant(unittest.TestCase):
             self.assert_sane(Js_v_ACcm_E)
             self.assertEqual(Js_v_ACcm_E.shape, (3, nw))
 
+            Js_v_ACcm_E = plant.CalcJacobianCenterOfMassTranslationalVelocity(
+                context=context, model_instances=[instance],
+                with_respect_to=wrt, frame_A=base_frame, frame_E=world_frame)
+            self.assert_sane(Js_v_ACcm_E)
+            self.assertEqual(Js_v_ACcm_E.shape, (3, nw))
+
             Js_V_ABp_E = plant.CalcJacobianSpatialVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BP=np.zeros(3), frame_A=world_frame,
