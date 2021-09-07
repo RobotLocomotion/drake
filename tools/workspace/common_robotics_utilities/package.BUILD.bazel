@@ -61,6 +61,8 @@ cc_test(
     ],
 )
 
+# N.B. The "test/print_test.cpp" is not added here, because it depends on ROS.
+
 cc_test(
     name = "task_planning_test",
     srcs = ["test/task_planning_test.cpp"],
