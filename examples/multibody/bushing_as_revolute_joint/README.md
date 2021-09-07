@@ -1,22 +1,23 @@
-## Simulate motion of a body (e.g., sphere or block) on an inclined plane.
+## Simulate motion of a robotic finger in a horizontal plane.
 
 ### Description
 
-This example simulates the motion of a rigid body B (e.g., a sphere or a block)
-on an inclined plane A.  You can simulate a uniform-density sphere B rolling 
-down an inclined plane A or simulate a block B that contacts an inclined plane A
-(first possibly dropping/colliding with A and then slipping and/or sticking).
-The inclined plane can be modeled as either an infinite half-space or as a 
-finite box (if a finite box, the block can fall off the inclined plane).
+This robot has a rigid push-rod A that connects to the robot's base (world) with
+a combination prismatic motor/revolute joint at point Ao of rod A. The prismatic
+motor pushes Ao with a force of measure Fy. At the other end of rod A, point Ac
+connects to point Co of rigid finger C by a frictionless revolute joint.
+Finger C connects to the robot's base (world) by a frictionless prismatic joint.
+(rod C can translate, but not rotate, relative to world.  The object being
+grasped exerts a contact force with measure Fx on the robot's end-effector E
+(E is at the end of finger C).
 
-1. A coefficient of friction is assigned separately to each object (a default
-   value is assigned or you may assign a value via command-line arguments).
-   Thereafter, a "combining equation" calculates the coefficient of friction
-   by combining the coefficients of friction assigned to each object.
-2. When time_step > 0 (fixed-time step), the coefficient of kinetic friction is 
-   ignored.  Only the coefficient of static friction is used.
-3. More information on the friction model being used is in
-[coulomb_friction.h](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_coulomb_friction.html).
+<p align="center">
+  <img src="RobotFingerPlanarMechanismSchematic.jpg" width="350" alt="Robotic finger">
+</p>
+
+1. One way to close the kinematic loop is to use a flexible bushing to
+   More information on the bushing model being used is in
+[linear_bushing_roll_pitch_yaw.h](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html).
 
 ### Building and running this example
 
@@ -27,24 +28,22 @@ Open a terminal in the `drake` workspace, and type commands as shown below.
 
 Build the example like so:
 ```
-bazel build //tools:drake_visualizer //examples/multibody/inclined_plane_with_body
+bazel build //tools:drake_visualizer //examples/multibody/bushing_as_revolute_joint
 ```
 
 Run the example like so:
 ```
 bazel-bin/tools/drake_visualizer &
-bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body
+bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint
 ```
 
-Alternatively,
-to simulate body B as a block that has 4 contacting spheres welded to its
-lowest four corners on a 30 degree inclined plane A (modeled as a half-space), 
-pass command line arguments to the executable by typing:
+Alternatively, to simulate for 5 seconds, pass command line arguments to the
+executable by typing:
 ```
-bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -inclined_plane_angle_degrees=30 -bodyB_type=block_with_4Spheres
+bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint -simulation_time=8 -simulator_max_time_step=2E-3
 ```
 
 To see a list of all possible command-line arguments:
 ```
-bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -help
+bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint -help
 ```
