@@ -11,4 +11,11 @@
   <author>Franka Emika GmbH</author>
   <buildtool_depend>catkin</buildtool_depend>
   <exec_depend>xacro</exec_depend>
+  <export>
+    <deprecated>
+      The franka_description package is deprecated, and will be removed on or
+      around 2022-02-01. Please use
+      'package://drake/manipulation/models/franka_description' instead.
+    </deprecated>
+  </export>
 </package>

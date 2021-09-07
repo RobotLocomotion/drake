@@ -22,4 +22,11 @@
   <run_depend>urdf</run_depend>
   <run_depend>xacro</run_depend>
 
+  <export>
+    <deprecated>
+      The jaco_description package is deprecated, and will be removed on or
+      around 2022-02-01. Please use
+      'package://drake/manipulation/models/jaco_description' instead.
+    </deprecated>
+  </export>
 </package>

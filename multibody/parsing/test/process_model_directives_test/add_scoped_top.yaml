@@ -14,7 +14,7 @@ directives:
     X_PF:
       base_frame: world
 - add_directives:
-    file: package://process_model_directives_test/add_scoped_sub.yaml
+    file: package://drake/multibody/parsing/test/process_model_directives_test/add_scoped_sub.yaml
 - add_frame:
     name: simple_model::top_added_frame
     X_PF:
@@ -32,7 +32,7 @@ directives:
       base_frame: world
       translation: [0, 1, 0]
 - add_directives:
-    file: package://process_model_directives_test/add_scoped_sub.yaml
+    file: package://drake/multibody/parsing/test/process_model_directives_test/add_scoped_sub.yaml
     model_namespace: left
 - add_frame:
     name: left::simple_model::top_added_frame
@@ -49,7 +49,7 @@ directives:
       base_frame: world
       translation: [0, -1, 0]
 - add_directives:
-    file: package://process_model_directives_test/add_scoped_sub.yaml
+    file: package://drake/multibody/parsing/test/process_model_directives_test/add_scoped_sub.yaml
     model_namespace: right
 - add_frame:
     name: right::simple_model::top_added_frame
@@ -61,7 +61,7 @@ directives:
 - add_model_instance:
     name: mid
 - add_directives:
-    file: package://process_model_directives_test/add_scoped_mid.yaml
+    file: package://drake/multibody/parsing/test/process_model_directives_test/add_scoped_mid.yaml
     model_namespace: mid
 - add_frame:
     name: mid::nested::simple_model::top_added_frame

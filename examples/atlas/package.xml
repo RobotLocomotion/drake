@@ -8,4 +8,10 @@
   <author email="drake-users@mit.edu">Drake Users</author>
   <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
   <license>Unknown</license>
+  <export>
+    <deprecated>
+      The Atlas package is deprecated, and will be removed on or around
+      2022-02-01. Please use 'package://drake/examples/atlas' instead.
+    </deprecated>
+  </export>
 </package>

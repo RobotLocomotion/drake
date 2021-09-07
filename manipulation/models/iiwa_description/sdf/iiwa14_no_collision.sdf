@@ -26,7 +26,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_0.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_0.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -55,7 +55,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_1.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_1.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -104,7 +104,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_2_grey.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -115,7 +115,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_2_orange.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -166,7 +166,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_3.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_3.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -177,7 +177,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/band.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -188,7 +188,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/kuka.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -237,7 +237,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_4_grey.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -248,7 +248,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_4_orange.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -297,7 +297,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_5.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_5.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -308,7 +308,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/band.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -319,7 +319,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/kuka.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -368,7 +368,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_6_grey.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -379,7 +379,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_6_orange.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -428,7 +428,7 @@ Later edited by hand to:
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>../meshes/visual/link_7.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_7.obj</uri>
           </mesh>
         </geometry>
         <material>

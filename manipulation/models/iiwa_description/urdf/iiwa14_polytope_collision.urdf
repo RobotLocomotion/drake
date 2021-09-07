@@ -55,7 +55,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_0.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_0.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -85,7 +85,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_1.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -111,14 +111,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_2_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -144,21 +144,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_3.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/band.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
@@ -184,14 +184,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_4_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -217,21 +217,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_5.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_5.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/band.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
@@ -257,14 +257,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6_grey.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_6_orange.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
@@ -290,14 +290,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/visual/link_7.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_7.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/collision/link_7_polytope.obj"/>
+        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/collision/link_7_polytope.obj"/>
       </geometry>
       <material name="Grey"/>
     </collision>

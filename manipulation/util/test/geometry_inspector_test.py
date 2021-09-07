@@ -24,7 +24,7 @@ class TestGeometryInspector(unittest.TestCase):
              "iiwa14_no_collision.sdf",
              "--test",
              "--visualize_collisions",
-             "--package_path=./manipulation/models/iiwa_description"])
+             "--package_path=."])
 
     def test_pyplot(self):
         subprocess.check_call(

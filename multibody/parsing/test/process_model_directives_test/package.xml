@@ -8,4 +8,12 @@
   <maintainer email="ggould@tri.global">Grant Gould</maintainer>
   <author>Grant Gould</author>
   <license>N/A</license>
+  <export>
+    <deprecated>
+      The process_model_directives_test package is deprecated, and will be
+      removed on or around 2022-02-01. Please use
+      'package://drake/multibody/parsing/test/process_model_directives_test'
+      instead.
+    </deprecated>
+  </export>
 </package>

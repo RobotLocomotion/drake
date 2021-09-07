@@ -22,7 +22,7 @@
           </box>
           <!--
           <mesh>
-            <uri>model://cinder_block_wide/meshes/cinder_block_wide.dae</uri>
+            <uri>package://drake/examples/atlas/sdf/cinder_block_wide/meshes/cinder_block_wide.dae</uri>
           </mesh>
           -->
         </geometry>

@@ -25,7 +25,7 @@
   <link name="j2s7s300_link_base">
     <visual>
       <geometry>
-        <mesh filename="../meshes/base.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/base.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -78,7 +78,7 @@
   <link name="j2s7s300_link_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/shoulder.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/shoulder.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -86,7 +86,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_big.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -161,7 +161,7 @@
   <link name="j2s7s300_link_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/arm_half_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/arm_half_1.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -169,7 +169,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_big.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -259,7 +259,7 @@
   <link name="j2s7s300_link_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/arm_half_2.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/arm_half_2.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -267,7 +267,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_big.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -363,7 +363,7 @@
   <link name="j2s7s300_link_4">
     <visual>
       <geometry>
-        <mesh filename="../meshes/forearm.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/forearm.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -371,7 +371,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -473,7 +473,7 @@
   <link name="j2s7s300_link_5">
     <visual>
       <geometry>
-        <mesh filename="../meshes/wrist_spherical_1.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/wrist_spherical_1.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -481,7 +481,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -529,7 +529,7 @@
   <link name="j2s7s300_link_6">
     <visual>
       <geometry>
-        <mesh filename="../meshes/wrist_spherical_2.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/wrist_spherical_2.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -537,7 +537,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -585,7 +585,7 @@
   <link name="j2s7s300_link_7">
     <visual>
       <geometry>
-        <mesh filename="../meshes/hand_3finger.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/hand_3finger.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -593,7 +593,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -690,7 +690,7 @@
   <link name="j2s7s300_link_finger_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_proximal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_proximal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -746,7 +746,7 @@
   <link name="j2s7s300_link_finger_tip_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_distal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_distal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -798,7 +798,7 @@
   <link name="j2s7s300_link_finger_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_proximal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_proximal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -854,7 +854,7 @@
   <link name="j2s7s300_link_finger_tip_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_distal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_distal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -906,7 +906,7 @@
   <link name="j2s7s300_link_finger_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_proximal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_proximal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -962,7 +962,7 @@
   <link name="j2s7s300_link_finger_tip_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_distal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_distal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
