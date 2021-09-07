@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="ball">
+    <link name="ball">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.02</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.5 1.0 0.0 0.5</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.02</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:point_contact_stiffness>980</drake:point_contact_stiffness>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>5.0e6</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.005</drake:mesh_resolution_hint>
+          <!-- Little dissipation means the ball can bounce off. -->
+          <drake:hunt_crossley_dissipation>
+            0.1
+          </drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+          <drake:point_contact_stiffness>980</drake:point_contact_stiffness>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
