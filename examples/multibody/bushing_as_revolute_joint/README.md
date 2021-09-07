@@ -37,7 +37,7 @@ bazel-bin/tools/drake_visualizer &
 bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint
 ```
 
-Alternatively, to simulate for 5 seconds, pass command line arguments to the
+Alternatively, to simulate for 8 seconds, pass command line arguments to the
 executable by typing:
 ```
 bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint -simulation_time=8 -simulator_max_time_step=2E-3
