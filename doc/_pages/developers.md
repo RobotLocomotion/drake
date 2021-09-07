@@ -68,10 +68,10 @@ Drake requires a compiler running in C++17 mode.
 
 | Operating System                 | Bazel | CMake | C/C++ Compiler                 | Java                          | Python |
 |----------------------------------|-------|-------|--------------------------------|-------------------------------|--------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | 4.1   | 3.10  | GCC 7.5 (default) or Clang 9   | OpenJDK 11                    | 3.6    |
-| Ubuntu 20.04 LTS (Focal Fossa)   | 4.1   | 3.16  | GCC 9.3 (default) or Clang 9   | OpenJDK 11                    | 3.8    |
-| macOS Catalina (10.15)           | 4.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
-| macOS Big Sur (11)               | 4.1   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
+| Ubuntu 18.04 LTS (Bionic Beaver) | 4.2   | 3.10  | GCC 7.5 (default) or Clang 9   | OpenJDK 11                    | 3.6    |
+| Ubuntu 20.04 LTS (Focal Fossa)   | 4.2   | 3.16  | GCC 9.3 (default) or Clang 9   | OpenJDK 11                    | 3.8    |
+| macOS Catalina (10.15)           | 4.2   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
+| macOS Big Sur (11)               | 4.2   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
 
 CPython is the only Python implementation supported. On Ubuntu, amd64
 (i.e., x86_64) is the only supported architecture. On macOS, x86_64 is the only
