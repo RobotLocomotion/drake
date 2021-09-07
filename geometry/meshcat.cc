@@ -36,19 +36,19 @@ std::string LoadResource(const std::string& resource_name) {
 }
 
 const std::string& GetUrlContent(std::string_view url_path) {
-  static const drake::never_destroyed<std::string> main_min_js(
-      LoadResource("drake/external/meshcat/dist/main.min.js"));
-  static const drake::never_destroyed<std::string> favicon_ico(
-      LoadResource("drake/doc/favicon.ico"));
-  static const drake::never_destroyed<std::string> index_html(
+  static const drake::never_destroyed<std::string> meshcat_js(
+      LoadResource("drake/geometry/meshcat.js"));
+  static const drake::never_destroyed<std::string> meshcat_ico(
+      LoadResource("drake/geometry/meshcat.ico"));
+  static const drake::never_destroyed<std::string> meshcat_html(
       LoadResource("drake/geometry/meshcat.html"));
-  if (url_path == "/main.min.js") {
-    return main_min_js.access();
+  if (url_path == "/meshcat.js") {
+    return meshcat_js.access();
   }
   if (url_path == "/favicon.ico") {
-    return favicon_ico.access();
+    return meshcat_ico.access();
   }
-  return index_html.access();
+  return meshcat_html.access();
 }
 
 }  // namespace

@@ -15,6 +15,7 @@ _DRAKE_ROOT_PACKAGE_RUNFILES = [x for x in _DRAKE_RUNFILES if "/" not in x]
 _EXPECTED_DRAKE_RUNFILES_PACKAGES = [
     "common",
     "examples",
+    "geometry",
     "manipulation",
 ]
 
