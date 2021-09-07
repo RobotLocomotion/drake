@@ -99,9 +99,9 @@ typename AutoDiffToGradientMatrix<Derived>::type ExtractGradient(
 template <typename Derived>
 // TODO(sherm1) DRAKE_DEPRECATED("2022-01-01", "Use ExtractGradient().")
 typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
-    const Eigen::MatrixBase<Derived>& auto_diff_matrix,
+    const Eigen::MatrixBase<Derived>& autodiff_matrix,
     int num_variables = Eigen::Dynamic) {
-  return ExtractGradient(auto_diff_matrix, num_variables);
+  return ExtractGradient(autodiff_matrix, num_variables);
 }
 
 /** Initializes an AutoDiff matrix given a matrix of values and a gradient

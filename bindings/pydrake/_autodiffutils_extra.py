@@ -31,7 +31,8 @@ def InitializeAutoDiffTuple(*args):
     deriv_num_start = 0
     for arg in args:
         autodiff_tuple.append(InitializeAutoDiff(arg,
-                              num_derivatives, deriv_num_start))
+                                                 num_derivatives,
+                                                 deriv_num_start))
         deriv_num_start += np.asarray(arg).size
 
     return tuple(autodiff_tuple)

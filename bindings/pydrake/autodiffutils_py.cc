@@ -118,17 +118,17 @@ PYBIND11_MODULE(autodiffutils, m) {
 
   m.def(
       "ExtractValue",
-      [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
-        return ExtractValue(autodiff_matrix);
+      [](const MatrixX<AutoDiffXd>& auto_diff_matrix) {
+        return ExtractValue(auto_diff_matrix);
       },
-      py::arg("autodiff_matrix"), doc.ExtractValue.doc);
+      py::arg("auto_diff_matrix"), doc.ExtractValue.doc);
 
   m.def(
       "ExtractGradient",
-      [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
-        return ExtractGradient(autodiff_matrix);
+      [](const MatrixX<AutoDiffXd>& auto_diff_matrix) {
+        return ExtractGradient(auto_diff_matrix);
       },
-      py::arg("autodiff_matrix"), doc.ExtractGradient.doc);
+      py::arg("auto_diff_matrix"), doc.ExtractGradient.doc);
 
   m.def(
       "InitializeAutoDiff",

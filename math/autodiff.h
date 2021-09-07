@@ -73,8 +73,8 @@ typename AutoDiffToValueMatrix<Derived>::type ExtractValue(
 template <typename Derived>
 // TODO(sherm1) DRAKE_DEPRECATED("2022-01-01", "Use ExtractValue() instead")
 typename AutoDiffToValueMatrix<Derived>::type
-    autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
-  return ExtractValue(auto_diff_matrix);
+    autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& autodiff_matrix) {
+  return ExtractValue(autodiff_matrix);
 }
 
 /** `B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
@@ -280,21 +280,18 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
 };
 }  // namespace internal
 
-/** Resizes derivatives vector of each element of a matrix to match the size
-of the derivatives vector of a given scalar.
-
-If the `matrix` and `scalar` inputs are both AutoDiffScalars, resize the
-derivatives vector of each element of `matrix` to match
-the number of derivatives of `scalar`. This is useful in functions that
-return matrices that do not depend on an AutoDiffScalar
-argument (e.g. a function with a constant output), while it is desired that
-information about the number of derivatives is preserved.
-
-
-@param matrix a matrix of AutoDiffScalars whose elements will have their
-    empty derivative vectors resized to match that of `scalar`.
-@param scalar an AutoDiffScalar whose derivative size should be preserved in
-    `matrix`. */
+/** Resize derivatives vector of each element of a matrix to match the size
+ * of the derivatives vector of a given scalar.
+ * \brief If the mat and scalar inputs are AutoDiffScalars, resize the
+ * derivatives vector of each element of the matrix mat to match
+ * the number of derivatives of the scalar. This is useful in functions that
+ * return matrices that do not depend on an AutoDiffScalar
+ * argument (e.g. a function with a constant output), while it is desired that
+ * information about the number of derivatives is preserved.
+ * \param mat matrix, for which the derivative vectors of the elements will be
+ * resized
+ * \param scalar scalar to match the derivative size vector against.
+ */
 template <typename Derived>
 DRAKE_DEPRECATED("2021-12-01",
     "Apparently unused. File a Drake issue on GitHub if you need this method.")
