@@ -572,14 +572,12 @@ PYBIND11_MODULE(primitives, m) {
           &BarycentricMeshSystem<double>::get_output_values,
           doc.BarycentricMeshSystem.get_output_values.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  py::class_<RandomSource, LeafSystem<double>>(
-      m, "RandomSource", doc.RandomSourced.doc)
+  // TODO(jwnimmer-tri) Add more scalar types bindings for this class.
+  py::class_<RandomSource<double>, LeafSystem<double>>(
+      m, "RandomSource", doc.RandomSource.doc)
       .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
           py::arg("num_outputs"), py::arg("sampling_interval_sec"),
           doc.RandomSource.ctor.doc);
-#pragma GCC diagnostic pop
 
   py::class_<TrajectorySource<double>, LeafSystem<double>>(
       m, "TrajectorySource", doc.TrajectorySource.doc)

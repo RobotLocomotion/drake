@@ -153,7 +153,7 @@ GTEST_TEST(RandomSimulationTest, WithRandomInputs) {
     DiagramBuilder<double> builder;
     const int kNumOutputs = 1;
     const double sampling_interval = 0.1;
-    auto random_source = builder.AddSystem<RandomSourced>(
+    auto random_source = builder.AddSystem<RandomSource<double>>(
         RandomDistribution::kUniform, kNumOutputs, sampling_interval);
     auto pass_through = builder.template AddSystem<PassThrough>(kNumOutputs);
     builder.Connect(random_source->get_output_port(0),
