@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="paddle">
+    <link name="paddle">
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>5.0e3</mass>
+        <inertia>
+          <ixx>5.0e3</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>5.0e3</iyy>
+          <iyz>0</iyz>
+          <izz>5.0e3</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.02</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.8 0.5 0.5 0.2</diffuse>
+        </material>      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.02</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>2.5e6</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>100</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
