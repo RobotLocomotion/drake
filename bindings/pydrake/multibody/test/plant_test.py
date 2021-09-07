@@ -75,6 +75,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
@@ -538,6 +539,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(dut, Class)
         dut /= T(1.0)
         self.assertIsInstance(dut, Class)
+        assert_pickle(self, dut, RotationalInertia_[T].CopyToFullMatrix3, T=T)
 
     @numpy_compare.check_all_types
     def test_unit_inertia_api(self, T):
@@ -551,6 +553,7 @@ class TestPlant(unittest.TestCase):
             dut.ShiftFromCenterOfMass(p_BcmQ_E=p), UnitInertia)
         self.assertIsInstance(
             dut.ShiftToCenterOfMass(p_QBcm_E=p), UnitInertia)
+        assert_pickle(self, dut, UnitInertia.CopyToFullMatrix3, T=T)
         # N.B. There are NO valid operators on UnitInertia.  They are inherited
         # through implementation reuse, but they are broken (#6109).
 
@@ -592,6 +595,8 @@ class TestPlant(unittest.TestCase):
             spatial_inertia * SpatialAcceleration(), SpatialForce)
         self.assertIsInstance(
             spatial_inertia * SpatialVelocity(), SpatialMomentum)
+        assert_pickle(
+            self, spatial_inertia, SpatialInertia.CopyToFullMatrix6, T=T)
         spatial_inertia.SetNaN()
         # N.B. `numpy_compare.assert_equal(IsNaN(), True)` does not work.
         if T != Expression:
@@ -603,6 +608,10 @@ class TestPlant(unittest.TestCase):
         CoulombFriction()
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
         copy.copy(CoulombFriction())
+        assert_pickle(
+            self, CoulombFriction,
+            lambda x: [x.static_friction, x.dynamic_friction], T=T
+        )
 
     @numpy_compare.check_all_types
     def test_rigid_body_api(self, T):

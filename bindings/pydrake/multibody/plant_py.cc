@@ -134,7 +134,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
-            cls_doc.dynamic_friction.doc);
+            cls_doc.dynamic_friction.doc)
+        .def(py::pickle(
+            [](const Class& self) {
+              return std::pair(self.static_friction(), self.dynamic_friction());
+            },
+            [](std::pair<T, T> frictions) {
+              return Class(frictions.first, frictions.second);
+            }));
     DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);

@@ -12,6 +12,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
@@ -506,21 +507,31 @@ class TestGeometry(unittest.TestCase):
         RigidTransform = RigidTransform_[float]
         sphere = mut.Sphere(radius=1.0)
         self.assertEqual(sphere.radius(), 1.0)
+        assert_pickle(self, sphere, mut.Sphere.radius)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         self.assertEqual(cylinder.radius(), 1.0)
         self.assertEqual(cylinder.length(), 2.0)
+        assert_pickle(
+            self, cylinder, lambda shape: [shape.radius(), shape.length()])
         box = mut.Box(width=1.0, depth=2.0, height=3.0)
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
+        assert_pickle(
+            self, box,
+            lambda shape: [shape.width(), shape.depth(), shape.height()])
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
         capsule = mut.Capsule(radius=1.0, length=2.0)
         self.assertEqual(capsule.radius(), 1.0)
         self.assertEqual(capsule.length(), 2.0)
+        assert_pickle(
+            self, capsule, lambda shape: [shape.radius(), shape.length()])
         ellipsoid = mut.Ellipsoid(a=1.0, b=2.0, c=3.0)
         self.assertEqual(ellipsoid.a(), 1.0)
         self.assertEqual(ellipsoid.b(), 2.0)
         self.assertEqual(ellipsoid.c(), 3.0)
+        assert_pickle(
+            self, ellipsoid, lambda shape: [shape.a(), shape.b(), shape.c()])
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
         box_mesh_path = FindResourceOrThrow(
@@ -528,9 +539,13 @@ class TestGeometry(unittest.TestCase):
         mesh = mut.Mesh(absolute_filename=box_mesh_path, scale=1.0)
         self.assertEqual(mesh.filename(), box_mesh_path)
         self.assertEqual(mesh.scale(), 1.0)
+        assert_pickle(
+            self, mesh, lambda shape: [shape.filename(), shape.scale()])
         convex = mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
         self.assertEqual(convex.filename(), box_mesh_path)
         self.assertEqual(convex.scale(), 1.0)
+        assert_pickle(
+            self, convex, lambda shape: [shape.filename(), shape.scale()])
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
