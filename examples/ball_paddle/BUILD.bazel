@@ -1,0 +1,51 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+    "drake_py_unittest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_library(
+    name = "ball_paddle",
+    srcs = ["ball_paddle.cc"],
+    hdrs = ["ball_paddle.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//geometry:shape_specification",
+        "//multibody/plant",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "//systems/controllers:pid_controller",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:vector_log_sink",
+    ],
+)
+
+drake_py_binary(
+    name = "contact_sim_demo_py",
+    srcs = ["contact_sim_demo.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+install_data()
+
+add_lint_tests()

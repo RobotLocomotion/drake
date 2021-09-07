@@ -39,6 +39,7 @@ drake_cc_binary(
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
     "//examples/atlas",
+    "//examples/ball_paddle",
     "//examples/compass_gait",
     "//examples/kuka_iiwa_arm/models",
     "//examples/manipulation_station",
