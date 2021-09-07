@@ -12,8 +12,12 @@ load(
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
-load("@drake//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files([
+    # For use by @drake//geometry:meshcat.
+    "favicon.ico",
+])
 
 drake_py_library(
     name = "defs",
@@ -55,7 +59,6 @@ filegroup(
         # https://developer.mozilla.org/en-US/docs/Web/Manifest
         "site.webmanifest",
     ],
-    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -81,13 +84,6 @@ filegroup(
     data = [
         ":favicon",
     ],
-)
-
-# favicon.ico is used by //geometry:meshcat.
-install_files(
-    name = "install_favicon",
-    dest = "share/drake/doc",
-    files = ["favicon.ico"],
 )
 
 enumerate_filegroup(
@@ -148,14 +144,6 @@ test_suite(
         "//doc/doxygen_cxx:build_test",
         "//doc/pydrake:build_test",
         "//doc/styleguide:build_test",
-    ],
-)
-
-install(
-    name = "install",
-    visibility = ["//visibility:public"],
-    deps = [
-        ":install_favicon",
     ],
 )
 
