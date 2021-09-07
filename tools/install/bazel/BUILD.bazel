@@ -27,6 +27,7 @@ _BUILD_FILES_DATA = [
     ":drake__bindings__pydrake.BUILD.bazel",
     ":drake__common.BUILD.bazel",
     ":drake__examples.BUILD.bazel",
+    ":drake__geometry.BUILD.bazel",
     ":drake__manipulation.BUILD.bazel",
 ]
 

@@ -353,15 +353,43 @@ drake_cc_library(
     deps = ["@msgpack"],
 )
 
+genrule(
+    name = "meshcat_ico_genrule",
+    srcs = ["//doc:favicon.ico"],
+    outs = ["meshcat.ico"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "meshcat_js_genrule",
+    srcs = ["@meshcat//:dist/main.min.js"],
+    outs = ["meshcat.js"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "meshcat_resources",
+    srcs = [
+        "meshcat.html",
+        ":meshcat.ico",
+        ":meshcat.js",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+install_files(
+    name = "install_meshcat_resources",
+    dest = "share/drake/geometry",
+    files = [":meshcat_resources"],
+)
+
 drake_cc_library(
     name = "meshcat",
     srcs = ["meshcat.cc"],
     hdrs = ["meshcat.h"],
-    data = [
-        "meshcat.html",
-        "//doc:favicon",
-        "@meshcat//:dist/main.min.js",
-    ],
+    data = [":meshcat_resources"],
     deps = [
         ":meshcat_types",
         ":rgba",
@@ -374,12 +402,6 @@ drake_cc_library(
         "@stduuid",
         "@uwebsockets",
     ],
-)
-
-install_files(
-    name = "install_meshcat_html",
-    dest = "share/drake/geometry",
-    files = ["meshcat.html"],
 )
 
 drake_cc_binary(
@@ -660,7 +682,7 @@ install(
     name = "install",
     visibility = ["//visibility:public"],
     deps = [
-        ":install_meshcat_html",
+        ":install_meshcat_resources",
     ],
 )
 

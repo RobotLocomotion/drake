@@ -47,7 +47,6 @@ install(
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
-        "//doc:install",
         "//examples:install",
         "//geometry:install",
         "//lcmtypes:install",
