@@ -162,7 +162,9 @@ def parse_visualizers(args_parser, args):
         # Connect to Meshcat.
         if args.meshcat is not None:
             meshcat_viz = ConnectMeshcatVisualizer(
-                builder, scene_graph, zmq_url=args.meshcat)
+                builder, scene_graph, zmq_url=args.meshcat,
+                role=args.meshcat_role,
+                prefer_hydro=args.meshcat_hydroelastic)
 
         # Connect to PyPlot.
         if args.pyplot:
