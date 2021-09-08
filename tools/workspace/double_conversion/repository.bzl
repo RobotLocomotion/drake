@@ -20,6 +20,8 @@ def _impl(repository_ctx):
             "/usr/include/double-conversion",
             "include/double-conversion",
         )
+    elif os_result.is_manylinux:
+        build_flavor = "ubuntu"
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
