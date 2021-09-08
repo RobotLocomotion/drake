@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <tuple>
+#include <vector>
+
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
@@ -102,7 +106,7 @@ class Toppra {
    * Performs the forward pass step of TOPPRA, computing the greediest
    * acceleration at each gridpoint that remains within the controllable set.
    */
-  Eigen::VectorXd ComputeForwardPass(double s_dot_0, Eigen::MatrixXd& K);
+  Eigen::VectorXd ComputeForwardPass(double s_dot_0, const Eigen::MatrixXd& K);
 
   std::unique_ptr<solvers::MathematicalProgram> backward_prog_;
   solvers::VectorXDecisionVariable backward_vars_;
