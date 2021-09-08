@@ -12,7 +12,7 @@ grasped exerts a contact force with measure Fx on the robot's end-effector E
 (E is at the end of finger C).
 
 <p align="center">
-  <img src="RobotFingerPlanarMechanismSchematic.jpg" width="350" alt="Robotic finger">
+  <img src="RobotFingerPlanarMechanismSchematic.jpg" width="480" alt="Robotic finger">
 </p>
 
 1. One way to close the kinematic loop is to use a flexible bushing to

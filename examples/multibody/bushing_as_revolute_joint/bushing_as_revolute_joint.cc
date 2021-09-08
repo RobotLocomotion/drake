@@ -93,7 +93,8 @@ int do_main() {
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
   std::string file_name =
-      "drake/examples/multibody/bushing_as_revolute_joint/transmission.sdf";
+      "drake/examples/multibody/bushing_as_revolute_joint/"
+      "robot_finger_planar_mechanism.sdf";
   std::string full_name = FindResourceOrThrow(file_name);
   const auto& id = parser.AddModelFromFile(full_name, "gripper");
 
