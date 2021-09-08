@@ -133,4 +133,7 @@ config_setting(
     values = {"define": "NO_SCS=ON"},
 )
 
+# A stub for disabling coverage tools.
+filegroup(name = "dummy_filegroup")
+
 add_lint_tests()

@@ -104,9 +104,13 @@ import pydrake.all
         "--announce_rc",
         # Use "release engineering" options for hermeticity.
         "--nokeep_state_after_build",
-        # Nerf the coverage reporter to avoid downloading the entire JDK afresh
-        # from the internet every time we run this test.
+        # Avoid downloading an entire JDK afresh from the internet every time
+        # we run this test (N.B. these are copied from drake/tools/bazel.rc):
+        #  Use the local JDK.
+        "--host_javabase=@bazel_tools//tools/jdk:jdk",
+        #  Disable coverage tools.
         "--coverage_report_generator=//:dummy_filegroup",
+        "--coverage_support=//:dummy_filegroup",
         ])
 
 

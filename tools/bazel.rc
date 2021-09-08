@@ -14,6 +14,15 @@ build --force_pic
 build --strip=never
 build --strict_system_includes
 
+# Disable coverage tools, to reduce our downloaded dependencies.
+build --coverage_report_generator=//tools:dummy_filegroup
+build --coverage_support=//tools:dummy_filegroup
+
+# Always use the local JDK, not a remote JDK, even for host tools.
+# (Note that this is the spelling as of Bazel 4.x; as of Bazel 5.x, it
+# will be something more like --tool_java_runtime_version=local_jdk.)
+build --host_javabase=@bazel_tools//tools/jdk:jdk
+
 # Default test options.
 test --test_output=errors
 test --test_summary=terse
