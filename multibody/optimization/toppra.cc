@@ -1,5 +1,8 @@
 #include "drake/multibody/optimization/toppra.h"
 
+#include <algorithm>
+#include <limits>
+
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -230,7 +233,8 @@ Eigen::MatrixXd Toppra::ComputeBackwardPass(double s_dot_0, double s_dot_N) {
   return K;
 }
 
-Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0, Eigen::MatrixXd& K) {
+Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0,
+                                           const Eigen::MatrixXd& K) {
   const int N = gridpoints_.size() - 1;
   DRAKE_DEMAND(s_dot_0 >= 0);
   DRAKE_DEMAND(K.rows() == N + 1);

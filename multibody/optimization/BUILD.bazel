@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":static_equilibrium_problem",
         ":static_friction_cone_complementarity_constraint",
         ":static_friction_cone_constraint",
+        ":toppra",
     ],
 )
 
