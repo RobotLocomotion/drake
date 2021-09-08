@@ -41,6 +41,25 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 
+// TODO(SeanCurtis-TRI) When pybind issue 3019 gets resolved, we won't need to
+//  define this locally anymore. In fact, it will probably cause link errors.
+namespace pybind11 {
+namespace detail {
+template <>
+struct type_caster<std::monostate> {
+ public:
+  PYBIND11_TYPE_CASTER(std::monostate, _("None"));
+
+  bool load(handle src, bool) { return src.ptr() == Py_None; }
+
+  static handle cast(
+      std::monostate, return_value_policy /* policy */, handle /* parent */) {
+    Py_RETURN_NONE;
+  }
+};
+}  // namespace detail
+}  // namespace pybind11
+
 namespace drake {
 namespace pydrake {
 namespace {
@@ -499,6 +518,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPoseInFrame", &Class::GetPoseInFrame,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPoseInFrame.doc)
+        .def("maybe_get_hydroelastic_mesh", &Class::maybe_get_hydroelastic_mesh,
+            py::arg("geometry_id"), py_rvp::reference_internal,
+            cls_doc.maybe_get_hydroelastic_mesh.doc)
         .def("GetProperties", &Class::GetProperties, py_rvp::reference_internal,
             py::arg("geometry_id"), py::arg("role"), cls_doc.GetProperties.doc)
         .def("GetProximityProperties", &Class::GetProximityProperties,
