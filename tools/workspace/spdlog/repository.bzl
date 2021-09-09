@@ -17,6 +17,9 @@ def _impl(repo_ctx):
     if os_result.is_macos:
         # On macOS, we use spdlog from homebrew via pkg-config.
         error = setup_pkg_config_repository(repo_ctx).error
+    elif os_result.is_manylinux:
+        # Compile it from downloaded github sources.
+        error = setup_github_repository(repo_ctx).error
     elif os_result.ubuntu_release == "18.04":
         # On Ubuntu 18.04, the host-provided spdlog is way too old.  Instead,
         # we'll recompile it from downloaded github sources.
