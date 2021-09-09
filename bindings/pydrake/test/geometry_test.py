@@ -895,6 +895,86 @@ class TestGeometry(unittest.TestCase):
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
 
+    def test_surface_mesh(self):
+        # Create a mesh out of two triangles forming a quad.
+        #
+        #     0______1
+        #      |b  /|      Two faces: a and b.
+        #      |  / |      Four vertices: 0, 1, 2, and 3.
+        #      | /a |
+        #      |/___|
+        #     2      3
+
+        f_a = mut.SurfaceFace(v0=mut.SurfaceVertexIndex(3),
+                              v1=mut.SurfaceVertexIndex(1),
+                              v2=mut.SurfaceVertexIndex(2))
+        f_b = mut.SurfaceFace(v0=mut.SurfaceVertexIndex(2),
+                              v1=mut.SurfaceVertexIndex(1),
+                              v2=mut.SurfaceVertexIndex(0))
+        self.assertEqual(f_a.vertex(0), 3)
+        self.assertEqual(f_b.vertex(1), 1)
+
+        v0 = mut.SurfaceVertex((-1,  1, 0))
+        v1 = mut.SurfaceVertex((1,  1, 0))
+        v2 = mut.SurfaceVertex((-1, -1, 0))
+        v3 = mut.SurfaceVertex((1, -1, 0))
+
+        self.assertListEqual(list(v0.r_MV()), [-1, 1, 0])
+
+        mesh = mut.SurfaceMesh(faces=(f_a, f_b), vertices=(v0, v1, v2, v3))
+        self.assertEqual(len(mesh.faces()), 2)
+        self.assertEqual(len(mesh.vertices()), 4)
+        self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
+
+    def test_volume_mesh(self):
+        # Create a mesh out of two tetrahedra with a single, shared face
+        # (1, 2, 3).
+        #
+        #            +y
+        #            |
+        #            o v2
+        #            |
+        #       v4   | v1   v0
+        #    ───o────o─────o──  +x
+        #           /
+        #          /
+        #         o v3
+        #        /
+        #      +z
+
+        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(2),
+                                   v1=mut.VolumeVertexIndex(1),
+                                   v2=mut.VolumeVertexIndex(3),
+                                   v3=mut.VolumeVertexIndex(4))
+        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(3),
+                                    v1=mut.VolumeVertexIndex(1),
+                                    v2=mut.VolumeVertexIndex(2),
+                                    v3=mut.VolumeVertexIndex(0))
+        self.assertEqual(t_left.vertex(0), 2)
+        self.assertEqual(t_right.vertex(1), 1)
+
+        v0 = mut.VolumeVertex((1, 0,  0))
+        v1 = mut.VolumeVertex((0, 0,  0))
+        v2 = mut.VolumeVertex((0, 1,  0))
+        v3 = mut.VolumeVertex((0, 0, 1))
+        v4 = mut.VolumeVertex((-1, 0,  0))
+
+        self.assertListEqual(list(v0.r_MV()), [1, 0, 0])
+
+        mesh = mut.VolumeMesh(elements=(t_left, t_right),
+                              vertices=(v0, v1, v2, v3, v4))
+
+        self.assertEqual(len(mesh.tetrahedra()), 2)
+        self.assertIsInstance(mesh.tetrahedra()[0], mut.VolumeElement)
+        self.assertEqual(len(mesh.vertices()), 5)
+        self.assertIsInstance(mesh.vertices()[0], mut.VolumeVertex)
+
+        self.assertAlmostEqual(
+            mesh.CalcTetrahedronVolume(e=mut.VolumeElementIndex(1)),
+            1/6.0,
+            delta=1e-15)
+        self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)
+
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
         mesh = mut.ReadObjToSurfaceMesh(mesh_path)
