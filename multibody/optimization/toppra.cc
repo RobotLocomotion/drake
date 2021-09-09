@@ -11,24 +11,23 @@ namespace multibody {
 using trajectories::PiecewisePolynomial;
 
 Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
-                            double max_err, int max_iter, double max_seg_length,
-                            int min_points) {
+                            const CalcGridPointsOptions& options) {
   std::vector<double> gridpts{path.start_time(), path.end_time()};
-  for (int iter = 0; iter < max_iter; iter++) {
+  for (int iter = 0; iter < options.max_iter; iter++) {
     bool add_points{false};
     for (size_t ii = 0; ii < gridpts.size() - 1; ii++) {
-      double mid_pt{0.5 * (gridpts[ii] + gridpts[ii + 1])};
-      double dist{gridpts[ii + 1] - gridpts[ii]};
-      if (dist > max_seg_length) {
+      const double mid_pt = 0.5 * (gridpts[ii] + gridpts[ii + 1]);
+      const double dist = gridpts[ii + 1] - gridpts[ii];
+      if (dist > options.max_seg_length) {
         add_points = true;
         gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
         ii++;
         continue;
       }
 
-      double error{0.5 * std::pow(dist, 2) *
-                   path.EvalDerivative(mid_pt, 2).cwiseAbs().maxCoeff()};
-      if (error > max_err) {
+      const double error = 0.5 * std::pow(dist, 2) *
+                   path.EvalDerivative(mid_pt, 2).cwiseAbs().maxCoeff();
+      if (error > options.max_err) {
         add_points = true;
         gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
         ii++;
@@ -39,9 +38,9 @@ Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
       break;
     }
   }
-  while (gridpts.size() < static_cast<size_t>(min_points)) {
+  while (gridpts.size() < static_cast<size_t>(options.min_points)) {
     for (size_t ii = 0; ii < gridpts.size() - 1; ii += 2) {
-      double mid_pt{0.5 * (gridpts[ii] + gridpts[ii + 1])};
+      const double mid_pt = 0.5 * (gridpts[ii] + gridpts[ii + 1]);
       gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
     }
   }
@@ -73,6 +72,11 @@ Toppra::Toppra(const PiecewisePolynomial<double>& path,
       gridpoints_{gridpoints} {
   DRAKE_DEMAND(gridpoints(0) == path.start_time());
   DRAKE_DEMAND(gridpoints(gridpoints.size() - 1) == path.end_time());
+  for (int ii = 0; ii < gridpoints.size() - 1; ii++) {
+    if (gridpoints(ii + 1) <= gridpoints(ii)) {
+      throw std::runtime_error("Gridpoints must be monotonically increasing.");
+    }
+  }
 }
 
 Toppra::ToppraBoundingBoxConstraint& Toppra::AddJointVelocityLimit(
@@ -269,7 +273,7 @@ PiecewisePolynomial<double> Toppra::Solve() {
 
   Eigen::VectorXd t_knots(gridpoints_.size());
   Eigen::MatrixXd q_knots(path_.rows(), gridpoints_.size());
-  t_knots(0) = 0;
+  t_knots(0) = path_.start_time();
   q_knots.col(0) = path_.value(gridpoints_(0));
   for (int knot = 1; knot < t_knots.size(); knot++) {
     double delta = gridpoints_(knot) - gridpoints_(knot - 1);
