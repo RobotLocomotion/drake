@@ -7,7 +7,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
@@ -222,28 +221,6 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   EXPECT_TRUE(fixed_gradients.isZero(0.));
 }
 
-GTEST_TEST(GetDerivativeSize, Test) {
-  // Empty gradient.
-  EXPECT_EQ(GetDerivativeSize(Eigen::Vector2d(1, 2).cast<AutoDiffXd>()), 0);
-  // Non-empty gradient.
-  EXPECT_EQ(GetDerivativeSize(initializeAutoDiffGivenGradientMatrix(
-                Eigen::Vector2d(1, 2), Eigen::Matrix<double, 2, 3>::Ones())),
-            3);
-  // Some derivatives have empty size.
-  Eigen::Matrix<AutoDiffXd, 3, 1> x;
-  x(0).value() = 0;
-  x(0).derivatives() = Eigen::VectorXd(0);
-  x(1).value() = 1;
-  x(1).derivatives() = Eigen::Vector4d::Ones();
-  x(2).value() = 2;
-  x(2).derivatives() = Eigen::VectorXd::Ones(4);
-  EXPECT_EQ(GetDerivativeSize(x), 4);
-
-  // Inconsistent derivative size.
-  x(2).derivatives() = Eigen::VectorXd::Ones(3);
-  DRAKE_EXPECT_THROWS_MESSAGE(GetDerivativeSize(x),
-                              ".* has size 3, while another entry has size 4");
-}
 }  // namespace
 }  // namespace math
 }  // namespace drake
