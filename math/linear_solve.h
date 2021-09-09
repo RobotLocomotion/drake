@@ -258,6 +258,35 @@ LinearSolve(const LinearSolver& linear_solver,
 
 //@}
 
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+typename std::enable_if<
+    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    LinearSolverType<
+        Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                      DerivedA::ColsAtCompileTime>>>::type
+GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
+  const LinearSolverType<
+      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                    DerivedA::ColsAtCompileTime>>
+      linear_solver(A);
+  return linear_solver;
+}
+
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+typename std::enable_if<
+    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                   DerivedA::ColsAtCompileTime>>>::type
+GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
+  using A_VAL_TYPE = Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                   DerivedA::ColsAtCompileTime>;
+  const A_VAL_TYPE A_val = autoDiffToValueMatrix(A);
+  const LinearSolverType<A_VAL_TYPE> linear_solver(A_val);
+  return linear_solver;
+}
+
 /**
  * @anchor linear_solve
  * @name solve linear system of equations
@@ -331,10 +360,7 @@ typename std::enable_if<
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
             const Eigen::MatrixBase<DerivedB>& b) {
-  const LinearSolverType<
-      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                    DerivedA::ColsAtCompileTime>>
-      linear_solver(A);
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return LinearSolve(linear_solver, A, b);
 }
 
@@ -351,9 +377,7 @@ typename std::enable_if<
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
             const Eigen::MatrixBase<DerivedB>& b) {
-  const LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                       DerivedA::ColsAtCompileTime>>
-      linear_solver(A);
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return LinearSolve(linear_solver, A, b);
 }
 
@@ -369,9 +393,7 @@ typename std::enable_if<
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
             const Eigen::MatrixBase<DerivedB>& b) {
-  const LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                       DerivedA::ColsAtCompileTime>>
-      linear_solver(autoDiffToValueMatrix(A));
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return LinearSolve(linear_solver, A, b);
 }
 //@}
