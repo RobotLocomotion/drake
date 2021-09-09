@@ -151,7 +151,7 @@ def determine_os(repository_ctx):
     versions we are targeting.
 
     Note that even if the operating system hosting the build is Ubuntu, the
-    target OS might be "manylinux", which means that we only the most basic
+    target OS might be "manylinux", which means that we only use the most basic
     host packages from Ubuntu (libc, libstdc++, etc.).  In that case, the
     value of is_ubuntu will be False.
 
