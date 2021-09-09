@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include <eigen3/Eigen/src/LU/PartialPivLU.h>
-#include <eigen3/Eigen/src/QR/ColPivHouseholderQR.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
