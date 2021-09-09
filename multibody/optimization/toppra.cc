@@ -51,7 +51,7 @@ Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
 
 Toppra::Toppra(const PiecewisePolynomial<double>& path,
                const MultibodyPlant<double>& plant,
-               const Eigen::VectorXd& gridpoints)
+               const Eigen::Ref<const Eigen::VectorXd>& gridpoints)
     : backward_prog_{new solvers::MathematicalProgram()},
       // Variables for the backward pass are [x, u]
       backward_vars_{backward_prog_->NewContinuousVariables(2)},
@@ -153,17 +153,6 @@ Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
   lin_constraint_coeff_.emplace_back(con_A, con_lb, con_ub);
   return lin_constraint_coeff_.back();
 }
-
-// ToppraLinearConstraint Toppra::AddJointTorqueLimit(
-//     const Eigen::VectorXd& lower_limit, const Eigen::VectorXd upper_limit);
-
-// ToppraBoundingBoxConstraint Toppra::AddFrameVelocityLimit(
-//     const Frame<double>& constraint_frame, const Eigen::VectorXd&
-//     lower_limit, const Eigen::VectorXd upper_limit);
-
-// ToppraLinearConstraint Toppra::AddFrameAccelerationLimit(
-//     const Frame<double>& constraint_frame, const Eigen::VectorXd&
-//     lower_limit, const Eigen::VectorXd upper_limit);
 
 Eigen::MatrixXd Toppra::ComputeBackwardPass(double s_dot_0, double s_dot_N) {
   DRAKE_DEMAND(s_dot_0 >= 0);

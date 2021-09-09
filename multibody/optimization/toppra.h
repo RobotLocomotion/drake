@@ -51,7 +51,7 @@ class Toppra {
    */
   explicit Toppra(const PiecewisePolynomial<double>& path,
                   const MultibodyPlant<double>& plant,
-                  const Eigen::VectorXd& gridpoints);
+                  const Eigen::Ref<const Eigen::VectorXd>& gridpoints);
 
   /**
    * Takes a path and generates a sequence of gridpoints selected to control
@@ -81,19 +81,6 @@ class Toppra {
       const Eigen::VectorXd& lower_limit, const Eigen::VectorXd upper_limit,
       ToppraDiscretization discretization =
           ToppraDiscretization::kInterpolation);
-
-  // ToppraLinearConstraint& AddJointTorqueLimit(const Eigen::VectorXd&
-  // lower_limit,
-  //                                            const Eigen::VectorXd
-  //                                            upper_limit);
-
-  // ToppraBoundingBoxConstraint& AddFrameVelocityLimit(
-  //     const Frame<double>& constraint_frame, const Eigen::VectorXd&
-  //     lower_limit, const Eigen::VectorXd upper_limit);
-
-  // ToppraLinearConstraint& AddFrameAccelerationLimit(
-  //     const Frame<double>& constraint_frame, const Eigen::VectorXd&
-  //     lower_limit, const Eigen::VectorXd upper_limit);
 
  private:
   /**
