@@ -31,6 +31,7 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
@@ -1030,6 +1031,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("r_MV", &Class::r_MV, py_rvp::reference_internal,
             doc.VolumeVertex.r_MV.doc);
   }
+
+  m.def("ConvertVolumeToSurfaceMesh", &ConvertVolumeToSurfaceMesh<T>,
+      py::arg("volume"), doc.ConvertVolumeToSurfaceMesh.doc);
 }  // NOLINT(readability/fn_size)
 
 void DoScalarIndependentDefinitions(py::module m) {
