@@ -245,7 +245,7 @@ TEST_F(DeformableRigidManagerTest, RegisterCollisionGeometry) {
   get_collision_geometry(&id);
   /* Verify the surface mesh is as expected. */
   const SurfaceMesh<double> expected_surface_mesh =
-      geometry::internal::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
+      geometry::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects.mesh(id)));
   /* Verify proximity property is as expected. */
   const CoulombFriction<double> mu = collision_objects.proximity_properties(id)

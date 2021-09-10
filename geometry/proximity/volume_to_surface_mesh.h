@@ -1,8 +1,6 @@
 #pragma once
 
 #include <array>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "drake/geometry/proximity/surface_mesh.h"
@@ -37,8 +35,9 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
 std::vector<VolumeVertexIndex> CollectUniqueVertices(
     const std::vector<std::array<VolumeVertexIndex, 3>>& faces);
 
-/*
- Converts a tetrahedral volume mesh to a triangulated surface mesh of the
+}  // namespace internal
+
+/** Converts a tetrahedral volume mesh to a triangulated surface mesh of the
  boundary surface of the volume.
  @param volume  The tetrahedral volume mesh, whose vertex positions are
                 measured and expressed in some frame E.
@@ -49,36 +48,9 @@ std::vector<VolumeVertexIndex> CollectUniqueVertices(
                 vertices with the same coordinates. Otherwise, the returned
                 surface mesh will have extra triangles in addition to the
                 boundary triangles of the volume.
- @tparam T      The underlying scalar type for coordinates, e.g., double
-                or AutoDiffXd. Must be a valid Eigen scalar.
- */
+ @tparam_nonsymbolic_scalar */
 template <class T>
-SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
-  const std::vector<std::array<VolumeVertexIndex, 3>> boundary_faces =
-      IdentifyBoundaryFaces(volume.tetrahedra());
+SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
 
-  const std::vector<VolumeVertexIndex> boundary_vertices =
-      CollectUniqueVertices(boundary_faces);
-
-  std::vector<SurfaceVertex<T>> surface_vertices;
-  surface_vertices.reserve(boundary_vertices.size());
-  std::unordered_map<VolumeVertexIndex, SurfaceVertexIndex> volume_to_surface;
-  for (SurfaceVertexIndex i(0); i < boundary_vertices.size(); ++i) {
-    surface_vertices.emplace_back(volume.vertex(boundary_vertices[i]).r_MV());
-    volume_to_surface.emplace(boundary_vertices[i], i);
-  }
-
-  std::vector<SurfaceFace> surface_faces;
-  surface_faces.reserve(boundary_faces.size());
-  for (const auto& face_vertices : boundary_faces) {
-    surface_faces.emplace_back(volume_to_surface.at(face_vertices[0]),
-                               volume_to_surface.at(face_vertices[1]),
-                               volume_to_surface.at(face_vertices[2]));
-  }
-
-  return SurfaceMesh<T>(std::move(surface_faces), std::move(surface_vertices));
-}
-
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
