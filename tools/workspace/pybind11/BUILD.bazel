@@ -15,7 +15,10 @@ load(
 )
 
 exports_files(
-    ["package-create-cps.py"],
+    [
+        "pybind11-config.cmake",
+        "pybind11-config-version.cmake",
+    ],
     visibility = ["@pybind11//:__pkg__"],
 )
 
