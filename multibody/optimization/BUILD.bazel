@@ -272,4 +272,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "toppra_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":toppra",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
 add_lint_tests()

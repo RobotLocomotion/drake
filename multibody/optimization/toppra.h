@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <vector>
 
@@ -101,9 +102,13 @@ class Toppra {
                                      const CalcGridPointsOptions& options);
 
   /**
-   * Solves the toppra optimization. Resulting piecewisepoly starts at path start time.
+   * Solves the toppra optimization and returns the time optimized trajectory.
+   * Resulting trajectory has the same start time as the original path.
+   * @note The trajectory may not perfectly follow the original path due to
+   * refitting a piecewise cubic but will pass through the points defined by the
+   * gridpoints.
    */
-  PiecewisePolynomial<double> Solve();
+  std::optional<PiecewisePolynomial<double>> Solve();
 
   /**
    * Adds a constant velocity limit to all the degrees of freedom in the plant.
@@ -112,7 +117,8 @@ class Toppra {
    * @param upper_limit The upper velocity limit for each degree of freedom.
    */
   ToppraBoundingBoxConstraint& AddJointVelocityLimit(
-      const Eigen::VectorXd& lower_limit, const Eigen::VectorXd upper_limit);
+      const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_limit);
 
   /**
    * Adds a constant acceleration limit to all the degrees of freedom in the
@@ -124,29 +130,32 @@ class Toppra {
    *                       constraint. See ToppraDiscretization for details.
    */
   ToppraLinearConstraint& AddJointAccelerationLimit(
-      const Eigen::VectorXd& lower_limit, const Eigen::VectorXd upper_limit,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
       ToppraDiscretization discretization =
           ToppraDiscretization::kInterpolation);
 
  private:
   /**
    * Performs the backward pass step of TOPPRA, returning the controllable set
-   * at each gridpoint.
+   * at each gridpoint. The rows are respectively the lower and upper bound for
+   * the path velocity at each knot point.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param s_dot_N The path velocity at the end of the path.
    */
-  Eigen::MatrixXd ComputeBackwardPass(double s_dot_0, double s_dot_N);
+  std::optional<Eigen::Matrix2Xd> ComputeBackwardPass(double s_dot_0,
+                                                      double s_dot_N);
 
   /**
    * Performs the forward pass step of TOPPRA, computing the greediest
    * acceleration at each gridpoint that remains within the controllable set.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param K The controllable set that the path velocity must stay within at
-   *          each gridpoint. Each row consists of the lower and upper bound
+   *          each gridpoint. Each column consists of the lower and upper bound
    *          for the path velocity and there must be gridpoint.size() number of
-   *          rows.
+   *          columns.
    */
-  Eigen::VectorXd ComputeForwardPass(double s_dot_0, const Eigen::MatrixXd& K);
+  Eigen::VectorXd ComputeForwardPass(double s_dot_0, const Eigen::Matrix2Xd& K);
 
   std::unique_ptr<solvers::MathematicalProgram> backward_prog_;
   solvers::VectorXDecisionVariable backward_vars_;
