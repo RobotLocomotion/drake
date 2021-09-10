@@ -10,8 +10,8 @@ namespace multibody {
 
 using trajectories::PiecewisePolynomial;
 
-Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
-                            const CalcGridPointsOptions& options) {
+Eigen::VectorXd Toppra::CalcGridpts(const PiecewisePolynomial<double>& path,
+                                    const CalcGridPointsOptions& options) {
   std::vector<double> gridpts{path.start_time(), path.end_time()};
   for (int iter = 0; iter < options.max_iter; iter++) {
     bool add_points{false};
@@ -26,7 +26,7 @@ Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
       }
 
       const double error = 0.5 * std::pow(dist, 2) *
-                   path.EvalDerivative(mid_pt, 2).cwiseAbs().maxCoeff();
+                           path.EvalDerivative(mid_pt, 2).cwiseAbs().maxCoeff();
       if (error > options.max_err) {
         add_points = true;
         gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
@@ -80,7 +80,8 @@ Toppra::Toppra(const PiecewisePolynomial<double>& path,
 }
 
 Toppra::ToppraBoundingBoxConstraint& Toppra::AddJointVelocityLimit(
-    const Eigen::VectorXd& lower_limit, const Eigen::VectorXd upper_limit) {
+    const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+    const Eigen::Ref<const Eigen::VectorXd>& upper_limit) {
   const int N = gridpoints_.size() - 1;
   const int n_dof = path_.rows();
   DRAKE_DEMAND(lower_limit.size() == n_dof);
@@ -112,7 +113,8 @@ Toppra::ToppraBoundingBoxConstraint& Toppra::AddJointVelocityLimit(
 }
 
 Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
-    const Eigen::VectorXd& lower_limit, const Eigen::VectorXd upper_limit,
+    const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+    const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
     ToppraDiscretization discretization) {
   const int N = gridpoints_.size() - 1;
   const int n_dof = path_.rows();
@@ -158,7 +160,8 @@ Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
   return lin_constraint_coeff_.back();
 }
 
-Eigen::MatrixXd Toppra::ComputeBackwardPass(double s_dot_0, double s_dot_N) {
+std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
+                                                            double s_dot_N) {
   DRAKE_DEMAND(s_dot_0 >= 0);
   DRAKE_DEMAND(s_dot_N >= 0);
   Eigen::Vector2d min_cost_A(1, 1e-9);
@@ -166,15 +169,15 @@ Eigen::MatrixXd Toppra::ComputeBackwardPass(double s_dot_0, double s_dot_N) {
   const int N = gridpoints_.size() - 1;
 
   // Compute controllable set.
-  Eigen::MatrixXd K(N + 1, 2);
-  K.row(N) << std::pow(s_dot_N, 2), std::pow(s_dot_N, 2);
+  Eigen::Matrix2Xd K(2, N + 1);
+  K.col(N) << std::pow(s_dot_N, 2), std::pow(s_dot_N, 2);
   // Setup and solve sequence of one-step problems
   for (int knot = N - 1; knot > -1; knot--) {
     // Setup constraints for both max & min
     double delta = gridpoints_(knot + 1) - gridpoints_(knot);
     backward_continuity_con_.evaluator()->UpdateCoefficients(
-        Eigen::Vector2d(1, 2 * delta).transpose(), K.block(knot + 1, 0, 1, 1),
-        K.block(knot + 1, 1, 1, 1));
+        Eigen::Vector2d(1, 2 * delta).transpose(), K.block(0, knot + 1, 1, 1),
+        K.block(1, knot + 1, 1, 1));
     for (size_t bb_con = 0; bb_con < bb_constraint_coeff_.size(); bb_con++) {
       Eigen::VectorXd lb, ub;
       std::tie(lb, ub) = bb_constraint_coeff_[bb_con];
@@ -192,46 +195,47 @@ Eigen::MatrixXd Toppra::ComputeBackwardPass(double s_dot_0, double s_dot_N) {
     {
       backward_cost_.evaluator()->UpdateCoefficients(min_cost_A);
       auto result = solvers::Solve(*backward_prog_);
-      K(knot, 0) = result.GetSolution()(0);
+      K(0, knot) = result.GetSolution()(0);
     }
     // Solve maximum
     {
       backward_cost_.evaluator()->UpdateCoefficients(max_cost_A);
       auto result = solvers::Solve(*backward_prog_);
-      K(knot, 1) = result.GetSolution()(0);
+      K(1, knot) = result.GetSolution()(0);
     }
 
-    if (K.row(knot).hasNaN()) {
-      throw std::runtime_error(
+    if (K.col(knot).hasNaN()) {
+      drake::log()->error(
           fmt::format("Toppra hit numerical issues. Controllable set "
                       "at knot {}/{} "
                       "can't be computed.",
                       knot, N));
+      return std::nullopt;
     }
-    if (K(knot, 0) < 0) {
-      K(knot, 0) = 0;
+    if (K(0, knot) < 0) {
+      K(0, knot) = 0;
     }
   }
 
   // Check problem is controllable
   double x_start = std::pow(s_dot_0, 2);
   double eps = 1e-8;
-  if (x_start < K(0, 0) - eps || x_start > K(0, 1) + eps) {
-    throw std::runtime_error(fmt::format(
+  if (x_start < K(0, 0) - eps || x_start > K(1, 0) + eps) {
+    drake::log()->error(fmt::format(
         "ToppraSolver: Initial velocity not controllable. {} not in "
         "({}, {}).",
-        x_start, K(0, 0), K(0, 1)));
+        x_start, K(0, 0), K(1, 0)));
+    return std::nullopt;
   }
 
   return K;
 }
 
 Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0,
-                                           const Eigen::MatrixXd& K) {
+                                           const Eigen::Matrix2Xd& K) {
   const int N = gridpoints_.size() - 1;
   DRAKE_DEMAND(s_dot_0 >= 0);
-  DRAKE_DEMAND(K.rows() == N + 1);
-  DRAKE_DEMAND(K.cols() == 2);
+  DRAKE_DEMAND(K.cols() == N + 1);
 
   // Compute controls greedily.
   Eigen::VectorXd xstar(N + 1);
@@ -239,9 +243,9 @@ Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0,
   xstar(0) = std::pow(s_dot_0, 2);
   for (int knot = 0; knot < N; knot++) {
     double delta = gridpoints_(knot + 1) - gridpoints_(knot);
-    backward_continuity_con_.evaluator()->UpdateCoefficients(
-        Vector1d(2 * delta), Vector1d(K(knot + 1, 0) - xstar(knot)),
-        Vector1d(K(knot + 1, 1) - xstar(knot)));
+    forward_continuity_con_.evaluator()->UpdateCoefficients(
+        Vector1d(2 * delta), Vector1d(K(0, knot + 1) - xstar(knot)),
+        Vector1d(K(1, knot + 1) - xstar(knot)));
     for (size_t lin_con = 0; lin_con < lin_constraint_coeff_.size();
          lin_con++) {
       Eigen::MatrixXd A, lb, ub;
@@ -254,21 +258,25 @@ Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0,
     ustar(knot) = result.GetSolution()(0);
     double xnext = xstar(knot) + 2 * delta * ustar(knot);
     xnext *= 0.99;
-    xstar(knot + 1) = std::max(K(knot + 1, 0), std::min(K(knot + 1, 1), xnext));
+    xstar(knot + 1) = std::max(K(0, knot + 1), std::min(K(1, knot + 1), xnext));
   }
 
   return xstar;
 }
 
-PiecewisePolynomial<double> Toppra::Solve() {
+std::optional<PiecewisePolynomial<double>> Toppra::Solve() {
   double s_dot_0 = 0;
   double s_dot_N = 0;
 
-  Eigen::MatrixXd K = ComputeBackwardPass(s_dot_0, s_dot_N);
-  Eigen::VectorXd x_star = ComputeForwardPass(s_dot_0, K);
+  std::optional<Eigen::Matrix2Xd> K = ComputeBackwardPass(s_dot_0, s_dot_N);
+  if (!K) {  // Error ocurred in backpass, return nothing
+    return std::nullopt;
+  }
+  Eigen::VectorXd x_star = ComputeForwardPass(s_dot_0, K.value());
   Eigen::VectorXd sd_knots = x_star.cwiseSqrt();
   if (sd_knots.hasNaN()) {
-    throw std::runtime_error("Toppra hit numerical issues. Found NaN sdot.");
+    drake::log()->error("Toppra hit numerical issues. Found NaN sdot.");
+    return std::nullopt;
   }
 
   Eigen::VectorXd t_knots(gridpoints_.size());
