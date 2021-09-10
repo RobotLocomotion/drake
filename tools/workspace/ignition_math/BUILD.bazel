@@ -3,7 +3,10 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(
-    ["package-create-cps.py"],
+    [
+        "ignition-math6-config.cmake",
+        "ignition-math6-config-version.cmake",
+    ],
     visibility = ["@ignition_math//:__pkg__"],
 )
 

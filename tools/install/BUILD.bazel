@@ -10,12 +10,6 @@ load(
 )
 
 py_library(
-    name = "cpsutils",
-    srcs = ["cpsutils.py"],
-    deps = ["@pycps//:cps"],
-)
-
-py_library(
     name = "install_test_helper",
     testonly = 1,
     srcs = ["install_test_helper.py"],

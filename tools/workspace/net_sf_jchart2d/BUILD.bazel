@@ -2,7 +2,6 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
     "install_cmake_config",
 )
@@ -11,11 +10,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 CMAKE_PACKAGE = "jchart2d"
-
-cmake_config(
-    cps_file_name = "package.cps",
-    package = CMAKE_PACKAGE,
-)
 
 install_cmake_config(package = CMAKE_PACKAGE)
 

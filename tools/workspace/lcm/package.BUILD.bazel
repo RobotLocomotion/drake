@@ -8,9 +8,7 @@ load(
 )
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
     "install_files",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
@@ -276,20 +274,17 @@ drake_java_binary(
 
 CMAKE_PACKAGE = "lcm"
 
-cmake_config(
-    package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/lcm:package-create-cps.py",
-    version_file = "lcm/lcm_version.h",
-)
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = CMAKE_PACKAGE)
-
 install_files(
-    name = "install_extra_cmake",
-    dest = "lib/cmake/lcm",
-    files = ["lcm-cmake/lcmUtilities.cmake"],
+    name = "install_cmake_config",
+    dest = "lib/cmake/{}".format(CMAKE_PACKAGE),
+    files = [
+        "lcm-cmake/lcmUtilities.cmake",
+        "@drake//tools/workspace/lcm:{}-config.cmake".format(CMAKE_PACKAGE),  # noqa
+        "@drake//tools/workspace/lcm:{}-config-version.cmake".format(CMAKE_PACKAGE),  # noqa
+    ],
     strip_prefix = ["**/"],
+    allowed_externals = ["@drake//:.bazelproject"],
+    visibility = ["//visibility:private"],
 )
 
 install(
@@ -333,7 +328,6 @@ install(
     },
     deps = [
         ":install_cmake_config",
-        ":install_extra_cmake",
         ":install_python",
     ],
 )
