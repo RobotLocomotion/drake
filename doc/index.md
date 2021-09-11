@@ -35,11 +35,11 @@ purpose of the front page (HTML for layout, Markdown for content).
     <div class="grid grid-3col">
       <div class="core-el">
         <h4>Modeling Dynamical<br> Systems</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/dynamical_systems.ipynb" target="_blank">TUTORIAL</a>
+        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?urlpath=/tree/tutorials/dynamical_systems.ipynb&" target="_blank">TUTORIAL</a>
       </div>
       <div class="core-el">
         <h4>Solving Mathematical<br> Programs</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/mathematical_program.ipynb" target="_blank">TUTORIAL</a>
+        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?urlpath=/tree/tutorials/mathematical_program.ipynb" target="_blank">TUTORIAL</a>
       </div>
       <div class="core-el">
         <h4>Multibody Kinematics<br> and Dynamics</h4>
@@ -105,7 +105,7 @@ notebooks online with no need for local installation. You can use Binder to
 preview and execute the notebooks (but startup time may be long), or you can
 use nbviewer to only preview the notebook (where startup time is fast):
 
-<a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials">
+<a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials">
   <img src="https://mybinder.org/badge_logo.svg"/>
 </a>
 <a target="_doc" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/">

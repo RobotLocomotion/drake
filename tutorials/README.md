@@ -22,7 +22,7 @@ The notebooks in this folder can be run and quickly viewed online using
 
 To run or quickly view them from the Drake `nightly-release-binder` branch on GitHub:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials)
 [![nbviewer](https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg)](https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/)
 
 Since Binder uses the `robotlocomotion/drake:latest` image on
@@ -61,4 +61,4 @@ link to the directory on your fork and branch, e.g.,
 
 If appropriate, add a Binder link to the notebook (in the `nightly-release-binder`
 branch) in the relevant documentation in `/doc`, e.g.,
-`https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials/{notebook}.ipynb`
+`https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?urlpath=/tree/tutorials/{notebook}.ipynb`
