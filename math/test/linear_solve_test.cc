@@ -322,15 +322,17 @@ void CheckGetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
                        double>,
         "The scalar type should be double");
   }
-  static_assert(decltype(linear_solver)::MatrixType::RowsAtCompileTime == 2,
-                /* Not sure why, but if I use DerivedA::RowsAtCompileTime, and
-                   DerivedA is Eigen::Matrix<AutoDiffXd, 2, 2>, then the
-                   compiler throws error on comparing enum */
-                // DerivedA::RowsAtCompileTime,
-                "The matrix rows don't match");
-  static_assert(decltype(linear_solver)::MatrixType::ColsAtCompileTime == 2,
-                // DerivedA::ColsAtCompileTime,
-                "The matrix rows don't match");
+
+  // Cast away the enum types of the matrix metrics so we can compare without
+  // compiler warnings.
+  static constexpr int RowsSolver =
+      static_cast<int>(decltype(linear_solver)::MatrixType::RowsAtCompileTime);
+  static constexpr int RowsA = static_cast<int>(DerivedA::RowsAtCompileTime);
+  static_assert(RowsSolver == RowsA, "The matrix rows don't match");
+  static constexpr int ColsSolver =
+      static_cast<int>(decltype(linear_solver)::MatrixType::ColsAtCompileTime);
+  static constexpr int ColsA = static_cast<int>(DerivedA::ColsAtCompileTime);
+  static_assert(ColsSolver == ColsA, "The matrix rows don't match");
 }
 
 TEST_F(LinearSolveTest, GetLinearSolver) {
