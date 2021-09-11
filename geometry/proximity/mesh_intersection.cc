@@ -12,10 +12,13 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh_to_obj.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 
@@ -408,6 +411,19 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation) {
+  WriteVolumeMeshFieldLinearToVtk(
+      "field_S.vtk", field_S, "compliant_tetrahedral_mesh_with_pressure_field");
+  {
+    SurfaceMesh<double> surface_mesh_of_volume_mesh_of_compliant_field_S =
+        ConvertVolumeToSurfaceMesh(field_S.mesh());
+    WriteSurfaceMeshToObj(
+        "surface_mesh_of_volume_mesh_of_compliant_field_S.obj",
+        surface_mesh_of_volume_mesh_of_compliant_field_S);
+  }
+  WriteSurfaceMeshToVtk("mesh_R.vtk", mesh_R, "rigid_triangulated_mesh");
+  WriteSurfaceMeshToObj("mesh_R.obj", mesh_R);
+  exit(0);
+
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
   //  scalar, and the mesh vertex-position scalar. However, short term, it is
