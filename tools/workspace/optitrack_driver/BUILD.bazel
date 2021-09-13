@@ -2,7 +2,6 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
     "install_cmake_config",
     "install_files",
@@ -19,14 +18,9 @@ install_files(
 
 CMAKE_PACKAGE = "optitrack"
 
-cmake_config(
-    cps_file_name = "package.cps",
-    package = CMAKE_PACKAGE,
-)
-
 install_cmake_config(
     package = CMAKE_PACKAGE,
-    versioned = 0,
+    versioned = False,
 )
 
 OPTITRACK_LICENSE_DOCS = ["@optitrack_driver//:LICENSE"]
