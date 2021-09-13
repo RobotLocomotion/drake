@@ -109,6 +109,15 @@ class DeformableRigidManager final
     }
   };
 
+  template <typename Scalar, int Options = 0, typename StorageIndex = int>
+  /* Wrapper around Eigen::SparseMatrix to avoid non-type template parameters
+   that trigger typename hasher to spew warning messages to the console in a
+   simulation. */
+  struct EigenSparseMatrix {
+    using NonTypeTemplateParameter = std::integral_constant<int, Options>;
+    Eigen::SparseMatrix<Scalar, Options, StorageIndex> data;
+  };
+
   friend class DeformableRigidManagerTest;
   friend class DeformableRigidContactDataTest;
   friend class DeformableRigidDynamicsDataTest;
@@ -230,14 +239,15 @@ class DeformableRigidManager final
       const systems::Context<T>& context, DeformableBodyIndex index) const {
     return this->plant()
         .get_cache_entry(tangent_matrix_cache_indexes_[index])
-        .template Eval<Eigen::SparseMatrix<T>>(context);
+        .template Eval<EigenSparseMatrix<T>>(context)
+        .data;
   }
 
   /* Calculates the tangent matrix of the deformable body with the given `index`
    at free motion state. */
-  void CalcFreeMotionTangentMatrix(
-      const systems::Context<T>& context, DeformableBodyIndex index,
-      Eigen::SparseMatrix<T>* tangent_matrix) const;
+  void CalcFreeMotionTangentMatrix(const systems::Context<T>& context,
+                                   DeformableBodyIndex index,
+                                   EigenSparseMatrix<T>* tangent_matrix) const;
 
   /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
   const internal::SchurComplement<T>&
