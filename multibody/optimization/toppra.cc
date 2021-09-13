@@ -81,6 +81,7 @@ Toppra::Toppra(const PiecewisePolynomial<double>& path,
   DRAKE_DEMAND(gridpoints(0) == path.start_time());
   DRAKE_DEMAND(gridpoints(gridpoints.size() - 1) == path.end_time());
   DRAKE_DEMAND(path.rows() == plant.num_positions());
+  unused(plant_);
   for (int ii = 0; ii < gridpoints.size() - 1; ii++) {
     if (gridpoints(ii + 1) <= gridpoints(ii)) {
       throw std::runtime_error("Gridpoints must be monotonically increasing.");
