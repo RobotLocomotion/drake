@@ -981,6 +981,30 @@ class TestGeometry(unittest.TestCase):
             delta=1e-15)
         self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)
 
+    def test_convert_volume_to_surface_mesh(self):
+        # Use the volume mesh from `test_volume_mesh()`.
+        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
+                                   v1=mut.VolumeVertexIndex(2),
+                                   v2=mut.VolumeVertexIndex(3),
+                                   v3=mut.VolumeVertexIndex(4))
+        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
+                                    v1=mut.VolumeVertexIndex(3),
+                                    v2=mut.VolumeVertexIndex(2),
+                                    v3=mut.VolumeVertexIndex(0))
+
+        v0 = mut.VolumeVertex((1, 0,  0))
+        v1 = mut.VolumeVertex((0, 0,  0))
+        v2 = mut.VolumeVertex((0, 1,  0))
+        v3 = mut.VolumeVertex((0, 0, -1))
+        v4 = mut.VolumeVertex((-1, 0,  0))
+
+        volume_mesh = mut.VolumeMesh(elements=(t_left, t_right),
+                                     vertices=(v0, v1, v2, v3, v4))
+
+        surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
+
+        self.assertIsInstance(surface_mesh, mut.SurfaceMesh)
+
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
         mesh = mut.ReadObjToSurfaceMesh(mesh_path)
