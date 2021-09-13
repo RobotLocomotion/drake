@@ -304,6 +304,53 @@ TEST_F(LinearSolveTest, TestWrongGradientSize) {
       ".*A contains derivatives for 3 variables, while b contains derivatives "
       "for 4 variables");
 }
+
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+void CheckGetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
+  if constexpr (std::is_same_v<typename DerivedA::Scalar, double> ||
+                std::is_same_v<typename DerivedA::Scalar,
+                               symbolic::Expression>) {
+    static_assert(
+        std::is_same_v<typename decltype(linear_solver)::MatrixType::Scalar,
+                       typename DerivedA::Scalar>,
+        "The scalar type don't match");
+  } else {
+    static_assert(
+        std::is_same_v<typename decltype(linear_solver)::MatrixType::Scalar,
+                       double>,
+        "The scalar type should be double");
+  }
+
+  // Cast away the enum types of the matrix metrics so we can compare without
+  // compiler warnings.
+  constexpr int RowsSolver =
+      static_cast<int>(decltype(linear_solver)::MatrixType::RowsAtCompileTime);
+  constexpr int RowsA = static_cast<int>(DerivedA::RowsAtCompileTime);
+  static_assert(RowsSolver == RowsA, "The matrix rows don't match");
+  constexpr int ColsSolver =
+      static_cast<int>(decltype(linear_solver)::MatrixType::ColsAtCompileTime);
+  constexpr int ColsA = static_cast<int>(DerivedA::ColsAtCompileTime);
+  static_assert(ColsSolver == ColsA, "The matrix rows don't match");
+}
+
+TEST_F(LinearSolveTest, GetLinearSolver) {
+  // Check double-valued A matrix.
+  CheckGetLinearSolver<Eigen::LLT>(A_val_);
+  CheckGetLinearSolver<Eigen::LDLT>(A_val_);
+  CheckGetLinearSolver<Eigen::PartialPivLU>(A_val_);
+  CheckGetLinearSolver<Eigen::ColPivHouseholderQR>(A_val_);
+
+  // Check symbolic::Expression-valued A matrix.
+  CheckGetLinearSolver<Eigen::LLT>(A_sym_);
+
+  // Check AutoDiffXd-valued A matrix.
+  CheckGetLinearSolver<Eigen::LLT>(A_ad_);
+  CheckGetLinearSolver<Eigen::LDLT>(A_ad_);
+  CheckGetLinearSolver<Eigen::PartialPivLU>(A_ad_);
+  CheckGetLinearSolver<Eigen::ColPivHouseholderQR>(A_ad_);
+}
 }  // namespace
 }  // namespace math
 }  // namespace drake
