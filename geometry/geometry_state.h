@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -227,6 +228,12 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::X_PG().  */
   const math::RigidTransform<double>& GetPoseInParent(
       GeometryId geometry_id) const;
+
+  /** Implementation of
+   SceneGraphInspector::maybe_get_hydroelastic_mesh().  */
+  std::variant<std::monostate, const SurfaceMesh<double>*,
+               const VolumeMesh<double>*>
+  maybe_get_hydroelastic_mesh(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetProximityProperties().  */
   const ProximityProperties* GetProximityProperties(GeometryId id) const;
