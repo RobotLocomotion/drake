@@ -1,6 +1,7 @@
 #include "drake/multibody/optimization/toppra.h"
 
 #include <algorithm>
+#include <forward_list>
 #include <limits>
 
 #include "drake/solvers/solve.h"
@@ -12,16 +13,19 @@ using trajectories::PiecewisePolynomial;
 
 Eigen::VectorXd Toppra::CalcGridpts(const PiecewisePolynomial<double>& path,
                                     const CalcGridPointsOptions& options) {
-  std::vector<double> gridpts{path.start_time(), path.end_time()};
+  std::forward_list<double> gridpts{path.start_time(), path.end_time()};
+  int num_grid_points = 2;
   for (int iter = 0; iter < options.max_iter; iter++) {
     bool add_points{false};
-    for (size_t ii = 0; ii < gridpts.size() - 1; ii++) {
-      const double mid_pt = 0.5 * (gridpts[ii] + gridpts[ii + 1]);
-      const double dist = gridpts[ii + 1] - gridpts[ii];
+    for (auto point = gridpts.begin(); std::next(point, 1) != gridpts.end();
+         point++) {
+      const double mid_pt = 0.5 * (*point + *(std::next(point, 1)));
+      const double dist = *(std::next(point, 1)) - *point;
       if (dist > options.max_seg_length) {
         add_points = true;
-        gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
-        ii++;
+        gridpts.emplace_after(point, mid_pt);
+        num_grid_points++;
+        point++;
         continue;
       }
 
@@ -29,8 +33,9 @@ Eigen::VectorXd Toppra::CalcGridpts(const PiecewisePolynomial<double>& path,
                            path.EvalDerivative(mid_pt, 2).cwiseAbs().maxCoeff();
       if (error > options.max_err) {
         add_points = true;
-        gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
-        ii++;
+        gridpts.emplace_after(point, mid_pt);
+        num_grid_points++;
+        point++;
         continue;
       }
     }
@@ -38,14 +43,17 @@ Eigen::VectorXd Toppra::CalcGridpts(const PiecewisePolynomial<double>& path,
       break;
     }
   }
-  while (gridpts.size() < static_cast<size_t>(options.min_points)) {
-    for (size_t ii = 0; ii < gridpts.size() - 1; ii += 2) {
-      const double mid_pt = 0.5 * (gridpts[ii] + gridpts[ii + 1]);
-      gridpts.emplace(gridpts.begin() + ii + 1, mid_pt);
+  while (num_grid_points < options.min_points) {
+    for (auto point = gridpts.begin(); std::next(point, 1) != gridpts.end();
+         std::advance(point, 2)) {
+      const double mid_pt = 0.5 * (*point + *(std::next(point, 1)));
+      gridpts.emplace_after(point, mid_pt);
+      num_grid_points++;
     }
   }
-  return Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(gridpts.data(),
-                                                       gridpts.size());
+  std::vector<double> result(gridpts.begin(), gridpts.end());
+  return Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(result.data(),
+                                                       result.size());
 }
 
 Toppra::Toppra(const PiecewisePolynomial<double>& path,
