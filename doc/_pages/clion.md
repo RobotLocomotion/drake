@@ -33,9 +33,9 @@ To use Drake with CLion, your Drake checkout **must** be named ``drake``.
 
 The most recent versions that we have tested for compatibility are:
 * Ubuntu 18.04
-* Bazel 3.0.0 (6 April 2020)
-* CLion 2019.3.6 (5 May 2020) with:
-    * Bazel plugin 2020.06.01.1.0 (15 June 2020).
+* Bazel 4.1.0 (2021-05-21)
+* CLion 2020.1.3 (2020-07-21)
+    * Bazel plugin 2020.12.01.0.1 (2021-01-01)
 
 Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
 with each other.  We strongly suggest using only the versions shown above, when
