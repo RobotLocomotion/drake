@@ -158,18 +158,19 @@ class Toppra {
   Eigen::VectorXd ComputeForwardPass(double s_dot_0, const Eigen::Matrix2Xd& K);
 
   std::unique_ptr<solvers::MathematicalProgram> backward_prog_;
-  solvers::VectorXDecisionVariable backward_vars_;
+  solvers::VectorXDecisionVariable backward_x_;
+  solvers::VectorXDecisionVariable backward_u_;
   Binding<LinearCost> backward_cost_;
   Binding<LinearConstraint> backward_continuity_con_;
   std::unique_ptr<solvers::MathematicalProgram> forward_prog_;
-  solvers::VectorXDecisionVariable forward_vars_;
+  solvers::VectorXDecisionVariable forward_u_;
   Binding<LinearCost> forward_cost_;
   Binding<LinearConstraint> forward_continuity_con_;
   const PiecewisePolynomial<double>& path_;
   const MultibodyPlant<double>& plant_;
   Eigen::VectorXd gridpoints_;
-  std::vector<Binding<BoundingBoxConstraint>> bb_constraint_;
-  std::vector<ToppraBoundingBoxConstraint> bb_constraint_coeff_;
+  Binding<BoundingBoxConstraint> x_bounding_box_con_;
+  std::vector<ToppraBoundingBoxConstraint> x_bounds_;
   std::vector<Binding<LinearConstraint>> backward_lin_constraint_;
   std::vector<Binding<LinearConstraint>> forward_lin_constraint_;
   std::vector<ToppraLinearConstraint> lin_constraint_coeff_;

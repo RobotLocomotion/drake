@@ -60,26 +60,27 @@ Toppra::Toppra(const PiecewisePolynomial<double>& path,
                const MultibodyPlant<double>& plant,
                const Eigen::Ref<const Eigen::VectorXd>& gridpoints)
     : backward_prog_{new solvers::MathematicalProgram()},
-      // Variables for the backward pass are [x, u]
-      backward_vars_{backward_prog_->NewContinuousVariables(2)},
-      backward_cost_{backward_prog_->AddLinearCost(Eigen::VectorXd::Zero(2), 0,
-                                                   backward_vars_)},
+      backward_x_{backward_prog_->NewContinuousVariables<1>("x")},
+      backward_u_{backward_prog_->NewContinuousVariables<1>("u")},
+      backward_cost_{backward_prog_->AddLinearCost(Eigen::Vector2d::Zero(), 0,
+                                                   {backward_x_, backward_u_})},
       backward_continuity_con_{backward_prog_->AddLinearConstraint(
-          Eigen::MatrixXd::Zero(1, 2), Eigen::VectorXd::Zero(1),
-          Eigen::VectorXd::Zero(1), backward_vars_)},
+          Eigen::RowVector2d::Zero(), Vector1d(0), Vector1d(0),
+          {backward_x_, backward_u_})},
       forward_prog_{new solvers::MathematicalProgram()},
       // Variables for the forward pass are u
-      forward_vars_{forward_prog_->NewContinuousVariables(1, "u")},
-      forward_cost_{forward_prog_->AddLinearCost(-Eigen::VectorXd::Ones(1), 0,
-                                                 forward_vars_)},
+      forward_u_{forward_prog_->NewContinuousVariables<1>("u")},
+      forward_cost_{forward_prog_->AddLinearCost(-Vector1d(1), 0, forward_u_)},
       forward_continuity_con_{forward_prog_->AddLinearConstraint(
-          Eigen::MatrixXd::Zero(1, 1), Eigen::VectorXd::Zero(1),
-          Eigen::VectorXd::Zero(1), forward_vars_)},
+          Vector1d(0), Vector1d(0), Vector1d(0), forward_u_)},
       path_{path},
       plant_{plant},
-      gridpoints_{gridpoints} {
+      gridpoints_{gridpoints},
+      x_bounding_box_con_{
+          backward_prog_->AddBoundingBoxConstraint(0, 1, backward_x_)} {
   DRAKE_DEMAND(gridpoints(0) == path.start_time());
   DRAKE_DEMAND(gridpoints(gridpoints.size() - 1) == path.end_time());
+  DRAKE_DEMAND(path.rows() == plant.num_positions());
   for (int ii = 0; ii < gridpoints.size() - 1; ii++) {
     if (gridpoints(ii + 1) <= gridpoints(ii)) {
       throw std::runtime_error("Gridpoints must be monotonically increasing.");
@@ -114,10 +115,8 @@ Toppra::ToppraBoundingBoxConstraint& Toppra::AddJointVelocityLimit(
     x_lower_bound(knot) = std::pow(std::max(sd_min, 0.), 2);
     x_upper_bound(knot) = std::pow(sd_max, 2);
   }
-  bb_constraint_.push_back(
-      backward_prog_->AddBoundingBoxConstraint(0, 1, backward_vars_(0)));
-  bb_constraint_coeff_.emplace_back(x_lower_bound, x_upper_bound);
-  return bb_constraint_coeff_.back();
+  x_bounds_.emplace_back(x_lower_bound, x_upper_bound);
+  return x_bounds_.back();
 }
 
 Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
@@ -160,10 +159,10 @@ Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
   }
   backward_lin_constraint_.push_back(backward_prog_->AddLinearConstraint(
       Eigen::MatrixXd::Zero(n_con, 2), Eigen::VectorXd::Zero(n_con),
-      Eigen::VectorXd::Zero(n_con), backward_vars_));
+      Eigen::VectorXd::Zero(n_con), {backward_x_, backward_u_}));
   forward_lin_constraint_.push_back(forward_prog_->AddLinearConstraint(
       Eigen::MatrixXd::Zero(n_con, 1), Eigen::VectorXd::Zero(n_con),
-      Eigen::VectorXd::Zero(n_con), forward_vars_));
+      Eigen::VectorXd::Zero(n_con), forward_u_));
   lin_constraint_coeff_.emplace_back(con_A, con_lb, con_ub);
   return lin_constraint_coeff_.back();
 }
@@ -186,12 +185,16 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
     backward_continuity_con_.evaluator()->UpdateCoefficients(
         Eigen::Vector2d(1, 2 * delta).transpose(), K.block(0, knot + 1, 1, 1),
         K.block(1, knot + 1, 1, 1));
-    for (size_t bb_con = 0; bb_con < bb_constraint_coeff_.size(); bb_con++) {
+    double x_min = 0;
+    double x_max = std::numeric_limits<double>::infinity();
+    for (size_t x_limit = 0; x_limit < x_bounds_.size(); x_limit++) {
       Eigen::VectorXd lb, ub;
-      std::tie(lb, ub) = bb_constraint_coeff_[bb_con];
-      bb_constraint_[bb_con].evaluator()->set_bounds(lb.segment(knot, 1),
-                                                     ub.segment(knot, 1));
+      std::tie(lb, ub) = x_bounds_[x_limit];
+      x_min = std::max(x_min, lb(knot));
+      x_max = std::min(x_max, ub(knot));
     }
+    x_bounding_box_con_.evaluator()->set_bounds(Vector1d(x_min),
+                                                Vector1d(x_max));
     for (size_t lin_con = 0; lin_con < lin_constraint_coeff_.size();
          lin_con++) {
       Eigen::MatrixXd A, lb, ub;
@@ -203,13 +206,13 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
     {
       backward_cost_.evaluator()->UpdateCoefficients(min_cost_A);
       auto result = solvers::Solve(*backward_prog_);
-      K(0, knot) = result.GetSolution()(0);
+      K(0, knot) = result.GetSolution(backward_x_)(0);
     }
     // Solve maximum
     {
       backward_cost_.evaluator()->UpdateCoefficients(max_cost_A);
       auto result = solvers::Solve(*backward_prog_);
-      K(1, knot) = result.GetSolution()(0);
+      K(1, knot) = result.GetSolution(backward_x_)(0);
     }
 
     if (K.col(knot).hasNaN()) {
