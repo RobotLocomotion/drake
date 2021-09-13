@@ -139,9 +139,10 @@ void AddContactMaterial(
 
  @param resolution_hint       If the geometry is to be tessellated, it is the
                               parameter that guides the level of mesh
-                              refinement. See @ref MODULE_NOT_WRITTEN_YET. This
-                              will be ignored for geometry types that don't
-                              require tessellation.
+                              refinement. Its unit is meters.
+                              See @ref MODULE_NOT_WRITTEN_YET. This will be
+                              ignored for geometry types that don't require
+                              tessellation.
  @param[in,out] properties    The properties will be added to this property set.
  @throws std::exception       If `properties` already has properties with the
                               names that this function would need to add.
@@ -163,8 +164,9 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
 
  @param resolution_hint       If the geometry is to be tessellated, it is the
                               parameter that guides the level of mesh
-                              refinement. This will be ignored for geometry
-                              types that don't require tessellation.
+                              refinement. Its unit is meters. This will be
+                              ignored for geometry types that don't require
+                              tessellation.
  @param[in,out] properties    The properties will be added to this property set.
  @throws std::exception       If `properties` already has properties with the
                               names that this function would need to add.
