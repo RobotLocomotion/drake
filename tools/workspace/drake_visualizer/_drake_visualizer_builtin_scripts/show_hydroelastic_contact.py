@@ -94,20 +94,6 @@ class _ConfigDialog(QtGui.QDialog):
 
         row = 0
 
-        # Name display - this will go away when we can simply support
-        # "minimally unique names"; see #15555.
-        layout.addWidget(QtGui.QLabel('Use full names'), row, 0)
-        self.use_full_name = QtGui.QCheckBox()
-        self.use_full_name.setChecked(False)
-        self.use_full_name.setToolTip(
-            'Display fully-qualified names for all contact data. Bodies are '
-            'shown as model instance/body and contact data is shown with '
-            'geometry names. This is useful if your simulation has '
-            'identically-named bodies, or bodies with multiple proximity '
-            'geometries.')
-        layout.addWidget(self.use_full_name, row, 1)
-        row += 1
-
         # Color map selection.
         layout.addWidget(QtGui.QLabel('Color map'), row, 0)
         self.color_map_mode = QtGui.QComboBox()
@@ -509,23 +495,17 @@ class _Contact:
     def make_key(surface: lcmt_hydroelastic_contact_surface_for_viz):
         """Creates the key for this contact surface (based on the
         geometries involved)."""
-        return (surface.geometry1_name, surface.geometry2_name)
+        need_names = (surface.collision_count1 > 1
+                      or surface.collision_count2 > 1)
+        return (surface.geometry1_name, surface.geometry2_name, need_names)
 
     @staticmethod
-    def _contact_label_suffix(key, use_full_name: bool):
-        """Creates a contact label based on the contact key. If we are not
-        using the "full" name, the suffix is empty."""
-        name1, name2 = key
-        if use_full_name:
+    def _contact_label_suffix(key):
+        """Creates a contact label based on the contact key."""
+        name1, name2, need_names = key
+        if need_names:
             return f' ({name1}, {name2})'
         return ""
-
-    def set_use_full_name(self, state: bool):
-        """Sets the label to reflect whether we are using full names or not."""
-        self._use_full_name = state
-        suffix = self._contact_label_suffix(self._key, state)
-        for label, vis_item in self.items.items():
-            vis_item.item.rename(label + suffix, renameChildren=False)
 
     def clear(self):
         """Clears all the contact data for this contact."""
@@ -540,8 +520,7 @@ class _Contact:
             callback(self.items[item_name])
 
     def set_mesh_data(self, mesh_data: vtk.vtkPolyData, item_name: str,
-                      add_callback, update_callback, view,
-                      use_full_name: bool):
+                      add_callback, update_callback, view):
         """Implements VisualModel.set_contact_mesh_data."""
         if mesh_data is None:
             if item_name in self.items:
@@ -550,15 +529,14 @@ class _Contact:
             vis_item = self.items[item_name]
             update_callback(vis_item, mesh_data)
         else:
-            suffix = self._contact_label_suffix(self._key, use_full_name)
+            suffix = self._contact_label_suffix(self._key)
             item = vis.PolyDataItem(item_name + suffix, mesh_data, view)
             om.addToObjectModel(item, self.folder)
             vis_item = VisualItem(item)
             self.items[item_name] = vis_item
             add_callback(vis_item, mesh_data)
 
-    def set_debug_data(self, item_data: DebugData, item_name: str, view,
-                       use_full_name: bool):
+    def set_debug_data(self, item_data: DebugData, item_name: str, view):
         """Implements VisualModel.set_contact_debug_data."""
         # The caller may instantiate an instance of DebugData (based on the
         # flag *requesting* visualization of some quantity), but find no
@@ -575,7 +553,7 @@ class _Contact:
                 item_data.getPolyData())
             self.items[item_name].item.colorBy('RGB255')
         else:
-            suffix = self._contact_label_suffix(self._key, use_full_name)
+            suffix = self._contact_label_suffix(self._key)
             item = vis.PolyDataItem(item_name + suffix,
                                     item_data.getPolyData(), view)
             om.addToObjectModel(item, self.folder)
@@ -590,20 +568,16 @@ class _BodyContact:
     of bodies."""
     def __init__(self,
                  surface: lcmt_hydroelastic_contact_surface_for_viz,
-                 root_folder: om.ContainerItem,
-                 use_full_name: bool):
+                 root_folder: om.ContainerItem):
         """Constructs a BodyContact instance based on the data contained in
-        the given `surface`. A folder (with a name based on the body names
-        -- and governed by use_full_name) will be place inside root_folder.
+        the given `surface`. A folder (with a name based on the body names)
+        will be place inside root_folder.
 
         Args:
             surface: The contact surface to add to the object model.
-            root_folder: The parent directory for the contact folder.
-            use_full_name: If True, the folder will use "full" body names
-             (model instance/body)."""
-        self.key = self.make_key(surface)
+            root_folder: The parent directory for the contact folder."""
         self._folder = om.getOrCreateContainer(
-            self._folder_name(self.key, use_full_name), root_folder)
+            self._folder_name(surface), root_folder)
 
         # All of the contacts associated with this body pair. Each contact
         # is keyed by the geometry pair that generated it (see
@@ -637,32 +611,20 @@ class _BodyContact:
 
         Args:
             surface: The contact surface to add to the object model."""
-        return ((surface.model1_name, surface.body1_name),
-                (surface.model2_name, surface.body2_name))
+        return (
+            (surface.model1_name, surface.body1_name, surface.body1_unique),
+            (surface.model2_name, surface.body2_name, surface.body2_unique))
 
     @staticmethod
-    def _folder_name(key, use_full_name: bool):
-        """Given the folder `key` (generated by make_key()), constructs the
-        corresponding folder name (based on `use_full_name`).
+    def _folder_name(surface: lcmt_hydroelastic_contact_surface_for_viz):
+        """Given a contact surface message, constructs the corresponding folder
+        name for the two bodies identified in `surface`'s data.
 
         Args:
-            key: The unique key for the *body pair* encoded in a contact.
-            use_full_name: If True, the folder will use "full" body names
-             (model instance/body)."""
-        # TODO(SeanCurtis-TRI): When the lcm message supports a server-side
-        #  generated "minimal unique name", use that instead of the blind
-        #  construction of model/body. See issue #15555 for details.
-        name1 = _BodyContact._body_name_from_key(key, 0, use_full_name)
-        name2 = _BodyContact._body_name_from_key(key, 1, use_full_name)
+            surface: The surface message."""
+        name1 = _BodyContact.body_name(surface, 0)
+        name2 = _BodyContact.body_name(surface, 1)
         return (f'({name1}, {name2}) Contact Data')
-
-    def set_use_full_name(self, state: bool):
-        """Sets the state of this body-pair contact (and all individual
-        contacts for the body pair) to enable/disable the use of full names
-        based on `state`."""
-        self._folder.rename(self._folder_name(self.key, state), False)
-        for contact in self._contacts.values():
-            contact.set_use_full_name(state)
 
     def __len__(self):
         """Reports the number of contacts"""
@@ -689,53 +651,38 @@ class _BodyContact:
 
     def set_debug_data(
       self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      item_data: DebugData, item_name: str, view, use_full_name: bool):
+      item_data: DebugData, item_name: str, view):
         """@pre add_contact() has been called on the given `surface`."""
         key = _Contact.make_key(surface)
-        self._contacts[key].set_debug_data(item_data, item_name, view,
-                                           use_full_name)
+        self._contacts[key].set_debug_data(item_data, item_name, view)
 
     def set_mesh_data(
       self, surface: lcmt_hydroelastic_contact_surface_for_viz,
       mesh_data: vtk.vtkPolyData, item_name, add_callback, update_callback,
-      view, use_full_name: bool):
+      view):
         """@pre add_contact() has been called on the given `surface`."""
         key = _Contact.make_key(surface)
         self._contacts[key].set_mesh_data(mesh_data, item_name, add_callback,
-                                          update_callback, view, use_full_name)
+                                          update_callback, view)
 
     def update_items(self, item_name: str, callback):
         for contact in self._contacts.values():
             contact.update_item(item_name, callback)
 
     @staticmethod
-    def _body_name_from_key(key, body_index: int, use_full_name: bool):
-        """Generates the name for a body identified by index in the given key
-        (based on whether we want the *full* name or not).
-
-        Args:
-            key: The surface key (derived from a surface).
-            body_index: The index of the body to name (must be 0 or 1).
-            use_full_name: If true, the *full* name is returned (model/body),
-                otherwise, just body."""
-        model, body = key[body_index]
-        if use_full_name:
-            return f'{model}/{body}'
-        return body
-
-    @staticmethod
     def body_name(surface: lcmt_hydroelastic_contact_surface_for_viz,
-                  body_index: int, use_full_name: bool):
-        """Generates the name for a body identified by index in the given
-        surface (based on whether we want the *full* name or not).
+                  body_index: int):
+        """Generates the minimally unique name for a body identified by index
+        in the given surface.
 
         Args:
             surface: The surface whose contact body is to be named..
-            body_index: The index of the body to name (must be 0 or 1).
-            use_full_name: If true, the *full* name is returned (model/body),
-                otherwise, just body."""
+            body_index: The index of the body to name (must be 0 or 1)."""
         key = _BodyContact.make_key(surface)
-        return _BodyContact._body_name_from_key(key, body_index, use_full_name)
+        model, body, is_unique = key[body_index]
+        if not is_unique:
+            return f'{model}/{body}'
+        return body
 
 
 class VisualModel:
@@ -759,7 +706,6 @@ class VisualModel:
         # pair of contacting bodies).
         self._body_contacts = {}
         self._timestamp = 0
-        self._use_full_name = False
 
     def set_view(self, view):
         """Sets the view for the model.
@@ -767,12 +713,6 @@ class VisualModel:
         Args:
             view: The director view used to instantiate object model items."""
         self.view = view
-
-    def set_use_full_name(self, state: bool):
-        if state != self._use_full_name:
-            self._use_full_name = state
-            for body_contact in self._body_contacts.values():
-                body_contact.set_use_full_name(state)
 
     def clear(self):
         """Clears the entire model - all data for all contact surfaces are
@@ -799,8 +739,7 @@ class VisualModel:
                 self._body_contacts[body_pair_key].add_contact(surface,
                                                                self._timestamp)
             else:
-                body_contact = _BodyContact(surface, self._root_folder,
-                                            self._use_full_name)
+                body_contact = _BodyContact(surface, self._root_folder)
                 body_contact.add_contact(surface, self._timestamp)
                 self._body_contacts[body_pair_key] = body_contact
 
@@ -837,8 +776,7 @@ class VisualModel:
             item_name: The unique name associated with this data."""
         key = _BodyContact.make_key(surface)
         body_contact = self._body_contacts[key]
-        body_contact.set_debug_data(surface, item_data, item_name, self.view,
-                                    self._use_full_name)
+        body_contact.set_debug_data(surface, item_data, item_name, self.view)
 
     def set_contact_mesh_data(
       self, surface: lcmt_hydroelastic_contact_surface_for_viz,
@@ -874,25 +812,12 @@ class VisualModel:
         key = _BodyContact.make_key(surface)
         body_contact = self._body_contacts[key]
         body_contact.set_mesh_data(surface, mesh_data, item_name, add_callback,
-                                   update_callback, self.view,
-                                   self._use_full_name)
+                                   update_callback, self.view)
 
     def update_items(self, item_name: str, callback):
         """Applies the callback to the named contact item in every contact."""
         for body_contact in self._body_contacts.values():
             body_contact.update_items(item_name, callback)
-
-    def body_name(
-      self, surface: lcmt_hydroelastic_contact_surface_for_viz,
-      body_index: int, use_full_name: bool):
-        """Returns the name of the body referenced in the given contact
-        surface that respects the given full-name configuration setting.
-
-        Args:
-            surface: The contact surface.
-            body_index: The index of the body to name: must be 0 or 1.
-            use_full_name: Controls whether the full name (True) is used."""
-        return _BodyContact.body_name(surface, body_index, use_full_name)
 
 
 class HydroelasticContactVisualizer:
@@ -941,7 +866,6 @@ class HydroelasticContactVisualizer:
         self.dlg = _ConfigDialog(self, applogic.getMainWindow())
 
         # Connect all of the widgets in the dialog to callbacks
-        self.dlg.use_full_name.connect('toggled(bool)', self.toggle_full_names)
         self.dlg.color_map_mode.connect("currentIndexChanged(int)",
                                         self.set_color_map)
         self.dlg.min_pressure.connect("editingFinished()",
@@ -979,10 +903,6 @@ class HydroelasticContactVisualizer:
 
     def show_dialog(self):
         self.dlg.show()
-
-    def toggle_full_names(self, state: bool):
-        """Controls whether short (False) or long names (True) are used."""
-        self.visual_model.set_use_full_name(state)
 
     def set_color_map(self, new_index: int):
         """Slot for dialog widget"""
@@ -1368,14 +1288,9 @@ class HydroelasticContactVisualizer:
             #  This is less likely with hydro than with point pair contact, so
             #  resolving this is less urgent.
 
-            # TODO(SeanCurtis-TRI): This value will *always* use the full name.
-            #  Getting it to update itself based on the configuration setting
-            #  is far too much work. It'll be better resolved when we introduce
-            #  the "minimal unique name" and always display that without
-            #  configuration.
             # The force is documented as acting on body 1 (out of bodies 1 and
             # 2) -- so we use index 0.
-            body_name = self.visual_model.body_name(surface, 0, True)
+            body_name = _BodyContact.body_name(surface, 0)
             self.visual_model.set_contact_debug_data(
                 surface, force_data, f"Spatial force on {body_name}")
 

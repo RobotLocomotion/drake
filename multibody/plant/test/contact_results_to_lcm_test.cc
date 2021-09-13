@@ -123,7 +123,8 @@ namespace internal {
  failure messages include human readable output (rather than bytestrings). */
 std::ostream& operator<<(std::ostream& out, const FullBodyName& name) {
   out << "Model: '" << name.model << "', Body = '" << name.body << "', Geo: '"
-      << name.geometry << "'";
+      << name.geometry << "', is_unique: " << name.body_name_is_unique
+      << ", geometry count: " << name.geometry_count;
   return out;
 }
 
@@ -245,43 +246,59 @@ template <typename T>
 class ContactResultsToLcmTest : public ::testing::Test {
  protected:
   /* Adds a body with the given `name` to the given `plant` as part of the given
-   model instance. In order to test the tables that ContactResultsToLcmSystem
-   builds during construction, this method builds the expected tables based
-   on the body added to the plant. The entries are added to the given
-   `id_to_body_map` and `body_names` output parameters.
+   model instance.
 
-   @param body_name         The name of the body to add.
-   @param model_index       The model instance to which this body will be
-                            added.
-   @param namer             A functor that turns GeometryId into strings.
-   @param plant             The plant to add the body to.
-   @param id_to_body_map    The ContactResultsToLcmSystem table that maps
-                            GeometryId to FullBodyName.
-   @param body_names        The ContactResultsToLcmSystem table that maps body
-                            index to body name.
+   The constructor of ContactResultsToLcmSystem populates two tables. This
+   method aids in building two corresponding tables which contain the expected
+   contents. These can be compared directly with the tables in the dut after
+   construction.
+
+   The first table (`body_names`) maps body index to a mangled body name.
+
+   The second table (`id_to_body`) maps collision geometry id to a collection of
+   related collection of body name data (`ref_name`). The provided FullBodyName,
+   `ref_name`, should have the body_name_is_unique and geometry_count fields
+   set. This method adds ref_name.geometry_count collision geometries to the
+   new body. It inserts one entry into the geometry -> body name map by
+   using the `ref_name` and setting the `model` name, `body` name, and
+   `geometry` name (using the `namer` function to map id to string).
+
+   @param body_name     The name of the body to add.
+   @param model_index   The model instance to which this body will be added.
+   @param namer         A functor that turns GeometryId into strings.
+   @param plant         The plant to add the body to.
+   @param body_names    The ContactResultsToLcmSystem table that maps body
+                        index to body name.
+   @param id_to_body    The ContactResultsToLcmSystem table that maps
+                        GeometryId to FullBodyName.
+   @param ref_name      A reference FullBodyName which has already defined
+                        .geometry_count and .body_name_is_unique.
    @pre `model_index` is a valid model instance index. */
-  void AddBody(const std::string& body_name, ModelInstanceIndex model_index,
-               const function<string(GeometryId)>& namer,
-               MultibodyPlant<T>* plant,
-               unordered_map<GeometryId, FullBodyName>* id_to_body_map,
-               vector<string>* body_names) {
+  void AddBody(const std::string& body_name,
+                     ModelInstanceIndex model_index,
+                     const function<string(GeometryId)>& namer,
+                     MultibodyPlant<T>* plant, vector<string>* body_names,
+                     unordered_map<GeometryId, FullBodyName>* id_to_body,
+                     FullBodyName ref_name) {
     const auto& body =
         plant->AddRigidBody(body_name, model_index, SpatialInertia<double>());
     /* The expected format based on knowledge of the ContactResultToLcmSystem's
      implementation. */
     body_names->push_back(fmt::format("{}({})", body_name, model_index));
 
-    /* We will *simulate* registering a collision geometry with MBP. Rather than
+    /* We will *simulate* registering a collision geometry with MbP. Rather than
      instantiating SceneGraph<T> (which we can't even do for symbolic), we'll
-     use friend access to shove a GeometryId into MBP's table of known,
+     use friend access to shove a GeometryId into MbP's table of known,
      per-body collision geometries. That is sufficient for
      ContactResultsToLcmSystem to add entries to its tables. */
-    const GeometryId fake_id = GeometryId::get_new_id();
-    MultibodyPlantTester::AddCollisionGeometryToBody(fake_id, body, plant);
-    /* And, now, populate the table. */
-    const string& model_name = plant->GetModelInstanceName(model_index);
-    const string geometry_name = namer(fake_id);
-    id_to_body_map->insert({fake_id, {model_name, body_name, geometry_name}});
+    ref_name.model = plant->GetModelInstanceName(model_index);
+    ref_name.body = body.name();
+    for (int g = 0; g < ref_name.geometry_count; ++g) {
+      const GeometryId g_id = GeometryId::get_new_id();
+      MultibodyPlantTester::AddCollisionGeometryToBody(g_id, body, plant);
+      ref_name.geometry = namer(g_id);
+      id_to_body->insert({g_id, ref_name});
+    }
   }
 
   /* Adds fake point-pair contact results to the given set of contact `results`.
@@ -404,15 +421,28 @@ TYPED_TEST(ContactResultsToLcmTest, Constructor) {
     };
 
     MultibodyPlant<T> plant(0.0);
-    /* Body 1 and 2 go to the same model instance. Body 3 goes to its own. */
+    /* Bodies 1 and 2 go to the same model instance. Body 3 goes to its own.
+      Body 1 gets two geometries (to test the geometry_count field). Bodies 1
+      and 3 have the same name (to test body_name_is_unique_field).  */
     const ModelInstanceIndex model12 = plant.AddModelInstance("JustForBody12");
-    this->AddBody("body1", model12, namer, &plant, &expected_geo_body_map,
-                  &expected_body_names);
-    this->AddBody("body2", model12, namer, &plant, &expected_geo_body_map,
-                  &expected_body_names);
+
+    FullBodyName ref_name;
+
+    ref_name.body_name_is_unique = false;
+    ref_name.geometry_count = 2;
+    this->AddBody("dupe_name", model12, namer, &plant, &expected_body_names,
+                  &expected_geo_body_map, ref_name);
+
+    ref_name.body_name_is_unique = true;
+    ref_name.geometry_count = 1;
+    this->AddBody("body2", model12, namer, &plant, &expected_body_names,
+                  &expected_geo_body_map, ref_name);
+
     const ModelInstanceIndex model3 = plant.AddModelInstance("JustForBody3");
-    this->AddBody("body3", model3, namer, &plant, &expected_geo_body_map,
-                  &expected_body_names);
+    ref_name.body_name_is_unique = false;
+    this->AddBody("dupe_name", model3, namer, &plant, &expected_body_names,
+                  &expected_geo_body_map, ref_name);
+
     plant.Finalize();
 
     SCOPED_TRACE(use_custom_names ? "Using custom names"
@@ -626,11 +656,15 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     EXPECT_EQ(pair_message.body1_name, name1.body);
     EXPECT_EQ(pair_message.model1_name, name1.model);
     EXPECT_EQ(pair_message.geometry1_name, name1.geometry);
+    EXPECT_EQ(pair_message.body1_unique, name1.body_name_is_unique);
+    EXPECT_EQ(pair_message.collision_count1, name1.geometry_count);
 
     const auto& name2 = geo_to_body_map.at(surface.id_N());
     EXPECT_EQ(pair_message.body2_name, name2.body);
     EXPECT_EQ(pair_message.model2_name, name2.model);
     EXPECT_EQ(pair_message.geometry2_name, name2.geometry);
+    EXPECT_EQ(pair_message.body2_unique, name2.body_name_is_unique);
+    EXPECT_EQ(pair_message.collision_count2, name2.geometry_count);
 
     /* Mesh aggregate results: centroid, force, moment. */
     // clang-format off
