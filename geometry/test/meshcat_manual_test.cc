@@ -42,13 +42,35 @@ int do_main() {
 Open up your browser to the URL above.
 
 - The background should be grey.
-- From back to front along the x axis, you should see:
+- From left to right along the x axis, you should see:
   - a red sphere
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
   - a gray cube (which will be textured once we add texture support)
 )""";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  meshcat->Set2dRenderMode(math::RigidTransform(Eigen::Vector3d{0, -3, 0}), -3,
+                           3, -2, 2);
+
+  std::cout << "- The scene should have switched to 2D rendering mode.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  meshcat->Set2dRenderMode(
+      math::RigidTransform(math::RotationMatrixd::MakeZRotation(-M_PI / 2.0),
+                           Eigen::Vector3d{-3, 0, 0}),
+      -2, 2, -2, 2);
+
+  std::cout << "- Now 2D rendering along the +x axis (red sphere in front).\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::cout << "- The scene should have switched back to 3D.\n";
+  meshcat->ResetRenderMode();
+
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 

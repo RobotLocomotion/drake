@@ -1572,6 +1572,14 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
         .def("SetObject", &Class::SetObject, py::arg("path"), py::arg("shape"),
             py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc)
+        // TODO(russt): Bind SetCamera.
+        .def("Set2dRenderMode", &Class::Set2dRenderMode,
+            py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
+            py::arg("xmin") = -1.0, py::arg("xmax") = 1.0,
+            py::arg("ymin") = -1.0, py::arg("ymax") = 1.0,
+            cls_doc.Set2dRenderMode.doc)
+        .def("ResetRenderMode", &Class::ResetRenderMode,
+            cls_doc.ResetRenderMode.doc)
         .def("SetTransform", &Class::SetTransform, py::arg("path"),
             py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
@@ -1833,6 +1841,7 @@ void def_geometry_all(py::module m) {
 PYBIND11_MODULE(geometry, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   py::module::import("pydrake.common");
+  py::module::import("pydrake.math");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.lcm");
 

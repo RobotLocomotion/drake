@@ -425,6 +425,28 @@ class Meshcat::WebSocketPublisher {
     });
   }
 
+  template <typename CameraData>
+  void SetCamera(CameraData camera, std::string path) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetCameraData<CameraData> data;
+    data.path = std::move(path);
+    data.object.object = std::move(camera);
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
   void SetTransform(std::string_view path,
                     const RigidTransformd& X_ParentPath) {
     DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
@@ -685,6 +707,14 @@ void Meshcat::SetObject(std::string_view path, const Shape& shape,
   publisher_->SetObject(path, shape, rgba);
 }
 
+void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
+  publisher_->SetCamera(std::move(camera), std::move(path));
+}
+
+void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
+  publisher_->SetCamera(std::move(camera), std::move(path));
+}
+
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
   publisher_->SetTransform(path, X_ParentPath);
@@ -700,6 +730,43 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
   publisher_->SetProperty(path, std::move(property), value);
+}
+
+void Meshcat::SetProperty(std::string_view path, std::string property,
+                          const std::vector<double>& value) {
+  publisher_->SetProperty(path, std::move(property), value);
+}
+
+void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
+                              double xmax, double ymin, double ymax) {
+  // Set orthographic camera.
+  OrthographicCamera camera;
+  camera.left = xmin;
+  camera.right = xmax;
+  camera.bottom = ymin;
+  camera.top = ymax;
+  SetCamera(camera);
+
+  SetTransform("/Cameras/default", X_WC);
+  // Lock orbit controls.
+  SetProperty("/Cameras/default/rotated/<object>", "position",
+              {0.0, 0.0, 0.0});
+
+  SetProperty("/Background", "visible", false);
+  SetProperty("/Grid", "visible", false);
+  SetProperty("/Axes", "visible", false);
+}
+
+void Meshcat::ResetRenderMode() {
+  PerspectiveCamera camera;
+  SetCamera(camera);
+  SetTransform("/Cameras/default", math::RigidTransformd());
+  // Lock orbit controls.
+  SetProperty("/Cameras/default/rotated/<object>", "position",
+              {0.0, 1.0, 3.0});
+  SetProperty("/Background", "visible", true);
+  SetProperty("/Grid", "visible", true);
+  SetProperty("/Axes", "visible", true);
 }
 
 bool Meshcat::HasPath(std::string_view path) const {
