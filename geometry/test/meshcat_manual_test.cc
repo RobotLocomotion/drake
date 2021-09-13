@@ -74,7 +74,6 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-
   // Turn off the background (it will appear white).
   meshcat->SetProperty("/Background", "visible", false);
 
