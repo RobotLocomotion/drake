@@ -59,8 +59,7 @@ set_target_properties(pybind11::embed PROPERTIES
 
 add_library(pybind11::module INTERFACE IMPORTED)
 set_target_properties(pybind11::module PROPERTIES
-  INTERFACE_LINK_LIBRARIES "pybind11::pybind11"
-  # TODO(jwnimmer-tri) On Darwin, we need "-undefined dynamic_lookup" here.
+  INTERFACE_LINK_LIBRARIES "pybind11::pybind11;$<$<PLATFORM_ID:Darwin>:-undefined dynamic_lookup>"
 )
 
 add_library(pybind11::pybind11 INTERFACE IMPORTED)
