@@ -39,7 +39,7 @@ class Parser final {
   /// SDFormat files may contain multiple `<model>` elements.  New model
   /// instances will be added to @p plant for each `<model>` tag in the file.
   ///
-  /// @note Adding multiple root-level models, i.e, `<model>`s direclty under
+  /// @note Adding multiple root-level models, i.e, `<model>`s directly under
   /// `<sdf>`, is deprecated. If you need multiple models in a single file,
   /// please use an SDFormat world file.
   ///
