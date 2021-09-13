@@ -118,6 +118,37 @@ TEST_F(IiwaToppraTest, JointAccelerationLimit) {
   EXPECT_TRUE((acceleration.array() >= lower_bound.array() + tol).all());
   EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
 }
+
+GTEST_TEST(ToppraTest, GridpointsTest) {
+  Eigen::MatrixXd knots(3, 2);
+  knots.col(0) << 0, 10, 20;
+  knots.col(1) << 1, 11, 21;
+  auto path = PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+      Eigen::VectorXd::LinSpaced(2, 0, 1), knots, Eigen::VectorXd::Zero(3),
+      Eigen::VectorXd::Zero(3));
+
+  // Check minimum points
+  auto options = CalcGridPointsOptions();
+  options.max_iter = 0;
+  options.min_points = 10;
+  auto gridpts = Toppra::CalcGridpts(path, options);
+  EXPECT_GT(gridpts.size(), options.min_points);
+
+  // Check minimum segment length
+  options = CalcGridPointsOptions();
+  options.max_err = 100;
+  options.max_seg_length = 0.05;
+  options.min_points = 1;
+  gridpts = Toppra::CalcGridpts(path, options);
+  EXPECT_GT(gridpts.size(), 20);
+
+  // Check iteration limit
+  options = CalcGridPointsOptions();
+  options.max_iter = 3;
+  options.min_points = 1;
+  gridpts = Toppra::CalcGridpts(path, options);
+  EXPECT_EQ(gridpts.size(), 9);
+}
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
