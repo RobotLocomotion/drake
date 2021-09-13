@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -80,14 +81,19 @@ class Meshcat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat)
 
-  /** Constructs the Meshcat instance. It will listen on the first available
-  port starting at 7001 (up to 7099). */
-  Meshcat();
+  /** Constructs the Meshcat instance on `port`. If no port is specified, the it
+  will listen on the first available port starting at 7000 (up to 7099).
+  @pre We require `port` >= 1024.
+  @throws std::exception if no requested `port` is available. */
+  explicit Meshcat(const std::optional<int>& port = std::nullopt);
 
   ~Meshcat();
 
   /** Returns the hosted http URL. */
   std::string web_url() const;
+
+  /** Returns the port on localhost listening for http connections. */
+  int port() const;
 
   /** (Advanced) Returns the ws:// URL for direct connection to the websocket
   interface.  Most users should connect via a browser opened to web_url(). */

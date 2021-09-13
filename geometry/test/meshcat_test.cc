@@ -9,6 +9,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_types.h"
 
 namespace drake {
@@ -55,6 +56,20 @@ GTEST_TEST(MeshcatTest, ConstructMultiple) {
   EXPECT_THAT(meshcat2.web_url(), HasSubstr("http://localhost:"));
   EXPECT_THAT(meshcat2.ws_url(), HasSubstr("ws://localhost:"));
   EXPECT_NE(meshcat.web_url(), meshcat2.web_url());
+}
+
+GTEST_TEST(MeshcatTest, Ports) {
+  Meshcat meshcat(7050);
+  EXPECT_EQ(meshcat.port(), 7050);
+
+  // Can't open the same port twice.
+  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat m2(7050),
+                              "Meshcat failed to open a websocket port.");
+
+  // The default constructor gets a default port.
+  Meshcat m3;
+  EXPECT_GE(m3.port(), 7000);
+  EXPECT_LE(m3.port(), 7099);
 }
 
 // The correctness of this is established with meshcat_manual_test.  Here we
