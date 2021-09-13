@@ -368,7 +368,10 @@ class TestGeometry(unittest.TestCase):
         draw_subscriber.clear()
 
     def test_meshcat(self):
-        meshcat = mut.Meshcat()
+        meshcat = mut.Meshcat(port=7051)
+        self.assertEqual(meshcat.port(), 7051)
+        with self.assertRaises(RuntimeError):
+            meshcat2 = mut.Meshcat(port=7051)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
         meshcat.SetObject(path="/test/box",
@@ -380,6 +383,9 @@ class TestGeometry(unittest.TestCase):
                             value=True)
         meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
                             property="intensity", value=1.0)
+        meshcat.Set2dRenderMode(
+            X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
+        meshcat.ResetRenderMode()
 
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_visualizer(self, T):

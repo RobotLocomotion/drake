@@ -145,8 +145,8 @@ LinearSolve(const LinearSolver& linear_solver,
 }
 
 /**
- * Specialized when both A is an AutoDiffScalar-valued matrix, and b can contain
- * either AutoDiffScalar or double.See @ref linear_solve_given_solver for more
+ * Specialized when A is an AutoDiffScalar-valued matrix, and b can contain
+ * either AutoDiffScalar or double. See @ref linear_solve_given_solver for more
  * details.
  */
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
@@ -259,6 +259,103 @@ LinearSolve(const LinearSolver& linear_solver,
 //@}
 
 /**
+ * @anchor get_linear_solver
+ * @name Get linear solver
+ *
+ * Create the linear solver for a given matrix A, which will be used to solve
+ * the linear system of equations A * x = b.
+ *
+ * The following table indicate the scalar type of the matrix in the returned
+ * linear solver, depending on the scalar type in matrix A
+ *
+ * | A    | double |  ADS  | Expr |
+ * |------|--------|-------|----- |
+ * |solver| double | double| Expr |
+ *
+ * where ADS stands for Eigen::AutoDiffScalar, and Expr stands for
+ * symbolic::Expression.
+ * Here is the example code
+ * @code{cc}
+ * Eigen::Matrix2d A_val;
+ * A_val << 1, 2, 2, 5;
+ * Eigen::Vector2d b_val(3, 4);
+ * const Eigen::Vector2d x_val =
+ *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_val), A_val, b_val);
+ * Eigen::Matrix<AutoDiffXd, 2, 2> A_ad;
+ * A_ad(0, 0).value() = A_val(0, 0);
+ * A_ad(0, 0).derivatives() = Eigen::Vector3d(1, 2, 3);
+ * A_ad(0, 1).value() = A_val(0, 1);
+ * A_ad(0, 1).derivatives() = Eigen::Vector3d(2, 3, 4);
+ * A_ad(1, 0).value() = A_val(1, 0);
+ * A_ad(1, 0).derivatives() = Eigen::Vector3d(3, 4, 5);
+ * A_ad(1, 1).value() = A_val(1, 1);
+ * A_ad(1, 1).derivatives() = Eigen::Vector3d(4, 5, 6);
+ * // Solve A * x = b with A containing gradient.
+ * const Eigen::Matrix<AutoDiffXd, 2, 1> x_ad1 =
+ *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_ad), A_ad, b_val);
+ * Eigen::Matrix<AutoDiffXd, 2, 1> b_ad;
+ * b_ad(0).value() = b_val(0);
+ * b_ad(0).derivatives() = Eigen::Vector3d(5, 6, 7);
+ * b_ad(1).value() = b_val(1);
+ * b_ad(1).derivatives() = Eigen::Vector3d(6, 7, 8);
+ * // Solve A * x = b with b containing gradient.
+ * const Eigen::Matrix<AutoDiffXd, 2, 1> x_ad2 =
+ *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_val), A_val, b_ad);
+ * // Solve A * x = b with both A and b containing gradient.
+ * const Eigen::Matrix<AutoDiffXd, 2, 1> x_ad3 =
+ *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_ad), A_ad, b_ad);
+ * @endcode{cc}
+ */
+
+//@{
+/**
+ * Get the linear solver for a matrix A containing double or
+ * symbolic::Expressions. The returned linear solver will have matrix type
+ * containing the same scalar type as A.
+ * See @ref get_linear_solver for more details.
+ */
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+typename std::enable_if<
+    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    LinearSolverType<Eigen::Matrix<
+        typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+        DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+        DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>>::type
+GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
+  const LinearSolverType<Eigen::Matrix<
+      typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+      DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+      DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>
+      linear_solver(A);
+  return linear_solver;
+}
+
+/**
+ * Get the linear solver for a matrix A containing AutoDiffScalar.
+ * The returned linear solver will be LinearSolverType<Matrix<double, Rows,
+ * Cols>>
+ */
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+typename std::enable_if<
+    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+                                   DerivedA::MaxRowsAtCompileTime,
+                                   DerivedA::MaxColsAtCompileTime>>>::type
+GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
+  using A_VAL_TYPE = Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+                                   DerivedA::MaxRowsAtCompileTime,
+                                   DerivedA::MaxColsAtCompileTime>;
+  const A_VAL_TYPE A_val = autoDiffToValueMatrix(A);
+  const LinearSolverType<A_VAL_TYPE> linear_solver(A_val);
+  return linear_solver;
+}
+//@}
+
+/**
  * @anchor linear_solve
  * @name solve linear system of equations
  * Solve linear system of equations A * x = b. Where A is an Eigen matrix of
@@ -269,6 +366,22 @@ LinearSolve(const LinearSolver& linear_solver,
  * When either A or b contains AutoDiffScalar, we use implicit function theorem
  * to find the gradient in x as ∂x/∂zᵢ = A⁻¹(∂b/∂zᵢ - ∂A/∂zᵢ * x) where z is the
  * variable we take gradient with.
+ *
+ * The following table indicate the scalar type of x with A/b containing the
+ * specified scalar type. The entries with NA are not supported.
+ *
+ * | ＼A  |        |     |      |
+ * | b ＼ | double | ADS | Expr |
+ * |------|--------|-----|----- |
+ * |double| double | ADS |  NA  |
+ * |  ADS |   ADS  | ADS |  NA  |
+ * | Expr |   NA   | NA  | Expr |
+ *
+ * where ADS stands for Eigen::AutoDiffScalar, and Expr stands for
+ * symbolic::Expression.
+ *
+ * TODO(hongkai.dai): support one of A/b being a double matrix and the other
+ * being a symbolic::Expression matrix.
  *
  * @note When both A and b are Eigen matrix of double, this function is almost
  * as fast as calling linear_solver.solve(b) directly; when either A or b
@@ -331,10 +444,7 @@ typename std::enable_if<
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
             const Eigen::MatrixBase<DerivedB>& b) {
-  const LinearSolverType<
-      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                    DerivedA::ColsAtCompileTime>>
-      linear_solver(A);
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return LinearSolve(linear_solver, A, b);
 }
 
@@ -351,9 +461,7 @@ typename std::enable_if<
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
             const Eigen::MatrixBase<DerivedB>& b) {
-  const LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                       DerivedA::ColsAtCompileTime>>
-      linear_solver(A);
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return LinearSolve(linear_solver, A, b);
 }
 
@@ -369,9 +477,7 @@ typename std::enable_if<
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
             const Eigen::MatrixBase<DerivedB>& b) {
-  const LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                       DerivedA::ColsAtCompileTime>>
-      linear_solver(autoDiffToValueMatrix(A));
+  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return LinearSolve(linear_solver, A, b);
 }
 //@}
