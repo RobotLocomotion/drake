@@ -95,15 +95,6 @@ TEST_F(IiwaToppraTest, JointAccelerationLimit) {
   ASSERT_TRUE(result);
   auto trajectory = result.value();
 
-  Eigen::MatrixXd knot_A, knot_lb, knot_ub;
-  std::tie(knot_A, knot_lb, knot_ub) = acceleration_constraint;
-  EXPECT_EQ(knot_A.cols(), 2 * trajectory.get_number_of_segments());
-  EXPECT_EQ(knot_lb.cols(), trajectory.get_number_of_segments());
-  EXPECT_EQ(knot_ub.cols(), trajectory.get_number_of_segments());
-  EXPECT_EQ(knot_A.rows(), knot_lb.rows());
-  EXPECT_EQ(knot_A.rows(), knot_ub.rows());
-  EXPECT_TRUE((knot_ub.array() >= knot_lb.array()).all());
-
   const double tol = 1e-6;
   for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
     const auto acceleration =
