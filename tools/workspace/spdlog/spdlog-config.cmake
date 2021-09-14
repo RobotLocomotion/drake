@@ -50,14 +50,19 @@ unset(_expectedTargets)
 
 set(spdlog_VERSION "1.5.0")
 
+set(_apple_soname_prologue)
+if(APPLE)
+  set(_apple_soname_prologue "@rpath/")
+endif()
 add_library(spdlog::spdlog SHARED IMPORTED)
 set_target_properties(spdlog::spdlog PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_spdlog.so"
-  IMPORTED_SONAME "libdrake_spdlog.so"
+  IMPORTED_SONAME "${_apple_soname_prologue}libdrake_spdlog.so"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include/spdlog"
   INTERFACE_LINK_LIBRARIES "fmt::fmt-header-only"
   INTERFACE_COMPILE_DEFINITIONS "HAVE_SPDLOG;SPDLOG_COMPILED_LIB;SPDLOG_FMT_EXTERNAL"
 )
+unset(_apple_soname_prologue)
 
 set(spdlog_LIBRARIES "spdlog::spdlog")
 set(spdlog_INCLUDE_DIRS "")

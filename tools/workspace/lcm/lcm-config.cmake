@@ -53,13 +53,18 @@ set_target_properties(lcm::lcm-coretypes PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include/lcm"
 )
 
+set(_apple_soname_prologue)
+if(APPLE)
+  set(_apple_soname_prologue "@rpath/")
+endif()
 add_library(lcm::lcm SHARED IMPORTED)
 set_target_properties(lcm::lcm PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_lcm.so"
-  IMPORTED_SONAME "libdrake_lcm.so"
+  IMPORTED_SONAME "${_apple_soname_prologue}libdrake_lcm.so"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include/lcm"
   INTERFACE_LINK_LIBRARIES "lcm::lcm-coretypes"
 )
+unset(_apple_soname_prologue)
 
 add_executable(lcm::lcm-gen IMPORTED)
 set_target_properties(lcm::lcm-gen PROPERTIES
