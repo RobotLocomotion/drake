@@ -1,0 +1,19 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+load("@drake//tools/install:install.bzl", "install")
+
+py_library(
+    name = "drake_visualizer_python_deps",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "drake_visualizer",
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)

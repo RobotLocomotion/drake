@@ -78,6 +78,15 @@ def _vtk_cc_library(
     elif os_result.is_ubuntu:
         if not header_only:
             srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
+    elif os_result.is_manylinux:
+        if not header_only:
+            # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
+            # using manylinux.
+            lib_dir = "/opt/vtk/lib"
+            linkopts = linkopts + [
+                "-L{}".format(lib_dir),
+                "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
+            ]
     else:
         fail("Unknown os_result {}".format(os_result))
 
@@ -126,6 +135,8 @@ def _impl(repository_ctx):
             sha256 = sha256,
             type = "tar.gz",
         )
+    elif os_result.is_manylinux:
+        repository_ctx.symlink("/opt/vtk/include", "include")
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
@@ -628,6 +639,11 @@ licenses([
         ],
     )
 
+    if os_result.is_manylinux:
+        vtk_glew_library = ":vtkglew"
+    else:
+        vtk_glew_library = "@glew"
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkRenderingOpenGL2",
@@ -653,7 +669,7 @@ licenses([
             ":vtkCommonTransforms",
             ":vtkRenderingCore",
             ":vtksys",
-            "@glew",
+            vtk_glew_library,
             "@opengl",
         ],
     )
@@ -676,7 +692,17 @@ licenses([
         deps = ["@zlib"],
     )
 
-    file_content += _vtk_cc_library(os_result, "vtksys")
+    if os_result.is_manylinux:
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtksys",
+            linkopts = ["-ldl"],
+        )
+
+        file_content += _vtk_cc_library(os_result, "vtkglew")
+
+    else:
+        file_content += _vtk_cc_library(os_result, "vtksys")
 
     # Glob all files for the data dependency of //tools:drake_visualizer.
     file_content += """

@@ -11,7 +11,7 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         # On macOS, no targets should depend on @glx.
         build_flavor = "macos"
-    elif os_result.is_ubuntu:
+    elif os_result.is_ubuntu or os_result.is_manylinux:
         build_flavor = "ubuntu"
         hdrs = [
             "GL/glx.h",
