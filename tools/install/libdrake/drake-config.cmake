@@ -52,10 +52,15 @@ unset(_targetsDefined)
 unset(_targetsNotDefined)
 unset(_expectedTargets)
 
+set(_apple_soname_prologue)
+if(APPLE)
+  set(_apple_soname_prologue "@rpath/")
+endif()
+
 add_library(drake::drake SHARED IMPORTED)
 set_target_properties(drake::drake PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake.so"
-  IMPORTED_SONAME "libdrake.so"
+  IMPORTED_SONAME "${_apple_soname_prologue}libdrake.so"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "drake::drake-lcmtypes-cpp;drake::drake-marker;Eigen3::Eigen;fmt::fmt-header-only;lcm::lcm;optitrack::optitrack-lcmtypes-cpp;spdlog::spdlog;tinyxml2::tinyxml2;${yaml-cpp_LIBRARIES}"
   INTERFACE_COMPILE_FEATURES "cxx_std_17"
@@ -78,8 +83,10 @@ set_target_properties(drake::drake-lcmtypes-java PROPERTIES
 add_library(drake::drake-marker SHARED IMPORTED)
 set_target_properties(drake::drake-marker PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_marker.so"
-  IMPORTED_SONAME "libdrake_marker.so"
+  IMPORTED_SONAME "${_apple_soname_prologue}libdrake_marker.so"
 )
+
+unset(_apple_soname_prologue)
 
 set(drake_LIBRARIES "drake::drake")
 set(drake_INCLUDE_DIRS "")

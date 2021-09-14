@@ -49,12 +49,17 @@ unset(_expectedTargets)
 
 set(ignition-math6_VERSION "6.8.0")
 
+set(_apple_soname_prologue)
+if(APPLE)
+  set(_apple_soname_prologue "@rpath/")
+endif()
 add_library(ignition-math6::ignition-math6 SHARED IMPORTED)
 set_target_properties(ignition-math6::ignition-math6 PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake_ignition_math.so"
-  IMPORTED_SONAME "libdrake_ignition_math.so"
+  IMPORTED_SONAME "${_apple_soname_prologue}libdrake_ignition_math.so"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include/ignition-math6"
 )
+unset(_apple_soname_prologue)
 
 set(ignition-math6_LIBRARIES "ignition-math6::ignition-math6")
 set(ignition-math6_INCLUDE_DIRS "")
