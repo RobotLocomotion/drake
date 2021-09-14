@@ -220,6 +220,9 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link2_name()));
   EXPECT_FALSE(plant->HasBodyNamed(kInvalidName));
+  // Indicator that the plant is calling the tree's method correctly.
+  EXPECT_EQ(plant->NumBodiesWithName(parameters.link1_name()), 1);
+  EXPECT_EQ(plant->NumBodiesWithName(kInvalidName), 0);
 
   EXPECT_TRUE(plant->HasJointNamed(parameters.shoulder_joint_name()));
   EXPECT_TRUE(plant->HasJointNamed(parameters.elbow_joint_name()));

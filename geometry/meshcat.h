@@ -1,7 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
+
+#include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/rgba.h"
@@ -77,14 +81,19 @@ class Meshcat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat)
 
-  /** Constructs the Meshcat instance. It will listen on the first available
-  port starting at 7001 (up to 7099). */
-  Meshcat();
+  /** Constructs the Meshcat instance on `port`. If no port is specified, the it
+  will listen on the first available port starting at 7000 (up to 7099).
+  @pre We require `port` >= 1024.
+  @throws std::exception if no requested `port` is available. */
+  explicit Meshcat(const std::optional<int>& port = std::nullopt);
 
   ~Meshcat();
 
   /** Returns the hosted http URL. */
   std::string web_url() const;
+
+  /** Returns the port on localhost listening for http connections. */
+  int port() const;
 
   /** (Advanced) Returns the ws:// URL for direct connection to the websocket
   interface.  Most users should connect via a browser opened to web_url(). */
@@ -103,6 +112,62 @@ class Meshcat {
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
   // TODO(russt): SetObject with texture map.
+
+  // TODO(russt): Provide a more general SetObject(std::string_view path,
+  // msgpack::object object) that would allow users to pass through anything
+  // that meshcat.js / three.js can handle.  Possible this could use
+  // common/name_value.h to avoid a header dependency on msgpack.
+
+  /** Properties for a perspective camera in three.js:
+   https://threejs.org/docs/#api/en/cameras/PerspectiveCamera */
+  struct PerspectiveCamera {
+    double fov{75};    ///< Camera frustum vertical field of view.
+    double aspect{1};  ///< Camera frustum aspect ratio.
+    double near{.01};  ///< Camera frustum near plane.
+    double far{100};   ///< Camera frustum far plane.
+    double zoom{1};    ///< The zoom factor of the camera.
+  };
+
+  /** Sets the Meshcat object on `path` to a perspective camera. We provide a
+   default value of `path` corresponding to the default camera object in
+   Meshcat. */
+  void SetCamera(PerspectiveCamera camera,
+                 std::string path = "/Cameras/default/rotated");
+
+  /** Properties for an orthographic camera in three.js:
+   https://threejs.org/docs/#api/en/cameras/OrthographicCamera */
+  struct OrthographicCamera {
+    double left{-1};     ///< Camera frustum left plane.
+    double right{1};     ///< Camera frustum right plane.
+    double top{-1};      ///< Camera frustum top plane.
+    double bottom{1};    ///< Camera frustum bottom plane.
+    double near{-1000};  ///< Camera frustum near plane.
+    double far{1000};    ///< Camera frustum far plane.
+    double zoom{1};      ///< The zoom factor of the camera.
+  };
+
+  /** Sets the Meshcat object on `path` to an orthographic camera. We provide a
+   default value of `path` corresponding to the default camera object in
+   Meshcat. */
+  void SetCamera(OrthographicCamera camera,
+                 std::string path = "/Cameras/default/rotated");
+
+  /** Applies a number of settings to make Meshcat act as a 2D renderer. The
+   camera is set to an orthographic camera with `X_WC` specifying the pose of
+   the camera in world.  The camera looks down the +Cy axis, with +Cz
+   corresponding to positive y in the 2D frame, and -Cx corresponding to
+   positive x in the 2D frame.
+
+   Additionally sets the background, grid lines, and axes "visible" properties
+   to false. */
+  void Set2dRenderMode(const math::RigidTransformd& X_WC =
+                           math::RigidTransformd(Eigen::Vector3d{0, -1, 0}),
+                       double xmin = -1, double xmax = 1, double ymin = -1,
+                       double ymax = 1);
+
+  /** Resets the default camera, background, grid lines, and axes to their
+   default settings. */
+  void ResetRenderMode();
 
   /** Set the RigidTransform for a given path in the scene tree. An object's
   pose is the concatenation of all of the transforms along its path, so setting
@@ -152,6 +217,9 @@ class Meshcat {
   */
   void SetProperty(std::string_view path, std::string property, double value);
 
+  void SetProperty(std::string_view path, std::string property,
+                   const std::vector<double>& value);
+
   // TODO(russt): Implement SetAnimation().
   // TODO(russt): Implement SetButton() and SetSlider() as wrappers on
   // set_control.
@@ -159,7 +227,11 @@ class Meshcat {
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block
   execution waiting for that data to be acquired. They are intentionally
-  excluded from doxygen. */
+  excluded from doxygen.
+
+  The SceneTree has a directory-like structure.  If HasPath() is true, then that
+  path optionally has an object, a transform, and any number of properties.
+  */
 
   /* Returns true iff `path` exists in the current internal (server) tree.
   Note that the javascript client maintains its own tree, which may contain

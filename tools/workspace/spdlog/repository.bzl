@@ -56,6 +56,10 @@ install(name = "install")
             # Here, we elect to use the same version as Ubuntu 20.04, even
             # though it is not the newest revision.  Sticking with a single,
             # older revision helps reduce spurious CI failures.
+            #
+            # In the unlikely event that you update the version here, fix up
+            # the two spdlog-*.cmake files in this directory, and revisit all
+            # of the version compatibility matrix in spdlog/repository.bzl.
             default = "v1.5.0",
         ),
         "sha256": attr.string(

@@ -6,6 +6,10 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 # Using the `drake` branch of this repository.
 _REPOSITORY = "RobotLocomotion/pybind11"
 
+# When upgrading this commit, check the version header within
+#  https://github.com/RobotLocomotion/pybind11/blob/drake/include/pybind11/detail/common.h
+# and if it has changed, then update the version number in the two
+# pybind11-*.cmake files in the current directory to match.
 _COMMIT = "c39ede1eedd4f39aa167d7b30b53ae45967c39b7"
 
 _SHA256 = "2281eef20037b1d18e7f790a1c47d64c48aaf5ba4f65c74b2c01453a926b05ab"

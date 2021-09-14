@@ -156,17 +156,17 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
 
     /* Allocates and calculates the free-motion tangent matrix for the
      deformable body. */
-    Eigen::SparseMatrix<T> model_tangent_matrix(fem_model.num_dofs(),
-                                                fem_model.num_dofs());
-    fem_model.SetTangentMatrixSparsityPattern(&model_tangent_matrix);
+    EigenSparseMatrix<T> model_tangent_matrix = {
+        Eigen::SparseMatrix<T>(fem_model.num_dofs(), fem_model.num_dofs())};
+    fem_model.SetTangentMatrixSparsityPattern(&(model_tangent_matrix.data));
     const auto& tangent_matrix_cache_entry = this->DeclareCacheEntry(
         fmt::format("Free motion FEM tangent matrix {}", deformable_body_id),
         systems::ValueProducer(model_tangent_matrix,
                                std::function<void(const systems::Context<T>&,
-                                                  Eigen::SparseMatrix<T>*)>{
+                                                  EigenSparseMatrix<T>*)>{
                                    [this, deformable_body_id](
                                        const systems::Context<T>& context,
-                                       Eigen::SparseMatrix<T>* tangent_matrix) {
+                                       EigenSparseMatrix<T>* tangent_matrix) {
                                      this->CalcFreeMotionTangentMatrix(
                                          context, deformable_body_id,
                                          tangent_matrix);
@@ -566,11 +566,11 @@ void DeformableRigidManager<T>::CalcNextFemStateBase(
 template <typename T>
 void DeformableRigidManager<T>::CalcFreeMotionTangentMatrix(
     const systems::Context<T>& context, DeformableBodyIndex index,
-    Eigen::SparseMatrix<T>* tangent_matrix) const {
+    EigenSparseMatrix<T>* tangent_matrix) const {
   const FemStateBase<T>& free_motion_fem_state =
       EvalFreeMotionFemStateBase(context, index);
   const FemModelBase<T>& fem_model = deformable_model_->fem_model(index);
-  fem_model.CalcTangentMatrix(free_motion_fem_state, tangent_matrix);
+  fem_model.CalcTangentMatrix(free_motion_fem_state, &(tangent_matrix->data));
 }
 
 template <typename T>

@@ -2,9 +2,7 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
     "install_files",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
@@ -50,14 +48,19 @@ cc_library(
     ],
 )
 
-cmake_config(
-    package = "pybind11",
-    script = "@drake//tools/workspace/pybind11:package-create-cps.py",
-    version_file = "include/pybind11/detail/common.h",
-)
+CMAKE_PACKAGE = "pybind11"
 
-# Creates rule :install_cmake_config.
-install_cmake_config(package = "pybind11")
+install_files(
+    name = "install_cmake_config",
+    dest = "lib/cmake/{}".format(CMAKE_PACKAGE),
+    files = [
+        "@drake//tools/workspace/pybind11:{}-config.cmake".format(CMAKE_PACKAGE),  # noqa
+        "@drake//tools/workspace/pybind11:{}-config-version.cmake".format(CMAKE_PACKAGE),  # noqa
+    ],
+    strip_prefix = ["**/"],
+    allowed_externals = ["@drake//:.bazelproject"],
+    visibility = ["//visibility:private"],
+)
 
 install_files(
     name = "install_extra_cmake",

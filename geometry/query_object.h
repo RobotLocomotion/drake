@@ -479,6 +479,24 @@ class QueryObject {
    and anchored objects. We DO NOT report the distance between two anchored
    objects.
 
+   <h3>Using maximum distance</h3>
+
+   While the algorithm generally has O(N²) complexity in time and space, that
+   can be reduced by the judicious use of the `max_distance` parameter. If
+   `φ(A, B) > max_distance`, the pair (A, B) will not be included in the
+   results (making it O(M²) in space where M < N). Furthermore, the broadphase
+   culling algorithm can exploit `max_distance` to *cheaply* eliminate pairs of
+   geometry that are "obviously" too far (likewise reducing the time
+   complexity).
+
+   Passing `max_distance = 0` is conceptually related to calling
+   HasCollisions(). If contact is sparse (very few actually contacting geometry
+   pairs), the two invocations will be quite similar in cost. However, the
+   distinction between the two is that *this* method would have to include *all*
+   pairs that satisfy `φ(A, B) <= 0`, whereas HasCollisions() stops at the
+   first. So, the more actually colliding geometry pairs there are, the bigger
+   the difference in cost between the two approaches.
+
    @anchor query_object_compute_pairwise_distance_table
    <h3>Characterizing the returned values</h3>
 

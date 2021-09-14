@@ -145,3 +145,15 @@ the main body of the document:
        date, commit SHA, and release tag in the same ping.
     4. Announce on Drake Slack, ``#general``.
     5. Party on, Wayne.
+
+## Post-release follow up
+
+1. Open the [tagged workspace](https://github.com/RobotLocomotion/drake/tree/v0.N.0/tools/workspace)
+   (editing that URL to have the correct value for ``N``) and ensure that
+   certain Drake-owned externals have sufficient tags:
+   1. Open ``models/repository.bzl`` and find the ``commit =`` used.
+      1. Open [RobotLocomotion/models](https://github.com/RobotLocomotion/models)
+         and check whether that commit already has an associated release tag.
+      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
+         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
+         four digit year, two digit month, two digit day).

@@ -15,6 +15,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
 
@@ -22,6 +23,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
@@ -386,6 +388,32 @@ const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.X_PG();
+}
+
+template <typename T>
+std::variant<std::monostate, const SurfaceMesh<double>*,
+             const VolumeMesh<double>*>
+GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
+  const auto& hydro_geometries = geometry_engine_->hydroelastic_geometries();
+  switch (hydro_geometries.hydroelastic_type(geometry_id)) {
+    case HydroelasticType::kUndefined:
+      break;
+    case HydroelasticType::kRigid: {
+      const auto& rigid = hydro_geometries.rigid_geometry(geometry_id);
+      if (!rigid.is_half_space()) {
+        return &rigid.mesh();
+      }
+      break;
+    }
+    case HydroelasticType::kSoft: {
+      const auto& soft = hydro_geometries.soft_geometry(geometry_id);
+      if (!soft.is_half_space()) {
+        return &soft.mesh();
+      }
+      break;
+    }
+  }
+  return {};
 }
 
 template <typename T>

@@ -368,7 +368,10 @@ class TestGeometry(unittest.TestCase):
         draw_subscriber.clear()
 
     def test_meshcat(self):
-        meshcat = mut.Meshcat()
+        meshcat = mut.Meshcat(port=7051)
+        self.assertEqual(meshcat.port(), 7051)
+        with self.assertRaises(RuntimeError):
+            meshcat2 = mut.Meshcat(port=7051)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
         meshcat.SetObject(path="/test/box",
@@ -380,6 +383,9 @@ class TestGeometry(unittest.TestCase):
                             value=True)
         meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
                             property="intensity", value=1.0)
+        meshcat.Set2dRenderMode(
+            X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
+        meshcat.ResetRenderMode()
 
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_visualizer(self, T):
@@ -974,6 +980,30 @@ class TestGeometry(unittest.TestCase):
             1/6.0,
             delta=1e-15)
         self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)
+
+    def test_convert_volume_to_surface_mesh(self):
+        # Use the volume mesh from `test_volume_mesh()`.
+        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
+                                   v1=mut.VolumeVertexIndex(2),
+                                   v2=mut.VolumeVertexIndex(3),
+                                   v3=mut.VolumeVertexIndex(4))
+        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
+                                    v1=mut.VolumeVertexIndex(3),
+                                    v2=mut.VolumeVertexIndex(2),
+                                    v3=mut.VolumeVertexIndex(0))
+
+        v0 = mut.VolumeVertex((1, 0,  0))
+        v1 = mut.VolumeVertex((0, 0,  0))
+        v2 = mut.VolumeVertex((0, 1,  0))
+        v3 = mut.VolumeVertex((0, 0, -1))
+        v4 = mut.VolumeVertex((-1, 0,  0))
+
+        volume_mesh = mut.VolumeMesh(elements=(t_left, t_right),
+                                     vertices=(v0, v1, v2, v3, v4))
+
+        surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
+
+        self.assertIsInstance(surface_mesh, mut.SurfaceMesh)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")

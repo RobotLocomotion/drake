@@ -31,6 +31,7 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
@@ -1030,6 +1031,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("r_MV", &Class::r_MV, py_rvp::reference_internal,
             doc.VolumeVertex.r_MV.doc);
   }
+
+  m.def("ConvertVolumeToSurfaceMesh", &ConvertVolumeToSurfaceMesh<T>,
+      py::arg("volume"), doc.ConvertVolumeToSurfaceMesh.doc);
 }  // NOLINT(readability/fn_size)
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -1567,11 +1571,21 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.Meshcat;
     py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const std::optional<int>&>(),
+            py::arg("port") = std::nullopt, cls_doc.ctor.doc)
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
+        .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
         .def("SetObject", &Class::SetObject, py::arg("path"), py::arg("shape"),
             py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc)
+        // TODO(russt): Bind SetCamera.
+        .def("Set2dRenderMode", &Class::Set2dRenderMode,
+            py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
+            py::arg("xmin") = -1.0, py::arg("xmax") = 1.0,
+            py::arg("ymin") = -1.0, py::arg("ymax") = 1.0,
+            cls_doc.Set2dRenderMode.doc)
+        .def("ResetRenderMode", &Class::ResetRenderMode,
+            cls_doc.ResetRenderMode.doc)
         .def("SetTransform", &Class::SetTransform, py::arg("path"),
             py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
@@ -1833,6 +1847,7 @@ void def_geometry_all(py::module m) {
 PYBIND11_MODULE(geometry, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   py::module::import("pydrake.common");
+  py::module::import("pydrake.math");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.lcm");
 

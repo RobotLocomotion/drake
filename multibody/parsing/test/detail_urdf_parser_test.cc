@@ -343,6 +343,65 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTagMismatchTest) {
       "and should be a <drake:joint>");
 }
 
+// We allow users to declare the "world" link for the purpose of declaring
+// "anchored" geometry (visual and collision). Specifying inertial properties
+// is not *strictly* an error -- a warning will be written to the console.
+// We can't test the warning, but we'll confirm there's no error.
+//
+// As for the geometry, we'll simply confirm that the expected numbers of
+// geometries get instantiated (with expected roles). We'll assume that because
+// the geometry parsing got triggered, it is correct and ignore the other
+// details.
+GTEST_TEST(MultibodyPlantUrdfParserTest, AddingGeometriesToWorldLink) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="world">
+    <!-- Declaring mass properties on the "world" link is bad. But it won't
+     cause the parser to throw. -->
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.1 0.2 0.3"/>
+        <material>
+          <color rgba="0.8 0.7 0.6 0.5"/>
+        </material>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
+)""";
+  DataSource source;
+  source.file_contents = &test_urdf;
+
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  AddModelFromUrdf(source, "urdf", {}, {}, &plant, &scene_graph);
+
+  const auto& inspector = scene_graph.model_inspector();
+  EXPECT_EQ(inspector.num_geometries(), 2);
+  EXPECT_EQ(inspector.NumGeometriesForFrame(scene_graph.world_frame_id()), 2);
+  EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(
+                scene_graph.world_frame_id(), geometry::Role::kProximity),
+            1);
+  // This does not total three geometries; the sphere has two roles,
+  EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(
+                scene_graph.world_frame_id(), geometry::Role::kIllustration),
+            1);
+  EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(
+                scene_graph.world_frame_id(), geometry::Role::kPerception),
+            1);
+}
+
 // Reports if the frame with the given id has a geometry with the given role
 // whose name is the same as what ShapeName(ShapeType{}) would produce.
 template <typename ShapeType>
