@@ -3,6 +3,8 @@
 #include <memory>
 #include <optional>
 #include <tuple>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
@@ -129,7 +131,8 @@ class Toppra {
    * @param discretization The discretization scheme to use for this linear
    *                       constraint. See ToppraDiscretization for details.
    */
-  ToppraLinearConstraint& AddJointAccelerationLimit(
+  std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+  AddJointAccelerationLimit(
       const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
       const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
       ToppraDiscretization discretization =
@@ -171,9 +174,10 @@ class Toppra {
   Eigen::VectorXd gridpoints_;
   Binding<BoundingBoxConstraint> x_bounding_box_con_;
   std::vector<ToppraBoundingBoxConstraint> x_bounds_;
-  std::vector<Binding<LinearConstraint>> backward_lin_constraint_;
-  std::vector<Binding<LinearConstraint>> forward_lin_constraint_;
-  std::vector<ToppraLinearConstraint> lin_constraint_coeff_;
+  std::unordered_map<Binding<LinearConstraint>, ToppraLinearConstraint>
+      backward_lin_constraint_;
+  std::unordered_map<Binding<LinearConstraint>, ToppraLinearConstraint>
+      forward_lin_constraint_;
 };
 }  // namespace multibody
 }  // namespace drake

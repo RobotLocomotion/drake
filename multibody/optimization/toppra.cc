@@ -120,7 +120,8 @@ Toppra::ToppraBoundingBoxConstraint& Toppra::AddJointVelocityLimit(
   return x_bounds_.back();
 }
 
-Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
+std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+Toppra::AddJointAccelerationLimit(
     const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
     const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
     ToppraDiscretization discretization) {
@@ -158,14 +159,16 @@ Toppra::ToppraLinearConstraint& Toppra::AddJointAccelerationLimit(
       con_ub.block(n_dof, knot, n_dof, 1) << upper_limit;
     }
   }
-  backward_lin_constraint_.push_back(backward_prog_->AddLinearConstraint(
+  auto backward_con = backward_prog_->AddLinearConstraint(
       Eigen::MatrixXd::Zero(n_con, 2), Eigen::VectorXd::Zero(n_con),
-      Eigen::VectorXd::Zero(n_con), {backward_x_, backward_u_}));
-  forward_lin_constraint_.push_back(forward_prog_->AddLinearConstraint(
+      Eigen::VectorXd::Zero(n_con), {backward_x_, backward_u_});
+  auto forward_con = forward_prog_->AddLinearConstraint(
       Eigen::MatrixXd::Zero(n_con, 1), Eigen::VectorXd::Zero(n_con),
-      Eigen::VectorXd::Zero(n_con), forward_u_));
-  lin_constraint_coeff_.emplace_back(con_A, con_lb, con_ub);
-  return lin_constraint_coeff_.back();
+      Eigen::VectorXd::Zero(n_con), forward_u_);
+  auto coefficients = std::make_tuple(con_A, con_lb, con_ub);
+  backward_lin_constraint_.emplace(backward_con, coefficients);
+  forward_lin_constraint_.emplace(forward_con, coefficients);
+  return std::make_pair(backward_con, forward_con);
 }
 
 std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
@@ -196,11 +199,10 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
     }
     x_bounding_box_con_.evaluator()->set_bounds(Vector1d(x_min),
                                                 Vector1d(x_max));
-    for (size_t lin_con = 0; lin_con < lin_constraint_coeff_.size();
-         lin_con++) {
+    for (auto& [constraint, coefficients] : backward_lin_constraint_) {
       Eigen::MatrixXd A, lb, ub;
-      std::tie(A, lb, ub) = lin_constraint_coeff_[lin_con];
-      backward_lin_constraint_[lin_con].evaluator()->UpdateCoefficients(
+      std::tie(A, lb, ub) = coefficients;
+      constraint.evaluator()->UpdateCoefficients(
           A.block(0, 2 * knot, A.rows(), 2), lb.col(knot), ub.col(knot));
     }
     // Solve minimum
@@ -258,11 +260,10 @@ Eigen::VectorXd Toppra::ComputeForwardPass(double s_dot_0,
     forward_continuity_con_.evaluator()->UpdateCoefficients(
         Vector1d(2 * delta), Vector1d(K(0, knot + 1) - xstar(knot)),
         Vector1d(K(1, knot + 1) - xstar(knot)));
-    for (size_t lin_con = 0; lin_con < lin_constraint_coeff_.size();
-         lin_con++) {
+    for (auto& [constraint, coefficients] : forward_lin_constraint_) {
       Eigen::MatrixXd A, lb, ub;
-      std::tie(A, lb, ub) = lin_constraint_coeff_[lin_con];
-      forward_lin_constraint_[lin_con].evaluator()->UpdateCoefficients(
+      std::tie(A, lb, ub) = coefficients;
+      constraint.evaluator()->UpdateCoefficients(
           A.col(2 * knot + 1), lb.col(knot) - xstar(knot) * A.col(2 * knot),
           ub.col(knot) - xstar(knot) * A.col(2 * knot));
     }
