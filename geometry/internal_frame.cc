@@ -10,7 +10,7 @@ InternalFrame::InternalFrame() {}
 
 InternalFrame::InternalFrame(SourceId source_id, FrameId frame_id,
                              const std::string& name, int frame_group,
-                             FrameIndex index, FrameId parent_id)
+                             int index, FrameId parent_id)
     : source_id_(source_id),
       id_(frame_id),
       name_(name),

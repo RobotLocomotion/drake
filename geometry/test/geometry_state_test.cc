@@ -974,8 +974,8 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     // The world frame + the frames added by s_id.
     EXPECT_EQ(internal_frames.size(), kFrameCount + 1);
 
-    auto test_frame = [internal_frames, this, s_id](
-        FrameIndex i, FrameId parent_id, int num_child_frames) {
+    auto test_frame = [internal_frames, this, s_id](int i, FrameId parent_id,
+                                                    int num_child_frames) {
       const auto& frame = internal_frames.at(frames_[i]);
       EXPECT_EQ(frame.source_id(), s_id);
       EXPECT_EQ(frame.id(), frames_[i]);
@@ -1013,9 +1013,9 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     gs_tester_.SetFramePoses(s_id, poses);
     gs_tester_.FinalizePoseUpdate();
 
-    test_frame(FrameIndex(0), gs_tester_.get_world_frame(), 0);
-    test_frame(FrameIndex(1), gs_tester_.get_world_frame(), 1);
-    test_frame(FrameIndex(2), frames_[1], 0);
+    test_frame(0, gs_tester_.get_world_frame(), 0);
+    test_frame(1, gs_tester_.get_world_frame(), 1);
+    test_frame(2, frames_[1], 0);
   }
 
   // The internal geometries are what and where they should be.

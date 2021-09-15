@@ -124,7 +124,7 @@ GeometryState<T>::GeometryState()
   // As an arbitrary design choice, we'll say the world frame is its own parent.
   frames_[world] = InternalFrame(self_source_, world, "world",
                                  InternalFrame::world_frame_group(),
-                                 FrameIndex(0), world);
+                                 0, world);
   frame_index_to_id_map_.push_back(world);
   X_WF_.push_back(RigidTransform<T>::Identity());
   X_PF_.push_back(RigidTransform<T>::Identity());
@@ -556,7 +556,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   }
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
-  FrameIndex index(X_PF_.size());
+  int index(static_cast<int>(X_PF_.size()));
   X_PF_.emplace_back(RigidTransform<T>::Identity());
   X_WF_.emplace_back(RigidTransform<T>::Identity());
   frame_index_to_id_map_.push_back(frame_id);
