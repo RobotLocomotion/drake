@@ -274,15 +274,17 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "toppra_test",
-    size = "medium",
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
+    use_default_main = False,
     deps = [
         ":toppra",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/tree",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
 )
 
