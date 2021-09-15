@@ -10,7 +10,6 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"

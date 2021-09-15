@@ -15,7 +15,6 @@
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"

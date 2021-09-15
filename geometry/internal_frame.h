@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_index.h"
 
 namespace drake {
 namespace geometry {
@@ -43,7 +42,7 @@ class InternalFrame {
    @param index         The index of this frame in the SceneGraph.
    @param parent_id     The id of the parent frame.  */
   InternalFrame(SourceId source_id, FrameId frame_id, const std::string& name,
-                int frame_group, FrameIndex index, FrameId parent_id);
+                int frame_group, int index, FrameId parent_id);
 
   /* Compares two %InternalFrame instances for "equality". Two internal frames
    are considered equal if they have the same frame identifier.  */
@@ -71,7 +70,7 @@ class InternalFrame {
   int frame_group() const { return frame_group_; }
 
   /* Returns the index of this frame in the full scene graph.  */
-  FrameIndex index() const { return index_; }
+  int index() const { return index_; }
 
   //@}
 
@@ -173,7 +172,7 @@ class InternalFrame {
   int frame_group_{0};
 
   // The index of this frame in the full SceneGraph.
-  FrameIndex index_;
+  int index_{};
 
   // The identifier of this frame's parent frame.
   FrameId parent_id_;
