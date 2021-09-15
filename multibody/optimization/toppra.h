@@ -50,25 +50,6 @@ class Toppra {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Toppra)
 
-  /**
-   * Contains the lower and upper bound for the bounding box constraint imposed
-   * on x at each gridpoint. The length of each vector is equal to the number of
-   * gridpoints.
-   */
-  typedef std::tuple<Eigen::VectorXd, Eigen::VectorXd>
-      ToppraBoundingBoxConstraint;
-  /**
-   * Contains the coefficients, lower bound and upper bound for the linear
-   * constraint at each gridpoint. The number of columns in the coefficent
-   * matrix is twice the number of gridpoints and each pair of columns
-   * correspond to the coefficients on [x, u] for the linear constraint at the
-   * respective gridpoint. The number of columns in the lower and upper bound
-   * matrices is equal to the number of gridpoints and each column contains the
-   * bounds for the constraint at the respective gridpoint.
-   */
-  typedef std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd>
-      ToppraLinearConstraint;
-
   ~Toppra() {}
 
   /**
@@ -82,9 +63,9 @@ class Toppra {
    *                   must equal the path start and end time respectively.
    *                   Gridpoints must also be monotonically increasing.
    */
-  explicit Toppra(const PiecewisePolynomial<double>& path,
-                  const MultibodyPlant<double>& plant,
-                  const Eigen::Ref<const Eigen::VectorXd>& gridpoints);
+  Toppra(const PiecewisePolynomial<double>& path,
+         const MultibodyPlant<double>& plant,
+         const Eigen::Ref<const Eigen::VectorXd>& gridpoints);
 
   /**
    * Takes a path and generates a sequence of gridpoints selected to control
@@ -118,7 +99,7 @@ class Toppra {
    * @param lower_limit The lower velocity limit for each degree of freedom.
    * @param upper_limit The upper velocity limit for each degree of freedom.
    */
-  ToppraBoundingBoxConstraint& AddJointVelocityLimit(
+  Binding<BoundingBoxConstraint> AddJointVelocityLimit(
       const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
       const Eigen::Ref<const Eigen::VectorXd>& upper_limit);
 
@@ -130,6 +111,9 @@ class Toppra {
    * @param upper_limit The upper acceleration limit for each degree of freedom.
    * @param discretization The discretization scheme to use for this linear
    *                       constraint. See ToppraDiscretization for details.
+   * @return A pair containing the linear constraints that will enforce the
+   *         acceleration limit on the backward pass and forward pass
+   *         respectively.
    */
   std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
   AddJointAccelerationLimit(
@@ -140,9 +124,9 @@ class Toppra {
 
  private:
   /**
-   * Performs the backward pass step of TOPPRA, returning the controllable set
-   * at each gridpoint. The rows are respectively the lower and upper bound for
-   * the path velocity at each knot point.
+   * Performs the backward pass step of TOPPRA, returning the controllable set,
+   * K, at each gridpoint. K(0, i) and K(1, i) contain respectively the lower
+   * and upper bound of the path velocity at grid point i.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param s_dot_N The path velocity at the end of the path.
    */
@@ -154,11 +138,40 @@ class Toppra {
    * acceleration at each gridpoint that remains within the controllable set.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param K The controllable set that the path velocity must stay within at
-   *          each gridpoint. Each column consists of the lower and upper bound
-   *          for the path velocity and there must be gridpoint.size() number of
-   *          columns.
+   *          each gridpoint. K(0, i) and K(1, i) contain respectively the lower
+   *          and upper bound of the path velocity at grid point i.
    */
-  Eigen::VectorXd ComputeForwardPass(double s_dot_0, const Eigen::Matrix2Xd& K);
+  std::optional<Eigen::VectorXd> ComputeForwardPass(
+      double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
+
+  /**
+   * Contains the lower and upper bound for the bounding box constraint imposed
+   * on x at each gridpoint. The bounding box constraint at the i'th grid point
+   * is lb(i) <= x <= ub(i).
+   */
+  struct ToppraBoundingBoxConstraint {
+    ToppraBoundingBoxConstraint(const Eigen::VectorXd& lower_limit,
+                                const Eigen::VectorXd& upper_limit)
+        : lb(lower_limit), ub(upper_limit) {}
+
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
+  };
+  /**
+   * Contains the coefficients, lower bound and upper bound for the linear
+   * constraint at each gridpoint. The linear constraint at the i'th grid point
+   * is lb.col(i) <= ceoffs.middleCols<2>(2*i) * [x;u] <= ub.col(i).
+   */
+  struct ToppraLinearConstraint {
+    ToppraLinearConstraint(const Eigen::MatrixXd& A,
+                           const Eigen::MatrixXd& lower_limit,
+                           const Eigen::MatrixXd& upper_limit)
+        : coeffs(A), lb(lower_limit), ub(upper_limit) {}
+
+    Eigen::MatrixXd coeffs;
+    Eigen::MatrixXd lb;
+    Eigen::MatrixXd ub;
+  };
 
   std::unique_ptr<solvers::MathematicalProgram> backward_prog_;
   solvers::VectorXDecisionVariable backward_x_;
@@ -172,10 +185,28 @@ class Toppra {
   const PiecewisePolynomial<double>& path_;
   const MultibodyPlant<double>& plant_;
   Eigen::VectorXd gridpoints_;
-  Binding<BoundingBoxConstraint> x_bounding_box_con_;
-  std::vector<ToppraBoundingBoxConstraint> x_bounds_;
+  // x_bounds_ maps a Binding<BoundingBoxConstraint> to its bounds for the
+  // backward pass. At the i'th grid point the linear constraint
+  // x_bounds_.at(constraint).lb.col(i) <= x
+  // <= x_bounds_.at(constraint.ub.col(i) will be imposed for each constraint in
+  // x_bounds_.
+  std::unordered_map<Binding<BoundingBoxConstraint>,
+                     ToppraBoundingBoxConstraint>
+      x_bounds_;
+  // Note: The coefficients/bounds in backward_lin_constraint_ and
+  // forward_lin_constraint_ must be kept in sync to ensure the correct
+  // solution.
+  // backward_lin_constraint_ maps a Binding<LinearConstraint> to its
+  // coefficients/bounds for the backward pass. At the i'th grid point the
+  // linear constraint backward_lin_constraint_.at(constraint).lb.col(i) <=
+  // backward_lin_constraint_.at(constraint).coeffs.middleCols<2>(2*i) * [x;u]
+  // <= backward_lin_constraint_.at(constraint.ub.col(i) will be imposed for
+  // each constraint in backward_lin_constraint_.
   std::unordered_map<Binding<LinearConstraint>, ToppraLinearConstraint>
       backward_lin_constraint_;
+  // forward_lin_constraint_ maps a Binding<LinearConstraint> to its
+  // coefficients/bounds for the forward pass in the same manner as
+  // backward_lin_constraint_.
   std::unordered_map<Binding<LinearConstraint>, ToppraLinearConstraint>
       forward_lin_constraint_;
 };

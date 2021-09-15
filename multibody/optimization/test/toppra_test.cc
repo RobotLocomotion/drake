@@ -61,12 +61,6 @@ TEST_F(IiwaToppraTest, JointVelocityLimit) {
   ASSERT_TRUE(result);
   auto trajectory = result.value();
 
-  Eigen::VectorXd knot_lb, knot_ub;
-  std::tie(knot_lb, knot_ub) = velocity_constraint;
-  EXPECT_EQ(knot_lb.size(), trajectory.get_number_of_segments());
-  EXPECT_EQ(knot_ub.size(), trajectory.get_number_of_segments());
-  EXPECT_TRUE((knot_ub.array() >= knot_lb.array()).all());
-
   const double tol = 1e-6;
   for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
     const auto velocity =
