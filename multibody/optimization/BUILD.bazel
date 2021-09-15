@@ -274,7 +274,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "toppra_test",
-    size = "medium",
+    use_default_main = False,
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
@@ -283,6 +283,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/tree",
+        "//solvers:mosek_solver",
     ],
 )
 
