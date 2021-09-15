@@ -92,6 +92,9 @@ class HPolyhedron final : public ConvexSet {
   */
   Eigen::VectorXd ChebyshevCenter() const;
 
+  /** Returns the Cartesian product of `this` and `other`. */
+  HPolyhedron CartesianProduct(const HPolyhedron& other) const;
+
   /** Returns the `n`-ary Cartesian power of `this`.
   The n-ary Cartesian power of a set H is the set H ⨉ H ⨉ ... ⨉ H, where H is
   repeated n times. */

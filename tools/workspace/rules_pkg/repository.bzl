@@ -12,7 +12,7 @@ def rules_pkg_repository(
         name = name,
         repository = "bazelbuild/rules_pkg",  # License: Apache-2.0
         extra_strip_prefix = "pkg",
-        commit = "0.5.0",
-        sha256 = "098d9d442a2dbd77bf0329d6c995a36d4f492f3161e80197abee5a9bf7ae262f",  # noqa
+        commit = "0.5.1",
+        sha256 = "0d2e97f71161e8af97cb2fffe321017293127f6ea8b497cb27b2b8a711e64174",  # noqa
         mirrors = mirrors,
     )

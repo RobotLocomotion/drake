@@ -134,7 +134,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
-            cls_doc.dynamic_friction.doc);
+            cls_doc.dynamic_friction.doc)
+        .def(py::pickle(
+            [](const Class& self) {
+              return std::pair(self.static_friction(), self.dynamic_friction());
+            },
+            [](std::pair<T, T> frictions) {
+              return Class(frictions.first, frictions.second);
+            }));
     DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);
@@ -335,6 +342,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
             cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_5args)
+        .def(
+            "CalcJacobianCenterOfMassTranslationalVelocity",
+            [](const Class* self, const Context<T>& context,
+                const std::vector<ModelInstanceIndex>& model_instances,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+                const Frame<T>& frame_E) {
+              Matrix3X<T> Js_v_ACcm_E(
+                  3, GetVariableSize<T>(*self, with_respect_to));
+              self->CalcJacobianCenterOfMassTranslationalVelocity(context,
+                  model_instances, with_respect_to, frame_A, frame_E,
+                  &Js_v_ACcm_E);
+              return Js_v_ACcm_E;
+            },
+            py::arg("context"), py::arg("model_instances"),
+            py::arg("with_respect_to"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc_6args)
         .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
             py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
@@ -1149,8 +1172,7 @@ PYBIND11_MODULE(plant, m) {
     py::class_<Class, systems::LeafSystem<T>>(
         m, "ContactResultsToLcmSystem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
-            // Keep alive, reference: `self` keeps `plant` alive.
-            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+            cls_doc.ctor.doc)
         .def("get_contact_result_input_port",
             &Class::get_contact_result_input_port, py_rvp::reference_internal,
             cls_doc.get_contact_result_input_port.doc)
@@ -1174,7 +1196,29 @@ PYBIND11_MODULE(plant, m) {
       py::keep_alive<2, 1>(),
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(),
-      doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
+      doc.ConnectContactResultsToDrakeVisualizer.doc_3args_builder_plant_lcm);
+
+  m.def(
+      "ConnectContactResultsToDrakeVisualizer",
+      [](systems::DiagramBuilder<double>* builder,
+          const MultibodyPlant<double>& plant,
+          const geometry::SceneGraph<double>& scene_graph,
+          lcm::DrakeLcmInterface* lcm) {
+        return drake::multibody::ConnectContactResultsToDrakeVisualizer(
+            builder, plant, scene_graph, lcm);
+      },
+      py::arg("builder"), py::arg("plant"), py::arg("scene_graph"),
+      py::arg("lcm") = nullptr, py_rvp::reference,
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(),
+      // Keep alive, transitive: `plant` keeps `builder` alive.
+      py::keep_alive<2, 1>(),
+      // Keep alive, transitive: `scene_graph` keeps `builder` alive.
+      py::keep_alive<3, 1>(),
+      // Keep alive, transitive: `lcm` keeps `builder` alive.
+      py::keep_alive<4, 1>(),
+      doc.ConnectContactResultsToDrakeVisualizer
+          .doc_4args_builder_plant_scene_graph_lcm);
 
   {
     using Class = PropellerInfo;

@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
@@ -129,6 +130,8 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   Eigen::Vector3d test3out = DiscardGradient(test3);
   EXPECT_TRUE(CompareMatrices(test3out, test2));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
   EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).linear(), test5.linear()));
   EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).translation(),
@@ -140,6 +143,7 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   EXPECT_TRUE(CompareMatrices(test6b.linear(), Eigen::Matrix3d::Identity()));
   EXPECT_TRUE(
       CompareMatrices(test6b.translation(), Eigen::Vector3d{3., 2., 1.}));
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
@@ -171,6 +175,8 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
   DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
   DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test5));
   EXPECT_TRUE(
@@ -190,6 +196,7 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   test6.linear()(0, 0).derivatives() = Vector3d{1., 2., 3.};
 
   EXPECT_THROW(DiscardZeroGradient(test6), std::runtime_error);
+#pragma GCC diagnostic pop
 }
 
 // Make sure that casting to autodiff always results in zero gradients.
@@ -215,6 +222,28 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   EXPECT_TRUE(fixed_gradients.isZero(0.));
 }
 
+GTEST_TEST(GetDerivativeSize, Test) {
+  // Empty gradient.
+  EXPECT_EQ(GetDerivativeSize(Eigen::Vector2d(1, 2).cast<AutoDiffXd>()), 0);
+  // Non-empty gradient.
+  EXPECT_EQ(GetDerivativeSize(initializeAutoDiffGivenGradientMatrix(
+                Eigen::Vector2d(1, 2), Eigen::Matrix<double, 2, 3>::Ones())),
+            3);
+  // Some derivatives have empty size.
+  Eigen::Matrix<AutoDiffXd, 3, 1> x;
+  x(0).value() = 0;
+  x(0).derivatives() = Eigen::VectorXd(0);
+  x(1).value() = 1;
+  x(1).derivatives() = Eigen::Vector4d::Ones();
+  x(2).value() = 2;
+  x(2).derivatives() = Eigen::VectorXd::Ones(4);
+  EXPECT_EQ(GetDerivativeSize(x), 4);
+
+  // Inconsistent derivative size.
+  x(2).derivatives() = Eigen::VectorXd::Ones(3);
+  DRAKE_EXPECT_THROWS_MESSAGE(GetDerivativeSize(x),
+                              ".* has size 3, while another entry has size 4");
+}
 }  // namespace
 }  // namespace math
 }  // namespace drake

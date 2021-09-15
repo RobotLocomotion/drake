@@ -255,6 +255,103 @@ std::string GetScopedName(
   }
 }
 
+// TODO(rpoyner-tri): the Select*() and Expand*() functions below can be
+// removed and replaced with arbitrary indexing once Eigen 3.4 is our minimum
+// required version.
+
+// Valid index arrays are no larger than max_size, are sorted, and contain
+// entries in the range [0, max_size).
+void DemandIndicesValid(const std::vector<int>& indices, int max_size) {
+  DRAKE_DEMAND(static_cast<int>(indices.size()) <= max_size);
+  if (indices.empty()) { return; }
+
+  // Only do the expensive check in debug builds.
+  DRAKE_ASSERT(std::is_sorted(indices.begin(), indices.end()));
+  DRAKE_DEMAND(indices[0] >= 0);
+  DRAKE_DEMAND(indices[indices.size() - 1] < max_size);
+}
+
+// Make a new, possibly smaller square matrix from square matrix @p M, by
+// selecting the rows and columns indexed by @p indices.
+template <typename T>
+MatrixX<T> SelectRowsCols(const MatrixX<T>& M,
+                          const std::vector<int>& indices) {
+  DRAKE_DEMAND(M.rows() == M.cols());
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, M.rows()));
+  const int selected_count = indices.size();
+  if (selected_count == M.rows()) {
+    return M;
+  }
+  MatrixX<T> result(selected_count, selected_count);
+
+  for (int i = 0; i < result.rows(); ++i) {
+    for (int j = 0; j < result.cols(); ++j) {
+      result(i, j) = M(indices[i], indices[j]);
+    }
+  }
+  return result;
+}
+
+// Make a new, possibly smaller matrix from matrix M, by selecting the columns
+// indexed by @p indices.
+template <typename T>
+MatrixX<T> SelectCols(const MatrixX<T>& M,
+                      const std::vector<int>& indices) {
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, M.cols()));
+  const int selected_count = indices.size();
+  if (selected_count == M.cols()) {
+    return M;
+  }
+  MatrixX<T> result(M.rows(), selected_count);
+
+  for (int i = 0; i < result.cols(); ++i) {
+    result.col(i) = M.col(indices[i]);
+  }
+  return result;
+}
+
+// Make a new, possibly smaller vector from vector @p v, by selecting the rows
+// indexed by @p indices.
+template <typename T>
+VectorX<T> SelectRows(const VectorX<T>& v,
+                      const std::vector<int>& indices) {
+  const int selected_count = indices.size();
+  if (selected_count == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(selected_count);
+
+  for (int i = 0; i < result.rows(); ++i) {
+    result(i) = v(indices[i]);
+  }
+  return result;
+}
+
+// Make a new, possibly larger vector of size @p rows_out, by copying rows
+// of @p v to rows indexed by @p indices. New rows are filled with zeros.
+template <typename T>
+VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
+                       const std::vector<int>& indices) {
+  DRAKE_ASSERT(static_cast<int>(indices.size()) == v.rows());
+  DRAKE_ASSERT(rows_out >= v.rows());
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, rows_out));
+  if (rows_out == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(rows_out);
+
+  int index_cursor = 0;
+  for (int i = 0; i < result.rows(); ++i) {
+    if (index_cursor >= v.rows() || i < indices[index_cursor]) {
+      result(i) = 0.;
+    } else {
+      result(indices[index_cursor]) = v(index_cursor);
+      ++index_cursor;
+    }
+  }
+  return result;
+}
+
 }  // namespace
 
 template <typename T>
@@ -751,17 +848,6 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
-  // Make a contact solver when the plant is modeled as a discrete system.
-  if (is_discrete()) {
-    tamsi_solver_ =
-        std::make_unique<TamsiSolver<T>>(num_velocities());
-    // Set the stiction tolerance according to the values set by users with
-    // set_stiction_tolerance().
-    TamsiSolverParameters solver_parameters;
-    solver_parameters.stiction_tolerance =
-        friction_model_.stiction_tolerance();
-    tamsi_solver_->set_solver_parameters(solver_parameters);
-  }
   SetUpJointLimitsParameters();
   scene_graph_ = nullptr;  // must not be used after Finalize().
 }
@@ -1834,6 +1920,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
 template<typename T>
 TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
+    TamsiSolver<T>* tamsi_solver,
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
     const VectorX<T>& minus_tau,
@@ -1857,18 +1944,18 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
 
     // Update the data.
-    tamsi_solver_->SetTwoWayCoupledProblemData(
+    tamsi_solver->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
         &p_star_substep, &fn0_substep,
         &stiffness, &damping, &mu);
 
-    info = tamsi_solver_->SolveWithGuess(dt_substep, v0_substep);
+    info = tamsi_solver->SolveWithGuess(dt_substep, v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
     if (info != TamsiSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
-    v0_substep = tamsi_solver_->get_generalized_velocities();
+    v0_substep = tamsi_solver->get_generalized_velocities();
 
     // TAMSI updates each normal force according to:
     //   fₙ = (1 − d vₙ)₊ (fₙ₀ − h k vₙ)₊
@@ -1878,7 +1965,7 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     // We must update fₙ₀ for each substep accordingly, i.e:
     //   fₙ₀(next) = (fₙ₀(previous) − h k vₙ(next))₊
     const auto vn_substep =
-        tamsi_solver_->get_normal_velocities();
+        tamsi_solver->get_normal_velocities();
     fn0_substep = fn0_substep.array() -
                   dt_substep * stiffness.array() * vn_substep.array();
     fn0_substep = fn0_substep.cwiseMax(T(0.0));
@@ -2239,19 +2326,121 @@ void MultibodyPlant<T>::CalcContactSolverResults(
     phi0[i] = contact_pairs[i].phi0;
   }
 
-  if (contact_solver_ != nullptr) {
-    CallContactSolver(contact_solver_.get(), context0.get_time(), v0, M0,
-                      minus_tau, phi0, contact_jacobians.Jc, stiffness, damping,
-                      mu, results);
-  } else {
-    CallTamsiSolver(context0.get_time(), v0, M0, minus_tau, fn0,
-                    contact_jacobians.Jn, contact_jacobians.Jt, stiffness,
-                    damping, mu, results);
+  // Joint locking: quick exit if everything is locked.
+  const auto& indices = EvalJointLockingIndices(context0);
+  if (indices.empty()) {
+    // Everything is locked! Return a result that indicates no velocity, but
+    // reports normal forces.
+    results->Resize(nv, num_contacts);
+    results->v_next.setZero();
+    results->fn = fn0;
+    results->ft.setZero();
+    results->vn.setZero();
+    results->vt.setZero();
+    results->tau_contact = contact_jacobians.Jn.transpose() * results->fn;
+    return;
   }
+
+  // Joint locking: reduce solver inputs.
+  MatrixX<T> M0_unlocked = SelectRowsCols(M0, indices);
+  VectorX<T> minus_tau_unlocked = SelectRows(minus_tau, indices);
+  MatrixX<T> Jn_unlocked = SelectCols(contact_jacobians.Jn, indices);
+  MatrixX<T> Jt_unlocked = SelectCols(contact_jacobians.Jt, indices);
+  MatrixX<T> Jc_unlocked = SelectCols(contact_jacobians.Jc, indices);
+
+  VectorX<T> v0_unlocked = SelectRows(v0, indices);
+
+  contact_solvers::internal::ContactSolverResults<T> results_unlocked;
+  results_unlocked.Resize(indices.size(), num_contacts);
+
+  if (contact_solver_ != nullptr) {
+    CallContactSolver(contact_solver_.get(), context0.get_time(), v0_unlocked,
+                      M0_unlocked, minus_tau_unlocked, phi0, Jc_unlocked,
+                      stiffness, damping, mu, &results_unlocked);
+  } else {
+    systems::CacheEntryValue& value =
+        this->get_cache_entry(cache_indexes_.contact_solver_scratch)
+        .get_mutable_cache_entry_value(context0);
+    auto& tamsi_solver =
+        value.GetMutableValueOrThrow<TamsiSolver<T>>();
+    if (tamsi_solver.get_solver_parameters().stiction_tolerance !=
+        friction_model_.stiction_tolerance()) {
+      // Set the stiction tolerance according to the values set by users with
+      // set_stiction_tolerance().
+      TamsiSolverParameters solver_parameters;
+      solver_parameters.stiction_tolerance =
+          friction_model_.stiction_tolerance();
+      tamsi_solver.set_solver_parameters(solver_parameters);
+    }
+
+    // TAMSI is initialized with num_velocities(). Resize the internal solver
+    // workspace if needed.
+    tamsi_solver.ResizeIfNeeded(indices.size());
+
+    CallTamsiSolver(&tamsi_solver, context0.get_time(), v0_unlocked,
+                    M0_unlocked, minus_tau_unlocked, fn0, Jn_unlocked,
+                    Jt_unlocked, stiffness, damping, mu, &results_unlocked);
+  }
+
+  // Joint locking: expand reduced outputs.
+  results->v_next = ExpandRows(results_unlocked.v_next,
+                                num_velocities(), indices);
+  results->tau_contact =
+      contact_jacobians.Jn.transpose() * results_unlocked.fn +
+      contact_jacobians.Jt.transpose() * results_unlocked.ft;
+
+  results->fn = results_unlocked.fn;
+  results->ft = results_unlocked.ft;
+  results->vn = results_unlocked.vn;
+  results->vt = results_unlocked.vt;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcJointLockingIndices(
+    const systems::Context<T>& context,
+    std::vector<int>* unlocked_velocity_indices) const {
+  DRAKE_DEMAND(unlocked_velocity_indices != nullptr);
+  auto& indices = *unlocked_velocity_indices;
+  indices.resize(num_velocities());
+
+  int velocity_cursor = 0;
+  int unlocked_cursor = 0;
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if (joint.is_locked(context)) {
+      velocity_cursor += joint.num_velocities();
+    } else {
+      for (int k = 0; k < joint.num_velocities(); ++k) {
+        indices[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (!body.is_floating()) {
+      continue;
+    }
+    if (body.is_locked(context)) {
+      velocity_cursor += 6;
+    } else {
+      for (int k = 0; k < 6; ++k) {
+        indices[unlocked_cursor++] = velocity_cursor++;
+      }
+    }
+  }
+  DRAKE_ASSERT(velocity_cursor == num_velocities());
+  DRAKE_ASSERT(unlocked_cursor <= num_velocities());
+
+  // Use size to indicate exactly how many velocities are unlocked.
+  indices.resize(unlocked_cursor);
+  DemandIndicesValid(indices, num_velocities());
+  DRAKE_DEMAND(static_cast<int>(indices.size()) == unlocked_cursor);
 }
 
 template <typename T>
 void MultibodyPlant<T>::CallTamsiSolver(
+    TamsiSolver<T>* tamsi_solver,
     const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
     const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
     const MatrixX<T>& Jt, const VectorX<T>& stiffness,
@@ -2260,11 +2449,11 @@ void MultibodyPlant<T>::CallTamsiSolver(
   // Solve for v and the contact forces.
   TamsiSolverResult info{TamsiSolverResult::kMaxIterationsReached};
 
-  TamsiSolverParameters params = tamsi_solver_->get_solver_parameters();
+  TamsiSolverParameters params = tamsi_solver->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
-  tamsi_solver_->set_solver_parameters(params);
+  tamsi_solver->set_solver_parameters(params);
 
   // We attempt to compute the update during the time interval dt using a
   // progressively larger number of sub-steps (i.e each using a smaller time
@@ -2277,8 +2466,8 @@ void MultibodyPlant<T>::CallTamsiSolver(
   int num_substeps = 0;
   do {
     ++num_substeps;
-    info = SolveUsingSubStepping(num_substeps, M0, Jn, Jt, minus_tau, stiffness,
-                                 damping, mu, v0, fn0);
+    info = SolveUsingSubStepping(tamsi_solver, num_substeps, M0, Jn, Jt,
+                                 minus_tau, stiffness, damping, mu, v0, fn0);
   } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
@@ -2306,12 +2495,12 @@ void MultibodyPlant<T>::CallTamsiSolver(
   // file for analysis.
 
   // Update the results.
-  results->v_next = tamsi_solver_->get_generalized_velocities();
-  results->fn = tamsi_solver_->get_normal_forces();
-  results->ft = tamsi_solver_->get_friction_forces();
-  results->vn = tamsi_solver_->get_normal_velocities();
-  results->vt = tamsi_solver_->get_tangential_velocities();
-  results->tau_contact = tamsi_solver_->get_generalized_contact_forces();
+  results->v_next = tamsi_solver->get_generalized_velocities();
+  results->fn = tamsi_solver->get_normal_forces();
+  results->ft = tamsi_solver->get_friction_forces();
+  results->vn = tamsi_solver->get_normal_velocities();
+  results->vt = tamsi_solver->get_tangential_velocities();
+  results->tau_contact = tamsi_solver->get_generalized_contact_forces();
 }
 
 template <>
@@ -2861,34 +3050,48 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
-  // Cache TamsiSolver computations.
-  auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
-      std::string("Implicit Stribeck solver computations."),
-      &MultibodyPlant<T>::CalcContactSolverResults,
-      // The Correct Solution:
-      // The Implicit Stribeck solver solution S is a function of state x,
-      // actuation input u (and externally applied forces) and even time if any
-      // of the force elements in the model is time dependent. We can write this
-      // as S = S(t, x, u).
-      // Even though this variables can change continuously with time, we want
-      // the solver solution to be updated periodically (with period
-      // time_step()) only. That is, ContactSolverResults should be
-      // handled as an abstract state with periodic updates. In the systems::
-      // framework terminology, we'd like to have an "unrestricted update" with
-      // a periodic event trigger.
-      // The Problem (#10149):
-      // From issue #10149 we know unrestricted updates incur a very noticeably
-      // performance hit that at this stage we are not willing to pay.
-      // The Work Around (#10888):
-      // To emulate the correct behavior until #10149 is addressed we declare
-      // the Implicit Stribeck solver solution dependent only on the discrete
-      // state. This is not the correct solution given these results do depend
-      // on time and (even continuous) inputs. However it does emulate the
-      // discrete update of these values as if zero-order held, which is what we
-      // want.
-      {this->xd_ticket(), this->all_parameters_ticket()});
-  cache_indexes_.contact_solver_results =
-      tamsi_solver_cache_entry.cache_index();
+  if (is_discrete()) {
+    // Cache TamsiSolver computations.
+    auto& tamsi_results_cache_entry = this->DeclareCacheEntry(
+        std::string("Implicit Stribeck solver computations."),
+        &MultibodyPlant<T>::CalcContactSolverResults,
+        // The Correct Solution:
+        // The Implicit Stribeck solver solution S is a function of state x,
+        // actuation input u (and externally applied forces) and even time if
+        // any of the force elements in the model is time dependent. We can
+        // write this as S = S(t, x, u).
+        // Even though this variables can change continuously with time, we
+        // want the solver solution to be updated periodically (with period
+        // time_step()) only. That is, ContactSolverResults should be handled
+        // as an abstract state with periodic updates. In the systems::
+        // framework terminology, we'd like to have an "unrestricted update"
+        // with a periodic event trigger.
+        // The Problem (#10149):
+        // From issue #10149 we know unrestricted updates incur a very
+        // noticeably performance hit that at this stage we are not willing to
+        // pay.
+        // The Work Around (#10888):
+        // To emulate the correct behavior until #10149 is addressed we declare
+        // the Implicit Stribeck solver solution dependent only on the discrete
+        // state. This is not the correct solution given these results do
+        // depend on time and (even continuous) inputs. However it does emulate
+        // the discrete update of these values as if zero-order held, which is
+        // what we want.
+        {this->xd_ticket(), this->all_parameters_ticket()});
+    cache_indexes_.contact_solver_results =
+        tamsi_results_cache_entry.cache_index();
+
+    // This cache entry holds the entire TAMSI solver, since there was no
+    // convenient way to isolate just the scratch data in its current form.
+    auto& tamsi_scratch_cache_entry = this->DeclareCacheEntry(
+        "solver scratch", systems::ValueProducer(
+            TamsiSolver<T>(num_velocities()),
+            &systems::ValueProducer::NoopCalc),
+        {this->nothing_ticket()});
+    cache_indexes_.contact_solver_scratch =
+        tamsi_scratch_cache_entry.cache_index();
+  }
+
 
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
@@ -2966,6 +3169,15 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.discrete_contact_pairs =
       discrete_contact_pairs_cache_entry.cache_index();
+
+  // Cache joint locking indices.
+  const auto& joint_locking_data_cache_entry =
+      this->DeclareCacheEntry("Joint Locking Indices.",
+                              std::vector<int>(),
+                              &MultibodyPlant::CalcJointLockingIndices,
+                              {this->all_parameters_ticket()});
+  cache_indexes_.joint_locking_data =
+      joint_locking_data_cache_entry.cache_index();
 }
 
 template <typename T>

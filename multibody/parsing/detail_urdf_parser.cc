@@ -116,24 +116,40 @@ void ParseBody(const multibody::PackageMap& package_map,
         "ERROR: link tag is missing name attribute.");
   }
 
+  const RigidBody<double>* body_pointer{};
   if (body_name == kWorldName) {
-    return;
-  }
-
-  SpatialInertia<double> M_BBo_B;
-  XMLElement* inertial_node = node->FirstChildElement("inertial");
-  if (!inertial_node) {
-    M_BBo_B = SpatialInertia<double>(
-        0, Vector3d::Zero(), UnitInertia<double>(0, 0, 0));
+    // TODO(SeanCurtis-TRI): We have no documentation about what our parsers
+    //  support and not. The fact that we allow this behavior should be
+    //  discoverable *somewhere*. But this function is in an anonymous
+    //  namespace; where would the documentation go that supports this
+    //  implementation?
+    body_pointer = &plant->world_body();
+    if (node->FirstChildElement("inertial") != nullptr) {
+      // TODO(SeanCurtis-TRI): It would be good to report file name and line
+      //  number in this error.
+      static const logging::Warn log_once(
+          "A URDF file declared the \"world\" link and then attempted to "
+          "assign mass properties (via the <inertial> tag). Only geometries, "
+          "<collision> and <visual>, can be assigned to the world link. The "
+          "<inertial> tag is being ignored.");
+    }
   } else {
-    M_BBo_B = ExtractSpatialInertiaAboutBoExpressedInB(inertial_node);
-  }
+    SpatialInertia<double> M_BBo_B;
+    XMLElement* inertial_node = node->FirstChildElement("inertial");
+    if (!inertial_node) {
+      M_BBo_B = SpatialInertia<double>(0, Vector3d::Zero(),
+                                       UnitInertia<double>(0, 0, 0));
+    } else {
+      M_BBo_B = ExtractSpatialInertiaAboutBoExpressedInB(inertial_node);
+    }
 
-  // Add a rigid body to model each link.
-  const RigidBody<double>& body =
-      plant->AddRigidBody(body_name, model_instance, M_BBo_B);
+    // Add a rigid body to model each link.
+    body_pointer = &plant->AddRigidBody(body_name, model_instance, M_BBo_B);
+  }
 
   if (plant->geometry_source_is_registered()) {
+    const RigidBody<double>& body = *body_pointer;
+
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {

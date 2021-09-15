@@ -1,9 +1,11 @@
 #include "drake/geometry/meshcat.h"
 
+#include <exception>
 #include <fstream>
 #include <future>
 #include <map>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -34,20 +36,19 @@ std::string LoadResource(const std::string& resource_name) {
 }
 
 const std::string& GetUrlContent(std::string_view url_path) {
-  static const drake::never_destroyed<std::string> main_min_js(
-      LoadResource("drake/external/meshcat/dist/main.min.js"));
-  static const drake::never_destroyed<std::string> favicon_ico(
-      LoadResource("drake/doc/favicon.ico"));
-  // TODO(russt): Set the different default background color for Drake.
-  static const drake::never_destroyed<std::string> index_html(
-      LoadResource("drake/external/meshcat/dist/index.html"));
-  if (url_path == "/main.min.js") {
-    return main_min_js.access();
+  static const drake::never_destroyed<std::string> meshcat_js(
+      LoadResource("drake/geometry/meshcat.js"));
+  static const drake::never_destroyed<std::string> meshcat_ico(
+      LoadResource("drake/geometry/meshcat.ico"));
+  static const drake::never_destroyed<std::string> meshcat_html(
+      LoadResource("drake/geometry/meshcat.html"));
+  if (url_path == "/meshcat.js") {
+    return meshcat_js.access();
   }
   if (url_path == "/favicon.ico") {
-    return favicon_ico.access();
+    return meshcat_ico.access();
   }
-  return index_html.access();
+  return meshcat_html.access();
 }
 
 }  // namespace
@@ -67,6 +68,12 @@ struct PerSocketData {
 };
 using WebSocket = uWS::WebSocket<kSsl, kIsServer, PerSocketData>;
 using MsgPackMap = std::map<std::string, msgpack::object>;
+
+// The maximum "backpressure" allowed each websocket, in bytes.  This
+// effectively sets a maximum size for messages, which may include mesh files
+// and texture maps.  50mb is a guess at a compromise that is safely larger than
+// reasonable meshfiles.
+constexpr static double kMaxBackPressure{50 * 1024 * 1024};
 
 class SceneTreeElement {
  public:
@@ -187,7 +194,8 @@ class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
-  explicit MeshcatShapeReifier(std::string uuid) : uuid_(std::move(uuid)) {}
+  explicit MeshcatShapeReifier(std::string uuid)
+      : uuid_(std::move(uuid)) {}
 
   ~MeshcatShapeReifier() = default;
 
@@ -225,6 +233,8 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
   void ImplementGeometry(const HalfSpace&, void*) override {
+    // TODO(russt): Use PlaneGeometry with fields width, height,
+    // widthSegments, heightSegments
     drake::log()->warn("Meshcat does not display HalfSpace geometry (yet).");
   }
 
@@ -292,9 +302,18 @@ class MeshcatShapeReifier : public ShapeReifier {
     // We simply dump the binary contents of the file into the data field of the
     // message.  The javascript meshcat takes care of the rest.
     int size = input.tellg();
+    if (size > kMaxBackPressure) {
+      throw std::runtime_error(fmt::format(
+          "The meshfile at {} is too large for the current websocket setup.  "
+          "Size {} is greater than the max backpressure {}.  You will either "
+          "need to reduce the size of your mesh, or modify the code to "
+          "increase the allowance.",
+          mesh.filename(), size, kMaxBackPressure));
+    }
     input.seekg(0, std::ios::beg);
-    geometry.data.resize(size);
-    input.read(geometry.data.data(), size);
+    geometry.data.reserve(size);
+    geometry.data.assign((std::istreambuf_iterator<char>(input)),
+                         std::istreambuf_iterator<char>());
 
     // TODO(russt): Implement textures.  Need to add LumpedData.textures,
     // LumpedData.images, etc.
@@ -324,21 +343,31 @@ class Meshcat::WebSocketPublisher {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WebSocketPublisher);
 
-  WebSocketPublisher()
+  explicit WebSocketPublisher(const std::optional<int> port)
       : prefix_("/drake"), main_thread_id_(std::this_thread::get_id()) {
+    DRAKE_DEMAND(!port.has_value() || *port >= 1024);
     std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
         app_promise;
     std::future<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
         app_future = app_promise.get_future();
     websocket_thread_ = std::thread(&WebSocketPublisher::WebSocketMain, this,
-                                    std::move(app_promise));
+                                    std::move(app_promise), port);
     std::tie(app_, loop_, port_, listen_socket_) = app_future.get();
+
+    if (listen_socket_ == nullptr) {
+      websocket_thread_.join();
+      throw std::runtime_error("Meshcat failed to open a websocket port.");
+    }
   }
 
   ~WebSocketPublisher() {
     DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
-    loop_->defer(
-        [socket = listen_socket_]() { us_listen_socket_close(0, socket); });
+    loop_->defer([this]() {
+      us_listen_socket_close(0, listen_socket_);
+      for (auto* ws : websockets_) {
+        ws->close();
+      }
+    });
     websocket_thread_.join();
   }
 
@@ -390,6 +419,28 @@ class Meshcat::WebSocketPublisher {
       return;
     }
     object3d.geometry = reifier.uuid();
+
+    // Note: pass all temporaries by value.
+    loop_->defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  template <typename CameraData>
+  void SetCamera(CameraData camera, std::string path) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(app_ != nullptr);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetCameraData<CameraData> data;
+    data.path = std::move(path);
+    data.object.object = std::move(camera);
 
     // Note: pass all temporaries by value.
     loop_->defer([this, data = std::move(data)]() {
@@ -541,17 +592,26 @@ class Meshcat::WebSocketPublisher {
  private:
   void WebSocketMain(
       std::promise<std::tuple<uWS::App*, uWS::Loop*, int, us_listen_socket_t*>>
-          app_promise) {
+          app_promise, const std::optional<int>& desired_port) {
     websocket_thread_id_ = std::this_thread::get_id();
 
-    int port = 7001;
-    const int kMaxPort = 7099;
+    int port = desired_port ? *desired_port : 7000;
+    const int kMaxPort = desired_port ? *desired_port : 7099;
 
     uWS::App::WebSocketBehavior<PerSocketData> behavior;
     behavior.open = [this](WebSocket* ws) {
       ws->subscribe("all");
       // Update this new connection with previously published data.
       SendTree(ws);
+      websockets_.emplace(ws);
+    };
+    // TODO(russt): I could increase this more if necessary (when it was too
+    // low, some SetObject messages were dropped).  But at some point the real
+    // fix is to actually throttle the sending (e.g. by slowing down the main
+    // thread).
+    behavior.maxBackpressure = kMaxBackPressure;
+    behavior.close = [this](WebSocket* ws, int, std::string_view) {
+      websockets_.erase(ws);
     };
 
     uWS::App app =
@@ -576,14 +636,12 @@ class Meshcat::WebSocketPublisher {
           });
     } while (listen_socket == nullptr && port++ < kMaxPort);
 
-    if (listen_socket == nullptr) {
-      throw std::runtime_error("Meshcat failed to open a websocket port.");
-    }
-
     app_promise.set_value(
         std::make_tuple(&app, uWS::Loop::get(), port, listen_socket));
 
-    app.run();
+    if (listen_socket != nullptr) {
+      app.run();
+    }
   }
 
   void SendTree(WebSocket* ws) {
@@ -621,6 +679,7 @@ class Meshcat::WebSocketPublisher {
   // they are pointing to should be only used in the websocket thread.
   uWS::App* app_{nullptr};
   us_listen_socket_t* listen_socket_{nullptr};
+  std::set<WebSocket*> websockets_{};
 
   // This pointer should only be accessed in the main thread, but the Loop
   // object itself should be only used in the websocket thread, with one
@@ -630,17 +689,21 @@ class Meshcat::WebSocketPublisher {
   uWS::Loop* loop_{nullptr};
 };
 
-Meshcat::Meshcat() {
+Meshcat::Meshcat(const std::optional<int>& port) {
   // Fetch the index once to be sure that we preload the content.
   GetUrlContent("/");
 
-  publisher_ = std::make_unique<WebSocketPublisher>();
+  publisher_ = std::make_unique<WebSocketPublisher>(port);
 }
 
 Meshcat::~Meshcat() = default;
 
 std::string Meshcat::web_url() const {
   return fmt::format("http://localhost:{}", publisher_->port());
+}
+
+int Meshcat::port() const {
+  return publisher_->port();
 }
 
 std::string Meshcat::ws_url() const {
@@ -650,6 +713,14 @@ std::string Meshcat::ws_url() const {
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
   publisher_->SetObject(path, shape, rgba);
+}
+
+void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
+  publisher_->SetCamera(std::move(camera), std::move(path));
+}
+
+void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
+  publisher_->SetCamera(std::move(camera), std::move(path));
 }
 
 void Meshcat::SetTransform(std::string_view path,
@@ -667,6 +738,43 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           double value) {
   publisher_->SetProperty(path, std::move(property), value);
+}
+
+void Meshcat::SetProperty(std::string_view path, std::string property,
+                          const std::vector<double>& value) {
+  publisher_->SetProperty(path, std::move(property), value);
+}
+
+void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
+                              double xmax, double ymin, double ymax) {
+  // Set orthographic camera.
+  OrthographicCamera camera;
+  camera.left = xmin;
+  camera.right = xmax;
+  camera.bottom = ymin;
+  camera.top = ymax;
+  SetCamera(camera);
+
+  SetTransform("/Cameras/default", X_WC);
+  // Lock orbit controls.
+  SetProperty("/Cameras/default/rotated/<object>", "position",
+              {0.0, 0.0, 0.0});
+
+  SetProperty("/Background", "visible", false);
+  SetProperty("/Grid", "visible", false);
+  SetProperty("/Axes", "visible", false);
+}
+
+void Meshcat::ResetRenderMode() {
+  PerspectiveCamera camera;
+  SetCamera(camera);
+  SetTransform("/Cameras/default", math::RigidTransformd());
+  // Lock orbit controls.
+  SetProperty("/Cameras/default/rotated/<object>", "position",
+              {0.0, 1.0, 3.0});
+  SetProperty("/Background", "visible", true);
+  SetProperty("/Grid", "visible", true);
+  SetProperty("/Axes", "visible", true);
 }
 
 bool Meshcat::HasPath(std::string_view path) const {

@@ -48,6 +48,7 @@ install(
         "//bindings/pydrake:install",
         "//common:install",
         "//examples:install",
+        "//geometry:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
         "//setup:install",
@@ -72,7 +73,9 @@ install(
 
 install_test(
     name = "install_test",
-    args = ["$(location :" + _INSTALL_TEST_COMMANDS + ")"],
+    args = ["--install_tests_filename=$(location :{})".format(
+        _INSTALL_TEST_COMMANDS,
+    )],
     data = [
         ":install",
         _INSTALL_TEST_COMMANDS,

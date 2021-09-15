@@ -468,30 +468,38 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         sg = builder.AddSystem(SceneGraph())
 
-        v2 = builder.AddSystem(MeshcatVisualizer(scene_graph=sg))
+        v2 = builder.AddSystem(
+          MeshcatVisualizer(scene_graph=sg, zmq_url=ZMQ_URL,
+                            open_browser=False))
         builder.Connect(sg.get_query_output_port(),
                         v2.get_geometry_query_input_port())
         v2.set_name("v2")
 
-        v4 = builder.AddSystem(MeshcatVisualizer(scene_graph=None))
+        v4 = builder.AddSystem(
+          MeshcatVisualizer(scene_graph=None, zmq_url=ZMQ_URL,
+                            open_browser=False))
         builder.Connect(sg.get_query_output_port(),
                         v4.get_geometry_query_input_port())
         v4.set_name("v4")
 
-        v5 = ConnectMeshcatVisualizer(builder, scene_graph=sg)
+        v5 = ConnectMeshcatVisualizer(builder, scene_graph=sg, zmq_url=ZMQ_URL,
+                                      open_browser=False)
         v5.set_name("v5")
 
         v7 = ConnectMeshcatVisualizer(
-            builder, scene_graph=sg, output_port=sg.get_query_output_port())
+            builder, scene_graph=sg, output_port=sg.get_query_output_port(),
+            zmq_url=ZMQ_URL, open_browser=False)
         v7.set_name("v7")
 
         with self.assertRaises(AssertionError):
             v8 = ConnectMeshcatVisualizer(builder, scene_graph=None,
-                                          output_port=None)
+                                          output_port=None, zmq_url=ZMQ_URL,
+                                          open_browser=False)
             v8.set_name("v8")
 
         v10 = ConnectMeshcatVisualizer(
-            builder, scene_graph=None, output_port=sg.get_query_output_port())
+            builder, scene_graph=None, output_port=sg.get_query_output_port(),
+            zmq_url=ZMQ_URL, open_browser=False)
         v10.set_name("v10")
 
         diagram = builder.Build()

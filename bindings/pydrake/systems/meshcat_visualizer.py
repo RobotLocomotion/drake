@@ -221,8 +221,8 @@ class MeshcatVisualizer(LeafSystem):
         print("Connected to meshcat-server.")
 
         # Set background color (to match drake-visualizer).
-        self.vis['/Background'].set_property("top_color", [242, 242, 255])
-        self.vis['/Background'].set_property("bottom_color", [77, 77, 89])
+        self.vis['/Background'].set_property("top_color", [0.95, 0.95, 1.0])
+        self.vis['/Background'].set_property("bottom_color", [.32, .32, .35])
 
         if open_browser:
             webbrowser.open(self.vis.url())
@@ -607,18 +607,19 @@ class MeshcatContactVisualizer(LeafSystem):
             cvis["tail"].set_transform(tf.translation_matrix(
                 [0, -height - arrow_height/2.0, 0.0]))
 
-            # Frame C is located at the contact point, but with the world frame
-            # orientation.
+            # The contact frame's origin is located at contact_point and is
+            # oriented such that Cy is aligned with the contact force.
+            p_WC = contact_info.contact_point()  # documented as in world.
             if force_norm < 1e-6:
-                X_CGeom = tf.identity_matrix()
+                # We cannot rely on self._force_threshold to determine if the
+                # force can be normalized; that threshold can be zero.
+                R_WC = RotationMatrix()
             else:
-                # Rotates [0,1,0] to contact_force/force_norm.
-                angle_axis = np.cross(np.array([0, 1, 0]),
-                                      contact_info.contact_force()/force_norm)
-                X_CGeom = tf.rotation_matrix(
-                    np.arcsin(np.linalg.norm(angle_axis)), angle_axis)
-            X_WC = tf.translation_matrix(contact_info.contact_point())
-            cvis.set_transform(X_WC @ X_CGeom)
+                fhat_C_W = contact_info.contact_force() / force_norm
+                R_WC = RotationMatrix.MakeFromOneVector(b_A=fhat_C_W,
+                                                        axis_index=1)
+            X_WC = RigidTransform(R=R_WC, p=p_WC)
+            cvis.set_transform(X_WC.GetAsMatrix4())
 
         # We only delete any contact vectors that did not persist into this
         # publish.  It is tempting to just delete() the root branch at the

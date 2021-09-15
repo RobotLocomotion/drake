@@ -102,11 +102,15 @@ GTEST_TEST(VolumeToSurfaceMeshTest, CollectUniqueVertices) {
   EXPECT_EQ(expect_vertex_set, vertex_set);
 }
 
+}  // namespace
+}  // namespace internal
+
+namespace {
 template <typename T>
 void TestVolumeToSurfaceMesh() {
   const Box box(0.2, 0.4, 0.6);
   const double target_edge_length = 0.1;
-  const auto volume = MakeBoxVolumeMesh<T>(box, target_edge_length);
+  const auto volume = internal::MakeBoxVolumeMesh<T>(box, target_edge_length);
 
   // Go through the vertices on the boundary of the volume mesh. Keep their
   // coordinates in a `set` for comparison with vertices of the surface
@@ -142,7 +146,7 @@ void TestVolumeToSurfaceMesh() {
 
   // Check that the face normal vectors are in the outward direction.
   for (SurfaceFaceIndex f(0); f < surface.num_faces(); ++f) {
-    const Vector3<T> normal_M = CalcFaceNormal(surface, f);
+    const Vector3<T> normal_M = internal::CalcFaceNormal(surface, f);
     // Position vector of the first vertex V of the face.
     const Vector3<T> r_MV =
         surface.vertex(surface.element(f).vertex(0)).r_MV();
@@ -159,6 +163,5 @@ GTEST_TEST(VolumeToSurfaceMeshTest, TestAutoDiffXd) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

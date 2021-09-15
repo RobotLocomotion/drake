@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- This file is forked from dist/index.html in rdeits/meshcat. -->
+<html>
+
+<head>
+  <meta charset=utf-8>
+  <title>Drake MeshCat</title>
+</head>
+
+<body>
+  <div id="meshcat-pane">
+  </div>
+
+  <script type="text/javascript" src="meshcat.js"></script>
+  <script>
+    var viewer = new MeshCat.Viewer(document.getElementById("meshcat-pane"));
+    // Set background to match Drake Visualizer.
+    viewer.set_property(['Background'], "top_color", [.95, .95, 1.0])
+    viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
+    // Set the initial view looking up the y-axis.
+    viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
+                        "position", [0.0, 1.0, 3.0])
+    try {
+      viewer.connect();
+    } catch (e) {
+      console.info("Not connected to MeshCat websocket server: ", e);
+    }
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+    }
+
+    #meshcat-pane {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+  </style>
+  <script id="embedded-json"></script>
+</body>
+
+</html>

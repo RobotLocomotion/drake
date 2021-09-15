@@ -8,8 +8,11 @@ def lcm_repository(
     github_archive(
         name = name,
         repository = "lcm-proj/lcm",
-        commit = "98893d8cb34cc86203235f2e41b740bf216b97c3",
-        sha256 = "5c9beb7e4d6f2aef4f6a51dc9c7ee687ba3a2c9a25f8228d9a0b126980db4477",  # noqa
+        # When upgrading this commit, check if the LCM maintainers have tagged
+        # a new version number; if so, then update the version numbers within
+        # the two lcm-*.cmake files in this directory to match.
+        commit = "e83d2d0810c7f1751123383ab7c3dc4da1b53602",
+        sha256 = "13f478db7002165e9987b6e6cbcc8e42e2c103c882b360236b83c9ba5355f539",  # noqa
         build_file = "@drake//tools/workspace/lcm:package.BUILD.bazel",
         mirrors = mirrors,
     )

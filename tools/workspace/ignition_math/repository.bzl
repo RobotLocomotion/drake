@@ -7,6 +7,10 @@ def ignition_math_repository(
         mirrors = None):
     # When updating this commit, also remember to adjust the PROJECT_*
     # constants in ./package.BUILD.bazel to match the new version number.
+    # TODO(jwnimmer-tri) Until we remove the CMake config stuff on 2021-12-01,
+    # any version upgrades will also need to manually fix up the *.cmake files
+    # in this directory. Once remove the *.cmake installation rules, we should
+    # also nix this comment.
     github_archive(
         name = name,
         repository = "ignitionrobotics/ign-math",

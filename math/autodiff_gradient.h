@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
@@ -188,8 +189,10 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
   return matrix;
 }
 
-/// @see DiscardZeroGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
+DRAKE_DEPRECATED("2021-12-01",
+    "Apparently unused. File a Drake issue on GitHub"
+    " if you need this specialization.")
 typename std::enable_if_t<
     !std::is_same_v<_Scalar, double>,
     Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
@@ -201,8 +204,10 @@ DiscardZeroGradient(
       DiscardZeroGradient(auto_diff_transform.matrix(), precision));
 }
 
-/// @see DiscardZeroGradient().
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
+DRAKE_DEPRECATED("2021-12-01",
+    "Apparently unused. File a Drake issue on GitHub"
+    " if you need this specialization.")
 typename std::enable_if_t<
     std::is_same_v<_Scalar, double>,
     const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>
@@ -211,6 +216,33 @@ DiscardZeroGradient(
     double precision = 0.) {
   unused(precision);
   return transform;
+}
+
+/**
+ * Given a matrix of AutoDiffScalars, returns the size of the
+ * derivatives.
+ * @throw runtime_error if some entry has different (non-zero) number of
+ * derivatives as the others.
+ */
+template <typename Derived>
+typename std::enable_if<!std::is_same_v<typename Derived::Scalar, double>,
+                        int>::type
+GetDerivativeSize(const Eigen::MatrixBase<Derived>& A) {
+  int num_derivs = 0;
+  for (int i = 0; i < A.rows(); ++i) {
+    for (int j = 0; j < A.cols(); ++j) {
+      if (A(i, j).derivatives().size() != 0) {
+        if (num_derivs != 0 && A(i, j).derivatives().size() != num_derivs) {
+          throw std::runtime_error(fmt::format(
+              "GetDerivativeSize(): A({}, {}).derivatives() has size "
+              "{}, while another entry has size {}",
+              i, j, A(i, j).derivatives().size(), num_derivs));
+        }
+        num_derivs = A(i, j).derivatives().size();
+      }
+    }
+  }
+  return num_derivs;
 }
 
 }  // namespace math

@@ -1,9 +1,33 @@
 package drake;
 
 struct lcmt_hydroelastic_contact_surface_for_viz {
-  // Names of the colliding bodies.
+  // The contact is between two bodies, but we track multiple names per body
+  // so that visualizers can fully disambiguate contacts:
+  //
+  //   - name of the geometry affixed to the body which produced the surface.
+  //   - name of the body.
+  //   - name of the model instance to which the body belongs.
+  //   - uniqueness of the body name. If unique, the body can unambiguously be
+  //     represented by just its body name. Otherwise it must be combined with
+  //     its model instance name. The validity of this logic relies on
+  //     MultibodyPlant's requirement that model instance names must be unique.
+  //   - the number of collision geometries affixed to the body. If the
+  //     colliding bodies both have a single collision geometry each, there can
+  //     be only one contact surface between them and display can be
+  //     streamlined. Otherwise, the possibility of multiple contact surfaces
+  //     needs to be accounted for.
+  //
+  string geometry1_name;
   string body1_name;
+  string model1_name;
+  boolean body1_unique;
+  int32_t collision_count1;
+
+  string geometry2_name;
   string body2_name;
+  string model2_name;
+  boolean body2_unique;
+  int32_t collision_count2;
 
   // The centroid of the contact surface, as an offset vector expressed in the
   // world frame.

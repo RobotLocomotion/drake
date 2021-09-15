@@ -511,6 +511,34 @@ class TamsiSolver {
   /// @throws std::exception if nv is non-positive.
   explicit TamsiSolver(int nv);
 
+  /// Change the working size of the solver to use `nv` generalized
+  /// velocities. This can be used to either shrink or grow the workspaces.
+  /// @throws std::exception if nv is non-positive.
+  void ResizeIfNeeded(int nv) const {
+    DRAKE_THROW_UNLESS(nv > 0);
+    if (nv != nv_) {
+      nv_ = nv;
+      fixed_size_workspace_ = FixedSizeWorkspace(nv);
+      variable_size_workspace_ = VariableSizeWorkspace(128, nv);
+    }
+  }
+
+  /// @returns a deep copy of this, with the problem data invalidated, i.e., one
+  /// of the Set*ProblemData() methods must be called on the clone before it
+  /// can be used to solve.
+  std::unique_ptr<TamsiSolver<T>> Clone() const {
+    auto result = std::make_unique<TamsiSolver<T>>(nv_);
+    // Don't copy the aliases; just wipe them.
+    result->problem_data_aliases_.Invalidate();
+    result->nc_ = nc_;
+    result->parameters_ = parameters_;
+    result->fixed_size_workspace_ = fixed_size_workspace_;
+    result->variable_size_workspace_ = variable_size_workspace_;
+    result->cos_theta_max_ = cos_theta_max_;
+    result->statistics_ = statistics_;
+    return result;
+  }
+
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
   /// class's documentation: <pre>
@@ -772,16 +800,44 @@ class TamsiSolver {
       mu_ptr_ = mu;
     }
 
+    // Clears references to any problem-defining data. One of the Set*Data()
+    // methods must be called to provide new references before any of the
+    // problem data accessors can be used again.
+    void Invalidate() {
+      coupling_scheme_ = kInvalidScheme;
+      M_ptr_ = nullptr;
+      Jn_ptr_ = nullptr;
+      Jt_ptr_ = nullptr;
+      p_star_ptr_ = nullptr;
+      fn_ptr_ = nullptr;
+      fn0_ptr_ = nullptr;
+      stiffness_ptr_ = nullptr;
+      dissipation_ptr_ = nullptr;
+      mu_ptr_ = nullptr;
+    }
+
     // Returns true if this class contains the data for a two-way coupled
     // problem.
     bool has_two_way_coupling_data() const {
       return coupling_scheme_ == kTwoWayCoupled;
     }
 
-    Eigen::Ref<const MatrixX<T>> M() const { return *M_ptr_; }
-    Eigen::Ref<const MatrixX<T>> Jn() const { return *Jn_ptr_; }
-    Eigen::Ref<const MatrixX<T>> Jt() const { return *Jt_ptr_; }
-    Eigen::Ref<const VectorX<T>> p_star() const { return *p_star_ptr_; }
+    Eigen::Ref<const MatrixX<T>> M() const {
+      DRAKE_ASSERT_VOID(DemandValid());
+      return *M_ptr_;
+    }
+    Eigen::Ref<const MatrixX<T>> Jn() const {
+      DRAKE_ASSERT_VOID(DemandValid());
+      return *Jn_ptr_;
+    }
+    Eigen::Ref<const MatrixX<T>> Jt() const {
+      DRAKE_ASSERT_VOID(DemandValid());
+      return *Jt_ptr_;
+    }
+    Eigen::Ref<const VectorX<T>> p_star() const {
+      DRAKE_ASSERT_VOID(DemandValid());
+      return *p_star_ptr_;
+    }
 
     // For the one-way coupled scheme, it returns a constant reference to the
     // data for the normal forces. It aborts if called on data for the two-way
@@ -816,6 +872,7 @@ class TamsiSolver {
     }
 
     Eigen::Ref<const VectorX<T>> mu() const {
+      DRAKE_ASSERT_VOID(DemandValid());
       return *mu_ptr_;
     }
 
@@ -825,6 +882,10 @@ class TamsiSolver {
       kOneWayCoupled,
       kTwoWayCoupled
     } coupling_scheme_{kInvalidScheme};
+
+    void DemandValid() const {
+      DRAKE_DEMAND(coupling_scheme_ != kInvalidScheme);
+    }
 
     // The mass matrix of the system.
     EigenPtr<const MatrixX<T>> M_ptr_{nullptr};
@@ -1134,12 +1195,16 @@ class TamsiSolver {
   // s = ‖v‖ / vₛ.
   static T RegularizedFrictionDerivative(const T& speed_BcAc, const T& mu);
 
-  int nv_;  // Number of generalized velocities.
+  // TODO(#15674): Adding mutability here is in part a consequence of
+  // thread-unsafe integration elsewhere.
+  mutable int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
   TamsiSolverParameters parameters_;
   ProblemDataAliases problem_data_aliases_;
+  // TODO(#15674): Adding mutability here is in part a consequence of
+  // thread-unsafe integration elsewhere.
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
 

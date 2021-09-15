@@ -8,12 +8,15 @@ from math import pi
 import numpy as np
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
+from pydrake.multibody.plant import CoulombFriction
 from pydrake.solvers.mathematicalprogram import MathematicalProgram
 from pydrake.systems.analysis import (
     Simulator_,
@@ -364,6 +367,58 @@ class TestGeometry(unittest.TestCase):
         load_subscriber.clear()
         draw_subscriber.clear()
 
+    def test_meshcat(self):
+        meshcat = mut.Meshcat(port=7051)
+        self.assertEqual(meshcat.port(), 7051)
+        with self.assertRaises(RuntimeError):
+            meshcat2 = mut.Meshcat(port=7051)
+        self.assertIn("http", meshcat.web_url())
+        self.assertIn("ws", meshcat.ws_url())
+        meshcat.SetObject(path="/test/box",
+                          shape=mut.Box(1, 1, 1),
+                          rgba=mut.Rgba(.5, .5, .5))
+        meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        meshcat.SetProperty(path="/Background",
+                            property="visible",
+                            value=True)
+        meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
+                            property="intensity", value=1.0)
+        meshcat.Set2dRenderMode(
+            X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
+        meshcat.ResetRenderMode()
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_meshcat_visualizer(self, T):
+        meshcat = mut.Meshcat()
+        params = mut.MeshcatVisualizerParams()
+        params.publish_period = 0.123
+        params.role = mut.Role.kIllustration
+        params.default_color = mut.Rgba(0.5, 0.5, 0.5)
+        params.prefix = "py_visualizer"
+        params.delete_on_intialization_event = False
+        vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
+        vis.Delete()
+        self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
+
+        builder = DiagramBuilder_[T]()
+        scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
+        mut.MeshcatVisualizerCpp_[T].AddToBuilder(builder=builder,
+                                                  scene_graph=scene_graph,
+                                                  meshcat=meshcat,
+                                                  params=params)
+        mut.MeshcatVisualizerCpp_[T].AddToBuilder(
+            builder=builder,
+            query_object_port=scene_graph.get_query_output_port(),
+            meshcat=meshcat,
+            params=params)
+
+    def test_meshcat_visualizer_scalar_conversion(self):
+        meshcat = mut.Meshcat()
+        vis = mut.MeshcatVisualizerCpp(meshcat)
+        vis_autodiff = vis.ToAutoDiffXd()
+        self.assertIsInstance(vis_autodiff,
+                              mut.MeshcatVisualizerCpp_[AutoDiffXd])
+
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
@@ -458,21 +513,31 @@ class TestGeometry(unittest.TestCase):
         RigidTransform = RigidTransform_[float]
         sphere = mut.Sphere(radius=1.0)
         self.assertEqual(sphere.radius(), 1.0)
+        assert_pickle(self, sphere, mut.Sphere.radius)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         self.assertEqual(cylinder.radius(), 1.0)
         self.assertEqual(cylinder.length(), 2.0)
+        assert_pickle(
+            self, cylinder, lambda shape: [shape.radius(), shape.length()])
         box = mut.Box(width=1.0, depth=2.0, height=3.0)
         self.assertEqual(box.width(), 1.0)
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
+        assert_pickle(
+            self, box,
+            lambda shape: [shape.width(), shape.depth(), shape.height()])
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
         capsule = mut.Capsule(radius=1.0, length=2.0)
         self.assertEqual(capsule.radius(), 1.0)
         self.assertEqual(capsule.length(), 2.0)
+        assert_pickle(
+            self, capsule, lambda shape: [shape.radius(), shape.length()])
         ellipsoid = mut.Ellipsoid(a=1.0, b=2.0, c=3.0)
         self.assertEqual(ellipsoid.a(), 1.0)
         self.assertEqual(ellipsoid.b(), 2.0)
         self.assertEqual(ellipsoid.c(), 3.0)
+        assert_pickle(
+            self, ellipsoid, lambda shape: [shape.a(), shape.b(), shape.c()])
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
         box_mesh_path = FindResourceOrThrow(
@@ -480,9 +545,13 @@ class TestGeometry(unittest.TestCase):
         mesh = mut.Mesh(absolute_filename=box_mesh_path, scale=1.0)
         self.assertEqual(mesh.filename(), box_mesh_path)
         self.assertEqual(mesh.scale(), 1.0)
+        assert_pickle(
+            self, mesh, lambda shape: [shape.filename(), shape.scale()])
         convex = mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
         self.assertEqual(convex.filename(), box_mesh_path)
         self.assertEqual(convex.scale(), 1.0)
+        assert_pickle(
+            self, convex, lambda shape: [shape.filename(), shape.scale()])
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
@@ -643,6 +712,77 @@ class TestGeometry(unittest.TestCase):
                 self.assertIsInstance(value_2, T)
                 self.assertEqual(value, value_2)
 
+    def test_proximity_properties(self):
+        """
+        Tests the utility functions for setting values in ProximityProperties
+        (as defined in proximity_properties.h).
+        """
+        props = mut.ProximityProperties()
+        reference_friction = CoulombFriction(0.25, 0.125)
+        mut.AddContactMaterial(elastic_modulus=1.5,
+                               dissipation=2.7,
+                               point_stiffness=3.9,
+                               friction=reference_friction,
+                               properties=props)
+        self.assertTrue(props.HasProperty("material", "elastic_modulus"))
+        self.assertEqual(props.GetProperty("material", "elastic_modulus"), 1.5)
+        self.assertTrue(
+            props.HasProperty("material", "hunt_crossley_dissipation"))
+        self.assertEqual(
+            props.GetProperty("material", "hunt_crossley_dissipation"), 2.7)
+        self.assertTrue(
+            props.HasProperty("material", "point_contact_stiffness"))
+        self.assertEqual(
+            props.GetProperty("material", "point_contact_stiffness"), 3.9)
+        self.assertTrue(props.HasProperty("material", "coulomb_friction"))
+        stored_friction = props.GetProperty("material", "coulomb_friction")
+        self.assertEqual(stored_friction.static_friction(),
+                         reference_friction.static_friction())
+        self.assertEqual(stored_friction.dynamic_friction(),
+                         reference_friction.dynamic_friction())
+
+        props = mut.ProximityProperties()
+        res_hint = 0.175
+        mut.AddRigidHydroelasticProperties(
+            resolution_hint=res_hint, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
+                         res_hint)
+
+        props = mut.ProximityProperties()
+        mut.AddRigidHydroelasticProperties(properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
+
+        props = mut.ProximityProperties()
+        res_hint = 0.275
+        mut.AddSoftHydroelasticProperties(
+            resolution_hint=res_hint, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
+                         res_hint)
+
+        props = mut.ProximityProperties()
+        mut.AddSoftHydroelasticProperties(properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
+
+        props = mut.ProximityProperties()
+        slab_thickness = 0.275
+        mut.AddSoftHydroelasticPropertiesForHalfSpace(
+            slab_thickness=slab_thickness, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
+        self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
+                         slab_thickness)
+
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.render.RenderEngineVtkParams()
@@ -760,6 +900,110 @@ class TestGeometry(unittest.TestCase):
             camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
+
+    def test_surface_mesh(self):
+        # Create a mesh out of two triangles forming a quad.
+        #
+        #     0______1
+        #      |b  /|      Two faces: a and b.
+        #      |  / |      Four vertices: 0, 1, 2, and 3.
+        #      | /a |
+        #      |/___|
+        #     2      3
+
+        f_a = mut.SurfaceFace(v0=mut.SurfaceVertexIndex(3),
+                              v1=mut.SurfaceVertexIndex(1),
+                              v2=mut.SurfaceVertexIndex(2))
+        f_b = mut.SurfaceFace(v0=mut.SurfaceVertexIndex(2),
+                              v1=mut.SurfaceVertexIndex(1),
+                              v2=mut.SurfaceVertexIndex(0))
+        self.assertEqual(f_a.vertex(0), 3)
+        self.assertEqual(f_b.vertex(1), 1)
+
+        v0 = mut.SurfaceVertex((-1,  1, 0))
+        v1 = mut.SurfaceVertex((1,  1, 0))
+        v2 = mut.SurfaceVertex((-1, -1, 0))
+        v3 = mut.SurfaceVertex((1, -1, 0))
+
+        self.assertListEqual(list(v0.r_MV()), [-1, 1, 0])
+
+        mesh = mut.SurfaceMesh(faces=(f_a, f_b), vertices=(v0, v1, v2, v3))
+        self.assertEqual(len(mesh.faces()), 2)
+        self.assertEqual(len(mesh.vertices()), 4)
+        self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
+
+    def test_volume_mesh(self):
+        # Create a mesh out of two tetrahedra with a single, shared face
+        # (1, 2, 3).
+        #
+        #            +y
+        #            |
+        #            o v2
+        #            |
+        #       v4   | v1   v0
+        #    ───o────o─────o──  +x
+        #           /
+        #          /
+        #         o v3
+        #        /
+        #      +z
+
+        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(2),
+                                   v1=mut.VolumeVertexIndex(1),
+                                   v2=mut.VolumeVertexIndex(3),
+                                   v3=mut.VolumeVertexIndex(4))
+        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(3),
+                                    v1=mut.VolumeVertexIndex(1),
+                                    v2=mut.VolumeVertexIndex(2),
+                                    v3=mut.VolumeVertexIndex(0))
+        self.assertEqual(t_left.vertex(0), 2)
+        self.assertEqual(t_right.vertex(1), 1)
+
+        v0 = mut.VolumeVertex((1, 0,  0))
+        v1 = mut.VolumeVertex((0, 0,  0))
+        v2 = mut.VolumeVertex((0, 1,  0))
+        v3 = mut.VolumeVertex((0, 0, 1))
+        v4 = mut.VolumeVertex((-1, 0,  0))
+
+        self.assertListEqual(list(v0.r_MV()), [1, 0, 0])
+
+        mesh = mut.VolumeMesh(elements=(t_left, t_right),
+                              vertices=(v0, v1, v2, v3, v4))
+
+        self.assertEqual(len(mesh.tetrahedra()), 2)
+        self.assertIsInstance(mesh.tetrahedra()[0], mut.VolumeElement)
+        self.assertEqual(len(mesh.vertices()), 5)
+        self.assertIsInstance(mesh.vertices()[0], mut.VolumeVertex)
+
+        self.assertAlmostEqual(
+            mesh.CalcTetrahedronVolume(e=mut.VolumeElementIndex(1)),
+            1/6.0,
+            delta=1e-15)
+        self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)
+
+    def test_convert_volume_to_surface_mesh(self):
+        # Use the volume mesh from `test_volume_mesh()`.
+        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
+                                   v1=mut.VolumeVertexIndex(2),
+                                   v2=mut.VolumeVertexIndex(3),
+                                   v3=mut.VolumeVertexIndex(4))
+        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
+                                    v1=mut.VolumeVertexIndex(3),
+                                    v2=mut.VolumeVertexIndex(2),
+                                    v3=mut.VolumeVertexIndex(0))
+
+        v0 = mut.VolumeVertex((1, 0,  0))
+        v1 = mut.VolumeVertex((0, 0,  0))
+        v2 = mut.VolumeVertex((0, 1,  0))
+        v3 = mut.VolumeVertex((0, 0, -1))
+        v4 = mut.VolumeVertex((-1, 0,  0))
+
+        volume_mesh = mut.VolumeMesh(elements=(t_left, t_right),
+                                     vertices=(v0, v1, v2, v3, v4))
+
+        surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
+
+        self.assertIsInstance(surface_mesh, mut.SurfaceMesh)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")

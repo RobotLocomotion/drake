@@ -4,56 +4,12 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/random.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
-
-namespace internal {
-template <typename T>
-class RandomSourceT : public LeafSystem<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSourceT)
-
-  using Seed = RandomGenerator::result_type;
-
-  RandomSourceT(RandomDistribution, int num_outputs,
-                double sampling_interval_sec);
-
-  template <typename U>
-  explicit RandomSourceT(const RandomSourceT<U>&);
-
-  ~RandomSourceT() override;
-
-  RandomDistribution get_distribution() const { return distribution_; }
-
-  Seed get_seed(const Context<double>& context) const;
-
-  std::optional<Seed> get_fixed_seed() const { return fixed_seed_; }
-
-  void set_fixed_seed(const std::optional<Seed>& seed) {
-    fixed_seed_ = seed;
-  }
-
- private:
-  // Allow different specializations to access each other's private data.
-  template <typename>
-  friend class RandomSourceT;
-  void SetDefaultState(const Context<T>&, State<T>*) const final;
-  void SetRandomState(const Context<T>&, State<T>*,
-                      RandomGenerator*) const final;
-  void SetSeed(Seed, const Context<T>&, State<T>*) const;
-  void UpdateSamples(const Context<T>&, State<T>*) const;
-
-  const RandomDistribution distribution_;
-  const double sampling_interval_sec_;
-  const Seed instance_seed_;
-  std::optional<Seed> fixed_seed_;
-};
-}  // namespace internal
 
 /// A source block which generates random numbers at a fixed sampling interval,
 /// with a zero-order hold between samples.  For continuous-time systems, this
@@ -112,13 +68,10 @@ class RandomSourceT : public LeafSystem<T> {
 ///
 /// @see @ref stochastic_systems
 ///
+/// @tparam_nonsymbolic_scalar
 /// @ingroup primitive_systems
-class DRAKE_DEPRECATED(
-    "2021-09-01",
-    "Re-spell uses of this class as RandomSourced, not RandomSource.  In the"
-    " future, this class will gain a template argument <typename T> in order to"
-    " support multiple scalar types.")
-RandomSource final : public internal::RandomSourceT<double> {
+template <typename T>
+class RandomSource final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
 
@@ -132,26 +85,44 @@ RandomSource final : public internal::RandomSourceT<double> {
   RandomSource(RandomDistribution distribution, int num_outputs,
                double sampling_interval_sec);
 
+  template <typename U>
+  explicit RandomSource(const RandomSource<U>&);
+
   ~RandomSource() override;
 
   /// Returns the `distribution` given at construction.
-  RandomDistribution get_distribution() const;
-
+  RandomDistribution get_distribution() const { return distribution_; }
 
   /// Returns the value of the `seed` parameter in the given context.
   Seed get_seed(const Context<double>& context) const;
 
   /// Gets this system's fixed random seed (or else nullopt when the seed is
   /// not fixed).  Refer to the class overview documentation for details.
-  std::optional<Seed> get_fixed_seed() const;
+  std::optional<Seed> get_fixed_seed() const { return fixed_seed_; }
 
   /// Sets (or clears) this system's fixed random seed.  Refer to the class
   /// overview documentation for details.
-  void set_fixed_seed(const std::optional<Seed>& seed);
+  void set_fixed_seed(const std::optional<Seed>& seed) { fixed_seed_ = seed; }
+
+ private:
+  // Allow different specializations to access each other's private data.
+  template <typename>
+  friend class RandomSource;
+  void SetDefaultState(const Context<T>&, State<T>*) const final;
+  void SetRandomState(const Context<T>&, State<T>*,
+                      RandomGenerator*) const final;
+  void SetSeed(Seed, const Context<T>&, State<T>*) const;
+  void UpdateSamples(const Context<T>&, State<T>*) const;
+
+  const RandomDistribution distribution_;
+  const double sampling_interval_sec_;
+  const Seed instance_seed_;
+  std::optional<Seed> fixed_seed_;
 };
 
+// TODO(jwnimmer-tri) On 2022-01-01 we should deprecate this vestigial alias.
 /// A convenient alias for a RandomSource that uses the `double` scalar type.
-using RandomSourced = internal::RandomSourceT<double>;
+using RandomSourced = RandomSource<double>;
 
 /// For each subsystem input port in @p builder that is (a) not yet connected
 /// and (b) labeled as random in the InputPort, this method will add a
@@ -168,7 +139,7 @@ int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder);
 
 namespace scalar_conversion {
 template <>
-struct Traits<internal::RandomSourceT> : public NonSymbolicTraits {};
+struct Traits<RandomSource> : public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 
 }  // namespace systems

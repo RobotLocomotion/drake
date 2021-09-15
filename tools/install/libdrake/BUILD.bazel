@@ -4,7 +4,6 @@ package(default_visibility = ["//visibility:private"])
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
     "install_cmake_config",
 )
@@ -22,16 +21,9 @@ load(
     "cc_whole_archive_library",
 )
 
-# TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
-# such that no downstream users can use it?
-cmake_config(
-    cps_file_name = "drake.cps",
-    package = "drake",
-)
-
 install_cmake_config(
     package = "drake",
-    versioned = 0,
+    versioned = False,
 )
 
 # Annotate all of the LIBDRAKE_COMPONENTS as `alwayslink = True`, so that we

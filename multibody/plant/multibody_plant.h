@@ -71,6 +71,7 @@ template <typename>
 class MultibodyPlantModelAttorney;
 template <typename>
 class MultibodyPlantDiscreteUpdateManagerAttorney;
+
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -1756,17 +1757,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     friction_model_.set_stiction_tolerance(v_stiction);
-    // We allow calling this method post-finalize. Therefore, if the plant is
-    // modeled as a discrete system, we must update the solver's stiction
-    // parameter. Pre-Finalize the solver is not yet created and therefore we
-    // check for nullptr.
-    if (is_discrete() && tamsi_solver_ != nullptr) {
-      TamsiSolverParameters solver_parameters =
-          tamsi_solver_->get_solver_parameters();
-      solver_parameters.stiction_tolerance =
-          friction_model_.stiction_tolerance();
-      tamsi_solver_->set_solver_parameters(solver_parameters);
-    }
   }
   /// @} <!-- Contact modeling -->
 
@@ -3493,6 +3483,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().HasBodyNamed(name);
   }
 
+  /// @returns The total number of bodies (across all model instances) with the
+  /// given name.
+  int NumBodiesWithName(std::string_view name) const {
+    return internal_tree().NumBodiesWithName(name);
+  }
+
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant
   /// in @p model_instance.
   /// @see AddRigidBody().
@@ -4025,7 +4021,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
+    systems::CacheIndex contact_solver_scratch;
     systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex joint_locking_data;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4227,6 +4225,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // During the time span dt the problem data M, Jn, Jt and minus_tau, are
   // approximated to be constant, a first order approximation.
   TamsiSolverResult SolveUsingSubStepping(
+      TamsiSolver<T>* tamsi_solver,
       int num_substeps, const MatrixX<T>& M0, const MatrixX<T>& Jn,
       const MatrixX<T>& Jt, const VectorX<T>& minus_tau,
       const VectorX<T>& stiffness, const VectorX<T>& damping,
@@ -4240,12 +4239,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context0,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+
   // Eval version of the method CalcContactSolverResults().
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_solver_results)
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
+  }
+
+
+  // Computes the array of indices of velocities that are not locked in the
+  // current configuration. The resulting index values in @p
+  // unlocked_velocity_indices will be in ascending order, in the range [0,
+  // num_velocities()), with the indices of the locked velocities removed.
+  void CalcJointLockingIndices(
+      const systems::Context<T>& context,
+      std::vector<int>* unlocked_velocity_indices) const;
+
+  // Eval version of the method CalcJointLockingIndices().
+  const std::vector<int>& EvalJointLockingIndices(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.joint_locking_data)
+        .template Eval<std::vector<int>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
@@ -4614,6 +4630,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper to invoke our TamsiSolver. This method and `CallContactSolver()` are
   // disjoint methods. One should only use one or the other, but not both.
   void CallTamsiSolver(
+      TamsiSolver<T>* tamsi_solver,
       const T& time0, const VectorX<T>& v0, const MatrixX<T>& M0,
       const VectorX<T>& minus_tau, const VectorX<T>& fn0, const MatrixX<T>& Jn,
       const MatrixX<T>& Jt, const VectorX<T>& stiffness,
@@ -4850,9 +4867,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // time_step_ corresponds to the period of those updates. Otherwise, if the
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
-
-  // The solver used when the plant is modeled as a discrete system.
-  std::unique_ptr<TamsiSolver<T>> tamsi_solver_;
 
   // TODO(xuchenhan-tri): Entirely remove the contact_solver_ back door by the
   // newer design using DiscreteUpdateManager. When not the nullptr, this is the

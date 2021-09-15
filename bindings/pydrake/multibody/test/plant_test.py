@@ -8,6 +8,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
+from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.tree import (
     BallRpyJoint_,
@@ -74,6 +75,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
@@ -537,6 +539,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(dut, Class)
         dut /= T(1.0)
         self.assertIsInstance(dut, Class)
+        assert_pickle(self, dut, RotationalInertia_[T].CopyToFullMatrix3, T=T)
 
     @numpy_compare.check_all_types
     def test_unit_inertia_api(self, T):
@@ -550,6 +553,7 @@ class TestPlant(unittest.TestCase):
             dut.ShiftFromCenterOfMass(p_BcmQ_E=p), UnitInertia)
         self.assertIsInstance(
             dut.ShiftToCenterOfMass(p_QBcm_E=p), UnitInertia)
+        assert_pickle(self, dut, UnitInertia.CopyToFullMatrix3, T=T)
         # N.B. There are NO valid operators on UnitInertia.  They are inherited
         # through implementation reuse, but they are broken (#6109).
 
@@ -571,6 +575,7 @@ class TestPlant(unittest.TestCase):
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
             G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
+        copied_inertia = copy.deepcopy(spatial_inertia)
         self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
         self.assertIsInstance(spatial_inertia.CalcComMoment(), np.ndarray)
         self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
@@ -590,6 +595,8 @@ class TestPlant(unittest.TestCase):
             spatial_inertia * SpatialAcceleration(), SpatialForce)
         self.assertIsInstance(
             spatial_inertia * SpatialVelocity(), SpatialMomentum)
+        assert_pickle(
+            self, spatial_inertia, SpatialInertia.CopyToFullMatrix6, T=T)
         spatial_inertia.SetNaN()
         # N.B. `numpy_compare.assert_equal(IsNaN(), True)` does not work.
         if T != Expression:
@@ -601,6 +608,10 @@ class TestPlant(unittest.TestCase):
         CoulombFriction()
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
         copy.copy(CoulombFriction())
+        assert_pickle(
+            self, CoulombFriction,
+            lambda x: [x.static_friction, x.dynamic_friction], T=T
+        )
 
     @numpy_compare.check_all_types
     def test_rigid_body_api(self, T):
@@ -753,10 +764,17 @@ class TestPlant(unittest.TestCase):
             float)
 
     @numpy_compare.check_all_types
-    def test_multibody_tree_kinematics(self, T):
+    def test_multibody_tree_kinematics_continuous(self, T):
+        self.do_test_multibody_tree_kinematics(T, 0.0)
+
+    @numpy_compare.check_all_types
+    def test_multibody_tree_kinematics_discrete(self, T):
+        self.do_test_multibody_tree_kinematics(T, 0.001)
+
+    def do_test_multibody_tree_kinematics(self, T, time_step):
         RigidTransform = RigidTransform_[T]
         SpatialVelocity = SpatialVelocity_[T]
-        plant_f = MultibodyPlant_[float](0.0)
+        plant_f = MultibodyPlant_[float](time_step)
 
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
@@ -774,6 +792,13 @@ class TestPlant(unittest.TestCase):
         free_bodies = plant.GetFloatingBaseBodies()
         self.assertEqual(len(free_bodies), 1)
         self.assertTrue(base.index() in free_bodies)
+
+        self.assertFalse(base.is_locked(context))
+        if time_step:
+            base.Lock(context)
+            self.assertTrue(base.is_locked(context))
+            base.Unlock(context)
+            self.assertFalse(base.is_locked(context))
 
         p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
@@ -804,6 +829,12 @@ class TestPlant(unittest.TestCase):
             Js_v_ACcm_E = plant.CalcJacobianCenterOfMassTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_A=base_frame,
                 frame_E=world_frame)
+            self.assert_sane(Js_v_ACcm_E)
+            self.assertEqual(Js_v_ACcm_E.shape, (3, nw))
+
+            Js_v_ACcm_E = plant.CalcJacobianCenterOfMassTranslationalVelocity(
+                context=context, model_instances=[instance],
+                with_respect_to=wrt, frame_A=base_frame, frame_E=world_frame)
             self.assert_sane(Js_v_ACcm_E)
             self.assertEqual(Js_v_ACcm_E.shape, (3, nw))
 
@@ -1538,8 +1569,8 @@ class TestPlant(unittest.TestCase):
             make_weld_joint,
         ]
 
-        def loop_body(make_joint):
-            plant = MultibodyPlant_[T](0.0)
+        def loop_body(make_joint, time_step):
+            plant = MultibodyPlant_[T](time_step)
             child = plant.AddRigidBody("Child", SpatialInertia_[float]())
             joint = make_joint(
                 plant=plant, P=plant.world_frame(), C=child.body_frame())
@@ -1570,6 +1601,13 @@ class TestPlant(unittest.TestCase):
                 type=Variable.Type.RANDOM_UNIFORM)
 
             context = plant.CreateDefaultContext()
+            self.assertFalse(joint.is_locked(context))
+            if time_step:
+                joint.Lock(context)
+                self.assertTrue(joint.is_locked(context))
+                joint.Unlock(context)
+                self.assertFalse(joint.is_locked(context))
+
             if joint.name() == "ball_rpy":
                 joint.damping()
                 set_point = array_T([1., 2., 3.])
@@ -1689,7 +1727,8 @@ class TestPlant(unittest.TestCase):
 
         for make_joint in make_joint_list:
             with self.subTest(make_joint=make_joint):
-                loop_body(make_joint)
+                loop_body(make_joint, 0.0)
+                loop_body(make_joint, 0.001)
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
@@ -1923,13 +1962,14 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant_[float](0.0)
+
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         plant.set_penetration_allowance(penetration_allowance=0.0001)
         plant.set_stiction_tolerance(v_stiction=0.001)
         self.assertIsInstance(
             plant.get_contact_penalty_method_time_scale(), float)
-        contact_results_to_lcm = ContactResultsToLcmSystem(plant)
+        contact_results_to_lcm = ContactResultsToLcmSystem(plant=plant)
         context = contact_results_to_lcm.CreateDefaultContext()
         contact_results_to_lcm.get_input_port(0).FixValue(
             context, ContactResults_[float]())
@@ -1939,18 +1979,32 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(result, AbstractValue)
 
     def test_connect_contact_results(self):
-        DiagramBuilder = DiagramBuilder_[float]
-        MultibodyPlant = MultibodyPlant_[float]
-
+        # For this test to be meaningful, the sdf file must contain collision
+        # geometries. We'll do a reality check after instantiating.
         file_name = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        builder = DiagramBuilder()
-        plant = builder.AddSystem(MultibodyPlant(0.001))
-        Parser(plant).AddModelFromFile(file_name)
-        plant.Finalize()
+            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
+        # Test for owning and non-owning lcm.
+        for lcm in (None, DrakeLcm()):
+            # There are two versions of the function; one takes a SceneGraph,
+            # one does not. Test both.
+            for use_custom_names in (True, False):
+                builder = DiagramBuilder_[float]()
+                plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+                Parser(plant).AddModelFromFile(file_name)
+                plant.Finalize()
+                self.assertGreater(
+                    len(plant.GetCollisionGeometriesForBody(
+                        plant.GetBodyByName("base"))),
+                    0)
 
-        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
-        self.assertIsInstance(publisher, LcmPublisherSystem)
+                if use_custom_names:
+                    publisher = ConnectContactResultsToDrakeVisualizer(
+                        builder=builder, plant=plant, scene_graph=scene_graph,
+                        lcm=lcm)
+                else:
+                    publisher = ConnectContactResultsToDrakeVisualizer(
+                        builder=builder, plant=plant, lcm=lcm)
+                self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):
         builder_f = DiagramBuilder_[float]()

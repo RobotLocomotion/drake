@@ -6,7 +6,8 @@ def net_sf_jchart2d_repository(
         name,
         mirrors = None):
     # In the unlikely event that you update the version here, verify that the
-    # licenses in tools/third_party/jchart2d/LICENSE are still applicable.
+    # licenses in tools/third_party/jchart2d/LICENSE are still applicable, and
+    # fix up the two jchart2d-*.cmake files in this directory.
     java_import_external(
         name = name,
         licenses = ["restricted"],  # LGPL-3.0+

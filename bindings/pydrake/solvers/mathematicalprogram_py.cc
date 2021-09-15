@@ -10,7 +10,6 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -1459,23 +1458,6 @@ for every column of ``prog_var_vals``. )""")
           doc.MathematicalProgram.RemoveCost.doc)
       .def("RemoveConstraint", &MathematicalProgram::RemoveConstraint,
           py::arg("constraint"), doc.MathematicalProgram.RemoveConstraint.doc);
-
-  {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    prog_cls.def("AddL2NormCost",
-        WrapDeprecated("Please use "
-                       "MathematicalProgram.Add2NormSquaredCost(A, b, vars),"
-                       " this variant will be "
-                       "removed after 2021-09-01",
-            overload_cast_explicit<Binding<QuadraticCost>,
-                const Eigen::Ref<const Eigen::MatrixXd>&,
-                const Eigen::Ref<const Eigen::VectorXd>&,
-                const Eigen::Ref<const VectorXDecisionVariable>&>(
-                &MathematicalProgram::Add2NormSquaredCost)),
-        py::arg("A"), py::arg("b"), py::arg("vars"));
-#pragma GCC diagnostic pop
-  }
 
   py::enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
       "NonnegativePolynomial",

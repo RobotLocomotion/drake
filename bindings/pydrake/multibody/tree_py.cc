@@ -306,7 +306,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("F_Bo_W"), py::arg("forces"), cls_doc.AddInForceInWorld.doc)
         .def("AddInForce", &Class::AddInForce, py::arg("context"),
             py::arg("p_BP_E"), py::arg("F_Bp_E"), py::arg("frame_E"),
-            py::arg("forces"), cls_doc.AddInForce.doc);
+            py::arg("forces"), cls_doc.AddInForce.doc)
+        .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
+        .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
+        .def("is_locked", &Class::is_locked, py::arg("context"),
+            cls_doc.is_locked.doc);
   }
 
   {
@@ -400,7 +404,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("lower_limits"), py::arg("upper_limits"),
             cls_doc.set_acceleration_limits.doc)
         .def("set_default_positions", &Class::set_default_positions,
-            py::arg("default_positions"), cls_doc.set_default_positions.doc);
+            py::arg("default_positions"), cls_doc.set_default_positions.doc)
+        .def("Lock", &Class::Lock, py::arg("context"), cls_doc.Lock.doc)
+        .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
+        .def("is_locked", &Class::is_locked, py::arg("context"),
+            cls_doc.is_locked.doc);
   }
 
   // BallRpyJoint
@@ -907,7 +915,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ShiftToThenAwayFromCenterOfMass",
             &Class::ShiftToThenAwayFromCenterOfMass, py::arg("mass"),
             py::arg("p_PBcm_E"), py::arg("p_QBcm_E"),
-            cls_doc.ShiftToThenAwayFromCenterOfMass.doc);
+            cls_doc.ShiftToThenAwayFromCenterOfMass.doc)
+        .def(py::pickle(
+            [](const Class& self) { return self.CopyToFullMatrix3(); },
+            [](const Matrix3<T>& I) {
+              // Invoke 6-argument constructor by specifying full (upper
+              // diagonal) inertia matrix.
+              return Class(
+                  I(0, 0), I(1, 1), I(2, 2), I(0, 1), I(0, 2), I(1, 2));
+            }));
     DefCopyAndDeepCopy(&cls);
   }
   {
@@ -956,7 +972,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("ThinRod", &Class::ThinRod, py::arg("L"), py::arg("b_E"),
             cls_doc.ThinRod.doc)
         .def_static("TriaxiallySymmetric", &Class::TriaxiallySymmetric,
-            py::arg("I_triaxial"), cls_doc.TriaxiallySymmetric.doc);
+            py::arg("I_triaxial"), cls_doc.TriaxiallySymmetric.doc)
+        .def(py::pickle(
+            [](const Class& self) { return self.CopyToFullMatrix3(); },
+            [](const Matrix3<T>& I) {
+              // Invoke 6-argument constructor by specifying full (upper
+              // diagonal) inertia matrix.
+              return Class(
+                  I(0, 0), I(1, 1), I(2, 2), I(0, 1), I(0, 2), I(1, 2));
+            }));
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -994,7 +1018,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Shift", &Class::Shift, py::arg("p_PQ_E"), cls_doc.Shift.doc)
         .def(py::self += py::self)
         .def(py::self * SpatialAcceleration<T>())
-        .def(py::self * SpatialVelocity<T>());
+        .def(py::self * SpatialVelocity<T>())
+        .def(py::pickle(
+            [](const Class& self) {
+              return py::make_tuple(
+                  self.get_mass(), self.get_com(), self.get_unit_inertia());
+            },
+            [](py::tuple t) {
+              DRAKE_THROW_UNLESS(t.size() == 3);
+              return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>(),
+                  t[2].cast<UnitInertia<T>>());
+            }));
+    DefCopyAndDeepCopy(&cls);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }

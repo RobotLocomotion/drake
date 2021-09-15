@@ -69,6 +69,13 @@ void DeformableRigidManager<T>::ExtractModelInfo() {
     throw std::logic_error(
         "The owning MultibodyPlant does not have any deformable model.");
   }
+  // TODO(xuchenhan-tri): We have to manually keep the integration schemes in
+  //  sync for free-motion solve and post-contact solve which is error prone.
+  //  See issue #15620.
+  /* We use the Newmark scheme with gamma = 1 and beta = 0.5 to advance states
+   for all deformable bodies. */
+  velocity_newmark_ = std::make_unique<internal::VelocityNewmarkScheme<T>>(
+      this->plant().time_step(), 1, 0.5);
 }
 
 template <typename T>
@@ -132,19 +139,34 @@ void DeformableRigidManager<T>::DeclareCacheEntries() {
     free_motion_cache_indexes_.emplace_back(
         free_motion_cache_entry.cache_index());
 
+    const auto& next_fem_state_cache_entry = this->DeclareCacheEntry(
+        fmt::format("FEM state for {} at the next time step",
+                    deformable_body_id),
+        systems::ValueProducer(
+            *model_fem_state,
+            std::function<void(const systems::Context<T>&, FemStateBase<T>*)>{
+                [this, deformable_body_id](const systems::Context<T>& context,
+                                           FemStateBase<T>* next_state) {
+                  this->CalcNextFemStateBase(context, deformable_body_id,
+                                             next_state);
+                }}),
+        {systems::System<T>::all_sources_ticket()});
+    next_fem_state_cache_indexes_.emplace_back(
+        next_fem_state_cache_entry.cache_index());
+
     /* Allocates and calculates the free-motion tangent matrix for the
      deformable body. */
-    Eigen::SparseMatrix<T> model_tangent_matrix(fem_model.num_dofs(),
-                                                fem_model.num_dofs());
-    fem_model.SetTangentMatrixSparsityPattern(&model_tangent_matrix);
+    EigenSparseMatrix<T> model_tangent_matrix = {
+        Eigen::SparseMatrix<T>(fem_model.num_dofs(), fem_model.num_dofs())};
+    fem_model.SetTangentMatrixSparsityPattern(&(model_tangent_matrix.data));
     const auto& tangent_matrix_cache_entry = this->DeclareCacheEntry(
         fmt::format("Free motion FEM tangent matrix {}", deformable_body_id),
         systems::ValueProducer(model_tangent_matrix,
                                std::function<void(const systems::Context<T>&,
-                                                  Eigen::SparseMatrix<T>*)>{
+                                                  EigenSparseMatrix<T>*)>{
                                    [this, deformable_body_id](
                                        const systems::Context<T>& context,
-                                       Eigen::SparseMatrix<T>* tangent_matrix) {
+                                       EigenSparseMatrix<T>* tangent_matrix) {
                                      this->CalcFreeMotionTangentMatrix(
                                          context, deformable_body_id,
                                          tangent_matrix);
@@ -397,7 +419,7 @@ void DeformableRigidManager<T>::CalcDeformableContactSolverResults(
           v_star, body_contact_data.permuted_vertex_indexes());
       const int body_num_participating_dofs =
           3 * body_contact_data.num_vertices_in_contact();
-      /* Calculate the velocitiy changes for participating dofs and store them
+      /* Calculate the velocity changes for participating dofs and store them
        in `participating_delta_v`. */
       const auto participating_v_star =
           permuted_v_star.head(body_num_participating_dofs);
@@ -405,7 +427,7 @@ void DeformableRigidManager<T>::CalcDeformableContactSolverResults(
           participating_dofs_offset, body_num_participating_dofs);
       const VectorX<T> participating_delta_v =
           participating_v - participating_v_star;
-      /* Use Schur complement to calculate the velocitiy changes for
+      /* Use Schur complement to calculate the velocity changes for
         non-participating dofs and store them in `nonparticipating_delta_v`. */
       const internal::SchurComplement<T>& schur_complement =
           EvalFreeMotionTangentMatrixSchurComplement(context, body);
@@ -452,7 +474,7 @@ template <typename T>
 void DeformableRigidManager<T>::DoCalcDiscreteValues(
     const systems::Context<T>& context,
     systems::DiscreteValues<T>* updates) const {
-  /* Get the rigid dofs from context. */
+  /* Calculate the discrete state values for the rigid dofs. */
   auto x =
       context.get_discrete_state(this->multibody_state_index()).get_value();
   const auto& q = x.topRows(this->plant().num_positions());
@@ -470,23 +492,19 @@ void DeformableRigidManager<T>::DoCalcDiscreteValues(
   x_next << q_next, v_next;
   updates->set_value(this->multibody_state_index(), x_next);
 
-  /* Evaluates the deformable free-motion states. */
+  /* Calculate the discrete state values for the deformable dofs. */
   const std::vector<systems::DiscreteStateIndex>& discrete_state_indexes =
       deformable_model_->discrete_state_indexes();
-  for (DeformableBodyIndex deformable_body_id(0);
-       deformable_body_id < free_motion_cache_indexes_.size();
-       ++deformable_body_id) {
-    const FemStateBase<T>& state_star =
-        EvalFreeMotionFemStateBase(context, deformable_body_id);
-    const int num_dofs = state_star.num_generalized_positions();
-    // TODO(xuchenhan-tri): This assumes no deformable-rigid contact exists.
-    //  Modify this to include the effect of contact.
-    /* Copy new state to output variable. */
+  for (DeformableBodyIndex body(0); body < discrete_state_indexes.size();
+       ++body) {
     Eigen::VectorBlock<VectorX<T>> next_discrete_value =
-        updates->get_mutable_value(discrete_state_indexes[deformable_body_id]);
-    next_discrete_value.head(num_dofs) = state_star.q();
-    next_discrete_value.segment(num_dofs, num_dofs) = state_star.qdot();
-    next_discrete_value.tail(num_dofs) = state_star.qddot();
+        updates->get_mutable_value(discrete_state_indexes[body]);
+    const int body_num_dofs = next_discrete_value.size() / 3;
+    const FemStateBase<T>& next_state = EvalNextFemStateBase(context, body);
+    next_discrete_value.head(body_num_dofs) = next_state.q();
+    next_discrete_value.segment(body_num_dofs, body_num_dofs) =
+        next_state.qdot();
+    next_discrete_value.tail(body_num_dofs) = next_state.qddot();
   }
 }
 
@@ -522,13 +540,37 @@ void DeformableRigidManager<T>::CalcFreeMotionFemStateBase(
 }
 
 template <typename T>
+void DeformableRigidManager<T>::CalcNextFemStateBase(
+    const systems::Context<T>& context, DeformableBodyIndex body_index,
+    FemStateBase<T>* fem_state) const {
+  DRAKE_DEMAND(deformable_model_ != nullptr);
+  /* Calculate the discrete state values for the deformable dofs. */
+  const auto& deformable_contact_solver_results =
+      EvalDeformableContactSolverResults(context);
+  const VectorX<T>& deformable_velocities =
+      deformable_contact_solver_results.v_next;
+  // TODO(xuchenhan-tri): The dofs offset for a certain deformable body is
+  // required throughout multiple methods in this class and should be
+  // precomputed.
+  int dofs_offset = 0;
+  for (DeformableBodyIndex b(0); b < body_index; ++b) {
+    dofs_offset += deformable_model_->fem_model(b).num_dofs();
+  }
+  const int body_num_dofs = deformable_model_->fem_model(body_index).num_dofs();
+  const VectorX<T>& body_velocity =
+      deformable_velocities.segment(dofs_offset, body_num_dofs);
+  const FemStateBase<T>& state0 = EvalFemStateBase(context, body_index);
+  velocity_newmark_->AdvanceOneTimeStep(state0, body_velocity, fem_state);
+}
+
+template <typename T>
 void DeformableRigidManager<T>::CalcFreeMotionTangentMatrix(
     const systems::Context<T>& context, DeformableBodyIndex index,
-    Eigen::SparseMatrix<T>* tangent_matrix) const {
+    EigenSparseMatrix<T>* tangent_matrix) const {
   const FemStateBase<T>& free_motion_fem_state =
       EvalFreeMotionFemStateBase(context, index);
   const FemModelBase<T>& fem_model = deformable_model_->fem_model(index);
-  fem_model.CalcTangentMatrix(free_motion_fem_state, tangent_matrix);
+  fem_model.CalcTangentMatrix(free_motion_fem_state, &(tangent_matrix->data));
 }
 
 template <typename T>

@@ -18,7 +18,10 @@ GTEST_TEST(TempDirectoryTest, TestTmpdirSet) {
 
   const std::string temp_directory_with_test_tmpdir_set = temp_directory();
   EXPECT_NE('/', temp_directory_with_test_tmpdir_set.back());
-  EXPECT_EQ(std::string(test_tmpdir), temp_directory_with_test_tmpdir_set);
+  filesystem::path temp_path(temp_directory_with_test_tmpdir_set);
+  EXPECT_EQ(std::string(test_tmpdir), temp_path.parent_path().string());
+  EXPECT_THAT(temp_path.filename().string(),
+              testing::MatchesRegex("robotlocomotion_drake_[^/]{6}$"));
 }
 
 GTEST_TEST(TempDirectoryTest, TestTmpdirUnset) {

@@ -208,6 +208,58 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return body_frame_;
   }
 
+  /// For a floating body, lock its implicit inboard joint. Its generalized
+  /// velocities will be 0 until it is unlocked. Locking is not yet supported
+  /// for continuous-mode systems.
+  /// @throws std::exception if this body is not a floating body, or if the
+  /// parent model uses continuous state.
+  void Lock(systems::Context<T>* context) const {
+    // Body locking is only supported for discrete mode.
+    // TODO(sherm1): extend the design to support continuous-mode systems.
+    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
+    // TODO(rpoyner-tri): consider extending the design to allow locking on
+    // non-floating bodies.
+    if (!is_floating()) {
+      throw std::logic_error(fmt::format(
+          "Attempted to call lock() on non-floating body {}", name()));
+    }
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(true);
+
+    static constexpr int kVelocities = 6;
+    const auto& tree = this->get_parent_tree();
+    const int start_in_v =
+        this->floating_velocities_start() - tree.num_positions();
+    DRAKE_ASSERT(start_in_v >= 0);
+    DRAKE_ASSERT(start_in_v + kVelocities <= tree.num_velocities());
+    tree.GetMutableVelocities(context)
+        .template segment<kVelocities>(start_in_v).setZero();
+  }
+
+  /// For a floating body, unlock its implicit inboard joint. Unlocking is not
+  /// yet supported for continuous-mode systems.
+  /// @throws std::exception if this body is not a floating body, or if the
+  /// parent model uses continuous state.
+  void Unlock(systems::Context<T>* context) const {
+    // Body locking is only supported for discrete mode.
+    // TODO(sherm1): extend the design to support continuous-mode systems.
+    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
+    // TODO(rpoyner-tri): consider extending the design to allow locking on
+    // non-floating bodies.
+    if (!is_floating()) {
+      throw std::logic_error(fmt::format(
+          "Attempted to call unlock() on non-floating body {}", name()));
+    }
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(false);
+  }
+
+  /// @return true if the body is locked, false otherwise.
+  bool is_locked(const systems::Context<T>& context) const {
+    return context.get_parameters().template get_abstract_parameter<bool>(
+        is_locked_parameter_index_);
+  }
+
   /// (Advanced) Returns the index of the node in the underlying tree structure
   /// of the parent MultibodyTree to which this body belongs.
   internal::BodyNodeIndex node_index() const {
@@ -418,6 +470,16 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   /// @}
 
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent classes' parameters
+    MultibodyElement<Body, T, BodyIndex>::DoDeclareParameters(tree_system);
+
+    is_locked_parameter_index_ =
+        this->DeclareAbstractParameter(tree_system, Value<bool>(false));
+  }
+
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.
@@ -465,6 +527,9 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   internal::BodyTopology topology_;
+
+  // System parameter index for `this` body's lock state stored in a context.
+  systems::AbstractParameterIndex is_locked_parameter_index_;
 };
 
 /// @cond

@@ -275,6 +275,37 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     DoAddInDamping(context, forces);
   }
 
+  /// Lock the joint. Its generalized velocities will be 0 until it is
+  /// unlocked. Locking is not yet supported for continuous-mode systems.
+  /// @throws std::exception if the parent model uses continuous state.
+  void Lock(systems::Context<T>* context) const {
+    // Joint locking is only supported for discrete mode.
+    // TODO(sherm1): extend the design to support continuous-mode systems.
+    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(true);
+    this->get_parent_tree().GetMutableVelocities(context).segment(
+        this->velocity_start(),
+        this->num_velocities()).setZero();
+  }
+
+  /// Unlock the joint. Unlocking is not yet supported for continuous-mode
+  /// systems.
+  /// @throws std::exception if the parent model uses continuous state.
+  void Unlock(systems::Context<T>* context) const {
+    // Joint locking is only supported for discrete mode.
+    // TODO(sherm1): extend the design to support continuous-mode systems.
+    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(false);
+  }
+
+  /// @return true if the joint is locked, false otherwise.
+  bool is_locked(const systems::Context<T>& context) const {
+    return context.get_parameters().template get_abstract_parameter<bool>(
+        is_locked_parameter_index_);
+  }
+
   /// @name Methods to get and set the limits of `this` joint. For position
   /// limits, the layout is the same as the generalized position's. For
   /// velocity and acceleration limits, the layout is the same as the
@@ -539,7 +570,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   // Implements MultibodyElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
-  void DoSetTopology(const internal::MultibodyTreeTopology&) {}
+  void DoSetTopology(const internal::MultibodyTreeTopology&) override {}
 
   /// @name Methods to make a clone templated on different scalar types.
   /// @{
@@ -573,6 +604,16 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// Returns whether `this` joint owns a particular implementation.
   /// If the MultibodyTree has been finalized, this will return true.
   bool has_implementation() const { return implementation_ != nullptr; }
+
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent class's parameters
+    MultibodyElement<Joint, T, JointIndex>::DoDeclareParameters(tree_system);
+
+    is_locked_parameter_index_ =
+        this->DeclareAbstractParameter(tree_system, Value<bool>(false));
+  }
 
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
@@ -612,6 +653,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   // Joint default position. This vector has zero size for joints with no state.
   VectorX<double> default_positions_;
+
+  // System parameter index for `this` joint's lock state stored in a context.
+  systems::AbstractParameterIndex is_locked_parameter_index_;
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;
