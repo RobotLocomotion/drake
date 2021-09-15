@@ -241,6 +241,67 @@ GTEST_TEST(MeshcatTest, SetPropertyDouble) {
   EXPECT_EQ(data.value, 2.0);
 }
 
+GTEST_TEST(MeshcatTest, Buttons) {
+  Meshcat meshcat;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button"),
+      "Meshcat does not have any button named button.");
+
+  meshcat.AddButton("button");
+  EXPECT_EQ(meshcat.GetButtonClicks("button"), 0);
+  meshcat.DeleteButton("button");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button"),
+      "Meshcat does not have any button named button.");
+
+  meshcat.AddButton("button1");
+  meshcat.AddButton("button2");
+  meshcat.DeleteAddedControls();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button1"),
+      "Meshcat does not have any button named button1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button2"),
+      "Meshcat does not have any button named button2.");
+}
+
+GTEST_TEST(MeshcatTest, Sliders) {
+  Meshcat meshcat;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider"),
+      "Meshcat does not have any slider named slider.");
+
+  meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.5, 1e-14);
+  meshcat.SetSliderValue("slider", 0.7);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.7, 1e-14);
+  meshcat.SetSliderValue("slider", -2.0);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), .2, 1e-14);
+  meshcat.SetSliderValue("slider", 2.0);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.5, 1e-14);
+  meshcat.SetSliderValue("slider", 1.245);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.2, 1e-14);
+
+  meshcat.DeleteSlider("slider");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider"),
+      "Meshcat does not have any slider named slider.");
+
+  meshcat.AddSlider("slider1", 2, 3, 0.01, 2.35);
+  meshcat.AddSlider("slider2", 4, 5, 0.01, 4.56);
+  meshcat.DeleteAddedControls();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider1"),
+      "Meshcat does not have any slider named slider1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider2"),
+      "Meshcat does not have any slider named slider2.");
+}
+
 void CheckWebsocketCommand(const drake::geometry::Meshcat& meshcat,
                            int message_num,
                            const std::string& desired_command_json) {

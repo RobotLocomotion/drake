@@ -221,8 +221,67 @@ class Meshcat {
                    const std::vector<double>& value);
 
   // TODO(russt): Implement SetAnimation().
-  // TODO(russt): Implement SetButton() and SetSlider() as wrappers on
-  // set_control.
+
+  /** @name Meshcat Controls
+   Meshcat "Controls" are user interface elements in the browser.  These
+   currently include buttons and sliders.
+   - Controls appear in the browser under the "Open Controls" dropdown menu,
+     and are appended to the root node of the tree (they do not have a path in
+     the "scene tree"), in the order in which they are added.
+   - Controls must have unique names.  Adding a control with a name that was
+     already in use will overwrite the existing control.  If you add a slider
+     with a name that was previous used for a button, then the button will be
+     replaced by the slider, etc.
+   - Users of this Meshcat instance are responsible for polling the GUI to
+     retrieve the user interface events.
+   - Controls can be added/deleted/accessed anytime during the lifetime of this
+     Meshcat instance.
+  */
+  //@{
+
+  /** Adds a button with the label `name` to the meshcat browser controls GUI.
+   */
+  void AddButton(std::string name);
+
+  /** Returns the number of times the button `name` has been clicked in the
+   GUI, from the time that it was added to `this`.  If multiple browsers are
+   open, then this number is the cumulative number of clicks in all browsers.
+   @throws std::exception if `name` is not a registered button. */
+  int GetButtonClicks(std::string_view name);
+
+  /** Removes the button `name` from the GUI.
+   @throws std::exception if `name` is not a registered button. */
+  void DeleteButton(std::string name);
+
+  /** Adds a slider with the label `name` to the meshcat browser controls GUI.
+   The slider range is given by [`min`, `max`]. `step` is the smallest
+   increment by which the slider can change values (and therefore send updates
+   back to this Meshcat instance). `value` specifies the initial value; it will
+   be truncated to the slider range and rounded to the nearest increment. */
+  void AddSlider(std::string name, double min, double max, double step,
+                 double value);
+
+  /** Sets the current `value` of the slider `name`. `value` will be truncated
+   to the slider range and rounded to the nearest increment specified by the
+   slider `step`. This will update the slider element in all connected meshcat
+   browsers.
+   @throws std::exception if `name` is not a registered slider. */
+  void SetSliderValue(std::string name, double value);
+
+  /** Gets the current `value` of the slider `name`.
+   @throws std::exception if `name` is not a registered slider. */
+  double GetSliderValue(std::string_view name);
+
+  /** Removes the slider `name` from the GUI.
+   @throws std::exception if `name` is not a registered slider. */
+  void DeleteSlider(std::string name);
+
+  /** Removes all buttons and sliders from the GUI that have been registered by
+   this Meshcat instance. It does *not* clear the default GUI elements set in
+   the meshcat browser (e.g. for cameras and lights). */
+  void DeleteAddedControls();
+
+  //@}
 
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block
