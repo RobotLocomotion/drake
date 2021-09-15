@@ -13,7 +13,7 @@ def _impl(repository_ctx):
             Label("@drake//tools/workspace/opengl:package-macos.BUILD.bazel"),
             "BUILD.bazel",
         )
-    elif os_result.is_ubuntu:
+    elif os_result.is_ubuntu or os_result.is_manylinux:
         hdrs = [
             "GL/gl.h",
             "GL/glcorearb.h",

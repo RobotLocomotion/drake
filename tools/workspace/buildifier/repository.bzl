@@ -29,29 +29,29 @@ load(
 )
 
 def _impl(repository_ctx):
-    # Enumerate the possible binaries.
+    # Enumerate the possible binaries.  Note that the buildifier binaries are
+    # fully statically linked, so the particular distribution doesn't matter,
+    # only the kernel.
     version = "4.0.1"
-    mac_urls = [
+    darwin_urls = [
         x.format(version = version, filename = "buildifier-darwin-amd64")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    mac_sha256 = "f4d0ede5af04b32671b9a086ae061df8f621f48ea139b01b3715bfa068219e4a"  # noqa
-    ubuntu_urls = [
+    darwin_sha256 = "f4d0ede5af04b32671b9a086ae061df8f621f48ea139b01b3715bfa068219e4a"  # noqa
+    linux_urls = [
         x.format(version = version, filename = "buildifier-linux-amd64")
         for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-    ubuntu_sha256 = "069a03fc1fa46135e3f71e075696e09389344710ccee798b2722c50a2d92d55a"  # noqa
+    linux_sha256 = "069a03fc1fa46135e3f71e075696e09389344710ccee798b2722c50a2d92d55a"  # noqa
 
-    # Choose which binary to use on the current OS.
+    # Choose which binary to use.
     os_result = determine_os(repository_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
     if os_result.is_macos:
-        urls = mac_urls
-        sha256 = mac_sha256
-    elif os_result.is_ubuntu:
-        urls = ubuntu_urls
-        sha256 = ubuntu_sha256
+        urls = darwin_urls
+        sha256 = darwin_sha256
+    elif os_result.is_ubuntu or os_result.is_manylinux:
+        urls = linux_urls
+        sha256 = linux_sha256
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
@@ -73,12 +73,12 @@ def _impl(repository_ctx):
         version = version,
         downloads = [
             {
-                "urls": mac_urls,
-                "sha256": mac_sha256,
+                "urls": darwin_urls,
+                "sha256": darwin_sha256,
             },
             {
-                "urls": ubuntu_urls,
-                "sha256": ubuntu_sha256,
+                "urls": linux_urls,
+                "sha256": linux_sha256,
             },
         ],
     )
