@@ -124,6 +124,65 @@ class Toppra {
       ToppraDiscretization discretization =
           ToppraDiscretization::kInterpolation);
 
+  /**
+   * Adds a constant torque limit to all the degrees of freedom in the plant.
+   * The limits must be arranged in the same order as the entries in the path.
+   * @param lower_limit The lower torque limit for each degree of freedom.
+   * @param upper_limit The upper torque limit for each degree of freedom.
+   * @param discretization The discretization scheme to use for this linear
+   *                       constraint. See ToppraDiscretization for details.
+   * @return A pair containing the linear constraints that will enforce the
+   *         torque limit on the backward pass and forward pass respectively.
+   */
+  std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+  AddJointTorqueLimit(const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+                      const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
+                      ToppraDiscretization discretization =
+                          ToppraDiscretization::kInterpolation);
+
+  /**
+   * Adds a constant limit on the velocity of the given frame.
+   * @param constraint_frame The frame to limit the velocity of.
+   * @param lower_limit The lower velocity limit for constraint_frame.
+   * @param upper_limit The upper velocity limit for constraint_frame.
+   * @return The bounding box constraint that will enforce the frame velocity
+   *         limit during the backward pass.
+   */
+  Binding<BoundingBoxConstraint> AddFrameVelocityLimit(
+      const Frame<double>& constraint_frame,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_limit);
+  /**
+   * Adds a constant limit on the translational speed of the given frame.
+   * @param constraint_frame The frame to limit the translational speed of.
+   * @param lower_limit The lower tranlational speed limit for constraint_frame.
+   * @param upper_limit The upper tranlational speed limit for constraint_frame.
+   * @return The bounding box constraint that will enforce the frame
+   *         tranlational speed limit during the backward pass.
+   */
+  Binding<BoundingBoxConstraint> AddFrameTranslationalSpeedLimit(
+      const Frame<double>& constraint_frame, const double& lower_limit,
+      const double& upper_limit);
+
+  /**
+   * Adds a constant limit on the acceleration of the given frame.
+   * @param constraint_frame The frame to limit the acceleration of.
+   * @param lower_limit The lower acceleration limit for constraint_frame.
+   * @param upper_limit The upper acceleration limit for constraint_frame.
+   * @param discretization The discretization scheme to use for this linear
+   *                       constraint. See ToppraDiscretization for details.
+   * @return A pair containing the linear constraints that will enforce the
+   * frame acceleration limit on the backward pass and forward pass
+   * respectively.
+   */
+  std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+  AddFrameAccelerationLimit(
+      const Frame<double>& constraint_frame,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_limit,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_limit,
+      ToppraDiscretization discretization =
+          ToppraDiscretization::kInterpolation);
+
  private:
   /**
    * Performs the backward pass step of TOPPRA, returning the controllable set,
@@ -145,6 +204,15 @@ class Toppra {
    */
   std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ComputeForwardPass(
       double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
+
+  /**
+   * Calculates the interpolation constraint coefficients for the forward
+   * integrated gridpoints based on the constraint coefficients already
+   * calculated for each gridpoint.
+   */
+  void CalcInterpolationConstraint(Eigen::MatrixXd* A,
+                                   Eigen::MatrixXd* lower_bound,
+                                   Eigen::MatrixXd* upper_bound);
 
   /**
    * Contains the lower and upper bound for the bounding box constraint imposed
@@ -186,6 +254,7 @@ class Toppra {
   Binding<LinearConstraint> forward_continuity_con_;
   const Trajectory<double>& path_;
   const MultibodyPlant<double>& plant_;
+  std::unique_ptr<systems::Context<double>> const plant_context_;
   Eigen::VectorXd gridpoints_;
   // x_bounds_ maps a Binding<BoundingBoxConstraint> to its bounds for the
   // backward pass. At the i'th grid point the linear constraint
