@@ -464,9 +464,9 @@ class DeformableRigidContactDataTest : public ::testing::Test {
 
   /* Forwards the call to DeformableRigidManager::CalcContactPointData() and
    returns the result as a return value. */
-  DeformableRigidManager<double>::ContactPointData CalcContactPointData(
+  internal::ContactPointData<double> CalcContactPointData(
       const Context<double>& context) const {
-    DeformableRigidManager<double>::ContactPointData data;
+    internal::ContactPointData<double> data;
     deformable_rigid_manager_->CalcContactPointData(context, &data);
     return data;
   }
@@ -737,7 +737,8 @@ TEST_F(DeformableRigidContactDataTest, ContactData) {
   ASSERT_GT(nc_rigid_deformable, 0);
 
   /* Verifies that the contact point data is as expected. */
-  const auto contact_point_data = CalcContactPointData(plant_context);
+  const internal::ContactPointData<double> contact_point_data =
+      CalcContactPointData(plant_context);
   const VectorXd& mu = contact_point_data.mu;
   const VectorXd& phi0 = contact_point_data.phi0;
   const VectorXd& stiffness = contact_point_data.stiffness;
@@ -874,7 +875,8 @@ TEST_F(DeformableRigidContactDataTest, NoContact) {
   EXPECT_EQ(Jc.cols(), 0);
 
   /* Verify that the contact point data is empty. */
-  const auto contact_point_data = CalcContactPointData(plant_context);
+  const internal::ContactPointData<double> contact_point_data =
+      CalcContactPointData(plant_context);
   EXPECT_EQ(contact_point_data.mu.size(), 0);
   EXPECT_EQ(contact_point_data.phi0.size(), 0);
   EXPECT_EQ(contact_point_data.stiffness.size(), 0);
