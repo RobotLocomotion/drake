@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -19,6 +20,7 @@ using solvers::BoundingBoxConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using trajectories::PiecewisePolynomial;
+using trajectories::Trajectory;
 
 /**
  * Selects how linear constraints are enforced for Toppra's optimization.
@@ -28,6 +30,15 @@ using trajectories::PiecewisePolynomial;
  * computational cost.
  */
 enum class ToppraDiscretization { kCollocation, kInterpolation };
+
+/**
+ * Selects what type of trajectory to return when solving the Toppra
+ * optimization.
+ */
+enum class ToppraTrajectoryType {
+  kPiecewiseConstantPathAcceleration,
+  kContinuousAcceleration
+};
 
 struct CalcGridPointsOptions {
   double max_err{1e-3};
@@ -63,8 +74,7 @@ class Toppra {
    *                   must equal the path start and end time respectively.
    *                   Gridpoints must also be monotonically increasing.
    */
-  Toppra(const PiecewisePolynomial<double>& path,
-         const MultibodyPlant<double>& plant,
+  Toppra(const Trajectory<double>& path, const MultibodyPlant<double>& plant,
          const Eigen::Ref<const Eigen::VectorXd>& gridpoints);
 
   /**
@@ -84,6 +94,7 @@ class Toppra {
   static Eigen::VectorXd CalcGridpts(const PiecewisePolynomial<double>& path,
                                      const CalcGridPointsOptions& options);
 
+  // TODO(mpetersen94): Consider adding optional<Solver> argument.
   /**
    * Solves the toppra optimization and returns the time optimized trajectory.
    * Resulting trajectory has the same start time as the original path.
@@ -91,7 +102,9 @@ class Toppra {
    * refitting a piecewise cubic but will pass through the points defined by the
    * gridpoints.
    */
-  std::optional<PiecewisePolynomial<double>> Solve();
+  std::optional<PiecewisePolynomial<double>> Solve(
+      ToppraTrajectoryType trajectory_type =
+          ToppraTrajectoryType::kContinuousAcceleration);
 
   /**
    * Adds a constant velocity limit to all the degrees of freedom in the plant.
@@ -141,7 +154,7 @@ class Toppra {
    *          each gridpoint. K(0, i) and K(1, i) contain respectively the lower
    *          and upper bound of the path velocity at grid point i.
    */
-  std::optional<Eigen::VectorXd> ComputeForwardPass(
+  std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ComputeForwardPass(
       double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
 
   /**
@@ -182,7 +195,7 @@ class Toppra {
   solvers::VectorXDecisionVariable forward_u_;
   Binding<LinearCost> forward_cost_;
   Binding<LinearConstraint> forward_continuity_con_;
-  const PiecewisePolynomial<double>& path_;
+  const Trajectory<double>& path_;
   const MultibodyPlant<double>& plant_;
   Eigen::VectorXd gridpoints_;
   // x_bounds_ maps a Binding<BoundingBoxConstraint> to its bounds for the

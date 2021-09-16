@@ -85,23 +85,29 @@ TEST_F(IiwaToppraTest, JointAccelerationLimit) {
   auto acceleration_constraint =
       toppra_->AddJointAccelerationLimit(lower_bound, upper_bound);
 
-  auto result = toppra_->Solve();
-  ASSERT_TRUE(result);
-  auto trajectory = result.value();
+  const std::vector<ToppraTrajectoryType> trajectory_types = {
+      // ToppraTrajectoryType::kPiecewiseConstantPathAcceleration,
+      ToppraTrajectoryType::kContinuousAcceleration};
+  for (const auto type : trajectory_types) {
+    auto result = toppra_->Solve(type);
+    ASSERT_TRUE(result);
+    auto trajectory = result.value();
 
-  const double tol = 1e-6;
-  for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
+    const double tol = 1e-6;
+    for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
+      const auto acceleration =
+          trajectory.EvalDerivative(trajectory.start_time(ii) + tol, 2);
+
+      EXPECT_TRUE((acceleration.array() >= lower_bound.array() + tol).all());
+      EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
+    }
+
     const auto acceleration =
-        trajectory.EvalDerivative(trajectory.start_time(ii), 2);
+        trajectory.EvalDerivative(trajectory.end_time(), 2);
 
     EXPECT_TRUE((acceleration.array() >= lower_bound.array() + tol).all());
     EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
   }
-
-  const auto acceleration = trajectory.EvalDerivative(trajectory.end_time(), 2);
-
-  EXPECT_TRUE((acceleration.array() >= lower_bound.array() + tol).all());
-  EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
 }
 
 GTEST_TEST(ToppraTest, GridpointsTest) {
