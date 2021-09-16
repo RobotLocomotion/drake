@@ -20,7 +20,6 @@ drake_cc_package_library(
         ":render_engine_vtk",
         ":render_engine_vtk_base",
         ":render_label",
-        ":render_label_class",
         ":vtk_util",
     ],
 )
@@ -124,17 +123,6 @@ drake_cc_library(
         "//common:essential",
         "//common:hash",
         "//systems/sensors:image",
-    ],
-)
-
-drake_cc_library(
-    name = "render_label_class",
-    srcs = ["render_label_class.cc"],
-    hdrs = ["render_label_class.h"],
-    deps = [
-        ":render_label",
-        "//common:essential",
-        "//geometry:geometry_ids",
     ],
 )
 
