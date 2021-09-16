@@ -176,7 +176,7 @@ drake_cc_library(
     srcs = ["toppra.cc"],
     hdrs = ["toppra.h"],
     deps = [
-        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories",
         "//multibody/plant",
         "//solvers:mathematical_program",
         "//solvers:solve",
