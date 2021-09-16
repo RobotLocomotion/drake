@@ -812,6 +812,10 @@ class MultibodyTree {
   std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
   const;
 
+  // Returns a list of frame indices associated with `model_instance`
+  std::vector<FrameIndex> GetFrameIndices(ModelInstanceIndex model_instance)
+  const;
+
   // See MultibodyPlant method.
   const Frame<T>& GetFrameByName(std::string_view name) const;
 
