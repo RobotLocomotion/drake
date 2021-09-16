@@ -338,7 +338,8 @@ void DeformableRigidManager<T>::CalcTwoWayCoupledContactSolverResults(
   /* Point contact data. */
   const BlockSparseMatrix<T> Jc = CalcContactJacobian(context);
   const BlockSparseLinearOperator<T> Jc_op("Contact Jacobian", &Jc);
-  const ContactPointData& point_data = EvalContactPointData(context);
+  const internal::ContactPointData<T>& point_data =
+      EvalContactPointData(context);
 
   /* System dynamics data.*/
   const VectorX<T>& v_star = EvalFreeMotionParticipatingVelocities(context);
@@ -900,7 +901,7 @@ MatrixX<T> DeformableRigidManager<T>::CalcContactJacobianRigidBlock(
 template <typename T>
 void DeformableRigidManager<T>::CalcContactPointData(
     const systems::Context<T>& context,
-    ContactPointData* contact_point_data) const {
+    internal::ContactPointData<T>* contact_point_data) const {
   DRAKE_DEMAND(contact_point_data != nullptr);
 
   /* Get the rigid-rigid and deformable-rigid contact info. */

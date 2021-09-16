@@ -23,6 +23,25 @@
 namespace drake {
 namespace multibody {
 namespace fem {
+
+namespace internal {
+/* Struct to hold data (friction, signed distance-like value, stiffness, and
+ damping) at each contact point in DeformableRigidManager. */
+template <typename T>
+struct ContactPointData {
+  VectorX<T> mu;
+  VectorX<T> phi0;
+  VectorX<T> stiffness;
+  VectorX<T> damping;
+  void Resize(int size) {
+    mu.resize(size);
+    phi0.resize(size);
+    stiffness.resize(size);
+    damping.resize(size);
+  }
+};
+}  // namespace internal
+
 /** %DeformableRigidManager implements the interface in DiscreteUpdateManager
  and performs discrete update for deformable and rigid bodies with a two-way
  coupling scheme.
@@ -94,21 +113,6 @@ class DeformableRigidManager final
       const geometry::SceneGraph<T>& scene_graph) const;
 
  private:
-  /* Struct to hold data (friction, signed distance-like value, stiffness, and
-   damping) at each contact point. */
-  struct ContactPointData {
-    VectorX<T> mu;
-    VectorX<T> phi0;
-    VectorX<T> stiffness;
-    VectorX<T> damping;
-    void Resize(int size) {
-      mu.resize(size);
-      phi0.resize(size);
-      stiffness.resize(size);
-      damping.resize(size);
-    }
-  };
-
   template <typename Scalar, int Options = 0, typename StorageIndex = int>
   /* Wrapper around Eigen::SparseMatrix to avoid non-type template parameters
    that trigger typename hasher to spew warning messages to the console in a
@@ -374,11 +378,11 @@ class DeformableRigidManager final
       const internal::DeformableContactData<T>& contact_data) const;
 
   /* Eval version of CalcContactPointData(). */
-  const ContactPointData& EvalContactPointData(
+  const internal::ContactPointData<T>& EvalContactPointData(
       const systems::Context<T>& context) const {
     return this->plant()
         .get_cache_entry(contact_point_data_cache_index_)
-        .template Eval<ContactPointData>(context);
+        .template Eval<internal::ContactPointData<T>>(context);
   }
 
   /* Calculates the combined friction, stiffness, damping, and penetration
@@ -387,8 +391,9 @@ class DeformableRigidManager final
    of CalcContactJacobian(). In particular, the i-th entry in the
    `contact_point_data` corresponds to the contact point associated with the
    3*i, 3*i+1, and 3*i+2-th rows in the result of CalcContactJacobian(). */
-  void CalcContactPointData(const systems::Context<T>& context,
-                            ContactPointData* contact_point_data) const;
+  void CalcContactPointData(
+      const systems::Context<T>& context,
+      internal::ContactPointData<T>* contact_point_data) const;
 
   /* Eval version of CalcContactTangentMatrix(). */
   const contact_solvers::internal::BlockSparseMatrix<T>&
