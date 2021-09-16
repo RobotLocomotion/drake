@@ -3669,6 +3669,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().get_frame(frame_index);
   }
 
+  /// Returns a list of all frames in this plant ordered by their FrameIndex.
+  const std::vector<Frame<T>*>& get_frames() const {
+    return internal_tree().get_frames();
+  }
+
   /// @returns `true` if a frame named `name` was added to the model.
   /// @see AddFrame().
   /// @throws std::exception if the frame name occurs in multiple model

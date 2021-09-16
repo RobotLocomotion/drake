@@ -683,6 +683,11 @@ class MultibodyTree {
     return *frames_[frame_index];
   }
 
+  // See MultibodyPant method.
+  const std::vector<Frame<T>*>& get_frames() const {
+    return frames_;
+  }
+
   // See MultibodyPlant method.
   const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
