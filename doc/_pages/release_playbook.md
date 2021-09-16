@@ -59,6 +59,8 @@ Here are some guidelines for bringing commit notes from the relnotes tool into
 the main body of the document:
 
 * Many commit messages can be cut down to their summary strings and used as-is.
+* File geometry/optimization changes under the "Mathematical Program" heading,
+  not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
 * In general you should mention new bindings and deprecated/removed classes and
@@ -80,15 +82,20 @@ the main body of the document:
   * Every dependency upgrade line should be "Upgrade libfoobar to latest
     release 1.2.3" or "Upgrade funrepo to latest commit".
   * Dependencies should be referred to by their workspace name.
+  * Only one dependency change per line. Even if both meshcat and meshcat-python
+    were upgraded in the same pull request, they each should get their own
+    line in the release notes.
 
 * Some features under development (eg, hydroelastic as of this writing) may
   have no-release-notes policies, as their APIs although public are not yet
   fully supported.  Be sure to take note of which these are, or ask on
   `#platform_review` slack.
-
 * Keep all bullet points to one line.
   * Using hard linebreaks to stay under 80 columns makes the bullet lists hard
     to maintain over time.
+
+* Say "macOS" not "Mac" or "Apple" or etc.
+* Say "SDFormat" not "SDF" nor "sdf".
 
 ## Cutting the release
 
@@ -152,7 +159,21 @@ the main body of the document:
    (editing that URL to have the correct value for ``N``) and ensure that
    certain Drake-owned externals have sufficient tags:
    1. Open ``models/repository.bzl`` and find the ``commit =`` used.
-      1. Open [RobotLocomotion/models](https://github.com/RobotLocomotion/models)
+      1. Open
+         [RobotLocomotion/models](https://github.com/RobotLocomotion/models/releases)
+         and check whether that commit already has an associated release tag.
+      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
+         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
+         four digit year, two digit month, two digit day).
+   2. Open ``optitrack_driver/repository.bzl`` and find the ``commit =`` used.
+      1. Open
+         [RobotLocomotion/optitrack-driver](https://github.com/RobotLocomotion/optitrack-driver/releases)
+         and check whether that commit already has an associated release tag.
+      2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
+         the 8-digit datestamp associated with the ``commit`` in question (i.e.,
+         four digit year, two digit month, two digit day).
+   3. Open ``styleguide/repository.bzl`` and find the ``commit =`` used.
+      1. Open [RobotLocomotion/styleguide](https://github.com/RobotLocomotion/styleguide/releases)
          and check whether that commit already has an associated release tag.
       2. If not, then create a new release named ``v0.0.foo`` where ``foo`` is
          the 8-digit datestamp associated with the ``commit`` in question (i.e.,
