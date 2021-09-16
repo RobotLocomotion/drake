@@ -430,13 +430,17 @@ CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
     //  and these will go along with it. These values are only used in rigid
     //  body tree; with no real expectation we'll re-use them in MBP.
     if (compliant_node->FirstChildElement("youngs_modulus")) {
-      drake::log()->warn("Ignoring youngs_modulus for link " +
-                         parent_element_name);
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified the <youngs_modulus> "
+          "tag under the <drake_compliance> tag. Drake no longer makes use of "
+          "that tag and all instances will be ignored.");
     }
 
     if (compliant_node->FirstChildElement("dissipation")) {
-      drake::log()->warn("Ignoring dissipation for link " +
-                         parent_element_name);
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified the <dissipation> "
+          "tag under the <drake_compliance> tag. Drake no longer makes use of "
+          "that tag and all instances will be ignored.");
     }
 
     double static_friction{-1};
@@ -509,8 +513,10 @@ geometry::GeometryInstance ParseCollision(
 
   const char* attr = node->Attribute("group");
   if (attr) {
-    drake::log()->warn("Ignoring collision group {} on link {}", attr,
-                       parent_element_name);
+    static const logging::Warn log_once(
+        "At least one of your URDF files has specified the 'group' attribute "
+        "on the <collision> tag. Drake doesn't make use of that attribute and "
+        "all instances will be ignored.");
   }
 
   std::unique_ptr<geometry::Shape> shape =
@@ -571,11 +577,12 @@ geometry::GeometryInstance ParseCollision(
     // We parsed friction from <drake:proximity_properties>; test for the
     // existence of <drake_compliance> and warn that it won't be used.
     if (node->FirstChildElement("drake_compliance")) {
-      drake::log()->warn(fmt::format(
-          "Drake contact parameters are fully specified by the "
-          "<drake:proximity_properties> tag for the '{}' link. The "
-          "<drake_compliance> tag is ignored. Consider removing  it.",
-          parent_element_name));
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified collision properties "
+          "using both <drake:proximity_properties> and <drake_compliance> "
+          "tags. The <drake_compliance> tag is ignored in this case and is "
+          "generally dispreferred. Consider removing all instances of "
+          "<drake_compliance> in favor of <drake:proximity_properties>.");
     }
   }
 
