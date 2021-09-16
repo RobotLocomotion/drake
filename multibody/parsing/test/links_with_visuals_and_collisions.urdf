@@ -25,19 +25,19 @@
       <geometry>
         <cylinder radius="0.5" length="2.0"/>
       </geometry>
-      <drake_compliance>
-        <static_friction>0.8</static_friction>
-        <dynamic_friction>0.3</dynamic_friction>
-      </drake_compliance>
+      <drake:proximity_properties>
+        <drake:mu_static value="0.8"/>
+        <drake:mu_dynamic value="0.3"/>
+      </drake:proximity_properties>
     </collision>
     <collision name="link1_collision2">
       <geometry>
         <sphere radius="1.0"/>
       </geometry>
-      <drake_compliance>
-        <static_friction>1.5</static_friction>
-        <dynamic_friction>0.6</dynamic_friction>
-      </drake_compliance>
+      <drake:proximity_properties>
+        <drake:mu_static value="1.5"/>
+        <drake:mu_dynamic value="0.6"/>
+      </drake:proximity_properties>
     </collision>
   </link>
   <!-- Link 2 has no collision geometry. -->

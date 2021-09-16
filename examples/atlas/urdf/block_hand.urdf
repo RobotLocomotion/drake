@@ -15,7 +15,7 @@
       </material>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </visual>
-    <collision group="block_hand">
+    <collision>
       <geometry>
         <box size="0.1 0.1 0.1"/>
       </geometry>
