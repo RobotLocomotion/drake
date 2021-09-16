@@ -60,7 +60,7 @@
     <parent link="base_part2"/>
     <child link="arm"/>
     <axis xyz="0 1 0"/>
-    <dynamics damping="0.5" friction="20" coulomb_window="0.1"/>
+    <dynamics damping="0.5" friction="20"/>
   </joint>
   <link name="arm_com">
     <inertial>
