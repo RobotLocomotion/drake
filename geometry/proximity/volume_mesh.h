@@ -17,14 +17,9 @@
 
 namespace drake {
 namespace geometry {
-
-/**
- Index used to identify a vertex in a volume mesh.
- */
-using VolumeVertexIndex = TypeSafeIndex<class VolumeVertexTag>;
-
-template <typename T>
-using VolumeVertex = Vector3<T>;
+/** Index used to identify a vertex in a volume mesh. Use `int` instead; this
+ will disappear imminently. */
+using VolumeVertexIndex = int;
 
 /**
  Index for identifying a tetrahedral element in a volume mesh.
@@ -49,33 +44,32 @@ class VolumeElement {
    @param v1 Index of the second vertex in VolumeMesh.
    @param v2 Index of the third vertex in VolumeMesh.
    @param v3 Index of the last vertex in VolumeMesh.
+   @pre All indices are non-negative.
    */
-  VolumeElement(VolumeVertexIndex v0, VolumeVertexIndex v1,
-                VolumeVertexIndex v2, VolumeVertexIndex v3)
-      : vertex_({v0, v1, v2, v3}) {}
+  VolumeElement(int v0, int v1, int v2, int v3) : vertex_({v0, v1, v2, v3}) {
+    DRAKE_DEMAND(v0 >= 0 && v1 >= 0 && v2 >= 0 && v3 >= 0);
+  }
 
   /** Constructs VolumeElement.
    @param v  Array of four integer indices of the vertices of the element in
              VolumeMesh.
+   @pre All indices are non-negative.
    */
   explicit VolumeElement(const int v[4])
-      : vertex_({VolumeVertexIndex(v[0]), VolumeVertexIndex(v[1]),
-                 VolumeVertexIndex(v[2]), VolumeVertexIndex(v[3])}) {}
+      : VolumeElement(v[0], v[1], v[2], v[3]) {}
 
   /** Returns the vertex index in VolumeMesh of the i-th vertex of this
    element.
    @param i  The local index of the vertex in this element.
    @pre 0 <= i < 4
    */
-  VolumeVertexIndex vertex(int i) const {
-    return vertex_.at(i);
-  }
+  int vertex(int i) const { return vertex_.at(i); }
 
-  /** Checks to see whether the given VolumeElement use the same four
-   VolumeVertexIndex's in the same order. We check for equality to the last
-   bit consistently with VolumeMesh::Equal(). Two permutations of
-   the four vertex indices of a tetrahedron are considered different
-   tetrahedra even though they span the same space.
+  /** Checks to see whether the given VolumeElement use the same four indices in
+   the same order. We check for equality to the last bit consistently with
+   VolumeMesh::Equal(). Two permutations of the four vertex indices of a
+   tetrahedron are considered different tetrahedra even though they span the
+   same space.
    */
   bool Equal(const VolumeElement& e) const {
     return this->vertex_ == e.vertex_;
@@ -83,7 +77,7 @@ class VolumeElement {
 
  private:
   // The vertices of this element.
-  std::array<VolumeVertexIndex, 4> vertex_;
+  std::array<int, 4> vertex_;
 };
 
 inline bool operator==(const VolumeElement& e1, const VolumeElement& e2) {
@@ -131,7 +125,7 @@ class VolumeMesh {
 
   /** Index for identifying a vertex.
    */
-  using VertexIndex = VolumeVertexIndex;
+  using VertexIndex = int;
 
   /** Index for identifying a tetrahedral element.
    */
@@ -180,7 +174,7 @@ class VolumeMesh {
    @param v  The index of the vertex.
    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
-  const Vector3<T>& vertex(VertexIndex v) const {
+  const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
   }
@@ -291,9 +285,8 @@ class VolumeMesh {
       if (!this->element(i).Equal(mesh.element(i))) return false;
     }
     // Check vertices.
-    for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {
-      if ((this->vertex(i) - mesh.vertex(i)).norm() >
-          vertex_tolerance) {
+    for (int i = 0; i < this->num_vertices(); ++i) {
+      if ((this->vertex(i) - mesh.vertex(i)).norm() > vertex_tolerance) {
         return false;
       }
     }

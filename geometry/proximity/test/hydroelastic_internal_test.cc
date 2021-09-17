@@ -885,7 +885,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   double max_distance = -1.0;
   for (const auto& soft_geometry : {*sphere1, *sphere2}) {
     const VolumeMesh<double>& mesh = soft_geometry.mesh();
-    for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+    for (int v = 0; v < mesh.num_vertices(); ++v) {
       const double dist = mesh.vertex(v).norm();
       max_distance = std::max(max_distance, dist);
       ASSERT_LE(dist, kRadius);
@@ -903,7 +903,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   };
   const double kEps = std::numeric_limits<double>::epsilon();
   const VolumeMesh<double>& mesh = sphere1->mesh();
-  for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     const Vector3d& vertex = mesh.vertex(v);
     // Zero on outside, 1 on inside.
     const double expected_p = pressure(vertex);
@@ -979,7 +979,7 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < box->mesh().num_vertices(); ++v) {
+  for (int v = 0; v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1005,7 +1005,7 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < cylinder->mesh().num_vertices(); ++v) {
+  for (int v = 0; v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1033,7 +1033,7 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   // `GetProperty` variant.
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < capsule->mesh().num_vertices(); ++v) {
+  for (int v = 0; v < capsule->mesh().num_vertices(); ++v) {
     const double pressure = capsule->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
@@ -1062,7 +1062,7 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
-  for (VolumeVertexIndex v(0); v < ellipsoid->mesh().num_vertices(); ++v) {
+  for (int v = 0; v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);

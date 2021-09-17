@@ -63,9 +63,9 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
   // Make sure the boundary vertices have zero pressure. Numerical rounding
   // can cause the boundary vertices to be slightly off the boundary surface
   // of the cylinder.
-  std::vector<VolumeVertexIndex> boundary_vertices =
+  std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh_C->tetrahedra()));
-  for (VolumeVertexIndex bv : boundary_vertices) {
+  for (int bv : boundary_vertices) {
     pressure_values[bv] = T(0.);
   }
 

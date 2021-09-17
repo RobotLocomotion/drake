@@ -16,7 +16,6 @@ using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
-using geometry::VolumeVertexIndex;
 using geometry::internal::Aabb;
 using geometry::internal::Bvh;
 using geometry::internal::BvttCallbackResult;
@@ -409,7 +408,7 @@ class Intersector {
     // Get the positions, in Frame D, of the four vertices of the tet.
     Vector3<T> p_DVs[4];
     for (int i = 0; i < 4; ++i) {
-      const VolumeVertexIndex v = tet_mesh_D.element(tet_index).vertex(i);
+      const int v = tet_mesh_D.element(tet_index).vertex(i);
       p_DVs[i] = tet_mesh_D.vertex(v);
     }
 

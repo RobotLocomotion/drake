@@ -38,13 +38,14 @@ GTEST_TEST(MakeSphereMesh, InvariantsOfLevelZeroMesh) {
   // There is only one vertex marked `false` in is_boundary -- the vertex at
   // (0, 0, 0).
   int count = 0;
-  VolumeVertexIndex center_index;
-  for (VolumeVertexIndex i(0); i < static_cast<int>(is_boundary.size()); ++i) {
+  int center_index = -1;
+  for (int i = 0; i < static_cast<int>(is_boundary.size()); ++i) {
     if (is_boundary[i] == false) {
       ++count;
       center_index = i;
     }
   }
+  ASSERT_GT(center_index, -1);
   EXPECT_EQ(count, 1);
   EXPECT_EQ(mesh.vertex(center_index), Vector3d(0, 0, 0));
 
@@ -152,11 +153,10 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
     return (tet_vertices[i] + tet_vertices[j]) / 2;
   };
 
-  using VIndex = VolumeVertexIndex;
   // We don't need the vertices for a, b, c, and d in the test; we just need
   // e-j.
-  const VIndex e(0), f(1), g(2), h(3), i(4), j(5);
-  const std::array<VIndex, 6> octo_vertices{e, f, g, h, i, j};
+  const int e(0), f(1), g(2), h(3), i(4), j(5);
+  const std::array<int, 6> octo_vertices{e, f, g, h, i, j};
   const std::vector<Vector3d> unit_p_MVs{
       Vector3d(mid_point(a, b)),  // e = (a + b) / 2
       Vector3d(mid_point(a, c)),  // f = (a + c) / 2
@@ -189,9 +189,8 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   // SplitOctohedron() will favor splitting along the shortest axis. In the
   // tests above, it's clear that EJ is aligned with the x-axis, GH with the y,
   // and FI with the z.
-  const std::vector<SortedPair<VIndex>> split_edges{SortedPair<VIndex>{e, j},
-                                                    SortedPair<VIndex>{g, h},
-                                                    SortedPair<VIndex>{f, i}};
+  const std::vector<SortedPair<int>> split_edges{
+      SortedPair<int>{e, j}, SortedPair<int>{g, h}, SortedPair<int>{f, i}};
   for (int axis = 0; axis < 3; ++axis) {
     Vector3d scale_factor{2, 2, 2};
     scale_factor(axis) = 1;
@@ -213,7 +212,7 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
     for (const auto& tet : split_tetrahedra) {
       for (int v = 0; v < 3; ++v) {
         for (int u = v + 1; u < 4; ++u) {
-          SortedPair<VIndex> test_edge(tet.vertex(v), tet.vertex(u));
+          SortedPair<int> test_edge(tet.vertex(v), tet.vertex(u));
           for (int ax = 0; ax < 3; ++ax) {
             if (test_edge == split_edges[ax]) ++split_count[ax];
           }
@@ -355,7 +354,7 @@ GTEST_TEST(SparseSphereTest, SurfaceMatchesDenseMesh) {
 int CountSurfaceVertices(const VolumeMesh<double>& mesh, double radius = 1.0) {
   const double kEps = std::numeric_limits<double>::epsilon() * radius;
   int count = 0;
-  for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     const double r = mesh.vertex(v).norm();
     // This is a very tight tolerance. That's good. We want to know that the
     // surface vertices are as close to the surface of the sphere as can

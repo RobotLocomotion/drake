@@ -24,7 +24,7 @@ void CheckMinMaxBoundaryValue(
   // zero and elastic_modulus respectively.
   double max_pressure = std::numeric_limits<double>::lowest();
   double min_pressure = std::numeric_limits<double>::max();
-  for (VolumeVertexIndex v(0); v < pressure_field.mesh().num_vertices(); ++v) {
+  for (int v = 0; v < pressure_field.mesh().num_vertices(); ++v) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_LE(pressure, elastic_modulus);
     EXPECT_GE(pressure, 0.0);
@@ -39,10 +39,10 @@ void CheckMinMaxBoundaryValue(
   EXPECT_EQ(max_pressure, elastic_modulus);
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<VolumeVertexIndex> boundary_vertex_indices =
+  std::vector<int> boundary_vertex_indices =
       CollectUniqueVertices(
           IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
-  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
+  for (int v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
   }
@@ -50,8 +50,8 @@ void CheckMinMaxBoundaryValue(
   // Check that the center (0,0,0) of the shape has the max_pressure.
   // This test assumes that the mesh has a vertex at the origin of its
   // canonical frame.
-  VolumeVertexIndex center_vertex{0};
-  for (VolumeVertexIndex v{0}; v < pressure_field.mesh().num_vertices(); ++v) {
+  int center_vertex = 0;
+  for (int v = 0; v < pressure_field.mesh().num_vertices(); ++v) {
     if (pressure_field.mesh().vertex(v) == Vector3d::Zero()) {
       center_vertex = v;
       break;

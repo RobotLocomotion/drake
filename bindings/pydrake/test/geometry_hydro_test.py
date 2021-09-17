@@ -98,14 +98,8 @@ class TestGeometryHydro(unittest.TestCase):
         #        /
         #      +z
 
-        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(2),
-                                   v1=mut.VolumeVertexIndex(1),
-                                   v2=mut.VolumeVertexIndex(3),
-                                   v3=mut.VolumeVertexIndex(4))
-        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(3),
-                                    v1=mut.VolumeVertexIndex(1),
-                                    v2=mut.VolumeVertexIndex(2),
-                                    v3=mut.VolumeVertexIndex(0))
+        t_left = mut.VolumeElement(v0=2, v1=1, v2=3, v3=4)
+        t_right = mut.VolumeElement(v0=3, v1=1, v2=2, v3=0)
         self.assertEqual(t_left.vertex(0), 2)
         self.assertEqual(t_right.vertex(1), 1)
 
@@ -132,14 +126,8 @@ class TestGeometryHydro(unittest.TestCase):
 
     def test_convert_volume_to_surface_mesh(self):
         # Use the volume mesh from `test_volume_mesh()`.
-        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
-                                   v1=mut.VolumeVertexIndex(2),
-                                   v2=mut.VolumeVertexIndex(3),
-                                   v3=mut.VolumeVertexIndex(4))
-        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
-                                    v1=mut.VolumeVertexIndex(3),
-                                    v2=mut.VolumeVertexIndex(2),
-                                    v3=mut.VolumeVertexIndex(0))
+        t_left = mut.VolumeElement(v0=1, v1=2, v2=3, v3=4)
+        t_right = mut.VolumeElement(v0=1, v1=3, v2=2, v3=0)
 
         v0 = (1, 0,  0)
         v1 = (0, 0,  0)

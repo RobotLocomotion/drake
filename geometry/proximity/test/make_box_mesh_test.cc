@@ -81,8 +81,8 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   // A. The mesh is conforming.
   // A1. The mesh has unique vertices.
   const int num_vertices = mesh.num_vertices();
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
-    for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
+  for (int i = 0; i < num_vertices; ++i) {
+    for (int j = i + 1; j < num_vertices; ++j) {
       const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       EXPECT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
       if (!vertex_is_unique) {
@@ -125,7 +125,7 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
     }
   }
   // B2. No mesh's vertex is outside the box.
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
+  for (int i = 0; i < num_vertices; ++i) {
     const bool vertex_is_inside_or_on_boundary =
         (mesh.vertex(i).array().abs() <= half_size.array()).all();
     EXPECT_TRUE(vertex_is_inside_or_on_boundary)
@@ -152,7 +152,7 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   // C. The mesh conforms to the box's medial axis.
   // C1. No tetrahedron has all four vertices on the box's boundary, i.e.,
   //     each tetrahedron has at least one interior vertex.
-  std::vector<VolumeVertexIndex> boundary_vertices =
+  std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
   for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;

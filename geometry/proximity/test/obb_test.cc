@@ -670,8 +670,8 @@ GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
   // Use a very coarse mesh.
   const VolumeMesh<double> volume_mesh = MakeEllipsoidVolumeMesh<double>(
       Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
-  std::set<VolumeVertexIndex> test_vertices;
-  for (VolumeVertexIndex i(0); i < volume_mesh.num_vertices(); ++i) {
+  std::set<int> test_vertices;
+  for (int i = 0; i < volume_mesh.num_vertices(); ++i) {
     test_vertices.insert(i);
   }
   Obb obb = ObbMaker(volume_mesh, test_vertices).Compute();

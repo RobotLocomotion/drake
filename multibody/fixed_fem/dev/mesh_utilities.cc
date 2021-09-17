@@ -19,7 +19,6 @@ using geometry::internal::IdentifyBoundaryFaces;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertexIndex;
 
 namespace {
 
@@ -28,7 +27,7 @@ namespace {
  */
 bool IsBoundaryTetrahedron(
     const VolumeElement& tetrahedron,
-    const std::unordered_set<VolumeVertexIndex>& boundary_vertex_set) {
+    const std::unordered_set<int>& boundary_vertex_set) {
   for (int j = 0; j < 4; ++j) {
     if (boundary_vertex_set.count(tetrahedron.vertex(j)) == 0) {
       // The trahedron has a non-boundary vertex.
@@ -51,10 +50,10 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
   DRAKE_DEMAND(e < num_elements_before);
 
   VolumeElement& tetrahedron = (*elements)[e];
-  VolumeVertexIndex v0 = tetrahedron.vertex(0);
-  VolumeVertexIndex v1 = tetrahedron.vertex(1);
-  VolumeVertexIndex v2 = tetrahedron.vertex(2);
-  VolumeVertexIndex v3 = tetrahedron.vertex(3);
+  int v0 = tetrahedron.vertex(0);
+  int v1 = tetrahedron.vertex(1);
+  int v2 = tetrahedron.vertex(2);
+  int v3 = tetrahedron.vertex(3);
 
   const int num_vertices_before = vertices->size();
   DRAKE_DEMAND(v0 < num_vertices_before);
@@ -66,7 +65,7 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
       ((*vertices)[v0] + (*vertices)[v1] + (*vertices)[v2] + (*vertices)[v3]) /
       4.};
   vertices->push_back(std::move(star));
-  VolumeVertexIndex star_vertex(num_vertices_before);
+  int star_vertex(num_vertices_before);
 
   //
   // You can use this picture to verify the connectivity with your
@@ -96,9 +95,9 @@ VolumeMesh<T> StarRefineBoundaryTetrahedra(
   std::vector<Vector3<T>> out_vertices(in.vertices());
   std::vector<VolumeElement> out_elements(in.tetrahedra());
 
-  const std::vector<VolumeVertexIndex> boundary_vertices =
+  const std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(out_elements));
-  const std::unordered_set<VolumeVertexIndex> boundary_vertex_set(
+  const std::unordered_set<int> boundary_vertex_set(
       boundary_vertices.begin(), boundary_vertices.end());
 
   const int num_input_tetrahedra = in.num_elements();
@@ -145,14 +144,13 @@ std::vector<VolumeElement> GenerateDiamondCubicElements(
             /
            /
          +I                                                        */
-        VolumeVertexIndex v[8];
+        int v[8];
         int s = 0;
         for (int l = 0; l < 2; ++l) {
           for (int m = 0; m < 2; ++m) {
             for (int n = 0; n < 2; ++n) {
-              v[s++] =
-                  VolumeVertexIndex(geometry::internal::CalcSequentialIndex(
-                      i + l, j + m, k + n, num_vertices));
+              v[s++] = geometry::internal::CalcSequentialIndex(
+                  i + l, j + m, k + n, num_vertices);
             }
           }
         }

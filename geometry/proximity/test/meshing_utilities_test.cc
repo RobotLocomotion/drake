@@ -10,20 +10,13 @@ namespace internal {
 namespace {
 
 GTEST_TEST(SplitTriangularPrismToTetrahedraTest, SimpleTest) {
-  const VolumeVertexIndex v0(0);
-  const VolumeVertexIndex v1(1);
-  const VolumeVertexIndex v2(2);
-  const VolumeVertexIndex v3(3);
-  const VolumeVertexIndex v4(4);
-  const VolumeVertexIndex v5(5);
-
   std::vector<VolumeElement> tetrahedra =
-      SplitTriangularPrismToTetrahedra(v0, v1, v2, v3, v4, v5);
+      SplitTriangularPrismToTetrahedra(0, 1, 2, 3, 4, 5);
 
   EXPECT_EQ(tetrahedra.size(), 3);
 
   // The following statements check each of the three tetrahedra and also the
-  // three face diagonals (v0,v5), (v0,v4), and (v1,v5) that we promised in the
+  // three face diagonals (0,5), (0,4), and (1,5) that we promised in the
   // API contract. A tetrahedron always connect its four vertices into all
   // possible pairs of vertices to make six edges (4 choose 2 = 6). Therefore,
   // checking for existence of tetrahedron *,u,*,v,* implies the diagonal u,v
@@ -35,32 +28,26 @@ GTEST_TEST(SplitTriangularPrismToTetrahedraTest, SimpleTest) {
   // need to change too.
   EXPECT_TRUE(tetrahedra.end() != std::find(tetrahedra.begin(),
                                             tetrahedra.end(),
-                                            VolumeElement(v3, v4, v0, v5)));
+                                            VolumeElement(3, 4, 0, 5)));
   EXPECT_TRUE(tetrahedra.end() != std::find(tetrahedra.begin(),
                                             tetrahedra.end(),
-                                            VolumeElement(v4, v1, v0, v5)));
+                                            VolumeElement(4, 1, 0, 5)));
   EXPECT_TRUE(tetrahedra.end() != std::find(tetrahedra.begin(),
                                             tetrahedra.end(),
-                                            VolumeElement(v1, v2, v0, v5)));
+                                            VolumeElement(1, 2, 0, 5)));
 }
 
 GTEST_TEST(SplitPyramidToTetrahedraTest, SimpleTest) {
-  const VolumeVertexIndex v0(0);
-  const VolumeVertexIndex v1(1);
-  const VolumeVertexIndex v2(2);
-  const VolumeVertexIndex v3(3);
-  const VolumeVertexIndex v4(4);
-
   std::vector<VolumeElement> tetrahedra =
-      SplitPyramidToTetrahedra(v0, v1, v2, v3, v4);
+      SplitPyramidToTetrahedra(0, 1, 2, 3, 4);
 
   EXPECT_EQ(tetrahedra.size(), 2);
   EXPECT_TRUE(tetrahedra.end() != std::find(tetrahedra.begin(),
                                             tetrahedra.end(),
-                                            VolumeElement(v3, v4, v0, v2)));
+                                            VolumeElement(3, 4, 0, 2)));
   EXPECT_TRUE(tetrahedra.end() != std::find(tetrahedra.begin(),
                                             tetrahedra.end(),
-                                            VolumeElement(v4, v1, v0, v2)));
+                                            VolumeElement(4, 1, 0, 2)));
 }
 
 }  // namespace

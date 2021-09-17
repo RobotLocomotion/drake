@@ -1069,8 +1069,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     /* The pressure field is arbitrary, but
       1. its orientation doesn't lead to culling of intersection polygons, and
       2. validation is expressed in terms of that gradient. */
-    using VI = VolumeVertexIndex;
-    vector<VolumeElement> elements({VolumeElement(VI(0), VI(1), VI(2), VI(3))});
+    vector<VolumeElement> elements({VolumeElement(0, 1, 2, 3)});
     vector<Vector3d> vertices_S({Vector3d::Zero(), Vector3d::UnitX(),
                                  Vector3d::UnitY(), Vector3d::UnitZ()});
     tet_mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
@@ -1194,10 +1193,10 @@ class MeshMeshDerivativesTest : public ::testing::Test {
       /* Reality check: confirm the edges *are* parallel with the triangle. */
       const RotationMatrixd R_WR_d = convert_to_double(X_WR_).rotation();
       const RotationMatrixd R_WS_d = R_WR_d * R_RS_d;
-      const Vector3d& v0_S = tet_mesh_S_->vertex(VolumeVertexIndex(0));
-      const Vector3d& v1_S = tet_mesh_S_->vertex(VolumeVertexIndex(1));
-      const Vector3d& v2_S = tet_mesh_S_->vertex(VolumeVertexIndex(2));
-      const Vector3d& v3_S = tet_mesh_S_->vertex(VolumeVertexIndex(3));
+      const Vector3d& v0_S = tet_mesh_S_->vertex(0);
+      const Vector3d& v1_S = tet_mesh_S_->vertex(1);
+      const Vector3d& v2_S = tet_mesh_S_->vertex(2);
+      const Vector3d& v3_S = tet_mesh_S_->vertex(3);
       const Vector3d e03_S = v3_S - v0_S;
       const Vector3d e12_S = v2_S - v1_S;
       const Vector3d e03_W = R_WS_d * e03_S;
