@@ -21,7 +21,7 @@ Bvh<BvType, SourceMeshType>::Bvh(const SourceMeshType& mesh) {
   // for calculating the split point of the volumes.
   const int num_elements = mesh.num_elements();
   std::vector<CentroidPair> element_centroids;
-  for (IndexType i(0); i < num_elements; ++i) {
+  for (int i = 0; i < num_elements; ++i) {
     element_centroids.emplace_back(i, ComputeCentroid(mesh, i));
   }
 
@@ -108,7 +108,7 @@ BvType Bvh<BvType, SourceMeshType>::ComputeBoundingVolume(
     const SourceMeshType& mesh,
     const typename std::vector<CentroidPair>::iterator& start,
     const typename std::vector<CentroidPair>::iterator& end) {
-  std::set<typename SourceMeshType::VertexIndex> vertices;
+  std::set<int> vertices;
   // Check each mesh element in the given range.
   for (auto pair = start; pair < end; ++pair) {
     const auto& element = mesh.element(pair->first);
@@ -123,7 +123,7 @@ BvType Bvh<BvType, SourceMeshType>::ComputeBoundingVolume(
 
 template <class BvType, class SourceMeshType>
 Vector3d Bvh<BvType, SourceMeshType>::ComputeCentroid(
-    const SourceMeshType& mesh, const IndexType i) {
+    const SourceMeshType& mesh, int i) {
   Vector3d centroid{0, 0, 0};
   const auto& element = mesh.element(i);
   // Calculate average from all vertices.

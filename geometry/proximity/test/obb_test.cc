@@ -33,8 +33,7 @@ class ObbTester : public ::testing::Test {
 template <typename MeshType>
 class ObbMakerTester {
  public:
-  ObbMakerTester(const MeshType& mesh_M,
-                 const std::set<typename MeshType::VertexIndex>& vertices)
+  ObbMakerTester(const MeshType& mesh_M, const std::set<int>& vertices)
       : obb_maker_(mesh_M, vertices) {}
 
   RotationMatrixd CalcOrientationByPca() const {
@@ -444,10 +443,10 @@ TEST_F(ObbMakerTestTriangle, CalcOrientedBox) {
 // vertices in the mesh.
 template <typename MeshType>
 bool Contain(const Obb& obb_M, const MeshType& mesh_M,
-             const std::set<typename MeshType::VertexIndex>& vertices) {
+             const std::set<int>& vertices) {
   const RigidTransformd& X_MB = obb_M.pose();
   const RigidTransformd X_BM = X_MB.inverse();
-  for (const typename MeshType::VertexIndex& v : vertices) {
+  for (int v : vertices) {
     Vector3d p_MV = mesh_M.vertex(v);
     Vector3d p_BV = X_BM * p_MV;
     if ((p_BV.array() > obb_M.half_width().array()).any()) {
