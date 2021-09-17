@@ -829,7 +829,7 @@ class MeshIntersectionFixture : public testing::Test {
     const double kEpsPressure = kEps * 1e10;
     const std::vector<Vector3<double>>& vertices = surface_S->vertices();
     bool domain_checked[] = {false, false, false};
-    for (SurfaceVertexIndex v(0); v < surface_S->num_vertices(); ++v) {
+    for (int v = 0; v < surface_S->num_vertices(); ++v) {
       const double p_SV_z = vertices[v][2];
       if (std::abs(p_SV_z) < kEps) {
         ASSERT_NEAR(e_field->EvaluateAtVertex(v), 0.0, kEpsPressure);
@@ -899,9 +899,8 @@ class MeshIntersectionFixture : public testing::Test {
               contact_RS->mesh_W().num_vertices());
 
     // Test one and assume all share the same property.
-    const SurfaceVertexIndex v_index(0);
-    EXPECT_TRUE(CompareMatrices(contact_SR->mesh_W().vertex(v_index),
-                                contact_RS->mesh_W().vertex(v_index)));
+    EXPECT_TRUE(CompareMatrices(contact_SR->mesh_W().vertex(0),
+                                contact_RS->mesh_W().vertex(0)));
 
     // TODO(SeanCurtis-TRI): Test that the face winding has been reversed, once
     //  that is officially documented as a property of the ContactSurface.
@@ -1085,8 +1084,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     vector<Vector3d> vertices{Vector3d{-5, -5, 0},
                               Vector3d{5, -5, 0},
                               Vector3d{0, 5, 0}};
-    using VIndex = SurfaceVertexIndex;
-    vector<SurfaceFace> faces({SurfaceFace{VIndex(0), VIndex(1), VIndex(2)}});
+    vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
     tri_mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
     bvh_R_ = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*tri_mesh_R_);
     X_WR_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
@@ -1323,20 +1321,19 @@ TEST_F(MeshMeshDerivativesTest, Area) {
      these hard-coded indices could become invalid. A more robust solution would
      be to *infer* the boundary polygon edges from the contact surface, but
      that's a lot of effort for little present value. */
-    using VIndex = SurfaceVertexIndex;
-    vector<vector<VIndex>> triangles;
+    vector<vector<int>> triangles;
     switch (pose) {
       case TetPose::kHorizontalSlice:
       case TetPose::kTriangleSlice:
-        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
+        triangles.emplace_back(vector<int>{0, 1, 2});
         break;
       case TetPose::kQuadSlice:
         /* This is a bit brittle and is predicated on knowledge of how
          the intersection algorithm processes the particular geometry. If that
          proves to be too brittle, we'll need to reconstruct this by looking
          at the provided mesh. */
-        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
-        triangles.emplace_back(vector<VIndex>{VIndex(2), VIndex(3), VIndex(1)});
+        triangles.emplace_back(vector<int>{0, 1, 2});
+        triangles.emplace_back(vector<int>{2, 3, 1});
         break;
     }
 
@@ -1453,7 +1450,6 @@ TEST_F(MeshMeshDerivativesTest, VertexPosition) {
                                  const RigidTransform<AutoDiffXd>& X_WS_ad,
                                  TetPose pose) {
     constexpr double kEps = 5 * std::numeric_limits<double>::epsilon();
-    using VIndex = SurfaceVertexIndex;
 
     /* The test is set up so there is only ever a single intersecting polygon.
      So, there is *one* centroid (the last vertex). All other vertices come
@@ -1465,7 +1461,7 @@ TEST_F(MeshMeshDerivativesTest, VertexPosition) {
     const RotationMatrixd R_RW = R_WR.inverse();
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);
     const RotationMatrixd& R_WS = X_WS.rotation();
-    for (VIndex v(0); v < mesh_W.num_vertices() - 1; ++v) {
+    for (int v = 0; v < mesh_W.num_vertices() - 1; ++v) {
       const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v);
       const Vector3d& p_WV = convert_to_double(p_WV_ad);
       const Vector3d e_R = R_RW * R_WS * GetEdgeDirInS(X_WS.inverse() * p_WV);
@@ -1491,11 +1487,11 @@ TEST_F(MeshMeshDerivativesTest, VertexPosition) {
       case kTriangleSlice: {
         /* The derivative should simply be the mean of the first three. */
         Matrix3<double> expected_J_W = Matrix3<double>::Zero();
-        for (VIndex v(0); v < 3; ++v) {
+        for (int v = 0; v < 3; ++v) {
           expected_J_W += math::ExtractGradient(mesh_W.vertex(v));
         }
         expected_J_W /= 3;
-        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3));
+        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(3);
         const Matrix3<double> J_W = math::ExtractGradient(p_WC);
         EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
         break;
@@ -1621,7 +1617,7 @@ TEST_F(MeshMeshDerivativesTest, Pressure) {
     constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
     const RigidTransform<double> X_WS_d = convert_to_double(X_WS);
     const Vector3d grad_p_W = X_WS_d.rotation() * grad_p_S;
-    for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
+    for (int v = 0; v < surface.mesh_W().num_vertices(); ++v) {
       const Matrix3<double> dp_WQ_dp_WSo_W =
           math::ExtractGradient(surface.mesh_W().vertex(v));
       const Vector3d dp_dp_WSo_W_expected =

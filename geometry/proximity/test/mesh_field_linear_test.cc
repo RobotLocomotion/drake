@@ -52,17 +52,16 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
   return surface_mesh;
 }
 
-// Tests Evaluate(VertexIndex).
 GTEST_TEST(MeshFieldLinearTest, EvaluateAtVertex) {
   auto mesh = GenerateMesh<double>();
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           std::move(e_values), mesh.get());
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(0)), 0);
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(1)), 1);
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(2)), 2);
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(3)), 3);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(0), 0);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(1), 1);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(2), 2);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(3), 3);
 }
 
 #pragma GCC diagnostic push
@@ -339,7 +338,7 @@ class ScalarMixingTest : public ::testing::Test {
             std::move(e_ad), mesh_d_.get());
 
     p_WQ_d_ = Vector3d::Zero();
-    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+    for (int v = 0; v < 3; ++v) {
       p_WQ_d_ += mesh_d_->vertex(v);
     }
     p_WQ_d_ /= 3;
@@ -349,7 +348,7 @@ class ScalarMixingTest : public ::testing::Test {
     b_ad_ = math::InitializeAutoDiff(b_d_);
 
     centroid_value_ = 0;
-    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+    for (int v = 0; v < 3; ++v) {
       centroid_value_ += field_d_->EvaluateAtVertex(v);
     }
     centroid_value_ /= 3;

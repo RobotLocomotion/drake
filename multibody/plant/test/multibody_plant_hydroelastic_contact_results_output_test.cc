@@ -14,7 +14,6 @@ namespace drake {
 using geometry::ContactSurface;
 using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
-using geometry::SurfaceVertexIndex;
 using geometry::SurfaceMesh;
 
 namespace multibody {

@@ -98,7 +98,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   // clang-format on
 
   for (int i = 0; i < 8; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)));
+    EXPECT_EQ(expect_vertices[i], surface.vertex(i));
   }
 
   // TODO(SeanCurtis-TRI) Devise a formulation of this that is less sensitive
@@ -230,7 +230,7 @@ f 1 2 3
     {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, { 0.0, 0.0, 1.0 }
   };
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)));
+    EXPECT_EQ(expect_vertices[i], surface.vertex(i));
   }
   ASSERT_EQ(1, surface.num_faces());
   int expect_face[3] = {0, 1, 2};
@@ -261,7 +261,7 @@ f 4 5 6
       {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
       {2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
   for (int i = 0; i < 6; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)));
+    EXPECT_EQ(expect_vertices[i], surface.vertex(i));
   }
   ASSERT_EQ(2, surface.num_faces());
   int expect_faces[2][3]{{0, 1, 2}, {3, 4, 5}};

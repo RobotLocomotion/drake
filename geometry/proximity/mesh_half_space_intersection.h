@@ -88,10 +88,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-        vertices_to_newly_created_vertices,
-    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-        edges_to_newly_created_vertices);
+    std::unordered_map<int, int>* vertices_to_newly_created_vertices,
+    std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices);
 
 /*
  Computes a triangular surface mesh by intersecting a half space with a set of

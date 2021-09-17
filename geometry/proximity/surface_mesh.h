@@ -16,14 +16,9 @@
 
 namespace drake {
 namespace geometry {
-
-/**
- Index used to identify a vertex in a surface mesh.
- */
-using SurfaceVertexIndex = TypeSafeIndex<class SurfaceVertexTag>;
-
-template <typename T>
-using SurfaceVertex = Vector3<T>;
+/** Index used to identify a vertex in a surface mesh. Use `int` instead; this
+ will disappear imminently. */
+using SurfaceVertexIndex = int;
 
 /**
  Index for identifying a triangular face in a surface mesh.
@@ -40,28 +35,22 @@ class SurfaceFace {
    @param v0 Index of the first vertex in SurfaceMesh.
    @param v1 Index of the second vertex in SurfaceMesh.
    @param v2 Index of the last vertex in SurfaceMesh.
-   */
-  SurfaceFace(SurfaceVertexIndex v0,
-              SurfaceVertexIndex v1,
-              SurfaceVertexIndex v2)
-      : vertex_({v0, v1, v2}) {}
+   @pre index values are non-negative. */
+  SurfaceFace(int v0, int v1, int v2) : vertex_({v0, v1, v2}) {
+    DRAKE_DEMAND(v0 >= 0 && v1 >= 0 && v2 >= 0);
+  }
 
   /** Constructs SurfaceFace.
    @param v  array of three integer indices of the vertices of the face in
              SurfaceMesh.
-   */
-  explicit SurfaceFace(const int v[3])
-      : vertex_({SurfaceVertexIndex(v[0]),
-                 SurfaceVertexIndex(v[1]),
-                 SurfaceVertexIndex(v[2])}) {}
+   @pre index values are non-negative. */
+  explicit SurfaceFace(const int v[3]) : SurfaceFace(v[0], v[1], v[2]) {}
 
   /** Returns the vertex index in SurfaceMesh of the i-th vertex of this face.
    @param i  The local index of the vertex in this face.
    @pre 0 <= i < 3
    */
-  SurfaceVertexIndex vertex(int i) const {
-    return vertex_.at(i);
-  }
+  int vertex(int i) const { return vertex_.at(i); }
 
   /** Reverses the order of the vertex indices -- this essentially flips the
    face normal based on the right-handed normal rule.
@@ -72,7 +61,7 @@ class SurfaceFace {
 
  private:
   // The vertices of this face.
-  std::array<SurfaceVertexIndex, 3> vertex_;
+  std::array<int, 3> vertex_;
 };
 
 namespace internal {
@@ -114,7 +103,7 @@ class SurfaceMesh {
   /**
    Index for identifying a vertex.
    */
-  using VertexIndex = SurfaceVertexIndex;
+  using VertexIndex = int;
 
   /**
    Index for identifying a triangular element.
@@ -165,7 +154,7 @@ class SurfaceMesh {
    @param v  The index of the vertex.
    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
-  const Vector3<T>& vertex(VertexIndex v) const {
+  const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
   }
@@ -372,7 +361,7 @@ class SurfaceMesh {
         Vector3<T>::Constant(std::numeric_limits<double>::max());
     Vector3<T> max_extent =
         Vector3<T>::Constant(std::numeric_limits<double>::lowest());
-    for (SurfaceVertexIndex i(0); i < num_vertices(); ++i) {
+    for (int i = 0; i < num_vertices(); ++i) {
       Vector3<T> vertex = this->vertex(i);
       min_extent = min_extent.cwiseMin(vertex);
       max_extent = max_extent.cwiseMax(vertex);
@@ -403,7 +392,7 @@ class SurfaceMesh {
     }
 
     // Check vertices.
-    for (SurfaceVertexIndex i(0); i < this->num_vertices(); ++i) {
+    for (int i = 0; i < this->num_vertices(); ++i) {
       if (this->vertex(i) != mesh.vertex(i)) return false;
     }
 

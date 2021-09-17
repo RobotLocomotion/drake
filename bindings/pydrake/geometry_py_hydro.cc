@@ -66,8 +66,6 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   // All the index types up front, so they'll be available to every other type.
   {
-    BindTypeSafeIndex<SurfaceVertexIndex>(
-        m, "SurfaceVertexIndex", doc.SurfaceVertexIndex.doc);
     BindTypeSafeIndex<SurfaceFaceIndex>(
         m, "SurfaceFaceIndex", doc.SurfaceFaceIndex.doc);
     BindTypeSafeIndex<VolumeVertexIndex>(
@@ -82,9 +80,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.SurfaceFace;
     py::class_<Class> cls(m, "SurfaceFace", cls_doc.doc);
     cls  // BR
-        .def(py::init<SurfaceVertexIndex, SurfaceVertexIndex,
-                 SurfaceVertexIndex>(),
-            py::arg("v0"), py::arg("v1"), py::arg("v2"), cls_doc.ctor.doc_3args)
+        .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
+            py::arg("v2"), cls_doc.ctor.doc_3args)
         // TODO(SeanCurtis-TRI): Bind constructor that takes array of ints.
         .def("vertex", &Class::vertex, py::arg("i"), cls_doc.vertex.doc);
     DefCopyAndDeepCopy(&cls);

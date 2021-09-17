@@ -171,8 +171,6 @@ GTEST_TEST(AabbTest, TestEqual) {
  elements of the mesh will be garbage). Then we'll successively build Aabb
  instances from subsets of the vertices. */
 GTEST_TEST(AabbMakerTest, Compute) {
-  using VIndex = SurfaceVertexIndex;
-
   /* The vertices are all located at box corners.
 
         V₃--------------V₇
@@ -196,27 +194,23 @@ GTEST_TEST(AabbMakerTest, Compute) {
       }
     }
   }
-  vector<SurfaceFace> faces{{SurfaceFace{VIndex(0), VIndex(1), VIndex(2)}}};
+  vector<SurfaceFace> faces{{SurfaceFace{0, 1, 2}}};
   SurfaceMesh<double> mesh{std::move(faces), std::move(vertices)};
 
   ASSERT_EQ(mesh.num_vertices(), 8);
 
-  const VIndex v0(0);
-  const VIndex v3(3);
-  const VIndex v4(4);
-  const VIndex v7(7);
   {
     /* Case: single vertex. */
-    const set<VIndex> fit_vertices = {VIndex(0)};
+    const set<int> fit_vertices = {0};
     const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
-    EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(VIndex(0))));
+    EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(0)));
     EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d::Zero()));
   }
 
   {
     /* Case: Two vertices forming an axis-aligned edge. */
-    const set<VIndex> fit_vertices = {VIndex(3), VIndex(7)};
+    const set<int> fit_vertices = {3, 7};
     const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(),
@@ -227,7 +221,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
 
   {
     /* Case: Two vertices lying completely on a plane. */
-    const set<VIndex> fit_vertices = {VIndex(4), VIndex(7)};
+    const set<int> fit_vertices = {4, 7};
     const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(),
@@ -238,7 +232,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
 
   {
     /* Case: Two vertices lying diagonally across the box. */
-    const set<VIndex> fit_vertices = {VIndex(3), VIndex(4)};
+    const set<int> fit_vertices = {3, 4};
     const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(), Vector3d::Zero()));
@@ -248,10 +242,9 @@ GTEST_TEST(AabbMakerTest, Compute) {
   {
     /* Case: Once I have the minimum support for the full box (e.g., vertices
      3 and 4), adding other vertices will not change the outcome. */
-    const set<VIndex> base_set = {VIndex(3), VIndex(4)};
-    for (VIndex v :
-         {VIndex(0), VIndex(1), VIndex(2), VIndex(5), VIndex(6), VIndex(7)}) {
-      set<VIndex> fit_vertices(base_set);
+    const set<int> base_set = {3, 4};
+    for (int v : {0, 1, 2, 5, 6, 7}) {
+      set<int> fit_vertices(base_set);
       fit_vertices.emplace(v);
       const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
       const Aabb aabb = maker.Compute();

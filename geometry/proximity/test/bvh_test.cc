@@ -178,10 +178,7 @@ TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
   using BvType = TypeParam;
   // A mesh of two triangles that are well separated by X-Y plane.
   const SurfaceMesh<double> mesh(
-      {SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                   SurfaceVertexIndex(2)),
-       SurfaceFace(SurfaceVertexIndex(3), SurfaceVertexIndex(4),
-                   SurfaceVertexIndex(5))},
+      {SurfaceFace(0, 1, 2), SurfaceFace(3, 4, 5)},
       {Vector3d(0, 0, 1), Vector3d(1, 0, 1), Vector3d(0, 1, 1),
        Vector3d(0, 0, -1), Vector3d(1, 0, -1), Vector3d(0, 1, -1)});
 
@@ -400,13 +397,11 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
         (tet, tri2). */
 
   using STri = SurfaceFace;
-  using SVIndex = SurfaceVertexIndex;
   std::vector<Vector3d> vertices_S{{Vector3d(0, 0, 0),     // P
                                     Vector3d(1, 0, 1),     // Q
                                     Vector3d(2, 0, 0),     // R
                                     Vector3d(1, 0, -1)}};  // S
-  std::vector<STri> faces_S{{STri(SVIndex(0), SVIndex(3), SVIndex(1)),
-                             STri(SVIndex(3), SVIndex(2), SVIndex(1))}};
+  std::vector<STri> faces_S{{STri(0, 3, 1), STri(3, 2, 1)}};
   const SurfaceMesh<double> mesh_S(std::move(faces_S), std::move(vertices_S));
   const Bvh<BvType, SurfaceMesh<double>> bvh_S(mesh_S);
   // Confirm the expected topology (one leaf with two tris).
