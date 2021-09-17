@@ -135,7 +135,7 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradient) {
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           std::move(e_values), mesh.get());
 
-  Vector3d gradient = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient = mesh_field->EvaluateGradient(0);
 
   Vector3d expect_gradient(1., 1., 0.);
   EXPECT_TRUE(CompareMatrices(expect_gradient, gradient, 1e-14));
@@ -151,7 +151,7 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradientThrow) {
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           std::move(e_values), mesh.get(), calculate_gradient);
 
-  EXPECT_THROW(mesh_field->EvaluateGradient(SurfaceFaceIndex(0)),
+  EXPECT_THROW(mesh_field->EvaluateGradient(0),
                std::runtime_error);
 }
 
@@ -166,7 +166,7 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
 
   // We will not check all gradient vectors. Instead we will use the gradient
   // vector of the first triangle as a representative.
-  Vector3d gradient_M = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient_M = mesh_field->EvaluateGradient(0);
 
   // Confirm the gradient vector before rigid transform.
   Vector3d expect_gradient_M(1., 1., 0.);
@@ -177,7 +177,7 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   mesh->TransformVertices(X_MN);
   mesh_field->TransformGradients(X_MN);
 
-  Vector3d gradient_N = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient_N = mesh_field->EvaluateGradient(0);
   Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
 
   EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
@@ -357,8 +357,8 @@ class ScalarMixingTest : public ::testing::Test {
   std::unique_ptr<MeshFieldLinear<double, SurfaceMesh<double>>> field_d_;
   std::unique_ptr<MeshFieldLinear<AutoDiffXd, SurfaceMesh<double>>> field_ad_;
 
-  SurfaceFaceIndex e0_{0};
-  SurfaceFaceIndex e1_{1};
+  int e0_{0};
+  int e1_{1};
   // The centroid of triangle 0.
   Vector3<double> p_WQ_d_;
   Vector3<AutoDiffXd> p_WQ_ad_;

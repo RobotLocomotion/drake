@@ -467,7 +467,7 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
 //     The unit normal vector of the polygon, expressed in frame F. We assume
 //     the winding of the polygon vertices is consistent with this normal
 //     vector.
-void VerifyRepresentativeTriangle(SurfaceFaceIndex triangle_index,
+void VerifyRepresentativeTriangle(int triangle_index,
                                   const vector<SurfaceFace>& faces,
                                   const vector<Vector3d>& vertices_F,
                                   const vector<Vector3d>& polygon_F,
@@ -545,8 +545,8 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle) {
                                               &vertices_F);
     EXPECT_EQ(faces.size(), i + 1);
     EXPECT_EQ(vertices_F.size(), 3 * (i + 1));
-    VerifyRepresentativeTriangle(SurfaceFaceIndex(i), faces, vertices_F,
-                                 polygons_F[i], nhats_F[i]);
+    VerifyRepresentativeTriangle(i, faces, vertices_F, polygons_F[i],
+                                 nhats_F[i]);
   }
 }
 

@@ -195,7 +195,7 @@ enum class ContactPolygonRepresentation {
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
                                    const SurfaceMesh<T>& surface_M,
-                                   SurfaceFaceIndex tri_index,
+                                   int tri_index,
                                    const math::RotationMatrix<T>& R_FM);
 
 }  // namespace internal

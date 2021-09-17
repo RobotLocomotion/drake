@@ -1342,7 +1342,7 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
       {ContactPolygonRepresentation::kCentroidSubdivision,
        ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
-    for (const auto&[id_A, id_B] : ids) {
+    for (const auto& [id_A, id_B] : ids) {
       SCOPED_TRACE(fmt::format("[id_A, id_B] = [{}, {}]", id_A, id_B));
       unique_ptr<ContactSurface<double>> contact =
           ComputeContactSurface<double>(id_A, *field_F_, id_B, plane_F,
@@ -1354,8 +1354,8 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
       // will improve.
       constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
       const SurfaceMesh<double>& mesh_W = contact->mesh_W();
-      for (SurfaceFaceIndex f{0}; f < mesh_W.num_faces(); ++f) {
-        SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+      for (int f = 0; f < mesh_W.num_faces(); ++f) {
+        SCOPED_TRACE(fmt::format("Face index f = {}", f));
         EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
       }
     }
@@ -1403,13 +1403,13 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
     EXPECT_TRUE(contact_surface->HasGradE_M());
     EXPECT_FALSE(contact_surface->HasGradE_N());
     int num_triangles = contact_surface->mesh_W().num_elements();
-    for (SurfaceFaceIndex f(0); f < num_triangles / 2; ++f) {
-      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+    for (int f = 0; f < num_triangles / 2; ++f) {
+      SCOPED_TRACE(fmt::format("Face index f = {}", f));
       EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
                                   grad_eMesh_W_expected0));
     }
-    for (SurfaceFaceIndex f(num_triangles / 2); f < num_triangles; ++f) {
-      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+    for (int f = num_triangles / 2; f < num_triangles; ++f) {
+      SCOPED_TRACE(fmt::format("Face index f = {}", f));
       EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
                                   grad_eMesh_W_expected1));
     }
@@ -1437,13 +1437,13 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
     EXPECT_FALSE(contact_surface->HasGradE_M());
     EXPECT_TRUE(contact_surface->HasGradE_N());
     int num_triangles = contact_surface->mesh_W().num_elements();
-    for (SurfaceFaceIndex f(0); f < num_triangles / 2; ++f) {
-      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+    for (int f = 0; f < num_triangles / 2; ++f) {
+      SCOPED_TRACE(fmt::format("Face index f = {}", f));
       EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
                                   grad_eMesh_W_expected0));
     }
-    for (SurfaceFaceIndex f(num_triangles / 2); f < num_triangles; ++f) {
-      SCOPED_TRACE(fmt::format("SurfaceFaceIndex f = {}", f));
+    for (int f = num_triangles / 2; f < num_triangles; ++f) {
+      SCOPED_TRACE(fmt::format("Face index f = {}", f));
       EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
                                   grad_eMesh_W_expected1));
     }
@@ -1507,7 +1507,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     }
     // Sample the face normals.
     const Vector3d& norm_W =
-        contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
+        contact_surface->mesh_W().face_normal(0);
     const Vector3d& Sx_W = X_WS.rotation().col(0);
     EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
     // Sample the vertex positions: in the S frame they should all have x = 0.5.
@@ -1546,7 +1546,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     // The effect of reversing the labels reverses the normals, so repeat the
     // normal test, but in the opposite direction.
     const Vector3d& norm_W =
-        contact_surface->mesh_W().face_normal(SurfaceFaceIndex{0});
+        contact_surface->mesh_W().face_normal(0);
     const Vector3d& Sx_W = X_WS.rotation().col(0);
     EXPECT_TRUE(CompareMatrices(norm_W, -Sx_W, kEps));
   }
@@ -2038,7 +2038,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtPosition) {
     const auto& mesh_W = surface.mesh_W();
     const Vector3d plane_n_W = X_WR.rotation().col(2);
     const Matrix3<double> zeros = Matrix3<double>::Zero();
-    for (SurfaceFaceIndex f(0); f < mesh_W.num_elements(); ++f) {
+    for (int f = 0; f < mesh_W.num_elements(); ++f) {
       const Vector3<AutoDiffXd>& tri_n_W = mesh_W.face_normal(f);
       EXPECT_TRUE(
           CompareMatrices(math::ExtractValue(tri_n_W), plane_n_W, 2 * kEps));
@@ -2091,7 +2091,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
     ASSERT_GT(mesh_W.num_elements(), 0);
 
     constexpr double kEps = std::numeric_limits<double>::epsilon();
-    for (SurfaceFaceIndex f(0); f < mesh_W.num_elements(); ++f) {
+    for (int f = 0; f < mesh_W.num_elements(); ++f) {
       const Vector3<AutoDiffXd>& tri_n_W = mesh_W.face_normal(f);
       /* Confirm the normal direction. */
       EXPECT_TRUE(

@@ -251,8 +251,9 @@ class ContactSurface {
   bool HasGradE_N() const { return grad_eN_W_ != nullptr; }
 
   /** Returns the value of ∇eₘ for the triangle with index `index`.
-   @throws std::exception if HasGradE_M() returns false.  */
-  const Vector3<T>& EvaluateGradE_M_W(SurfaceFaceIndex index) const {
+   @throws std::exception if HasGradE_M() returns false.
+   @pre `index ∈ [0, mesh().num_faces())`.  */
+  const Vector3<T>& EvaluateGradE_M_W(int index) const {
     if (grad_eM_W_ == nullptr) {
       throw std::runtime_error(
           "ContactSurface::EvaluateGradE_M_W() invalid; no gradient values "
@@ -263,8 +264,9 @@ class ContactSurface {
   }
 
   /** Returns the value of ∇eₙ for the triangle with index `index`.
-   @throws std::exception if HasGradE_N() returns false.  */
-  const Vector3<T>& EvaluateGradE_N_W(SurfaceFaceIndex index) const {
+   @throws std::exception if HasGradE_N() returns false.
+   @pre `index ∈ [0, mesh().num_faces())`.  */
+  const Vector3<T>& EvaluateGradE_N_W(int index) const {
     if (grad_eN_W_ == nullptr) {
       throw std::runtime_error(
           "ContactSurface::EvaluateGradE_N_W() invalid; no gradient values "

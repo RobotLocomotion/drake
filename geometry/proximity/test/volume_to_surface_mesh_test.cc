@@ -18,8 +18,7 @@ namespace {
 // Calculates unit normal vector to a triangular face of a surface mesh. The
 // direction of the vector depends on the winding of the face.
 template <typename T>
-Vector3<T> CalcFaceNormal(const SurfaceMesh<T>& surface,
-                          SurfaceFaceIndex face_index) {
+Vector3<T> CalcFaceNormal(const SurfaceMesh<T>& surface, int face_index) {
 // TODO(DamrongGuoy): Consider moving this function into SurfaceMesh by
 //  adding a member variable `normal_M_` similar to `area_`. Consequently we
 //  will update `normal_M_` when TransformVertices() and ReverseFaceWinding()
@@ -133,7 +132,7 @@ void TestVolumeToSurfaceMesh() {
   EXPECT_EQ(surface_vertex_coords.size(), surface.num_vertices());
 
   // Check that the face normal vectors are in the outward direction.
-  for (SurfaceFaceIndex f(0); f < surface.num_faces(); ++f) {
+  for (int f = 0; f < surface.num_faces(); ++f) {
     const Vector3<T> normal_M = internal::CalcFaceNormal(surface, f);
     // Position vector of the first vertex V of the face.
     const Vector3<T> r_MV =

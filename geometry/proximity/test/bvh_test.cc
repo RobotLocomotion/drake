@@ -77,36 +77,32 @@ GTEST_TEST(BvNodeTest, TestEqualLeaf) {
   // We can use any Obb for this test.
   Obb bv(RigidTransformd::Identity(), Vector3d::Zero());
 
-  BvNode<Obb, SurfaceMesh<double>> leaf_of_one_element(
-      bv, {1, {SurfaceFaceIndex(0)}});
+  BvNode<Obb, SurfaceMesh<double>> leaf_of_one_element(bv, {1, {0}});
   // Tests reflexive property: equal to itself.
   EXPECT_TRUE(leaf_of_one_element.EqualLeaf(leaf_of_one_element));
 
   // Unequal number of elements.
-  BvNode<Obb, SurfaceMesh<double>> leaf_of_two_elements(
-      bv, {2, {SurfaceFaceIndex(0), SurfaceFaceIndex(1)}});
+  BvNode<Obb, SurfaceMesh<double>> leaf_of_two_elements(bv, {2, {0, 1}});
   EXPECT_FALSE(leaf_of_one_element.EqualLeaf(leaf_of_two_elements));
 
   // Second element is different.
-  BvNode<Obb, SurfaceMesh<double>> leaf_with_a_different_element(
-      bv, {2, {SurfaceFaceIndex(0), SurfaceFaceIndex(2)}});
+  BvNode<Obb, SurfaceMesh<double>> leaf_with_a_different_element(bv,
+                                                                 {2, {0, 2}});
   EXPECT_FALSE(leaf_of_two_elements.EqualLeaf(leaf_with_a_different_element));
 
   // All elements are the same.
-  BvNode<Obb, SurfaceMesh<double>> leaf_with_same_two_elements(
-      bv, {2, {SurfaceFaceIndex(0), SurfaceFaceIndex(1)}});
+  BvNode<Obb, SurfaceMesh<double>> leaf_with_same_two_elements(bv, {2, {0, 1}});
   EXPECT_TRUE(leaf_of_two_elements.EqualLeaf(leaf_with_same_two_elements));
 
   // Explicitly test that we can compare leaves for meshes with different
   // declared scalar types.
-  BvNode<Obb, SurfaceMesh<AutoDiffXd>> leaf_of_one_ad_element(
-      bv, {1, {SurfaceFaceIndex(0)}});
+  BvNode<Obb, SurfaceMesh<AutoDiffXd>> leaf_of_one_ad_element(bv, {1, {0}});
   EXPECT_TRUE(leaf_of_one_element.EqualLeaf(leaf_of_one_ad_element));
 
   // In fact, the EqualLeaf is such that it allows for different Bv types as it
   // is only testing tree *topology*.
   BvNode<Aabb, SurfaceMesh<double>> aabb_leaf_of_one_element(
-      Aabb(Vector3d::Zero(), Vector3d::Zero()), {1, {SurfaceFaceIndex(0)}});
+      Aabb(Vector3d::Zero(), Vector3d::Zero()), {1, {0}});
   EXPECT_TRUE(leaf_of_one_element.EqualLeaf(aabb_leaf_of_one_element));
 }
 
@@ -182,10 +178,10 @@ TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
       {Vector3d(0, 0, 1), Vector3d(1, 0, 1), Vector3d(0, 1, 1),
        Vector3d(0, 0, -1), Vector3d(1, 0, -1), Vector3d(0, 1, -1)});
 
-  using FaceCentroidPair = std::pair<SurfaceFaceIndex, Vector3d>;
+  using FaceCentroidPair = std::pair<int, Vector3d>;
   // The positions of centroids are not relevant to this test.
-  std::vector<FaceCentroidPair> upper{{SurfaceFaceIndex(0), Vector3d()}};
-  std::vector<FaceCentroidPair> lower{{SurfaceFaceIndex(1), Vector3d()}};
+  std::vector<FaceCentroidPair> upper{{0, Vector3d()}};
+  std::vector<FaceCentroidPair> lower{{1, Vector3d()}};
 
   const BvType bv =
       BvhTester::ComputeBoundingVolume<BvType, SurfaceMesh<double>>(
@@ -217,7 +213,7 @@ TYPED_TEST(BvhTest, TestBuildBvTree) {
   EXPECT_EQ(tree_height, 2);
 
   const int num_elements = this->mesh_.num_elements();
-  std::set<SurfaceFaceIndex> element_indices;
+  std::set<int> element_indices;
   std::function<void(const BvNode<BvType, SurfaceMesh<double>>&, int)>
       check_node;
   check_node = [&check_node, &element_indices, num_elements, tree_height](
@@ -286,7 +282,7 @@ TYPED_TEST(BvhTest, TestCollide) {
   auto separate_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
   RigidTransformd X_WV{Vector3d{4, 4, 4}};
   Bvh<BvType, SurfaceMesh<double>> separate(separate_mesh);
-  std::vector<std::pair<SurfaceFaceIndex, SurfaceFaceIndex>> pairs =
+  std::vector<std::pair<int, int>> pairs =
       this->bvh_.GetCollisionCandidates(separate, X_WV);
   EXPECT_EQ(pairs.size(), 0);
 
@@ -334,8 +330,7 @@ TYPED_TEST(BvhTest, TestCollideEarlyExit) {
   int limit{1};
   // This callback should only be run as many times as the specified limit
   // before the early exit kicks in.
-  auto callback = [&count, &limit](SurfaceFaceIndex a,
-                                   SurfaceFaceIndex b) -> BvttCallbackResult {
+  auto callback = [&count, &limit](int a, int b) -> BvttCallbackResult {
     ++count;
     return count < limit ? BvttCallbackResult::Continue
                          : BvttCallbackResult::Terminate;
@@ -428,8 +423,7 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
    the candidates and the total number of candidates we get. */
   bool intersecting_included = false;
   int total_count = 0;
-  auto callback = [&intersecting_included, &total_count](int v,
-                                                         SurfaceFaceIndex s) {
+  auto callback = [&intersecting_included, &total_count](int v, int s) {
     ++total_count;
     if (v == 0 && s == 0) intersecting_included = true;
     return BvttCallbackResult::Continue;
@@ -458,12 +452,12 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
 
     // All collision candidates.
     {
-      std::vector<SurfaceFaceIndex> candidates;
+      std::vector<int> candidates;
       // We pose the plane to pass through a plane of symmetry of the
       // octahedron, so we should get all 8 triangles.
       this->bvh_.Collide(
           plane_P, RigidTransformd::Identity(),
-          [&candidates](SurfaceFaceIndex f) -> BvttCallbackResult {
+          [&candidates](int f) -> BvttCallbackResult {
             candidates.push_back(f);
             return BvttCallbackResult::Continue;
           });
@@ -473,10 +467,10 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
 
     // First collision candidate then terminate early.
     {
-      std::vector<SurfaceFaceIndex> candidates;
+      std::vector<int> candidates;
       this->bvh_.Collide(
           plane_P, RigidTransformd::Identity(),
-          [&candidates](SurfaceFaceIndex f) -> BvttCallbackResult {
+          [&candidates](int f) -> BvttCallbackResult {
             candidates.push_back(f);
             return BvttCallbackResult::Terminate;
           });
@@ -486,11 +480,11 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
 
     // No collision.
     {
-      std::vector<SurfaceFaceIndex> candidates;
+      std::vector<int> candidates;
       // We pose the plane far from the mesh.
       this->bvh_.Collide(
           plane_P, RigidTransformd(Vector3d(10, 0, 0)),
-          [&candidates](SurfaceFaceIndex f) -> BvttCallbackResult {
+          [&candidates](int f) -> BvttCallbackResult {
             candidates.push_back(f);
             return BvttCallbackResult::Continue;
           });
@@ -507,7 +501,7 @@ TYPED_TEST(BvhTest, TestComputeCentroid) {
   auto surface_mesh =
       MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
   Vector3d centroid = BvhTester::ComputeCentroid<BvType, SurfaceMesh<double>>(
-      surface_mesh, SurfaceFaceIndex(0));
+      surface_mesh, 0);
   // The first face of our octahedron is a triangle with vertices at 1, 2, and
   // 3 along each respective axis, so its centroid should average out to 1/3,
   // 2/3, and 3/3.
@@ -632,8 +626,8 @@ GTEST_TEST(BoundingVolumeHierarchyTest, CollideDifferentBvTypes) {
   Bvh<Aabb, SurfaceMesh<double>> aabb_bvh(mesh);
   Bvh<Obb, SurfaceMesh<double>> obb_bvh(mesh);
 
-  std::vector<std::pair<SurfaceFaceIndex, SurfaceFaceIndex>> results;
-  auto callback = [&results](SurfaceFaceIndex a, SurfaceFaceIndex b) {
+  std::vector<std::pair<int, int>> results;
+  auto callback = [&results](int a, int b) {
     results.emplace_back(a, b);
     return BvttCallbackResult::Continue;
   };

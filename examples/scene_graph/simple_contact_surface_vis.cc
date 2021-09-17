@@ -61,7 +61,6 @@ using geometry::Role;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
@@ -273,7 +272,7 @@ class ContactResultMaker final : public LeafSystem<double> {
 
       // Loop through each contact triangle on the contact surface.
       const auto& field = surfaces[i].e_MN();
-      for (SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
+      for (int j = 0; j < surface_msg.num_triangles; ++j) {
         lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
             surface_msg.triangles[j];
         lcmt_hydroelastic_quadrature_per_point_data_for_viz& quad_msg =
