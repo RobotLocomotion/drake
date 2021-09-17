@@ -237,14 +237,14 @@ class ObbMakerTestRectangularBox : public ::testing::Test {
 
   void SetUp() override {
     ASSERT_EQ(mesh_M_.num_vertices(), 8);
-    for (SurfaceVertexIndex i(0); i < mesh_M_.num_vertices(); ++i) {
+    for (int i = 0; i < mesh_M_.num_vertices(); ++i) {
       test_vertices_.insert(i);
     }
   }
 
  protected:
   SurfaceMesh<double> mesh_M_;
-  std::set<SurfaceVertexIndex> test_vertices_;
+  std::set<int> test_vertices_;
 };
 
 // Test the creation of obb orientation via PCA. We want to test the following:
@@ -344,15 +344,13 @@ class ObbMakerTestTriangle : public ::testing::Test {
  public:
   ObbMakerTestTriangle()
       : ::testing::Test(),
-        mesh_M_({SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                             SurfaceVertexIndex(2))},
+        mesh_M_({SurfaceFace(0, 1, 2)},
                 {Vector3d::UnitX(), Vector3d::UnitY(), Vector3d::UnitZ()}),
-        test_vertices_{SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                       SurfaceVertexIndex(2)} {}
+        test_vertices_{0, 1, 2} {}
 
  protected:
   SurfaceMesh<double> mesh_M_;
-  const std::set<SurfaceVertexIndex> test_vertices_;
+  const std::set<int> test_vertices_;
 };
 
 TEST_F(ObbMakerTestTriangle, CalcOrientationByPca) {
@@ -479,9 +477,7 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
   // Confirm that it is an octahedron.
   ASSERT_EQ(8, mesh_M.num_faces());
   ASSERT_EQ(6, mesh_M.num_vertices());
-  const std::set<SurfaceVertexIndex> test_vertices{
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2),
-      SurfaceVertexIndex(3), SurfaceVertexIndex(4), SurfaceVertexIndex(5)};
+  const std::set<int> test_vertices{0, 1, 2, 3, 4, 5};
 
   // Initial obb is aligned with the three axes of the ellipsoid.
   const Obb initial_obb_M(X_ME, Vector3d(1., 2., 3.));
@@ -520,15 +516,13 @@ class ObbMakerTestOctahedron : public ::testing::Test {
       : ::testing::Test(),
         // Use a coarse sphere, i.e. an octahedron, as the underlying mesh.
         mesh_M_(MakeSphereSurfaceMesh<double>(Sphere(1.5), 3)),
-        test_vertices_{SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                       SurfaceVertexIndex(2), SurfaceVertexIndex(3),
-                       SurfaceVertexIndex(4), SurfaceVertexIndex(5)} {}
+        test_vertices_{0, 1, 2, 3, 4, 5} {}
 
   void SetUp() override { ASSERT_EQ(mesh_M_.num_vertices(), 6); }
 
  protected:
   SurfaceMesh<double> mesh_M_;
-  const std::set<SurfaceVertexIndex> test_vertices_;
+  const std::set<int> test_vertices_;
 };
 
 // Test PCA problem whose eigenvalue has triple multiplicity.
@@ -642,8 +636,8 @@ GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
   auto surface_mesh = MakeBoxSurfaceMesh<double>(Box(6, 4, 2), 10);
   ASSERT_EQ(surface_mesh.num_vertices(), 8);
   ASSERT_EQ(surface_mesh.num_faces(), 12);
-  std::set<SurfaceVertexIndex> test_vertices;
-  for (SurfaceVertexIndex i(0); i < 8; ++i) {
+  std::set<int> test_vertices;
+  for (int i = 0; i < 8; ++i) {
     const Vector3d& p_MV = surface_mesh.vertex(i);
     // Omit vertices on a diagonal.
     if (CompareMatrices(p_MV, Vector3d(-3, -2, -1), 1e-5)) continue;
@@ -693,15 +687,11 @@ GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
 GTEST_TEST(ObbMakerTestAPI, ObbMakerCompute) {
   const SurfaceMesh<double> mesh(
       // The triangles are not relevant to the test.
-      {SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                   SurfaceVertexIndex(2)),
-       SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(3),
-                   SurfaceVertexIndex(1))},
+      {SurfaceFace(0, 1, 2), SurfaceFace(0, 3, 1)},
       {Vector3d::Zero(), Vector3d::UnitX(), 2. * Vector3d::UnitY(),
        3. * Vector3d::UnitZ()});
 
-  const std::set<SurfaceVertexIndex> test_vertices{SurfaceVertexIndex(0),
-                                                   SurfaceVertexIndex(1)};
+  const std::set<int> test_vertices{0, 1};
 
   const Obb obb = ObbMaker(mesh, test_vertices).Compute();
 
@@ -712,8 +702,7 @@ GTEST_TEST(ObbMakerTestAPI, ObbMakerCompute) {
   EXPECT_NEAR(obb.half_width().x(), 0.5, ObbTester::kTolerance);
   EXPECT_NEAR(obb.half_width().y(), 0., ObbTester::kTolerance);
   EXPECT_NEAR(obb.half_width().z(), 0., ObbTester::kTolerance);
-  const std::set<SurfaceVertexIndex> remaining_vertices{SurfaceVertexIndex(2),
-                                                        SurfaceVertexIndex(3)};
+  const std::set<int> remaining_vertices{2, 3};
   EXPECT_FALSE(Contain(obb, mesh, remaining_vertices));
 }
 

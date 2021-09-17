@@ -38,9 +38,8 @@ class ContactSurfaceUtilityTest : public ::testing::Test {
   }
 
   // Compute the average vertex position of the given `polygon`.
-  static Vector3d AverageVertex(
-      const vector<SurfaceVertexIndex>& polygon,
-      const vector<Vector3d>& vertices_F) {
+  static Vector3d AverageVertex(const vector<int>& polygon,
+                                const vector<Vector3d>& vertices_F) {
     Vector3d v = Vector3d::Zero();
     for (const auto& i : polygon) {
       v += vertices_F[i];
@@ -104,8 +103,6 @@ class ContactSurfaceUtilityTest : public ::testing::Test {
 // We then transform these vertices into various frames to make sure that it
 // works with rotation matrices that have no zero-values.
 TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
-  using VIndex = SurfaceVertexIndex;
-
   const double kEps = std::numeric_limits<double>::epsilon();
 
   // Create a number of vertices in mesh frame M. All vertices lie on the Mz = 0
@@ -126,7 +123,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
 
     {
       // Well-formed triangle; it's simply the average vertex location.
-      const vector<VIndex> triangle{VIndex{6}, VIndex{1}, VIndex{2}};
+      const vector<int> triangle{6, 1, 2};
       const Vector3d p_FC = CalcPolygonCentroid(triangle, nhat_F, vertices_F);
       const Vector3d p_FC_expected = AverageVertex(triangle, vertices_F);
       EXPECT_TRUE(CompareMatrices(p_FC, p_FC_expected));
@@ -134,7 +131,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
     {
       // Radially symmetric quad; the centroid is simply the average vertex
       // position.
-      const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{3}, VIndex{2}};
+      const vector<int> quad{0, 1, 3, 2};
       const Vector3d p_FC = CalcPolygonCentroid(quad, nhat_F, vertices_F);
       const Vector3d p_FC_expected = AverageVertex(quad, vertices_F);
       EXPECT_TRUE(CompareMatrices(p_FC, p_FC_expected, 2 * kEps));
@@ -142,8 +139,8 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
     {
       // Quad with a duplicate vertex; Centroid is the same as for the
       // corresponding triangle.
-      const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{1}, VIndex{2}};
-      const vector<VIndex> triangle{VIndex{0}, VIndex{1}, VIndex{2}};
+      const vector<int> quad{0, 1, 1, 2};
+      const vector<int> triangle{0, 1, 2};
       const Vector3d p_FC = CalcPolygonCentroid(quad, nhat_F, vertices_F);
       const Vector3d p_FC_expected = AverageVertex(triangle, vertices_F);
       EXPECT_TRUE(CompareMatrices(p_FC, p_FC_expected));
@@ -151,8 +148,8 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
     {
       // Quad with a negligible edge; Centroid is _almost_ the same as for the
       // corresponding triangle.
-      const vector<VIndex> quad{VIndex{6}, VIndex{1}, VIndex{5}, VIndex{2}};
-      const vector<VIndex> triangle{VIndex{6}, VIndex{1}, VIndex{2}};
+      const vector<int> quad{6, 1, 5, 2};
+      const vector<int> triangle{6, 1, 2};
       const Vector3d p_FC = CalcPolygonCentroid(quad, nhat_F, vertices_F);
       const Vector3d p_FC_expected = AverageVertex(triangle, vertices_F);
       EXPECT_TRUE(CompareMatrices(p_FC, p_FC_expected, kEps));
@@ -162,9 +159,9 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
       // into a triangle and a square with equal areas. So, we can compute each
       // centroid by averaging their vertex positions and simply average them to
       // get the expected centroid.
-      const vector<VIndex> quad{VIndex{7}, VIndex{1}, VIndex{3}, VIndex{2}};
-      const vector<VIndex> triangle{VIndex{7}, VIndex{0}, VIndex{2}};
-      const vector<VIndex> square{VIndex{0}, VIndex{1}, VIndex{3}, VIndex{2}};
+      const vector<int> quad{7, 1, 3, 2};
+      const vector<int> triangle{7, 0, 2};
+      const vector<int> square{0, 1, 3, 2};
 
       const Vector3d p_FCt = AverageVertex(triangle, vertices_F);
       const Vector3d p_FCs = AverageVertex(square, vertices_F);
@@ -187,7 +184,6 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
 // is irrelevant. The vertex positions imply a frame and the centroid is
 // computed in that same frame.
 TEST_F(ContactSurfaceUtilityTest, ZeroAreaPolygon) {
-  using VIndex = SurfaceVertexIndex;
   constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
 
   // We'll use two primitives from two points:
@@ -195,21 +191,21 @@ TEST_F(ContactSurfaceUtilityTest, ZeroAreaPolygon) {
   // Quad: (a, a, b, b)
   const vector<Vector3d> vertices{Vector3d{0.25, 1.5, -3},
                                   Vector3d{-0.75, 0.25, 1.25}};
-  const VIndex a{0};
-  const VIndex b{1};
+  const int a{0};
+  const int b{1};
 
   const Vector3d p_AB = vertices[b] - vertices[a];
   const Vector3d normal = Vector3d{0, p_AB(2), -p_AB(1)}.normalized();
 
   {
-    const vector<VIndex> triangle{a, a, b};
+    const vector<int> triangle{a, a, b};
     const Vector3d centroid = CalcPolygonCentroid(triangle, normal, vertices);
     const Vector3d expected_centroid = (2 * vertices[a] + vertices[b]) / 3.0;
     EXPECT_TRUE(CompareMatrices(centroid, expected_centroid, kEps));
   }
 
   {
-    const vector<VIndex> quad{a, a, b, b};
+    const vector<int> quad{a, a, b, b};
     const Vector3d centroid = CalcPolygonCentroid(quad, normal, vertices);
     const Vector3d expected_centroid = (2 * vertices[a] + 2 * vertices[b]) / 4;
     EXPECT_TRUE(CompareMatrices(centroid, expected_centroid, kEps));
@@ -218,14 +214,13 @@ TEST_F(ContactSurfaceUtilityTest, ZeroAreaPolygon) {
 
 // This confirms that with assertions armed, non-planar polygons are detected.
 TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
-  using VIndex = SurfaceVertexIndex;
   constexpr double kEps = 11 * std::numeric_limits<double>::epsilon();
   if (kDrakeAssertIsArmed) {
     const Vector3d Mz = Vector3d::UnitZ();
     const vector<Vector3d> vertices_M{
         Vector3d{-1.5, -0.25, kEps}, Vector3d{1, 0, -kEps},
         Vector3d{0.75, 1.25, -kEps}, Vector3d{0, 1, -kEps}};
-    const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(2), VIndex(3)};
+    const vector<int> quad{0, 1, 2, 3};
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcPolygonCentroid(quad, Mz, vertices_M), std::runtime_error,
         "CalcPolygonCentroid: input polygon is not planar");
@@ -235,8 +230,6 @@ TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
 // This confirms that with assertions armed, normal perpendicularity is ignored
 // for degenerate polygons (lines and points).
 TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
-  using VIndex = SurfaceVertexIndex;
-
   if (kDrakeAssertIsArmed) {
     const vector<Vector3d> vertices_M{
         Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
@@ -246,7 +239,7 @@ TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
     {
       // Base case: polygon is _not_ degenerate, but the normal is parallel
       // with the polygon's plane; it throws.
-      const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(2), VIndex(3)};
+      const vector<int> quad{0, 1, 2, 3};
       DRAKE_EXPECT_THROWS_MESSAGE(
           CalcPolygonCentroid(quad, My, vertices_M), std::runtime_error,
           "CalcPolygonCentroid: the given normal is not perpendicular to the "
@@ -259,13 +252,13 @@ TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
     // PolygonCentroidTest_NormalUse test.
     {
       // Case: same normal, subset of the vertices span a line.
-      const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(1), VIndex(0)};
+      const vector<int> quad{0, 1, 1, 0};
       EXPECT_NO_THROW(CalcPolygonCentroid(quad, My, vertices_M));
     }
 
     {
       // Case: same normal, subset of the vertices span a point.
-      const vector<VIndex> quad{VIndex(0), VIndex(0), VIndex(0), VIndex(0)};
+      const vector<int> quad{0, 0, 0, 0};
       EXPECT_NO_THROW(CalcPolygonCentroid(quad, My, vertices_M));
     }
   }
@@ -277,8 +270,6 @@ TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
 //   2. The "normalness" doesn't really matter that much
 //   3. A zero vector destroys the answer.
 TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
-  using VIndex = SurfaceVertexIndex;
-
   const double kEps = std::numeric_limits<double>::epsilon();
 
   // Vertices sufficient to support a well-defined quad.
@@ -287,14 +278,13 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
   // A quad formed with a duplicate index; this forces the function to perform
   // full area calculations, but it should still have the expected value of
   // the corresponding triangle.
-  const vector<VIndex> pseudo_triangle{VIndex{0}, VIndex{1}, VIndex{1},
-                                       VIndex{2}};
-  const Vector3d p_MC_expected = AverageVertex(
-      vector<VIndex>{VIndex{0}, VIndex{1}, VIndex{2}}, vertices_M);
+  const vector<int> pseudo_triangle{0, 1, 1, 2};
+  const Vector3d p_MC_expected =
+      AverageVertex(vector<int>{0, 1, 2}, vertices_M);
 
   {
     // A literal zero normal vector.
-    const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{2}, VIndex{3}};
+    const vector<int> quad{0, 1, 2, 3};
     Vector3d kZeroVec = Vector3d::Zero();
     if (kDrakeAssertIsArmed) {
       // With assertions armed; we throw.
@@ -314,7 +304,7 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
 
   {
     // A close-to-zero normal vector.
-    const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{2}, VIndex{3}};
+    const vector<int> quad{0, 1, 2, 3};
     Vector3d kZeroVec{kEps, kEps, kEps};
     if (kDrakeAssertIsArmed) {
       // With assertions armed; we throw.
@@ -393,8 +383,6 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
 //   4. Each of the triangles have winding that produce a normal in the same
 //      direction as the input polygons.
 TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
-  using VIndex = SurfaceVertexIndex;
-
   // Vertices sufficient to support a well-defined quad.
   //
   //             y
@@ -415,11 +403,11 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
 
   vector<SurfaceFace> faces;
   vector<Vector3d> vertices_M(vertices_source);
-  const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{2}, VIndex{3}};
+  const vector<int> quad{0, 1, 2, 3};
   const Vector3d nhat_M{0, 0, 1};
   AddPolygonToMeshData(quad, nhat_M, &faces, &vertices_M);
 
-  auto triangle_normal = [](VIndex v0, VIndex v1, VIndex v2,
+  auto triangle_normal = [](int v0, int v1, int v2,
                             const vector<Vector3d>& vertices_F) -> Vector3d {
     const Vector3d phat_V0V1_F = (vertices_F[v1] - vertices_F[v0]).normalized();
     const Vector3d phat_V0V2_F = (vertices_F[v2] - vertices_F[v0]).normalized();
@@ -433,20 +421,19 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
   ASSERT_TRUE(
       CompareMatrices(vertices_M.back(),
                       CalcPolygonCentroid(quad, nhat_M, vertices_M)));
-  const VIndex centroid_index(vertices_M.size() - 1);
+  const int centroid_index = static_cast<int>(vertices_M.size()) - 1;
 
   ASSERT_EQ(faces.size(), quad.size());
-  std::set<VIndex> quad_verts(quad.begin(), quad.end());
+  std::set<int> quad_verts(quad.begin(), quad.end());
   for (const auto& face : faces) {
-    const std::set<VIndex> verts{face.vertex(0), face.vertex(1),
-                                 face.vertex(2)};
+    const std::set<int> verts{face.vertex(0), face.vertex(1), face.vertex(2)};
     EXPECT_EQ(verts.size(), 3);  // No duplicate vertex indices.
     EXPECT_NE(verts.find(centroid_index), verts.end());  // Includes centroid.
     const Vector3d tri_normal_M = triangle_normal(
         face.vertex(0), face.vertex(1), face.vertex(2), vertices_M);
     EXPECT_NEAR(tri_normal_M.dot(poly_normal_M), 1,
                 std::numeric_limits<double>::epsilon());
-    for (VIndex i(0); i < 3; ++i) {
+    for (int i = 0; i < 3; ++i) {
       if (i == centroid_index) continue;
       // The other two vertices come from the quad.
       EXPECT_NE(quad_verts.find(i), quad_verts.end());
@@ -578,9 +565,9 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_3Gon) {
   AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                             &vertices_F);
   ASSERT_EQ(faces.size(), 1);
-  EXPECT_EQ(faces[0].vertex(0), SurfaceVertexIndex(0));
-  EXPECT_EQ(faces[0].vertex(1), SurfaceVertexIndex(1));
-  EXPECT_EQ(faces[0].vertex(2), SurfaceVertexIndex(2));
+  EXPECT_EQ(faces[0].vertex(0), 0);
+  EXPECT_EQ(faces[0].vertex(1), 1);
+  EXPECT_EQ(faces[0].vertex(2), 2);
 
   ASSERT_EQ(vertices_F.size(), 3);
   EXPECT_EQ(vertices_F[0], polygon_F[0]);

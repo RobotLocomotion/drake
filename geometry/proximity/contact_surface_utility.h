@@ -39,7 +39,7 @@ namespace internal {
  @tparam_nonsymbolic_scalar
  */
 template <typename T>
-Vector3<T> CalcPolygonCentroid(const std::vector<SurfaceVertexIndex>& polygon,
+Vector3<T> CalcPolygonCentroid(const std::vector<int>& polygon,
                                const Vector3<T>& n_F,
                                const std::vector<Vector3<T>>& vertices_F);
 
@@ -108,7 +108,7 @@ T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
  @pre `n_F` has non-trivial length.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-void AddPolygonToMeshData(const std::vector<SurfaceVertexIndex>& polygon,
+void AddPolygonToMeshData(const std::vector<int>& polygon,
                           const Vector3<T>& n_F,
                           std::vector<SurfaceFace>* faces,
                           std::vector<Vector3<T>>* vertices_F);

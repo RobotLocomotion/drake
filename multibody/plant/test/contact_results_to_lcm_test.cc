@@ -31,7 +31,6 @@ using geometry::Sphere;
 using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using multibody::internal::FullBodyName;
 using std::function;
@@ -155,10 +154,8 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
   vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5) + offset);
   vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5) + offset);
   vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5) + offset);
-  faces.emplace_back(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
-                     SurfaceVertexIndex(2));
-  faces.emplace_back(SurfaceVertexIndex(2), SurfaceVertexIndex(3),
-                     SurfaceVertexIndex(0));
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
   auto mesh = make_unique<SurfaceMesh<T>>(move(faces), move(vertices));
 
   /* Create the "e" field values (i.e., "hydroelastic pressure") - simply

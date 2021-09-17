@@ -203,7 +203,7 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   // surface_N.
   polygon_M->clear();
   for (int i = 0; i < 3; ++i) {
-    SurfaceVertexIndex v = surface_N.element(face).vertex(i);
+    const int v = surface_N.element(face).vertex(i);
     const Vector3<T>& p_NV = surface_N.vertex(v).cast<T>();
     polygon_M->push_back(X_MN * p_NV);
   }
@@ -312,7 +312,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   // We know that each contact polygon has at most 7 vertices because
   // each surface triangle is clipped by four half-spaces of the four
   // triangular faces of a tetrahedron.
-  std::vector<SurfaceVertexIndex> contact_polygon;
+  std::vector<int> contact_polygon;
   contact_polygon.reserve(7);
 
   const math::RigidTransform<double> X_MN_d = convert_to_double(X_MN);

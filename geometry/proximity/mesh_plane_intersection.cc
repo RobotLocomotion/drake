@@ -71,7 +71,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
                        std::unordered_map<SortedPair<VolumeVertexIndex>,
-                                          SurfaceVertexIndex>* cut_edges) {
+                                          int>* cut_edges) {
   const VolumeMesh<double>& mesh_M = field_M.mesh();
 
   T distance[4];
@@ -93,7 +93,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
   // Indices of the new polygon's vertices in vertices_W. There can be, at
   // most, four due to the intersection with the plane.
   // Used for ContactPolygonRepresentation::kCentroidSubdivision.
-  std::vector<SurfaceVertexIndex> face_verts(4);
+  std::vector<int> face_verts(4);
   // Positions of the new polygon's vertices.
   // Used for ContactPolygonRepresentation::kSingleTriangle.
   std::vector<Vector3<T>> polygon_W(4);
@@ -131,7 +131,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
 
       switch (representation) {
         case ContactPolygonRepresentation::kCentroidSubdivision: {
-          SurfaceVertexIndex new_index{static_cast<int>(vertices_W->size())};
+          int new_index = static_cast<int>(vertices_W->size());
           vertices_W->emplace_back(p_WC);
           const double e0 = field_M.EvaluateAtVertex(v0);
           const double e1 = field_M.EvaluateAtVertex(v1);
@@ -183,8 +183,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   std::vector<SurfaceFace> faces;
   std::vector<Vector3<T>> vertices_W;
   std::vector<T> surface_e;
-  std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
-      cut_edges;
+  std::unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges;
 
   auto grad_eM_W = std::make_unique<std::vector<Vector3<T>>>();
   size_t old_face_count = 0;

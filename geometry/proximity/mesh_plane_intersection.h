@@ -90,7 +90,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
                        std::unordered_map<SortedPair<VolumeVertexIndex>,
-                                          SurfaceVertexIndex>* cut_edges);
+                                          int>* cut_edges);
 
 /* Computes a ContactSurface by intersecting a plane with a set of tetrahedra
  drawn from the given volume mesh (and its pressure field). The indicated
