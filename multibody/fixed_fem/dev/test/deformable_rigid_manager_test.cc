@@ -407,13 +407,32 @@ class DeformableRigidContactDataTest : public ::testing::Test {
   /* Set up a scene with three rigid boxes and one deforamble cube.
    In particular, unit cube A is deformable and boxes B, C, and D are rigid and
    have size (2, 0.5, 2). */
-  void SetUp() override {
+  void SetUp() override { Initialize(false); }
+
+  void Initialize(bool add_dirichlet_bc) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
     A_ = deformable_model->RegisterDeformableBody(
         MakeUnitCubeDeformableGeometry(), "box_A", MakeDeformableBodyConfig(),
         MakeProximityProperties(kStiffnessA, kDampingA, kFrictionA));
+    if (add_dirichlet_bc) {
+      /* Set up the boundary condition so that one and only one vertex (at
+       position (-0.5, -0.5, -0.5)) is under dirichlet boundary conditions. */
+      deformable_model->SetWallBoundaryCondition(A_, Vector3d(-0.5, -0.5, -0.5),
+                                                 Vector3d(1, 1, 1));
+      /* Verify our clear box knowledge that the vertex at position (-0.5,
+       -0.5, -0.5) has vertex index 0 and thus dof index 0, 1, 2. */
+      const FemModelBase<double>& fem_model = deformable_model->fem_model(A_);
+      const DirichletBoundaryCondition<double>* dirichlet_bc =
+          fem_model.dirichlet_boundary_condition();
+      ASSERT_NE(dirichlet_bc, nullptr);
+      const std::map<DofIndex, VectorXd>& bc_map = dirichlet_bc->get_bcs();
+      ASSERT_EQ(bc_map.size(), 3);
+      for (DofIndex dof_index(0); dof_index < 3; ++dof_index) {
+        ASSERT_NE(bc_map.find(dof_index), bc_map.end());
+      }
+    }
     plant_->AddPhysicalModel(std::move(deformable_model));
     /* Add the rigid bodies. */
     const UnitInertia<double> G_Rcm =
@@ -701,6 +720,49 @@ TEST_F(DeformableRigidContactDataTest, ContactJacobian) {
     const ContactPolygonData<double>& data = contact_surface_AC.polygon_data(i);
     verify_contact_velocity(v_WA, V_WC, X_WC, data, contact_index);
   }
+}
+
+/* Verify that the contact jacobian with Dirichlet boundary condition present is
+ the same as that when there is no boundary condition except with appropriate
+ columns zeroed out. */
+TEST_F(DeformableRigidContactDataTest, ContactJacobianWithBoundaryCondition) {
+  /* Calculate the contact jacobian *without* boundary condition. */
+  Initialize(false);
+  Context<double>& plant_without_bc_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Set poses of the rigid bodies. */
+  const Vector3d p_WB(0, -0.5, 0);
+  const Vector3d p_WC(0, 0.5, 0);
+  const Vector3d p_WD(0, 0, -1);
+  const math::RigidTransformd X_WB(p_WB);
+  const math::RigidTransformd X_WC(p_WC);
+  const math::RigidTransformd X_WD(p_WD);
+  plant_->SetFreeBodyPose(&plant_without_bc_context, plant_->get_body(B_),
+                          X_WB);
+  plant_->SetFreeBodyPose(&plant_without_bc_context, plant_->get_body(C_),
+                          X_WC);
+  plant_->SetFreeBodyPose(&plant_without_bc_context, plant_->get_body(D_),
+                          X_WD);
+  MatrixXd Jc_without_bc = CalcContactJacobian(plant_without_bc_context);
+
+  /* Calculate the contact jacobian *with* boundary condition. */
+  Initialize(true);
+  Context<double>& plant_with_bc_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  plant_->SetFreeBodyPose(&plant_with_bc_context, plant_->get_body(B_), X_WB);
+  plant_->SetFreeBodyPose(&plant_with_bc_context, plant_->get_body(C_), X_WC);
+  plant_->SetFreeBodyPose(&plant_with_bc_context, plant_->get_body(D_), X_WD);
+  const MatrixXd Jc_with_bc = CalcContactJacobian(plant_with_bc_context);
+
+  /* Jc_without_bc should be the same as Jc_with_bc except that the columns
+   corresponding to the deformable dofs under bc (the 0th, 1st, and 2nd
+   deformable dofs) are zeroed out. */
+  EXPECT_FALSE(CompareMatrices(Jc_with_bc, Jc_without_bc));
+  const int nv_rigid = plant_->num_velocities();
+  for (int deformable_dof = 0; deformable_dof < 3; ++deformable_dof) {
+    Jc_without_bc.col(nv_rigid + deformable_dof).setZero();
+  }
+  EXPECT_TRUE(CompareMatrices(Jc_with_bc, Jc_without_bc));
 }
 
 /* Uses the same set up as the ContactJacobian test and verifies that

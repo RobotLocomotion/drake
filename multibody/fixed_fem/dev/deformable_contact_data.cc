@@ -19,6 +19,12 @@ DeformableContactData<T>::DeformableContactData(
       permuted_to_original_indexes_(deformable_geometry.mesh().num_vertices()) {
   num_contact_points_ = 0;
   if (!contact_pairs_.empty()) {
+    /* All contact pairs should involve the same deformable body. */
+    deformable_body_index_ = contact_pairs_[0].deformable_id;
+    for (const auto& contact_pair : contact_pairs_) {
+      DRAKE_DEMAND(deformable_body_index_ == contact_pair.deformable_id);
+    }
+
     CalcParticipatingVertices(deformable_geometry.mesh());
     for (const auto& contact_pair : contact_pairs_) {
       num_contact_points_ += contact_pair.num_contact_points();
