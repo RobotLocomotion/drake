@@ -72,8 +72,7 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
   EXPECT_EQ(2, volume_mesh_W->num_elements());
   EXPECT_EQ(5, volume_mesh_W->num_vertices());
   for (int v = 0; v < 5; ++v)
-    EXPECT_EQ(X_WM * vertex_data[v],
-              volume_mesh_W->vertex(VolumeVertexIndex(v)));
+    EXPECT_EQ(X_WM * vertex_data[v], volume_mesh_W->vertex(v));
   for (int e = 0; e < 2; ++e)
     for (int v = 0; v < 4; ++v)
       EXPECT_EQ(element_data[e][v],
@@ -452,12 +451,11 @@ class ScalarMixingTest : public ::testing::Test {
     // only set the derivatives for vertex 3. That means, operations on
     // test 0 *must* have derivatives, but tet 1 may not have them.
     std::vector<Vector3<AutoDiffXd>> vertices;
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(0)));
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(1)));
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(2)));
-    vertices.emplace_back(math::InitializeAutoDiff(
-        mesh_d_->vertex(VolumeVertexIndex(3))));
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(4)));
+    vertices.emplace_back(mesh_d_->vertex(0));
+    vertices.emplace_back(mesh_d_->vertex(1));
+    vertices.emplace_back(mesh_d_->vertex(2));
+    vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(3)));
+    vertices.emplace_back(mesh_d_->vertex(4));
     std::vector<VolumeElement> elements(mesh_d_->tetrahedra());
 
     mesh_ad_ = std::make_unique<VolumeMesh<AutoDiffXd>>(std::move(elements),
@@ -474,7 +472,7 @@ class ScalarMixingTest : public ::testing::Test {
 TEST_F(ScalarMixingTest, CalcBarycentric) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
   Vector3<double> p_WQ_d = Vector3<double>::Zero();
-  for (VolumeVertexIndex v(0); v < 4; ++v) {
+  for (int v = 0; v < 4; ++v) {
     p_WQ_d += mesh_d_->vertex(v);
   }
   p_WQ_d /= 4;

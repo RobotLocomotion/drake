@@ -149,8 +149,8 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   // A. The mesh is conforming.
   // A1. The mesh has unique vertices.
   const int num_vertices = mesh.num_vertices();
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
-    for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
+  for (int i = 0; i < num_vertices; ++i) {
+    for (int j = i + 1; j < num_vertices; ++j) {
       const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       ASSERT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
     }
@@ -195,7 +195,7 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   // C. The mesh conforms to the cylinder's medial axis.
   // C1. No tetrahedron has all four vertices on the cylinder's boundary, i.e.,
   //     each tetrahedron has at least one interior vertex.
-  std::vector<VolumeVertexIndex> boundary_vertices =
+  std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
   for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;

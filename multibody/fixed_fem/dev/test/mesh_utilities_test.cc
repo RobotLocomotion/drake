@@ -19,7 +19,6 @@ using geometry::Box;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertexIndex;
 using geometry::internal::ComputeEulerCharacteristic;
 using math::RigidTransform;
 using std::abs;
@@ -41,8 +40,8 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   // A. The mesh is conforming.
   // A1. The mesh has unique vertices.
   const int num_vertices = mesh.num_vertices();
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
-    for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
+  for (int i = 0; i < num_vertices; ++i) {
+    for (int j = i + 1; j < num_vertices; ++j) {
       const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       EXPECT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
       if (!vertex_is_unique) {
@@ -88,7 +87,7 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   // TODO(xuchenhan-tri): The epsilon here should be tuned to the condition
   // number of the rigid transform.
   const double epsilon = 1e-14;
-  for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
+  for (int i = 0; i < num_vertices; ++i) {
     const bool vertex_is_inside_or_on_boundary =
         ((X_WB.inverse() * mesh.vertex(i)).array().abs() <=
          (1 + epsilon) * half_size.array())
@@ -159,7 +158,7 @@ GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
   const VolumeMesh<double>& mesh = box_geometry.mesh();
   const VolumeMeshFieldLinear<double, double>& mesh_field =
       box_geometry.signed_distance();
-  for (VolumeVertexIndex i(0); i < mesh.num_vertices(); ++i) {
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
     const double signed_distance = mesh_field.EvaluateAtVertex(i);
     const Vector3d& r_WV = mesh.vertex(i);
     // clang-format off
@@ -177,9 +176,8 @@ GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
 GTEST_TEST(MeshUtilitiesTest, StarRefineBoundaryTetrahedra) {
   // Refine one tetrahedron into four tetrahedra.
   {
-    using VIx = VolumeVertexIndex;
     const VolumeMesh<double> one_element_mesh(
-        std::vector<VolumeElement>{{VIx(0), VIx(1), VIx(2), VIx(3)}},
+        std::vector<VolumeElement>{{0, 1, 2, 3}},
         std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
                               Vector3d::UnitY(), Vector3d::UnitZ()});
     ASSERT_EQ(one_element_mesh.num_elements(), 1);

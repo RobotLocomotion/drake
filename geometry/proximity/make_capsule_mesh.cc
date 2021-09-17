@@ -49,20 +49,18 @@ VolumeMesh<T> MakeCapsuleVolumeMesh(const Capsule& capsule,
   mesh_vertices.reserve(2 * num_circles_per_cap * num_vertices_per_circle + 4);
 
   // Add the cap pole vertices and the medial vertices.
-  VolumeVertexIndex medial_top(mesh_vertices.size());
+  int medial_top = static_cast<int>(mesh_vertices.size());
   mesh_vertices.emplace_back(0, 0, medial_top_z);
-  VolumeVertexIndex medial_bottom(mesh_vertices.size());
+  int medial_bottom = static_cast<int>(mesh_vertices.size());
   mesh_vertices.emplace_back(0, 0, medial_bottom_z);
-  VolumeVertexIndex top(mesh_vertices.size());
+  int top = static_cast<int>(mesh_vertices.size());
   mesh_vertices.emplace_back(0, 0, top_z);
-  VolumeVertexIndex bottom(mesh_vertices.size());
+  int bottom = static_cast<int>(mesh_vertices.size());
   mesh_vertices.emplace_back(0, 0, bottom_z);
 
   // Storage for the vertex indices of each cap.
-  std::vector<VolumeVertexIndex> top_cap(num_circles_per_cap *
-                                         num_vertices_per_circle);
-  std::vector<VolumeVertexIndex> bottom_cap(num_circles_per_cap *
-                                            num_vertices_per_circle);
+  std::vector<int> top_cap(num_circles_per_cap * num_vertices_per_circle);
+  std::vector<int> bottom_cap(num_circles_per_cap * num_vertices_per_circle);
 
   // The vertices of the caps are spaced in an equal subdivision of the sphere
   // with spherical coordinates. Vertex (i, j) will have spherical coordinates:
@@ -93,10 +91,10 @@ VolumeMesh<T> MakeCapsuleVolumeMesh(const Capsule& capsule,
       const double y = capsule.radius() * s * sin(phi);
 
       top_cap[num_vertices_per_circle * i + j] =
-          VolumeVertexIndex(mesh_vertices.size());
+          static_cast<int>(mesh_vertices.size());
       mesh_vertices.emplace_back(x, y, top_circle_z);
       bottom_cap[num_vertices_per_circle * i + j] =
-          VolumeVertexIndex(mesh_vertices.size());
+          static_cast<int>(mesh_vertices.size());
       mesh_vertices.emplace_back(x, y, bottom_circle_z);
     }
   }

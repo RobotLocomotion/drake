@@ -10,12 +10,12 @@ namespace internal {
 namespace {
 
 GTEST_TEST(SplitTriangularPrismToTetrahedraTest, SimpleTest) {
-  const VolumeVertexIndex v0(0);
-  const VolumeVertexIndex v1(1);
-  const VolumeVertexIndex v2(2);
-  const VolumeVertexIndex v3(3);
-  const VolumeVertexIndex v4(4);
-  const VolumeVertexIndex v5(5);
+  const int v0(0);
+  const int v1(1);
+  const int v2(2);
+  const int v3(3);
+  const int v4(4);
+  const int v5(5);
 
   std::vector<VolumeElement> tetrahedra =
       SplitTriangularPrismToTetrahedra(v0, v1, v2, v3, v4, v5);
@@ -45,11 +45,11 @@ GTEST_TEST(SplitTriangularPrismToTetrahedraTest, SimpleTest) {
 }
 
 GTEST_TEST(SplitPyramidToTetrahedraTest, SimpleTest) {
-  const VolumeVertexIndex v0(0);
-  const VolumeVertexIndex v1(1);
-  const VolumeVertexIndex v2(2);
-  const VolumeVertexIndex v3(3);
-  const VolumeVertexIndex v4(4);
+  const int v0(0);
+  const int v1(1);
+  const int v2(2);
+  const int v3(3);
+  const int v4(4);
 
   std::vector<VolumeElement> tetrahedra =
       SplitPyramidToTetrahedra(v0, v1, v2, v3, v4);

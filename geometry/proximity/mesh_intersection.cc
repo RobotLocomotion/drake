@@ -213,7 +213,7 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   // as we do transformed computations below.
   Vector3<double> p_MVs[4];
   for (int i = 0; i < 4; ++i) {
-    VolumeVertexIndex v = volume_M.element(element).vertex(i);
+    int v = volume_M.element(element).vertex(i);
     p_MVs[i] = volume_M.vertex(v);
   }
   // Sets up the four half spaces associated with the four triangular faces of

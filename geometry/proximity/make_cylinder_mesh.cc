@@ -40,10 +40,8 @@ namespace {
 template <typename T>
 std::vector<VolumeElement> CalcLongCylinderVolumeMeshWithMa(
     const Cylinder& cylinder, const int num_vertices_per_circle,
-    const VolumeVertexIndex bottom_center,
-    const std::vector<VolumeVertexIndex>& bottom,
-    const VolumeVertexIndex top_center,
-    const std::vector<VolumeVertexIndex>& top,
+    const int bottom_center, const std::vector<int>& bottom,
+    const int top_center, const std::vector<int>& top,
     std::vector<Vector3<T>>* mesh_vertices) {
   const double top_z = cylinder.length() / 2.;
   const double tolerance =
@@ -54,13 +52,13 @@ std::vector<VolumeElement> CalcLongCylinderVolumeMeshWithMa(
 
   // These two mesh vertices will be at the two end points of the central
   // medial line segment.
-  VolumeVertexIndex medial[2];
+  int medial[2];
   const double offset_distance = cylinder.radius();
   const double offset_top_z = top_z - offset_distance;
   const double offset_bottom_z = -offset_top_z;
-  medial[0] = VolumeVertexIndex(mesh_vertices->size());
+  medial[0] = static_cast<int>(mesh_vertices->size());
   mesh_vertices->emplace_back(0, 0, offset_bottom_z);
-  medial[1] = VolumeVertexIndex(mesh_vertices->size());
+  medial[1] = static_cast<int>(mesh_vertices->size());
   mesh_vertices->emplace_back(0, 0, offset_top_z);
 
   std::vector<VolumeElement> mesh_elements;
@@ -150,10 +148,8 @@ std::vector<VolumeElement> CalcLongCylinderVolumeMeshWithMa(
 template <typename T>
 std::vector<VolumeElement> CalcMediumCylinderVolumeMeshWithMa(
     const Cylinder& cylinder, const int num_vertices_per_circle,
-    const VolumeVertexIndex bottom_center,
-    const std::vector<VolumeVertexIndex>& bottom,
-    const VolumeVertexIndex top_center,
-    const std::vector<VolumeVertexIndex>& top,
+    const int bottom_center, const std::vector<int>& bottom,
+    const int top_center, const std::vector<int>& top,
     std::vector<Vector3<T>>* mesh_vertices) {
   const double top_z = cylinder.length() / 2.;
   const double tolerance =
@@ -163,7 +159,7 @@ std::vector<VolumeElement> CalcMediumCylinderVolumeMeshWithMa(
   DRAKE_DEMAND(num_vertices_per_circle == static_cast<int>(top.size()));
 
   // The central medial vertex is at the center of the medium cylinder.
-  VolumeVertexIndex medial = VolumeVertexIndex(mesh_vertices->size());
+  int medial = static_cast<int>(mesh_vertices->size());
   mesh_vertices->emplace_back(0, 0, 0);
 
   std::vector<VolumeElement> mesh_elements;
@@ -248,10 +244,8 @@ std::vector<VolumeElement> CalcMediumCylinderVolumeMeshWithMa(
 template <typename T>
 std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
     const Cylinder& cylinder, const int num_vertices_per_circle,
-    const VolumeVertexIndex bottom_center,
-    const std::vector<VolumeVertexIndex>& bottom,
-    const VolumeVertexIndex top_center,
-    const std::vector<VolumeVertexIndex>& top,
+    const int bottom_center, const std::vector<int>& bottom,
+    const int top_center, const std::vector<int>& top,
     std::vector<Vector3<T>>* mesh_vertices) {
   const double top_z = cylinder.length() / 2.;
   const double tolerance =
@@ -267,11 +261,11 @@ std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
   // will decrease the number of vertices and tetrahedra slightly, but the
   // mesh will not be symmetric around the rotation axis, and the code will
   // become more complicated.
-  VolumeVertexIndex center = VolumeVertexIndex(mesh_vertices->size());
+  int center = static_cast<int>(mesh_vertices->size());
   mesh_vertices->emplace_back(0, 0, 0);
 
   // Vertices along the medial circle.
-  std::vector<VolumeVertexIndex> medial(num_vertices_per_circle);
+  std::vector<int> medial(num_vertices_per_circle);
   const double medial_radius = cylinder.radius() - cylinder.length() / 2.;
   const double scale_cylinder_radius_to_medial_circle =
       medial_radius / cylinder.radius();
@@ -282,7 +276,7 @@ std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
     const double y =
         ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).y()) *
         scale_cylinder_radius_to_medial_circle;
-    medial[i] = VolumeVertexIndex(mesh_vertices->size());
+    medial[i] = static_cast<int>(mesh_vertices->size());
     mesh_vertices->emplace_back(x, y, 0);
   }
 
@@ -391,21 +385,21 @@ VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
   // will decrease the number of vertices and tetrahedra slightly, but the
   // mesh will not be symmetric around the rotation axis, and the code will
   // become more complicated.
-  VolumeVertexIndex bottom_center(mesh_vertices.size());
+  int bottom_center = static_cast<int>(mesh_vertices.size());
   mesh_vertices.emplace_back(0, 0, bottom_z);
-  VolumeVertexIndex top_center(mesh_vertices.size());
+  int top_center = static_cast<int>(mesh_vertices.size());
   mesh_vertices.emplace_back(0, 0, top_z);
 
   // Vertices on the two circular rims of the cylinder.
-  std::vector<VolumeVertexIndex> bottom(num_vertices_per_circle);
-  std::vector<VolumeVertexIndex> top(num_vertices_per_circle);
+  std::vector<int> bottom(num_vertices_per_circle);
+  std::vector<int> top(num_vertices_per_circle);
   const double angle_step = 2. * M_PI / num_vertices_per_circle;
   for (int i = 0; i < num_vertices_per_circle; ++i) {
     const double x = cylinder.radius() * cos(angle_step * i);
     const double y = cylinder.radius() * sin(angle_step * i);
-    bottom[i] = VolumeVertexIndex(mesh_vertices.size());
+    bottom[i] = static_cast<int>(mesh_vertices.size());
     mesh_vertices.emplace_back(x, y, bottom_z);
-    top[i] = VolumeVertexIndex(mesh_vertices.size());
+    top[i] = static_cast<int>(mesh_vertices.size());
     mesh_vertices.emplace_back(x, y, top_z);
   }
 

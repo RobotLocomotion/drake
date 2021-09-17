@@ -29,7 +29,7 @@ void CheckMinMaxBoundaryValue(
   // zero and elastic_modulus respectively.
   double max_pressure = std::numeric_limits<double>::lowest();
   double min_pressure = std::numeric_limits<double>::max();
-  for (VolumeVertexIndex v(0); v < pressure_field.mesh().num_vertices(); ++v) {
+  for (int v = 0; v < pressure_field.mesh().num_vertices(); ++v) {
     const double pressure = pressure_field.EvaluateAtVertex(v);
     ASSERT_LE(pressure, elastic_modulus);
     ASSERT_GE(pressure, 0.0);
@@ -48,10 +48,10 @@ void CheckMinMaxBoundaryValue(
   // knowledge of the mesh structure. This goes for medial axis vertices also.
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<VolumeVertexIndex> boundary_vertex_indices =
+  std::vector<int> boundary_vertex_indices =
       CollectUniqueVertices(
           IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
-  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
+  for (int v : boundary_vertex_indices) {
     ASSERT_EQ(pressure_field.EvaluateAtVertex(v), 0.0);
   }
 }

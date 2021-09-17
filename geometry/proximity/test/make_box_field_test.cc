@@ -28,7 +28,7 @@ GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureField) {
   // zero and kElasticModulus respectively.
   double max_pressure = std::numeric_limits<double>::lowest();
   double min_pressure = std::numeric_limits<double>::max();
-  for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_LE(pressure, kElasticModulus);
     EXPECT_GE(pressure, 0.0);
@@ -43,9 +43,9 @@ GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureField) {
   EXPECT_EQ(max_pressure, kElasticModulus);
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<VolumeVertexIndex> boundary_vertex_indices =
+  std::vector<int> boundary_vertex_indices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
-  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
+  for (int v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
   }
@@ -66,7 +66,7 @@ GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureFieldInMeshWithMedialAxis) {
   // zero and kElasticModulus respectively.
   double max_pressure = std::numeric_limits<double>::lowest();
   double min_pressure = std::numeric_limits<double>::max();
-  for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_LE(pressure, kElasticModulus);
     EXPECT_GE(pressure, 0.0);
@@ -81,9 +81,9 @@ GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureFieldInMeshWithMedialAxis) {
   EXPECT_EQ(max_pressure, kElasticModulus);
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<VolumeVertexIndex> boundary_vertex_indices =
+  std::vector<int> boundary_vertex_indices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
-  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
+  for (int v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
   }

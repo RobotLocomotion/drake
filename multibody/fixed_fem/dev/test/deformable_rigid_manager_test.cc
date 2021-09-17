@@ -290,8 +290,7 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
   EXPECT_EQ(current_positions.size(), 1);
   EXPECT_EQ(current_positions[0].size(),
             deformed_meshes[0].mesh().num_vertices() * 3);
-  for (geometry::VolumeVertexIndex i(0);
-       i < deformed_meshes[0].mesh().num_vertices(); ++i) {
+  for (int i = 0; i < deformed_meshes[0].mesh().num_vertices(); ++i) {
     const Vector3<double> p_WV = current_positions[0].segment<3>(3 * i);
     EXPECT_TRUE(
         CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
