@@ -2124,8 +2124,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
         const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
             s.id_M(), s.id_N(), inspector);
 
-        for (geometry::SurfaceFaceIndex face(0); face < mesh_W.num_faces();
-             ++face) {
+        for (int face = 0; face < mesh_W.num_faces(); ++face) {
           const T& Ae = mesh_W.area(face);  // Face element area.
 
           // We found out that the hydroelastic query might report

@@ -66,8 +66,6 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   // All the index types up front, so they'll be available to every other type.
   {
-    BindTypeSafeIndex<SurfaceFaceIndex>(
-        m, "SurfaceFaceIndex", doc.SurfaceFaceIndex.doc);
     BindTypeSafeIndex<VolumeElementIndex>(
         m, "VolumeElementIndex", doc.VolumeElementIndex.doc);
   }

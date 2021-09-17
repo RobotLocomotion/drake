@@ -321,7 +321,7 @@ class MeshFieldLinear {
   }
 
   T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const {
-    DRAKE_DEMAND(e < gradients_.size());
+    DRAKE_DEMAND(e < static_cast<int>(gradients_.size()));
     const typename MeshType::VertexIndex v0 = this->mesh().element(e).vertex(0);
     const Vector3<T>& p_MV0 = this->mesh().vertex(v0);
     // f(V₀) = ∇fᵉ⋅p_MV₀ + fᵉ(Mo)
