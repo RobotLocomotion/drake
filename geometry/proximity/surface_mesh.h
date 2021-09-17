@@ -10,20 +10,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/type_safe_index.h"
 #include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
-/** Index used to identify a vertex in a surface mesh. Use `int` instead; this
- will disappear imminently. */
-using SurfaceVertexIndex = int;
-
-/** Index used to identify a triangular face in a surface mesh. Use `int`
- instead; this will disappear imminently. */
-using SurfaceFaceIndex = int;
-
 /** %SurfaceFace represents a triangular face in a SurfaceMesh.
  */
 class SurfaceFace {
@@ -98,16 +89,6 @@ class SurfaceMesh {
    Number of vertices per element. A triangle has 3 vertices.
    */
   static constexpr int kVertexPerElement = 3;
-
-  /**
-   Index for identifying a vertex.
-   */
-  using VertexIndex = int;
-
-  /**
-   Index for identifying a triangular element.
-   */
-  using ElementIndex = int;
 
   // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
   //  templated class doesn't depend on the class template parameter, but

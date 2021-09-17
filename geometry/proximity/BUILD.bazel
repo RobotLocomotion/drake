@@ -590,7 +590,6 @@ drake_cc_library(
     hdrs = ["surface_mesh.h"],
     deps = [
         ":mesh_traits",
-        "//common:type_safe_index",
         "//math:geometric_transform",
     ],
 )
@@ -612,7 +611,6 @@ drake_cc_library(
     deps = [
         ":mesh_traits",
         "//common:default_scalars",
-        "//common:type_safe_index",
         "//geometry:geometry_ids",
     ],
 )
