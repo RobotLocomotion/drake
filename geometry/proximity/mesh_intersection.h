@@ -213,7 +213,7 @@ class SurfaceVolumeIntersector {
    */
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
       VolumeElementIndex element, const VolumeMesh<double>& volume_M,
-      SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
+      int face, const SurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN);
 
   /* Determines whether a triangle of a rigid surface N and a tetrahedron of a
@@ -298,7 +298,7 @@ class SurfaceVolumeIntersector {
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const SurfaceMesh<double>& surface_N,
       const math::RigidTransform<double>& X_MN,
-      const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
+      const VolumeElementIndex& tet_index, int tri_index);
 
   // To avoid heap allocation by std::vector in low-level functions, we use
   // these member variables instead of local variables in the functions.

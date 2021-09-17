@@ -29,7 +29,6 @@ using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
 using geometry::Sphere;
 using geometry::SurfaceFace;
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using math::RigidTransform;
 using multibody::internal::FullBodyName;
@@ -184,14 +183,14 @@ vector<HydroelasticQuadraturePointData<T>> MakeQuadratureData(
   quadrature_point_data[0].p_WQ = Vector3<double>(1, 3, 5) + offset;
   quadrature_point_data[0].vt_BqAq_W = Vector3<double>(7, 11, 13) + offset;
   quadrature_point_data[0].traction_Aq_W = Vector3<double>(17, 19, 23) + offset;
-  quadrature_point_data[0].face_index = SurfaceFaceIndex(0);
+  quadrature_point_data[0].face_index = 0;
   for (int i = 1; i < kNumPoints; ++i) {
     quadrature_point_data[i].p_WQ = quadrature_point_data[i - 1].p_WQ + offset;
     quadrature_point_data[i].vt_BqAq_W =
         quadrature_point_data[i - 1].vt_BqAq_W + offset;
     quadrature_point_data[i].traction_Aq_W =
         quadrature_point_data[i - 1].traction_Aq_W + offset;
-    quadrature_point_data[i].face_index = SurfaceFaceIndex(i / kNumPointPerTri);
+    quadrature_point_data[i].face_index = i / kNumPointPerTri;
   }
   return quadrature_point_data;
 }
@@ -680,7 +679,7 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     EXPECT_EQ(pair_message.num_triangles, mesh.num_faces());
     EXPECT_EQ(pair_message.triangles.size(), mesh.num_faces());
     const auto& field = surface.e_MN();
-    for (SurfaceFaceIndex f(0); f < mesh.num_faces(); ++f) {
+    for (int f = 0; f < mesh.num_faces(); ++f) {
       const auto& tri_message = pair_message.triangles[f];
       const auto& tri_data = mesh.element(f);
       // clang-format off

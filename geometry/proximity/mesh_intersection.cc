@@ -194,7 +194,7 @@ template <typename T>
 const std::vector<Vector3<T>>&
 SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
     VolumeElementIndex element, const VolumeMesh<double>& volume_M,
-    SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
+    int face, const SurfaceMesh<double>& surface_N,
     const math::RigidTransform<T>& X_MN) {
   // Although polygon_M starts out pointing to polygon_[0] that is not an
   // invariant in this function.
@@ -283,7 +283,7 @@ bool SurfaceVolumeIntersector<T>::IsFaceNormalAlongPressureGradient(
     const VolumeMeshFieldLinear<double, double>& volume_field_M,
     const SurfaceMesh<double>& surface_N,
     const math::RigidTransform<double>& X_MN,
-    const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
+    const VolumeElementIndex& tet_index, int tri_index) {
   const Vector3<double> grad_p_M = volume_field_M.EvaluateGradient(tet_index);
   return IsFaceNormalInNormalDirection(grad_p_M.normalized(), surface_N,
                                        tri_index, X_MN.rotation());
@@ -320,7 +320,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
                    &surface_vertices_M, &surface_e, &mesh_M, &X_MN_d, &X_MN,
                    &contact_polygon, grad_eM_Ms, representation,
                    this](VolumeElementIndex tet_index,
-                         SurfaceFaceIndex tri_index) -> BvttCallbackResult {
+                         int tri_index) -> BvttCallbackResult {
     if (!this->IsFaceNormalAlongPressureGradient(
             volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
       return BvttCallbackResult::Continue;

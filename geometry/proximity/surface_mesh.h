@@ -20,10 +20,9 @@ namespace geometry {
  will disappear imminently. */
 using SurfaceVertexIndex = int;
 
-/**
- Index for identifying a triangular face in a surface mesh.
- */
-using SurfaceFaceIndex = TypeSafeIndex<class SurfaceFaceTag>;
+/** Index used to identify a triangular face in a surface mesh. Use `int`
+ instead; this will disappear imminently. */
+using SurfaceFaceIndex = int;
 
 /** %SurfaceFace represents a triangular face in a SurfaceMesh.
  */
@@ -108,7 +107,7 @@ class SurfaceMesh {
   /**
    Index for identifying a triangular element.
    */
-  using ElementIndex = SurfaceFaceIndex;
+  using ElementIndex = int;
 
   // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
   //  templated class doesn't depend on the class template parameter, but
@@ -138,7 +137,7 @@ class SurfaceMesh {
     @param e   The index of the triangular element.
     @pre e ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const SurfaceFace& element(ElementIndex e) const {
+  const SurfaceFace& element(int e) const {
     DRAKE_DEMAND(0 <= e && e < num_faces());
     return faces_[e];
   }
@@ -218,8 +217,12 @@ class SurfaceMesh {
   int num_faces() const { return faces_.size(); }
 
   /** Returns area of a triangular element.
+   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const T& area(SurfaceFaceIndex f) const { return area_[f]; }
+  const T& area(int f) const {
+    DRAKE_DEMAND(0 <= f && f < num_faces());
+    return area_[f];
+  }
 
   /** Returns the total area of all the faces of this surface mesh.
    */
@@ -230,7 +233,7 @@ class SurfaceMesh {
    normal vector. A zero-area triangle will get a zero vector.
    @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const Vector3<T>& face_normal(SurfaceFaceIndex f) const {
+  const Vector3<T>& face_normal(int f) const {
     DRAKE_DEMAND(0 <= f && f < num_faces());
     return face_normals_[f];
   }
@@ -254,10 +257,11 @@ class SurfaceMesh {
    The return type depends on both the mesh's vertex position scalar type `T`
    and the Barycentric coordinate type `B` of the query point.  See
    @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+   @pre `element_index` ∈ {0, 1, 2,..., num_faces()-1}.
    */
   template <typename B>
   Vector3<promoted_numerical_t<T, B>> CalcCartesianFromBarycentric(
-      ElementIndex element_index, const Barycentric<B>& b_Q) const {
+      int element_index, const Barycentric<B>& b_Q) const {
     const Vector3<T> va = vertex(element(element_index).vertex(0));
     const Vector3<T> vb = vertex(element(element_index).vertex(1));
     const Vector3<T> vc = vertex(element(element_index).vertex(2));
@@ -289,10 +293,11 @@ class SurfaceMesh {
    @note  If Q' is outside the triangle, the barycentric coordinates
           (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
           negative.
+   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
   template <typename C>
-  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, SurfaceFaceIndex f) const {
+  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(const Vector3<C>& p_MQ,
+                                                      int f) const {
     const Vector3<T>& v0 = vertex(element(f).vertex(0));
     const Vector3<T>& v1 = vertex(element(f).vertex(1));
     const Vector3<T>& v2 = vertex(element(f).vertex(2));
@@ -384,7 +389,7 @@ class SurfaceMesh {
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
     // Check face indices.
-    for (SurfaceFaceIndex i(0); i < this->num_faces(); ++i) {
+    for (int i = 0; i < this->num_faces(); ++i) {
       const SurfaceFace& face1 = this->element(i);
       const SurfaceFace& face2 = mesh.element(i);
       for (int j = 0; j < 3; ++j)
@@ -407,7 +412,7 @@ class SurfaceMesh {
    */
   template <typename FieldValue>
   Vector3<FieldValue> CalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 3>& field_value, SurfaceFaceIndex f) const {
+      const std::array<FieldValue, 3>& field_value, int f) const {
     Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(f, 0);
     gradu_M += field_value[1] * CalcGradBarycentric(f, 1);
     gradu_M += field_value[2] * CalcGradBarycentric(f, 2);
@@ -426,7 +431,7 @@ class SurfaceMesh {
   // function bᵢ of the i-th vertex of the triangle `f`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 3.
-  Vector3<T> CalcGradBarycentric(SurfaceFaceIndex f, int i) const;
+  Vector3<T> CalcGradBarycentric(int f, int i) const;
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
@@ -454,7 +459,7 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   total_area_ = 0;
   p_MSc_.setZero();
 
-  for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
+  for (int f = 0; f < num_faces(); ++f) {
     const SurfaceFace& face = faces_[f];
     const Vector3<T>& r_MA = vertices_[face.vertex(0)];
     const Vector3<T>& r_MB = vertices_[face.vertex(1)];
@@ -486,9 +491,9 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
 }
 
 template <typename T>
-Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
-                                               int i) const {
+Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
+  DRAKE_DEMAND(0 <= f && f < num_faces());
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
   // indexed by `f`. A and B are the other two vertices of the triangle.
   // Positions of the vertices are expressed in frame M of the mesh.
