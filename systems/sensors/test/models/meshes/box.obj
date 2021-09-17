@@ -1,4 +1,5 @@
 mtllib ./box.obj.mtl
+usemtl material_0
 
 # Vertices
 v -1.0 -1.0 -1.0
