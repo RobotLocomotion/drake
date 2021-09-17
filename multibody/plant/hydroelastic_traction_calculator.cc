@@ -14,7 +14,6 @@ namespace drake {
 
 using geometry::ContactSurface;
 using geometry::SurfaceFace;
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::SurfaceMeshFieldLinear;
 using math::RigidTransform;
@@ -52,7 +51,7 @@ void HydroelasticTractionCalculator<T>::
   traction_at_quadrature_points->reserve(data.surface.mesh_W().num_faces());
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (SurfaceFaceIndex i(0); i < data.surface.mesh_W().num_faces(); ++i) {
+  for (int i = 0; i < data.surface.mesh_W().num_faces(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
@@ -130,7 +129,7 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
 template <typename T>
 HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
-    const Data& data, SurfaceFaceIndex face_index,
+    const Data& data, int face_index,
     // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
     const typename SurfaceMesh<T>::template Barycentric<T>& Q_barycentric,
     double dissipation, double mu_coulomb) const {
@@ -170,9 +169,8 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 template <typename T>
 HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
-    const Data& data, SurfaceFaceIndex face_index, const T& e,
-    const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
-    const Vector3<T>& p_WQ) const {
+    const Data& data, int face_index, const T& e, const Vector3<T>& nhat_W,
+    double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const {
   HydroelasticQuadraturePointData<T> traction_data;
 
   // Set entries that do not require computation first.

@@ -22,7 +22,6 @@ using geometry::ContactSurface;
 using geometry::GeometryId;
 using geometry::MeshFieldLinear;
 using geometry::SceneGraph;
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
 using math::RigidTransform;
@@ -72,7 +71,7 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   auto mesh = std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 
-  for (SurfaceFaceIndex f(0); f < mesh->num_faces(); ++f) {
+  for (int f = 0; f < mesh->num_faces(); ++f) {
     // Can't use an ASSERT_TRUE here because it interferes with the return
     // value.
     if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),
@@ -170,7 +169,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // world frame.
     HydroelasticQuadraturePointData<double> output =
         traction_calculator().CalcTractionAtPoint(
-            calculator_data(), SurfaceFaceIndex(0),
+            calculator_data(), 0 /* tri_index */,
             SurfaceMesh<double>::Barycentric<double>(1.0, 0.0, 0.0),
             dissipation, mu_coulomb);
 
@@ -566,9 +565,8 @@ class HydroelasticTractionCalculatorTester {
   static HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
       const HydroelasticTractionCalculator<T>& calculator,
       const typename HydroelasticTractionCalculator<T>::Data& data,
-      geometry::SurfaceFaceIndex face_index, const T& e,
-      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
-      const Vector3<T>& p_WQ) {
+      int face_index, const T& e, const Vector3<T>& nhat_W, double dissipation,
+      double mu_coulomb, const Vector3<T>& p_WQ) {
     return calculator.CalcTractionAtQHelper(data, face_index, e, nhat_W,
                                             dissipation, mu_coulomb, p_WQ);
   }
@@ -684,7 +682,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
                                                std::move(field));
 
   // Parameters for CalcTractionAtQHelper().
-  const geometry::SurfaceFaceIndex f0(0);
+  const int f0 = 0;
   // N.B. From documentation for CalcTractionAtQHelper(), nhat_W points from B
   // into A. Since the right-hand rule on the triangle above dictates the
   // direction of the normal to be in the +z axis, body A is situated above body
@@ -855,10 +853,10 @@ SpatialForce<double> MakeSpatialForce() {
 std::vector<HydroelasticQuadraturePointData<double>> GetQuadraturePointData() {
   HydroelasticQuadraturePointData<double> data;
   data.p_WQ = Vector3<double>(3.0, 5.0, 7.0);
-  data.face_index = SurfaceFaceIndex(1);
+  data.face_index = 1;
   data.vt_BqAq_W = Vector3<double>(11.0, 13.0, 17.0);
   data.traction_Aq_W = Vector3<double>(19.0, 23.0, 29.0);
-  return { data };
+  return {data};
 }
 
 HydroelasticContactInfo<double> CreateContactInfo(

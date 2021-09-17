@@ -243,7 +243,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     // Loop through each contact triangle on the contact surface.
     const auto& field = contact_surface.e_MN();
-    for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
+    for (int j = 0; j < surface_msg.num_triangles; ++j) {
       lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
           surface_msg.triangles[j];
 

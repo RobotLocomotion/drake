@@ -116,7 +116,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   // The index of the most recently added vertex (whose position measures are
   // written at v_index, v_index + 1, and v_index + 2 in float_data).
   int newest_vertex_index = -1;
-  for (SurfaceFaceIndex f(0); f < surface_mesh.num_faces(); ++f) {
+  for (int f = 0; f < surface_mesh.num_faces(); ++f) {
     const auto& face = surface_mesh.element(f);
     for (int fv = 0; fv < 3; ++fv) {
       const int v_i = face.vertex(fv);
