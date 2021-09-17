@@ -10,13 +10,14 @@ InternalFrame::InternalFrame() {}
 
 InternalFrame::InternalFrame(SourceId source_id, FrameId frame_id,
                              const std::string& name, int frame_group,
-                             FrameIndex index, FrameId parent_id)
+                             int index, FrameId parent_id)
     : source_id_(source_id),
       id_(frame_id),
       name_(name),
       frame_group_(frame_group),
       index_(index),
       parent_id_(parent_id) {
+  DRAKE_DEMAND(index >= 0);
   DRAKE_DEMAND(frame_group >= 0 || frame_group == world_frame_group());
 }
 
