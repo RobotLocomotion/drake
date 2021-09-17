@@ -1,12 +1,14 @@
 #include "drake/geometry/meshcat.h"
 
 #include <algorithm>
+#include <cctype>
 #include <exception>
 #include <fstream>
 #include <functional>
 #include <future>
 #include <map>
 #include <optional>
+#include <regex>
 #include <set>
 #include <sstream>
 #include <string>
@@ -15,10 +17,12 @@
 #include <utility>
 
 #include <App.h>
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
 #include <msgpack.hpp>
 #include <uuid.h>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
@@ -196,39 +200,44 @@ class MeshcatShapeReifier : public ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MeshcatShapeReifier);
 
-  explicit MeshcatShapeReifier(std::string uuid) : uuid_(std::move(uuid)) {}
+  explicit MeshcatShapeReifier(uuids::uuid_random_generator* uuid_generator)
+      : uuid_generator_(uuid_generator) {
+    DRAKE_DEMAND(uuid_generator != nullptr);
+  }
 
   ~MeshcatShapeReifier() = default;
-
-  const std::string& uuid() const { return uuid_; }
 
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Sphere& sphere, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    internal::GeometryData& geometry = lumped.geometries[0];
+    lumped.object = internal::MeshData();
 
-    geometry.uuid = uuid_;
+    internal::GeometryData geometry;
+    geometry.uuid = uuids::to_string((*uuid_generator_)());
     geometry.type = "SphereGeometry";
     geometry.radius = sphere.radius();
     geometry.widthSegments = 20;
     geometry.heightSegments = 20;
+    lumped.geometries.emplace_back(std::move(geometry));
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    internal::GeometryData& geometry = lumped.geometries[0];
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
 
-    geometry.uuid = uuid_;
+    internal::GeometryData geometry;
+    geometry.uuid = uuids::to_string((*uuid_generator_)());
     geometry.type = "CylinderGeometry";
     geometry.radiusBottom = cylinder.radius();
     geometry.radiusTop = cylinder.radius();
     geometry.height = cylinder.length();
     geometry.radialSegments = 50;
+    lumped.geometries.emplace_back(std::move(geometry));
 
-    Eigen::Map<Eigen::Matrix4d>(lumped.object.matrix) =
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
         RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
             .GetAsMatrix4();
   }
@@ -242,14 +251,16 @@ class MeshcatShapeReifier : public ShapeReifier {
   void ImplementGeometry(const Box& box, void* data) override {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    internal::GeometryData& geometry = lumped.geometries[0];
+    lumped.object = internal::MeshData();
 
-    geometry.uuid = uuid_;
+    internal::GeometryData geometry;
+    geometry.uuid = uuids::to_string((*uuid_generator_)());
     geometry.type = "BoxGeometry";
     geometry.width = box.width();
     // Three.js uses height for the y axis; Drake uses depth.
     geometry.height = box.depth();
     geometry.depth = box.height();
+    lumped.geometries.emplace_back(std::move(geometry));
   }
 
   void ImplementGeometry(const Capsule&, void*) override {
@@ -260,15 +271,17 @@ class MeshcatShapeReifier : public ShapeReifier {
     // Implemented as a Sphere stretched by a diagonal transform.
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    internal::GeometryData& geometry = lumped.geometries[0];
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
 
-    geometry.uuid = uuid_;
+    internal::GeometryData geometry;
+    geometry.uuid = uuids::to_string((*uuid_generator_)());
     geometry.type = "SphereGeometry";
     geometry.radius = 1;
     geometry.widthSegments = 20;
     geometry.heightSegments = 20;
+    lumped.geometries.emplace_back(std::move(geometry));
 
-    Eigen::Map<Eigen::Matrix4d> matrix(lumped.object.matrix);
+    Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
     matrix(0, 0) = ellipsoid.a();
     matrix(1, 1) = ellipsoid.b();
     matrix(2, 2) = ellipsoid.c();
@@ -278,21 +291,14 @@ class MeshcatShapeReifier : public ShapeReifier {
   void ImplementMesh(const T& mesh, void* data) {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
-    internal::GeometryData& geometry = lumped.geometries[0];
 
     // TODO(russt): Use file contents to generate the uuid, and avoid resending
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
 
-    size_t pos = mesh.filename().find_last_of('.');
-    if (pos == std::string::npos) {
-      drake::log()->warn("Meshcat: Unsupported extension for mesh filename {}",
-                         mesh.filename());
-      return;
-    }
-    geometry.uuid = uuid_;
-    geometry.format = mesh.filename().substr(pos + 1);
-
+    const filesystem::path filename(mesh.filename());
+    std::string format = filename.extension();
+    format.erase(0, 1);  // remove the . from the extension
     std::ifstream input(mesh.filename(), std::ios::binary | std::ios::ate);
     if (!input.is_open()) {
       drake::log()->warn("Meshcat: Could not open mesh filename {}",
@@ -302,28 +308,100 @@ class MeshcatShapeReifier : public ShapeReifier {
 
     // We simply dump the binary contents of the file into the data field of the
     // message.  The javascript meshcat takes care of the rest.
-    int size = input.tellg();
-    if (size > kMaxBackPressure) {
-      throw std::runtime_error(fmt::format(
-          "The meshfile at {} is too large for the current websocket setup.  "
-          "Size {} is greater than the max backpressure {}.  You will either "
-          "need to reduce the size of your mesh, or modify the code to "
-          "increase the allowance.",
-          mesh.filename(), size, kMaxBackPressure));
-    }
+    const int obj_size = input.tellg();
     input.seekg(0, std::ios::beg);
-    geometry.data.reserve(size);
-    geometry.data.assign((std::istreambuf_iterator<char>(input)),
-                         std::istreambuf_iterator<char>());
+    std::string mesh_data;
+    mesh_data.reserve(obj_size);
+    mesh_data.assign(std::istreambuf_iterator<char>(input),
+                     std::istreambuf_iterator<char>());
 
-    // TODO(russt): Implement textures.  Need to add LumpedData.textures,
-    // LumpedData.images, etc.
-    geometry.type = "_meshfile_geometry";
+    // TODO(russt): MeshCat.jl/src/mesh_files.jl loads dae with textures, also.
 
-    Eigen::Map<Eigen::Matrix4d> matrix(lumped.object.matrix);
-    matrix(0, 0) = mesh.scale();
-    matrix(1, 1) = mesh.scale();
-    matrix(2, 2) = mesh.scale();
+    // TODO(russt): Make the regex parsing more robust.
+    std::smatch matches;
+    if (format == "obj" &&
+        std::regex_search(mesh_data, matches,
+                          std::regex("mtllib\\s+([^\\s]+)"))) {
+      // Note: We do a minimal parsing manually here.  tinyobj does too much
+      // work (actually loading all of the content) and also does not give
+      // access to the intermediate data that we need to pass to meshcat, like
+      // the resource names in the mtl file.  This is also the approach taken
+      // in MeshCat.jl/src/mesh_files.jl.
+
+      auto& meshfile_object =
+          lumped.object.emplace<internal::MeshFileObjectData>();
+      meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
+      meshfile_object.format = std::move(format);
+      meshfile_object.data = std::move(mesh_data);
+
+      std::string mtllib = matches.str(1);
+
+      // Use filename path as the base directory for textures.
+      const filesystem::path basedir = filename.parent_path();
+
+      // Read .mtl file into geometry.mtl_library.
+      std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
+      if (mtl_stream.is_open()) {
+        int mtl_size = mtl_stream.tellg();
+        mtl_stream.seekg(0, std::ios::beg);
+        meshfile_object.mtl_library.reserve(mtl_size);
+        meshfile_object.mtl_library.assign(
+            std::istreambuf_iterator<char>(mtl_stream),
+            std::istreambuf_iterator<char>());
+
+        // Scan .mtl file for map_ lines.  For each, load the file and add
+        // the contents to geometry.resources.
+        // TODO(russt): Make this parsing more robust.
+        std::regex map_regex("map_[^\\s]+\\s+([^\\s]+)");
+        for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
+                                       meshfile_object.mtl_library.end(),
+                                       map_regex);
+             iter != std::sregex_iterator(); ++iter) {
+          std::string map = iter->str(1);
+          std::ifstream map_stream(basedir / map,
+                                   std::ios::binary | std::ios::ate);
+          if (map_stream.is_open()) {
+            int map_size = map_stream.tellg();
+            map_stream.seekg(0, std::ios::beg);
+            std::vector<uint8_t> map_data;
+            map_data.reserve(map_size);
+            map_data.assign(std::istreambuf_iterator<char>(map_stream),
+                            std::istreambuf_iterator<char>());
+            meshfile_object.resources.try_emplace(
+                map, std::string("data:image/png;base64,") +
+                          common_robotics_utilities::base64_helpers::Encode(
+                              map_data));
+          } else {
+            drake::log()->warn(
+                "Meshcat: Failed to load texture. {} references {}, but "
+                "Meshcat could not open filename {}",
+                basedir / mtllib, map, basedir / map);
+          }
+        }
+      } else {
+        drake::log()->warn(
+            "Meshcat: Failed to load texture. {} references {}, but Meshcat "
+            "could not open filename {}",
+            mesh.filename(), mtllib, basedir / mtllib);
+      }
+      Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
+      matrix(0, 0) = mesh.scale();
+      matrix(1, 1) = mesh.scale();
+      matrix(2, 2) = mesh.scale();
+    } else {  // not obj or no mtllib.
+      internal::GeometryData geometry;
+      geometry.uuid = uuids::to_string((*uuid_generator_)());
+      geometry.type = "_meshfile_geometry";
+      geometry.format = std::move(format);
+      geometry.data = std::move(mesh_data);
+      lumped.geometries.emplace_back(std::move(geometry));
+
+      auto& meshcat_mesh = lumped.object.emplace<internal::MeshData>();
+      Eigen::Map<Eigen::Matrix4d> matrix(meshcat_mesh.matrix);
+      matrix(0, 0) = mesh.scale();
+      matrix(1, 1) = mesh.scale();
+      matrix(2, 2) = mesh.scale();
+    }
   }
 
   void ImplementGeometry(const Mesh& mesh, void* data) override {
@@ -335,7 +413,7 @@ class MeshcatShapeReifier : public ShapeReifier {
   }
 
  private:
-  std::string uuid_;
+  uuids::uuid_random_generator* const uuid_generator_{};
 };
 
 }  // namespace
@@ -391,39 +469,51 @@ class Meshcat::WebSocketPublisher {
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
-    internal::MaterialData& material = data.object.materials[0];
-    material.uuid = uuids::to_string(uuid_generator());
-    material.type = "MeshPhongMaterial";
-    material.color = (static_cast<int>(255 * rgba.r()) << 16) +
-                     (static_cast<int>(255 * rgba.g()) << 8) +
-                     static_cast<int>(255 * rgba.b());
-    // From meshcat-python: Three.js allows a material to have an opacity
-    // which is != 1, but to still be non - transparent, in which case the
-    // opacity only serves to desaturate the material's color. That's a
-    // pretty odd combination of things to want, so by default we just use
-    // the opacity value to decide whether to set transparent to True or
-    // False.
-    material.transparent = (rgba.a() != 1.0);
-    material.opacity = rgba.a();
-
-    internal::Object3dData& object3d = data.object.object;
-    object3d.uuid = uuids::to_string(uuid_generator());
-    object3d.type = "Mesh";
-    object3d.material = material.uuid;
-
-    MeshcatShapeReifier reifier(uuids::to_string(uuid_generator()));
+    MeshcatShapeReifier reifier(&uuid_generator);
     shape.Reify(&reifier, &data.object);
-    if (data.object.geometries[0].type.empty()) {
+
+    if (std::holds_alternative<std::monostate>(data.object.object)) {
       // Then this shape is not supported, and I should not send the message,
       // nor add the object to the tree.
       return;
     }
-    object3d.geometry = reifier.uuid();
+    if (std::holds_alternative<internal::MeshData>(data.object.object)) {
+      auto& meshfile_object = std::get<internal::MeshData>(data.object.object);
+      meshfile_object.geometry = data.object.geometries[0].uuid;
+
+      internal::MaterialData material;
+      material.uuid = uuids::to_string(uuid_generator());
+      material.type = "MeshPhongMaterial";
+      material.color = (static_cast<int>(255 * rgba.r()) << 16) +
+                      (static_cast<int>(255 * rgba.g()) << 8) +
+                      static_cast<int>(255 * rgba.b());
+      // From meshcat-python: Three.js allows a material to have an opacity
+      // which is != 1, but to still be non - transparent, in which case the
+      // opacity only serves to desaturate the material's color. That's a
+      // pretty odd combination of things to want, so by default we just use
+      // the opacity value to decide whether to set transparent to True or
+      // False.
+      material.transparent = (rgba.a() != 1.0);
+      material.opacity = rgba.a();
+
+      meshfile_object.uuid = uuids::to_string(uuid_generator());
+      meshfile_object.material = material.uuid;
+      data.object.materials.emplace_back(std::move(material));
+    }
 
     loop_->defer([this, data = std::move(data)]() {
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
       std::string message = message_stream.str();
+      if (message.size() > kMaxBackPressure) {
+        drake::log()->warn(
+            "The message describing the object at {} is too large for the "
+            "current websocket setup (size {} is greater than the max "
+            "backpressure {}).  You will either need to reduce the size of "
+            "your object/mesh/textures, or modify the code to increase the "
+            "allowance.",
+            data.path, message.size(), kMaxBackPressure);
+      }
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
