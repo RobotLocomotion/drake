@@ -308,6 +308,24 @@ LinearSolve(const LinearSolver& linear_solver,
  */
 
 //@{
+
+/**
+ * The type of the linear solver. For example
+ * LinearSolve<Eigen::LLT, Eigen::Matrix3d>::type is
+ * Eigen::LLT<Eigen::Matrix3d>.
+ */
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+struct LinearSolver {
+  typedef LinearSolverType<Eigen::Matrix<
+      std::conditional_t<
+          internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+          typename DerivedA::Scalar, double>,
+      DerivedA::RowsAtCompileTime, DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+      DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>
+      type;
+};
+
 /**
  * Get the linear solver for a matrix A containing double or
  * symbolic::Expressions. The returned linear solver will have matrix type
@@ -318,16 +336,10 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
 typename std::enable_if<
     internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<
-        typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-        DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-        DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>>::type
+    typename LinearSolver<LinearSolverType, DerivedA>::type>::type
 GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  const LinearSolverType<Eigen::Matrix<
-      typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-      DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-      DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>
-      linear_solver(A);
+  const typename LinearSolver<LinearSolverType, DerivedA>::type linear_solver(
+      A);
   return linear_solver;
 }
 
@@ -340,10 +352,7 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
 typename std::enable_if<
     !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>>>::type
+    typename LinearSolver<LinearSolverType, DerivedA>::type>::type
 GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
   using A_VAL_TYPE = Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
                                    DerivedA::ColsAtCompileTime, Eigen::ColMajor,
