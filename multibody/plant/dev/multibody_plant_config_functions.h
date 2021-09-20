@@ -2,9 +2,9 @@
 
 #include <string>
 
+#include "drake/multibody/plant/dev/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "sim/common/multibody_plant_config.h"
 
 namespace anzu {
 namespace sim {
