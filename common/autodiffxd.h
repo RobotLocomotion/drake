@@ -17,6 +17,7 @@
 #endif
 
 #include <cmath>
+#include <limits>
 #include <ostream>
 
 #include <Eigen/Dense>
@@ -374,7 +375,7 @@ class AutoDiffScalar<VectorXd>
   }
 
  protected:
-  Scalar m_value;
+  Scalar m_value{std::numeric_limits<Scalar>::quiet_NaN()};
   DerType m_derivatives;
 };
 

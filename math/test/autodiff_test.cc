@@ -113,6 +113,11 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
       << gradients;
 }
 
+GTEST_TEST(AdditionalAutodiffTest, ValueIsInitializedToNaN) {
+  AutoDiffXd autodiff;
+  EXPECT_TRUE(std::isnan(autodiff.value()));
+}
+
 GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   // Test the double case:
   Eigen::Matrix2d test = Eigen::Matrix2d::Identity();
