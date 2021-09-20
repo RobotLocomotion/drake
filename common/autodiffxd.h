@@ -17,6 +17,7 @@
 #endif
 
 #include <cmath>
+#include <limits>
 #include <ostream>
 
 #include <Eigen/Dense>
@@ -58,6 +59,19 @@ namespace Eigen {
 // value, and only allocate when needed, as determined by the compiler. For C++
 // considerations, see Scott Meyers' _Effective Modern C++_ Item 41. See #13985
 // for more discussion of Drake considerations.
+//
+// @note default initialization
+// Value initialization is not part of the Eigen::AutoDiffScalar contract nor
+// part of the contract for our AutoDiffXd specialization of that template
+// class. Thus no code should be written assuming that default-constructed
+// AutoDiffXd objects will be value initialized. However, leaving the value
+// uninitialized triggered hard-to-eliminate maybe-uninitialized warnings (not
+// necessarily spurious) from some versions of gcc (not seen with clang).
+// After determining that there is a negligible effect on performance, we
+// decided (see PRs #15699 and #15792) to initialize the value member to avoid
+// those warnings. Initializing to NaN (as opposed to zero) ensures that no code
+// will function with uninitialized AutoDiffXd objects, just as it should not
+// with any other Eigen::AutoDiffScalar.
 template <>
 class AutoDiffScalar<VectorXd>
     : public internal::auto_diff_special_op<VectorXd, false> {
@@ -70,6 +84,8 @@ class AutoDiffScalar<VectorXd>
   using Base::operator+;
   using Base::operator*;
 
+  // Default constructor leaves the value effectively uninitialized and the
+  // derivatives vector zero length.
   AutoDiffScalar() {}
 
   AutoDiffScalar(const Scalar& value, int nbDer, int derNumber)
@@ -374,7 +390,10 @@ class AutoDiffScalar<VectorXd>
   }
 
  protected:
-  Scalar m_value;
+  // See class documentation above for why we are initializing the value here
+  // even though that is not part of the Eigen::AutoDiffScalar contract.
+  // Scalar is always double in this specialization.
+  Scalar m_value{std::numeric_limits<double>::quiet_NaN()};
   DerType m_derivatives;
 };
 
