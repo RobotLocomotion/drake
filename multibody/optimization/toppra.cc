@@ -256,9 +256,8 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
   return K;
 }
 
-std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
-Toppra::ComputeForwardPass(double s_dot_0,
-                           const Eigen::Ref<const Eigen::Matrix2Xd>& K) {
+std::optional<Eigen::VectorXd> Toppra::ComputeForwardPass(
+    double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K) {
   const int N = gridpoints_.size() - 1;
   DRAKE_DEMAND(s_dot_0 >= 0);
   DRAKE_DEMAND(K.cols() == N + 1);
@@ -290,15 +289,13 @@ Toppra::ComputeForwardPass(double s_dot_0,
       ustar(knot) = result.GetSolution()(0);
     }
     double xnext = xstar(knot) + 2 * delta * ustar(knot);
-    xnext *= 0.99;
     xstar(knot + 1) = std::max(K(0, knot + 1), std::min(K(1, knot + 1), xnext));
   }
 
-  return std::make_pair(xstar, ustar);
+  return xstar;
 }
 
-std::optional<PiecewisePolynomial<double>> Toppra::Solve(
-    ToppraTrajectoryType trajectory_type) {
+std::optional<PiecewisePolynomial<double>> Toppra::Solve() {
   const double s_dot_0 = 0;
   const double s_dot_N = 0;
 
@@ -307,13 +304,11 @@ std::optional<PiecewisePolynomial<double>> Toppra::Solve(
   if (!K) {  // Error ocurred in backpass, return nothing
     return std::nullopt;
   }
-  const auto forward_results = ComputeForwardPass(s_dot_0, K.value());
-  if (!forward_results) {  // Error ocurred in forward pass, return nothing
+  const auto x_star = ComputeForwardPass(s_dot_0, K.value());
+  if (!x_star) {  // Error ocurred in forward pass, return nothing
     return std::nullopt;
   }
-  const Eigen::VectorXd x_star = forward_results.value().first;
-  const Eigen::VectorXd u_star = forward_results.value().second;
-  const Eigen::VectorXd sd_knots = x_star.cwiseSqrt();
+  const Eigen::VectorXd sd_knots = x_star.value().cwiseSqrt();
   if (sd_knots.hasNaN()) {
     drake::log()->error("Toppra hit numerical issues. Found NaN sdot.");
     return std::nullopt;
@@ -332,55 +327,10 @@ std::optional<PiecewisePolynomial<double>> Toppra::Solve(
     q_knots.col(knot) = path_.value(gridpoints_(knot));
   }
 
-  switch (trajectory_type) {
-    case ToppraTrajectoryType::kPiecewiseConstantPathAcceleration: {
-      std::vector<MatrixX<Polynomial<double>>> polynomials(N);
-      for (int knot = 0; knot < N; knot++) {
-        polynomials[knot].resize(path_.rows(), 1);
-        // The path is given as q(s) and the path parameterization is a
-        // piecewise cubic with the i'th segment expressed as
-        // s(t) = 0.5 * u_star[i] * (t - t_knot[i])^2
-        //        + s_dot[i] * (t - t_knot[i]) + gridpoints[i]
-        // To construct the full trajectory a piecewise cubic approximation of
-        // the path is combined with the path parameterization.
-        // For each segment combining the path,
-        // q(s) = j(s) * ds^3 + a(s) * ds^2 + v(s) * d(s) + q(s),
-        // with the path parameterization ds = 0.5 * u_star * dt^2 + s_dot * dt
-        // results in the below polynomials.
-        const Eigen::VectorXd qs_dot =
-            path_.EvalDerivative(gridpoints_(knot), 1);
-        const Eigen::VectorXd qs_ddot =
-            path_.EvalDerivative(gridpoints_(knot), 2);
-        const Eigen::VectorXd qs_dddot =
-            path_.EvalDerivative(gridpoints_(knot), 3);
-        for (int jj = 0; jj < path_.rows(); jj++) {
-          Vector<double, 7> coeffs;
-          coeffs << q_knots(jj, knot), qs_dot(jj) * sd_knots(knot),
-              qs_ddot(jj) * x_star(knot) + 0.5 * qs_dot(jj) * u_star(knot),
-              qs_dddot(jj) * sd_knots(knot) * x_star(knot) +
-                  qs_ddot(jj) * u_star(knot) * sd_knots(knot),
-              1.5 * qs_dddot(jj) * u_star(knot) * x_star(knot) +
-                  0.25 * qs_ddot(jj) * std::pow(u_star(knot), 2),
-              0.75 * qs_dddot(jj) * std::pow(u_star(knot), 2) * sd_knots(knot),
-              0.125 * qs_dddot(jj) * std::pow(u_star(knot), 3);
-          polynomials[knot](jj, 0) = Polynomial<double>(coeffs);
-        }
-      }
-
-      std::vector<double> times(t_knots.data(),
-                                t_knots.data() + t_knots.size());
-      return PiecewisePolynomial<double>(polynomials, times);
-    }
-    case ToppraTrajectoryType::kContinuousAcceleration: {
-      const Eigen::VectorXd v_start = Eigen::VectorXd::Zero(path_.rows());
-      const Eigen::VectorXd v_end = Eigen::VectorXd::Zero(path_.rows());
-      return PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
-          t_knots, q_knots, v_start, v_end);
-    }
-    default: {
-      throw std::runtime_error("Unsupported trajectory type.");
-    }
-  }
+  const Eigen::VectorXd v_start = Eigen::VectorXd::Zero(path_.rows());
+  const Eigen::VectorXd v_end = Eigen::VectorXd::Zero(path_.rows());
+  return PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+      t_knots, q_knots, v_start, v_end);
 }
 
 }  // namespace multibody

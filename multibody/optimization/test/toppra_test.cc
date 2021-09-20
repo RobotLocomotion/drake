@@ -5,6 +5,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -31,11 +32,6 @@ class IiwaToppraTest : public ::testing::Test {
     path_ = PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
         Eigen::VectorXd::LinSpaced(2, 0, 1), knots, Eigen::VectorXd::Zero(7),
         Eigen::VectorXd::Zero(7));
-
-    auto options = CalcGridPointsOptions();
-    options.max_err = 1e-5;
-    auto gridpts = Toppra::CalcGridpts(path_, options);
-    toppra_ = std::make_unique<Toppra>(path_, *iiwa_plant_, gridpts);
   }
 
   ~IiwaToppraTest() override {}
@@ -43,7 +39,6 @@ class IiwaToppraTest : public ::testing::Test {
  protected:
   std::unique_ptr<MultibodyPlant<double>> iiwa_plant_;
   PiecewisePolynomial<double> path_;
-  std::unique_ptr<Toppra> toppra_;
 };
 
 TEST_F(IiwaToppraTest, JointVelocityLimit) {
@@ -52,27 +47,32 @@ TEST_F(IiwaToppraTest, JointVelocityLimit) {
   Eigen::VectorXd upper_bound(7);
   upper_bound << 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7;
 
+  auto options = CalcGridPointsOptions();
+  options.max_err = 1e-5;
+  auto gridpts = Toppra::CalcGridpts(path_, options);
+  auto toppra = std::make_unique<Toppra>(path_, *iiwa_plant_, gridpts);
+
   auto velocity_constraint =
-      toppra_->AddJointVelocityLimit(lower_bound, upper_bound);
-  toppra_->AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
+      toppra->AddJointVelocityLimit(lower_bound, upper_bound);
+  toppra->AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
                                      Eigen::VectorXd::Constant(7, 10));
 
-  auto result = toppra_->Solve();
+  auto result = toppra->Solve();
   ASSERT_TRUE(result);
   auto trajectory = result.value();
 
-  const double tol = 1e-6;
+  const double tol = 1e-4;
   for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
     const auto velocity =
         trajectory.EvalDerivative(trajectory.start_time(ii), 1);
 
-    EXPECT_TRUE((velocity.array() >= lower_bound.array() + tol).all());
+    EXPECT_TRUE((velocity.array() >= lower_bound.array() - tol).all());
     EXPECT_TRUE((velocity.array() <= upper_bound.array() + tol).all());
   }
 
   const auto velocity = trajectory.EvalDerivative(trajectory.end_time(), 1);
 
-  EXPECT_TRUE((velocity.array() >= lower_bound.array() + tol).all());
+  EXPECT_TRUE((velocity.array() >= lower_bound.array() - tol).all());
   EXPECT_TRUE((velocity.array() <= upper_bound.array() + tol).all());
 }
 
@@ -82,32 +82,36 @@ TEST_F(IiwaToppraTest, JointAccelerationLimit) {
   Eigen::VectorXd upper_bound(7);
   upper_bound << 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7;
 
+  auto options = CalcGridPointsOptions();
+  options.max_err = 1e-3;
+  auto gridpts = Toppra::CalcGridpts(path_, options);
+  auto toppra = std::make_unique<Toppra>(path_, *iiwa_plant_, gridpts);
+
   auto acceleration_constraint =
-      toppra_->AddJointAccelerationLimit(lower_bound, upper_bound);
+      toppra->AddJointAccelerationLimit(lower_bound, upper_bound);
 
-  const std::vector<ToppraTrajectoryType> trajectory_types = {
-      // ToppraTrajectoryType::kPiecewiseConstantPathAcceleration,
-      ToppraTrajectoryType::kContinuousAcceleration};
-  for (const auto type : trajectory_types) {
-    auto result = toppra_->Solve(type);
-    ASSERT_TRUE(result);
-    auto trajectory = result.value();
+  auto result = toppra->Solve();
+  ASSERT_TRUE(result);
+  auto trajectory = result.value();
 
-    const double tol = 1e-6;
-    for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
-      const auto acceleration =
-          trajectory.EvalDerivative(trajectory.start_time(ii) + tol, 2);
-
-      EXPECT_TRUE((acceleration.array() >= lower_bound.array() + tol).all());
-      EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
-    }
-
+  const double tol = 0.11;
+  for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
     const auto acceleration =
-        trajectory.EvalDerivative(trajectory.end_time(), 2);
+        trajectory.EvalDerivative(trajectory.start_time(ii), 2);
 
-    EXPECT_TRUE((acceleration.array() >= lower_bound.array() + tol).all());
+    EXPECT_TRUE((acceleration.array() >= lower_bound.array() - tol).all());
     EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
+
+    if (!((acceleration.array() >= lower_bound.array() - tol).all())) {
+      std::cout << acceleration.transpose() << std::endl;
+    }
   }
+
+  const auto acceleration =
+      trajectory.EvalDerivative(trajectory.end_time(), 2);
+
+  EXPECT_TRUE((acceleration.array() >= lower_bound.array() - tol).all());
+  EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
 }
 
 GTEST_TEST(ToppraTest, GridpointsTest) {
@@ -139,6 +143,41 @@ GTEST_TEST(ToppraTest, GridpointsTest) {
   options.min_points = 1;
   gridpts = Toppra::CalcGridpts(path, options);
   EXPECT_EQ(gridpts.size(), 9);
+}
+
+GTEST_TEST(ToppraTest, TimeOptimalTest) {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0);
+  const double mass{1};
+  const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
+  const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
+  const SpatialInertia<double> M_AAo_A =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A, I_AAcm_A);
+  auto& body = plant->AddRigidBody("body", M_AAo_A);
+  plant->AddJoint<PrismaticJoint>("joint", plant->world_body(), std::nullopt,
+                                  body, std::nullopt, Eigen::Vector3d::UnitX());
+  plant->Finalize();
+
+  auto path = PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+      Eigen::Vector2d(0, 1), Eigen::RowVector2d(0, 1), Vector1d(0),
+      Vector1d(0));
+
+  auto options = CalcGridPointsOptions();
+  options.max_err = 1e-5;
+  auto gridpts = Toppra::CalcGridpts(path, options);
+  auto toppra = std::make_unique<Toppra>(path, *plant, gridpts);
+
+  auto acceleration_constraint =
+      toppra->AddJointAccelerationLimit(Vector1d(-1), Vector1d(1));
+
+  auto result = toppra->Solve();
+  ASSERT_TRUE(result);
+  auto trajectory = result.value();
+
+  // The time optimal trajectory for a double integrator travelling 1 m with
+  // 1 m/s^2 acceleration limits will be a bang-bang trajectory that lasts 2
+  // seconds.
+  const double tol = 0.01;
+  EXPECT_LT(trajectory.end_time(), 2 + tol);
 }
 }  // namespace
 }  // namespace multibody
