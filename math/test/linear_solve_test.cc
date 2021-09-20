@@ -16,7 +16,7 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 void TestLinearSolve(const Eigen::MatrixBase<DerivedA>& A,
                      const Eigen::MatrixBase<DerivedB>& b) {
-  const auto x = LinearSolve<LinearSolverType>(A, b);
+  const auto x = SolveLinearSystem<LinearSolverType>(A, b);
   if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
                 std::is_same_v<typename DerivedB::Scalar, double>) {
     static_assert(std::is_same_v<typename decltype(x)::Scalar, double>,
@@ -155,7 +155,7 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 void TestLinearSolveSymbolic(const Eigen::MatrixBase<DerivedA>& A,
                              const Eigen::MatrixBase<DerivedB>& b) {
-  const auto x = LinearSolve<LinearSolverType>(A, b);
+  const auto x = SolveLinearSystem<LinearSolverType>(A, b);
   static_assert(
       std::is_same_v<typename decltype(x)::Scalar, symbolic::Expression>,
       "The scalar type should be symbolic expression");
@@ -208,7 +208,7 @@ TEST_F(LinearSolveTest, TestNoGrad) {
 }
 
 TEST_F(LinearSolveTest, TestBwithGrad) {
-  // Test LinearSolve with A containing empty gradient while b
+  // Test SolveLinearSystem with A containing empty gradient while b
   // contains meaningful gradient.
   TestLinearSolve<Eigen::LLT>(A_val_.cast<AutoDiffXd>(), b_vec_ad_);
   TestLinearSolve<Eigen::LDLT>(A_val_.cast<AutoDiffXd>(), b_vec_ad_);
@@ -223,7 +223,7 @@ TEST_F(LinearSolveTest, TestBwithGrad) {
 }
 
 TEST_F(LinearSolveTest, TestAwithGrad) {
-  // Test LinearSolve with A containing gradient while b contains
+  // Test SolveLinearSystem with A containing gradient while b contains
   // no gradient.
   TestLinearSolve<Eigen::LLT>(A_ad_, b_vec_val_.cast<AutoDiffXd>());
   TestLinearSolve<Eigen::LDLT>(A_ad_, b_vec_val_.cast<AutoDiffXd>());
@@ -238,8 +238,8 @@ TEST_F(LinearSolveTest, TestAwithGrad) {
 }
 
 TEST_F(LinearSolveTest, TestFixedDerivativeSize) {
-  // Test LinearSolve with either or both A and b containing AutoDiffScalar,
-  // The AutoDiffScalar has a fixed derivative size.
+  // Test SolveLinearSystem with either or both A and b containing
+  // AutoDiffScalar, The AutoDiffScalar has a fixed derivative size.
 
   // Both A and B contain AutoDiffScalar.
   TestLinearSolve<Eigen::LLT>(A_ad_fixed_der_size_, b_ad_fixed_der_size_);
@@ -263,7 +263,7 @@ TEST_F(LinearSolveTest, TestFixedDerivativeSize) {
 }
 
 TEST_F(LinearSolveTest, TestAbWithGrad) {
-  // Test LinearSolve with both A and b containing gradient.
+  // Test SolveLinearSystem with both A and b containing gradient.
   TestLinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_);
   TestLinearSolve<Eigen::LDLT>(A_ad_, b_vec_ad_);
   TestLinearSolve<Eigen::ColPivHouseholderQR>(A_ad_, b_vec_ad_);
@@ -275,7 +275,7 @@ TEST_F(LinearSolveTest, TestAbWithGrad) {
 }
 
 TEST_F(LinearSolveTest, TestAbWithMaybeEmptyGrad) {
-  // Test LinearSolve with both A and b containing gradient in
+  // Test SolveLinearSystem with both A and b containing gradient in
   // some entries, and empty gradient in some other entries.
   A_ad_(1, 0).derivatives() = Eigen::VectorXd(0);
   b_vec_ad_(1).derivatives() = Eigen::VectorXd(0);
@@ -288,19 +288,21 @@ TEST_F(LinearSolveTest, TestWrongGradientSize) {
   // A's gradient has inconsistent size.
   auto A_ad_error = A_ad_;
   A_ad_error(0, 1).derivatives() = Eigen::Vector2d(1, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_error, b_vec_ad_),
-                              ".* has size 2, while another entry has size 3");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SolveLinearSystem<Eigen::LLT>(A_ad_error, b_vec_ad_),
+      ".* has size 2, while another entry has size 3");
   // b's gradient has inconsistent size.
   auto b_vec_ad_error = b_vec_ad_;
   b_vec_ad_error(1).derivatives() = Eigen::Vector2d(1, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_error),
-                              ".* has size 2, while another entry has size 3");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_error),
+      ".* has size 2, while another entry has size 3");
   // A and b have different number of derivatives.
   auto b_vec_ad_error2 = b_vec_ad_;
   b_vec_ad_error2(0).derivatives() = Eigen::Vector4d::Ones();
   b_vec_ad_error2(1).derivatives() = Eigen::Vector4d::Ones();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      LinearSolve<Eigen::LLT>(A_ad_, b_vec_ad_error2),
+      SolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_error2),
       ".*A contains derivatives for 3 variables, while b contains derivatives "
       "for 4 variables");
 }
