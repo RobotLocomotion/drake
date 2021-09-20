@@ -308,6 +308,26 @@ LinearSolve(const LinearSolver& linear_solver,
  */
 
 //@{
+
+/**
+ * The return type of GetLinearSolver function. It is the type of the linear
+ * solver. For example
+ * LinearSolver<Eigen::LLT, Eigen::Matrix3d>::type is
+ * Eigen::LLT<Eigen::Matrix3d>.
+ * See @ref get_linear_solver for more details. When DerivedA::Scalar is
+ * double or symbolic::Expression, the solver scalar type is the same as
+ * DerivedA::Scalar; when DerivedA::Scalar is Eigen::AutoDiffScalar, the
+ * solver scalar type is double.
+ */
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+using GetLinearSolverReturn = LinearSolverType<Eigen::Matrix<
+    std::conditional_t<
+        internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+        typename DerivedA::Scalar, double>,
+    DerivedA::RowsAtCompileTime, DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+    DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>;
+
 /**
  * Get the linear solver for a matrix A containing double or
  * symbolic::Expressions. The returned linear solver will have matrix type
@@ -318,16 +338,9 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
 typename std::enable_if<
     internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<
-        typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-        DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-        DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>>::type
+    GetLinearSolverReturn<LinearSolverType, DerivedA>>::type
 GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  const LinearSolverType<Eigen::Matrix<
-      typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-      DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-      DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>
-      linear_solver(A);
+  const GetLinearSolverReturn<LinearSolverType, DerivedA> linear_solver(A);
   return linear_solver;
 }
 
@@ -340,17 +353,10 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
 typename std::enable_if<
     !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>>>::type
+    GetLinearSolverReturn<LinearSolverType, DerivedA>>::type
 GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  using A_VAL_TYPE = Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>;
-  const A_VAL_TYPE A_val = autoDiffToValueMatrix(A);
-  const LinearSolverType<A_VAL_TYPE> linear_solver(A_val);
+  const auto A_val = autoDiffToValueMatrix(A);
+  const GetLinearSolverReturn<LinearSolverType, DerivedA> linear_solver(A_val);
   return linear_solver;
 }
 //@}
