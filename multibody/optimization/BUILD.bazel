@@ -281,6 +281,7 @@ drake_cc_googletest(
         ":toppra",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+        "//multibody/tree",
     ],
 )
 

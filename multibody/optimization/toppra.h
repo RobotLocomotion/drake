@@ -31,15 +31,6 @@ using trajectories::Trajectory;
  */
 enum class ToppraDiscretization { kCollocation, kInterpolation };
 
-/**
- * Selects what type of trajectory to return when solving the Toppra
- * optimization.
- */
-enum class ToppraTrajectoryType {
-  kPiecewiseConstantPathAcceleration,
-  kContinuousAcceleration
-};
-
 struct CalcGridPointsOptions {
   double max_err{1e-3};
   int max_iter{100};
@@ -98,13 +89,11 @@ class Toppra {
   /**
    * Solves the toppra optimization and returns the time optimized trajectory.
    * Resulting trajectory has the same start time as the original path.
-   * @note The trajectory may not perfectly follow the original path due to
-   * refitting a piecewise cubic but will pass through the points defined by the
-   * gridpoints.
+   * @note The trajectory may not perfectly obey the constraints set due to
+   * fitting a piecewise cubic but will pass through the points defined by the
+   * gridpoints and approximately satisfy the constraints.
    */
-  std::optional<PiecewisePolynomial<double>> Solve(
-      ToppraTrajectoryType trajectory_type =
-          ToppraTrajectoryType::kContinuousAcceleration);
+  std::optional<PiecewisePolynomial<double>> Solve();
 
   /**
    * Adds a constant velocity limit to all the degrees of freedom in the plant.
@@ -154,7 +143,7 @@ class Toppra {
    *          each gridpoint. K(0, i) and K(1, i) contain respectively the lower
    *          and upper bound of the path velocity at grid point i.
    */
-  std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ComputeForwardPass(
+  std::optional<Eigen::VectorXd> ComputeForwardPass(
       double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
 
   /**
