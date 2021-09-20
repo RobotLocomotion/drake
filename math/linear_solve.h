@@ -18,6 +18,9 @@ struct is_double_or_symbolic<symbolic::Expression> : std::true_type {};
 
 template <>
 struct is_double_or_symbolic<symbolic::Variable> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_double_or_symbolic_v = is_double_or_symbolic<T>::value;
 }  // namespace internal
 
 /**
@@ -89,8 +92,8 @@ struct is_double_or_symbolic<symbolic::Variable> : std::true_type {};
  */
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value &&
-        internal::is_double_or_symbolic<typename DerivedB::Scalar>::value &&
+    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
+        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
         std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
@@ -111,7 +114,7 @@ LinearSolve(const LinearSolver& linear_solver,
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same_v<typename DerivedA::Scalar, double> &&
-        !internal::is_double_or_symbolic<typename DerivedB::Scalar>::value,
+        !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const LinearSolver& linear_solver,
@@ -151,7 +154,7 @@ LinearSolve(const LinearSolver& linear_solver,
  */
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const LinearSolver& linear_solver,
@@ -308,50 +311,46 @@ LinearSolve(const LinearSolver& linear_solver,
  */
 
 //@{
-/**
- * Get the linear solver for a matrix A containing double or
- * symbolic::Expressions. The returned linear solver will have matrix type
- * containing the same scalar type as A.
- * See @ref get_linear_solver for more details.
- */
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA>
-typename std::enable_if<
-    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<
-        typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-        DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-        DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>>::type
-GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  const LinearSolverType<Eigen::Matrix<
-      typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-      DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-      DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>
-      linear_solver(A);
-  return linear_solver;
-}
 
 /**
- * Get the linear solver for a matrix A containing AutoDiffScalar.
- * The returned linear solver will be LinearSolverType<Matrix<double, Rows,
- * Cols>>
+ * The return type of GetLinearSolver function. It is the type of the linear
+ * solver. For example
+ * LinearSolver<Eigen::LLT, Eigen::Matrix3d>::type is
+ * Eigen::LLT<Eigen::Matrix3d>.
+ * See @ref get_linear_solver for more details. When DerivedA::Scalar is
+ * double or symbolic::Expression, the solver scalar type is the same as
+ * DerivedA::Scalar; when DerivedA::Scalar is Eigen::AutoDiffScalar, the
+ * solver scalar type is double.
  */
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
-typename std::enable_if<
-    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>>>::type
-GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  using A_VAL_TYPE = Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>;
-  const A_VAL_TYPE A_val = autoDiffToValueMatrix(A);
-  const LinearSolverType<A_VAL_TYPE> linear_solver(A_val);
-  return linear_solver;
+using GetLinearSolverReturn = LinearSolverType<Eigen::Matrix<
+    std::conditional_t<
+        internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
+        typename DerivedA::Scalar, double>,
+    DerivedA::RowsAtCompileTime, DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+    DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>;
+
+/**
+ * Get the linear solver for a matrix A.
+ * If A has scalar type of double or symbolic::Expressions, then the returned
+ * linear solver will have the same scalar type. If A has scalar type of
+ * Eigen::AutoDiffScalar, then the returned linear solver will have scalar type
+ * of double. See @ref get_linear_solver for more details.
+ */
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+GetLinearSolverReturn<LinearSolverType, DerivedA> GetLinearSolver(
+    const Eigen::MatrixBase<DerivedA>& A) {
+  if constexpr (internal::is_double_or_symbolic_v<typename DerivedA::Scalar>) {
+    const GetLinearSolverReturn<LinearSolverType, DerivedA> linear_solver(A);
+    return linear_solver;
+  } else {
+    const auto A_val = autoDiffToValueMatrix(A);
+    const GetLinearSolverReturn<LinearSolverType, DerivedA> linear_solver(
+        A_val);
+    return linear_solver;
+  }
 }
 //@}
 
@@ -437,8 +436,8 @@ GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value &&
-        internal::is_double_or_symbolic<typename DerivedB::Scalar>::value &&
+    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
+        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
         std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
@@ -456,7 +455,7 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same_v<typename DerivedA::Scalar, double> &&
-        !internal::is_double_or_symbolic<typename DerivedB::Scalar>::value,
+        !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
@@ -472,7 +471,7 @@ LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
 LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
