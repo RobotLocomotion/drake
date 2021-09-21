@@ -55,22 +55,27 @@ TEST_F(IiwaToppraTest, JointVelocityLimit) {
   auto velocity_constraint =
       toppra->AddJointVelocityLimit(lower_bound, upper_bound);
   toppra->AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
-                                     Eigen::VectorXd::Constant(7, 10));
+                                    Eigen::VectorXd::Constant(7, 10));
 
-  auto result = toppra->Solve();
+  auto result = toppra->SolvePathParameterization();
   ASSERT_TRUE(result);
-  auto trajectory = result.value();
+  auto s_path = result.value();
 
-  const double tol = 1e-4;
-  for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
-    const auto velocity =
-        trajectory.EvalDerivative(trajectory.start_time(ii), 1);
+  const double tol = 1e-14;
+  for (int ii = 0; ii < s_path.get_number_of_segments(); ii++) {
+    const auto s = s_path.scalarValue(s_path.start_time(ii));
+    const auto s_dot = s_path.EvalDerivative(s_path.start_time(ii), 1);
+    const auto dq_ds = path_.EvalDerivative(s, 1);
+    const auto velocity = dq_ds * s_dot;
 
     EXPECT_TRUE((velocity.array() >= lower_bound.array() - tol).all());
     EXPECT_TRUE((velocity.array() <= upper_bound.array() + tol).all());
   }
 
-  const auto velocity = trajectory.EvalDerivative(trajectory.end_time(), 1);
+  const auto s = s_path.scalarValue(s_path.end_time());
+  const auto s_dot = s_path.EvalDerivative(s_path.end_time(), 1);
+  const auto dq_ds = path_.EvalDerivative(s, 1);
+  const auto velocity = dq_ds * s_dot;
 
   EXPECT_TRUE((velocity.array() >= lower_bound.array() - tol).all());
   EXPECT_TRUE((velocity.array() <= upper_bound.array() + tol).all());
@@ -90,25 +95,29 @@ TEST_F(IiwaToppraTest, JointAccelerationLimit) {
   auto acceleration_constraint =
       toppra->AddJointAccelerationLimit(lower_bound, upper_bound);
 
-  auto result = toppra->Solve();
+  auto result = toppra->SolvePathParameterization();
   ASSERT_TRUE(result);
-  auto trajectory = result.value();
+  auto s_path = result.value();
 
-  const double tol = 0.11;
-  for (int ii = 0; ii < trajectory.get_number_of_segments(); ii++) {
-    const auto acceleration =
-        trajectory.EvalDerivative(trajectory.start_time(ii), 2);
+  const double tol = 1e-14;
+  for (int ii = 0; ii < s_path.get_number_of_segments(); ii++) {
+    const auto s = s_path.scalarValue(s_path.start_time(ii));
+    const auto s_dot = s_path.EvalDerivative(s_path.start_time(ii), 1);
+    const auto s_ddot = s_path.EvalDerivative(s_path.start_time(ii), 2);
+    const auto dq_ds = path_.EvalDerivative(s, 1);
+    const auto ddq_dds = path_.EvalDerivative(s, 2);
+    const auto acceleration = dq_ds * s_ddot + ddq_dds * s_dot * s_dot;
 
     EXPECT_TRUE((acceleration.array() >= lower_bound.array() - tol).all());
     EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
-
-    if (!((acceleration.array() >= lower_bound.array() - tol).all())) {
-      std::cout << acceleration.transpose() << std::endl;
-    }
   }
 
-  const auto acceleration =
-      trajectory.EvalDerivative(trajectory.end_time(), 2);
+  const auto s = s_path.scalarValue(s_path.end_time());
+  const auto s_dot = s_path.EvalDerivative(s_path.end_time(), 1);
+  const auto s_ddot = s_path.EvalDerivative(s_path.end_time(), 2);
+  const auto dq_ds = path_.EvalDerivative(s, 1);
+  const auto ddq_dds = path_.EvalDerivative(s, 2);
+  const auto acceleration = dq_ds * s_ddot + ddq_dds * s_dot * s_dot;
 
   EXPECT_TRUE((acceleration.array() >= lower_bound.array() - tol).all());
   EXPECT_TRUE((acceleration.array() <= upper_bound.array() + tol).all());
@@ -169,7 +178,7 @@ GTEST_TEST(ToppraTest, TimeOptimalTest) {
   auto acceleration_constraint =
       toppra->AddJointAccelerationLimit(Vector1d(-1), Vector1d(1));
 
-  auto result = toppra->Solve();
+  auto result = toppra->SolvePathParameterization();
   ASSERT_TRUE(result);
   auto trajectory = result.value();
 

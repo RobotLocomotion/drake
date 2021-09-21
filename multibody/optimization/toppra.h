@@ -87,13 +87,13 @@ class Toppra {
 
   // TODO(mpetersen94): Consider adding optional<Solver> argument.
   /**
-   * Solves the toppra optimization and returns the time optimized trajectory.
-   * Resulting trajectory has the same start time as the original path.
-   * @note The trajectory may not perfectly obey the constraints set due to
-   * fitting a piecewise cubic but will pass through the points defined by the
-   * gridpoints and approximately satisfy the constraints.
+   * Solves the toppra optimization and returns the time optimized path
+   * parameterization s(t). This can be used with the original path q(s) to
+   * generate a time parameterized trajectory.
+   * The path parameterization has the same start time as the original path's
+   * starting break.
    */
-  std::optional<PiecewisePolynomial<double>> Solve();
+  std::optional<PiecewisePolynomial<double>> SolvePathParameterization();
 
   /**
    * Adds a constant velocity limit to all the degrees of freedom in the plant.
@@ -143,7 +143,7 @@ class Toppra {
    *          each gridpoint. K(0, i) and K(1, i) contain respectively the lower
    *          and upper bound of the path velocity at grid point i.
    */
-  std::optional<Eigen::VectorXd> ComputeForwardPass(
+  std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ComputeForwardPass(
       double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
 
   /**

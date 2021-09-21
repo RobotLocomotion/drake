@@ -256,8 +256,9 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
   return K;
 }
 
-std::optional<Eigen::VectorXd> Toppra::ComputeForwardPass(
-    double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K) {
+std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
+Toppra::ComputeForwardPass(double s_dot_0,
+                           const Eigen::Ref<const Eigen::Matrix2Xd>& K) {
   const int N = gridpoints_.size() - 1;
   DRAKE_DEMAND(s_dot_0 >= 0);
   DRAKE_DEMAND(K.cols() == N + 1);
@@ -292,10 +293,10 @@ std::optional<Eigen::VectorXd> Toppra::ComputeForwardPass(
     xstar(knot + 1) = std::max(K(0, knot + 1), std::min(K(1, knot + 1), xnext));
   }
 
-  return xstar;
+  return std::make_pair(xstar, ustar);
 }
 
-std::optional<PiecewisePolynomial<double>> Toppra::Solve() {
+std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
   const double s_dot_0 = 0;
   const double s_dot_N = 0;
 
@@ -304,33 +305,34 @@ std::optional<PiecewisePolynomial<double>> Toppra::Solve() {
   if (!K) {  // Error ocurred in backpass, return nothing
     return std::nullopt;
   }
-  const auto x_star = ComputeForwardPass(s_dot_0, K.value());
-  if (!x_star) {  // Error ocurred in forward pass, return nothing
+  const auto forward_results = ComputeForwardPass(s_dot_0, K.value());
+  if (!forward_results) {  // Error ocurred in forward pass, return nothing
     return std::nullopt;
   }
-  const Eigen::VectorXd sd_knots = x_star.value().cwiseSqrt();
+  const Eigen::VectorXd x_star = forward_results.value().first;
+  const Eigen::VectorXd u_star = forward_results.value().second;
+  const Eigen::VectorXd sd_knots = x_star.cwiseSqrt();
   if (sd_knots.hasNaN()) {
     drake::log()->error("Toppra hit numerical issues. Found NaN sdot.");
     return std::nullopt;
   }
 
   const int N = gridpoints_.size() - 1;
-  Eigen::VectorXd t_knots(N + 1);
-  Eigen::MatrixXd q_knots(path_.rows(), N + 1);
-  t_knots(0) = path_.start_time();
-  q_knots.col(0) = path_.value(gridpoints_(0));
-  for (int knot = 1; knot < t_knots.size(); knot++) {
-    const double delta = gridpoints_(knot) - gridpoints_(knot - 1);
-    const double sd_avg = (sd_knots(knot) + sd_knots(knot - 1)) / 2.;
+  std::vector<double> t_knots(N + 1);
+  std::vector<Polynomial<double>> polynomials(N);
+  t_knots[0] = path_.start_time();
+  for (size_t knot = 0; knot < t_knots.size() - 1; knot++) {
+    const double delta = gridpoints_(knot + 1) - gridpoints_(knot);
+    const double sd_avg = (sd_knots(knot + 1) + sd_knots(knot)) / 2.;
     const double delta_t = delta / sd_avg;
-    t_knots(knot) = t_knots(knot - 1) + delta_t;
-    q_knots.col(knot) = path_.value(gridpoints_(knot));
+    t_knots[knot + 1] = t_knots[knot] + delta_t;
+
+    Eigen::Vector3d coeffs(gridpoints_(knot), sd_knots(knot),
+                           0.5 * u_star(knot));
+    polynomials[knot] = Polynomial<double>(coeffs);
   }
 
-  const Eigen::VectorXd v_start = Eigen::VectorXd::Zero(path_.rows());
-  const Eigen::VectorXd v_end = Eigen::VectorXd::Zero(path_.rows());
-  return PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
-      t_knots, q_knots, v_start, v_end);
+  return PiecewisePolynomial<double>(polynomials, t_knots);
 }
 
 }  // namespace multibody
