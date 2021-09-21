@@ -1,10 +1,12 @@
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
 
@@ -12,11 +14,100 @@ namespace drake {
 namespace multibody {
 namespace fem {
 using geometry::Box;
+using geometry::internal::CollectUniqueVertices;
+using geometry::internal::IdentifyBoundaryFaces;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
 using geometry::VolumeVertex;
 using geometry::VolumeVertexIndex;
+
+namespace {
+
+bool IsBoundaryTetrahedron(
+    const VolumeElement& tetrahedron,
+    const std::unordered_set<VolumeVertexIndex>& boundary_vertex_set) {
+  int num_boundary_vertices = 0;
+  for (int j = 0; j < 4; ++j) {
+    if (boundary_vertex_set.count(tetrahedron.vertex(j)) > 0) {
+      ++num_boundary_vertices;
+    }
+  }
+  return num_boundary_vertices == 4;
+}
+
+template <typename T>
+void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
+                           std::vector<VolumeVertex<T>>* vertices) {
+  DRAKE_DEMAND(elements != nullptr);
+  DRAKE_DEMAND(vertices != nullptr);
+  const int num_elements_before = elements->size();
+  DRAKE_DEMAND(e < num_elements_before);
+
+  VolumeElement& tetrahedron = (*elements)[e];
+  VolumeVertexIndex v0 = tetrahedron.vertex(0);
+  VolumeVertexIndex v1 = tetrahedron.vertex(1);
+  VolumeVertexIndex v2 = tetrahedron.vertex(2);
+  VolumeVertexIndex v3 = tetrahedron.vertex(3);
+
+  const int num_vertices_before = vertices->size();
+  DRAKE_DEMAND(v0 < num_vertices_before);
+  DRAKE_DEMAND(v1 < num_vertices_before);
+  DRAKE_DEMAND(v2 < num_vertices_before);
+  DRAKE_DEMAND(v3 < num_vertices_before);
+
+  Vector3<T> star = ((*vertices)[v0].r_MV() + (*vertices)[v1].r_MV() +
+                         (*vertices)[v2].r_MV() + (*vertices)[v3].r_MV()) /
+                        4.;
+  vertices->emplace_back(star);
+  VolumeVertexIndex star_vertex(num_vertices_before);
+
+  //
+  // You can use this picture to verify the connectivity with your
+  // right hand.
+  //
+  //     +Z
+  //      |
+  //      v3
+  //      |
+  //      v0---v2---+Y
+  //     /
+  //    v1
+  //   /
+  // +X
+  //
+  (*elements)[e] = VolumeElement(v0, v1, v2, star_vertex);  // replace v3
+  elements->emplace_back(v1, v3, v2, star_vertex);  // replace v0
+  elements->emplace_back(v2, v3, v0, star_vertex);  // replace v1
+  elements->emplace_back(v3, v1, v0, star_vertex);  // replace v2
+}
+
+}  // namespace
+
+template <typename T>
+std::unique_ptr<VolumeMesh<T>> StarRefineBoundaryTetrahedra(
+    const VolumeMesh<T>& in) {
+  std::vector<VolumeVertex<T>> out_vertices(in.vertices());
+  std::vector<VolumeElement> out_elements(in.tetrahedra());
+
+  const std::vector<VolumeVertexIndex> boundary_vertices =
+      CollectUniqueVertices(IdentifyBoundaryFaces(out_elements));
+  const std::unordered_set<VolumeVertexIndex> boundary_vertex_set(
+      boundary_vertices.begin(), boundary_vertices.end());
+
+  const int num_tetrahedra = out_elements.size();
+  for (int i=0; i < num_tetrahedra; ++i) {
+    if (IsBoundaryTetrahedron(out_elements.at(i), boundary_vertex_set)) {
+      StarRefineTetrahedron(i, &out_elements, &out_vertices);
+    }
+  }
+
+  auto out = std::make_unique<VolumeMesh<T>>(std::move(out_elements),
+                                             std::move(out_vertices));
+  return out;
+}
+
+
 /* Generates connectivity for the tetrahedral elements of the mesh by splitting
  each cube into five tetrahedra.
  @param[in] num_vertices
@@ -194,7 +285,7 @@ internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry() {
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&MakeDiamondCubicBoxDeformableGeometry<T>, &MakeOctahedronVolumeMesh<T>,
-     &MakeOctahedronDeformableGeometry<T>))
+     &MakeOctahedronDeformableGeometry<T>, &StarRefineBoundaryTetrahedra<T>))
 
 }  // namespace fem
 }  // namespace multibody
