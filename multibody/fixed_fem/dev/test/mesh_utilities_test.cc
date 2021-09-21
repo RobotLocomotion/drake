@@ -3,6 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/make_box_field.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 
 namespace drake {
@@ -172,6 +175,103 @@ GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
     EXPECT_DOUBLE_EQ(-distance_to_surface, signed_distance);
   }
 }
+
+GTEST_TEST(MeshUtilitiesTest, StarRefineBoundaryTetrahedra) {
+  // Refine one tetrahedron into four tetrahedra.
+  {
+    using VIx = VolumeVertexIndex;
+    using Vertex = VolumeVertex<double>;
+    const VolumeMesh<double> one_element_mesh(
+        std::vector<VolumeElement>{{VIx(0), VIx(1), VIx(2), VIx(3)}},
+        std::vector<Vertex>{Vertex(Vector3d::Zero()), Vertex(Vector3d::UnitX()),
+                            Vertex(Vector3d::UnitY()),
+                            Vertex(Vector3d::UnitZ())});
+    ASSERT_EQ(one_element_mesh.num_elements(), 1);
+    ASSERT_EQ(one_element_mesh.num_vertices(), 4);
+
+    const VolumeMesh<double> refined_mesh =
+        StarRefineBoundaryTetrahedra(one_element_mesh);
+
+    EXPECT_EQ(refined_mesh.num_elements(), 4);
+    EXPECT_EQ(refined_mesh.num_vertices(), 5);
+  }
+
+  // All tetrahedra of the octahedron mesh are non-boundary tetrahedra, so we
+  // expect no change to the mesh.
+  {
+    const VolumeMesh<double> octahedron_mesh =
+        MakeOctahedronVolumeMesh<double>();
+
+    const VolumeMesh<double> no_refine_mesh =
+        StarRefineBoundaryTetrahedra(octahedron_mesh);
+
+    EXPECT_EQ(no_refine_mesh.num_elements(), octahedron_mesh.num_elements());
+    EXPECT_EQ(no_refine_mesh.num_vertices(), octahedron_mesh.num_vertices());
+  }
+
+  // A coarse tetrahedral mesh of a cube consists of 6 tethedra, all of which
+  // are boundary tetrahedra.
+  {
+    const Box cube_10cm = Box::MakeCube(0.1);
+    const double resolution_hint_20cm = 0.2;
+    const VolumeMesh<double> cube_mesh =
+        geometry::internal::MakeBoxVolumeMesh<double>(cube_10cm,
+                                                      resolution_hint_20cm);
+    ASSERT_EQ(cube_mesh.num_elements(), 6);
+    ASSERT_EQ(cube_mesh.num_vertices(), 8);
+
+    const VolumeMesh<double> refined_cube_mesh =
+        StarRefineBoundaryTetrahedra(cube_mesh);
+
+    // The star-refinement is expected to create 4 x 6 = 24 tetrahedra.
+    EXPECT_EQ(refined_cube_mesh.num_elements(), 24);
+    // The star-refinement adds as many vertices as the number of boundary
+    // tetrahedra, so we have 8 (original) + 6 (new) = 14 vertices.
+    EXPECT_EQ(refined_cube_mesh.num_vertices(), 14);
+  }
+}
+
+// TODO(DamrongGuoy): Remove the following unit tests. For now, it's ok to be
+//  in `dev` directory, but it shouldn't go out of `dev`.
+
+// Verification by Visualization (another kind of V&V, not the standard
+// Verification and Validation. 8)
+// 1. bazel build //multibody/fixed_fem/dev:mesh_utilities_test
+// 2. bazel-bin/multibody/fixed_fem/dev/mesh_utilities_test to get *.vtk files.
+// 3. paraview, Load Data: *.vtk
+GTEST_TEST(MeshUtilitiesTest, VisuallyVerifyStarRefineBoundaryTetrahedra) {
+  constexpr double dx = 0.1;
+  constexpr double half_Lx = 1.1 * dx;
+  constexpr double half_Ly = 1.2 * dx;
+  constexpr double half_Lz = 2.3 * dx;
+  const Box box(2.0 * half_Lx, 2.0 * half_Ly, 2.0 * half_Lz);
+  const internal::ReferenceDeformableGeometry<double> box_geometry =
+      MakeDiamondCubicBoxDeformableGeometry<double>(box, dx,
+                                                    math::RigidTransformd());
+  {
+    const std::string file_name("box_signed_distance.vtk");
+    geometry::internal::WriteVolumeMeshFieldLinearToVtk(
+        file_name, box_geometry.signed_distance(),
+        "Signed distance function in " + file_name);
+  }
+
+  const VolumeMesh<double> refined_box_mesh =
+      StarRefineBoundaryTetrahedra(box_geometry.mesh());
+
+  // The max field value is the half the minimal dimension of the box,
+  // so that the field will mimic the "unsigned" distance-to-boundary function.
+  const double field_value_bound = half_Lx;
+  VolumeMeshFieldLinear<double, double> refined_box_positive_distance_function =
+      geometry::internal::MakeBoxPressureField<double>(
+          box, &refined_box_mesh, field_value_bound);
+  {
+    const std::string file_name("refined_box_positive_distance.vtk");
+    geometry::internal::WriteVolumeMeshFieldLinearToVtk(
+        file_name, refined_box_positive_distance_function,
+        "Positive distance function in " + file_name);
+  }
+}
+
 }  // namespace
 }  // namespace fem
 }  // namespace multibody
