@@ -1296,6 +1296,20 @@ class TestGeometry(unittest.TestCase):
         v_unit_box = mut.optimization.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
 
+        # Test CartesianProduct.
+        sum = mut.optimization.CartesianProduct(setA=point, setB=h_box)
+        self.assertEqual(sum.ambient_dimension(), 6)
+        self.assertEqual(sum.num_factors(), 2)
+        sum2 = mut.optimization.CartesianProduct(sets=[point, h_box])
+        self.assertEqual(sum2.ambient_dimension(), 6)
+        self.assertEqual(sum2.num_factors(), 2)
+        self.assertIsInstance(sum2.factor(0), mut.optimization.Point)
+        sum2 = mut.optimization.CartesianProduct(
+            sets=[point, h_box], A=np.eye(6, 3), b=[0, 1, 2, 3, 4, 5])
+        self.assertEqual(sum2.ambient_dimension(), 3)
+        self.assertEqual(sum2.num_factors(), 2)
+        self.assertIsInstance(sum2.factor(1), mut.optimization.HPolyhedron)
+
         # Test remaining ConvexSet methods using these instances.
         self.assertIsInstance(hpoly.Clone(), mut.optimization.HPolyhedron)
         self.assertTrue(ellipsoid.IsBounded())
@@ -1310,7 +1324,12 @@ class TestGeometry(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Box(1., 1., 1.),
-                                          name="sphere"))
+                                          name="box"))
+        cylinder_geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id, frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform(),
+                                          shape=mut.Cylinder(1., 1.),
+                                          name="cylinder"))
         sphere_geometry_id = scene_graph.RegisterGeometry(
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
@@ -1331,6 +1350,10 @@ class TestGeometry(unittest.TestCase):
             query_object=query_object, geometry_id=box_geometry_id,
             reference_frame=scene_graph.world_frame_id())
         self.assertEqual(H.ambient_dimension(), 3)
+        C = mut.optimization.CartesianProduct(
+            query_object=query_object, geometry_id=cylinder_geometry_id,
+            reference_frame=scene_graph.world_frame_id())
+        self.assertEqual(C.ambient_dimension(), 3)
         E = mut.optimization.Hyperellipsoid(
             query_object=query_object, geometry_id=sphere_geometry_id,
             reference_frame=scene_graph.world_frame_id())
