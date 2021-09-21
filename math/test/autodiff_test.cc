@@ -113,6 +113,14 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
       << gradients;
 }
 
+// See note in class documentation for our AutoDiffXd specialization in
+// common/autodiffxd.h for why we initialize the value field even though
+// that is not part of the Eigen::AutoDiffScalar contract.
+GTEST_TEST(AdditionalAutodiffTest, ValueIsInitializedToNaN) {
+  AutoDiffXd autodiff;
+  EXPECT_TRUE(std::isnan(autodiff.value()));
+}
+
 GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   // Test the double case:
   Eigen::Matrix2d test = Eigen::Matrix2d::Identity();
