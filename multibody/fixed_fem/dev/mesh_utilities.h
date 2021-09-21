@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -74,6 +75,32 @@ geometry::VolumeMesh<T> MakeOctahedronVolumeMesh();
  @tparam_nonsymbolic_scalar */
 template <typename T>
 internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry();
+
+/* Refines each boundary tetrahedron into tetrahedra with at least one
+ interior vertex by applying "star" refinement from the centroid of the
+ boundary tetrahedron. A boundary tetrahedron is a tetrahedron with
+ all four vertices on the boundary surface. "Star" refinement replaces one
+ boundary tetrahedron with four non-boundary tetrahedra.
+
+ Schematically this is "star" refinement of a tetrahedron (each triangular
+ face of the tetrahedron is drawn schematically as a line segment).
+
+             o                   o
+            / \                 /|\
+           /   \     star      / | \
+          o     o    ===>     o--*--o        --- represent triangular faces
+           \   /  refinement   \ | /
+            \ /                 \|/
+             o                   o
+
+       1 tetrahedron              4 tetrahedra
+       4 triangular faces        10 triangular faces
+       6 edges                   10 edges
+       4 vertices                 5 vertices
+ */
+template <typename T>
+geometry::VolumeMesh<T> StarRefineBoundaryTetrahedra(
+    const geometry::VolumeMesh<T>& in);
 
 }  // namespace fem
 }  // namespace multibody
