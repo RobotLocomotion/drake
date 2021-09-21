@@ -777,6 +777,11 @@ def main():
     os.mkdir(tmpdir)
     glue_filename = os.path.join(tmpdir, "mkdoc_glue.h")
     with open(glue_filename, 'w') as glue_f:
+        # As the first line of the glue file, include a C++17 standard library
+        # file to sanity check that it's working, before we start processing
+        # the user headers.
+        glue_f.write("#include <optional>\n")
+        # Add the includes to the glue, and as comments in the output.
         for include_file in sorted(include_files):
             line = "#include \"{}\"".format(include_file)
             glue_f.write(line + "\n")
@@ -793,6 +798,18 @@ def main():
         if not translation_unit:
             raise RuntimeError(
                 "Parsing headers using the clang library failed")
+        # If there is an error on line 1, that means the C++ standard library
+        # include paths are broken.
+        if translation_unit.diagnostics:
+            if translation_unit.diagnostics[0].location.line == 1:
+                try:
+                    # Use '###' to dump Clang's include paths to stdout.
+                    index.parse("foo", parameters + ["-###"])
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    ("The operating system's C++ standard library is not "
+                     "installed correctly."))
         severities = [
             diagnostic.severity for diagnostic in translation_unit.diagnostics
             if diagnostic.severity >= cindex.Diagnostic.Error
