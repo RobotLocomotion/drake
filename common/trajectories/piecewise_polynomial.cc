@@ -550,11 +550,14 @@ void PiecewisePolynomial<T>::
   const std::vector<T>& times = breaks;
   const std::vector<MatrixX<T>>& Y = samples;
   if (times.size() != Y.size()) {
-    throw std::runtime_error(
-        "Number of break points does not match number of samples.");
+    throw std::runtime_error(fmt::format(
+        "Number of break points {} does not match number of samples {}.",
+        times.size(), Y.size()));
   }
   if (static_cast<int>(times.size()) < min_length) {
-    throw std::runtime_error("Not enough samples.");
+    throw std::runtime_error(fmt::format(
+        "{} samples is not enough samples (this method requires at least {}).",
+        times.size(), min_length));
   }
   Eigen::Index rows = Y.front().rows();
   Eigen::Index cols = Y.front().cols();
