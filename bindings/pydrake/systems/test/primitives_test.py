@@ -149,6 +149,10 @@ class TestGeneral(unittest.TestCase):
 
         diagram = builder.Build()
         simulator = Simulator_[T](diagram)
+        integrator.set_integral_value(
+            context=integrator.GetMyContextFromRoot(
+                simulator.get_mutable_context()),
+            value=[0]*kSize)
         kTime = 1.
         simulator.AdvanceTo(kTime)
 
