@@ -24,6 +24,8 @@ std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
     case SolverType::kEqualityConstrainedQP:
       return SolverType::kGurobi;
     case SolverType::kGurobi:
+      return SolverType::kIbex;
+    case SolverType::kIbex:
       return SolverType::kIpopt;
     case SolverType::kIpopt:
       return SolverType::kLinearSystem;
@@ -67,7 +69,7 @@ GTEST_TEST(SolverId, RoundTrip) {
   }
 
   // This should track the number of SolverType values, if we add any.
-  EXPECT_EQ(iterations, 14);
+  EXPECT_EQ(iterations, 15);
 }
 
 }  // namespace
