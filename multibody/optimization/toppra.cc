@@ -317,6 +317,7 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
     return std::nullopt;
   }
 
+  // The path parameterization returned is piecewise quadratic.
   const int N = gridpoints_.size() - 1;
   std::vector<double> t_knots(N + 1);
   std::vector<Polynomial<double>> polynomials(N);
@@ -327,8 +328,8 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
     const double delta_t = delta / sd_avg;
     t_knots[knot + 1] = t_knots[knot] + delta_t;
 
-    Eigen::Vector3d coeffs(gridpoints_(knot), sd_knots(knot),
-                           0.5 * u_star(knot));
+    const Eigen::Vector3d coeffs(gridpoints_(knot), sd_knots(knot),
+                                 0.5 * u_star(knot));
     polynomials[knot] = Polynomial<double>(coeffs);
   }
 
