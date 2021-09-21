@@ -866,6 +866,9 @@ drake_cc_googletest(
     name = "mesh_utilities_test",
     deps = [
         ":mesh_utilities",
+        "//geometry/proximity:make_box_field",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:mesh_to_vtk",
         "//geometry/proximity:proximity_utilities",
     ],
 )
