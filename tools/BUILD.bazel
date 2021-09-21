@@ -93,6 +93,16 @@ config_setting(
     values = {"define": "NO_DREAL=ON"},
 )
 
+# Ibex is an open-source solver, and is included in the Drake build by
+# default. The Ibex solver is irrelevant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for developers who don't
+# actually need it.  This is not a supported configuration. Use at your own
+# risk: --define=NO_IBEX=ON
+config_setting(
+    name = "no_ibex",
+    values = {"define": "NO_IBEX=ON"},
+)
+
 # IPOPT is an open-source solver, and is included in the Drake build by
 # default. The IPOPT solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't

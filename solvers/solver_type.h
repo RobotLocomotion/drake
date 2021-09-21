@@ -11,6 +11,7 @@ enum class SolverType {
   kDReal,
   kEqualityConstrainedQP,
   kGurobi,
+  kIbex,
   kIpopt,
   kLinearSystem,
   kMobyLCP,
