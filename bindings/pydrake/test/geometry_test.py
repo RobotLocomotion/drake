@@ -62,16 +62,28 @@ class TestGeometry(unittest.TestCase):
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere1"))
-        scene_graph.RegisterGeometry(
+        # We'll explicitly give sphere_2 a rigid hydroelastic representation.
+        sphere_2 = scene_graph.RegisterGeometry(
             source_id=global_source, geometry_id=global_geometry,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere2"))
-        scene_graph.RegisterAnchoredGeometry(
+        props = mut.ProximityProperties()
+        mut.AddRigidHydroelasticProperties(resolution_hint=1, properties=props)
+        scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_2,
+                               properties=props)
+        # We'll explicitly give sphere_3 a soft hydroelastic representation.
+        sphere_3 = scene_graph.RegisterAnchoredGeometry(
             source_id=global_source,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere3"))
+        props = mut.ProximityProperties()
+        mut.AddContactMaterial(elastic_modulus=1e8, properties=props)
+        mut.AddSoftHydroelasticProperties(resolution_hint=1, properties=props)
+        scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_3,
+                               properties=props)
+
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
 
@@ -179,11 +191,23 @@ class TestGeometry(unittest.TestCase):
             ids = inspector.GetGeometryIds(geometry_set)
             self.assertEqual(len(ids), 1)
 
+        # Only the first sphere has no proximity properties. The latter two
+        # have hydroelastic properties (rigid and compliant, respectively).
         self.assertEqual(
-            inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
+            inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 1)
+        self.assertIsNone(
+            inspector.maybe_get_hydroelastic_mesh(
+                geometry_id=global_geometry))
+        self.assertIsInstance(
+            inspector.maybe_get_hydroelastic_mesh(
+                geometry_id=sphere_2), mut.SurfaceMesh)
+        self.assertIsInstance(
+            inspector.maybe_get_hydroelastic_mesh(
+                geometry_id=sphere_3), mut.VolumeMesh)
         self.assertEqual(inspector.NumDynamicGeometries(), 2)
         self.assertEqual(inspector.NumAnchoredGeometries(), 1)
-        self.assertEqual(len(inspector.GetCollisionCandidates()), 0)
+        # Sphere 2 and 3 have proximity roles; the pair is a candidate.
+        self.assertEqual(len(inspector.GetCollisionCandidates()), 1)
         self.assertTrue(inspector.SourceIsRegistered(source_id=global_source))
         # TODO(SeanCurtis-TRI) Remove this call at the same time as deprecating
         # the subsequent deprecation tests; it is only here to show that the
@@ -203,7 +227,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(
             inspector.NumGeometriesForFrame(frame_id=global_frame), 2)
         self.assertEqual(inspector.NumGeometriesForFrameWithRole(
-            frame_id=global_frame, role=mut.Role.kProximity), 0)
+            frame_id=global_frame, role=mut.Role.kProximity), 1)
         self.assertEqual(len(inspector.GetGeometries(frame_id=global_frame)),
                          2)
         self.assertTrue(
@@ -211,7 +235,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(
             len(inspector.GetGeometries(frame_id=global_frame,
                                         role=mut.Role.kProximity)),
-            0)
+            1)
         self.assertEqual(
             inspector.GetGeometryIdByName(frame_id=global_frame,
                                           role=mut.Role.kUnassigned,
