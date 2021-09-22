@@ -120,6 +120,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
         v_unit_box = mut.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
+        v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3))
+        self.assertTrue(v_from_h.PointInSet([0, 0, 0]))
 
     def test_cartesian_product(self):
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
