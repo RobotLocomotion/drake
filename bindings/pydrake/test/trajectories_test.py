@@ -319,6 +319,9 @@ class TestTrajectories(unittest.TestCase):
             ppose.get_orientation_trajectory(), PiecewiseQuaternionSlerp)
 
         X = RigidTransform()
+        ppose = PiecewisePose.MakeLinear(times=t, poses=[X, X, X])
+        self.assertEqual(ppose.get_number_of_segments(), 2)
+
         ppose = PiecewisePose.MakeCubicLinearWithEndLinearVelocity(
             times=t, poses=[X, X, X], start_vel=np.zeros((3, 1)),
             end_vel=np.zeros((3, 1)))
