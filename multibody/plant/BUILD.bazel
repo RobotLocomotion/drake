@@ -25,7 +25,6 @@ drake_cc_package_library(
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
-        ":hydroelastic_poly_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
         ":multibody_plant_core",
@@ -151,21 +150,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelastic_poly_contact_info",
-    srcs = [
-        "hydroelastic_poly_contact_info.cc",
-    ],
-    hdrs = [
-        "hydroelastic_poly_contact_info.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//geometry/query_results:polygonal_contact_surface",
-        "//multibody/math",
-    ],
-)
-
-drake_cc_library(
     name = "hydroelastic_quadrature_point_data",
     srcs = [],
     hdrs = [
@@ -186,7 +170,6 @@ drake_cc_library(
     ],
     deps = [
         ":hydroelastic_contact_info",
-        ":hydroelastic_poly_contact_info",
         ":point_pair_contact_info",
         "//common:default_scalars",
     ],
@@ -296,13 +279,6 @@ drake_cc_library(
     hdrs = ["contact_permutation.h"],
     deps = [
         "//multibody/tree:multibody_tree_topology",
-    ],
-)
-
-drake_cc_googletest(
-    name = "contact_results_test",
-    deps = [
-        ":contact_results",
     ],
 )
 
