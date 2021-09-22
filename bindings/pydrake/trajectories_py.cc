@@ -357,6 +357,8 @@ PYBIND11_MODULE(trajectories, m) {
                const PiecewiseQuaternionSlerp<T>&>(),
           py::arg("position_trajectory"), py::arg("orientation_trajectory"),
           doc.PiecewisePose.ctor.doc_2args)
+      .def_static("MakeLinear", &PiecewisePose<T>::MakeLinear, py::arg("times"),
+          py::arg("poses"), doc.PiecewisePose.MakeLinear.doc)
       .def_static("MakeCubicLinearWithEndLinearVelocity",
           &PiecewisePose<T>::MakeCubicLinearWithEndLinearVelocity,
           py::arg("times"), py::arg("poses"),
