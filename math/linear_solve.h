@@ -1,8 +1,9 @@
 #pragma once
 
-#include "common/symbolic.h"
-#include "math/autodiff.h"
-#include "math/autodiff_gradient.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/symbolic.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace math {
@@ -18,6 +19,9 @@ struct is_double_or_symbolic<symbolic::Expression> : std::true_type {};
 
 template <>
 struct is_double_or_symbolic<symbolic::Variable> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_double_or_symbolic_v = is_double_or_symbolic<T>::value;
 }  // namespace internal
 
 /**
@@ -71,11 +75,11 @@ struct is_double_or_symbolic<symbolic::Variable> : std::true_type {};
  * const auto b_ad = initializeAutoDiffGivenGradientMatrix(b_val, b_gradient);
  * // Solve the linear system A_val * x_val = b_val.
  * Eigen::PartialPivLU<Eigen::Matrix2d> linear_solver(A_val);
- * const auto x_val = LinearSolve(linear_solver, A_val, b_val);
+ * const auto x_val = SolveLinearSystem(linear_solver, A_val, b_val);
  * // Solve the linear system A*x=b, together with the gradient.
  * // x_ad contains both the value of the solution A*x=b, together with its
  * // gradient.
- * const auto x_ad = LinearSolve(linear_solver, A_ad, b_ad);
+ * const auto x_ad = SolveLinearSystem(linear_solver, A_ad, b_ad);
  * @endcode
  */
 
@@ -89,16 +93,31 @@ struct is_double_or_symbolic<symbolic::Variable> : std::true_type {};
  */
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value &&
-        internal::is_double_or_symbolic<typename DerivedB::Scalar>::value &&
+    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
+        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
         std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
-LinearSolve(const LinearSolver& linear_solver,
-            const Eigen::MatrixBase<DerivedA>& A,
-            const Eigen::MatrixBase<DerivedB>& b) {
+SolveLinearSystem(const LinearSolver& linear_solver,
+                  const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b) {
   unused(A);
   return linear_solver.solve(b);
+}
+
+template <typename LinearSolver, typename DerivedA, typename DerivedB>
+DRAKE_DEPRECATED("2022-01-01",
+                 "Please use SolveLinearSystem() instead of LinearSolve()")
+typename std::enable_if<
+    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
+        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
+        std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
+    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                  DerivedB::ColsAtCompileTime>>::type
+    LinearSolve(const LinearSolver& linear_solver,
+                const Eigen::MatrixBase<DerivedA>& A,
+                const Eigen::MatrixBase<DerivedB>& b) {
+  return SolveLinearSystem(linear_solver, A, b);
 }
 
 /**
@@ -111,12 +130,12 @@ LinearSolve(const LinearSolver& linear_solver,
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same_v<typename DerivedA::Scalar, double> &&
-        !internal::is_double_or_symbolic<typename DerivedB::Scalar>::value,
+        !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
-LinearSolve(const LinearSolver& linear_solver,
-            const Eigen::MatrixBase<DerivedA>& A,
-            const Eigen::MatrixBase<DerivedB>& b) {
+SolveLinearSystem(const LinearSolver& linear_solver,
+                  const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b) {
   unused(A);
   const int num_z_b = GetDerivativeSize(b);
   if (num_z_b == 0) {
@@ -144,6 +163,20 @@ LinearSolve(const LinearSolver& linear_solver,
   return x_ad;
 }
 
+template <typename LinearSolver, typename DerivedA, typename DerivedB>
+DRAKE_DEPRECATED("2022-01-01",
+                 "Please use SolveLinearSystem() instead of LinearSolve()")
+typename std::enable_if<
+    std::is_same_v<typename DerivedA::Scalar, double> &&
+        !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
+    Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
+                  DerivedB::ColsAtCompileTime>>::type
+    LinearSolve(const LinearSolver& linear_solver,
+                const Eigen::MatrixBase<DerivedA>& A,
+                const Eigen::MatrixBase<DerivedB>& b) {
+  return SolveLinearSystem(linear_solver, A, b);
+}
+
 /**
  * Specialized when A is an AutoDiffScalar-valued matrix, and b can contain
  * either AutoDiffScalar or double. See @ref linear_solve_given_solver for more
@@ -151,12 +184,12 @@ LinearSolve(const LinearSolver& linear_solver,
  */
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
-LinearSolve(const LinearSolver& linear_solver,
-            const Eigen::MatrixBase<DerivedA>& A,
-            const Eigen::MatrixBase<DerivedB>& b) {
+SolveLinearSystem(const LinearSolver& linear_solver,
+                  const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b) {
   // We differentiate A * x = b directly
   // A*∂x/∂zᵢ + ∂A/∂zᵢ * x = ∂b/∂zᵢ
   // So ∂x/∂zᵢ = A⁻¹(∂b/∂zᵢ - ∂A/∂zᵢ * x)
@@ -170,15 +203,15 @@ LinearSolve(const LinearSolver& linear_solver,
   }
   if (num_z_A == 0 && num_z_b == 0) {
     if constexpr (std::is_same_v<typename DerivedB::Scalar, double>) {
-      return LinearSolve(linear_solver, autoDiffToValueMatrix(A), b)
+      return SolveLinearSystem(linear_solver, autoDiffToValueMatrix(A), b)
           .template cast<typename DerivedA::Scalar>();
     } else {
-      return LinearSolve(linear_solver, autoDiffToValueMatrix(A),
-                         autoDiffToValueMatrix(b))
+      return SolveLinearSystem(linear_solver, autoDiffToValueMatrix(A),
+                               autoDiffToValueMatrix(b))
           .template cast<typename DerivedA::Scalar>();
     }
   } else if (num_z_A == 0 && num_z_b != 0) {
-    return LinearSolve(linear_solver, autoDiffToValueMatrix(A), b);
+    return SolveLinearSystem(linear_solver, autoDiffToValueMatrix(A), b);
   }
   // First compute the value of x.
   Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
@@ -194,7 +227,7 @@ LinearSolve(const LinearSolver& linear_solver,
   // num_z_A != 0
   if (num_z_A != 0 && num_z_b != 0 && num_z_A != num_z_b) {
     throw std::runtime_error(
-        fmt::format("LinearSolve(): A contains derivatives for {} "
+        fmt::format("SolveLinearSystem(): A contains derivatives for {} "
                     "variables, while b contains derivatives for {} variables",
                     num_z_A, num_z_b));
   }
@@ -256,6 +289,19 @@ LinearSolve(const LinearSolver& linear_solver,
   return x_ad;
 }
 
+template <typename LinearSolver, typename DerivedA, typename DerivedB>
+DRAKE_DEPRECATED("2022-01-01",
+                 "Please use SolveLinearSystem() instead of LinearSolve()")
+typename std::enable_if<
+    !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
+    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                  DerivedB::ColsAtCompileTime>>::type
+    LinearSolve(const LinearSolver& linear_solver,
+                const Eigen::MatrixBase<DerivedA>& A,
+                const Eigen::MatrixBase<DerivedB>& b) {
+  return SolveLinearSystem(linear_solver, A, b);
+}
+
 //@}
 
 /**
@@ -280,7 +326,7 @@ LinearSolve(const LinearSolver& linear_solver,
  * A_val << 1, 2, 2, 5;
  * Eigen::Vector2d b_val(3, 4);
  * const Eigen::Vector2d x_val =
- *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_val), A_val, b_val);
+ *   SolveLinearSystem(GetLinearSolver<Eigen::LLT>(A_val), A_val, b_val);
  * Eigen::Matrix<AutoDiffXd, 2, 2> A_ad;
  * A_ad(0, 0).value() = A_val(0, 0);
  * A_ad(0, 0).derivatives() = Eigen::Vector3d(1, 2, 3);
@@ -292,7 +338,7 @@ LinearSolve(const LinearSolver& linear_solver,
  * A_ad(1, 1).derivatives() = Eigen::Vector3d(4, 5, 6);
  * // Solve A * x = b with A containing gradient.
  * const Eigen::Matrix<AutoDiffXd, 2, 1> x_ad1 =
- *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_ad), A_ad, b_val);
+ *   SolveLinearSystem(GetLinearSolver<Eigen::LLT>(A_ad), A_ad, b_val);
  * Eigen::Matrix<AutoDiffXd, 2, 1> b_ad;
  * b_ad(0).value() = b_val(0);
  * b_ad(0).derivatives() = Eigen::Vector3d(5, 6, 7);
@@ -300,58 +346,53 @@ LinearSolve(const LinearSolver& linear_solver,
  * b_ad(1).derivatives() = Eigen::Vector3d(6, 7, 8);
  * // Solve A * x = b with b containing gradient.
  * const Eigen::Matrix<AutoDiffXd, 2, 1> x_ad2 =
- *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_val), A_val, b_ad);
+ *   SolveLinearSystem(GetLinearSolver<Eigen::LLT>(A_val), A_val, b_ad);
  * // Solve A * x = b with both A and b containing gradient.
  * const Eigen::Matrix<AutoDiffXd, 2, 1> x_ad3 =
- *   LinearSolve(GetLinearSolver<Eigen::LLT>(A_ad), A_ad, b_ad);
+ *   SolveLinearSystem(GetLinearSolver<Eigen::LLT>(A_ad), A_ad, b_ad);
  * @endcode{cc}
  */
 
 //@{
-/**
- * Get the linear solver for a matrix A containing double or
- * symbolic::Expressions. The returned linear solver will have matrix type
- * containing the same scalar type as A.
- * See @ref get_linear_solver for more details.
- */
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA>
-typename std::enable_if<
-    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<
-        typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-        DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-        DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>>::type
-GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  const LinearSolverType<Eigen::Matrix<
-      typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-      DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-      DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>
-      linear_solver(A);
-  return linear_solver;
-}
 
 /**
- * Get the linear solver for a matrix A containing AutoDiffScalar.
- * The returned linear solver will be LinearSolverType<Matrix<double, Rows,
- * Cols>>
+ * The return type of GetLinearSolver function. It is the type of the linear
+ * solver. For example
+ * LinearSolver<Eigen::LLT, Eigen::Matrix3d>::type is
+ * Eigen::LLT<Eigen::Matrix3d>.
+ * See @ref get_linear_solver for more details. When DerivedA::Scalar is
+ * double or symbolic::Expression, the solver scalar type is the same as
+ * DerivedA::Scalar; when DerivedA::Scalar is Eigen::AutoDiffScalar, the
+ * solver scalar type is double.
  */
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
-typename std::enable_if<
-    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
-    LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>>>::type
-GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
-  using A_VAL_TYPE = Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                   DerivedA::ColsAtCompileTime, Eigen::ColMajor,
-                                   DerivedA::MaxRowsAtCompileTime,
-                                   DerivedA::MaxColsAtCompileTime>;
-  const A_VAL_TYPE A_val = autoDiffToValueMatrix(A);
-  const LinearSolverType<A_VAL_TYPE> linear_solver(A_val);
-  return linear_solver;
+using LinearSolver = LinearSolverType<Eigen::Matrix<
+    std::conditional_t<
+        internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
+        typename DerivedA::Scalar, double>,
+    DerivedA::RowsAtCompileTime, DerivedA::ColsAtCompileTime, Eigen::ColMajor,
+    DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>;
+
+/**
+ * Get the linear solver for a matrix A.
+ * If A has scalar type of double or symbolic::Expressions, then the returned
+ * linear solver will have the same scalar type. If A has scalar type of
+ * Eigen::AutoDiffScalar, then the returned linear solver will have scalar type
+ * of double. See @ref get_linear_solver for more details.
+ */
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA>
+LinearSolver<LinearSolverType, DerivedA> GetLinearSolver(
+    const Eigen::MatrixBase<DerivedA>& A) {
+  if constexpr (internal::is_double_or_symbolic_v<typename DerivedA::Scalar>) {
+    const LinearSolver<LinearSolverType, DerivedA> linear_solver(A);
+    return linear_solver;
+  } else {
+    const auto A_val = autoDiffToValueMatrix(A);
+    const LinearSolver<LinearSolverType, DerivedA> linear_solver(A_val);
+    return linear_solver;
+  }
 }
 //@}
 
@@ -421,11 +462,11 @@ GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
  * b_gradient << 1, 3, 5, 7, 9, 11;
  * const auto b_ad = initializeAutoDiffGivenGradientMatrix(b_val, b_gradient);
  * // Solve the linear system A*x=b without the gradient.
- * const auto x_val = LinearSolve<Eigen::PartialPivLU>(A_val, b_val);
+ * const auto x_val = SolveLinearSystem<Eigen::PartialPivLU>(A_val, b_val);
  * // Solve the linear system A*x=b, together with the gradient.
  * // x_ad contains both the value of the solution A*x=b, together with its
  * // gradient.
- * const auto x_ad = LinearSolve<Eigen::PartialPivLU>(A_ad, b_ad);
+ * const auto x_ad = SolveLinearSystem<Eigen::PartialPivLU>(A_ad, b_ad);
  * @endcode
  */
 
@@ -437,15 +478,30 @@ GetLinearSolver(const Eigen::MatrixBase<DerivedA>& A) {
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    internal::is_double_or_symbolic<typename DerivedA::Scalar>::value &&
-        internal::is_double_or_symbolic<typename DerivedB::Scalar>::value &&
+    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
+        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
         std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
-LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
-            const Eigen::MatrixBase<DerivedB>& b) {
+SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b) {
   const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
-  return LinearSolve(linear_solver, A, b);
+  return SolveLinearSystem(linear_solver, A, b);
+}
+
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
+DRAKE_DEPRECATED("2022-01-01",
+                 "Please use SolveLinearSystem() instead of LinearSolve()")
+typename std::enable_if<
+    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
+        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
+        std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
+    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                  DerivedB::ColsAtCompileTime>>::type
+    LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
+                const Eigen::MatrixBase<DerivedB>& b) {
+  return SolveLinearSystem<LinearSolverType>(A, b);
 }
 
 /**
@@ -456,13 +512,27 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same_v<typename DerivedA::Scalar, double> &&
-        !internal::is_double_or_symbolic<typename DerivedB::Scalar>::value,
+        !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
     Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
-LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
-            const Eigen::MatrixBase<DerivedB>& b) {
+SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b) {
   const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
-  return LinearSolve(linear_solver, A, b);
+  return SolveLinearSystem(linear_solver, A, b);
+}
+
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
+DRAKE_DEPRECATED("2022-01-01",
+                 "Please use SolveLinearSystem() instead of LinearSolve()")
+typename std::enable_if<
+    std::is_same_v<typename DerivedA::Scalar, double> &&
+        !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
+    Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
+                  DerivedB::ColsAtCompileTime>>::type
+    LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
+                const Eigen::MatrixBase<DerivedB>& b) {
+  return SolveLinearSystem<LinearSolverType>(A, b);
 }
 
 /**
@@ -472,13 +542,26 @@ LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    !internal::is_double_or_symbolic<typename DerivedA::Scalar>::value,
+    !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
                   DerivedB::ColsAtCompileTime>>::type
-LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
-            const Eigen::MatrixBase<DerivedB>& b) {
+SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b) {
   const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
-  return LinearSolve(linear_solver, A, b);
+  return SolveLinearSystem(linear_solver, A, b);
+}
+
+template <template <typename, int...> typename LinearSolverType,
+          typename DerivedA, typename DerivedB>
+DRAKE_DEPRECATED("2022-01-01",
+                 "Please use SolveLinearSystem() instead of LinearSolve()")
+typename std::enable_if<
+    !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
+    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                  DerivedB::ColsAtCompileTime>>::type
+    LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
+                const Eigen::MatrixBase<DerivedB>& b) {
+  return SolveLinearSystem<LinearSolverType>(A, b);
 }
 //@}
 
