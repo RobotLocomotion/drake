@@ -3669,11 +3669,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().get_frame(frame_index);
   }
 
-  /// Returns a list of all frames in this plant ordered by their FrameIndex.
-  const std::vector<Frame<T>*>& get_frames() const {
-    return internal_tree().get_frames();
-  }
-
   /// @returns `true` if a frame named `name` was added to the model.
   /// @see AddFrame().
   /// @throws std::exception if the frame name occurs in multiple model
@@ -3711,6 +3706,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const Frame<T>& GetFrameByName(
       std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().GetFrameByName(name, model_instance);
+  }
+
+  /// Returns a list of frame indices associated with `model_instance`.
+  std::vector<FrameIndex> GetFrameIndices(ModelInstanceIndex model_instance)
+  const {
+    return internal_tree().GetFrameIndices(model_instance);
   }
 
   /// Returns the number of joint actuators in the model.
