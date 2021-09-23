@@ -97,11 +97,12 @@ def parse_filename_and_parser(args_parser, args):
         if args.package_path:
             # Verify that package.xml is found in the designated path.
             package_path = os.path.abspath(args.package_path)
-            if not os.path.isfile(os.path.join(package_path, "package.xml")):
+            package_xml = os.path.join(package_path, "package.xml")
+            if not os.path.isfile(package_xml):
                 args_parser.error(f"package.xml not found at: {package_path}")
 
             # Get the package map and populate it using the package path.
-            parser.package_map().PopulateFromFolder(package_path)
+            parser.package_map().AddPackageXml(package_xml)
         return parser
 
     if args.find_resource:
