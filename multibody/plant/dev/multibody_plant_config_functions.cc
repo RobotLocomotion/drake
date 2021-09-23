@@ -1,4 +1,4 @@
-#include "sim/common/multibody_plant_config_functions.h"
+#include "drake/multibody/plant/dev/multibody_plant_config_functions.h"
 
 #include <array>
 #include <stdexcept>
