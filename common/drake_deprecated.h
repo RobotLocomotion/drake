@@ -50,6 +50,11 @@ Sample uses: @code
   using NewType
       DRAKE_DEPRECATED("2038-01-19", "Use NewType instead.")
       = OldType;
+
+  // Very long messages might need a NOLINT.
+  DRAKE_DEPRECATED("2038-01-19",
+      "Profiling has shown f() to be slow with a large N; prefer to use g() instead.")  // NOLINT
+  int f(int arg);
 @endcode
 */
 #define DRAKE_DEPRECATED(removal_date, message)

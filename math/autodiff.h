@@ -72,8 +72,7 @@ DiscardGradient(const Eigen::MatrixBase<Derived>& matrix) {
 
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
+    "Apparently unused. File a Drake issue on GitHub if you need this specialization.")  // NOLINT
 typename std::enable_if_t<
     !std::is_same_v<_Scalar, double>,
     Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
@@ -85,8 +84,7 @@ DiscardGradient(const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&
 
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
+    "Apparently unused. File a Drake issue on GitHub if you need this specialization.")  // NOLINT
 typename std::enable_if_t<std::is_same_v<_Scalar, double>,
                           const Eigen::Transform<_Scalar, _Dim, _Mode,
     _Options>&>
