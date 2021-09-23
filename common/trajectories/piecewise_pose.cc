@@ -22,6 +22,22 @@ PiecewisePose<T>::PiecewisePose(
 }
 
 template <typename T>
+PiecewisePose<T> PiecewisePose<T>::MakeLinear(
+    const std::vector<T>& times,
+    const std::vector<math::RigidTransform<T>>& poses) {
+  std::vector<MatrixX<T>> pos_knots(poses.size());
+  std::vector<math::RotationMatrix<T>> rot_knots(poses.size());
+  for (size_t i = 0; i < poses.size(); ++i) {
+    pos_knots[i] = poses[i].translation();
+    rot_knots[i] = poses[i].rotation();
+  }
+
+  return PiecewisePose<T>(
+      PiecewisePolynomial<T>::FirstOrderHold(times, pos_knots),
+      PiecewiseQuaternionSlerp<T>(times, rot_knots));
+}
+
+template <typename T>
 PiecewisePose<T> PiecewisePose<T>::MakeCubicLinearWithEndLinearVelocity(
     const std::vector<T>& times,
     const std::vector<math::RigidTransform<T>>& poses,

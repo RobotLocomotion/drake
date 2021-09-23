@@ -38,7 +38,19 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
                 const PiecewiseQuaternionSlerp<T>& orientation_trajectory);
 
   /**
-   * Constructs a PiecewisePose from given @p time and @p poses.
+   * Constructs a PiecewisePose from given @p times and @p poses. The positions
+   * trajectory is constructed as a first-order hold. The orientation is
+   * constructed using the quaternion slerp.  There must be at least two
+   * elements in @p times and @p poses.
+   * @param times     Breaks used to build the splines.
+   * @param poses     Knots used to build the splines.
+   */
+  static PiecewisePose<T> MakeLinear(
+      const std::vector<T>& times,
+      const std::vector<math::RigidTransform<T>>& poses);
+
+  /**
+   * Constructs a PiecewisePose from given @p times and @p poses.
    * A cubic polynomial with given end velocities is used to construct the
    * position part. The rotational part is represented by a piecewise quaterion
    * trajectory.  There must be at least two elements in @p times and @p poses.
