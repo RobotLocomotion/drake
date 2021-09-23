@@ -6,17 +6,15 @@
 
 #include "drake/common/drake_assert.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace multibody {
 
-using AddResult = drake::multibody::AddMultibodyPlantSceneGraphResult<double>;
-using drake::multibody::ContactModel;
+using AddResult = AddMultibodyPlantSceneGraphResult<double>;
 
 AddResult AddMultibodyPlant(
     const MultibodyPlantConfig& config,
-    drake::systems::DiagramBuilder<double>* builder) {
-  AddResult result = drake::multibody::AddMultibodyPlantSceneGraph(
-      builder, config.time_step);
+    systems::DiagramBuilder<double>* builder) {
+  AddResult result = AddMultibodyPlantSceneGraph(builder, config.time_step);
   result.plant.set_penetration_allowance(config.penetration_allowance);
   result.plant.set_stiction_tolerance(config.stiction_tolerance);
   result.plant.set_contact_model(
@@ -53,8 +51,7 @@ constexpr std::array<std::pair<ContactModel, const char*>, 3> kContactModels{{
 
 }  // namespace
 
-drake::multibody::ContactModel GetContactModelFromString(
-    const std::string_view& contact_model) {
+ContactModel GetContactModelFromString(std::string_view contact_model) {
   for (const auto& [value, name] : kContactModels) {
     if (name == contact_model) {
       return value;
@@ -74,5 +71,5 @@ std::string ContactModelToString(ContactModel contact_model) {
 }
 
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake

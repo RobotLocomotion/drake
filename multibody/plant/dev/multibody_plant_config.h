@@ -4,15 +4,13 @@
 
 #include "drake/common/name_value.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace multibody {
 
 /// The set of configurable properties on a MultibodyPlant.
 ///
 /// The field names and defaults here match MultibodyPlant's defaults exactly,
-/// with the exception of time_step -- it has no default within MultibodyPlant,
-/// since it is passed in as a constructor argument. Here, we choose a nominal
-/// value as a reasonably conservative estimate that works in many cases.
+/// with the exception of time_step.
 struct MultibodyPlantConfig {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -22,10 +20,20 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(contact_model));
   }
 
+  /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
+  ///
+  /// There is no default value for this within MultibodyPlant itself, so here
+  /// we choose a nominal value as a reasonably conservative estimate that
+  /// works in many cases.
   double time_step{0.001};
+
+  /// Configures the MultibodyPlant::set_penetration_allowance().
   double penetration_allowance{0.001};
+
+  /// Configures the MultibodyPlant::set_stiction_tolerance().
   double stiction_tolerance{0.001};
 
+  /// Configures the MultibodyPlant::set_contact_model().
   /// Refer to drake::multibody::ContactModel for details.
   /// Valid strings are:
   /// - "point"
@@ -34,5 +42,5 @@ struct MultibodyPlantConfig {
   std::string contact_model{"point"};
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake
