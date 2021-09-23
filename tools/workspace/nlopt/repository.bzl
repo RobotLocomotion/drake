@@ -23,21 +23,10 @@ def _impl(repository_ctx):
         repository_ctx.symlink("/usr/include/nlopt.h", "include/nlopt.h")
         repository_ctx.symlink("/usr/include/nlopt.hpp", "include/nlopt.hpp")
     elif os_result.is_manylinux:
-        # Although we expect that "manylinux" is based on Ubuntu 18.04, the
-        # "flavor" here relates to what spelling of the linkopts we want to be
-        # using.  As drake-dependencies is currently formulated, the linkopts
-        # from the ubuntu-18.04.BUILD.bazel are satisfactory.
+        # We expect that "manylinux" is based on Ubuntu 18.04.
         build_flavor = "ubuntu-18.04"
-        repository_ctx.symlink(
-            # TODO(jwnimmer-tri) Ideally, we wouldn't be hard-coding paths when
-            # using manylinux.
-            "/opt/drake-dependencies/include/nlopt.h",
-            "include/nlopt.h",
-        )
-        repository_ctx.symlink(
-            "/opt/drake-dependencies/include/nlopt.hpp",
-            "include/nlopt.hpp",
-        )
+        repository_ctx.symlink("/usr/include/nlopt.h", "include/nlopt.h")
+        repository_ctx.symlink("/usr/include/nlopt.hpp", "include/nlopt.hpp")
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
