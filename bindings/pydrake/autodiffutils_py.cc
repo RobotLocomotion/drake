@@ -107,13 +107,46 @@ PYBIND11_MODULE(autodiffutils, m) {
   autodiff.attr("arctan2") = autodiff.attr("atan2");
 
   m.def(
+      "InitializeAutoDiff",
+      [](const Eigen::MatrixXd& value, Eigen::DenseIndex num_derivatives,
+          Eigen::DenseIndex deriv_num_start) {
+        return InitializeAutoDiff(value, num_derivatives, deriv_num_start);
+      },
+      py::arg("value"), py::arg("num_derivatives") = std::nullopt,
+      py::arg("deriv_num_start") = std::nullopt,
+      doc.InitializeAutoDiff.doc_just_value);
+
+  m.def(
+      "ExtractValue",
+      [](const MatrixX<AutoDiffXd>& auto_diff_matrix) {
+        return ExtractValue(auto_diff_matrix);
+      },
+      py::arg("auto_diff_matrix"), doc.ExtractValue.doc);
+
+  m.def(
+      "ExtractGradient",
+      [](const MatrixX<AutoDiffXd>& auto_diff_matrix) {
+        return ExtractGradient(auto_diff_matrix);
+      },
+      py::arg("auto_diff_matrix"), doc.ExtractGradient.doc);
+
+  m.def(
+      "InitializeAutoDiff",
+      [](const Eigen::VectorXd& value, const Eigen::MatrixXd& gradient) {
+        return InitializeAutoDiff(value, gradient);
+      },
+      py::arg("value"), py::arg("gradient"),
+      doc.InitializeAutoDiff.doc_value_and_gradient);
+
+  // TODO(sherm1) To be deprecated asap.
+  m.def(
       "initializeAutoDiff",
       [](const Eigen::MatrixXd& mat, Eigen::DenseIndex num_derivatives,
           Eigen::DenseIndex deriv_num_start) {
         return initializeAutoDiff(mat, num_derivatives, deriv_num_start);
       },
       py::arg("mat"), py::arg("num_derivatives") = -1,
-      py::arg("deriv_num_start") = 0, doc.initializeAutoDiff.doc_3args);
+      py::arg("deriv_num_start") = 0, doc.initializeAutoDiff.doc);
 
   m.def(
       "autoDiffToValueMatrix",
@@ -135,7 +168,7 @@ PYBIND11_MODULE(autodiffutils, m) {
         return initializeAutoDiffGivenGradientMatrix(val, gradient);
       },
       py::arg("val"), py::arg("gradient"),
-      doc.initializeAutoDiffGivenGradientMatrix.doc_2args);
+      doc.initializeAutoDiffGivenGradientMatrix.doc);
 
   ExecuteExtraPythonCode(m);
 }

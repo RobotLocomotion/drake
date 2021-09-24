@@ -155,6 +155,7 @@ namespace drake {
 
 /// Returns the autodiff scalar's value() as a double.  Never throws.
 /// Overloads ExtractDoubleOrThrow from common/extract_double.h.
+/// @see math::ExtractValue(), math::DiscardGradient()
 template <typename DerType>
 double ExtractDoubleOrThrow(const Eigen::AutoDiffScalar<DerType>& scalar) {
   return static_cast<double>(scalar.value());
@@ -163,6 +164,7 @@ double ExtractDoubleOrThrow(const Eigen::AutoDiffScalar<DerType>& scalar) {
 /// Returns @p matrix as an Eigen::Matrix<double, ...> with the same size
 /// allocation as @p matrix.  Calls ExtractDoubleOrThrow on each element of the
 /// matrix, and therefore throws if any one of the extractions fail.
+/// @see math::ExtractValue(), math::DiscardGradient()
 template <typename DerType, int RowsAtCompileTime, int ColsAtCompileTime,
           int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
 auto ExtractDoubleOrThrow(
