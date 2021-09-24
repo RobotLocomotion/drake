@@ -38,7 +38,6 @@ drake_cc_package_library(
         ":evaluator_base",
         ":function",
         ":get_program_type",
-        ":gurobi_qp",
         ":gurobi_solver",
         ":ibex_solver",
         ":indeterminate",
@@ -1059,31 +1058,6 @@ drake_cc_library(
     }),
 )
 
-# This library is empty unless Gurobi is available.
-drake_cc_library(
-    name = "gurobi_qp",
-    srcs = select({
-        "//tools:with_gurobi": [
-            "qp.cc",
-        ],
-        "//conditions:default": [],
-    }),
-    hdrs = select({
-        "//tools:with_gurobi": [
-            "fast_qp.h",
-            "gurobi_qp.h",
-        ],
-        "//conditions:default": [],
-    }),
-    deps = select({
-        "//tools:with_gurobi": [
-            "@eigen",
-            "@gurobi//:gurobi_c",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
 drake_cc_library(
     name = "mixed_integer_optimization_util",
     srcs = ["mixed_integer_optimization_util.cc"],
@@ -1838,10 +1812,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "dreal_solver.cc",
     "dreal_solver.h",
     "dreal_solver_common.cc",
-    "fast_qp.h",
     "get_program_type.h",
     "get_program_type.cc",
-    "gurobi_qp.h",
     "gurobi_solver.cc",
     "gurobi_solver.h",
     "gurobi_solver_common.cc",
@@ -1872,7 +1844,6 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_snopt.cc",
     "osqp_solver.cc",
     "osqp_solver_common.cc",
-    "qp.cc",
     "scs_solver.cc",
     "scs_solver_common.cc",
     "snopt_solver.cc",
