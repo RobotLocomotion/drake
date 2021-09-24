@@ -1,4 +1,10 @@
+// N.B. Because we do not have a *direct* deprecation on the call site, but
+// instead indirectly via GeometryProperties::ToVector4d, ToRgba(), we must
+// suppress deprecations for the declaration of the file itself.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "drake/geometry/geometry_properties.h"
+#pragma GCC diagnostic pop
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -488,6 +494,7 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   properties.AddProperty(group_name, color_name, color);
   // - Get<Rgba>.
   EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, color_name));
+
   // - Get<Vector4d>.
   EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, color_name));
   EXPECT_EQ(vector, properties.GetPropertyOrDefault<Vector4d>(
