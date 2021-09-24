@@ -80,6 +80,16 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
         EXPECT_TRUE(CompareMatrices(Ax_grad[i], b_grad[i], tol));
       }
     }
+    // Also use LinearSolve class, make sure it gives the same result as
+    // SolveLinearSystem.
+    const LinearSolver<LinearSolverType, DerivedA> solver(A);
+    const auto x_result = solver.Solve(b);
+    static_assert(std::is_same_v<typename decltype(x_result)::Scalar,
+                                 typename decltype(x)::Scalar>);
+    if constexpr (std::is_same_v<typename decltype(x_result)::Scalar, double>) {
+      EXPECT_TRUE(CompareMatrices(x_result, x));
+    } else {
+    }
   }
 }
 
