@@ -14,8 +14,10 @@ namespace {
 
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
-void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
-                           const Eigen::MatrixBase<DerivedB>& b) {
+typename std::enable_if<internal::is_autodiff_v<typename DerivedA::Scalar> ||
+                        std::is_same_v<typename DerivedA::Scalar, double>>::type
+TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
+                      const Eigen::MatrixBase<DerivedB>& b) {
   for (const bool use_deprecated : {true, false}) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -44,9 +46,9 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                 Ax.rows(), 0));
       }
     } else {
-      Ax_val = autoDiffToValueMatrix(Ax);
+      Ax_val = ExtractValue(Ax);
       for (int i = 0; i < Ax.cols(); ++i) {
-        Ax_grad.push_back(autoDiffToGradientMatrix(Ax.col(i)));
+        Ax_grad.push_back(ExtractGradient(Ax.col(i)));
       }
     }
 
@@ -58,9 +60,9 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                 b.rows(), 0));
       }
     } else {
-      b_val = autoDiffToValueMatrix(b);
+      b_val = ExtractValue(b);
       for (int i = 0; i < b.cols(); ++i) {
-        b_grad.push_back(autoDiffToGradientMatrix(b.col(i)));
+        b_grad.push_back(ExtractGradient(b.col(i)));
       }
     }
     const double tol = 2E-12;
@@ -80,6 +82,19 @@ void TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
         EXPECT_TRUE(CompareMatrices(Ax_grad[i], b_grad[i], tol));
       }
     }
+    // Also use LinearSolver class, make sure it gives the same result as
+    // SolveLinearSystem.
+    const LinearSolver<LinearSolverType, DerivedA> solver(A);
+    const auto x_result = solver.Solve(b);
+    static_assert(std::is_same_v<typename decltype(x_result)::Scalar,
+                                 typename decltype(x)::Scalar>);
+    if constexpr (std::is_same_v<typename decltype(x_result)::Scalar, double>) {
+      EXPECT_TRUE(CompareMatrices(x_result, x));
+    } else {
+      EXPECT_TRUE(CompareMatrices(ExtractValue(x_result), ExtractValue(x)));
+      EXPECT_TRUE(
+          CompareMatrices(ExtractGradient(x_result), ExtractGradient(x)));
+    }
   }
 }
 
@@ -90,7 +105,7 @@ class LinearSolveTest : public ::testing::Test {
     b_vec_val_ << 3, 5;
     Eigen::Matrix<double, 2, Eigen::Dynamic> b_grad(2, 3);
     b_grad << 1, 2, 3, 4, 5, 6;
-    b_vec_ad_ = initializeAutoDiffGivenGradientMatrix(b_vec_val_, b_grad);
+    b_vec_ad_ = InitializeAutoDiff(b_vec_val_, b_grad);
     for (int i = 0; i < 2; ++i) {
       for (int j = 0; j < 2; ++j) {
         A_ad_(i, j).value() = A_val_(i, j);
