@@ -53,6 +53,7 @@ while [ "${1:-}" != "" ]; do
       source_distribution_args+=(--without-update)
       ;;
     --without-asking)
+      binary_distribution_args+=(--without-asking)
       source_distribution_args+=(--without-asking)
       ;;
     *)
