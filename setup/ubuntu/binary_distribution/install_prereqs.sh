@@ -13,6 +13,8 @@ while [ "${1:-}" != "" ]; do
     --without-update)
       with_update=0
       ;;
+    --without-asking)
+      without-asking=1
     *)
       echo 'Invalid command line argument' >&2
       exit 3
@@ -24,6 +26,14 @@ if [[ "${EUID}" -ne 0 ]]; then
   echo 'ERROR: This script must be run as root' >&2
   exit 1
 fi
+
+if [[ "${without_asking}" -eq 1 ]]; then
+  echo 'We are going to install with apt-get install -y'
+  alias apt-get-install='apt-get install -y'
+else
+  alias apt-get-install='apt-get install'
+fi
+
 
 if command -v conda &>/dev/null; then
   echo 'WARNING: Anaconda is NOT supported for building and using the Drake Python bindings' >&2
@@ -39,7 +49,7 @@ if [[ "${with_update}" -eq 1 ]]; then
   binary_distribution_called_update=1
 fi
 
-apt-get install --no-install-recommends lsb-release
+apt-get-install --no-install-recommends lsb-release
 
 codename=$(lsb_release -sc)
 
@@ -48,7 +58,7 @@ if [[ "${codename}" != 'bionic' && "${codename}" != 'focal' ]]; then
   exit 2
 fi
 
-apt-get install --no-install-recommends $(cat <<EOF
+apt-get-install --no-install-recommends $(cat <<EOF
 build-essential
 cmake
 pkg-config
@@ -56,4 +66,4 @@ EOF
 )
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
-apt-get install --no-install-recommends ${packages}
+apt-get-install --no-install-recommends ${packages}
