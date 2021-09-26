@@ -1,9 +1,11 @@
 #pragma once
 
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <msgpack.hpp>
@@ -15,6 +17,14 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+
+// The fields in these structures are chosen to match the serialized names in
+// the meshcat messages. This simplifies msgpack operations and provides parity
+// with the javascript.  The structure names do not have this requirement.
+// When they represent a specific message with a single `type`, we take the
+// type name (with a `Data` suffix) as the struct name, e.g.
+// `MeshFileObjectData` is taken because the message `type` is
+// `_meshfile_object`.
 
 // Note: These types lack many of the standard const qualifiers in order to be
 // compatible with msgpack, which wants to be able to unpack into the same
@@ -36,6 +46,7 @@ struct MaterialData {
   bool wireframe{false};
   double wireframeLineWidth{1.0};
   bool vertexColors{false};
+
   MSGPACK_DEFINE_MAP(uuid, type, color, reflectivity, side, transparent,
                      opacity, linewidth, wireframe, wireframeLineWidth,
                      vertexColors);
@@ -55,7 +66,7 @@ struct GeometryData {
   std::optional<double> radiusTop;
   std::optional<double> radiusBottom;
   std::optional<double> radialSegments;
-  std::optional<std::string> format;
+  std::string format;
   std::string data;
 
   // MSGPACK_DEFINE_MAP sends e.g. 'heightSegments':nil when the optional values
@@ -76,7 +87,7 @@ struct GeometryData {
     if (radiusTop) ++size;
     if (radiusBottom) ++size;
     if (radialSegments) ++size;
-    if (format) ++size;
+    if (!format.empty()) ++size;
     if (!data.empty()) ++size;
     o.pack_map(size);
     o.pack("uuid");
@@ -119,9 +130,9 @@ struct GeometryData {
       o.pack("radialSegments");
       o.pack(*radialSegments);
     }
-    if (format) {
+    if (!format.empty()) {
       o.pack("format");
-      o.pack(*format);
+      o.pack(format);
     }
     if (!data.empty()) {
       o.pack("data");
@@ -135,27 +146,64 @@ struct GeometryData {
   }
 };
 
-struct ObjectMetaData {
+struct ObjectData {
   std::string type{"Object"};
   double version{4.5};
   MSGPACK_DEFINE_MAP(type, version);
 };
 
-struct Object3dData {
+struct MeshData {
   std::string uuid;
-  std::string type;
+  std::string type{"Mesh"};
   std::string geometry;
   std::string material;
   double matrix[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
   MSGPACK_DEFINE_MAP(uuid, type, geometry, material, matrix);
 };
 
+struct MeshFileObjectData {
+  std::string uuid;
+  std::string type{"_meshfile_object"};
+  std::string format;
+  std::string data;
+  std::string mtl_library;
+  std::map<std::string, std::string> resources;
+  double matrix[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+  MSGPACK_DEFINE_MAP(uuid, type, format, data, mtl_library, resources, matrix);
+};
+
 struct LumpedObjectData {
-  ObjectMetaData metadata{};
-  GeometryData geometries[1];
-  MaterialData materials[1];
-  Object3dData object;
-  MSGPACK_DEFINE_MAP(metadata, geometries, materials, object);
+  ObjectData metadata{};
+  // We use std::vector here for geometries and materials, even though our
+  // current usage only ever sends zero or one of each.  This is because the
+  // msgpack serialization needs to use msgpack::Array; using std::vector
+  // allows us to use the msgpack default Packer.
+  std::vector<GeometryData> geometries;
+  std::vector<MaterialData> materials;
+  std::variant<std::monostate, MeshData, MeshFileObjectData> object;
+
+  template <typename Packer>
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(Packer& o) const {
+    o.pack_map(4);
+    o.pack("metadata");
+    o.pack(metadata);
+    o.pack("geometries");
+    o.pack(geometries);
+    o.pack("materials");
+    o.pack(materials);
+    o.pack("object");
+    if (std::holds_alternative<MeshData>(object)) {
+      o.pack(std::get<MeshData>(object));
+    } else {
+      o.pack(std::get<MeshFileObjectData>(object));
+    }
+  }
+  // This method must be defined, but the implementation is not needed in the
+  // current workflows.
+  void msgpack_unpack(msgpack::object const&) {
+    throw std::runtime_error("unpack is not implemented for LumpedObjectData.");
+  }
 };
 
 struct SetObjectData {

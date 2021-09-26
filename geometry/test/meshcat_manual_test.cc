@@ -21,22 +21,29 @@ int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
 
   meshcat->SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
-  meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-2.0, 0, 0}));
+  meshcat->SetTransform("sphere", RigidTransformd(Vector3d{-2.5, 0, 0}));
 
   meshcat->SetObject("cylinder", Cylinder(.25, .5), Rgba(0.0, 1.0, 0, 1));
-  meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{-1.0, 0, 0}));
+  meshcat->SetTransform("cylinder", RigidTransformd(Vector3d{-1.5, 0, 0}));
 
   meshcat->SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, .5));
-  meshcat->SetTransform("ellipsoid", RigidTransformd(Vector3d{0.0, 0, 0}));
+  meshcat->SetTransform("ellipsoid", RigidTransformd(Vector3d{-0.5, 0, 0}));
 
   meshcat->SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
-  meshcat->SetTransform("box", RigidTransformd(Vector3d{1.0, 0, 0}));
+  meshcat->SetTransform("box", RigidTransformd(Vector3d{.5, 0, 0}));
 
+  // The green color of this cube comes from the texture map.
   meshcat->SetObject(
       "obj", Mesh(FindResourceOrThrow(
                       "drake/systems/sensors/test/models/meshes/box.obj"),
                   .25));
-  meshcat->SetTransform("obj", RigidTransformd(Vector3d{2.0, 0, 0}));
+  meshcat->SetTransform("obj", RigidTransformd(Vector3d{1.5, 0, 0}));
+
+  meshcat->SetObject(
+      "mustard",
+      Mesh(FindResourceOrThrow("drake/manipulation/models/ycb/meshes/"
+                               "006_mustard_bottle_textured.obj"), 3.0));
+  meshcat->SetTransform("mustard", RigidTransformd(Vector3d{2.5, 0, 0}));
 
   std::cout << R"""(
 Open up your browser to the URL above.
@@ -47,7 +54,8 @@ Open up your browser to the URL above.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
-  - a gray cube (which will be textured once we add texture support)
+  - a bright green cube (the green comes from a texture map)
+  - a yellow mustard bottle w/ label
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
