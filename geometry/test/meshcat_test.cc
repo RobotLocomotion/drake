@@ -109,6 +109,36 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
 }
 
+GTEST_TEST(MeshcatTest, SetObjectWithPointCloud) {
+  Meshcat meshcat;
+
+  perception::PointCloud cloud(5);
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  // clang-format on
+  meshcat.SetObject("cloud", cloud);
+  EXPECT_FALSE(meshcat.GetPackedObject("cloud").empty());
+
+  perception::PointCloud rgb_cloud(
+      5, perception::pc_flags::kXYZs | perception::pc_flags::kRGBs);
+  rgb_cloud.mutable_xyzs() = cloud.xyzs();
+  // clang-format off
+  rgb_cloud.mutable_rgbs() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 255,
+    4, 5, 6,
+    40, 50, 60;
+  // clang-format on
+  meshcat.SetObject("rgb_cloud", rgb_cloud);
+  EXPECT_FALSE(meshcat.GetPackedObject("rgb_cloud").empty());
+}
+
 GTEST_TEST(MeshcatTest, SetTransform) {
   Meshcat meshcat;
   EXPECT_FALSE(meshcat.HasPath("frame"));

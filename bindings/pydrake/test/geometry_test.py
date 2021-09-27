@@ -17,6 +17,7 @@ from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
 from pydrake.multibody.plant import CoulombFriction
+from pydrake.perception import PointCloud
 from pydrake.solvers.mathematicalprogram import MathematicalProgram
 from pydrake.systems.analysis import (
     Simulator_,
@@ -404,6 +405,10 @@ class TestGeometry(unittest.TestCase):
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))
         meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        cloud = PointCloud(4)
+        cloud.mutable_xyzs()[:] = np.zeros((3, 4))
+        meshcat.SetObject(path="/test/cloud", cloud=cloud,
+                          size=0.01, rgba=mut.Rgba(.5, .5, .5))
         meshcat.SetProperty(path="/Background",
                             property="visible",
                             value=True)

@@ -10,6 +10,7 @@
 
 #include <msgpack.hpp>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/rgba.h"
 #include "drake/math/rigid_transform.h"
@@ -30,119 +31,158 @@ namespace internal {
 // compatible with msgpack, which wants to be able to unpack into the same
 // structure.
 
-// TODO(russt): These are taken verbatim from meshcat-python.  We should
-// expose them to the user, but not until we can properly document them.
-// Many are documented here: https://threejs.org/docs/#api/en/materials/Material
+// TODO(russt): We should expose these options to the user, but not until we
+// can properly document them. Many are documented here:
+// https://threejs.org/docs/#api/en/materials/Material
 struct MaterialData {
   std::string uuid{};
   std::string type{};
   int color{(229 << 16) + (229 << 8) + 229};
-  // TODO(russt): Make many of these std::optional.
-  double reflectivity{0.5};
-  int side{2};
-  bool transparent{false};
-  double opacity{1.0};
-  double linewidth{1.0};
-  bool wireframe{false};
-  double wireframeLineWidth{1.0};
-  bool vertexColors{false};
+  int vertexColors{0};
+  std::optional<double> reflectivity;
+  std::optional<int> side;
+  std::optional<double> size;
+  std::optional<bool> transparent;
+  std::optional<double> opacity;
+  std::optional<double> linewidth;
+  std::optional<bool> wireframe;
+  std::optional<double> wireframeLineWidth;
 
-  MSGPACK_DEFINE_MAP(uuid, type, color, reflectivity, side, transparent,
-                     opacity, linewidth, wireframe, wireframeLineWidth,
-                     vertexColors);
-};
-
-// Note: This contains the fields required for all geometry types.  Getting
-// msgpack to work with runtime derived types proved to be very complicated.
-struct GeometryData {
-  std::string uuid;
-  std::string type;
-  std::optional<double> width;
-  std::optional<double> height;
-  std::optional<double> depth;
-  std::optional<double> radius;
-  std::optional<double> widthSegments;
-  std::optional<double> heightSegments;
-  std::optional<double> radiusTop;
-  std::optional<double> radiusBottom;
-  std::optional<double> radialSegments;
-  std::string format;
-  std::string data;
-
-  // MSGPACK_DEFINE_MAP sends e.g. 'heightSegments':nil when the optional values
-  // are not set.  This defeats the defaults in three.js.  We have to implement
-  // a custom packer in order to avoid it.
-  // TODO(russt): Could make this fancier with e.g. the template parameter packs
-  // in msgpack-c/include/msgpack/v1/adaptor/detail/cpp11_define_map.hpp
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(Packer& o) const {
-    int size = 2;  // uuid and type are always sent.
-    if (width) ++size;
-    if (height) ++size;
-    if (depth) ++size;
-    if (radius) ++size;
-    if (widthSegments) ++size;
-    if (heightSegments) ++size;
-    if (radiusTop) ++size;
-    if (radiusBottom) ++size;
-    if (radialSegments) ++size;
-    if (!format.empty()) ++size;
-    if (!data.empty()) ++size;
-    o.pack_map(size);
+    int n = 4;
+    if (reflectivity) ++n;
+    if (side) ++n;
+    if (size) ++n;
+    if (transparent) ++n;
+    if (opacity) ++n;
+    if (linewidth) ++n;
+    if (wireframe) ++n;
+    if (wireframeLineWidth) ++n;
+    o.pack_map(n);
     o.pack("uuid");
     o.pack(uuid);
     o.pack("type");
     o.pack(type);
-    if (width) {
-      o.pack("width");
-      o.pack(*width);
+    o.pack("color");
+    o.pack(color);
+    o.pack("vertexColors");
+    o.pack(vertexColors);
+    if (reflectivity) {
+      o.pack("reflectivity");
+      o.pack(*reflectivity);
     }
-    if (height) {
-      o.pack("height");
-      o.pack(*height);
+    if (side) {
+      o.pack("side");
+      o.pack(*side);
     }
-    if (depth) {
-      o.pack("depth");
-      o.pack(*depth);
+    if (size) {
+      o.pack("size");
+      o.pack(*size);
     }
-    if (radius) {
-      o.pack("radius");
-      o.pack(*radius);
+    if (transparent) {
+      o.pack("transparent");
+      o.pack(*transparent);
     }
-    if (widthSegments) {
-      o.pack("widthSegments");
-      o.pack(*widthSegments);
+    if (opacity) {
+      o.pack("opacity");
+      o.pack(*opacity);
     }
-    if (heightSegments) {
-      o.pack("heightSegments");
-      o.pack(*heightSegments);
+    if (linewidth) {
+      o.pack("linewidth");
+      o.pack(*linewidth);
     }
-    if (radiusTop) {
-      o.pack("radiusTop");
-      o.pack(*radiusTop);
+    if (wireframe) {
+      o.pack("wireframe");
+      o.pack(*wireframe);
     }
-    if (radiusBottom) {
-      o.pack("radiusBottom");
-      o.pack(*radiusBottom);
-    }
-    if (radialSegments) {
-      o.pack("radialSegments");
-      o.pack(*radialSegments);
-    }
-    if (!format.empty()) {
-      o.pack("format");
-      o.pack(format);
-    }
-    if (!data.empty()) {
-      o.pack("data");
-      o.pack(data);
+    if (wireframeLineWidth) {
+      o.pack("wireframeLineWidth");
+      o.pack(*wireframeLineWidth);
     }
   }
+
   // This method must be defined, but the implementation is not needed in the
   // current workflows.
   void msgpack_unpack(msgpack::object const&) {
-    throw std::runtime_error("unpack is not implemented for GeometryData.");
+    throw std::runtime_error(
+        "unpack is not implemented for MaterialData.");
+  }
+};
+
+struct GeometryData {
+  virtual ~GeometryData() = default;
+  std::string uuid;
+};
+
+struct SphereGeometryData : public GeometryData {
+  std::string type{"SphereGeometry"};
+  double radius;
+  double widthSegments{20};
+  double heightSegments{20};
+  MSGPACK_DEFINE_MAP(uuid, type, radius, widthSegments, heightSegments);
+};
+
+struct CylinderGeometryData : public GeometryData {
+  std::string type{"CylinderGeometry"};
+  double radiusBottom;
+  double radiusTop;
+  double height;
+  double radialSegments{50};
+  MSGPACK_DEFINE_MAP(uuid, type, radiusBottom, radiusTop, height,
+                     radialSegments);
+};
+
+struct BoxGeometryData : public GeometryData {
+  std::string type{"BoxGeometry"};
+  double width;
+  double height;
+  double depth;
+  MSGPACK_DEFINE_MAP(uuid, type, width, height, depth);
+};
+
+struct MeshFileGeometryData : public GeometryData {
+  std::string type{"_meshfile_geometry"};
+  std::string format;
+  std::string data;
+  MSGPACK_DEFINE_MAP(uuid, type, format, data);
+};
+
+struct BufferGeometryData : public GeometryData {
+  std::string type{"BufferGeometry"};
+  // We deviate from the meshcat data structure, since it is an unnecessarily
+  // deep hierarchy of dictionaries, and simply implement the packer manually.
+  Eigen::Matrix3Xf position;
+  Eigen::Matrix3Xf color;
+
+  template <typename Packer>
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(Packer& o) const {
+    o.pack_map(3);
+    o.pack("uuid");
+    o.pack(uuid);
+    o.pack("type");
+    o.pack(type);
+    o.pack("data");
+    o.pack_map(1);
+    o.pack("attributes");
+    if (color.cols() > 0) {
+      o.pack_map(2);
+      o.pack("color");
+      o.pack(color);
+    } else {
+      o.pack_map(1);
+    }
+    o.pack("position");
+    o.pack(position);
+  }
+
+  // This method must be defined, but the implementation is not needed in the
+  // current workflows.
+  void msgpack_unpack(msgpack::object const&) {
+    throw std::runtime_error(
+        "unpack is not implemented for BufferGeometryData.");
   }
 };
 
@@ -174,24 +214,48 @@ struct MeshFileObjectData {
 
 struct LumpedObjectData {
   ObjectData metadata{};
-  // We use std::vector here for geometries and materials, even though our
-  // current usage only ever sends zero or one of each.  This is because the
-  // msgpack serialization needs to use msgpack::Array; using std::vector
-  // allows us to use the msgpack default Packer.
-  std::vector<GeometryData> geometries;
-  std::vector<MaterialData> materials;
+  // We deviate from the msgpack names (geometries, materials) here since we
+  // currently only support zero or one geometry/material.
+  std::unique_ptr<GeometryData> geometry{};
+  std::unique_ptr<MaterialData> material{};
   std::variant<std::monostate, MeshData, MeshFileObjectData> object;
 
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(Packer& o) const {
-    o.pack_map(4);
+    int size = 2;
+    if (geometry) ++size;
+    if (material) ++size;
+    o.pack_map(size);
     o.pack("metadata");
     o.pack(metadata);
-    o.pack("geometries");
-    o.pack(geometries);
-    o.pack("materials");
-    o.pack(materials);
+    if (geometry) {
+      o.pack("geometries");
+      o.pack_array(1);
+      if (auto* sphere = dynamic_cast<SphereGeometryData*>(geometry.get())) {
+        o.pack(*sphere);
+      } else if (auto* cylinder =
+                     dynamic_cast<CylinderGeometryData*>(geometry.get())) {
+        o.pack(*cylinder);
+      } else if (auto* box =
+                     dynamic_cast<BoxGeometryData*>(geometry.get())) {
+        o.pack(*box);
+      } else if (auto* meshfile =
+                     dynamic_cast<MeshFileGeometryData*>(geometry.get())) {
+        o.pack(*meshfile);
+      } else if (auto* buffer =
+                     dynamic_cast<BufferGeometryData*>(geometry.get())) {
+        o.pack(*buffer);
+      } else {
+        throw std::runtime_error(
+            "Unknown geometry data type in msgpack_pack for LumpedObjectData.");
+      }
+    }
+    if (material) {
+      o.pack("materials");
+      o.pack_array(1);
+      o.pack(*material);
+    }
     o.pack("object");
     if (std::holds_alternative<MeshData>(object)) {
       o.pack(std::get<MeshData>(object));
@@ -304,11 +368,56 @@ namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
 
-template<>
+template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
+          int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
+struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
+                          MaxRowsAtCompileTime, MaxColsAtCompileTime> > {
+  template <typename Stream>
+  packer<Stream>& operator()(
+      // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
+      msgpack::packer<Stream>& o,
+      const Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
+                          MaxRowsAtCompileTime, MaxColsAtCompileTime>& mat)
+      const {
+    o.pack_map(4);
+    o.pack("itemSize");
+    o.pack(mat.rows());
+    o.pack("type");
+    int8_t ext;
+    // Based on pack_numpy_array method in meshcat-python geometry.py. See also
+    // https://github.com/msgpack/msgpack/blob/master/spec.md#extension-types
+    if (std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float>) {
+      o.pack("Float32Array");
+      ext = 0x17;
+    } else if (std::is_same_v<Scalar, uint8_t>) {
+      o.pack("Uint8Array");
+      ext = 0x12;
+    } else {
+      throw std::runtime_error("Unsupported Scalar " +
+                               drake::NiceTypeName::Get(typeid(Scalar)));
+    }
+    o.pack("array");
+    if (std::is_same_v<Scalar, double>) {
+      size_t s = mat.size() * sizeof(float);
+      o.pack_ext(s, ext);
+      auto mat_float = mat.template cast<float>().eval();
+      o.pack_ext_body(reinterpret_cast<const char*>(mat_float.data()), s);
+    } else {
+      size_t s = mat.size() * sizeof(Scalar);
+      o.pack_ext(s, ext);
+      o.pack_ext_body(reinterpret_cast<const char*>(mat.data()), s);
+    }
+    o.pack("normalized");
+    o.pack(false);
+    return o;
+  }
+};
+
+template <>
 struct pack<drake::geometry::Meshcat::OrthographicCamera> {
   template <typename Stream>
   packer<Stream>& operator()(
-  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+      // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
       msgpack::packer<Stream>& o,
       const drake::geometry::Meshcat::OrthographicCamera& v) const {
     o.pack_map(8);
