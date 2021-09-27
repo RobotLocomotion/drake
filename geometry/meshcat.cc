@@ -442,10 +442,13 @@ class Meshcat::WebSocketPublisher {
   ~WebSocketPublisher() {
     DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
     loop_->defer([this]() {
-      us_listen_socket_close(0, listen_socket_);
-      for (auto* ws : websockets_) {
+      auto iter = websockets_.begin();
+      while (iter != websockets_.end()) {
+        // Need to advance the iterator before calling close (#15821).
+        auto* ws = *iter++;
         ws->close();
       }
+      us_listen_socket_close(0, listen_socket_);
     });
     websocket_thread_.join();
   }
