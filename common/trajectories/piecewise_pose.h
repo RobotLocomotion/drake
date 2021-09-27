@@ -85,8 +85,7 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
     return GetPose(t).GetAsMatrix4();
   }
 
-  DRAKE_DEPRECATED("2022-01-01",
-                   "get_velocity() has been renamed to GetVelocity().")
+  DRAKE_DEPRECATED("2022-01-01", "get_velocity() has been renamed to GetVelocity().")  // NOLINT
   Vector6<T> get_velocity(const T& time) const {
     return GetVelocity(time);
   }
@@ -97,8 +96,7 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
    */
   Vector6<T> GetVelocity(const T& time) const;
 
-  DRAKE_DEPRECATED("2022-01-01",
-                   "get_acceleration() has been renamed to GetAcceleration().")
+  DRAKE_DEPRECATED("2022-01-01", "get_acceleration() has been renamed to GetAcceleration().")  // NOLINT
   Vector6<T> get_acceleration(const T& time) const {
     return GetAcceleration(time);
   }
@@ -109,8 +107,7 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
    */
   Vector6<T> GetAcceleration(const T& time) const;
 
-  DRAKE_DEPRECATED("2022-01-01",
-                   "is_approx() has been renamed to IsApprox().")
+  DRAKE_DEPRECATED("2022-01-01", "is_approx() has been renamed to IsApprox().")
   bool is_approx(const PiecewisePose<T>& other, double tol) const {
     return IsApprox(other, tol);
   }

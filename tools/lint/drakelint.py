@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 from drake.tools.lint.formatter import IncludeFormatter
@@ -124,6 +125,34 @@ def _check_shebang(filename, disallow_executable):
     return 0
 
 
+def _check_deprecation(filename):
+    """Uses of the DRAKE_DEPRECATED macro should not contain line breaks
+    (according to its API documentation).
+    """
+    errors = 0
+    with open(filename, mode='r', encoding='utf-8') as file:
+        lines = file.readlines()
+    has_deprecation_macro = re.compile(r'^\s*DRAKE_DEPRECATED')
+    for i, line in enumerate(lines):
+        if not has_deprecation_macro.match(line):
+            continue
+        line = line.rstrip()
+        if line.endswith(")"):
+            continue
+        if line.endswith(")  // NOLINT"):
+            if len(line) - len("  // NOLINT") <= 80:
+                print("ERROR: {}:{}: {}".format(
+                    filename, i + 1,
+                    "There is no need for a NOLINT here; "
+                    + "the message short enough to fit in <= 80."))
+                errors += 1
+            continue
+        print("ERROR: {}:{}: {}".format(
+            filename, i + 1, "Do not use line breaks within DRAKE_DEPRECATED"))
+        errors += 1
+    return errors
+
+
 def main():
     """Run Drake lint checks on each path specified as a command-line argument.
     Exit 1 if any of the paths are invalid or any lint checks fail.
@@ -146,6 +175,7 @@ def main():
         if not filename.endswith(".py"):
             total_errors += _check_includes(filename)
             total_errors += _check_unguarded_openmp_uses(filename)
+        total_errors += _check_deprecation(filename)
 
     if total_errors == 0:
         sys.exit(0)

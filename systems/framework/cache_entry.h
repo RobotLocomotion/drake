@@ -48,15 +48,13 @@ class CacheEntry {
   a value of a particular cache entry. The result is always returned as an
   AbstractValue but must contain the correct concrete type. */
   using AllocCallback
-      DRAKE_DEPRECATED("2021-10-01",
-          "Use ValueProducer::AllocateCallback instead.")
+      DRAKE_DEPRECATED("2021-10-01", "Use ValueProducer::AllocateCallback instead.")  // NOLINT
       = ValueProducer::AllocateCallback;
 
   /** Signature of a function suitable for calculating a value of a particular
   cache entry, given a place to put the value. */
   using CalcCallback
-      DRAKE_DEPRECATED("2021-10-01",
-          "Use ValueProducer::CalcCallback instead.")
+      DRAKE_DEPRECATED("2021-10-01", "Use ValueProducer::CalcCallback instead.")
       = ValueProducer::CalcCallback;
 
   // All the nontrivial parameters here are moved to the CacheEntry which is

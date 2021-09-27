@@ -1521,12 +1521,7 @@ class LeafSystem : public System<T> {
   // Declares an output port by specifying an allocator function pointer that
   // returns by-value, and a calc function pointer.
   template <class MySystem, typename OutputType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareAbstractOutputPort is rarely the best choice;"
-      " it is unusual for a boutique allocation to return an abstract type by"
-      " value rather than provide a model_value. If the default constructor"
-      " or a model value cannot be used, use the overload that accepts an"
-      " AllocCallback alloc_function instead.")
+  DRAKE_DEPRECATED("2021-11-01", "This overload for DeclareAbstractOutputPort is rarely the best choice; it is unusual for a boutique allocation to return an abstract type by value rather than provide a model_value. If the default constructor or a model value cannot be used, use the overload that accepts an AllocCallback alloc_function instead.")  // NOLINT
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,
       OutputType (MySystem::*make)() const,

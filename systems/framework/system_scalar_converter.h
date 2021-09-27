@@ -91,8 +91,7 @@ class SystemScalarConverter {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   template <template <typename> class S>
-  DRAKE_DEPRECATED("2021-11-01",
-      "Use MakeWithoutSubtypeChecking instead of kDisabled.")
+  DRAKE_DEPRECATED("2021-11-01", "Use MakeWithoutSubtypeChecking instead of kDisabled.")  // NOLINT
   SystemScalarConverter(SystemTypeTag<S>, GuaranteedSubtypePreservation sub) {
     if (sub == GuaranteedSubtypePreservation::kEnabled) {
       AddConstructors<true, S>();
@@ -119,21 +118,18 @@ class SystemScalarConverter {
 
   template <typename T, typename U>
   using ConverterFunction
-      DRAKE_DEPRECATED("2021-10-01",
-      "Only scalar-converting copy constructors are supported.")
+      DRAKE_DEPRECATED("2021-10-01", "Only scalar-converting copy constructors are supported.")  // NOLINT
       = std::function<std::unique_ptr<System<T>>(const System<U>&)>;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   template <typename T, typename U>
-  DRAKE_DEPRECATED("2021-10-01",
-      "Only scalar-converting copy constructors are supported.")
+  DRAKE_DEPRECATED("2021-10-01", "Only scalar-converting copy constructors are supported.")  // NOLINT
   void Add(const ConverterFunction<T, U>&);
 #pragma GCC diagnostic pop
 
   template <template <typename> class S, typename T, typename U>
-  DRAKE_DEPRECATED("2021-10-01",
-      "User-defined scalar types cannot be added.")
+  DRAKE_DEPRECATED("2021-10-01", "User-defined scalar types cannot be added.")
   void AddIfSupported() {
     MaybeAddConstructor<true, S, T, U>();
   }

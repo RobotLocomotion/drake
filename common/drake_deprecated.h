@@ -27,11 +27,10 @@ three months by default, often rounded up to the next first of the month.  So
 for code announced as deprecated on 2018-01-22 the removal_date would nominally
 be set to 2018-05-01.
 
-Try to keep the date string immediately after the DRAKE_DEPRECATED macro name,
-even if the message itself must be wrapped to a new line:
+Do not use line breaks within the DRAKE_DEPRECATED macro; long lines should use
+a NOLINT marker instead:
 @code
-  DRAKE_DEPRECATED("2038-01-19",
-      "foo is being replaced with a safer, const-method named bar().")
+  DRAKE_DEPRECATED("2038-01-19", "foo is being replaced with a safer, const-method named bar().")  // NOLINT
   int foo();
 @endcode
 

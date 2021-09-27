@@ -106,8 +106,7 @@ SolveLinearSystem(const LinearSolver& linear_solver,
 }
 
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
+DRAKE_DEPRECATED("2022-01-01", "Please use SolveLinearSystem() instead of LinearSolve()")  // NOLINT
 typename std::enable_if<
     internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
         internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
@@ -164,8 +163,7 @@ SolveLinearSystem(const LinearSolver& linear_solver,
 }
 
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
+DRAKE_DEPRECATED("2022-01-01", "Please use SolveLinearSystem() instead of LinearSolve()")  // NOLINT
 typename std::enable_if<
     std::is_same_v<typename DerivedA::Scalar, double> &&
         !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
@@ -290,8 +288,7 @@ SolveLinearSystem(const LinearSolver& linear_solver,
 }
 
 template <typename LinearSolver, typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
+DRAKE_DEPRECATED("2022-01-01", "Please use SolveLinearSystem() instead of LinearSolve()")  // NOLINT
 typename std::enable_if<
     !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
@@ -491,8 +488,7 @@ SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
 
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
+DRAKE_DEPRECATED("2022-01-01", "Please use SolveLinearSystem() instead of LinearSolve()")  // NOLINT
 typename std::enable_if<
     internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
         internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
@@ -523,8 +519,7 @@ SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
 
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
+DRAKE_DEPRECATED("2022-01-01", "Please use SolveLinearSystem() instead of LinearSolve()")  // NOLINT
 typename std::enable_if<
     std::is_same_v<typename DerivedA::Scalar, double> &&
         !internal::is_double_or_symbolic_v<typename DerivedB::Scalar>,
@@ -553,8 +548,7 @@ SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
 
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
-DRAKE_DEPRECATED("2022-01-01",
-                 "Please use SolveLinearSystem() instead of LinearSolve()")
+DRAKE_DEPRECATED("2022-01-01", "Please use SolveLinearSystem() instead of LinearSolve()")  // NOLINT
 typename std::enable_if<
     !internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
     Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,

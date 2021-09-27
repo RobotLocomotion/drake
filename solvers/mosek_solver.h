@@ -83,9 +83,7 @@ class MosekSolver final : public SolverBase {
    * set @p log_file to the name of that file. If the user wants to output the
    * logging to the console, then set log_file to empty string.
    */
-  DRAKE_DEPRECATED("2021-11-01",
-                   "Please set CommonSolverOption::kPrintFileName or "
-                   "CommonSolverOption::kPrintToConsole in SolverOptions")
+  DRAKE_DEPRECATED("2021-11-01", "Please set CommonSolverOption::kPrintFileName or CommonSolverOption::kPrintToConsole in SolverOptions")  // NOLINT
   void set_stream_logging(bool flag, const std::string& log_file) {
     stream_logging_ = flag;
     log_file_ = log_file;
