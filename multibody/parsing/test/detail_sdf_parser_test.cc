@@ -1023,15 +1023,6 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
 </model>)");
 }
 
-void FailWithUnsupportedRelativeTo(const std::string& inner) {
-  SCOPED_TRACE(inner);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(inner),
-      std::runtime_error,
-      R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
-      R"(in <inertial/> or top-level <model/> tags in model files.)");
-}
-
 void FailWithRelativeToNotDefined(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1086,11 +1077,15 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 )", bad_name));
   }
 
-  FailWithUnsupportedRelativeTo(R"(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
 <model name='bad'>
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
-</model>)");
+</model>)"),
+      R"([\s\S]*Error: Attribute //pose\[@relative_to\] of top level model )"
+      R"(must be left empty[\s\S]*)");
+
   FailWithRelativeToNotDefined(R"(
 <model name='bad'>
   <frame name='my_frame'/>
@@ -1121,7 +1116,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
   <link name='b'/>
 </model>
 )"""),
-    ".*has 2 models and 0 worlds.*");
+    R"([\s\S]*Root object can only contain one model.*)");
 
   std::stringstream buffer;
   sdf::Console::ConsoleStream old_stream =
@@ -1155,11 +1150,11 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       <initial_position>0</initial_position>
     </axis>
   </joint>
-</model>)""", "1.8");
+</model>)""", "1.9");
 
   EXPECT_THAT(buffer.str(), testing::MatchesRegex(
-      ".*Warning.*SDF Element\\[initial_position\\] is "
-      "deprecated.*"));
+      ".*Warning.*XML Element\\[initial_position\\], child of element"
+      "\\[axis\\], not defined in SDF.*"));
 }
 
 // Reports if the frame with the given id has a geometry with the given role
