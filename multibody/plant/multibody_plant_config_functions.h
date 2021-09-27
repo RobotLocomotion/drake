@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "drake/multibody/plant/dev/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
