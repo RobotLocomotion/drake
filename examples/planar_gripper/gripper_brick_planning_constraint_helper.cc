@@ -120,8 +120,8 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
       plant_context, multibody::JacobianWrtVariable::kQDot,
       gripper_brick.finger_link2_frame(finger), gripper_brick.p_L2Fingertip(),
       gripper_brick.brick_frame(), gripper_brick.brick_frame(), &Jv_BF2_B);
-  return math::initializeAutoDiffGivenGradientMatrix(
-      p_BFingertip, Jv_BF2_B * math::autoDiffToGradientMatrix(q));
+  return math::InitializeAutoDiff(
+      p_BFingertip, Jv_BF2_B * math::ExtractGradient(q));
 }
 
 namespace internal {

@@ -122,17 +122,17 @@ GTEST_TEST(SpatialInertia, CastToAutoDiff) {
   // Values and gradients of the com vector.
   const auto& G_autodiff = M_autodiff.get_unit_inertia();
   const Matrix3<AutoDiffXd> G_autodiff_matrix = G_autodiff.CopyToFullMatrix3();
-  auto G_value = math::autoDiffToValueMatrix(G_autodiff_matrix);
+  auto G_value = math::ExtractValue(G_autodiff_matrix);
   G_value.resize(3, 3);
   EXPECT_TRUE(G_value.isApprox(G_double.CopyToFullMatrix3(), kEpsilon));
-  MatrixXd G_gradient = math::autoDiffToGradientMatrix(G_autodiff_matrix);
+  MatrixXd G_gradient = math::ExtractGradient(G_autodiff_matrix);
   ASSERT_EQ(G_gradient.size(), 0);
 
   // Values and gradients of the unit inertia.
   const auto& com_autodiff = M_autodiff.get_com();
-  const Vector3d com_value = math::autoDiffToValueMatrix(com_autodiff);
+  const Vector3d com_value = math::ExtractValue(com_autodiff);
   EXPECT_TRUE(com_value.isApprox(com_double, kEpsilon));
-  MatrixXd com_gradient = math::autoDiffToGradientMatrix(com_autodiff);
+  MatrixXd com_gradient = math::ExtractGradient(com_autodiff);
   ASSERT_EQ(com_gradient.size(), 0);
 }
 

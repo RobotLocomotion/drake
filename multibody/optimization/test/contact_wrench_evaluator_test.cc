@@ -45,15 +45,15 @@ TEST_F(ContactWrenchEvaluatorTest,
   EXPECT_EQ(evaluator.num_outputs(), 6);
 
   const Vector3<AutoDiffXd> lambda_val =
-      math::initializeAutoDiff(Eigen::Vector3d(1, 2, 3));
+      math::InitializeAutoDiff(Eigen::Vector3d(1, 2, 3));
   const VectorX<AutoDiffXd> x_value =
       evaluator.ComposeVariableValues(*plant_context, lambda_val);
   AutoDiffVecXd y;
   evaluator.Eval(x_value, &y);
-  EXPECT_EQ(math::autoDiffToValueMatrix(y.head<3>()), Eigen::Vector3d::Zero());
+  EXPECT_EQ(math::ExtractValue(y.head<3>()), Eigen::Vector3d::Zero());
   EXPECT_EQ(y.tail<3>(), lambda_val);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y.tail<3>()),
-                              math::autoDiffToGradientMatrix(lambda_val)));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y.tail<3>()),
+                              math::ExtractGradient(lambda_val)));
 }
 }  // namespace
 }  // namespace multibody

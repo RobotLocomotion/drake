@@ -83,8 +83,7 @@ void EvalConstraintGradient(
   const Eigen::VectorXd y_val = A * p_EC;
   Eigen::MatrixXd dy_dx(A.rows(), plant.num_positions());
   dy_dx << A * Jq_V_EC;
-  *y = math::initializeAutoDiffGivenGradientMatrix(
-      y_val, dy_dx * math::autoDiffToGradientMatrix(x));
+  *y = math::InitializeAutoDiff(y_val, dy_dx * math::ExtractGradient(x));
 }
 
 // (T, S) can be (double, double), (double, AutoDiffXd) and (AutoDiffXd,
@@ -126,7 +125,7 @@ void ComInPolyhedronConstraint::DoEval(
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
     Eval(x.cast<AutoDiffXd>(), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, model_instances_,
                   expressed_frame_index_, A_, x, y);

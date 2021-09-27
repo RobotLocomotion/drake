@@ -455,7 +455,7 @@ class ScalarMixingTest : public ::testing::Test {
     vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(0)).r_MV());
     vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(1)).r_MV());
     vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(2)).r_MV());
-    vertices.emplace_back(math::initializeAutoDiff(
+    vertices.emplace_back(math::InitializeAutoDiff(
         mesh_d_->vertex(VolumeVertexIndex(3)).r_MV()));
     vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(4)).r_MV());
     std::vector<VolumeElement> elements(mesh_d_->tetrahedra());
@@ -478,7 +478,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     p_WQ_d += mesh_d_->vertex(v).r_MV();
   }
   p_WQ_d /= 4;
-  const Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ_d);
+  const Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ_d);
 
   const Vector4<double> b_expected = Vector4<double>{1, 1, 1, 1} / 4;
 
@@ -495,8 +495,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected, kEps));
   }
 
   {
@@ -506,8 +505,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b1(0).derivatives().size(), 3);
     EXPECT_EQ(b1(1).derivatives().size(), 3);
     EXPECT_EQ(b1(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b1), b_expected, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b1), b_expected, kEps));
 
     // AutoDiffXd-valued mesh with double-valued point on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
@@ -525,8 +523,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected, kEps));
   }
 }
 
@@ -556,7 +553,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
     EXPECT_EQ(grad_W(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W(1).derivatives().size(), 3);
     EXPECT_EQ(grad_W(2).derivatives().size(), 3);
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W),
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(grad_W),
                                 grad_W_expected, kEps));
   }
 
@@ -568,7 +565,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
     EXPECT_EQ(grad_W1(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W1(1).derivatives().size(), 3);
     EXPECT_EQ(grad_W1(2).derivatives().size(), 3);
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W1),
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(grad_W1),
                                 grad_W_expected, kEps));
 
     // AutoDiffXd-valued mesh with double-valued field on triangle *without*
@@ -589,7 +586,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
     EXPECT_EQ(grad_W(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W(1).derivatives().size(), 3);
     EXPECT_EQ(grad_W(2).derivatives().size(), 3);
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W),
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(grad_W),
                                 grad_W_expected, kEps));
   }
 }

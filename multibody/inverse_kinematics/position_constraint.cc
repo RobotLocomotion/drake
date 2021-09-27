@@ -60,8 +60,7 @@ void EvalConstraintGradient(const systems::Context<double>& context,
   plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
                                           frameB, p_BQ, frameA, frameA,
                                           &Jq_V_ABq);
-  *y = math::initializeAutoDiffGivenGradientMatrix(
-      p_AQ, Jq_V_ABq * math::autoDiffToGradientMatrix(x));
+  *y = math::InitializeAutoDiff(p_AQ, Jq_V_ABq * math::ExtractGradient(x));
 }
 
 template <typename T, typename S>
@@ -86,8 +85,8 @@ void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 Eigen::VectorXd* y) const {
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
-    Eval(math::initializeAutoDiff(x), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    Eval(math::InitializeAutoDiff(x), &y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, frameA_index_, frameB_index_,
                   p_BQ_, x, y);

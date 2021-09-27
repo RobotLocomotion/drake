@@ -121,7 +121,7 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
     plant_.CalcPointsPositions(*context_, frame_Fb, p_FbCb,
                                plant_.world_frame(), &p_WCb);
     contact_wrench_sol.emplace_back(
-        body_A_index, body_B_index, math::autoDiffToValueMatrix(p_WCb),
+        body_A_index, body_B_index, math::ExtractValue(p_WCb),
         SpatialForce<double>(Vector6<double>(F_Cb_W)));
   }
   return contact_wrench_sol;

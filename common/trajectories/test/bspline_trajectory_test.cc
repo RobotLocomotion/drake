@@ -30,7 +30,7 @@ namespace drake {
 namespace trajectories {
 
 using common::CallPython;
-using math::autoDiffToGradientMatrix;
+using math::ExtractGradient;
 using math::BsplineBasis;
 using math::ComputeNumericalGradient;
 using math::KnotVectorType;
@@ -284,9 +284,8 @@ GTEST_TEST(BsplineTrajectoryDerivativeTests, AutoDiffTest) {
       ExtractDoubleOrThrow(trajectory.end_time()));
   const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
   for (int k = 0; k < num_times; ++k) {
-    AutoDiffXd t_k = math::initializeAutoDiff(Vector1d{t(k)})[0];
-    MatrixX<double> derivative_value =
-        autoDiffToGradientMatrix(trajectory.value(t_k));
+    AutoDiffXd t_k = math::InitializeAutoDiff(Vector1d{t(k)})[0];
+    MatrixX<double> derivative_value = ExtractGradient(trajectory.value(t_k));
     MatrixX<double> expected_derivative_value =
         derivative_trajectory->value(t(k));
     EXPECT_TRUE(CompareMatrices(derivative_value, expected_derivative_value,

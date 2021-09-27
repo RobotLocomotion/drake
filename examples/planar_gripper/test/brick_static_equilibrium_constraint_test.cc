@@ -71,7 +71,7 @@ GTEST_TEST(BrickStaticEquilibriumNonlinearConstraint, TestEval) {
   EXPECT_TRUE(CompareMatrices(y, y_expected, 1E-10));
 
   // Now check Eval with autodiff.
-  auto x_ad = math::initializeAutoDiff(x);
+  auto x_ad = math::InitializeAutoDiff(x);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_ad, &y_autodiff);
 
@@ -82,8 +82,7 @@ GTEST_TEST(BrickStaticEquilibriumNonlinearConstraint, TestEval) {
         return constraint.Eval(x_val, y_val);
       };
   const auto J = math::ComputeNumericalGradient(evaluator, x);
-  EXPECT_TRUE(
-      CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff), J, 1E-5));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff), J, 1E-5));
 }
 }  // namespace planar_gripper
 }  // namespace examples

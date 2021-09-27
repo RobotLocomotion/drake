@@ -63,9 +63,9 @@ class DynamicElasticityElementTest : public ::testing::Test {
     Vector<T, kNumDofs> x_autodiff;
     Vector<T, kNumDofs> v_autodiff;
     Vector<T, kNumDofs> a_autodiff;
-    math::initializeAutoDiff(x, x_autodiff, 3 * kNumDofs, 0);
-    math::initializeAutoDiff(v, v_autodiff, 3 * kNumDofs, kNumDofs);
-    math::initializeAutoDiff(a, a_autodiff, 3 * kNumDofs, 2 * kNumDofs);
+    math::InitializeAutoDiff(x, 3 * kNumDofs, 0, &x_autodiff);
+    math::InitializeAutoDiff(v, 3 * kNumDofs, kNumDofs, &v_autodiff);
+    math::InitializeAutoDiff(a, 3 * kNumDofs, 2 * kNumDofs, &a_autodiff);
     state_ = std::make_unique<FemState<ElementType>>(x_autodiff, v_autodiff,
                                                      a_autodiff);
     state_->MakeElementData(elements_);

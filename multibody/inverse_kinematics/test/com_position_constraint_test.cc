@@ -66,11 +66,10 @@ void TestComPositionConstraint(
   if constexpr (std::is_same_v<T, double>) {
     EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
   } else {
-    EXPECT_TRUE(
-        CompareMatrices(y, math::autoDiffToValueMatrix(y_expected), tol));
+    EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_expected), tol));
   }
 
-  AutoDiffVecXd x_autodiff = math::initializeAutoDiff(x);
+  AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
   plant_autodiff->GetMutablePositions(plant_context_autodiff) =
@@ -96,7 +95,7 @@ void TestComPositionConstraint(
     x_grad(i, 0) = 0.1 * i + 1;
     x_grad(i, 1) = -0.2 * i - 0.5;
   }
-  x_autodiff = math::initializeAutoDiffGivenGradientMatrix(x, x_grad);
+  x_autodiff = math::InitializeAutoDiff(x, x_grad);
   plant_autodiff->GetMutablePositions(plant_context_autodiff) =
       x_autodiff.head(plant->num_positions());
   constraint.Eval(x_autodiff, &y_autodiff);

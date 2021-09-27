@@ -1212,10 +1212,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
                   shoulder_angle.value(), elbow_angle.value());
 
           // Extract the transformations' values.
-          Eigen::MatrixXd X_WU_value =
-              math::autoDiffToValueMatrix(X_WU.GetAsMatrix4());
-          Eigen::MatrixXd X_WL_value =
-              math::autoDiffToValueMatrix(X_WL.GetAsMatrix4());
+          Eigen::MatrixXd X_WU_value = math::ExtractValue(X_WU.GetAsMatrix4());
+          Eigen::MatrixXd X_WL_value = math::ExtractValue(X_WL.GetAsMatrix4());
 
           // Obtain the lower link center of mass to later shift its computed
           // spatial velocity to the center of mass frame for comparison with
@@ -1232,11 +1230,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
               X_WL_value.isApprox(X_WL_expected.GetAsMatrix4(), kTolerance));
 
           // Extract the transformations' time derivatives.
-          Eigen::MatrixXd X_WU_dot =
-              math::autoDiffToGradientMatrix(X_WU.GetAsMatrix4());
+          Eigen::MatrixXd X_WU_dot = math::ExtractGradient(X_WU.GetAsMatrix4());
           X_WU_dot.resize(4, 4);
-          Eigen::MatrixXd X_WL_dot =
-              math::autoDiffToGradientMatrix(X_WL.GetAsMatrix4());
+          Eigen::MatrixXd X_WL_dot = math::ExtractGradient(X_WL.GetAsMatrix4());
           X_WL_dot.resize(4, 4);
 
           // Convert transformations' time derivatives to spatial velocities.
