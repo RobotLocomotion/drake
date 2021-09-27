@@ -9,9 +9,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-DRAKE_DEPRECATED("2021-11-01",
-    "Prefer to use LcmScopeSystem::AddToBuilder instead of this function;"
-    " the LcmScopeSystem provides more detailed timestamps.")
+DRAKE_DEPRECATED("2021-11-01", "Prefer to use LcmScopeSystem::AddToBuilder instead of this function; the LcmScopeSystem provides more detailed timestamps.")  // NOLINT
 LcmPublisherSystem* ConnectLcmScope(const OutputPort<double>& src,
                                     const std::string& channel,
                                     systems::DiagramBuilder<double>* builder,

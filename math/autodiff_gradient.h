@@ -212,8 +212,7 @@ initializeAutoDiffGivenGradientMatrix(
 }
 
 template <typename DerivedGradient, typename DerivedAutoDiff>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub if you need this method.")
+DRAKE_DEPRECATED("2021-12-01", "Apparently unused. File a Drake issue on GitHub if you need this method.")  // NOLINT
 void gradientMatrixToAutoDiff(
     const Eigen::MatrixBase<DerivedGradient>& gradient,
     // NOLINTNEXTLINE(runtime/references).
@@ -277,9 +276,7 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
 }
 
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
+DRAKE_DEPRECATED("2021-12-01", "Apparently unused. File a Drake issue on GitHub if you need this specialization.")  // NOLINT
 typename std::enable_if_t<
     !std::is_same_v<_Scalar, double>,
     Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
@@ -292,9 +289,7 @@ DiscardZeroGradient(
 }
 
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
+DRAKE_DEPRECATED("2021-12-01", "Apparently unused. File a Drake issue on GitHub if you need this specialization.")  // NOLINT
 typename std::enable_if_t<
     std::is_same_v<_Scalar, double>,
     const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>
