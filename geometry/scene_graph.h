@@ -336,9 +336,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Returns the output port which produces the PoseBundle for LCM
    communication to drake visualizer.  */
-  DRAKE_DEPRECATED("2021-12-01",
-                   "PoseBundle is no longer in use. Visualizers typically "
-                   "connect to SceneGraph's QueryObject port.")
+  DRAKE_DEPRECATED("2021-12-01", "PoseBundle is no longer in use. Visualizers typically connect to SceneGraph's QueryObject port.")  // NOLINT
   const systems::OutputPort<T>& get_pose_bundle_output_port() const {
     return systems::System<T>::get_output_port(bundle_port_index_);
   }
@@ -897,19 +895,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @throws std::exception if the set includes ids that don't exist in the
                           scene graph.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager().Apply() "
-      "instead")
+  DRAKE_DEPRECATED("2021-11-01", "Please call collision_filter_manager().Apply() instead")  // NOLINT
   void ExcludeCollisionsWithin(const GeometrySet& set);
 
   /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager(context).Apply() "
-      "instead")
+  DRAKE_DEPRECATED("2021-11-01", "Please call collision_filter_manager(context).Apply() instead")  // NOLINT
   void ExcludeCollisionsWithin(systems::Context<T>* context,
                                const GeometrySet& set) const;
 
@@ -925,20 +917,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @throws std::exception if the groups include ids that don't exist in the
                           scene graph.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager().Apply() "
-      "instead")
+  DRAKE_DEPRECATED("2021-11-01", "Please call collision_filter_manager().Apply() instead")  // NOLINT
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
   /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
-  DRAKE_DEPRECATED(
-      "2021-11-01",
-      "Please call collision_filter_manager(context).Apply()"
-      " instead")
+  DRAKE_DEPRECATED("2021-11-01", "Please call collision_filter_manager(context).Apply() instead")  // NOLINT
   void ExcludeCollisionsBetween(systems::Context<T>* context,
                                 const GeometrySet& setA,
                                 const GeometrySet& setB) const;

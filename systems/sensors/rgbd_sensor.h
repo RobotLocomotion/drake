@@ -174,9 +174,7 @@ class RgbdSensor final : public LeafSystem<double> {
 
   /** Returns the abstract-valued output port that contains a
    rendering::PoseVector for `X_WB`. */
-  DRAKE_DEPRECATED("2021-12-01",
-                   "Please use the body_pose_in_world_output_port() for a "
-                   "RigidTransform-valued pose.")
+  DRAKE_DEPRECATED("2021-12-01", "Please use the body_pose_in_world_output_port() for a RigidTransform-valued pose.")  // NOLINT
   const OutputPort<double>& X_WB_output_port() const;
 
   /** Returns the abstract-valued output port (containing a RigidTransform)
@@ -299,9 +297,7 @@ class RgbdSensorDiscrete final : public systems::Diagram<double> {
   }
 
   /** @see RgbdSensor::base_pose_output_port().  */
-  DRAKE_DEPRECATED("2021-12-01",
-                   "Please use the body_pose_in_world_output_port() for a "
-                   "RigidTransform-valued pose.")
+  DRAKE_DEPRECATED("2021-12-01", "Please use the body_pose_in_world_output_port() for a RigidTransform-valued pose.")  // NOLINT
   const systems::OutputPort<double>& X_WB_output_port() const {
     return get_output_port(X_WB_output_port_);
   }

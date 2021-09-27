@@ -381,14 +381,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // This will be demoted to `protected` access on or after 2021-10-01, and then
   // removed entirely on 2021-11-01.
   template <class MySystem, class MyContext, typename ValueType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareCacheEntry is rarely the best choice; it is"
-      " unusual for allocation to actually require a boutique callback rather"
-      " than just a Clone of a model_value. We found that most uses of this"
-      " overload hindered readability, because other overloads would often do"
-      " the job more directly. If no existing overload works, you may wrap a"
-      " ValueProducer around your existing make method and call the primary"
-      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
+  DRAKE_DEPRECATED("2021-11-01", "This overload for DeclareCacheEntry is rarely the best choice; it is unusual for allocation to actually require a boutique callback rather than just a Clone of a model_value. We found that most uses of this overload hindered readability, because other overloads would often do the job more directly. If no existing overload works, you may wrap a ValueProducer around your existing make method and call the primary DeclareCacheEntry overload that takes a ValueProducer, instead.")  // NOLINT
   CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*make)() const,
@@ -422,14 +415,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // This will be demoted to `protected` access on or after 2021-10-01, and then
   // removed entirely on 2021-11-01.
   template <class MySystem, class MyContext, typename ValueType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareCacheEntry is dispreferred because it might"
-      " not reuse heap storage from one calculation to the next, and so is"
-      " typically less efficient than the other overloads. A better option"
-      " is to change the ValueType returned by-value to be an output pointer"
-      " instead, and return void. If that is not possible, you may wrap a"
-      " ValueProducer around your existing method and call the primary"
-      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
+  DRAKE_DEPRECATED("2021-11-01", "This overload for DeclareCacheEntry is dispreferred because it might not reuse heap storage from one calculation to the next, and so is typically less efficient than the other overloads. A better option is to change the ValueType returned by-value to be an output pointer instead, and return void. If that is not possible, you may wrap a ValueProducer around your existing method and call the primary DeclareCacheEntry overload that takes a ValueProducer, instead.")  // NOLINT
   CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
       ValueType (MySystem::*calc)(const MyContext&) const,
@@ -471,14 +457,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // This will be demoted to `protected` access on or after 2021-10-01, and then
   // removed entirely on 2021-11-01.
   template <class MySystem, class MyContext, typename ValueType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareCacheEntry is dispreferred because it might"
-      " not reuse heap storage from one calculation to the next, and so is"
-      " typically less efficient than the other overloads. A better option"
-      " is to change the ValueType returned by-value to be an output pointer"
-      " instead, and return void. If that is not possible, you may wrap a"
-      " ValueProducer around your existing method and call the primary"
-      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
+  DRAKE_DEPRECATED("2021-11-01", "This overload for DeclareCacheEntry is dispreferred because it might not reuse heap storage from one calculation to the next, and so is typically less efficient than the other overloads. A better option is to change the ValueType returned by-value to be an output pointer instead, and return void. If that is not possible, you may wrap a ValueProducer around your existing method and call the primary DeclareCacheEntry overload that takes a ValueProducer, instead.")  // NOLINT
   CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*calc)(const MyContext&) const,
