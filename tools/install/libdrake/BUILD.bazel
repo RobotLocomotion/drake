@@ -14,6 +14,10 @@ load(
     "drake_cc_test",
     "drake_transitive_installed_hdrs_filegroup",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load(
@@ -260,6 +264,19 @@ drake_cc_googletest(
     tags = ["no_kcov"],  # See #10788.
     deps = [
         "//:drake_shared_library",
+    ],
+)
+
+drake_py_unittest(
+    name = "header_dependency_test",
+    args = [
+        "$(rootpaths :libdrake_headers)",
+    ],
+    data = [
+        ":libdrake_headers",
+    ],
+    tags = [
+        "lint",
     ],
 )
 
