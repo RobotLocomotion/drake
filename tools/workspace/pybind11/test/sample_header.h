@@ -260,13 +260,13 @@ enum {
 class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.")
 DrakeDeprecatedClass {
  public:
-  DRAKE_DEPRECATED("2038-01-19",
-    "f() is slow; use g() instead. "
-    "Also, I like hats.")
+  // (This is a filler line to avoid disturbing line numbers.)
+  // (This is a filler line to avoid disturbing line numbers.)
+  DRAKE_DEPRECATED("2038-01-19", "f() is slow; use g() instead. Also, I like hats.")  // NOLINT
   int f(int arg);
 
-  DRAKE_DEPRECATED("2038-01-19",
-    "f() now requires an int.")
+  // (This is a filler line to avoid disturbing line numbers.)
+  DRAKE_DEPRECATED("2038-01-19", "f() now requires an int.")
   int f();
 
   /// Ideally this overview would still appear, but it does not yet.
