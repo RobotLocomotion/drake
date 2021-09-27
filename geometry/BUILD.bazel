@@ -471,6 +471,9 @@ drake_cc_googletest(
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
+    tags = [
+        "no_asan",  # TODO(#15828) This is a workaround and should be removed.
+    ],
     deps = [
         ":meshcat_visualizer",
         "//common/test_utilities:expect_throws_message",
