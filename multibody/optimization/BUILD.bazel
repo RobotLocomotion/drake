@@ -274,6 +274,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "toppra_test",
+    size = "medium",
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
