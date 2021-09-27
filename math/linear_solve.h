@@ -11,13 +11,17 @@ namespace drake {
 namespace math {
 namespace internal {
 template <typename T>
-struct is_double_or_symbolic : std::false_type {};
+struct is_symbolic : std::false_type {};
 
 template <>
-struct is_double_or_symbolic<double> : std::true_type {};
+struct is_symbolic<symbolic::Expression> : std::true_type {};
 
-template <>
-struct is_double_or_symbolic<symbolic::Expression> : std::true_type {};
+template <typename T>
+inline constexpr bool is_symbolic_v = is_symbolic<T>::value;
+
+template <typename T>
+using is_double_or_symbolic =
+    std::disjunction<std::is_same<T, double>, is_symbolic<T>>;
 
 template <typename T>
 inline constexpr bool is_double_or_symbolic_v = is_double_or_symbolic<T>::value;
@@ -416,6 +420,28 @@ using EigenLinearSolver = LinearSolverType<Eigen::Matrix<
         typename DerivedA::Scalar, double>,
     DerivedA::RowsAtCompileTime, DerivedA::ColsAtCompileTime, Eigen::ColMajor,
     DerivedA::MaxRowsAtCompileTime, DerivedA::MaxColsAtCompileTime>>;
+
+/**
+ * The most "promoted" of two scalar types; if they are the same, then that
+ * type, if they are different, then whichever one is not 'double'.
+ */
+template <typename ScalarA, typename ScalarB>
+using Promoted = typename std::conditional_t<
+  std::is_same_v<ScalarA, ScalarB>,
+  ScalarA,
+  std::conditional_t<
+    std::is_same_v<double, ScalarA>,
+    ScalarB,
+    ScalarA>>;
+
+/**
+ * The type of the solution vector 'x' given DerivedA and DerivedB.
+ */
+template <typename DerivedA, typename DerivedB>
+using Solution = typename Eigen::Matrix<
+  Promoted<typename DerivedA::Scalar, typename DerivedB::Scalar>,
+  DerivedA::RowsAtCompileTime,
+  DerivedB::ColsAtCompileTime>;
 }  // namespace internal
 
 /**
@@ -521,14 +547,16 @@ internal::EigenLinearSolver<LinearSolverType, DerivedA> GetLinearSolver(
  */
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
-        internal::is_double_or_symbolic_v<typename DerivedB::Scalar> &&
-        std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
+internal::Solution<DerivedA, DerivedB>
 SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                   const Eigen::MatrixBase<DerivedB>& b) {
+  using ScalarA = typename DerivedA::Scalar;
+  using ScalarB = typename DerivedB::Scalar;
+  static_assert(std::is_same_v<ScalarA, ScalarB> ||
+                (!internal::is_symbolic_v<ScalarA> &&
+                 !internal::is_symbolic_v<ScalarB>),
+                "Mixing symbolic and other types is not supported.");
+
   const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
   return SolveLinearSystem(linear_solver, A, b);
 }
@@ -548,23 +576,6 @@ typename std::enable_if<
   return SolveLinearSystem<LinearSolverType>(A, b);
 }
 
-/**
- * Template specialization for A being double-valued matrix, and b being
- * AutoDiffScalar-valued matrix. See @ref linear_solve for more details.
- */
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    std::is_same_v<typename DerivedA::Scalar, double> &&
-        internal::is_autodiff_v<typename DerivedB::Scalar>,
-    Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
-                  const Eigen::MatrixBase<DerivedB>& b) {
-  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
-  return SolveLinearSystem(linear_solver, A, b);
-}
-
 template <template <typename, int...> typename LinearSolverType,
           typename DerivedA, typename DerivedB>
 DRAKE_DEPRECATED("2022-01-01",
@@ -577,22 +588,6 @@ typename std::enable_if<
     LinearSolve(const Eigen::MatrixBase<DerivedA>& A,
                 const Eigen::MatrixBase<DerivedB>& b) {
   return SolveLinearSystem<LinearSolverType>(A, b);
-}
-
-/**
- * Template specialization when A is a matrix of AutoDiffScalar.
- * See @ref linear_solve for more details.
- */
-template <template <typename, int...> typename LinearSolverType,
-          typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    internal::is_autodiff_v<typename DerivedA::Scalar>,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                  DerivedB::ColsAtCompileTime>>::type
-SolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
-                  const Eigen::MatrixBase<DerivedB>& b) {
-  const auto linear_solver = GetLinearSolver<LinearSolverType>(A);
-  return SolveLinearSystem(linear_solver, A, b);
 }
 
 template <template <typename, int...> typename LinearSolverType,
@@ -655,51 +650,42 @@ template <template <typename, int...> typename LinearSolverType,
 class LinearSolver {
  public:
   using SolverType = internal::EigenLinearSolver<LinearSolverType, DerivedA>;
+  template <typename DerivedB>
+  using SolutionType = internal::Solution<DerivedA, DerivedB>;
+  using ScalarA = typename DerivedA::Scalar;
+
   explicit LinearSolver(const Eigen::MatrixBase<DerivedA>& A)
       : linear_solver_{GetLinearSolver<LinearSolverType>(A)} {
-    if constexpr (internal::is_autodiff_v<typename DerivedA::Scalar>) {
+    if constexpr (internal::is_autodiff_v<ScalarA>) {
       A_.emplace(A);
     }
   }
 
   /**
-   * Template specialization for both A and b being double- or symbolic-valued
-   * matrices.
+   * Solve Ax = b.
+   * Return type is as described in the table above.
    */
   template <typename DerivedB>
-  typename std::enable_if<
-      internal::is_double_or_symbolic_v<typename DerivedA::Scalar> &&
-          std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar>,
-      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                    DerivedB::ColsAtCompileTime>>::type
+  SolutionType<DerivedB>
   Solve(const Eigen::MatrixBase<DerivedB>& b) const {
-    return linear_solver_.solve(b);
-  }
+    using ScalarB = typename DerivedB::Scalar;
+    static_assert(std::is_same_v<ScalarA, ScalarB> ||
+                  (!internal::is_symbolic_v<ScalarA> &&
+                   !internal::is_symbolic_v<ScalarB>),
+                  "Mixing symbolic and other types is not supported.");
 
-  /**
-   * Template specialization for A being double-valued matrix, and b being
-   * AutoDiffScalar-valued matrix.
-   */
-  template <typename DerivedB>
-  typename std::enable_if<
-      std::is_same_v<typename DerivedA::Scalar, double> &&
-          internal::is_autodiff_v<typename DerivedB::Scalar>,
-      Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
-                    DerivedB::ColsAtCompileTime>>::type
-  Solve(const Eigen::MatrixBase<DerivedB>& b) const {
-    return SolveLinearSystem(linear_solver_, b);
-  }
-
-  /**
-   * Template specialization when A is a matrix of AutoDiffScalar.
-   */
-  template <typename DerivedB>
-  typename std::enable_if<
-      internal::is_autodiff_v<typename DerivedA::Scalar>,
-      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
-                    DerivedB::ColsAtCompileTime>>::type
-  Solve(const Eigen::MatrixBase<DerivedB>& b) const {
-    return SolveLinearSystem(linear_solver_, *A_, b);
+    if constexpr (!internal::is_autodiff_v<ScalarA> &&
+                  std::is_same_v<ScalarA, ScalarB>) {
+      return linear_solver_.solve(b);
+    // NOLINTNEXTLINE(readability/braces)
+    } else if constexpr (std::is_same_v<ScalarA, double> &&
+                         internal::is_autodiff_v<ScalarB>) {
+      return SolveLinearSystem(linear_solver_, b);
+    // NOLINTNEXTLINE(readability/braces)
+    } else if constexpr (internal::is_autodiff_v<ScalarA>) {
+      return SolveLinearSystem(linear_solver_, *A_, b);
+    }
+    DRAKE_UNREACHABLE();
   }
 
  private:
