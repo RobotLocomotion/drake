@@ -4,12 +4,10 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace multibody {
 namespace internal {
 namespace {
-
-using drake::multibody::ContactModel;
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, BasicTest) {
   MultibodyPlantConfig config;
@@ -46,5 +44,5 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactModelTest) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace sim
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake
