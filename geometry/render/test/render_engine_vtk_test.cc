@@ -51,6 +51,14 @@ using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
 
+// Optimizers on some platforms break code and cause test failures. Worse
+// still, there is no agreement on attribute spelling.
+#ifdef __clang__
+#define NOOPT __attribute__((optnone))
+#else
+#define NOOPT __attribute__((optimize("-O0")))
+#endif
+
 // Default camera properties.
 const int kWidth = 640;
 const int kHeight = 480;
@@ -1034,7 +1042,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
 
   // Sets the expected values prior to calling PerformCenterShapeTest().
   auto set_expectations = [this](const RgbaColor& color, float depth,
-                                 RenderLabel label) {
+                                 RenderLabel label) NOOPT {
     expected_color_ = color;
     expected_label_ = label;
     expected_object_depth_ = depth;
