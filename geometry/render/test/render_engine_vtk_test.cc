@@ -51,6 +51,13 @@ using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
 
+// Apple clang 13 -O2 optimization causes spurious test failures.
+#if defined(__APPLE__) && defined(__clang__) && __clang_major__ == 13
+  #define MAYBE_NOOPT __attribute__((optnone))
+#else
+  #define MAYBE_NOOPT
+#endif
+
 // Default camera properties.
 const int kWidth = 640;
 const int kHeight = 480;
@@ -1034,7 +1041,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
 
   // Sets the expected values prior to calling PerformCenterShapeTest().
   auto set_expectations = [this](const RgbaColor& color, float depth,
-                                 RenderLabel label) {
+				 RenderLabel label) MAYBE_NOOPT {
     expected_color_ = color;
     expected_label_ = label;
     expected_object_depth_ = depth;
