@@ -429,11 +429,13 @@ class NiceAnonEnumTemplate {
 
 }  // namespace
 
-#ifdef __APPLE__
-constexpr bool kApple = true;
+// Apple clang prior to version 13 needs a fixup for inline namespaces.
+#if defined(__APPLE__) && defined(__clang__) && __clang_major__ < 13
+constexpr bool kAppleInlineNamespace = true;
 #else
-constexpr bool kApple = false;
+constexpr bool kAppleInlineNamespace = false;
 #endif
+
 #ifdef __clang__
 constexpr bool kClang = true;
 #else
@@ -457,7 +459,7 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
   CheckHash<AnonEnum>("drake::test::{anonymous}::AnonEnum");
 
   // Templated containers without default template arguments.
-  const std::string stdcc = kApple ? "std::__1" : "std";
+  const std::string stdcc = kAppleInlineNamespace ? "std::__1" : "std";
   CheckHash<std::shared_ptr<double>>(fmt::format(
       "{std}::shared_ptr<double>",
       fmt::arg("std", stdcc)));
