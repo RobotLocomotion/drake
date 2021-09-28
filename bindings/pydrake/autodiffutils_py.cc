@@ -106,15 +106,38 @@ PYBIND11_MODULE(autodiffutils, m) {
   autodiff.attr("arccos") = autodiff.attr("acos");
   autodiff.attr("arctan2") = autodiff.attr("atan2");
 
+  // Separating InitialAutoDiff(value) into three separate signatures was
+  // needed to avoid a signature-matching problem in Python code that
+  // invoked InitializeAutoDiff([array of floats]).
+  m.def(
+      "InitializeAutoDiff",
+      [](const Eigen::MatrixXd& value) { return InitializeAutoDiff(value); },
+      py::arg("value"), doc.InitializeAutoDiff.doc_just_value);
+
+  m.def(
+      "InitializeAutoDiff",
+      [](const Eigen::MatrixXd& value, Eigen::DenseIndex num_derivatives) {
+        return InitializeAutoDiff(value, num_derivatives);
+      },
+      py::arg("value"), py::arg("num_derivatives"),
+      doc.InitializeAutoDiff.doc_just_value);
+
   m.def(
       "InitializeAutoDiff",
       [](const Eigen::MatrixXd& value, Eigen::DenseIndex num_derivatives,
           Eigen::DenseIndex deriv_num_start) {
         return InitializeAutoDiff(value, num_derivatives, deriv_num_start);
       },
-      py::arg("value"), py::arg("num_derivatives") = std::nullopt,
-      py::arg("deriv_num_start") = std::nullopt,
+      py::arg("value"), py::arg("num_derivatives"), py::arg("deriv_num_start"),
       doc.InitializeAutoDiff.doc_just_value);
+
+  m.def(
+      "InitializeAutoDiff",
+      [](const Eigen::MatrixXd& value, const Eigen::MatrixXd& gradient) {
+        return InitializeAutoDiff(value, gradient);
+      },
+      py::arg("value"), py::arg("gradient"),
+      doc.InitializeAutoDiff.doc_value_and_gradient);
 
   m.def(
       "ExtractValue",
@@ -129,14 +152,6 @@ PYBIND11_MODULE(autodiffutils, m) {
         return ExtractGradient(auto_diff_matrix);
       },
       py::arg("auto_diff_matrix"), doc.ExtractGradient.doc);
-
-  m.def(
-      "InitializeAutoDiff",
-      [](const Eigen::VectorXd& value, const Eigen::MatrixXd& gradient) {
-        return InitializeAutoDiff(value, gradient);
-      },
-      py::arg("value"), py::arg("gradient"),
-      doc.InitializeAutoDiff.doc_value_and_gradient);
 
   // TODO(sherm1) To be deprecated asap.
   m.def(

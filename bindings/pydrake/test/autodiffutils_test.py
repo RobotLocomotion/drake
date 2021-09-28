@@ -270,6 +270,12 @@ class TestAutoDiffXd(unittest.TestCase):
         np.testing.assert_array_equal(ExtractGradient(c),
                                       np.array(c_grad))
 
+        # With just a single InitializeAutoDiff(value [,n] [,start]) signature
+        # this failed to compile due to an ambiguity with the (value, gradient)
+        # form. Splitting the value form into three signatures fixed it.
+        InitializeAutoDiff(value=[1., 2., 3.])
+        InitializeAutoDiff(value=[1., 2., 3.], num_derivatives=3)
+
     # TODO(sherm1) To be deprecated asap.
     def test_deprecated_math_utils(self):
         a = initializeAutoDiff([1, 2, 3])
