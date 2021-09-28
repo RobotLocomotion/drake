@@ -404,13 +404,6 @@ class TestMath(unittest.TestCase):
         if T != Expression:
             self.assertEqual(value, T(.5))
 
-    # TODO(2021-10-01) Remove with completion of deprecation.
-    def test_orthonormal_basis(self):
-        with catch_drake_warnings(expected_count=1):
-            R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
-            self.assertAlmostEqual(np.linalg.det(R), 1.0)
-            self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
-
     def test_random_rotations(self):
         g = RandomGenerator()
         quat = mut.UniformlyRandomQuaternion(g)

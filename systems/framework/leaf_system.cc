@@ -663,21 +663,6 @@ InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
                                 kAbstractValued, 0 /* size */);
 }
 
-// (This function is deprecated.)
-template <typename T>
-InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
-    const BasicVector<T>& model_vector,
-    std::optional<RandomDistribution> random_type) {
-  return DeclareVectorInputPort(kUseDefaultName, model_vector, random_type);
-}
-
-// (This function is deprecated.)
-template <typename T>
-InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
-    const AbstractValue& model_value) {
-  return DeclareAbstractInputPort(kUseDefaultName, model_value);
-}
-
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     std::variant<std::string, UseDefaultName> name,
@@ -753,34 +738,6 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
       },
       {this->abstract_state_ticket(state_index)});
 }
-
-// (This function is deprecated.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
-    const BasicVector<T>& model_vector,
-    typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc) {
-  return DeclareVectorOutputPort(kUseDefaultName, model_vector,
-                                 std::move(vector_calc_function),
-                                 std::move(prerequisites_of_calc));
-}
-#pragma GCC diagnostic pop
-
-// (This function is deprecated.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
-    typename LeafOutputPort<T>::AllocCallback alloc_function,
-    typename LeafOutputPort<T>::CalcCallback calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc) {
-  return DeclareAbstractOutputPort(kUseDefaultName, std::move(alloc_function),
-                                   std::move(calc_function),
-                                   std::move(prerequisites_of_calc));
-}
-#pragma GCC diagnostic pop
 
 template <typename T>
 std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
