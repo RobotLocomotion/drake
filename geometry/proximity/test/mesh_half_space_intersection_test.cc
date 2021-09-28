@@ -161,7 +161,7 @@ SurfaceMesh<double> CreateMeshOfIndependentTriangles(
   std::vector<SurfaceVertex<double>> vertices_W;
   std::vector<SurfaceFace> faces;
   const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
-  for (const auto face : mesh_F.faces()) {
+  for (const auto& face : mesh_F.faces()) {
     const size_t v = vertices_W.size();
     faces.emplace_back(SurfaceVertexIndex(v), SurfaceVertexIndex(v + 1),
                        SurfaceVertexIndex(v + 2));
@@ -1466,7 +1466,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     // (AB⋅AE)² = |AB|²⋅|AE|²
     const vector<SurfaceVertex<double>>& verts_R = mesh_R_->vertices();
     const vector<pair<int, int>> edges{{0, 1}, {0, 2}, {1, 2}};
-    for (const auto [a, b] : edges) {
+    for (const auto& [a, b] : edges) {
       const Vector3d& p_AB_R = verts_R[b].r_MV() - verts_R[a].r_MV();
       const Vector3d p_AE_R = p_RE - verts_R[a].r_MV();
       const double lhs = std::pow(p_AB_R.dot(p_AE_R), 2);

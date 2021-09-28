@@ -292,7 +292,7 @@ std::unique_ptr<SolverInterface> MakeFirstAvailableSolver(
     }
   }
   std::string solver_names = "";
-  for (const auto solver_id : solver_ids) {
+  for (const auto& solver_id : solver_ids) {
     solver_names.append(solver_id.name() + " ");
   }
   throw std::runtime_error("MakeFirstAvailableSolver(): none of the solvers " +
