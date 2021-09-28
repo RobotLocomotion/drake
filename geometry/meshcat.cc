@@ -440,8 +440,10 @@ class Meshcat::WebSocketPublisher {
   }
 
   ~WebSocketPublisher() {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_DEMAND(loop_ != nullptr);
     loop_->defer([this]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       auto iter = websockets_.begin();
       while (iter != websockets_.end()) {
         // Need to advance the iterator before calling close (#15821).
@@ -454,12 +456,12 @@ class Meshcat::WebSocketPublisher {
   }
 
   int port() const {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     return port_;
   }
 
   void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     uuids::uuid_random_generator uuid_generator{generator_};
@@ -504,6 +506,7 @@ class Meshcat::WebSocketPublisher {
     }
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -525,7 +528,7 @@ class Meshcat::WebSocketPublisher {
 
   template <typename CameraData>
   void SetCamera(CameraData camera, std::string path) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     uuids::uuid_random_generator uuid_generator{generator_};
@@ -534,6 +537,7 @@ class Meshcat::WebSocketPublisher {
     data.object.object = std::move(camera);
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -546,7 +550,7 @@ class Meshcat::WebSocketPublisher {
 
   void SetTransform(std::string_view path,
                     const RigidTransformd& X_ParentPath) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::SetTransformData data;
@@ -554,6 +558,7 @@ class Meshcat::WebSocketPublisher {
     Eigen::Map<Eigen::Matrix4d>(data.matrix) = X_ParentPath.GetAsMatrix4();
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -565,13 +570,14 @@ class Meshcat::WebSocketPublisher {
   }
 
   void Delete(std::string_view path) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::DeleteData data;
     data.path = FullPath(path);
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -583,7 +589,7 @@ class Meshcat::WebSocketPublisher {
   template <typename T>
   void SetProperty(std::string_view path, std::string property,
                    const T& value) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::SetPropertyData<T> data;
@@ -592,6 +598,7 @@ class Meshcat::WebSocketPublisher {
     data.value = value;
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -603,7 +610,7 @@ class Meshcat::WebSocketPublisher {
   }
 
   void AddButton(std::string name) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::SetButtonControl data;
@@ -628,6 +635,7 @@ class Meshcat::WebSocketPublisher {
     }
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -646,7 +654,7 @@ class Meshcat::WebSocketPublisher {
   }
 
   void DeleteButton(std::string name) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::DeleteControl data;
@@ -665,6 +673,7 @@ class Meshcat::WebSocketPublisher {
     }
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -674,7 +683,7 @@ class Meshcat::WebSocketPublisher {
 
   void AddSlider(std::string name, double min, double max,
                                double step, double value) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::SetSliderControl data;
@@ -709,6 +718,7 @@ class Meshcat::WebSocketPublisher {
     }
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -717,7 +727,7 @@ class Meshcat::WebSocketPublisher {
   }
 
   void SetSliderValue(std::string name, double value) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     {
@@ -740,6 +750,7 @@ class Meshcat::WebSocketPublisher {
     data.value = value;
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -748,7 +759,7 @@ class Meshcat::WebSocketPublisher {
   }
 
   double GetSliderValue(std::string_view name) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
 
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = sliders_.find(name);
@@ -760,7 +771,7 @@ class Meshcat::WebSocketPublisher {
   }
 
   void DeleteSlider(std::string name) {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::DeleteControl data;
@@ -779,6 +790,7 @@ class Meshcat::WebSocketPublisher {
     }
 
     loop_->defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
@@ -787,7 +799,7 @@ class Meshcat::WebSocketPublisher {
   }
 
   void DeleteAddedControls() {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     // We copy the data structures so that the main thread can iterate through
     // them without acquiring an additional lock.
     std::map<std::string, internal::SetButtonControl, std::less<>> buttons{};
@@ -806,24 +818,26 @@ class Meshcat::WebSocketPublisher {
   }
 
   bool HasPath(std::string_view path) const {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     std::promise<bool> p;
     std::future<bool> f = p.get_future();
     loop_->defer([this, path = FullPath(path), p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       p.set_value(scene_tree_root_.Find(path) != nullptr);
     });
     return f.get();
   }
 
   std::string GetPackedObject(std::string_view path) const {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     std::promise<std::string> p;
     std::future<std::string> f = p.get_future();
     loop_->defer([this, path = FullPath(path), p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
       if (!e || !e->object()) {
         p.set_value("");
@@ -835,12 +849,13 @@ class Meshcat::WebSocketPublisher {
   }
 
   std::string GetPackedTransform(std::string_view path) const {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     std::promise<std::string> p;
     std::future<std::string> f = p.get_future();
     loop_->defer([this, path = FullPath(path), p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
       if (!e || !e->transform()) {
         p.set_value("");
@@ -853,13 +868,14 @@ class Meshcat::WebSocketPublisher {
 
   std::string GetPackedProperty(std::string_view path,
                                 std::string property) const {
-    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     std::promise<std::string> p;
     std::future<std::string> f = p.get_future();
     loop_->defer([this, path = FullPath(path), property = std::move(property),
                   p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       const SceneTreeElement* e = scene_tree_root_.Find(path);
       if (!e) {
         p.set_value("");
@@ -876,6 +892,10 @@ class Meshcat::WebSocketPublisher {
   }
 
  private:
+  bool IsThread(std::thread::id thread_id) const {
+    return (std::this_thread::get_id() == thread_id);
+  }
+
   void WebSocketMain(
       std::promise<std::tuple<uWS::Loop*, int, bool>> app_promise,
       const std::optional<int>& desired_port) {
@@ -886,6 +906,7 @@ class Meshcat::WebSocketPublisher {
 
     uWS::App::WebSocketBehavior<PerSocketData> behavior;
     behavior.open = [this](WebSocket* ws) {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       websockets_.emplace(ws);
       ws->subscribe("all");
       // Update this new connection with previously published data.
@@ -949,6 +970,7 @@ class Meshcat::WebSocketPublisher {
       }
     };
     behavior.close = [this](WebSocket* ws, int, std::string_view) {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
       websockets_.erase(ws);
     };
 
@@ -956,6 +978,7 @@ class Meshcat::WebSocketPublisher {
         uWS::App()
             .get("/*",
                  [&](uWS::HttpResponse<kSsl>* res, uWS::HttpRequest* req) {
+                   DRAKE_DEMAND(IsThread(websocket_thread_id_));
                    res->end(GetUrlContent(req->getUrl()));
                  })
             .ws<PerSocketData>("/*", std::move(behavior));
@@ -965,6 +988,7 @@ class Meshcat::WebSocketPublisher {
       app.listen(
           port, LIBUS_LISTEN_EXCLUSIVE_PORT,
           [this, port](us_listen_socket_t* socket) {
+            DRAKE_DEMAND(IsThread(websocket_thread_id_));
             if (socket) {
               drake::log()->info(
                   "Meshcat listening for connections at http://localhost:{}",
@@ -983,11 +1007,12 @@ class Meshcat::WebSocketPublisher {
   }
 
   void SendTree(WebSocket* ws) {
-    DRAKE_DEMAND(std::this_thread::get_id() == websocket_thread_id_);
+    DRAKE_DEMAND(IsThread(websocket_thread_id_));
     scene_tree_root_.Send(ws);
   }
 
   std::string FullPath(std::string_view path) const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
     while (path.size() > 1 && path.back() == '/') {
       path.remove_suffix(1);
     }
