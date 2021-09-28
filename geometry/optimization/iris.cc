@@ -331,7 +331,7 @@ HPolyhedron IrisInConfigurationSpace(
     tangent_matrix = 2.0 * E.A().transpose() * E.A();
     int num_constraints = 2 * nq;  // Start with just the joint limits.
     // Find separating hyperplanes
-    for (const auto [geomA, geomB] : pairs) {
+    for (const auto& [geomA, geomB] : pairs) {
       while (true) {
         const bool collision = FindClosestCollision(
             *symbolic_plant, bodies.at(geomA), bodies.at(geomB),

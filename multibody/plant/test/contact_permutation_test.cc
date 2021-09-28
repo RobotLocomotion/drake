@@ -101,7 +101,7 @@ int VerifyModelInstanceIsATreeAndReturnTreeIndex(
   // For the purpose of these tests, verify the entire model instance belongs to
   // the same tree.
   const int t = body_to_tree_map[model_bodies[0]];  // tree for the first body.
-  for (const BodyIndex body_index : model_bodies) {
+  for (const BodyIndex& body_index : model_bodies) {
     EXPECT_EQ(body_to_tree_map[body_index], t);
   }
   return t;

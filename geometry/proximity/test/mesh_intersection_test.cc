@@ -1260,7 +1260,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     const vector<VolumeVertex<double>>& verts_S = field_S_->mesh().vertices();
     const vector<pair<int, int>> edges{{0, 1}, {0, 2}, {0, 3},
                                        {1, 2}, {1, 3}, {2, 3}};
-    for (const auto [a, b] : edges) {
+    for (const auto& [a, b] : edges) {
       const Vector3d& p_AB_S = verts_S[b].r_MV() - verts_S[a].r_MV();
       const Vector3d p_AE_S = p_SE - verts_S[a].r_MV();
       const double lhs = std::pow(p_AB_S.dot(p_AE_S), 2);
