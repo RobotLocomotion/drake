@@ -47,6 +47,7 @@ drake_py_binary(
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ccd",
+    "common_robotics_utilities",
     "fcl",
     "fmt",
     "ghc_filesystem",
