@@ -6,7 +6,7 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 import argparse
 from fnmatch import fnmatch
 import os
-from os.path import join
+from os.path import join, relpath
 import sys
 
 from bazel_tools.tools.python.runfiles import runfiles
@@ -57,7 +57,7 @@ def _symlink_headers(*, drake_workspace, temp_dir, modules):
             print(f"error: Unknown module {module}")
             sys.exit(1)
         for dirpath, dirs, files in os.walk(module_workspace):
-            subdir = os.path.relpath(dirpath, drake_workspace)
+            subdir = relpath(dirpath, drake_workspace)
             os.makedirs(join(temp_dir, "drake", subdir))
             for item in files:
                 if any([module.startswith("drake.doc"),
@@ -216,6 +216,33 @@ def _build(*, out_dir, temp_dir, modules, quick):
             for line in f.readlines()
         ]
     _postprocess_doxygen_log(lines, check_for_errors)
+
+    # Collect the list of all HTML output files.
+    html_files = []
+    for dirpath, _, filenames in os.walk(out_dir):
+        for filename in filenames:
+            if filename.endswith(".html"):
+                html_files.append(relpath(join(dirpath, filename), out_dir))
+
+    # Fix the formatting of deprecation text (see drake#15619 for an example).
+    perl_statements = [
+        # Remove quotes around the removal date.
+        r's#(removed from Drake on or after) "(....-..-..)" *\.#\1 \2.#;',
+        # Remove all quotes within the explanation text, i.e., the initial and
+        # final quotes, as well as internal quotes that might be due to C++
+        # multi-line string literals.
+        # - The quotes must appear after a "_deprecatedNNNNNN" anchor.
+        # - The quotes must appear before a "<br />" end-of-line.
+        # Example lines:
+        # <dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000013">Deprecated:</a></b></dt><dd>"Use RotationMatrix::MakeFromOneVector()." <br />  # noqa
+        # <dd><a class="anchor" id="_deprecated000013"></a>"Use RotationMatrix::MakeFromOneVector()." <br />  # noqa
+        r'while (s#(?<=_deprecated\d{6}")([^"]*)"(.*?<br)#\1\2#) {};',
+    ]
+    while html_files:
+        # Work in batches of 100, so we don't overflow the argv limit.
+        first, html_files = html_files[:100], html_files[100:]
+        check_call(["perl", "-pi", "-e", "".join(perl_statements)] + first,
+                   cwd=out_dir)
 
     # The nominal pages to offer for preview.
     return ["", "classes.html", "modules.html"]
