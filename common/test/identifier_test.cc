@@ -16,6 +16,9 @@
 namespace drake {
 namespace {
 
+class ATag {};
+class BTag {};
+
 // Creates various dummy index types to test.
 using std::set;
 using std::stringstream;

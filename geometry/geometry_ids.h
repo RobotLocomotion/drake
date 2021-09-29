@@ -8,21 +8,27 @@ namespace geometry {
 
 namespace internal {
 class EncodedData;
+
+class FilterTag {};
+class SourceTag {};
+class FrameTag {};
+class GeometryTag {};
+
 }  // namespace internal
 
 /** Type used to identify transient collision filter declarations in SceneGraph.
  */
-using FilterId = drake::Identifier<class FilterTag>;
+using FilterId = drake::Identifier<class internal::FilterTag>;
 
 /** Type used to identify geometry sources in SceneGraph. */
-using SourceId = drake::Identifier<class SourceTag>;
+using SourceId = drake::Identifier<class internal::SourceTag>;
 
 /** Type used to identify geometry frames in SceneGraph.*/
-using FrameId = drake::Identifier<class FrameTag>;
+using FrameId = drake::Identifier<class internal::FrameTag>;
 
 /** Type used to identify geometry instances in SceneGraph. */
-class GeometryId : public drake::Identifier<class GeometryTag> {
-  using Base = drake::Identifier<class GeometryTag>;
+class GeometryId : public drake::Identifier<class internal::GeometryTag> {
+  using Base = drake::Identifier<class internal::GeometryTag>;
  public:
   GeometryId() = default;
 

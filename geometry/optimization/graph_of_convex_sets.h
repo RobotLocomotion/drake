@@ -57,6 +57,8 @@ class GraphOfConvexSets {
 
   class Edge;  // forward declaration.
 
+  class VertexTag {};
+  class EdgeTag {};
   using VertexId = Identifier<class VertexTag>;
   using EdgeId = Identifier<class EdgeTag>;
 

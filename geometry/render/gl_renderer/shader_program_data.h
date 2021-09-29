@@ -12,6 +12,7 @@ namespace geometry {
 namespace render {
 namespace internal {
 
+class ShaderTag {};
 /* Type used to identify unique shader programs in RenderEngineGl. */
 using ShaderId = drake::Identifier<class ShaderTag>;
 

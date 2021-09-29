@@ -1886,8 +1886,9 @@ bool PropertiesIndicateSoftHydro(const geometry::ProximityProperties& props) {
   return hydro_type == HydroelasticType::kSoft;
 }
 
+class FakeTag {};
+
 void def_testing_module(py::module m) {
-  class FakeTag;
   using FakeId = Identifier<FakeTag>;
 
   BindIdentifier<FakeId>(m, "FakeId", "Fake documentation.");

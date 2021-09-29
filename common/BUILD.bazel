@@ -278,6 +278,7 @@ drake_cc_library(
     deps = [
         ":essential",
         ":hash",
+        ":nice_type_name",
     ],
 )
 

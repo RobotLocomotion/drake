@@ -41,6 +41,7 @@ class GeometryVersion {
   bool IsSameAs(const GeometryVersion& other, Role role) const;
 
  private:
+  class RoleVersionTag {};
   using RoleVersionId = Identifier<class RoleVersionTag>;
   /* Only GeometryState can update the role versions and construct
    GeometryVersion from scratch. Downstream systems should obtain a reference
