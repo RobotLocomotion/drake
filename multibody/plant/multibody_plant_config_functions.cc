@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/dev/multibody_plant_config_functions.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 
 #include <array>
 #include <stdexcept>
@@ -61,7 +61,7 @@ ContactModel GetContactModelFromString(std::string_view contact_model) {
       "Unknown contact_model: '{}'", contact_model));
 }
 
-std::string ContactModelToString(ContactModel contact_model) {
+std::string GetStringFromContactModel(ContactModel contact_model) {
   for (const auto& [value, name] : kContactModels) {
     if (value == contact_model) {
       return name;

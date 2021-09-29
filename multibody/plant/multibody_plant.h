@@ -26,6 +26,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
@@ -1693,7 +1694,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// details.
   ///
   /// @throws std::exception if penetration_allowance is not positive.
-  void set_penetration_allowance(double penetration_allowance = 0.001);
+  void set_penetration_allowance(
+      double penetration_allowance =
+          MultibodyPlantConfig{}.penetration_allowance);
 
   /// Returns a time-scale estimate `tc` based on the requested penetration
   /// allowance δ set with set_penetration_allowance().
@@ -1755,7 +1758,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// this value.
   /// See also @ref stribeck_approximation.
   /// @throws std::exception if `v_stiction` is non-positive.
-  void set_stiction_tolerance(double v_stiction = 0.001) {
+  void set_stiction_tolerance(
+      double v_stiction = MultibodyPlantConfig{}.stiction_tolerance) {
     friction_model_.set_stiction_tolerance(v_stiction);
   }
   /// @} <!-- Contact modeling -->
@@ -4682,7 +4686,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
   // See set_penetration_allowance() for details.
-  double penetration_allowance_{1.0e-3};
+  double penetration_allowance_{MultibodyPlantConfig{}.penetration_allowance};
 
   // Stribeck model of friction.
   class StribeckModel {
@@ -4794,6 +4798,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
   // The model used by the plant to compute contact forces.
+  // Keep this in sync with the default value in multibody_plant_config.h.
+  // TODO(jwnimmer-tri) The best way to keep in sync would be to initialize
+  // this value from a default-constructed MultibodyPlantConfig.  We'll need
+  // to refactor the code a little bit before we can do that, though.
   ContactModel contact_model_{ContactModel::kPoint};
 
   bool use_low_resolution_contact_surface_{false};
