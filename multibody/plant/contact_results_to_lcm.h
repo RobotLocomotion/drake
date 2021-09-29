@@ -193,7 +193,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
    the Diagram and connects the draw message output to the publisher input,
  - connects a ContactResults<double>-valued output port to the
    ContactResultsToLcmSystem system, and
- - sets the publishing rate to 1/60 of a second (simulated time).
+ - sets the publishing rate to 1/64th of a second (simulated time).
 
  The four variants differ in the following ways:
 

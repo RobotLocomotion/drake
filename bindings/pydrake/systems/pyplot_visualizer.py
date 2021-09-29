@@ -26,7 +26,7 @@ class PyPlotVisualizer(LeafSystem):
     appropriate state.
     """
 
-    def __init__(self, draw_period=1./30, facecolor=[1, 1, 1],
+    def __init__(self, draw_period=1./32, facecolor=[1, 1, 1],
                  figsize=None, ax=None, show=None):
         LeafSystem.__init__(self)
 

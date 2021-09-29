@@ -874,12 +874,12 @@ class ConnectVisualizerTest : public ::testing::Test {
    with the given publication period.
 
    When no publication period is given, we check that the default value from the
-   cc file made it through.  We don't specifically care that this is 60 Hz, just
+   cc file made it through.  We don't specifically care that this is 64 Hz, just
    that it's some sensible default.  If the cc file changes, we should update
    the value here as well.
   */
   void ExpectValidPublisher(systems::lcm::LcmPublisherSystem* publisher,
-                            double expected_publish_period = 1.0 / 60) {
+                            double expected_publish_period = 1.0 / 64) {
     /* Confirm that we get a non-null result. */
     ASSERT_NE(publisher, nullptr);
 

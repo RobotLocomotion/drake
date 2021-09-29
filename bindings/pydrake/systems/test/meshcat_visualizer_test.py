@@ -354,7 +354,7 @@ class TestMeshcat(unittest.TestCase):
     def test_point_cloud_visualization(self):
         """A small point cloud"""
 
-        draw_period = 1 / 30.
+        draw_period = 1 / 32.
         sim_time = draw_period * 3.
 
         def se3_from_xyz(xyz):

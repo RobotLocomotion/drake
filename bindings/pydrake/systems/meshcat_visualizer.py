@@ -44,7 +44,7 @@ import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 from meshcat.animation import Animation
 
-_DEFAULT_PUBLISH_PERIOD = 1 / 30.
+_DEFAULT_PUBLISH_PERIOD = 1 / 32.
 
 
 def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):

@@ -76,7 +76,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
     def __init__(self,
                  scene_graph,
-                 draw_period=1./30,
+                 draw_period=1./32,
                  T_VW=np.array([[1., 0., 0., 0.],
                                 [0., 0., 1., 0.],
                                 [0., 0., 0., 1.]]),

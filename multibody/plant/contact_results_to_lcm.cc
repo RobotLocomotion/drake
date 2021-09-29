@@ -286,7 +286,7 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
 
   auto contact_results_publisher = builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", lcm, publish_period.value_or(1.0 / 60)));
+          "CONTACT_RESULTS", lcm, publish_period.value_or(1.0 / 64)));
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port,

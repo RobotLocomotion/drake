@@ -304,7 +304,7 @@ class DrakeVisualizerTest : public ::testing::Test {
     }
   }
 
-  static constexpr double kPublishPeriod = 1 / 60.0;
+  static constexpr double kPublishPeriod = 1 / 64.0;
   /* The LCM channel names. We are implicitly confirming that DrakeVisualizer
    broadcasts on the right channels via the subscribers. The reception of
    expected messages on those subscribers is proof.  */
@@ -340,7 +340,7 @@ TYPED_TEST_SUITE(DrakeVisualizerTest, ScalarTypes);
 
 TYPED_TEST(DrakeVisualizerTest, PublishPeriod) {
   using T = TypeParam;
-  for (double period : {1 / 30.0, 1 / 10.0}) {
+  for (double period : {1 / 32.0, 1 / 10.0}) {
     this->ConfigureDiagram({.publish_period = period});
     Simulator<T> simulator(*(this->diagram_));
     ASSERT_EQ(simulator.get_context().get_time(), 0.0);

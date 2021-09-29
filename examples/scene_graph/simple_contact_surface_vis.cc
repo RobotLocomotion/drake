@@ -408,7 +408,7 @@ int do_main() {
   // Visualize contacts.
   auto& contact_to_lcm =
       *builder.AddSystem(LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm, 1.0 / 60));
+          "CONTACT_RESULTS", &lcm, 1.0 / 64));
   builder.Connect(contact_results, contact_to_lcm);
 
   auto diagram = builder.Build();
