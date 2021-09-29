@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "drake/multibody/plant/dev/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -25,7 +25,7 @@ ContactModel GetContactModelFromString(std::string_view contact_model);
 
 // (Exposed for unit testing only.)
 // Returns the string name of an enumerated value for a contact model.
-std::string ContactModelToString(ContactModel contact_model);
+std::string GetStringFromContactModel(ContactModel contact_model);
 
 }  // namespace internal
 }  // namespace multibody

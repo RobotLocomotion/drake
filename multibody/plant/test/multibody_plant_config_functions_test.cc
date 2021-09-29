@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/dev/multibody_plant_config_functions.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 
 #include <gtest/gtest.h>
 
@@ -35,7 +35,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactModelTest) {
 
   for (const auto& [name, value] : known_values) {
     EXPECT_EQ(GetContactModelFromString(name), value);
-    EXPECT_EQ(ContactModelToString(value), name);
+    EXPECT_EQ(GetStringFromContactModel(value), name);
   }
 
   DRAKE_EXPECT_THROWS_MESSAGE(GetContactModelFromString("foobar"),
