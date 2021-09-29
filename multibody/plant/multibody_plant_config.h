@@ -23,8 +23,8 @@ struct MultibodyPlantConfig {
   /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
   ///
   /// There is no default value for this within MultibodyPlant itself, so here
-  /// we choose a nominal value as a reasonably conservative estimate that
-  /// works in many cases.
+  /// we choose a nominal value (a discrete system, with a 1ms periodic update)
+  /// as a reasonably conservative estimate that works in many cases.
   double time_step{0.001};
 
   /// Configures the MultibodyPlant::set_penetration_allowance().
