@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -126,7 +127,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
       systems::DiagramBuilder<double>*, const MultibodyPlant<double>&,
       const systems::OutputPort<double>&,
       const std::function<std::string(geometry::GeometryId)>&,
-      lcm::DrakeLcmInterface*);
+      lcm::DrakeLcmInterface*, std::optional<double>);
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -213,6 +214,9 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                                whose contact results are to be visualized.
  @param scene_graph            The SceneGraph that will determine how the
                                geometry names will appear in the lcm message.
+ @param publish_period         An optional period to pass along to the
+                               LcmPublisherSystem constructor; when null, a
+                               reasonable default period will be used.
  @param lcm                    An optional lcm interface through which lcm
                                messages will be dispatched. Will be allocated
                                internally if none is supplied. If one is given,
@@ -235,7 +239,8 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 /** MultibodyPlant-connecting, SceneGraph-named geometry overload.
  @ingroup visualization */
@@ -243,7 +248,8 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 /** OutputPort-connecting, default-named geometry overload.
  @ingroup visualization */
@@ -251,7 +257,8 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 /** OutputPort-connecting, SceneGraph-named geometry overload.
  @ingroup visualization */
@@ -260,7 +267,8 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 //@}
 
