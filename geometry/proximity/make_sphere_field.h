@@ -63,8 +63,7 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(const Sphere& sphere,
     }
     pressure_values.push_back(elastic_modulus * extent);
   }
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_S);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_S);
 }
 
 }  // namespace internal

@@ -448,7 +448,7 @@ unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
   std::vector<T> p_values = {p0, p1, p2, p3, p4};
   DRAKE_DEMAND(5 == volume_mesh->num_vertices());
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "pressure", std::move(p_values), volume_mesh);
+      std::move(p_values), volume_mesh);
 
   return volume_mesh_field;
 }
@@ -1094,7 +1094,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     tet_mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        "pressure", vector<double>{0.25, 0.5, 0.75, 1}, tet_mesh_S_.get());
+        vector<double>{0.25, 0.5, 0.75, 1}, tet_mesh_S_.get());
     bvh_S_ = std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*tet_mesh_S_);
 
     /* Rigid triangle mesh; tilt and offset the triangle's plane so things are

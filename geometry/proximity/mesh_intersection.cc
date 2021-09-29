@@ -395,7 +395,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
       std::move(surface_faces), std::move(surface_vertices_M));
   const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
+      std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
 template <typename T>

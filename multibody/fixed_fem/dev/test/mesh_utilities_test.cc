@@ -251,7 +251,7 @@ GTEST_TEST(MeshUtilitiesTest, VisuallyVerifyStarRefineBoundaryTetrahedra) {
   {
     const std::string file_name("box_signed_distance.vtk");
     geometry::internal::WriteVolumeMeshFieldLinearToVtk(
-        file_name, box_geometry.signed_distance(),
+        file_name, "signed distance", box_geometry.signed_distance(),
         "Signed distance function in " + file_name);
   }
 
@@ -267,7 +267,8 @@ GTEST_TEST(MeshUtilitiesTest, VisuallyVerifyStarRefineBoundaryTetrahedra) {
   {
     const std::string file_name("refined_box_positive_distance.vtk");
     geometry::internal::WriteVolumeMeshFieldLinearToVtk(
-        file_name, refined_box_positive_distance_function,
+        file_name, "positive distance function",
+        refined_box_positive_distance_function,
         "Positive distance function in " + file_name);
   }
 }
