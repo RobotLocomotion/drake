@@ -2000,10 +2000,11 @@ class TestPlant(unittest.TestCase):
                 if use_custom_names:
                     publisher = ConnectContactResultsToDrakeVisualizer(
                         builder=builder, plant=plant, scene_graph=scene_graph,
-                        lcm=lcm)
+                        lcm=lcm, publish_period=1.0/32)
                 else:
                     publisher = ConnectContactResultsToDrakeVisualizer(
-                        builder=builder, plant=plant, lcm=lcm)
+                        builder=builder, plant=plant,
+                        lcm=lcm, publish_period=1.0/32)
                 self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):
