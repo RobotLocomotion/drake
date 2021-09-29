@@ -1,17 +1,23 @@
 #pragma once
 
-#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <typeinfo>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/hash.h"
-#include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
+namespace internal {
+
+/* This function serves as the support for all identifier types. It guarantees
+ that the static memory is well isolated within a single compilation unit. */
+int64_t new_id_value_from_type(const std::type_info& t);
+
+}
 
 /**
  A simple identifier class.
@@ -184,14 +190,7 @@ class Identifier {
    This method is guaranteed to be thread safe.
    */
   static Identifier get_new_id() {
-    // Note that id 0 is reserved for uninitialized variable which is created
-    // by the default constructor. As a result, we have an invariant that
-    // get_new_id() > 0.
-    static never_destroyed<std::atomic<int64_t>> next_index(1);
-    std::cerr << NiceTypeName::Get<Identifier>() << "::get_new_id() at "
-              << static_cast<void*>(&next_index) << "\n";
-
-    return Identifier(next_index.access()++);
+    return Identifier(internal::new_id_value_from_type(typeid(Identifier)));
   }
 
   /** Implements the @ref hash_append concept. And invalid id will successfully
