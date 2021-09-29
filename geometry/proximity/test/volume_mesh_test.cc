@@ -401,7 +401,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   std::vector<T> f_values = {f0, f1, f2, f3, f4};
 
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "pressure", std::move(f_values), volume_mesh.get());
+      std::move(f_values), volume_mesh.get());
 
   // Tests evaluation of the field on the element e0 {v0, v1, v2, v3}.
   const VolumeElementIndex e0(0);

@@ -97,7 +97,6 @@ class MeshFieldLinear {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
 
   /** Constructs a MeshFieldLinear.
-   @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
    @param mesh    The mesh M to which this field refers.
    @param calculate_gradient Calculate gradient field when true, default is
@@ -144,9 +143,9 @@ class MeshFieldLinear {
    @pre   The `mesh` is non-null, and the number of entries in `values` is the
           same as the number of vertices of the mesh.
    */
-  MeshFieldLinear(std::string name, std::vector<T>&& values,
+  MeshFieldLinear(std::vector<T>&& values,
                   const MeshType* mesh, bool calculate_gradient = true)
-      : mesh_(mesh), name_(std::move(name)), values_(std::move(values)) {
+      : mesh_(mesh), values_(std::move(values)) {
     DRAKE_DEMAND(mesh_ != nullptr);
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
                  this->mesh().num_vertices());
@@ -257,7 +256,6 @@ class MeshFieldLinear {
   }
 
   const MeshType& mesh() const { return *mesh_; }
-  const std::string& name() const { return name_; }
   const std::vector<T>& values() const { return values_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
@@ -326,7 +324,6 @@ class MeshFieldLinear {
   // the pointer to null when a MeshFieldLinear is copied.
   reset_on_copy<const MeshType*> mesh_;
 
-  std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
   std::vector<T> values_;

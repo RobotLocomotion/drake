@@ -115,7 +115,7 @@ ContactSurface<T> TestContactSurface() {
   const T e3{3.};
   vector<T> e_values = {e0, e1, e2, e3};
   auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", move(e_values), surface_mesh.get());
+      move(e_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, move(surface_mesh),
                                     move(e_field));
@@ -162,7 +162,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   auto make_e_field = [](SurfaceMesh<double>* mesh) {
     vector<double> e_values{0, 1, 2, 3};
     return make_unique<SurfaceMeshFieldLinear<double, double>>(
-        "e", move(e_values), mesh, false /* calc_gradient */);
+        move(e_values), mesh, false /* calc_gradient */);
   };
   vector<Vector3d> grad_e;
   for (int i = 0; i < surface_mesh->num_elements(); ++i) {
@@ -308,7 +308,7 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
   vector<double> field2_values(field.values());
   field2_values.at(0) += 2.0;
   auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
-                    field.name(), move(field2_values), mesh2.get());
+                    move(field2_values), mesh2.get());
   auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
                                          move(mesh2), move(field2));
   EXPECT_FALSE(surface.Equal(surface2));
@@ -334,7 +334,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   ContactSurface<double> dut(
       id_M, id_N, move(mesh),
       make_unique<SurfaceMeshFieldLinear<double, double>>(
-          "e_MN", move(e_MN_values), mesh_pointer));
+          move(e_MN_values), mesh_pointer));
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
   // These tests are just to confirm that those things changed where we
