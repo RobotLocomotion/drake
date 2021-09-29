@@ -1184,31 +1184,34 @@ PYBIND11_MODULE(plant, m) {
   m.def(
       "ConnectContactResultsToDrakeVisualizer",
       [](systems::DiagramBuilder<double>* builder,
-          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
+          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm,
+          std::optional<double> publish_period) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
-            builder, plant, lcm);
+            builder, plant, lcm, publish_period);
       },
       py::arg("builder"), py::arg("plant"), py::arg("lcm") = nullptr,
-      py_rvp::reference,
+      py::arg("publish_period") = std::nullopt, py_rvp::reference,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // Keep alive, transitive: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(),
-      doc.ConnectContactResultsToDrakeVisualizer.doc_3args_builder_plant_lcm);
+      doc.ConnectContactResultsToDrakeVisualizer
+          .doc_4args_builder_plant_lcm_publish_period);
 
   m.def(
       "ConnectContactResultsToDrakeVisualizer",
       [](systems::DiagramBuilder<double>* builder,
           const MultibodyPlant<double>& plant,
           const geometry::SceneGraph<double>& scene_graph,
-          lcm::DrakeLcmInterface* lcm) {
+          lcm::DrakeLcmInterface* lcm, std::optional<double> publish_period) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
-            builder, plant, scene_graph, lcm);
+            builder, plant, scene_graph, lcm, publish_period);
       },
       py::arg("builder"), py::arg("plant"), py::arg("scene_graph"),
-      py::arg("lcm") = nullptr, py_rvp::reference,
+      py::arg("lcm") = nullptr, py::arg("publish_period") = std::nullopt,
+      py_rvp::reference,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // Keep alive, transitive: `plant` keeps `builder` alive.
@@ -1218,7 +1221,7 @@ PYBIND11_MODULE(plant, m) {
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<4, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer
-          .doc_4args_builder_plant_scene_graph_lcm);
+          .doc_5args_builder_plant_scene_graph_lcm_publish_period);
 
   {
     using Class = PropellerInfo;
