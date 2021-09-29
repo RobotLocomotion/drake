@@ -317,11 +317,16 @@ class MeshcatShapeReifier : public ShapeReifier {
 
     // TODO(russt): MeshCat.jl/src/mesh_files.jl loads dae with textures, also.
 
-    // TODO(russt): Make the regex parsing more robust.
-    std::smatch matches;
+    // TODO(russt): Make this mtllib parsing more robust (right now commented
+    // mtllib lines will match, too, etc).
+    size_t mtllib_pos;
     if (format == "obj" &&
-        std::regex_search(mesh_data, matches,
-                          std::regex("mtllib\\s+([^\\s]+)"))) {
+        (mtllib_pos = mesh_data.find("mtllib ")) != std::string::npos) {
+      mtllib_pos += 7;  // Advance to after the actual "mtllib " string.
+      std::string mtllib_string =
+          mesh_data.substr(mtllib_pos, mesh_data.find('\n', mtllib_pos));
+      std::smatch matches;
+      std::regex_search(mtllib_string, matches, std::regex("\\s*([^\\s]+)"));
       // Note: We do a minimal parsing manually here.  tinyobj does too much
       // work (actually loading all of the content) and also does not give
       // access to the intermediate data that we need to pass to meshcat, like
@@ -402,7 +407,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     }
-  }
+    }
 
   void ImplementGeometry(const Mesh& mesh, void* data) override {
     ImplementMesh(mesh, data);
