@@ -7,7 +7,7 @@ load(
 
 def liblzma_repository(
         name,
-        licenses = ["restricted"],  # LGPL-2.1-only
+        licenses = ["unencumbered"],  # Public-Domain
         modname = "liblzma",
         pkg_config_paths = ["/usr/local/opt/xz/lib/pkgconfig"],
         **kwargs):
