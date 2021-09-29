@@ -161,8 +161,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     VolumeMesh<double> mesh_F = TrivialVolumeMesh(X_FM);
     // Make an arbitrary mesh field with heterogeneous values.
     vector<double> values{0.25, 0.5, 0.75, 1, -1};
-    VolumeMeshFieldLinear<double, double> field_F{"pressure", move(values),
-                                                  &mesh_F};
+    VolumeMeshFieldLinear<double, double> field_F{move(values), &mesh_F};
     representation_ = representation;
 
     faces_.clear();
@@ -934,7 +933,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   VolumeMesh<double> min_mesh_F =
       TrivialVolumeMesh(X_FM, true /* min_vertices */);
   VolumeMeshFieldLinear<double, double> min_field_F{
-      "pressure", vector<double>{0, 0, 0, 1, -1}, &min_mesh_F};
+      vector<double>{0, 0, 0, 1, -1}, &min_mesh_F};
   vector<SurfaceFace> min_faces;
   vector<SurfaceVertex<double>> min_vertices_F;
   vector<double> min_surface_pressure;
@@ -945,7 +944,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   VolumeMesh<double> dupe_mesh_F =
       TrivialVolumeMesh(X_FM, false /* min_vertices */);
   VolumeMeshFieldLinear<double, double> dupe_field_F{
-      "pressure", vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
+      vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
   vector<SurfaceFace> dupe_faces;
   vector<SurfaceVertex<double>> dupe_vertices_F;
   vector<double> dupe_surface_pressure;
@@ -1007,8 +1006,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
   VolumeMesh<double> mesh_M = TrivialVolumeMesh(I);
   // Make an arbitrary mesh field with heterogeneous values.
   vector<double> values{0.25, 0.5, 0.75, 1, -1};
-  VolumeMeshFieldLinear<double, double> field_M{"pressure", move(values),
-                                                &mesh_M};
+  VolumeMeshFieldLinear<double, double> field_M{move(values), &mesh_M};
 
   // Slicing against tet 0 should intersect and produce the faces.
   for (const auto representation :
@@ -1078,7 +1076,7 @@ class ComputeContactSurfaceTest : public ::testing::Test {
     mesh_F_ = make_unique<VolumeMesh<double>>(
         TrivialVolumeMesh(X_FM_, true /* minimum_vertices */));
     field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        "pressure", vector<double>{0, 0, 0, 1, -1}, mesh_F_.get());
+        vector<double>{0, 0, 0, 1, -1}, mesh_F_.get());
     mesh_id_ = GeometryId::get_new_id();
     plane_id_ = GeometryId::get_new_id();
   }
@@ -1287,7 +1285,7 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // with duplicates.
     const VolumeMesh<double> dupe_mesh_F = TrivialVolumeMesh(X_FM_, false);
     VolumeMeshFieldLinear<double, double> dupe_field_F{
-        "pressure", vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
+        vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
 
     // Passing in all tet indices produces the full intersection: 6 triangles.
     unique_ptr<ContactSurface<double>> contact_surface =
@@ -1471,7 +1469,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
   // Create mesh and volume mesh.
   const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
   const VolumeMeshFieldLinear<double, double> field_F{
-      "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
+      vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
   const Bvh<Obb, VolumeMesh<double>> bvh_F(mesh_F);
 
   // We'll pose the plane in the soft mesh's frame S and then transform the
@@ -1621,7 +1619,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
     mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        "pressure", vector<double>{0.25, 0.5, 0.75, 1}, mesh_S_.get());
+        vector<double>{0.25, 0.5, 0.75, 1}, mesh_S_.get());
     bvh_S_ = std::make_unique<Bvh<Obb, VolumeMesh<double>>>(*mesh_S_);
 
     /* Rigid plane; tilt and offset the plane so things are interesting. */

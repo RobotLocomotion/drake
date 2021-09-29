@@ -46,6 +46,7 @@ void WriteSurfaceMeshToVtk(const std::string& file_name,
 /*
  Writes VolumeMeshFieldLinear to VTK file.
  @param file_name  A file name with absolute path or relative path.
+ @param field_name Name of the field quantity to be written to the VTK file.
  @param field      A scalar field defined on a tetrahedral mesh.
  @param title      Name of the data set will be written on the second line of
                    the VTK file.
@@ -54,13 +55,14 @@ void WriteSurfaceMeshToVtk(const std::string& file_name,
  @throws std::exception if unable to create the file.
  */
 void WriteVolumeMeshFieldLinearToVtk(
-    const std::string& file_name,
+    const std::string& file_name, const std::string& field_name,
     const VolumeMeshFieldLinear<double, double>& field,
     const std::string& title);
 
 /*
  Writes SurfaceMeshFieldLinear to VTK file.
  @param file_name  A file name with absolute path or relative path.
+ @param field_name Name of the field quantity to be written to the VTK file.
  @param field      A scalar field defined on a triangulated surface mesh.
  @param title      Name of the data set will be written on the second line of
                    the VTK file.
@@ -69,7 +71,7 @@ void WriteVolumeMeshFieldLinearToVtk(
  @throws std::exception if unable to create the file.
  */
 void WriteSurfaceMeshFieldLinearToVtk(
-    const std::string& file_name,
+    const std::string& file_name, const std::string& field_name,
     const SurfaceMeshFieldLinear<double, double>& field,
     const std::string& title);
 
