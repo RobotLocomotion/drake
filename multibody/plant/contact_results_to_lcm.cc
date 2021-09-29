@@ -40,9 +40,10 @@ const std::vector<GeometryId>& GetCollisionGeometriesForBody(
         "MultibodyPlant has at least one body '{}/{}' with multiple contact "
         "geometries. Contacts with this body may be unclear in the visualizer "
         "if contact is made with multiple geometries simultaneously. To "
-        "clarify the visualization, pass in a geometry naming functor to the "
-        "constructor. See the documentation for ContactResultsToLcmSystem for "
-        "details.",
+        "clarify the visualization, use ConnectContactResultsToDrakeVisualizer "
+        "instead of the ContactResultsToLcm constructor, and pass a SceneGraph "
+        "to that function. See the documentation for ContactResultsToLcmSystem "
+        "for details.",
         plant.GetModelInstanceName(body.model_instance()), body.name());
     unused(log_once);
   }
@@ -272,7 +273,8 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
     const std::function<std::string(GeometryId)>& name_lookup,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
   DRAKE_DEMAND(builder != nullptr);
 
   // Note: Can't use AddSystem<System> or make_unique<System> because neither
@@ -284,7 +286,7 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
 
   auto contact_results_publisher = builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", lcm, 1.0 / 60 /* publish period */));
+          "CONTACT_RESULTS", lcm, publish_period.value_or(1.0 / 60)));
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port,
@@ -297,30 +299,35 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
-    lcm::DrakeLcmInterface* lcm) {
-  return ConnectWithNameLookup(
-      builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(), nullptr, lcm);
-}
-
-systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
-    systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& multibody_plant,
-    const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
   return ConnectWithNameLookup(
       builder, multibody_plant,
       multibody_plant.get_contact_results_output_port(),
-      make_geometry_name_lookup(scene_graph), lcm);
+      nullptr, lcm, publish_period);
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
+  return ConnectWithNameLookup(
+      builder, multibody_plant,
+      multibody_plant.get_contact_results_output_port(),
+      make_geometry_name_lookup(scene_graph), lcm, publish_period);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
   return ConnectWithNameLookup(
-      builder, multibody_plant, contact_results_port, nullptr, lcm);
+      builder, multibody_plant, contact_results_port,
+      nullptr, lcm, publish_period);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
@@ -328,11 +335,12 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& multibody_plant,
     const geometry::SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    const std::optional<double> publish_period) {
   return ConnectWithNameLookup(
       builder, multibody_plant,
       contact_results_port,
-      make_geometry_name_lookup(scene_graph), lcm);
+      make_geometry_name_lookup(scene_graph), lcm, publish_period);
 }
 
 }  // namespace multibody

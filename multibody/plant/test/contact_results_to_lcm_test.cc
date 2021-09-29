@@ -18,6 +18,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 
 namespace drake {
 
@@ -869,16 +870,21 @@ class ConnectVisualizerTest : public ::testing::Test {
     }
   }
 
-  /* Confirms that the publisher pointer is non-null and has been configured to
-   60Hz periodic publication. */
-  void ExpectValidPublisher(systems::lcm::LcmPublisherSystem* publisher) {
+  /* Confirms that the publisher pointer is non-null and has been configured
+   with the given publication period.
+
+   When no publication period is given, we check that the default value from the
+   cc file made it through.  We don't specifically care that this is 60 Hz, just
+   that it's some sensible default.  If the cc file changes, we should update
+   the value here as well.
+  */
+  void ExpectValidPublisher(systems::lcm::LcmPublisherSystem* publisher,
+                            double expected_publish_period = 1.0 / 60) {
     /* Confirm that we get a non-null result. */
     ASSERT_NE(publisher, nullptr);
 
     /* Check that the publishing event was set as documented. */
-    auto periodic_events = publisher->GetPeriodicEvents();
-    ASSERT_EQ(periodic_events.size(), 1);
-    EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1 / 60.0);
+    EXPECT_EQ(publisher->get_publish_period(), expected_publish_period);
   }
 
   /* Confirms that the names for geometries stored in the
@@ -942,6 +948,38 @@ TEST_F(ConnectVisualizerTest, ConnectToPortSceneGraphNames) {
   auto* publisher = ConnectContactResultsToDrakeVisualizer(
       &builder_, *plant_, *scene_graph_, *contact_results_port_);
   ExpectValidPublisher(publisher);
+  ExpectGeometryNameSemantics(false /* expect_default_names */);
+}
+
+TEST_F(ConnectVisualizerTest, ConnectToPlantDefaultNamesWithPeriod) {
+  ConfigureDiagram(false /* is_nested */);
+  auto* publisher = ConnectContactResultsToDrakeVisualizer(
+      &builder_, *plant_, nullptr, 0.5);
+  ExpectValidPublisher(publisher, 0.5);
+  ExpectGeometryNameSemantics(true /* expect_default_names */);
+}
+
+TEST_F(ConnectVisualizerTest, ConnectToPlantSceneGraphNamesWithPeriod) {
+  ConfigureDiagram(false /* is_nested */);
+  auto* publisher = ConnectContactResultsToDrakeVisualizer(
+      &builder_, *plant_, *scene_graph_, nullptr, 0.5);
+  ExpectValidPublisher(publisher, 0.5);
+  ExpectGeometryNameSemantics(false /* expect_default_names */);
+}
+
+TEST_F(ConnectVisualizerTest, ConnectToPortDefaultNamesWithPeriod) {
+  ConfigureDiagram(true /* is_nested */);
+  auto* publisher = ConnectContactResultsToDrakeVisualizer(
+      &builder_, *plant_, *contact_results_port_, nullptr, 0.5);
+  ExpectValidPublisher(publisher, 0.5);
+  ExpectGeometryNameSemantics(true /* expect_default_names */);
+}
+
+TEST_F(ConnectVisualizerTest, ConnectToPortSceneGraphNamesWithPeriod) {
+  ConfigureDiagram(true /* is_nested */);
+  auto* publisher = ConnectContactResultsToDrakeVisualizer(
+      &builder_, *plant_, *scene_graph_, *contact_results_port_, nullptr, 0.5);
+  ExpectValidPublisher(publisher, 0.5);
   ExpectGeometryNameSemantics(false /* expect_default_names */);
 }
 
