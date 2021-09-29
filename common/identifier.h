@@ -183,13 +183,7 @@ class Identifier {
    This method is guaranteed to be thread safe.
    @note To avoid possible "one definition rule" violations, it's best to only
    ever call this from from a *.cc file, not a header file.  */
-  static Identifier get_new_id() {
-    // Note that id 0 is reserved for uninitialized variable which is created
-    // by the default constructor. As a result, we have an invariant that
-    // get_new_id() > 0.
-    static never_destroyed<std::atomic<int64_t>> next_index(1);
-    return Identifier(next_index.access()++);
-  }
+  static Identifier get_new_id();
 
   /** Implements the @ref hash_append concept. And invalid id will successfully
    hash (in order to satisfy STL requirements), and it is up to the user to
@@ -237,6 +231,19 @@ template <typename Tag>
 std::string to_string(const drake::Identifier<Tag>& id) {
   return std::to_string(id.get_value());
 }
+
+// When compiling pydrake, we will not define this function, in order to
+// prevent "one definition rule" errors.
+#ifndef DRAKE_PYBIND_LIBRARY_BZL
+template <class Tag>
+inline Identifier<Tag> Identifier<Tag>::get_new_id()  {
+  // Note that id 0 is reserved for uninitialized variable which is created
+  // by the default constructor. As a result, we have an invariant that
+  // get_new_id() > 0.
+  static never_destroyed<std::atomic<int64_t>> next_index;
+  return Identifier(++next_index.access());
+}
+#endif
 
 }  // namespace drake
 

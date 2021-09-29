@@ -150,7 +150,7 @@ def drake_pybind_library(
             "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
         ],
-        cc_copts = cc_copts,
+        cc_copts = (cc_copts or []) + ["-DDRAKE_PYBIND_LIBRARY_BZL"],
         cc_binary_rule = drake_cc_binary,
         py_srcs = py_srcs,
         py_deps = py_deps,
