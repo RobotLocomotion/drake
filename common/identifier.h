@@ -9,6 +9,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 
@@ -187,6 +188,9 @@ class Identifier {
     // by the default constructor. As a result, we have an invariant that
     // get_new_id() > 0.
     static never_destroyed<std::atomic<int64_t>> next_index(1);
+    std::cerr << NiceTypeName::Get<Identifier>() << "::get_new_id() at "
+              << static_cast<void*>(&next_index) << "\n";
+
     return Identifier(next_index.access()++);
   }
 
