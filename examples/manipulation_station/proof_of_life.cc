@@ -70,7 +70,7 @@ int do_main(int argc, char* argv[]) {
       &builder, station->GetOutputPort("query_object"));
   multibody::ConnectContactResultsToDrakeVisualizer(
       &builder, station->get_mutable_multibody_plant(),
-      station->GetOutputPort("contact_results"));
+      station->get_scene_graph(), station->GetOutputPort("contact_results"));
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();

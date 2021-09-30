@@ -920,12 +920,15 @@ class ConnectVisualizerTest : public ::testing::Test {
   static constexpr char kGeoName[] = "test_sphere";
 };
 
-TEST_F(ConnectVisualizerTest, ConnectToPlantDefaultNames) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(ConnectVisualizerTest, DeprecatedConnectToPlantDefaultNames) {
   ConfigureDiagram(false /* is_nested */);
   auto* publisher = ConnectContactResultsToDrakeVisualizer(&builder_, *plant_);
   ExpectValidPublisher(publisher);
   ExpectGeometryNameSemantics(true /* expect_default_names */);
 }
+#pragma GCC diagnostic push
 
 TEST_F(ConnectVisualizerTest, ConnectToPlantSceneGraphNames) {
   ConfigureDiagram(false /* is_nested */);
@@ -935,13 +938,16 @@ TEST_F(ConnectVisualizerTest, ConnectToPlantSceneGraphNames) {
   ExpectGeometryNameSemantics(false /* expect_default_names */);
 }
 
-TEST_F(ConnectVisualizerTest, ConnectToPortDefaultNames) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(ConnectVisualizerTest, DeprecatedConnectToPortDefaultNames) {
   ConfigureDiagram(true /* is_nested */);
   auto* publisher = ConnectContactResultsToDrakeVisualizer(
       &builder_, *plant_, *contact_results_port_);
   ExpectValidPublisher(publisher);
   ExpectGeometryNameSemantics(true /* expect_default_names */);
 }
+#pragma GCC diagnostic pop
 
 TEST_F(ConnectVisualizerTest, ConnectToPortSceneGraphNames) {
   ConfigureDiagram(true /* is_nested */);
@@ -951,13 +957,16 @@ TEST_F(ConnectVisualizerTest, ConnectToPortSceneGraphNames) {
   ExpectGeometryNameSemantics(false /* expect_default_names */);
 }
 
-TEST_F(ConnectVisualizerTest, ConnectToPlantDefaultNamesWithPeriod) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(ConnectVisualizerTest, DeprecatedConnectToPlantDefaultNamesWithPeriod) {
   ConfigureDiagram(false /* is_nested */);
   auto* publisher = ConnectContactResultsToDrakeVisualizer(
       &builder_, *plant_, nullptr, 0.5);
   ExpectValidPublisher(publisher, 0.5);
   ExpectGeometryNameSemantics(true /* expect_default_names */);
 }
+#pragma GCC diagnostic pop
 
 TEST_F(ConnectVisualizerTest, ConnectToPlantSceneGraphNamesWithPeriod) {
   ConfigureDiagram(false /* is_nested */);
@@ -967,13 +976,16 @@ TEST_F(ConnectVisualizerTest, ConnectToPlantSceneGraphNamesWithPeriod) {
   ExpectGeometryNameSemantics(false /* expect_default_names */);
 }
 
-TEST_F(ConnectVisualizerTest, ConnectToPortDefaultNamesWithPeriod) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(ConnectVisualizerTest, DeprecatedConnectToPortDefaultNamesWithPeriod) {
   ConfigureDiagram(true /* is_nested */);
   auto* publisher = ConnectContactResultsToDrakeVisualizer(
       &builder_, *plant_, *contact_results_port_, nullptr, 0.5);
   ExpectValidPublisher(publisher, 0.5);
   ExpectGeometryNameSemantics(true /* expect_default_names */);
 }
+#pragma GCC diagnostic pop
 
 TEST_F(ConnectVisualizerTest, ConnectToPortSceneGraphNamesWithPeriod) {
   ConfigureDiagram(true /* is_nested */);
