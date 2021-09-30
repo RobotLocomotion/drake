@@ -142,7 +142,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "geometry_frame",
-    srcs = [],
+    srcs = ["geometry_frame.cc"],
     hdrs = ["geometry_frame.h"],
     deps = [
         ":geometry_ids",
