@@ -44,7 +44,7 @@ while [ "${1:-}" != "" ]; do
     --without-update)
       with_update=0
       ;;
-    --without-asking)
+    -y)
       with_asking=0
       ;;
     *)
@@ -60,7 +60,6 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 if [[ "${with_asking}" -eq 0 ]]; then
-  echo 'We are going to install with apt-get install -y'
   apt_get_install='apt-get install -y'
 else
   apt_get_install='apt-get install'

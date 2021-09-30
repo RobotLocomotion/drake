@@ -52,9 +52,9 @@ while [ "${1:-}" != "" ]; do
       binary_distribution_args+=(--without-update)
       source_distribution_args+=(--without-update)
       ;;
-    --without-asking)
-      binary_distribution_args+=(--without-asking)
-      source_distribution_args+=(--without-asking)
+    -y)
+      binary_distribution_args+=(-y)
+      source_distribution_args+=(-y)
       ;;
     *)
       echo 'Invalid command line argument' >&2
