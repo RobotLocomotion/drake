@@ -46,7 +46,8 @@ bool BsplineTrajectory<T>::do_has_derivative() const {
 }
 
 template <typename T>
-MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(const T& t, int derivative_order) const {
+MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
+    const T& t, int derivative_order) const {
   return this->MakeDerivative(derivative_order)->value(t);
 }
 
