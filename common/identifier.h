@@ -181,7 +181,8 @@ class Identifier {
    different from all previous identifiers created. This method does _not_
    make any guarantees about the values of ids from successive invocations.
    This method is guaranteed to be thread safe.
-   */
+   @note To avoid possible "one definition rule" violations, it's best to only
+   ever call this from from a *.cc file, not a header file.  */
   static Identifier get_new_id() {
     // Note that id 0 is reserved for uninitialized variable which is created
     // by the default constructor. As a result, we have an invariant that
