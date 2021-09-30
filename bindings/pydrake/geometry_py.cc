@@ -1887,14 +1887,10 @@ bool PropertiesIndicateSoftHydro(const geometry::ProximityProperties& props) {
 }
 
 void def_testing_module(py::module m) {
-  class FakeTag;
-  using FakeId = Identifier<FakeTag>;
-
-  BindIdentifier<FakeId>(m, "FakeId", "Fake documentation.");
-  // Get a valid, constant FakeId to test hashing with new instances returned.
-  FakeId fake_id_constant{FakeId::get_new_id()};
-  m.def("get_fake_id_constant",
-      [fake_id_constant]() { return fake_id_constant; });
+  // The get_constant_id() returns a fresh object every time, but always with
+  // the same underlying get_value().
+  const auto constant_id = geometry::FilterId::get_new_id();
+  m.def("get_constant_id", [constant_id]() { return constant_id; });
 
   m.def("PropertiesIndicateSoftHydro", &PropertiesIndicateSoftHydro);
 
