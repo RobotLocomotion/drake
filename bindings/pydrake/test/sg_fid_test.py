@@ -23,7 +23,6 @@ class TestFoo(unittest.TestCase):
         self.assertNotEqual(scene_graph.world_frame_id().get_value(), f_id)
         self.assertNotEqual(f.id().get_value(), f_id)
 
-
     def test_two(self):
         """
         Same exact test as test_one, fails if executed first, passes if
