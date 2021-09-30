@@ -44,7 +44,9 @@ import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 from meshcat.animation import Animation
 
-_DEFAULT_PUBLISH_PERIOD = 1 / 30.
+# To help avoid small simulation timesteps, we use a default period that has an
+# exact representation in binary floating point; see drake#15021 for details.
+_DEFAULT_PUBLISH_PERIOD = 1 / 32.
 
 
 def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
