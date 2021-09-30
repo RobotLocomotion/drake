@@ -65,6 +65,18 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateAtVertex) {
   EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(3)), 3);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(MeshFieldLinearTest, DeprecatedEvaluateAtVertex) {
+  auto mesh = GenerateMesh<double>();
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "my_name", std::move(e_values), mesh.get());
+  EXPECT_EQ(mesh_field->name(), "my_name");
+}
+#pragma GCC diagnostic pop
+
 // Tests CloneAndSetMesh(). We use `double` and SurfaceMesh<double> as
 // representative arguments for type parameters.
 GTEST_TEST(MeshFieldLinearTest, TestDoCloneWithMesh) {
