@@ -41,6 +41,16 @@ MatrixX<T> BsplineTrajectory<T>::value(const T& time) const {
 }
 
 template <typename T>
+bool BsplineTrajectory<T>::do_has_derivative() const {
+  return true;
+}
+
+template <typename T>
+MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(const T& t, int derivative_order) const {
+  return this->MakeDerivative(derivative_order)->value(t);
+}
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
     int derivative_order) const {
   if (derivative_order == 0) {
