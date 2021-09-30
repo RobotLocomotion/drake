@@ -4,20 +4,18 @@ import unittest
 
 import numpy as np
 
+from pydrake.math import RigidTransform
 from pydrake.solvers.mathematicalprogram import MathematicalProgram
 
 
+class TestGeometryOptimization(unittest.TestCase):
+    A = np.eye(3)
+    b = [1.0, 1.0, 1.0]
+    prog = MathematicalProgram()
+    x = prog.NewContinuousVariables(3, "x")
+    t = prog.NewContinuousVariables(1, "t")
 
-class TestGeometry(unittest.TestCase):
-    def test_optimization(self):
-        """Tests geometry::optimization bindings"""
-        A = np.eye(3)
-        b = [1.0, 1.0, 1.0]
-        prog = MathematicalProgram()
-        x = prog.NewContinuousVariables(3, "x")
-        t = prog.NewContinuousVariables(1, "t")
-
-        # Test Point.
+    def test_point_convex_set(self):
         p = np.array([11.1, 12.2, 13.3])
         point = mut.optimization.Point(p)
         self.assertEqual(point.ambient_dimension(), 3)
@@ -26,13 +24,16 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_equal(point.x(), 2*p)
         point.set_x(x=p)
 
-        # Test HPolyhedron.
-        hpoly = mut.optimization.HPolyhedron(A=A, b=b)
+        # TODO(SeanCurtis-TRI): This doesn't test the constructor that
+        # builds from shape.
+
+    def test_h_polyhedron(self):
+        hpoly = mut.optimization.HPolyhedron(A=self.A, b=self.b)
         self.assertEqual(hpoly.ambient_dimension(), 3)
-        np.testing.assert_array_equal(hpoly.A(), A)
-        np.testing.assert_array_equal(hpoly.b(), b)
+        np.testing.assert_array_equal(hpoly.A(), self.A)
+        np.testing.assert_array_equal(hpoly.b(), self.b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
-        hpoly.AddPointInSetConstraints(prog, x)
+        hpoly.AddPointInSetConstraints(self.prog, self.x)
         with self.assertRaisesRegex(
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
             hpoly.ToShapeWithPose()
@@ -48,32 +49,36 @@ class TestGeometry(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             h_box.ChebyshevCenter(), [0, 0, 0])
 
-        # Test Hyperellipsoid.
-        ellipsoid = mut.optimization.Hyperellipsoid(A=A, center=b)
+    def test_hyper_ellipsoid(self):
+        ellipsoid = mut.optimization.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
-        np.testing.assert_array_equal(ellipsoid.A(), A)
-        np.testing.assert_array_equal(ellipsoid.center(), b)
-        self.assertTrue(ellipsoid.PointInSet(x=b, tol=0.0))
-        ellipsoid.AddPointInSetConstraints(prog, x)
+        np.testing.assert_array_equal(ellipsoid.A(), self.A)
+        np.testing.assert_array_equal(ellipsoid.center(), self.b)
+        self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
+        ellipsoid.AddPointInSetConstraints(self.prog, self.x)
         shape, pose = ellipsoid.ToShapeWithPose()
         self.assertIsInstance(shape, mut.Ellipsoid)
         self.assertIsInstance(pose, RigidTransform)
+        p = np.array([11.1, 12.2, 13.3])
+        point = mut.optimization.Point(p)
         scale, witness = ellipsoid.MinimumUniformScalingToTouch(point)
         self.assertTrue(scale > 0.0)
         np.testing.assert_array_almost_equal(witness, p)
         e_ball = mut.optimization.Hyperellipsoid.MakeAxisAligned(
-            radius=[1, 1, 1], center=b)
-        np.testing.assert_array_equal(e_ball.A(), A)
-        np.testing.assert_array_equal(e_ball.center(), b)
+            radius=[1, 1, 1], center=self.b)
+        np.testing.assert_array_equal(e_ball.A(), self.A)
+        np.testing.assert_array_equal(e_ball.center(), self.b)
         e_ball2 = mut.optimization.Hyperellipsoid.MakeHypersphere(
-            radius=1, center=b)
-        np.testing.assert_array_equal(e_ball2.A(), A)
-        np.testing.assert_array_equal(e_ball2.center(), b)
+            radius=1, center=self.b)
+        np.testing.assert_array_equal(e_ball2.A(), self.A)
+        np.testing.assert_array_equal(e_ball2.center(), self.b)
         e_ball3 = mut.optimization.Hyperellipsoid.MakeUnitBall(dim=3)
-        np.testing.assert_array_equal(e_ball3.A(), A)
+        np.testing.assert_array_equal(e_ball3.A(), self.A)
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
 
-        # Test MinkowskiSum.
+    def test_minkowski_sum(self):
+        point = mut.optimization.Point(np.array([11.1, 12.2, 13.3]))
+        hpoly = mut.optimization.HPolyhedron(A=self.A, b=self.b)
         sum = mut.optimization.MinkowskiSum(setA=point, setB=hpoly)
         self.assertEqual(sum.ambient_dimension(), 3)
         self.assertEqual(sum.num_terms(), 2)
@@ -82,20 +87,23 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(sum2.num_terms(), 2)
         self.assertIsInstance(sum2.term(0), mut.optimization.Point)
 
-        # Test VPolytope.
+    def test_v_polytope(self):
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.optimization.VPolytope(vertices=vertices)
         self.assertEqual(vpoly.ambient_dimension(), 2)
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
-        vpoly.AddPointInSetConstraints(prog, x[0:2])
+        vpoly.AddPointInSetConstraints(self.prog, self.x[0:2])
         v_box = mut.optimization.VPolytope.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
         v_unit_box = mut.optimization.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
 
-        # Test CartesianProduct.
+    def test_cartesian_product(self):
+        point = mut.optimization.Point(np.array([11.1, 12.2, 13.3]))
+        h_box = mut.optimization.HPolyhedron.MakeBox(
+            lb=[-1, -1, -1], ub=[1, 1, 1])
         sum = mut.optimization.CartesianProduct(setA=point, setB=h_box)
         self.assertEqual(sum.ambient_dimension(), 6)
         self.assertEqual(sum.num_factors(), 2)
@@ -109,12 +117,14 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(sum2.num_factors(), 2)
         self.assertIsInstance(sum2.factor(1), mut.optimization.HPolyhedron)
 
-        # Test remaining ConvexSet methods using these instances.
-        self.assertIsInstance(hpoly.Clone(), mut.optimization.HPolyhedron)
-        self.assertTrue(ellipsoid.IsBounded())
-        hpoly.AddPointInNonnegativeScalingConstraints(prog=prog, x=x, t=t[0])
-
-        # Test MakeFromSceneGraph methods.
+    def test_make_from_scene_graph_and_iris(self):
+        """
+        Tests the make from scene graph and iris functionality together as
+        the Iris code makes obstacles from geometries registered in SceneGraph.
+        """
+        # TODO(15846) Once the unique identifier issue is resolved, we'll no
+        # longer need to prime the FrameId access for this test.
+        mut.FrameId.get_new_id()
         scene_graph = mut.SceneGraph()
         source_id = scene_graph.RegisterSource("source")
         frame_id = scene_graph.RegisterFrame(
@@ -123,7 +133,7 @@ class TestGeometry(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Box(1., 1., 1.),
-                                          name="box"))
+                                          name="sphere"))
         cylinder_geometry_id = scene_graph.RegisterGeometry(
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
@@ -171,7 +181,6 @@ class TestGeometry(unittest.TestCase):
             reference_frame=scene_graph.world_frame_id())
         self.assertEqual(V.ambient_dimension(), 3)
 
-        # Test Iris.
         obstacles = mut.optimization.MakeIrisObstacles(
             query_object=query_object,
             reference_frame=scene_graph.world_frame_id())

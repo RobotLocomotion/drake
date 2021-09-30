@@ -1,3 +1,6 @@
+/* @file The contains all of the public entities found in the
+ drake::geometry::optimization namespace. They can be found in the
+ pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -12,8 +15,7 @@
 namespace drake {
 namespace pydrake {
 
-
-void def_geometry_optimization(py::module m) {
+void DefineGeometryOptimization(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -23,6 +25,7 @@ void def_geometry_optimization(py::module m) {
   m.doc() = "Local bindings for `drake::geometry::optimization`";
   constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
 
+  // ConvexSet
   {
     const auto& cls_doc = doc.ConvexSet;
     py::class_<ConvexSet>(m, "ConvexSet", cls_doc.doc)
@@ -52,6 +55,7 @@ void def_geometry_optimization(py::module m) {
         }));
   }
 
+  // CartesianProduct
   {
     const auto& cls_doc = doc.CartesianProduct;
     py::class_<CartesianProduct, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
@@ -77,6 +81,7 @@ void def_geometry_optimization(py::module m) {
         copyable_unique_ptr<ConvexSet>>();
   }
 
+  // HPolyhedron
   {
     const auto& cls_doc = doc.HPolyhedron;
     py::class_<HPolyhedron, ConvexSet>(m, "HPolyhedron", cls_doc.doc)
@@ -101,6 +106,7 @@ void def_geometry_optimization(py::module m) {
     py::implicitly_convertible<HPolyhedron, copyable_unique_ptr<ConvexSet>>();
   }
 
+  // Hyperellipsoid
   {
     const auto& cls_doc = doc.Hyperellipsoid;
     py::class_<Hyperellipsoid, ConvexSet>(m, "Hyperellipsoid", cls_doc.doc)
@@ -127,6 +133,7 @@ void def_geometry_optimization(py::module m) {
         copyable_unique_ptr<ConvexSet>>();
   }
 
+  // MinkowskiSum
   {
     const auto& cls_doc = doc.MinkowskiSum;
     py::class_<MinkowskiSum, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
@@ -144,6 +151,7 @@ void def_geometry_optimization(py::module m) {
     py::implicitly_convertible<MinkowskiSum, copyable_unique_ptr<ConvexSet>>();
   }
 
+  // Point
   {
     const auto& cls_doc = doc.Point;
     py::class_<Point, ConvexSet>(m, "Point", cls_doc.doc)
@@ -159,6 +167,7 @@ void def_geometry_optimization(py::module m) {
     py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
   }
 
+  // VPolytope
   {
     const auto& cls_doc = doc.VPolytope;
     py::class_<VPolytope, ConvexSet>(m, "VPolytope", cls_doc.doc)

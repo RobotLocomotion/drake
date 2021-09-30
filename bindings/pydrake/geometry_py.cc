@@ -63,6 +63,11 @@ struct type_caster<std::monostate> {
 
 namespace drake {
 namespace pydrake {
+
+/** Defines all elements in the drake::geometry::optimization namespace.
+ See geometry_py_optimization.cc. */
+void DefineGeometryOptimization(py::module m);
+
 namespace {
 
 using Eigen::Vector3d;
@@ -1742,6 +1747,7 @@ PYBIND11_MODULE(geometry, m) {
 
   def_geometry(m);
   def_geometry_render(m.def_submodule("render"));
+  DefineGeometryOptimization(m.def_submodule("optimization"));
   def_geometry_all(m.def_submodule("all"));
   testing::def_testing_module(m.def_submodule("_testing"));
 }
