@@ -52,8 +52,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
     pressure_values.push_back(elastic_modulus * extent);
   }
 
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_B);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_B);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((

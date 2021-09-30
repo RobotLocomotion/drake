@@ -82,8 +82,7 @@ internal::ReferenceDeformableGeometry<double> MakeUnitCubeDeformableGeometry(
   std::vector<double> dummy_signed_distances(kNumVertices,
                                              kDummySignedDistance);
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
-      "Dummy signed distances", std::move(dummy_signed_distances), mesh.get(),
-      false);
+      std::move(dummy_signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 
