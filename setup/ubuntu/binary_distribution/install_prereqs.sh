@@ -14,6 +14,7 @@ while [ "${1:-}" != "" ]; do
     --without-update)
       with_update=0
       ;;
+    # Pass -y along to apt-get.
     -y)
       with_asking=0
       ;;
