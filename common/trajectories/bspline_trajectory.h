@@ -132,6 +132,10 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   }
 
  private:
+  bool do_has_derivative() const override;
+
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
+
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
 
