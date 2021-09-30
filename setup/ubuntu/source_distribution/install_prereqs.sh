@@ -13,6 +13,7 @@ with_kcov=0
 with_maintainer_only=0
 with_test_only=1
 with_update=1
+with_asking=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -43,6 +44,10 @@ while [ "${1:-}" != "" ]; do
     --without-update)
       with_update=0
       ;;
+    # Pass -y along to apt-get.
+    -y)
+      with_asking=0
+      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 3
@@ -55,11 +60,17 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+if [[ "${with_asking}" -eq 0 ]]; then
+  apt_get_install='apt-get install -y'
+else
+  apt_get_install='apt-get install'
+fi
+
 if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
   apt-get update || (sleep 30; apt-get update)
 fi
 
-apt-get install --no-install-recommends $(cat <<EOF
+$apt_get_install --no-install-recommends $(cat <<EOF
 ca-certificates
 wget
 EOF
@@ -73,7 +84,7 @@ codename=$(lsb_release -sc)
 # already be trusted, the apt repository must already have been added to the
 # list of sources, and apt-get update must have been called.
 if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
-  apt-get install --no-install-recommends gnupg
+  $apt_get_install --no-install-recommends gnupg
   wget -q -O- https://drake-apt.csail.mit.edu/drake.asc \
     | apt-key --keyring /etc/apt/trusted.gpg.d/drake.gpg add
   if [[ "${with_update}" -eq 1 ]]; then
@@ -81,22 +92,22 @@ if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
       > /etc/apt/sources.list.d/drake.list
     apt-get update || (sleep 30; apt-get update)
   fi
-  apt-get install --no-install-recommends kcov-35
+  $apt_get_install --no-install-recommends kcov-35
 fi
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
-apt-get install --no-install-recommends ${packages}
+$apt_get_install --no-install-recommends ${packages}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
-apt-get install --no-install-recommends locales
+$apt_get_install --no-install-recommends locales
 locale-gen en_US.UTF-8
 
 if [[ "${codename}" == 'focal' ]]; then
   # We need a working /usr/bin/python (of any version).  On Bionic it's there
   # by default, but on Focal we have to ask for it.
   if [[ ! -e /usr/bin/python ]]; then
-    apt-get install --no-install-recommends python-is-python3
+    $apt_get_install --no-install-recommends python-is-python3
   else
     echo "/usr/bin/python is already installed"
   fi
@@ -104,19 +115,19 @@ fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
-  apt-get install --no-install-recommends ${packages}
+  $apt_get_install --no-install-recommends ${packages}
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
   # Suppress Python 3.8 warnings when installing python3-pandas on Focal.
   PYTHONWARNINGS=ignore::SyntaxWarning \
-    apt-get install --no-install-recommends ${packages}
+    $apt_get_install --no-install-recommends ${packages}
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer-only.txt")
-  apt-get install --no-install-recommends ${packages}
+  $apt_get_install --no-install-recommends ${packages}
 fi
 
 dpkg_install_from_wget() {
@@ -160,7 +171,7 @@ dpkg_install_from_wget() {
 
 # Install bazel package dependencies (these may duplicate dependencies of
 # drake).
-apt-get install --no-install-recommends $(cat <<EOF
+$apt_get_install --no-install-recommends $(cat <<EOF
 g++
 unzip
 zlib1g-dev
