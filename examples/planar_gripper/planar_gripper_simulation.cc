@@ -351,7 +351,7 @@ int DoMain() {
 
   // Publish contact results for visualization.
   if (FLAGS_visualize_contacts) {
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, lcm);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, lcm);
   }
 
   // Publish planar gripper status via LCM.

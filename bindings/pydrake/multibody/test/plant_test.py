@@ -1999,8 +1999,10 @@ class TestPlant(unittest.TestCase):
                 [{}, {"publish_period": None}, {"publish_period": 1.0/32}]):
             kwargs = collections.ChainMap(*optional_args)
             with self.subTest(num_optional_args=len(kwargs), **kwargs):
-                publisher = ConnectContactResultsToDrakeVisualizer(
-                    builder=builder, plant=plant, **kwargs)
+                is_deprecated = 0 if "scene_graph" in kwargs else 1
+                with catch_drake_warnings(expected_count=is_deprecated) as w:
+                    publisher = ConnectContactResultsToDrakeVisualizer(
+                        builder=builder, plant=plant, **kwargs)
                 self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):

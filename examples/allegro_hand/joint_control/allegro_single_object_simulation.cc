@@ -85,22 +85,19 @@ void DoMain() {
   systems::DiagramBuilder<double> builder;
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
 
-  geometry::SceneGraph<double>& scene_graph =
-      *builder.AddSystem<geometry::SceneGraph>();
-  scene_graph.set_name("scene_graph");
+  auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
+      &builder, FLAGS_mbp_discrete_update_period);
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string hand_model_path;
-  if (FLAGS_use_right_hand)
+  if (FLAGS_use_right_hand) {
     hand_model_path = FindResourceOrThrow(
         "drake/manipulation/models/"
         "allegro_hand_description/sdf/allegro_hand_description_right.sdf");
-  else
+  } else {
     hand_model_path = FindResourceOrThrow(
         "drake/manipulation/models/"
         "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
+  }
 
   const std::string object_model_path = FindResourceOrThrow(
       "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
@@ -187,15 +184,8 @@ void DoMain() {
 
   // Visualization
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-  DRAKE_DEMAND(plant.get_source_id().has_value());
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
-
-  // Publish contact results for visualization.
-  multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant, lcm);
+  multibody::ConnectContactResultsToDrakeVisualizer(
+      &builder, plant, scene_graph, lcm);
 
   // Estimate rotational inertia for an average finger of mass 0.17/3 kg (0.17
   // is the mass of one finger) and length 5 cm. We estimate it using the
