@@ -84,6 +84,9 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::PixelType;
 
+// For any Identifier<FooTag> class bound using this helper, its non-pydrake
+// *.cc file must contain an explicit class template instantiation.  Refer to
+// the existing bound Identifier<FooTag> classes for examples.
 template <typename Class>
 void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
   constexpr auto& cls_doc = pydrake_doc.drake.Identifier;

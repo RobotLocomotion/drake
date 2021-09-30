@@ -28,10 +28,7 @@ class GeometryId : public drake::Identifier<class GeometryTag> {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryId);
 
-  static GeometryId get_new_id() {
-    auto base_id = Base::get_new_id();
-    return GeometryId(base_id.get_value());
-  }
+  static GeometryId get_new_id();
 
  private:
   explicit GeometryId(int64_t value) : Base(value) {}
