@@ -1,11 +1,8 @@
 #pragma once
 
 #include <string>
-#include <type_traits>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
-#include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 
 namespace drake {
@@ -36,12 +33,7 @@ class GeometryFrame {
    @param frame_group_id    The optional frame group identifier. If unspecified,
                             defaults to the common, 0 group. Must be
                             non-negative.  */
-  explicit GeometryFrame(const std::string& frame_name, int frame_group_id = 0)
-      : id_(FrameId::get_new_id()),
-        name_(frame_name),
-        frame_group_(frame_group_id) {
-    ThrowIfInvalid();
-  }
+  explicit GeometryFrame(const std::string& frame_name, int frame_group_id = 0);
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %FrameInstance will contain a unique id value. The id
@@ -55,14 +47,6 @@ class GeometryFrame {
   int frame_group() const { return frame_group_; }
 
  private:
-  // Throws an exception if the GeometryFrame is ill configured.
-  void ThrowIfInvalid() const {
-    if (frame_group_ < 0) {
-      throw std::logic_error(
-          "GeometryFrame requires a non-negative frame group");
-    }
-  }
-
   // The *globally* unique identifier for this instance. It is functionally
   // const (i.e. defined in construction) but not marked const to allow for
   // default copying/assigning.
