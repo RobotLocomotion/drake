@@ -232,8 +232,7 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
   auto mesh =
       std::make_unique<VolumeMesh<T>>(std::move(elements), std::move(vertices));
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "Approximated signed distance", std::move(signed_distances), mesh.get(),
-      false);
+      std::move(signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 
@@ -282,8 +281,7 @@ internal::ReferenceDeformableGeometry<T> MakeOctahedronDeformableGeometry() {
   std::vector<T> signed_distances(7, 0.0);
   signed_distances[0] = -1.0 / std::sqrt(3);
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "Approximated signed distance", std::move(signed_distances), mesh.get(),
-      false);
+      std::move(signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 
