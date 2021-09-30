@@ -47,6 +47,11 @@ GLuint CompileShader(GLuint shader_type, const std::string& shader_code) {
 
 }  // namespace
 
+// N.B. This definition appears in the cc file because get_new_id should never
+// be called from a header file.
+ShaderProgram::ShaderProgram()
+    : id_(ShaderId::get_new_id()) {}
+
 void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
                                     const std::string& fragment_shader_source) {
   // Compile.
