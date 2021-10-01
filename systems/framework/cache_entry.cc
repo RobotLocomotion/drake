@@ -33,19 +33,6 @@ CacheEntry::CacheEntry(
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-CacheEntry::CacheEntry(
-    const internal::SystemMessageInterface* owning_system, CacheIndex index,
-    DependencyTicket ticket, std::string description,
-    AllocCallback alloc_function, CalcCallback calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc)
-    : CacheEntry(owning_system, index, ticket, std::move(description),
-                 ValueProducer(std::move(alloc_function),
-                               std::move(calc_function)),
-                 std::move(prerequisites_of_calc)) {}
-#pragma GCC diagnostic pop
-
 std::unique_ptr<AbstractValue> CacheEntry::Allocate() const {
   std::unique_ptr<AbstractValue> value = value_producer_.Allocate();
   if (value == nullptr) {
