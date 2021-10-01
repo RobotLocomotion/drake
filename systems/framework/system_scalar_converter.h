@@ -131,13 +131,6 @@ class SystemScalarConverter {
   void Add(const ConverterFunction<T, U>&);
 #pragma GCC diagnostic pop
 
-  template <template <typename> class S, typename T, typename U>
-  DRAKE_DEPRECATED("2021-10-01",
-      "User-defined scalar types cannot be added.")
-  void AddIfSupported() {
-    MaybeAddConstructor<true, S, T, U>();
-  }
-
   /// Removes from this converter all pairs where `other.IsConvertible<T, U>`
   /// is false.  The subtype `S` need not be the same between this and `other`.
   void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);

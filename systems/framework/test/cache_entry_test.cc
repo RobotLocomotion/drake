@@ -276,16 +276,6 @@ GTEST_TEST(CacheEntryAllocTest, DetectsDefaultPrerequisites) {
   EXPECT_FALSE(time_only_prereq.has_default_prerequisites());
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Sanity check deprecated method.
-GTEST_TEST(CacheEntryDeprecationTest, Constructor) {
-  MySystemBase system;
-  const CacheEntry& dut = system.DeclareCacheEntry("dut", Alloc3, Calc99);
-  EXPECT_TRUE(dut.has_default_prerequisites());
-}
-#pragma GCC diagnostic pop
-
 // Allocate a System and Context and provide some convenience methods.
 class CacheEntryTest : public ::testing::Test {
  protected:
