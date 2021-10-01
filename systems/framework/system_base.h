@@ -646,9 +646,6 @@ class SystemBase : public internal::SystemMessageInterface {
   the cache entry's value, which is placed in an object of the type returned by
   `Allocate()`.
 
-  @warning These methods are currently specified as `public` access, but will
-  be demoted to `protected` access on or after 2021-10-01.
-
   <h4>Prerequisites</h4>
 
   Correct runtime caching behavior depends critically on understanding the
@@ -717,14 +714,6 @@ class SystemBase : public internal::SystemMessageInterface {
   @see drake::Value for more about abstract values. */
   //@{
 
-  // TODO(jwnimmer-tri) We are violating the style guide here by momentarily
-  // introducing a "protected:" section for just this one function and then
-  // going to back to "public:" afterwards. We need to do this so all of the
-  // DeclareCacheEntry overloads share a Doxygen section, but once the other
-  // overloads become protected after 2021-10-01 we should move this entire
-  // section down into the real "protected:" section lower in this class
-  // declaration and by doing so remove the style violation.
- protected:
   /// @anchor DeclareCacheEntry_primary
   /** Declares a new %CacheEntry in this System using the most generic form
   of the calculation function. Prefer one of the more convenient signatures
@@ -752,13 +741,8 @@ class SystemBase : public internal::SystemMessageInterface {
       std::string description, ValueProducer value_producer,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
-  // NOLINTNEXTLINE(whitespace/blank_line)
- public:
-  // (Undo the momentary "protected:" from immediately above.)
 
   // Declares a cache entry via two member function pointers.
-  // This will be demoted to `protected` access on or after 2021-10-01, and then
-  // removed entirely on 2021-11-01.
   template <class MySystem, class MyContext, typename ValueType>
   DRAKE_DEPRECATED("2021-11-01",
       "This overload for DeclareCacheEntry is rarely the best choice; it is"
@@ -787,9 +771,7 @@ class SystemBase : public internal::SystemMessageInterface {
   arguments will be deduced and do not need to be specified. See the
   @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
   above for more information about the parameters and behavior.
-  @see drake::Value
-  @warning This method is currently specified as `public` access, but will be
-  demoted to `protected` access on or after 2021-10-01. */
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
@@ -798,8 +780,6 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
 
   // Declares a cache entry via a model value and calc member function pointer.
-  // This will be demoted to `protected` access on or after 2021-10-01, and then
-  // removed entirely on 2021-11-01.
   template <class MySystem, class MyContext, typename ValueType>
   DRAKE_DEPRECATED("2021-11-01",
       "This overload for DeclareCacheEntry is dispreferred because it might"
@@ -836,9 +816,7 @@ class SystemBase : public internal::SystemMessageInterface {
   each allocation (not common), use one of the other signatures to explicitly
   provide a method for the allocator to call; that method can then invoke
   the `ValueType` default constructor each time it is called.
-  @see drake::Value
-  @warning This method is currently specified as `public` access, but will be
-  demoted to `protected` access on or after 2021-10-01. */
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description,
@@ -847,8 +825,6 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
 
   // Declares a cache entry via a calculator member function pointer only.
-  // This will be demoted to `protected` access on or after 2021-10-01, and then
-  // removed entirely on 2021-11-01.
   template <class MySystem, class MyContext, typename ValueType>
   DRAKE_DEPRECATED("2021-11-01",
       "This overload for DeclareCacheEntry is dispreferred because it might"
