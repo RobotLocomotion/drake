@@ -129,7 +129,11 @@ drake_pybind_library(
         "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
     ],
-    cc_srcs = ["geometry_py.cc"],
+    cc_srcs = [
+        "geometry_py.cc",
+        "geometry_py.h",
+        "geometry_py_optimization.cc",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":math_py",
@@ -483,7 +487,6 @@ drake_py_unittest(
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody:plant_py",
-        "//bindings/pydrake/solvers:mathematicalprogram_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
@@ -493,6 +496,15 @@ drake_py_unittest(
     name = "frame_id_test",
     deps = [
         ":geometry_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_optimization_test",
+    deps = [
+        ":geometry_py",
+        ":math_py",
+        "//bindings/pydrake/solvers:mathematicalprogram_py",
     ],
 )
 
