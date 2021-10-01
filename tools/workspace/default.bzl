@@ -164,7 +164,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
     if "ibex" not in excludes:
-        ibex_repository(name = "ibex")
+        ibex_repository(name = "ibex", mirrors = mirrors)
     if "ignition_math" not in excludes:
         ignition_math_repository(name = "ignition_math", mirrors = mirrors)
     if "ignition_utils" not in excludes:
