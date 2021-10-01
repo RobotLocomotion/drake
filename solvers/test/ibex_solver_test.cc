@@ -108,13 +108,13 @@ TEST_F(IbexSolverTest, GenericCost) {
   prog_.AddCost(Binding<Cost>(generic_cost, x_));
   EXPECT_FALSE(prog_.generic_costs().empty());
   if (solver_.available()) {
-    auto result = solver_.Solve(prog_);
+    auto result = solver_.Solve(prog_, {});
     ASSERT_TRUE(result.is_success());
     const auto x_val = result.GetSolution(prog_.decision_variables());
     const double v0{result.GetSolution(x0)};
     const double v1{result.GetSolution(x1)};
     const double v2{result.GetSolution(x2)};
-    EXPECT_NEAR(v0, 1.413078079, 1e-8);
+    EXPECT_NEAR(v0, 1.4142135623730951, 1e-8);
     EXPECT_NEAR(v1, 1, 1e-8);
     EXPECT_NEAR(v2, 1, 1e-8);
   }
@@ -368,9 +368,9 @@ class IbexSolverOptionTest1 : public ::testing::Test {
     prog_.AddConstraint(x0, -5, 5);
     prog_.AddConstraint(x1, -5, 5);
     prog_.AddConstraint(x2, -5, 5);
-    prog_.AddConstraint(2 * x0 - 3 * x1 + 4 * x2 <= 1.0);
-    prog_.AddConstraint(2 * x0 - 3 * x1 + 4 * x2 >= 1.0);
-    prog_.AddCost(x_(1));
+    prog_.AddConstraint(2 * x0 - 3 * x1 + 4 * x2 <= 1.0 + 1e-10);
+    prog_.AddConstraint(2 * x0 - 3 * x1 + 4 * x2 >= 1.0 - 1e-10);
+    prog_.AddCost(x_(1) + x_(2));
   }
 
   MathematicalProgram prog_;
