@@ -368,15 +368,6 @@ class SystemBase : public internal::SystemMessageInterface {
  public:
   // (Undo the momentary "protected:" from immediately above.)
 
-  // Declares a cache entry by specifying two callback functions.
-  DRAKE_DEPRECATED("2021-10-01", "Use the ValueProducer overload instead.")
-  CacheEntry& DeclareCacheEntry(
-      std::string description,
-      std::function<std::unique_ptr<AbstractValue>()> alloc_function,
-      std::function<void(const ContextBase&, AbstractValue*)> calc_function,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
   // Declares a cache entry via two member function pointers.
   // This will be demoted to `protected` access on or after 2021-10-01, and then
   // removed entirely on 2021-11-01.

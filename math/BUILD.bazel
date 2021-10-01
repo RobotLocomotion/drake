@@ -31,7 +31,6 @@ drake_cc_package_library(
         ":jacobian",
         ":linear_solve",
         ":matrix_util",
-        ":orthonormal_basis",
         ":quadratic_form",
         ":saturate",
         ":vector3_util",
@@ -158,15 +157,6 @@ drake_cc_library(
     deps = [
         ":gradient",
         "//common:symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "orthonormal_basis",
-    srcs = ["orthonormal_basis.cc"],
-    hdrs = ["orthonormal_basis.h"],
-    deps = [
-        "//common:essential",
     ],
 )
 
@@ -461,14 +451,6 @@ drake_cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "orthonormal_basis_test",
-    deps = [
-        ":orthonormal_basis",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
