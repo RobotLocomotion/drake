@@ -138,7 +138,7 @@ int DoMain() {
                                        {0, 0.6, 0});
 
   auto& visualizer = *builder.AddSystem<DeformableVisualizer>(
-      1.0 / 30.0, dummy_softsim_system->get_names(),
+      1.0 / 32.0, dummy_softsim_system->get_names(),
       dummy_softsim_system->get_meshes());
   builder.Connect(*dummy_softsim_system, visualizer);
   auto diagram = builder.Build();
