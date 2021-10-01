@@ -841,19 +841,21 @@ void DoScalarIndependentDefinitions(py::module m) {
       using T = typename Pack::template type_at<0>;
       using U = typename Pack::template type_at<1>;
       AddTemplateMethod(converter, "IsConvertible",
-          &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      AddTemplateMethod(converter, "Add",
-          WrapDeprecated(cls_doc.Add.doc_deprecated,
-              WrapCallbacks(&SystemScalarConverter::Add<T, U>)),
-          GetPyParam<T, U>());
-      // N.B. When the deprecation date happens, the C++ member function Add()
-      // should become internal or private, to be used only by pydrake here
-      // via this method with a leading underscore.
+          &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>(),
+          cls_doc.IsConvertible.doc);
+      using system_scalar_converter_internal::AddPydrakeConverterFunction;
+      using ConverterFunction =
+          std::function<std::unique_ptr<System<T>>(const System<U>&)>;
       AddTemplateMethod(converter, "_Add",
-          WrapCallbacks(&SystemScalarConverter::Add<T, U>), GetPyParam<T, U>());
-#pragma GCC diagnostic pop
+          WrapCallbacks(
+              [](SystemScalarConverter* self, const ConverterFunction& func) {
+                const std::function<System<T>*(const System<U>&)> bare_func =
+                    [func](const System<U>& other) {
+                      return func(other).release();
+                    };
+                AddPydrakeConverterFunction(self, bare_func);
+              }),
+          GetPyParam<T, U>());
     };
     // N.B. When changing the pairs of supported types below, ensure that these
     // reflect the stanzas for the advanced constructor of
