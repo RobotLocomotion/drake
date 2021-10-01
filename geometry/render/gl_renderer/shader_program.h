@@ -58,7 +58,7 @@ namespace internal {
      to ℜ². */
 class ShaderProgram {
  public:
-  ShaderProgram();
+  ShaderProgram() : id_(ShaderId::get_new_id()) {}
 
   /* Note: we're using the default destructor and explicitly *not* cleaning up
    the OpenGl context. This is consistent with how we treat all OpenGl objects:

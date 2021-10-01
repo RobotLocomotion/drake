@@ -490,6 +490,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "frame_id_test",
+    deps = [
+        ":geometry_py",
+    ],
+)
+
+drake_py_unittest(
     name = "geometry_render_engine_gl_test",
     deps = [
         ":geometry_py",

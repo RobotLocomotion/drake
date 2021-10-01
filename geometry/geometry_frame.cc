@@ -5,8 +5,6 @@
 namespace drake {
 namespace geometry {
 
-// N.B. This definition appears in the cc file because get_new_id should never
-// be called from a header file.
 GeometryFrame::GeometryFrame(const std::string& frame_name, int frame_group_id)
     : id_(FrameId::get_new_id()),
       name_(frame_name),
