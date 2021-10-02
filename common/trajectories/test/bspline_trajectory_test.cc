@@ -173,13 +173,13 @@ TYPED_TEST(BsplineTrajectoryTests, EvalDerivativeTest) {
   const int num_times = 50;
   VectorX<T> t = VectorX<T>::LinSpaced(num_times, trajectory.start_time(),
       trajectory.end_time());
-  for (int k = 0; k < num_times; ++k) {
-    MatrixX<T> derivative_eval = trajectory.EvalDerivative(t(k));
-    MatrixX<T> derivative_make = trajectory.MakeDerivative()->value(t(k));
-    double tolerance = 1e-7;
-    EXPECT_TRUE(CompareMatrices(derivative_eval, derivative_make, tolerance));
-//    std::cout << derivative_eval << derivative_make << std::endl;
-//    std::cout << derivative_eval << std::endl;
+  for (int order=0; order < 4; ++order) {
+    for (int k = 0; k < num_times; ++k) {
+      MatrixX<T> derivative_eval = trajectory.EvalDerivative(t(k), order);
+      MatrixX<T> derivative_make = trajectory.MakeDerivative(order)->value(t(k));
+      double tolerance = 1e-7;
+      EXPECT_TRUE(CompareMatrices(derivative_eval, derivative_make, tolerance));
+    }
   }
 }
 

@@ -45,43 +45,6 @@ bool BsplineTrajectory<T>::do_has_derivative() const {
   return true;
 }
 
-//template <typename T>
-//MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
-//    const T& t, int derivative_order) const {
-////  return this->MakeDerivative(derivative_order)->value(t);
-//  if (derivative_order == 0) {
-//    return this->value(t);
-//  } else if (derivative_order > 1) {
-//    throw std::logic_error("not implemented");
-//  } else if (derivative_order == 1) {
-//    // Implements equation 1.65 in Patrikalakis et al. [0]
-//    // [0] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
-//    std::vector<T> derivative_knots;
-//    const int num_derivative_knots = basis_.knots().size() - 2;
-//    derivative_knots.reserve(num_derivative_knots);
-//    for (int i = 1; i <= num_derivative_knots; ++i) {
-//      derivative_knots.push_back(basis_.knots()[i]);
-//    }
-//    BsplineBasis<T> lower_order_basis = BsplineBasis<T>(basis_.order() - 1,
-//                                                        derivative_knots);
-//    MatrixX<T> derivative = MatrixX<T>::Zero(rows(), cols());
-//    for (int i = 0; i < num_control_points() - 1; ++i) {
-//      derivative += basis_.degree() /
-//          (basis_.knots()[i + basis_.order()] - basis_.knots()[i + 1]) *
-//          (control_points()[i + 1] - control_points()[i]) *
-//          lower_order_basis.EvaluateBasisFunctionI(i, t);
-//      T temp = lower_order_basis.EvaluateBasisFunctionI(i, t);
-//      std::cout<< temp << std::endl;
-//    }
-//    return derivative;
-//  } else {
-//    throw std::invalid_argument(
-//      fmt::format("Invalid derivative order ({}). The derivative order must "
-//                  "be greater than or equal to 0.",
-//                  derivative_order));
-//  }
-//}
-
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
         const T& t, int derivative_order) const {
@@ -91,14 +54,7 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
   } else if (derivative_order > 1) {
     throw std::logic_error("not implemented");
   } else if (derivative_order == 1) {
-    // Implements equation 1.65 in Patrikalakis et al. [0]
-    // [0] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
-    std::vector<T> derivative_knots;
-    const int num_derivative_knots = basis_.knots().size() - 2;
-    derivative_knots.reserve(num_derivative_knots);
-    for (int i = 1; i <= num_derivative_knots; ++i) {
-      derivative_knots.push_back(basis_.knots()[i]);
-    }
+    std::vector<T> derivative_knots(basis_.knots().begin() + 1, basis_.knots().end() - 1);
     BsplineBasis<T> lower_order_basis = BsplineBasis<T>(basis_.order() - 1,
                                                         derivative_knots);
     std::vector<MatrixX<T>> derivative_control_points(
