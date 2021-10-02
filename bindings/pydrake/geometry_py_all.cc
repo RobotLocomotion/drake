@@ -1629,6 +1629,11 @@ void DoScalarIndependentDefinitions(py::module m) {
                 &Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
             cls_doc.SetProperty.doc_double)
+        .def("SetProperty",
+            py::overload_cast<std::string_view, std::string,
+                const std::vector<double>&>(&Class::SetProperty),
+            py::arg("path"), py::arg("property"), py::arg("value"),
+            cls_doc.SetProperty.doc_vector_double)
         .def("AddButton", &Class::AddButton, py::arg("name"),
             cls_doc.AddButton.doc)
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
