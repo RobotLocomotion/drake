@@ -93,9 +93,6 @@ class Trajectory {
 
   virtual MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const;
 
-  virtual std::unique_ptr<trajectories::Trajectory<T>> EvalDerivativeHelper(
-      const T& t, int derivative_order) const;
-
   virtual std::unique_ptr<Trajectory<T>> DoMakeDerivative(
       int derivative_order) const;
 };

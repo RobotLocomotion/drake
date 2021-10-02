@@ -49,20 +49,20 @@ bool BsplineTrajectory<T>::do_has_derivative() const {
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
         const T& t, int derivative_order) const {
-  return EvalDerivativeHelper(t, derivative_order)->value(t);
+  return MakeDerivativeAt(t, derivative_order)->value(t);
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::EvalDerivativeHelper(
+std::unique_ptr<BsplineTrajectory<T>> BsplineTrajectory<T>::MakeDerivativeAt(
     const T& t, int derivative_order) const {
-  // More efficient version of DoMakeDerivative when we are only interested in
-  // the derivative a particular point on the trajectory. For k th derivative
-  // of a degree n trajectory, this implementation reduces a run time of O(nk)
-  // in DoMakeDerivative to O(k^2)
+  // O(derivative_order^2) version of DoMakeDerivative when we are only
+  // interested in the derivative a particular point on the trajectory.
+  // Returned derivative trajectory evaluates to the correct value at t but
+  // no necessarily other points
   if (derivative_order == 0) {
-    return this->Clone();
+    return std::make_unique<BsplineTrajectory<T>>(*this);
   } else if (derivative_order > 1) {
-    return this->EvalDerivativeHelper(t, 1)->EvalDerivativeHelper(t, derivative_order - 1);
+    return this->MakeDerivativeAt(t, 1)->MakeDerivativeAt(t, derivative_order - 1);
   } else if (derivative_order == 1) {
     std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
                                     basis_.knots().end() - derivative_order);

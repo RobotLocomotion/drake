@@ -170,16 +170,29 @@ TYPED_TEST(BsplineTrajectoryTests, EvalDerivativeTest) {
   BsplineTrajectory<T> trajectory = MakeCircleTrajectory<T>();
 
   // Verify that EvalDerivative() returns the expected results.
+  std::function<void(const Vector1<T>&, VectorX<T>*)> calc_value =
+      [&trajectory](const Vector1<T>& t, VectorX<T>* value) {
+          *value = trajectory.value(t(0));
+      };
   const int num_times = 50;
   VectorX<T> t = VectorX<T>::LinSpaced(num_times, trajectory.start_time(),
-      trajectory.end_time());
-  for (int order=0; order < 4; ++order) {
-    for (int k = 0; k < num_times; ++k) {
-      MatrixX<T> derivative_eval = trajectory.EvalDerivative(t(k), order);
-      MatrixX<T> derivative_make = trajectory.MakeDerivative(order)->value(t(k));
-      double tolerance = 1e-7;
-      EXPECT_TRUE(CompareMatrices(derivative_eval, derivative_make, tolerance));
+                                       trajectory.end_time());
+  for (int k = 0; k < num_times; ++k) {
+    MatrixX<T> derivative = trajectory.EvalDerivative(t(k));
+    // To avoid evaluating the B-spline trajectory outside of its domain, we
+    // use forward/backward finite differences at the start/end points.
+    NumericalGradientMethod method = NumericalGradientMethod::kCentral;
+    double tolerance = 1e-7;
+    if (k == 0) {
+      method = NumericalGradientMethod::kForward;
+      tolerance = 1e-5;
+    } else if (k == num_times - 1) {
+      method = NumericalGradientMethod::kBackward;
+      tolerance = 1e-5;
     }
+    MatrixX<T> expected_derivative = ComputeNumericalGradient(
+        calc_value, Vector1<T>{t(k)}, NumericalGradientOption{method});
+    EXPECT_TRUE(CompareMatrices(derivative, expected_derivative, tolerance));
   }
 }
 
