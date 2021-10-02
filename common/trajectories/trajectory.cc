@@ -1,8 +1,6 @@
 #include "drake/common/trajectories/trajectory.h"
 
 #include "drake/common/unused.h"
-#include "common/trajectories/trajectory.h"
-
 
 namespace drake {
 namespace trajectories {
