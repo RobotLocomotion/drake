@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":internal_frame",
         ":internal_geometry",
         ":meshcat",
+        ":meshcat_animation",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
         ":proximity_engine",
@@ -375,6 +376,24 @@ install_files(
 )
 
 drake_cc_library(
+    name = "meshcat_animation",
+    srcs = ["meshcat_animation.cc"],
+    hdrs = ["meshcat_animation.h"],
+    deps = [
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_animation_test",
+    deps = [
+        ":meshcat_animation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
     name = "meshcat",
     srcs = ["meshcat.cc"],
     hdrs = [
@@ -384,6 +403,7 @@ drake_cc_library(
     data = [":meshcat_resources"],
     install_hdrs_exclude = ["meshcat_types.h"],
     deps = [
+        ":meshcat_animation",
         ":rgba",
         ":shape_specification",
         "//common:essential",
