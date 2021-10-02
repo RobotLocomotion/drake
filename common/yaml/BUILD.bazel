@@ -47,9 +47,11 @@ drake_cc_library(
     srcs = ["yaml_write_archive.cc"],
     hdrs = ["yaml_write_archive.h"],
     deps = [
+        ":yaml_node",
         "//common:essential",
         "//common:name_value",
         "//common:nice_type_name",
+        "//common:unused",
         "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
         "@yaml_cpp",
     ],
