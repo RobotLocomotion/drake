@@ -12,6 +12,7 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/rgba.h"
 #include "drake/math/rigid_transform.h"
 
@@ -423,6 +424,7 @@ struct UserInterfaceEvent {
 }  // namespace drake
 
 MSGPACK_ADD_ENUM(drake::geometry::internal::ThreeSide);
+MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 
 // We use the msgpack "non-intrusive" approach for packing types exposed in the
 // public interface. https://github.com/msgpack/msgpack-c/wiki/v2_0_cpp_adaptor
