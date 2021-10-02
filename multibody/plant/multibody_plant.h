@@ -4797,11 +4797,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // See geometry_id_to_collision_index_.
   std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
-  // The model used by the plant to compute contact forces.
-  // Keep this in sync with the default value in multibody_plant_config.h.
-  // TODO(jwnimmer-tri) The best way to keep in sync would be to initialize
-  // this value from a default-constructed MultibodyPlantConfig.  We'll need
-  // to refactor the code a little bit before we can do that, though.
+  // The model used by the plant to compute contact forces. Keep this in sync
+  // with the default value in multibody_plant_config.h; there are already
+  // assertions in the cc file that enforce this.
   ContactModel contact_model_{ContactModel::kPoint};
 
   bool use_low_resolution_contact_surface_{false};
