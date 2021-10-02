@@ -164,6 +164,25 @@ TYPED_TEST(BsplineTrajectoryTests, MakeDerivativeTest) {
   }
 }
 
+// Verifies that EvalDerivative() works as expected.
+TYPED_TEST(BsplineTrajectoryTests, EvalDerivativeTest) {
+  using T = TypeParam;
+  BsplineTrajectory<T> trajectory = MakeCircleTrajectory<T>();
+
+  // Verify that EvalDerivative() returns the expected results.
+  const int num_times = 50;
+  VectorX<T> t = VectorX<T>::LinSpaced(num_times, trajectory.start_time(),
+      trajectory.end_time());
+  for (int k = 0; k < num_times; ++k) {
+    MatrixX<T> derivative_eval = trajectory.EvalDerivative(t(k));
+    MatrixX<T> derivative_make = trajectory.MakeDerivative()->value(t(k));
+    double tolerance = 1e-7;
+    EXPECT_TRUE(CompareMatrices(derivative_eval, derivative_make, tolerance));
+//    std::cout << derivative_eval << derivative_make << std::endl;
+//    std::cout << derivative_eval << std::endl;
+  }
+}
+
 // Verifies that CopyBlock() works as expected.
 TYPED_TEST(BsplineTrajectoryTests, CopyBlockTest) {
   using T = TypeParam;
