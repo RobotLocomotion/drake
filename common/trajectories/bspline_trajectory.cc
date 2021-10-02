@@ -62,7 +62,8 @@ std::unique_ptr<BsplineTrajectory<T>> BsplineTrajectory<T>::MakeDerivativeAt(
   if (derivative_order == 0) {
     return std::make_unique<BsplineTrajectory<T>>(*this);
   } else if (derivative_order > 1) {
-    return this->MakeDerivativeAt(t, 1)->MakeDerivativeAt(t, derivative_order - 1);
+    return this->MakeDerivativeAt(t, 1)->MakeDerivativeAt(
+        t, derivative_order - 1);
   } else if (derivative_order == 1) {
     std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
                                     basis_.knots().end() - derivative_order);
