@@ -1,6 +1,8 @@
 #include "drake/common/trajectories/trajectory.h"
 
 #include "drake/common/unused.h"
+#include "common/trajectories/trajectory.h"
+
 
 namespace drake {
 namespace trajectories {
@@ -71,6 +73,23 @@ std::unique_ptr<Trajectory<T>> Trajectory<T>::DoMakeDerivative(
     throw std::logic_error(
         "Trajectory classes that promise derivatives via do_has_derivative() "
         "must implement DoMakeDerivative().");
+  } else {
+    throw std::logic_error(
+        "You asked for derivatives from a class that does not support "
+        "derivatives.");
+  }
+}
+
+template<typename T>
+std::unique_ptr<trajectories::Trajectory<T>>
+Trajectory<T>::EvalDerivativeHelper(const T &t,
+                                    int derivative_order) const {
+  unused(t);
+  unused(derivative_order);
+  if (has_derivative()) {
+    throw std::logic_error(
+        "Trajectory classes that promise derivatives via do_has_derivative() "
+        "must implement EvalDerivativeHelper().");
   } else {
     throw std::logic_error(
         "You asked for derivatives from a class that does not support "

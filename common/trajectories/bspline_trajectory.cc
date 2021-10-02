@@ -45,31 +45,44 @@ bool BsplineTrajectory<T>::do_has_derivative() const {
   return true;
 }
 
+
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
         const T& t, int derivative_order) const {
-//  return this->MakeDerivative(derivative_order)->value(t);
+  return EvalDerivativeHelper(t, derivative_order)->value(t);
+}
+
+template <typename T>
+std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::EvalDerivativeHelper(
+    const T& t, int derivative_order) const {
+  // More efficient version of DoMakeDerivative when we are only interested in
+  // the derivative a particular point on the trajectory. For k th derivative
+  // of a degree n trajectory, this implementation reduces a run time of O(nk)
+  // in DoMakeDerivative to O(k^2)
   if (derivative_order == 0) {
-    return this->value(t);
+    return this->Clone();
   } else if (derivative_order > 1) {
-    throw std::logic_error("not implemented");
+    return this->EvalDerivativeHelper(t, 1)->EvalDerivativeHelper(t, derivative_order - 1);
   } else if (derivative_order == 1) {
-    std::vector<T> derivative_knots(basis_.knots().begin() + 1, basis_.knots().end() - 1);
-    BsplineBasis<T> lower_order_basis = BsplineBasis<T>(basis_.order() - 1,
-                                                        derivative_knots);
+    std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
+                                    basis_.knots().end() - derivative_order);
+    BsplineBasis<T> lower_order_basis = BsplineBasis<T>(
+        basis_.order() - 1, derivative_knots);
     std::vector<MatrixX<T>> derivative_control_points(
-            num_control_points() - 1, MatrixX<T>::Zero(rows(), cols()));
+        num_control_points() - 1, MatrixX<T>::Zero(rows(), cols()));
     for (int i : lower_order_basis.ComputeActiveBasisFunctionIndices(t)) {
-      derivative_control_points.at(i) = basis_.degree() /
-                 (basis_.knots()[i + basis_.order()] - basis_.knots()[i + 1]) *
-                 (control_points()[i + 1] - control_points()[i]);
+      derivative_control_points.at(i) =
+          basis_.degree() /
+          (basis_.knots()[i + basis_.order()] - basis_.knots()[i + 1]) *
+          (control_points()[i + 1] - control_points()[i]);
     }
-    return lower_order_basis.EvaluateCurve(derivative_control_points, t);
+    return std::make_unique<BsplineTrajectory<T>>(
+        lower_order_basis, derivative_control_points);
   } else {
     throw std::invalid_argument(
-      fmt::format("Invalid derivative order ({}). The derivative order must "
-                  "be greater than or equal to 0.",
-                  derivative_order));
+        fmt::format("Invalid derivative order ({}). The derivative order must "
+                    "be greater than or equal to 0.",
+                    derivative_order));
   }
 }
 
