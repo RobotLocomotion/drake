@@ -413,6 +413,116 @@ GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
     })""");
 }
 
+GTEST_TEST(MeshcatTest, SetAnimation) {
+  Meshcat meshcat;
+  MeshcatAnimation animation;
+
+  animation.SetTransform(0, "sphere", RigidTransformd(Vector3d{0, 0, 0}));
+  animation.SetTransform(20, "sphere", RigidTransformd(Vector3d{0, 0, 1}));
+  animation.SetTransform(40, "sphere", RigidTransformd(Vector3d{0, 0, 0}));
+
+  animation.SetProperty(0, "cylinder", "visible", true);
+  animation.SetProperty(20, "cylinder", "visible", false);
+  animation.SetProperty(40, "cylinder", "visible", true);
+
+  animation.SetProperty(0, "ellipsoid/<object>", "material.opacity", 0.0);
+  animation.SetProperty(20, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.SetProperty(40, "ellipsoid/<object>", "material.opacity", 0.0);
+
+  animation.set_loop_mode(MeshcatAnimation::kLoopRepeat);
+  animation.set_repetitions(4);
+  animation.set_autoplay(true);
+  animation.set_clamp_when_finished(true);
+
+  meshcat.SetAnimation(animation);
+
+  // The animations will be in lexographical order by path since we're using a
+  // std::map with the path strings as the (sorted) keys.
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_animation",
+      "animations": [{
+          "path": "/drake/cylinder",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".visible",
+                  "type": "boolean",
+                  "keys": [{
+                      "time": 0,
+                      "value": true
+                    },{
+                      "time": 20,
+                      "value": false
+                    },{
+                      "time": 40,
+                      "value": true
+                  }]
+              }]
+          }
+      }, {
+          "path": "/drake/ellipsoid/<object>",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".material.opacity",
+                  "type": "number",
+                  "keys": [{
+                      "time": 0,
+                      "value": 0.0
+                    },{
+                      "time": 20,
+                      "value": 1.0
+                  },{
+                      "time": 40,
+                      "value": 0.0
+                  }]
+              }]
+          }
+      }, {
+          "path": "/drake/sphere",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".position",
+                  "type": "vector3",
+                  "keys": [{
+                      "time": 0,
+                      "value": [0.0, 0.0, 0.0]
+                    },{
+                      "time": 20,
+                      "value": [0.0, 0.0, 1.0]
+                    },{
+                      "time": 40,
+                      "value": [0.0, 0.0, 0.0]
+                  }]
+              }, {
+                  "name": ".quaternion",
+                  "type": "quaternion",
+                  "keys": [{
+                      "time": 0,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                    },{
+                      "time": 20,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                    },{
+                      "time": 40,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                  }]
+              }]
+          }
+      }],
+      "options": {
+          "play": true,
+          "loopMode": 2201,
+          "repetitions": 4,
+          "clampWhenFinished": true
+      }
+  })""");
+}
+
 GTEST_TEST(MeshcatTest, Set2dRenderMode) {
   Meshcat meshcat;
   meshcat.Set2dRenderMode();
