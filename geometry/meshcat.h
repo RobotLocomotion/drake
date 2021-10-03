@@ -11,6 +11,8 @@
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+// TODO(russt): Move point_cloud.h to a more central location.
+#include "drake/perception/point_cloud.h"
 
 namespace drake {
 namespace geometry {
@@ -107,11 +109,30 @@ class Meshcat {
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
+  @pydrake_mkdoc_identifier{shape}
   */
   void SetObject(std::string_view path, const Shape& shape,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
   // TODO(russt): SetObject with texture map.
+
+  /** Sets the "object" at a given `path` in the scene tree to be
+  `point_cloud`.  Note that `path`="/foo" will always set an object in the tree
+  at "/foo/<object>".  See @ref meshcat_path.  Any objects previously set at
+  this `path` will be replaced.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param point_cloud a perception::PointCloud; if `point_cloud.has_rgbs()` is
+                     true, then meshcat will render the colored points.
+  @param point_size is the size of each rendered point.
+  @param rgba is the default color, which is only used if
+              `point_cloud.has_rgbs() == false`.
+  @pydrake_mkdoc_identifier{cloud}
+  */
+  void SetObject(std::string_view path,
+                 const perception::PointCloud& point_cloud,
+                 double point_size = 0.001,
+                 const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
