@@ -1599,8 +1599,16 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
         .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
-        .def("SetObject", &Class::SetObject, py::arg("path"), py::arg("shape"),
-            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc)
+        .def("SetObject",
+            py::overload_cast<std::string_view, const Shape&, const Rgba&>(
+                &Class::SetObject),
+            py::arg("path"), py::arg("shape"),
+            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_shape)
+        .def("SetObject",
+            py::overload_cast<std::string_view, const perception::PointCloud&,
+                double, const Rgba&>(&Class::SetObject),
+            py::arg("path"), py::arg("cloud"), py::arg("point_size") = 0.001,
+            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_cloud)
         // TODO(russt): Bind SetCamera.
         .def("Set2dRenderMode", &Class::Set2dRenderMode,
             py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
