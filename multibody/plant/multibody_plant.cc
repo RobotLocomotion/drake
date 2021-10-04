@@ -2543,10 +2543,9 @@ void MultibodyPlant<T>::CallContactSolver(
       : public contact_solvers::internal::LinearOperator<T> {
    public:
     MassMatrixInverseOperator(const std::string& name, const MatrixX<T>* M)
-        : contact_solvers::internal::LinearOperator<T>(name) {
+        : contact_solvers::internal::LinearOperator<T>(name), M_ldlt_{*M} {
       DRAKE_DEMAND(M != nullptr);
       nv_ = M->rows();
-      M_ldlt_ = M->ldlt();
       // TODO(sherm1) Eliminate heap allocation.
       tmp_.resize(nv_);
     }
@@ -2559,15 +2558,15 @@ void MultibodyPlant<T>::CallContactSolver(
     void DoMultiply(const Eigen::Ref<const Eigen::SparseVector<T>>& x,
                     Eigen::SparseVector<T>* y) const final {
       tmp_ = VectorX<T>(x);
-      *y = M_ldlt_.solve(tmp_).sparseView();
+      *y = M_ldlt_.Solve(tmp_).sparseView();
     }
     void DoMultiply(const Eigen::Ref<const VectorX<T>>& x,
                     VectorX<T>* y) const final {
-      *y = M_ldlt_.solve(x);
+      *y = M_ldlt_.Solve(x);
     }
     int nv_;
     mutable VectorX<T> tmp_;  // temporary workspace.
-    Eigen::LDLT<MatrixX<T>> M_ldlt_;
+    math::LinearSolver<Eigen::LDLT, MatrixX<T>> M_ldlt_;
   };
   MassMatrixInverseOperator Minv_op("Minv", &M0);
 

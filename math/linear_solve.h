@@ -641,6 +641,10 @@ class LinearSolver {
  public:
   template <typename DerivedB>
   using SolutionType = internal::Solution<DerivedA, DerivedB>;
+  using SolverType = internal::EigenLinearSolver<LinearSolverType, DerivedA>;
+
+  /** Default constructor. Constructs an empty linear solver. */
+  LinearSolver() : linear_solver_() {}
 
   explicit LinearSolver(const Eigen::MatrixBase<DerivedA>& A)
       : linear_solver_{GetLinearSolver<LinearSolverType>(A)} {
@@ -676,8 +680,23 @@ class LinearSolver {
     DRAKE_UNREACHABLE();
   }
 
+  /** Getter for the linear solver.
+   * The scalar type in the linear solver depends on the scalar type in A
+   * matrix, as shown in this table
+   * |      A       | double |  ADS   | Expr |
+   * |--------------|--------|--------|----- |
+   * |linear_solver | double | double | Expr |
+   *
+   * where ADS stands for Eigen::AutoDiffScalar, Expr stands for
+   * symbolic::Expression.
+   *
+   */
+  const SolverType& linear_solver() const { return linear_solver_; }
+
+  /** Mutable version of linear_solver().  */
+  SolverType& mutable_linear_solver() { return linear_solver_; }
+
  private:
-  using SolverType = internal::EigenLinearSolver<LinearSolverType, DerivedA>;
   SolverType linear_solver_;
   std::optional<Eigen::Matrix<
       typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
