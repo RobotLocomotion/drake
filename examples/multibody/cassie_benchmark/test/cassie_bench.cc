@@ -287,7 +287,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
     // mark comes when building against Eigen 3.4, so only tighten the limit
     // here if you've tested vs Eigen 3.4 specifically -- our default build
     // of Drake currently uses the Eigen 3.3 series.
-    LimitMalloc guard(LimitReleaseOnly(57787));
+    LimitMalloc guard(LimitReleaseOnly(57916));
 
     compute();
 

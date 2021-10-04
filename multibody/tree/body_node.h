@@ -1059,15 +1059,17 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().
-      Eigen::LDLT<MatrixUpTo6<T>>& ldlt_D_B = get_mutable_ldlt_D_B(abic);
-      ldlt_D_B = D_B.template selfadjointView<Eigen::Lower>().ldlt();
+      math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& ldlt_D_B =
+          get_mutable_ldlt_D_B(abic);
+      ldlt_D_B = math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>(
+          MatrixUpTo6<T>(D_B.template selfadjointView<Eigen::Lower>()));
 
       // Ensure that D_B is not singular.
       // Singularity means that a non-physical hinge mapping matrix was used or
       // that this articulated body inertia has some non-physical quantities
       // (such as zero moment of inertia along an axis which the hinge mapping
       // matrix permits motion).
-      if (ldlt_D_B.info() != Eigen::Success) {
+      if (ldlt_D_B.eigen_linear_solver().info() != Eigen::Success) {
         std::stringstream message;
         message << "Encountered singular articulated body hinge inertia "
                 << "for body node index " << topology_.index << ". "
@@ -1078,7 +1080,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Compute the Kalman gain, g_PB_W, using (6).
       Matrix6xUpTo6<T>& g_PB_W = get_mutable_g_PB_W(abic);
-      g_PB_W = ldlt_D_B.solve(U_B_W).transpose();
+      g_PB_W = ldlt_D_B.Solve(U_B_W).transpose();
 
       // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
       // inertia of this body B as felt by body P and expressed in frame W.
@@ -1264,7 +1266,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute nu_B, the articulated body inertia innovations generalized
       // acceleration.
       const VectorUpTo6<T> nu_B =
-          get_ldlt_D_B(abic).solve(get_e_B(aba_force_cache));
+          get_ldlt_D_B(abic).Solve(get_e_B(aba_force_cache));
 
       // Mutable reference to the generalized acceleration.
       auto vmdot = get_mutable_accelerations(ac);
@@ -1640,13 +1642,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
   // Returns a const reference to the LDLT factorization `ldlt_D_B` of the
   // articulated body hinge inertia.
-  const Eigen::LDLT<MatrixUpTo6<T>>& get_ldlt_D_B(
+  const math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_ldlt_D_B(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_ldlt_D_B(topology_.index);
   }
 
   // Mutable version of get_ldlt_D_B().
-  Eigen::LDLT<MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
+  math::LinearSolver<Eigen::LDLT, MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_ldlt_D_B(topology_.index);
   }
