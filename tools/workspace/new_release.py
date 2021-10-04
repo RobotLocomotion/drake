@@ -20,18 +20,32 @@ To create the ~/.config/readonly_github_api_token.txt file used by (2), open a
 browser to https://github.com/settings/tokens and create a new token (it does
 not need any extra permissions; the default "no checkboxes are set" is good),
 and save the plaintext hexadecimal token to that file.
+
+This program can also automatically prepare an upgrade for one of our GitHub
+externals via the --upgrade option:
+
+  bazel build //tools/workspace:new_release
+  bazel-bin/tools/workspace/new_release --upgrade=rules_python
+
+Note that this program runs `bazel` as a subprocess, without any special
+command line flags.  If you do need to use any flags when you run bazel,
+then those must be added to an rcfile; they cannot be provided on the
+command line.
 """
 
 import argparse
 import getpass
 import glob
+import hashlib
 import json
 import logging
 import os
 import re
 import subprocess
 import sys
+from tempfile import TemporaryDirectory
 import time
+import urllib
 
 import github3
 
@@ -76,6 +90,14 @@ def _get_default_username():
     return git_user or http_user
 
 
+def _smells_like_a_git_commit(revision):
+    """Returns true iff revision seems to be a git commit (as opposed to
+    a version number tag name).  This might produce false positives for
+    very long version numbers, but we've never seen that in practice.
+    """
+    return len(revision) == 40
+
+
 def _handle_github(workspace_name, gh, data):
     time.sleep(0.2)  # Don't make github angry.
     old_commit = data["commit"]
@@ -83,7 +105,7 @@ def _handle_github(workspace_name, gh, data):
     gh_repo = gh.repository(owner, repo_name)
 
     # If we're tracking via git commit, then upgrade to the newest commit.
-    if len(old_commit) == 40:
+    if _smells_like_a_git_commit(old_commit):
         new_commit = gh_repo.commit("HEAD").sha
         return old_commit, new_commit
 
@@ -116,7 +138,7 @@ def _handle_github(workspace_name, gh, data):
     return old_commit, new_commit
 
 
-def run(gh, args, metadata):
+def _check_for_upgrades(gh, args, metadata):
     for workspace_name, data in sorted(metadata.items()):
         if workspace_name in _IGNORED_REPOSITORIES:
             continue
@@ -143,8 +165,89 @@ def run(gh, args, metadata):
                 workspace_name, old_commit))
 
 
+def _do_upgrade(temp_dir, gh, workspace_name, metadata):
+    if workspace_name not in metadata:
+        raise RuntimeError(f"Unknown repository {workspace_name}")
+    data = metadata[workspace_name]
+    if data["repository_rule_type"] != "github":
+        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+    repository = data["repository"]
+
+    # Figure out what to upgrade.
+    old_commit, new_commit = _handle_github(workspace_name, gh, data)
+    if old_commit == new_commit:
+        raise RuntimeError(f"No upgrade needed for {workspace_name}")
+    print("Upgrading {} from {} to {}".format(
+        workspace_name, old_commit, new_commit))
+
+    # Slurp the file we're supposed to modify.
+    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+    with open(bzl_filename, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Locate the two hexadecimal lines we need to edit.
+    commit_line_re = re.compile(
+        r'(?<=    commit = ")(' + re.escape(old_commit) + r')(?=",)')
+    checksum_line_re = re.compile(
+        r'(?<=    sha256 = ")([0-9a-f]{64})(?=",)')
+    commit_line_num = None
+    checksum_line_num = None
+    for i, line in enumerate(lines):
+        match = commit_line_re.search(line)
+        if match:
+            assert commit_line_num is None
+            commit_line_num = i
+            commit_line_match = match
+        match = checksum_line_re.search(line)
+        if match:
+            assert checksum_line_num is None
+            checksum_line_num = i
+            checksum_line_match = match
+    assert commit_line_num is not None
+    assert checksum_line_num is not None
+
+    # Download the new source archive.
+    print("Downloading new archive...")
+    new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
+    hasher = hashlib.sha256()
+    with open(f"{temp_dir}/{new_commit}.tar.gz", "wb") as temp:
+        with urllib.request.urlopen(new_url) as response:
+            while True:
+                data = response.read(4096)
+                if not data:
+                    break
+                hasher.update(data)
+                temp.write(data)
+            new_checksum = hasher.hexdigest()
+
+    # Update the repository.bzl contents and then write it out.
+    lines[commit_line_num] = commit_line_re.sub(
+        new_commit, lines[commit_line_num])
+    lines[checksum_line_num] = checksum_line_re.sub(
+        new_checksum, lines[checksum_line_num])
+    with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line)
+    os.rename(bzl_filename + ".new", bzl_filename)
+
+    # Copy the downloaded tarball into the repository cache.
+    print("Populating repository cache ...")
+    subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
+
+    print("Done.  Be sure to review and commit the changes:")
+    message = f"[workspace] Upgrade {workspace_name}"
+    if _smells_like_a_git_commit(new_commit):
+        message += " to latest commit"
+    else:
+        message += f" to latest release {new_commit}"
+    print(f"  git add {bzl_filename}")
+    print(f"  git commit -m'{message}'")
+
+
 def main():
-    parser = argparse.ArgumentParser(prog="new_release", description=__doc__)
+    parser = argparse.ArgumentParser(
+        prog="new_release", description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--use_password", action="store_true", default=False,
         help="Prompt for the GitHub password, instead of using an API token.")
@@ -157,6 +260,11 @@ def main():
         help="GitHub username (default: %(default)s)")
     parser.add_argument(
         "--verbose", action="store_true", default=False)
+    parser.add_argument(
+        "--upgrade", metavar="REPOSITORY_NAME", type=str,
+        help="(Optional) Instead of reporting on possible upgrades, download"
+             " a new archive for the given repository and edit its bzl rules"
+             " to match.")
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -174,15 +282,26 @@ def main():
             token = f.read().strip()
         gh = github3.login(token=token)
 
+    # Are we operating on all repositories, or just one?
+    if args.upgrade:
+        repositories = [args.upgrade]
+    else:
+        # (None denotes "all".)
+        repositories = None
+
     # Grab the workspace metadata.
     print("Collecting bazel repository details...")
-    metadata = read_repository_metadata()
+    metadata = read_repository_metadata(repositories=repositories)
     if args.verbose:
         print(json.dumps(metadata, sort_keys=True, indent=2))
 
-    # Run our report.
-    print("Checking for new releases...")
-    run(gh, args, metadata)
+    if args.upgrade:
+        with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
+            _do_upgrade(temp_dir, gh, args.upgrade, metadata)
+    else:
+        # Run our report of what's available.
+        print("Checking for new releases...")
+        _check_for_upgrades(gh, args, metadata)
 
 
 if __name__ == '__main__':
