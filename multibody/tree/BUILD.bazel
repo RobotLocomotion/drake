@@ -242,6 +242,7 @@ drake_cc_library(
         "//common:essential",
         "//common:nice_type_name",
         "//common:symbolic",
+        "//math:linear_solve",
         "//math:vector3_util",
         "//multibody/math:spatial_algebra",
     ],
