@@ -1,4 +1,8 @@
-from pydrake.common.deprecation import ModuleShim, deprecated
+from pydrake.common.deprecation import (
+    ModuleShim,
+    deprecated,
+    deprecated_callable,
+)
 
 value = 1
 
@@ -30,3 +34,11 @@ class ExampleClass:
     _deprecated_prop = property(lambda self: 2, doc=doc_prop)
     deprecated_prop = deprecated(message_prop, date="2038-01-19")(
         _deprecated_prop)
+
+
+message_func = "`deprecated_func` is deprecated"
+
+
+@deprecated_callable(message_func, date="2038-01-19")
+def deprecated_func(x):
+    return 2 * x
