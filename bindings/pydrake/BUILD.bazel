@@ -130,7 +130,7 @@ drake_pybind_library(
         "//lcmtypes:viewer",
     ],
     cc_srcs = [
-        "geometry_py.cc",
+        "geometry_py_all.cc",
         "geometry_py.h",
         "geometry_py_optimization.cc",
     ],
@@ -478,7 +478,7 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "geometry_test",
+    name = "geometry_all_test",
     data = [
         "//geometry:test_obj_files",
         "//systems/sensors:test_models",
