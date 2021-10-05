@@ -2,6 +2,7 @@
 # rationale.
 
 import numpy as np
+from pydrake.common.deprecation import deprecated
 
 
 def InitializeAutoDiffTuple(*args):
@@ -38,7 +39,8 @@ def InitializeAutoDiffTuple(*args):
     return tuple(autodiff_tuple)
 
 
-# TODO(sherm1) To be deprecated asap.
+# TODO(sherm1) This doesn't seem to produce a warning. What's wrong?
+deprecated("Use InitializeAutoDiffTuple()", date="2022-02-01")
 initializeAutoDiffTuple = InitializeAutoDiffTuple
 
 
