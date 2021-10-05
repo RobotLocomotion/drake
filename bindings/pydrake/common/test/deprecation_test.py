@@ -150,14 +150,14 @@ class TestDeprecation(unittest.TestCase):
         else:
             self.assertIn(message_expected, str(item.message))
 
-    def test_member_deprecation(self):
+    def test_python_deprecation_usages(self):
         """
         Tests low-level deprecation API for members.
 
         Please see `deprecation_utility_test.py` for a unittest on
         higher-level API.
         """
-        from deprecation_example import ExampleClass
+        import deprecation_example as mut
 
         def base_deprecation():
             warnings.warn(
@@ -172,27 +172,33 @@ class TestDeprecation(unittest.TestCase):
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
-            obj = ExampleClass()
+            obj = mut.ExampleClass()
             # Call each deprecated method / property repeatedly; it should only
             # warn once per unique line of source code.
             # - Method.
             for _ in range(3):
-                method = ExampleClass.deprecated_method
+                method = mut.ExampleClass.deprecated_method
                 self.assertEqual(obj.deprecated_method(), 1)
                 # The next line will not show a warning.
                 self.assertEqual(method(obj), 1)
-            self.assertEqual(method.__doc__, ExampleClass.doc_method)
+            self.assertEqual(method.__doc__, mut.ExampleClass.doc_method)
             # - Property.
             for _ in range(3):
-                prop = ExampleClass.deprecated_prop
+                prop = mut.ExampleClass.deprecated_prop
                 self.assertEqual(obj.deprecated_prop, 2)
                 # The next line will not show a warning.
                 self.assertEqual(prop.__get__(obj), 2)
-            self.assertEqual(prop.__doc__, ExampleClass.doc_prop)
+            self.assertEqual(prop.__doc__, mut.ExampleClass.doc_prop)
+            # - Free function.
+            for _ in range(3):
+                x = 50
+                y = mut.deprecated_func(x)
+                self.assertEqual(y, 2 * x)
             # Check warnings.
-            self.assertEqual(len(w), 2, "\n".join(map(str, w)))
-            self._check_warning(w[0], ExampleClass.message_method)
-            self._check_warning(w[1], ExampleClass.message_prop)
+            self.assertEqual(len(w), 3, "\n".join(map(str, w)))
+            self._check_warning(w[0], mut.ExampleClass.message_method)
+            self._check_warning(w[1], mut.ExampleClass.message_prop)
+            self._check_warning(w[2], mut.message_func)
 
         # Because `once` uses a (somehow opaque) registry (not accessible via
         # `warnings.once*registry` or `_warnings.once_registry`), we must
@@ -208,11 +214,11 @@ class TestDeprecation(unittest.TestCase):
             # `DrakeDeprecationWarning` if so desired.
             warnings.simplefilter("default", DeprecationWarning)
             base_deprecation()
-            method = ExampleClass.deprecated_method
+            method = mut.ExampleClass.deprecated_method
             self.assertEqual(len(w), 2)
             self.assertEqual(w[0].category, DeprecationWarning)
             self.assertEqual(str(w[0].message), "Non-drake warning")
-            self._check_warning(w[1], ExampleClass.message_method)
+            self._check_warning(w[1], mut.ExampleClass.message_method)
 
         # Edit the following flags to manually inspect the warnings generated.
         show_warnings = False
@@ -225,10 +231,10 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
-                method = ExampleClass.deprecated_method
-                method_extra = ExampleClass.deprecated_method
-                prop = ExampleClass.deprecated_prop
-                prop_extra = ExampleClass.deprecated_prop
+                method = mut.ExampleClass.deprecated_method
+                method_extra = mut.ExampleClass.deprecated_method
+                prop = mut.ExampleClass.deprecated_prop
+                prop_extra = mut.ExampleClass.deprecated_prop
             # Manually set this back to `once`.
             warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
