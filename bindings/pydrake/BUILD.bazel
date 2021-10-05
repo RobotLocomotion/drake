@@ -104,6 +104,7 @@ drake_pybind_library(
     cc_deps = [
         ":autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
     package_info = PACKAGE_INFO,
@@ -397,6 +398,7 @@ drake_py_unittest(
         ":autodiffutils_py",
         ":autodiffutils_test_util_py",
         ":math_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],

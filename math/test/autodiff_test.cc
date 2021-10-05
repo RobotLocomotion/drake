@@ -82,9 +82,11 @@ TEST_F(AutodiffTest, ExtractValue) {
       CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute))
       << values;
 
-  // TODO(sherm1) To be deprecated.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(autoDiffToValueMatrix(output_calculation_),
       values));
+#pragma GCC diagnostic pop
 }
 
 TEST_F(AutodiffTest, ExtractGradient) {
@@ -114,9 +116,11 @@ TEST_F(AutodiffTest, ExtractGradient) {
       CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute))
       << gradients;
 
-  // TODO(sherm1) To be deprecated.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(autoDiffToGradientMatrix(output_calculation_),
       gradients));
+#pragma GCC diagnostic pop
 
   // Given an AutoDiff matrix with no derivatives, ExtractGradient() should
   // return a matrix with zero-length rows, or return with specified-length
@@ -409,10 +413,12 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test3), test2));
   test3 = InitializeAutoDiff(test2, Eigen::MatrixXd::Ones(3, 2));
 
-  // TODO(sherm1) To be deprecated.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(
       initializeAutoDiffGivenGradientMatrix(test2, Eigen::MatrixXd::Ones(3, 2)),
       test3));
+#pragma GCC diagnostic pop
 
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
   DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
