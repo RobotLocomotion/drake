@@ -93,6 +93,11 @@ To aid the human editor in making that determination, you must add the tag
 code whose date has passed.  Removing deprecated code is not considered to be a
 breaking change, so do not add ``release notes: breaking change``.
 
+For commits that do not meet any of the above criteria, you must add the tag
+``release notes: yes`` to indicate that you've considered the question.  The
+pull request will be not be allowed to merge until it has at least one release
+notes label.
+
 # Joint Feature and Platform review
 
 For a review to be considered complete, both Feature Review and Platform Review
