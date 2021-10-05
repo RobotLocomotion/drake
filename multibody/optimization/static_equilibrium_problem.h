@@ -14,6 +14,8 @@
 
 namespace drake {
 namespace multibody {
+// TODO(hongkai.dai): add the bounds on the input u, and other position
+// constraint (such as unit length constraint on quaternion).
 /**
  * Finds the static equilibrium pose of a multibody system through optimization.
  * The constraints are
@@ -25,8 +27,6 @@ namespace multibody {
  * 4. complementarity condition between the contact force and the signed
  *    distance.
  * 5. q within the joint limit.
- * TODO(hongkai.dai): add the bounds on the input u, and other position
- * constraint (such as unit length constraint on quaternion).
  *
  * @ingroup planning
  */
