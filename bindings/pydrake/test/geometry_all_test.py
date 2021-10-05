@@ -476,7 +476,6 @@ class TestGeometry(unittest.TestCase):
 
     def test_identifier_api(self):
         cls_list = [
-            mut_testing.FakeId,
             mut.FilterId,
             mut.SourceId,
             mut.FrameId,
@@ -492,14 +491,14 @@ class TestGeometry(unittest.TestCase):
             # N.B. Creation order does not imply value.
             self.assertTrue(a < b or b > a)
 
-        fake_id_1 = mut_testing.get_fake_id_constant()
-        fake_id_2 = mut_testing.get_fake_id_constant()
-        self.assertIsNot(fake_id_1, fake_id_2)
-        self.assertEqual(hash(fake_id_1), hash(fake_id_2))
+        id_1 = mut_testing.get_constant_id()
+        id_2 = mut_testing.get_constant_id()
+        self.assertIsNot(id_1, id_2)
+        self.assertEqual(hash(id_1), hash(id_2))
 
-        self.assertEqual(
-            repr(fake_id_1),
-            f"<FakeId value={fake_id_1.get_value()}>")
+        self.assertIn(
+            f"value={id_1.get_value()}",
+            repr(id_1))
 
     @numpy_compare.check_nonsymbolic_types
     def test_penetration_as_point_pair_api(self, T):

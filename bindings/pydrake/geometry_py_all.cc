@@ -1,5 +1,3 @@
-#include "drake/bindings/pydrake/geometry_py.h"
-
 #include <sstream>
 
 #include "pybind11/eigen.h"
@@ -15,6 +13,7 @@
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/geometry_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_frame.h"
@@ -1709,14 +1708,10 @@ bool PropertiesIndicateSoftHydro(const geometry::ProximityProperties& props) {
 }
 
 void def_testing_module(py::module m) {
-  class FakeTag;
-  using FakeId = Identifier<FakeTag>;
-
-  BindIdentifier<FakeId>(m, "FakeId", "Fake documentation.");
-  // Get a valid, constant FakeId to test hashing with new instances returned.
-  FakeId fake_id_constant{FakeId::get_new_id()};
-  m.def("get_fake_id_constant",
-      [fake_id_constant]() { return fake_id_constant; });
+  // The get_constant_id() returns a fresh object every time, but always with
+  // the same underlying get_value().
+  const auto constant_id = geometry::FilterId::get_new_id();
+  m.def("get_constant_id", [constant_id]() { return constant_id; });
 
   m.def("PropertiesIndicateSoftHydro", &PropertiesIndicateSoftHydro);
 
