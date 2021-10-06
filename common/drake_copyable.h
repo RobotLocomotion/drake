@@ -52,6 +52,14 @@ class Foo {
 
   // ...
 };
+
+When unit testing uses of this macro, it is usually sufficient to check only
+one of the functions; usually the copy constructor is the easiest one to check.
+Because the implementations are defaulted, we can reason by induction that
+either all of them pass or all of them fail.  If it is important for
+performance that the move functions actually move (instead of making a copy),
+then check for that as well.  Any tests beyond those two cases woulld usually
+be unnecessary bloat to the unit test.
 </pre>
 */
 #define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
