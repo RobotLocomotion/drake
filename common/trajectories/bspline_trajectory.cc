@@ -51,6 +51,8 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
         const T& t, int derivative_order) const {
   if (derivative_order == 0) {
     return this->value(t);
+  } else if (derivative_order >= basis_.order()){
+    return MatrixX<T>::Zero(rows(), cols());
   } else if (derivative_order >= 1) {
     std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
                                     basis_.knots().end() - derivative_order);

@@ -173,7 +173,7 @@ TYPED_TEST(BsplineTrajectoryTests, EvalDerivativeTest) {
   const int num_times = 20;
   VectorX<T> t = VectorX<T>::LinSpaced(num_times, trajectory.start_time(),
                                        trajectory.end_time());
-  for (int o = 0; o < 4; ++o) {
+  for (int o = 0; o < trajectory.basis().order(); ++o) {
     for (int k = 0; k < num_times; ++k) {
       MatrixX<T> derivative = trajectory.EvalDerivative(t(k), o);
       MatrixX<T> expected_derivative =
