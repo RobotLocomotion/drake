@@ -10,6 +10,10 @@
 namespace drake {
 namespace pydrake {
 
+/** Defines the common elements in the drake::geometry namespace. See
+ geometry_py_common.cc. */
+void DefineGeometryCommon(py::module m);
+
 /** Defines all elements in the drake::geometry::optimization namespace.
  See geometry_py_optimization.cc. */
 void DefineGeometryOptimization(py::module m);
