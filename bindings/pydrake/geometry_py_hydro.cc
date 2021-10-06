@@ -1,8 +1,12 @@
+/* @file This contains the various public components of the hydroelastic contact
+ calculations -- specifically, the mesh types and basic I/O operations on those
+ types. The can be found in the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
@@ -79,7 +83,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   m.def("ConvertVolumeToSurfaceMesh", &ConvertVolumeToSurfaceMesh<T>,
       py::arg("volume"), doc.ConvertVolumeToSurfaceMesh.doc);
-}  // NOLINT(readability/fn_size)
+}
 
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -159,11 +163,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   m.def("AddSoftHydroelasticPropertiesForHalfSpace",
       &AddSoftHydroelasticPropertiesForHalfSpace, py::arg("slab_thickness"),
       py::arg("properties"), doc.AddSoftHydroelasticPropertiesForHalfSpace.doc);
+}
 
-  }
-}  // NOLINT(readability/fn_size)
+}  // namespace
 
-void def_geometry(py::module m) {
+void DefineGeometryHydro(py::module m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});

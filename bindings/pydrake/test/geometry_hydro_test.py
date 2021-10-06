@@ -6,11 +6,54 @@ import unittest
 from pydrake.common import FindResourceOrThrow
 
 
+class TestGeometryHydro(unittest.TestCase):
+    def test_hydro_proximity_properties(self):
+        """
+        Tests the utility functions (related to hydroelastic contact) for
+        setting values in ProximityProperties (as defined in
+        proximity_properties.h).
+        """
         props = mut.ProximityProperties()
+        res_hint = 0.175
+        mut.AddRigidHydroelasticProperties(
+            resolution_hint=res_hint, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
+                         res_hint)
 
+        props = mut.ProximityProperties()
+        mut.AddRigidHydroelasticProperties(properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertFalse(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
 
+        props = mut.ProximityProperties()
+        res_hint = 0.275
+        mut.AddSoftHydroelasticProperties(
+            resolution_hint=res_hint, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
+                         res_hint)
 
+        props = mut.ProximityProperties()
+        mut.AddSoftHydroelasticProperties(properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
 
+        props = mut.ProximityProperties()
+        slab_thickness = 0.275
+        mut.AddSoftHydroelasticPropertiesForHalfSpace(
+            slab_thickness=slab_thickness, properties=props)
+        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
+        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
+        self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
+        self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
+                         slab_thickness)
 
     def test_surface_mesh(self):
         # Create a mesh out of two triangles forming a quad.

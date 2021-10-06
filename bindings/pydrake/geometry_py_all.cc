@@ -1107,6 +1107,7 @@ PYBIND11_MODULE(geometry, m) {
   /* The order of execution matters -- a module may rely on the definition
    of bindings executed prior to it. */
   DefineGeometryCommon(m);
+  DefineGeometryHydro(m);
   def_geometry(m);
   def_geometry_render(m.def_submodule("render"));
   DefineGeometryOptimization(m.def_submodule("optimization"));
