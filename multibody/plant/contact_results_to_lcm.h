@@ -193,14 +193,13 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
    the Diagram and connects the draw message output to the publisher input,
  - connects a ContactResults<double>-valued output port to the
    ContactResultsToLcmSystem system, and
- - sets the publishing rate to 1/60 of a second (simulated time).
+ - sets the publishing rate based on publish_period.
 
  The four variants differ in the following ways:
 
   - Two overloads take a SceneGraph and two don't. Those that do will ensure
     that the geometry names communicated in the lcm messages match the names
-    used in SceneGraph. Those that don't default to the naming convention
-    documented in ContactResultsToLcmSystem.
+    used in SceneGraph. Those that don't are deprecated.
   - Two overloads take an OutputPort and two don't. This determines what is
     connected to the ContactResultsToLcmSystem input port. The overloads that
     specify an OutputPort will attempt to connect that port. Those that don't
@@ -236,6 +235,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
 /** MultibodyPlant-connecting, default-named geometry overload.
  @ingroup visualization */
+DRAKE_DEPRECATED("2022-01-01", "Provide a SceneGraph as the third argument.")
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
@@ -253,6 +253,7 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 
 /** OutputPort-connecting, default-named geometry overload.
  @ingroup visualization */
+DRAKE_DEPRECATED("2022-01-01", "Provide a SceneGraph as the third argument.")
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,

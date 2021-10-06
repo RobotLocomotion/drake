@@ -63,9 +63,8 @@ using drake::multibody::MultibodyPlant;
 int do_main() {
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
-  auto pair = AddMultibodyPlantSceneGraph(
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
-  MultibodyPlant<double>& plant = pair.plant;
 
   // Set constants that are relevant whether body B is a sphere or block.
   const double massB = 0.1;       // Body B's mass (kg).
@@ -137,9 +136,9 @@ int do_main() {
   // Publish contact results for visualization.
   // TODO(Mitiguy) Ensure contact forces can be displayed when time_step = 0.
   if (FLAGS_time_step > 0)
-    ConnectContactResultsToDrakeVisualizer(&builder, plant);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
 
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, pair.scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:

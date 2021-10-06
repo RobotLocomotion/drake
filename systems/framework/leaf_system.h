@@ -1204,22 +1204,6 @@ class LeafSystem : public System<T> {
   //@}
 
   // =========================================================================
-  /** @name             Deprecated input port declarations
-  Methods in this section leave out the name parameter and are the same
-  as invoking the corresponding method with `kUseDefaultName` as the name. */
-  //@{
-
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  InputPort<T>& DeclareVectorInputPort(
-      const BasicVector<T>& model_vector,
-      std::optional<RandomDistribution> random_type = std::nullopt);
-
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  InputPort<T>& DeclareAbstractInputPort(
-      const AbstractValue& model_value);
-  //@}
-
-  // =========================================================================
   /** @name                    Declare output ports
   @anchor DeclareLeafOutputPort_documentation
 
@@ -1578,85 +1562,6 @@ class LeafSystem : public System<T> {
   LeafOutputPort<T>& DeclareStateOutputPort(
       std::variant<std::string, UseDefaultName> name,
       AbstractStateIndex state_index);
-  //@}
-
-  // =========================================================================
-  /** @name             Deprecated output port declarations
-  Methods in this section leave out the name parameter and are the same
-  as invoking the corresponding method with `kUseDefaultName` as the name. */
-  //@{
-
-  template <class MySystem, typename BasicVectorSubtype>
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  LeafOutputPort<T>& DeclareVectorOutputPort(
-      const BasicVectorSubtype& model_vector,
-      void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()}) {
-    return DeclareVectorOutputPort(kUseDefaultName, model_vector, calc,
-                                   std::move(prerequisites_of_calc));
-  }
-
-  template <class MySystem, typename BasicVectorSubtype>
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  LeafOutputPort<T>& DeclareVectorOutputPort(
-      void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()}) {
-    return DeclareVectorOutputPort(kUseDefaultName, calc,
-                                   std::move(prerequisites_of_calc));
-  }
-
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  LeafOutputPort<T>& DeclareVectorOutputPort(
-      const BasicVector<T>& model_vector,
-      typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
-  template <class MySystem, typename OutputType>
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  std::enable_if_t<!std::is_same_v<OutputType, std::string>,
-                   LeafOutputPort<T>&>
-  DeclareAbstractOutputPort(const OutputType& model_value,
-                            void (MySystem::*calc)(const Context<T>&,
-                                                   OutputType*) const,
-                            std::set<DependencyTicket> prerequisites_of_calc = {
-                                all_sources_ticket()}) {
-    return DeclareAbstractOutputPort(kUseDefaultName, model_value, calc,
-                                     std::move(prerequisites_of_calc));
-  }
-
-  template <class MySystem, typename OutputType>
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  LeafOutputPort<T>& DeclareAbstractOutputPort(
-      void (MySystem::*calc)(const Context<T>&, OutputType*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()}) {
-    return DeclareAbstractOutputPort<MySystem, OutputType>(
-        kUseDefaultName, calc, std::move(prerequisites_of_calc));
-  }
-
-  template <class MySystem, typename OutputType>
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  LeafOutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*make)() const,
-      void (MySystem::*calc)(const Context<T>&, OutputType*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()}) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return DeclareAbstractOutputPort(kUseDefaultName, make, calc,
-                                     std::move(prerequisites_of_calc));
-#pragma GCC diagnostic pop
-  }
-
-  DRAKE_DEPRECATED("2021-10-01", "Pass a port name as the first argument.")
-  LeafOutputPort<T>& DeclareAbstractOutputPort(
-      typename LeafOutputPort<T>::AllocCallback alloc_function,
-      typename LeafOutputPort<T>::CalcCallback calc_function,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
   //@}
 
   // =========================================================================

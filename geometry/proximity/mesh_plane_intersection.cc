@@ -208,8 +208,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   auto mesh_W =
       std::make_unique<SurfaceMesh<T>>(std::move(faces), std::move(vertices_W));
   auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "pressure", std::move(surface_e), mesh_W.get(),
-      false /* calculate_gradient */);
+      std::move(surface_e), mesh_W.get(), false /* calculate_gradient */);
   // SliceTetWithPlane promises to make the surface normals point in the plane
   // normal direction (i.e., out of the plane and into the mesh).
   return std::make_unique<ContactSurface<T>>(

@@ -2,6 +2,7 @@
 # rationale.
 
 import numpy as np
+from pydrake.common.deprecation import deprecated_callable
 
 
 def InitializeAutoDiffTuple(*args):
@@ -38,8 +39,9 @@ def InitializeAutoDiffTuple(*args):
     return tuple(autodiff_tuple)
 
 
-# TODO(sherm1) To be deprecated asap.
-initializeAutoDiffTuple = InitializeAutoDiffTuple
+initializeAutoDiffTuple = deprecated_callable(
+    "Use InitializeAutoDiffTuple()", date="2022-02-01"
+)(InitializeAutoDiffTuple)
 
 
 @np.vectorize

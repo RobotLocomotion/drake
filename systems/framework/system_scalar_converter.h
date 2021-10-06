@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <typeindex>
 #include <typeinfo>
@@ -17,7 +18,16 @@
 namespace drake {
 namespace systems {
 
+#if !defined(DRAKE_DOXYGEN_CXX)
+// We need a bunch of forward declarations here.
 template <typename T> class System;
+class SystemScalarConverter;
+namespace system_scalar_converter_internal {
+template <typename T, typename U>
+void AddPydrakeConverterFunction(
+    SystemScalarConverter*, const std::function<System<T>*(const System<U>&)>&);
+}  // namespace system_scalar_converter_internal
+#endif
 
 /// Helper class to convert a System<U> into a System<T>, intended for internal
 /// use by the System framework, not directly by users.
@@ -117,27 +127,6 @@ class SystemScalarConverter {
   /// this is a default-constructed object.)
   bool empty() const { return funcs_.empty(); }
 
-  template <typename T, typename U>
-  using ConverterFunction
-      DRAKE_DEPRECATED("2021-10-01",
-      "Only scalar-converting copy constructors are supported.")
-      = std::function<std::unique_ptr<System<T>>(const System<U>&)>;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  template <typename T, typename U>
-  DRAKE_DEPRECATED("2021-10-01",
-      "Only scalar-converting copy constructors are supported.")
-  void Add(const ConverterFunction<T, U>&);
-#pragma GCC diagnostic pop
-
-  template <template <typename> class S, typename T, typename U>
-  DRAKE_DEPRECATED("2021-10-01",
-      "User-defined scalar types cannot be added.")
-  void AddIfSupported() {
-    MaybeAddConstructor<true, S, T, U>();
-  }
-
   /// Removes from this converter all pairs where `other.IsConvertible<T, U>`
   /// is false.  The subtype `S` need not be the same between this and `other`.
   void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);
@@ -158,6 +147,12 @@ class SystemScalarConverter {
   std::unique_ptr<System<T>> Convert(const System<U>& other) const;
 
  private:
+  // Allow the pydrake helper to call Insert().
+  template <typename T, typename U>
+  friend void system_scalar_converter_internal::AddPydrakeConverterFunction(
+      SystemScalarConverter*,
+      const std::function<System<T>*(const System<U>&)>&);
+
   // Like ConverterFunc, but with the args and return value decayed into void*.
   using ErasedConverterFunc = std::function<void*(const void*)>;
 
@@ -208,24 +203,6 @@ class SystemScalarConverter {
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// (This function is deprecated.)
-template <typename T, typename U>
-void SystemScalarConverter::Add(const ConverterFunction<T, U>& func) {
-  // Make sure func contains a target (i.e., is not null-ish).
-  DRAKE_ASSERT(static_cast<bool>(func));
-  // Copy `func` into a lambda that ends up stored into `funcs_`.  The lambda
-  // is typed as `void* => void*` in order to have a non-templated signature
-  // and thus fit into a homogeneously-typed std::unordered_map.
-  Insert(typeid(T), typeid(U), [func](const void* const bare_u) {
-    DRAKE_ASSERT(bare_u != nullptr);
-    const System<U>& other = *static_cast<const System<U>*>(bare_u);
-    return func(other).release();
-  });
-}
-#pragma GCC diagnostic pop
 
 template <typename T, typename U>
 bool SystemScalarConverter::IsConvertible() const {

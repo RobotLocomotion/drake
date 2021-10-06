@@ -76,7 +76,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
     def __init__(self,
                  scene_graph,
-                 draw_period=1./30,
+                 draw_period=None,
                  T_VW=np.array([[1., 0., 0., 0.],
                                 [0., 0., 1., 0.],
                                 [0., 0., 0., 1.]]),
@@ -91,7 +91,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         Args:
             scene_graph: A SceneGraph object.
             draw_period: The rate at which this class publishes to the
-                visualizer.
+                visualizer.  When None, a suitable default will be used.
             T_VW: The view projection matrix from world to view coordinates.
             xlim: View limit into the scene.
             ylim: View limit into the scene.

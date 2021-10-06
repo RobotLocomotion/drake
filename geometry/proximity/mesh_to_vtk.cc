@@ -109,15 +109,15 @@ void WriteVtkScalarField(
  */
 template <typename Field>
 void WriteMeshFieldLinearToVtk(const std::string& file_name,
-                               const Field& field,
-                               const std::string& title) {
+                               const std::string& field_name,
+                               const Field& field, const std::string& title) {
   std::ofstream file(file_name);
   if (file.fail()) {
     throw std::runtime_error(fmt::format("Cannot create file: {}.", file_name));
   }
   WriteVtkHeader(file, title);
   WriteVtkUnstructuredGrid(file, field.mesh());
-  WriteVtkScalarField(file, field.name(), field);
+  WriteVtkScalarField(file, field_name, field);
   file.close();
 }
 
@@ -136,17 +136,17 @@ void WriteSurfaceMeshToVtk(const std::string& file_name,
 }
 
 void WriteVolumeMeshFieldLinearToVtk(
-    const std::string& file_name,
+    const std::string& file_name, const std::string& field_name,
     const VolumeMeshFieldLinear<double, double>& field,
     const std::string& title) {
-  WriteMeshFieldLinearToVtk(file_name, field, title);
+  WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }
 
 void WriteSurfaceMeshFieldLinearToVtk(
-    const std::string& file_name,
+    const std::string& file_name, const std::string& field_name,
     const SurfaceMeshFieldLinear<double, double>& field,
     const std::string& title) {
-  WriteMeshFieldLinearToVtk(file_name, field, title);
+  WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }
 
 }  // namespace internal

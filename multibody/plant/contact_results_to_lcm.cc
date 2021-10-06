@@ -284,9 +284,13 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
           new ContactResultsToLcmSystem<double>(multibody_plant, name_lookup)));
   contact_to_lcm->set_name("contact_to_lcm");
 
+  // To help avoid small timesteps, use a default period that has an exact
+  // representation in binary floating point (see drake#15021).
+  const double default_publish_period = 1.0 / 64;
   auto contact_results_publisher = builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", lcm, publish_period.value_or(1.0 / 60)));
+          "CONTACT_RESULTS", lcm, publish_period.value_or(
+              default_publish_period)));
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port,

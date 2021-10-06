@@ -117,7 +117,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
+          std::move(e_MN), mesh_pointer));
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -674,7 +674,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   std::vector<AutoDiffXd> values{0, 0, 0};
   auto field = std::make_unique<
       geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
-      "junk", std::move(values), mesh_W.get(), false);
+      std::move(values), mesh_W.get(), false);
   // N.B. get_new_id() makes no guarantee on the order.
   // Since the surface normal follows the convention that it points from B into
   // A, we generate a pair of id's such that idA < idB to ensure that
@@ -799,9 +799,9 @@ class HydroelasticReportingTests
 
     SurfaceMesh<double>* mesh_pointer = mesh.get();
     contact_surface_ = std::make_unique<ContactSurface<double>>(
-      null_id, null_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
+        null_id, null_id, std::move(mesh),
+        std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+            std::move(e_MN), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body
     // free so that we can test the slip velocity. Additionally, we'll

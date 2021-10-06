@@ -453,56 +453,6 @@ TEST_F(LeafSystemTest, DeclareVectorPortsBySizeTest) {
   EXPECT_EQ(output2.size(), 2);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-class AllThingsDeprecated final : public LeafSystem<double> {
- public:
-  AllThingsDeprecated() {
-    // Call each deprecated "Declare...Port" method once.
-    DeclareInputPort(kVectorValued, 2);
-    DeclareVectorInputPort(BasicVector<double>(2));
-    DeclareAbstractInputPort(Value<int>(1));
-    DeclareVectorOutputPort(
-        &AllThingsDeprecated::CalcVectorSubtype);
-    DeclareVectorOutputPort(
-        MyVector2d{},
-        &AllThingsDeprecated::CalcVectorSubtype);
-    DeclareVectorOutputPort(
-        BasicVector<double>(2),
-        [](const Context<double>&, BasicVector<double>*) {});
-    DeclareAbstractOutputPort(
-        &AllThingsDeprecated::CalcInt);
-    DeclareAbstractOutputPort(
-        0,
-        &AllThingsDeprecated::CalcInt);
-    DeclareAbstractOutputPort(
-        &AllThingsDeprecated::MakeInt,
-        &AllThingsDeprecated::CalcInt);
-    DeclareAbstractOutputPort(
-        []() { return AbstractValue::Make<int>(); },
-        [](const Context<double>&, AbstractValue*) {});
-  }
-
-  void CalcVectorSubtype(const Context<double>&, MyVector2d*) const {}
-  int MakeInt() const { return 0; }
-  void CalcInt(const Context<double>&, int*) const {}
-};
-#pragma GCC diagnostic pop
-
-TEST_F(LeafSystemTest, DeprecatedDefaultPortNameTest) {
-  const AllThingsDeprecated dut;
-  EXPECT_EQ(dut.get_input_port(0).get_name(), "u0");
-  EXPECT_EQ(dut.get_input_port(1).get_name(), "u1");
-  EXPECT_EQ(dut.get_input_port(2).get_name(), "u2");
-  EXPECT_EQ(dut.get_output_port(0).get_name(), "y0");
-  EXPECT_EQ(dut.get_output_port(1).get_name(), "y1");
-  EXPECT_EQ(dut.get_output_port(2).get_name(), "y2");
-  EXPECT_EQ(dut.get_output_port(3).get_name(), "y3");
-  EXPECT_EQ(dut.get_output_port(4).get_name(), "y4");
-  EXPECT_EQ(dut.get_output_port(5).get_name(), "y5");
-  EXPECT_EQ(dut.get_output_port(6).get_name(), "y6");
-}
-
 // Tests that witness functions can be declared. Tests that witness functions
 // stop Simulator at desired points (i.e., the raison d'être of a witness
 // function) are done in diagram_test.cc and

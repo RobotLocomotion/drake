@@ -36,6 +36,7 @@ from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
+    _DEFAULT_PUBLISH_PERIOD,
     ConnectMeshcatVisualizer,
     MeshcatVisualizer,
     MeshcatContactVisualizer,
@@ -354,8 +355,7 @@ class TestMeshcat(unittest.TestCase):
     def test_point_cloud_visualization(self):
         """A small point cloud"""
 
-        draw_period = 1 / 30.
-        sim_time = draw_period * 3.
+        sim_time = _DEFAULT_PUBLISH_PERIOD * 3.
 
         def se3_from_xyz(xyz):
             return Isometry3(np.eye(3), xyz)

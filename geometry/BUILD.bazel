@@ -142,7 +142,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "geometry_frame",
-    srcs = [],
+    srcs = ["geometry_frame.cc"],
     hdrs = ["geometry_frame.h"],
     deps = [
         ":geometry_ids",
@@ -390,6 +390,7 @@ drake_cc_library(
         "//common:find_resource",
         "//common:unused",
         "//math:geometric_transform",
+        "//perception:point_cloud",
         "@common_robotics_utilities",
         "@msgpack",
         "@stduuid",

@@ -200,6 +200,9 @@ def deprecated(message, *, date=None):
 
     Use `ModuleShim` for deprecating variables in a module.
     """
+    # TODO(eric.cousineau): If possible, distinguish between descriptors and
+    # free functions. See PR #15877 for attempt.
+
     def wrapped(original):
         return _DeprecatedDescriptor(original, message, date=date)
 
@@ -234,17 +237,45 @@ def install_numpy_warning_filters(force=False):
         message="elementwise comparison failed")
 
 
-def _deprecated_callable(f, message, *, date=None):
+def deprecated_callable(message, *, date=None):
+    """
+    Deprecates a callable (a free function or a type/class object) by
+    wrapping its invocation to emit a deprecation.
 
-    def wrapper(*args, **kwargs):
-        _warn_deprecated(message, date=date, stacklevel=3)
-        return f(*args, **kwargs)
+    When possible, use ModuleShim to ensure that a deprecation warning is
+    emitted at *import time*, as it can easily be used with pure Python
+    modules.
 
-    wrapper.__name__ = f.__name__
-    wrapper.__qualname__ = f.__name__
-    warning = _format_deprecation_message(message, date=date)
-    wrapper.__doc__ = f"Warning:\n\n    {warning}"
-    return wrapper
+    However, if you are dealing with a C++ module (and are writing code inside
+    of `_{module}_extra.py`), you should use this approach.
+
+    Example as decorator:
+
+        @deprecated_callable("Please use `func_y` instead", date="2038-01-19")
+        def func_x():
+            ...
+
+    Example for alias:
+
+        my_alias = deprecated_callable(
+            "Please use `my_original` instead", date="2038-01-19"
+        )(my_original)
+    """
+
+    def decorator(original):
+
+        def wrapped(*args, **kwargs):
+            _warn_deprecated(message, date=date, stacklevel=3)
+            return original(*args, **kwargs)
+
+        wrapped.__name__ = original.__name__
+        wrapped.__qualname__ = original.__name__
+        warning = _format_deprecation_message(message, date=date)
+        wrapped.__doc__ = f"Warning:\n\n    {warning}"
+
+        return wrapped
+
+    return decorator
 
 
 def _forward_callables_as_deprecated(var_dict, m_new, date):
@@ -261,7 +292,7 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
             f"Please use ``{m_new.__name__}.{symbol}`` instead of "
             f"``{old_name}.{symbol}``."
         )
-        old = _deprecated_callable(new, message, date=date)
+        old = deprecated_callable(message, date=date)(new)
         old.__module__ = old_name
         var_dict[symbol] = old
 

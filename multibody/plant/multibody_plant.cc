@@ -356,7 +356,11 @@ VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
 
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
-    : MultibodyPlant(nullptr, time_step) {}
+    : MultibodyPlant(nullptr, time_step) {
+  // Cross-check that the Config default matches our header file default.
+  DRAKE_DEMAND(contact_model_ == ContactModel::kPoint);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model == "point");
+}
 
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(

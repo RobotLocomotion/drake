@@ -214,13 +214,10 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
     lumped.object = internal::MeshData();
 
-    internal::GeometryData geometry;
-    geometry.uuid = uuids::to_string((*uuid_generator_)());
-    geometry.type = "SphereGeometry";
-    geometry.radius = sphere.radius();
-    geometry.widthSegments = 20;
-    geometry.heightSegments = 20;
-    lumped.geometries.emplace_back(std::move(geometry));
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = sphere.radius();
+    lumped.geometry = std::move(geometry);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* data) override {
@@ -228,14 +225,12 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
     auto& mesh = lumped.object.emplace<internal::MeshData>();
 
-    internal::GeometryData geometry;
-    geometry.uuid = uuids::to_string((*uuid_generator_)());
-    geometry.type = "CylinderGeometry";
-    geometry.radiusBottom = cylinder.radius();
-    geometry.radiusTop = cylinder.radius();
-    geometry.height = cylinder.length();
-    geometry.radialSegments = 50;
-    lumped.geometries.emplace_back(std::move(geometry));
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radiusBottom = cylinder.radius();
+    geometry->radiusTop = cylinder.radius();
+    geometry->height = cylinder.length();
+    lumped.geometry = std::move(geometry);
 
     Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
         RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0))
@@ -253,14 +248,13 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
     lumped.object = internal::MeshData();
 
-    internal::GeometryData geometry;
-    geometry.uuid = uuids::to_string((*uuid_generator_)());
-    geometry.type = "BoxGeometry";
-    geometry.width = box.width();
+    auto geometry = std::make_unique<internal::BoxGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->width = box.width();
     // Three.js uses height for the y axis; Drake uses depth.
-    geometry.height = box.depth();
-    geometry.depth = box.height();
-    lumped.geometries.emplace_back(std::move(geometry));
+    geometry->height = box.depth();
+    geometry->depth = box.height();
+    lumped.geometry = std::move(geometry);
   }
 
   void ImplementGeometry(const Capsule&, void*) override {
@@ -273,13 +267,10 @@ class MeshcatShapeReifier : public ShapeReifier {
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
     auto& mesh = lumped.object.emplace<internal::MeshData>();
 
-    internal::GeometryData geometry;
-    geometry.uuid = uuids::to_string((*uuid_generator_)());
-    geometry.type = "SphereGeometry";
-    geometry.radius = 1;
-    geometry.widthSegments = 20;
-    geometry.heightSegments = 20;
-    lumped.geometries.emplace_back(std::move(geometry));
+    auto geometry = std::make_unique<internal::SphereGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radius = 1;
+    lumped.geometry = std::move(geometry);
 
     Eigen::Map<Eigen::Matrix4d> matrix(mesh.matrix);
     matrix(0, 0) = ellipsoid.a();
@@ -394,12 +385,11 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     } else {  // not obj or no mtllib.
-      internal::GeometryData geometry;
-      geometry.uuid = uuids::to_string((*uuid_generator_)());
-      geometry.type = "_meshfile_geometry";
-      geometry.format = std::move(format);
-      geometry.data = std::move(mesh_data);
-      lumped.geometries.emplace_back(std::move(geometry));
+      auto geometry = std::make_unique<internal::MeshFileGeometryData>();
+      geometry->uuid = uuids::to_string((*uuid_generator_)());
+      geometry->format = std::move(format);
+      geometry->data = std::move(mesh_data);
+      lumped.geometry = std::move(geometry);
 
       auto& meshcat_mesh = lumped.object.emplace<internal::MeshData>();
       Eigen::Map<Eigen::Matrix4d> matrix(meshcat_mesh.matrix);
@@ -488,31 +478,94 @@ class Meshcat::WebSocketPublisher {
     }
     if (std::holds_alternative<internal::MeshData>(data.object.object)) {
       auto& meshfile_object = std::get<internal::MeshData>(data.object.object);
-      meshfile_object.geometry = data.object.geometries[0].uuid;
+      DRAKE_DEMAND(data.object.geometry != nullptr);
+      meshfile_object.geometry = data.object.geometry->uuid;
 
-      internal::MaterialData material;
-      material.uuid = uuids::to_string(uuid_generator());
-      material.type = "MeshPhongMaterial";
-      material.color = (static_cast<int>(255 * rgba.r()) << 16) +
+      auto material = std::make_unique<internal::MaterialData>();
+      material->uuid = uuids::to_string(uuid_generator());
+      material->type = "MeshPhongMaterial";
+      material->color = (static_cast<int>(255 * rgba.r()) << 16) +
                       (static_cast<int>(255 * rgba.g()) << 8) +
                       static_cast<int>(255 * rgba.b());
+      // TODO(russt): Most values are taken verbatim from meshcat-python.
+      material->reflectivity = 0.5;
+      material->side = internal::kDoubleSide;
       // From meshcat-python: Three.js allows a material to have an opacity
       // which is != 1, but to still be non - transparent, in which case the
       // opacity only serves to desaturate the material's color. That's a
       // pretty odd combination of things to want, so by default we just use
       // the opacity value to decide whether to set transparent to True or
       // False.
-      material.transparent = (rgba.a() != 1.0);
-      material.opacity = rgba.a();
+      material->transparent = (rgba.a() != 1.0);
+      material->opacity = rgba.a();
+      material->linewidth = 1.0;
+      material->wireframe = false;
+      material->wireframeLineWidth = 1.0;
 
       meshfile_object.uuid = uuids::to_string(uuid_generator());
-      meshfile_object.material = material.uuid;
-      data.object.materials.emplace_back(std::move(material));
+      meshfile_object.material = material->uuid;
+      data.object.material = std::move(material);
     }
 
     loop_->defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
       DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      // TODO(russt): Consider using msgpack::sbuffer instead of stringstream
+      // (here and throughout) to avoid this copy.
+      // https://github.com/redboltz/msgpack-c/wiki/v2_0_cpp_packer
+      std::string message = message_stream.str();
+      if (message.size() > kMaxBackPressure) {
+        drake::log()->warn(
+            "The message describing the object at {} is too large for the "
+            "current websocket setup (size {} is greater than the max "
+            "backpressure {}).  You will either need to reduce the size of "
+            "your object/mesh/textures, or modify the code to increase the "
+            "allowance.",
+            data.path, message.size(), kMaxBackPressure);
+      }
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  void SetObject(std::string_view path, const perception::PointCloud& cloud,
+                 double point_size, const Rgba& rgba) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto geometry = std::make_unique<internal::BufferGeometryData>();
+    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->position = cloud.xyzs();
+    if (cloud.has_rgbs()) {
+      geometry->color = cloud.rgbs().cast<float>()/255.0;
+    }
+    data.object.geometry = std::move(geometry);
+
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuids::to_string(uuid_generator());
+    material->type = "PointsMaterial";
+    material->color = (static_cast<int>(255 * rgba.r()) << 16) +
+                      (static_cast<int>(255 * rgba.g()) << 8) +
+                      static_cast<int>(255 * rgba.b());
+    material->size = point_size;
+    material->vertexColors = cloud.has_rgbs();
+    data.object.material = std::move(material);
+
+    internal::MeshData mesh;
+    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.type = "Points";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    loop_->defer([this, data = std::move(data)]() {
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
       std::string message = message_stream.str();
@@ -1085,6 +1138,12 @@ std::string Meshcat::ws_url() const {
 void Meshcat::SetObject(std::string_view path, const Shape& shape,
                         const Rgba& rgba) {
   publisher_->SetObject(path, shape, rgba);
+}
+
+void Meshcat::SetObject(std::string_view path,
+                        const perception::PointCloud& cloud, double point_size,
+                        const Rgba& rgba) {
+  publisher_->SetObject(path, cloud, point_size, rgba);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {

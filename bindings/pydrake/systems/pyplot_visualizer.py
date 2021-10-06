@@ -26,15 +26,20 @@ class PyPlotVisualizer(LeafSystem):
     appropriate state.
     """
 
-    def __init__(self, draw_period=1./30, facecolor=[1, 1, 1],
+    def __init__(self, draw_period=None, facecolor=[1, 1, 1],
                  figsize=None, ax=None, show=None):
         LeafSystem.__init__(self)
+
+        # To help avoid small simulation timesteps, we use a default period
+        # that has an exact representation in binary floating point; see
+        # drake#15021 for details.
+        default_draw_period = 1./32
 
         self._warned_signal_logger_deprecated = False  # Remove 2021-12-01.
 
         self.set_name('pyplot_visualization')
-        self.timestep = draw_period
-        self.DeclarePeriodicPublish(draw_period, 0.0)
+        self.timestep = draw_period or default_draw_period
+        self.DeclarePeriodicPublish(self.timestep, 0.0)
 
         if ax is None:
             self.fig = plt.figure(facecolor=facecolor, figsize=figsize)

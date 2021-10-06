@@ -420,36 +420,6 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_reset)
         self.assertTrue(system.called_system_reset)
 
-    def test_deprecated_leaf_system_port_declarations(self):
-        """Checks that the bindings without a name= argument still work."""
-        dut = LeafSystem()
-
-        # Input port.
-        with catch_drake_warnings(expected_count=1):
-            input_port = dut.DeclareInputPort(
-                type=PortDataType.kVectorValued, size=1)
-
-        # Vector output port.
-        def _vector_calc(context, output):
-            output.get_mutable_value()[:] = context.get_time()
-        with catch_drake_warnings(expected_count=1):
-            vector_output_port = dut.DeclareVectorOutputPort(
-                BasicVector(1), _vector_calc)
-
-        # Abstract output port.
-        def _tuple_calc(context, output):
-            output.set_value(("time", context.get_time()))
-        with catch_drake_warnings(expected_count=1):
-            abstract_output_port = dut.DeclareAbstractOutputPort(
-                lambda: AbstractValue.Make(("string", 0.0)),
-                _tuple_calc)
-
-        # Check that the return values were sane.
-        context = dut.CreateDefaultContext()
-        input_port.get_index()
-        vector_output_port.Eval(context)
-        abstract_output_port.Eval(context)
-
     def test_state_output_port_declarations(self):
         """Checks that DeclareStateOutputPort is bound."""
         dut = LeafSystem()

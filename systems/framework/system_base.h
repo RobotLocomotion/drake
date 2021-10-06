@@ -244,249 +244,6 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   //============================================================================
-  /** @name                    Declare cache entries
-  @anchor DeclareCacheEntry_documentation
-
-  Methods in this section are used by derived classes to declare cache entries
-  for their own internal computations. (Other cache entries are provided
-  automatically for well-known computations such as output ports and time
-  derivatives.) Cache entries may contain values of any type, however the type
-  for any particular cache entry is fixed after first allocation. Every cache
-  entry must have an _allocator_ function `Allocate()` and a _calculator_
-  function `Calc()`. `Allocate()` returns an object suitable for holding a value
-  of the cache entry. `Calc()` uses the contents of a given Context to produce
-  the cache entry's value, which is placed in an object of the type returned by
-  `Allocate()`.
-
-  @warning These methods are currently specified as `public` access, but will
-  be demoted to `protected` access on or after 2021-10-01.
-
-  <h4>Prerequisites</h4>
-
-  Correct runtime caching behavior depends critically on understanding the
-  dependencies of the cache entry's `Calc()` function (we call those
-  "prerequisites"). If none of the prerequisites has changed since the last
-  time `Calc()` was invoked to set the cache entry's value, then we don't need
-  to perform a potentially expensive recalculation. On the other hand, if any
-  of the prerequisites has changed then the current value is invalid and must
-  not be used without first recomputing.
-
-  Currently it is not possible for Drake to infer prerequisites accurately and
-  automatically from inspection of the `Calc()` implementation. Therefore,
-  if you don't say otherwise, Drake will assume `Calc()` is dependent
-  on all value sources in the Context, including time, state, input ports,
-  parameters, and accuracy. That means the cache entry's value will be
-  considered invalid if _any_ of those sources has changed since the last time
-  the value was calculated. That is safe, but can result in more computation
-  than necessary. If you know that your `Calc()` method has fewer prerequisites,
-  you may say so by providing an explicit list in the `prerequisites_of_calc`
-  parameter. Every possible prerequisite has a DependencyTicket ("ticket"), and
-  the list should consist of tickets. For example, if your calculator depends
-  only on time (e.g. `Calc(context)` is `sin(context.get_time())`) then you
-  would specify `prerequisites_of_calc={time_ticket()}` here. See
-  @ref DependencyTicket_documentation "Dependency tickets" for a list of the
-  possible tickets and what they mean.
-
-  @warning It is critical that the prerequisite list you supply be accurate, or
-  at least conservative, for correct functioning of the caching system. Drake
-  cannot currently detect that a `Calc()` function accesses an undeclared
-  prerequisite. Even assuming you have correctly listed the prerequisites, you
-  should include a prominent comment in every `Calc()` implementation noting
-  that if the implementation is changed then the prerequisite list must be
-  updated correspondingly.
-
-  A technique you can use to ensure that prerequisites have been properly
-  specified is to make use of the Context's
-  @ref drake::systems::ContextBase::DisableCaching "DisableCaching()"
-  method, which causes cache values to be recalculated unconditionally. You
-  should get identical results with caching enabled or disabled, with speed
-  being the only difference. You can also disable caching for individual
-  cache entries in a Context, or specify that individual cache entries should
-  be disabled by default when they are first allocated.
-  @see ContextBase::DisableCaching()
-  @see CacheEntry::disable_caching()
-  @see CacheEntry::disable_caching_by_default()
-  @see LeafOutputPort::disable_caching_by_default()
-
-  <h4>Which signature to use?</h4>
-
-  Although the allocator and calculator functions ultimately satisfy generic
-  function signatures defined by a ValueProducer, we provide a variety
-  of `DeclareCacheEntry()` signatures here for convenient specification,
-  with mapping to the generic form handled invisibly. In particular,
-  allocators are most easily defined by providing a model value that can be
-  used to construct an allocator that copies the model when a new value
-  object is needed. Alternatively a method can be provided that constructs
-  a value object when invoked (those methods are conventionally, but not
-  necessarily, named `MakeSomething()` where `Something` is replaced by the
-  cache entry value type).
-
-  Because cache entry values are ultimately stored in AbstractValue objects,
-  the underlying types must be suitable. That means the type must be copy
-  constructible or cloneable. For methods below that are not given an explicit
-  model value or construction ("make") method, the underlying type must also be
-  default constructible.
-  @see drake::Value for more about abstract values. */
-  //@{
-
-  // TODO(jwnimmer-tri) We are violating the style guide here by momentarily
-  // introducing a "protected:" section for just this one function and then
-  // going to back to "public:" afterwards. We need to do this so all of the
-  // DeclareCacheEntry overloads share a Doxygen section, but once the other
-  // overloads become protected after 2021-10-01 we should move this entire
-  // section down into the real "protected:" section lower in this class
-  // declaration and by doing so remove the style violation.
- protected:
-  /// @anchor DeclareCacheEntry_primary
-  /** Declares a new %CacheEntry in this System using the most generic form
-  of the calculation function. Prefer one of the more convenient signatures
-  below if you can. The new cache entry is assigned a unique CacheIndex and
-  DependencyTicket, which can be obtained from the returned %CacheEntry.
-
-  @param[in] description
-    A human-readable description of this cache entry, most useful for debugging
-    and documentation. Not interpreted in any way by Drake; it is retained
-    by the cache entry and used to generate the description for the
-    corresponding CacheEntryValue in the Context.
-  @param[in] value_producer
-    Provides the computation that maps from a given Context to the current
-    value that this cache entry should have, as well as a way to allocate
-    storage prior to the computation.
-  @param[in] prerequisites_of_calc
-    Provides the DependencyTicket list containing a ticket for _every_ Context
-    value on which `calc_function` may depend when it computes its result.
-    Defaults to `{all_sources_ticket()}` if unspecified. If the cache value
-    is truly independent of the Context (rare!) say so explicitly by providing
-    the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
-  @returns a reference to the newly-created %CacheEntry.
-  @throws std::exception if given an explicitly empty prerequisite list. */
-  CacheEntry& DeclareCacheEntry(
-      std::string description, ValueProducer value_producer,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-  // NOLINTNEXTLINE(whitespace/blank_line)
- public:
-  // (Undo the momentary "protected:" from immediately above.)
-
-  // Declares a cache entry by specifying two callback functions.
-  DRAKE_DEPRECATED("2021-10-01", "Use the ValueProducer overload instead.")
-  CacheEntry& DeclareCacheEntry(
-      std::string description,
-      std::function<std::unique_ptr<AbstractValue>()> alloc_function,
-      std::function<void(const ContextBase&, AbstractValue*)> calc_function,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
-  // Declares a cache entry via two member function pointers.
-  // This will be demoted to `protected` access on or after 2021-10-01, and then
-  // removed entirely on 2021-11-01.
-  template <class MySystem, class MyContext, typename ValueType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareCacheEntry is rarely the best choice; it is"
-      " unusual for allocation to actually require a boutique callback rather"
-      " than just a Clone of a model_value. We found that most uses of this"
-      " overload hindered readability, because other overloads would often do"
-      " the job more directly. If no existing overload works, you may wrap a"
-      " ValueProducer around your existing make method and call the primary"
-      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
-  CacheEntry& DeclareCacheEntry(
-      std::string description,
-      ValueType (MySystem::*make)() const,
-      void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
-  /// @anchor DeclareCacheEntry_model_and_calc
-  /** Declares a cache entry by specifying a model value of concrete type
-  `ValueType` and a calculator function that is a class member function (method)
-  with signature: @code
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
-  @endcode
-  where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
-  derived from `ContextBase`, and `ValueType` is any concrete type such that
-  `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified. See the
-  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
-  above for more information about the parameters and behavior.
-  @see drake::Value
-  @warning This method is currently specified as `public` access, but will be
-  demoted to `protected` access on or after 2021-10-01. */
-  template <class MySystem, class MyContext, typename ValueType>
-  CacheEntry& DeclareCacheEntry(
-      std::string description, const ValueType& model_value,
-      void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
-  // Declares a cache entry via a model value and calc member function pointer.
-  // This will be demoted to `protected` access on or after 2021-10-01, and then
-  // removed entirely on 2021-11-01.
-  template <class MySystem, class MyContext, typename ValueType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareCacheEntry is dispreferred because it might"
-      " not reuse heap storage from one calculation to the next, and so is"
-      " typically less efficient than the other overloads. A better option"
-      " is to change the ValueType returned by-value to be an output pointer"
-      " instead, and return void. If that is not possible, you may wrap a"
-      " ValueProducer around your existing method and call the primary"
-      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
-  CacheEntry& DeclareCacheEntry(
-      std::string description, const ValueType& model_value,
-      ValueType (MySystem::*calc)(const MyContext&) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
-  /// @anchor DeclareCacheEntry_calc_only
-  /** Declares a cache entry by specifying only a calculator function that is a
-  class member function (method) with signature:
-  @code
-    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
-  @endcode
-  where `MySystem` is a class derived from `SystemBase` and `MyContext` is a
-  class derived from `ContextBase`. `ValueType` is a concrete type such that
-  (a) `Value<ValueType>` is permitted, and (b) `ValueType` is default
-  constructible. That allows us to create a model value using
-  `Value<ValueType>{}` (value initialized so numerical types will be zeroed in
-  the model). (The method name is arbitrary.) Template arguments will be
-  deduced and do not need to be specified. See the first DeclareCacheEntry()
-  signature above for more information about the parameters and behavior.
-
-  @note The default constructor will be called once immediately to create a
-  model value, and subsequent allocations will just copy the model value without
-  invoking the constructor again. If you want the constructor invoked again at
-  each allocation (not common), use one of the other signatures to explicitly
-  provide a method for the allocator to call; that method can then invoke
-  the `ValueType` default constructor each time it is called.
-  @see drake::Value
-  @warning This method is currently specified as `public` access, but will be
-  demoted to `protected` access on or after 2021-10-01. */
-  template <class MySystem, class MyContext, typename ValueType>
-  CacheEntry& DeclareCacheEntry(
-      std::string description,
-      void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-
-  // Declares a cache entry via a calculator member function pointer only.
-  // This will be demoted to `protected` access on or after 2021-10-01, and then
-  // removed entirely on 2021-11-01.
-  template <class MySystem, class MyContext, typename ValueType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareCacheEntry is dispreferred because it might"
-      " not reuse heap storage from one calculation to the next, and so is"
-      " typically less efficient than the other overloads. A better option"
-      " is to change the ValueType returned by-value to be an output pointer"
-      " instead, and return void. If that is not possible, you may wrap a"
-      " ValueProducer around your existing method and call the primary"
-      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
-  CacheEntry& DeclareCacheEntry(
-      std::string description,
-      ValueType (MySystem::*calc)(const MyContext&) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()});
-  //@}
-
-  //============================================================================
   /** @name                     Dependency tickets
   @anchor DependencyTicket_documentation
 
@@ -873,6 +630,216 @@ class SystemBase : public internal::SystemMessageInterface {
  protected:
   /** (Internal use only). */
   SystemBase() = default;
+
+  //============================================================================
+  /** @name                    Declare cache entries
+  @anchor DeclareCacheEntry_documentation
+
+  Methods in this section are used by derived classes to declare cache entries
+  for their own internal computations. (Other cache entries are provided
+  automatically for well-known computations such as output ports and time
+  derivatives.) Cache entries may contain values of any type, however the type
+  for any particular cache entry is fixed after first allocation. Every cache
+  entry must have an _allocator_ function `Allocate()` and a _calculator_
+  function `Calc()`. `Allocate()` returns an object suitable for holding a value
+  of the cache entry. `Calc()` uses the contents of a given Context to produce
+  the cache entry's value, which is placed in an object of the type returned by
+  `Allocate()`.
+
+  <h4>Prerequisites</h4>
+
+  Correct runtime caching behavior depends critically on understanding the
+  dependencies of the cache entry's `Calc()` function (we call those
+  "prerequisites"). If none of the prerequisites has changed since the last
+  time `Calc()` was invoked to set the cache entry's value, then we don't need
+  to perform a potentially expensive recalculation. On the other hand, if any
+  of the prerequisites has changed then the current value is invalid and must
+  not be used without first recomputing.
+
+  Currently it is not possible for Drake to infer prerequisites accurately and
+  automatically from inspection of the `Calc()` implementation. Therefore,
+  if you don't say otherwise, Drake will assume `Calc()` is dependent
+  on all value sources in the Context, including time, state, input ports,
+  parameters, and accuracy. That means the cache entry's value will be
+  considered invalid if _any_ of those sources has changed since the last time
+  the value was calculated. That is safe, but can result in more computation
+  than necessary. If you know that your `Calc()` method has fewer prerequisites,
+  you may say so by providing an explicit list in the `prerequisites_of_calc`
+  parameter. Every possible prerequisite has a DependencyTicket ("ticket"), and
+  the list should consist of tickets. For example, if your calculator depends
+  only on time (e.g. `Calc(context)` is `sin(context.get_time())`) then you
+  would specify `prerequisites_of_calc={time_ticket()}` here. See
+  @ref DependencyTicket_documentation "Dependency tickets" for a list of the
+  possible tickets and what they mean.
+
+  @warning It is critical that the prerequisite list you supply be accurate, or
+  at least conservative, for correct functioning of the caching system. Drake
+  cannot currently detect that a `Calc()` function accesses an undeclared
+  prerequisite. Even assuming you have correctly listed the prerequisites, you
+  should include a prominent comment in every `Calc()` implementation noting
+  that if the implementation is changed then the prerequisite list must be
+  updated correspondingly.
+
+  A technique you can use to ensure that prerequisites have been properly
+  specified is to make use of the Context's
+  @ref drake::systems::ContextBase::DisableCaching "DisableCaching()"
+  method, which causes cache values to be recalculated unconditionally. You
+  should get identical results with caching enabled or disabled, with speed
+  being the only difference. You can also disable caching for individual
+  cache entries in a Context, or specify that individual cache entries should
+  be disabled by default when they are first allocated.
+  @see ContextBase::DisableCaching()
+  @see CacheEntry::disable_caching()
+  @see CacheEntry::disable_caching_by_default()
+  @see LeafOutputPort::disable_caching_by_default()
+
+  <h4>Which signature to use?</h4>
+
+  Although the allocator and calculator functions ultimately satisfy generic
+  function signatures defined by a ValueProducer, we provide a variety
+  of `DeclareCacheEntry()` signatures here for convenient specification,
+  with mapping to the generic form handled invisibly. In particular,
+  allocators are most easily defined by providing a model value that can be
+  used to construct an allocator that copies the model when a new value
+  object is needed. Alternatively a method can be provided that constructs
+  a value object when invoked (those methods are conventionally, but not
+  necessarily, named `MakeSomething()` where `Something` is replaced by the
+  cache entry value type).
+
+  Because cache entry values are ultimately stored in AbstractValue objects,
+  the underlying types must be suitable. That means the type must be copy
+  constructible or cloneable. For methods below that are not given an explicit
+  model value or construction ("make") method, the underlying type must also be
+  default constructible.
+  @see drake::Value for more about abstract values. */
+  //@{
+
+  /// @anchor DeclareCacheEntry_primary
+  /** Declares a new %CacheEntry in this System using the most generic form
+  of the calculation function. Prefer one of the more convenient signatures
+  below if you can. The new cache entry is assigned a unique CacheIndex and
+  DependencyTicket, which can be obtained from the returned %CacheEntry.
+
+  @param[in] description
+    A human-readable description of this cache entry, most useful for debugging
+    and documentation. Not interpreted in any way by Drake; it is retained
+    by the cache entry and used to generate the description for the
+    corresponding CacheEntryValue in the Context.
+  @param[in] value_producer
+    Provides the computation that maps from a given Context to the current
+    value that this cache entry should have, as well as a way to allocate
+    storage prior to the computation.
+  @param[in] prerequisites_of_calc
+    Provides the DependencyTicket list containing a ticket for _every_ Context
+    value on which `calc_function` may depend when it computes its result.
+    Defaults to `{all_sources_ticket()}` if unspecified. If the cache value
+    is truly independent of the Context (rare!) say so explicitly by providing
+    the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
+  @returns a reference to the newly-created %CacheEntry.
+  @throws std::exception if given an explicitly empty prerequisite list. */
+  CacheEntry& DeclareCacheEntry(
+      std::string description, ValueProducer value_producer,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  // Declares a cache entry via two member function pointers.
+  template <class MySystem, class MyContext, typename ValueType>
+  DRAKE_DEPRECATED("2021-11-01",
+      "This overload for DeclareCacheEntry is rarely the best choice; it is"
+      " unusual for allocation to actually require a boutique callback rather"
+      " than just a Clone of a model_value. We found that most uses of this"
+      " overload hindered readability, because other overloads would often do"
+      " the job more directly. If no existing overload works, you may wrap a"
+      " ValueProducer around your existing make method and call the primary"
+      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
+  CacheEntry& DeclareCacheEntry(
+      std::string description,
+      ValueType (MySystem::*make)() const,
+      void (MySystem::*calc)(const MyContext&, ValueType*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  /// @anchor DeclareCacheEntry_model_and_calc
+  /** Declares a cache entry by specifying a model value of concrete type
+  `ValueType` and a calculator function that is a class member function (method)
+  with signature: @code
+    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+  @endcode
+  where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
+  derived from `ContextBase`, and `ValueType` is any concrete type such that
+  `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  above for more information about the parameters and behavior.
+  @see drake::Value */
+  template <class MySystem, class MyContext, typename ValueType>
+  CacheEntry& DeclareCacheEntry(
+      std::string description, const ValueType& model_value,
+      void (MySystem::*calc)(const MyContext&, ValueType*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  // Declares a cache entry via a model value and calc member function pointer.
+  template <class MySystem, class MyContext, typename ValueType>
+  DRAKE_DEPRECATED("2021-11-01",
+      "This overload for DeclareCacheEntry is dispreferred because it might"
+      " not reuse heap storage from one calculation to the next, and so is"
+      " typically less efficient than the other overloads. A better option"
+      " is to change the ValueType returned by-value to be an output pointer"
+      " instead, and return void. If that is not possible, you may wrap a"
+      " ValueProducer around your existing method and call the primary"
+      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
+  CacheEntry& DeclareCacheEntry(
+      std::string description, const ValueType& model_value,
+      ValueType (MySystem::*calc)(const MyContext&) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  /// @anchor DeclareCacheEntry_calc_only
+  /** Declares a cache entry by specifying only a calculator function that is a
+  class member function (method) with signature:
+  @code
+    void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
+  @endcode
+  where `MySystem` is a class derived from `SystemBase` and `MyContext` is a
+  class derived from `ContextBase`. `ValueType` is a concrete type such that
+  (a) `Value<ValueType>` is permitted, and (b) `ValueType` is default
+  constructible. That allows us to create a model value using
+  `Value<ValueType>{}` (value initialized so numerical types will be zeroed in
+  the model). (The method name is arbitrary.) Template arguments will be
+  deduced and do not need to be specified. See the first DeclareCacheEntry()
+  signature above for more information about the parameters and behavior.
+
+  @note The default constructor will be called once immediately to create a
+  model value, and subsequent allocations will just copy the model value without
+  invoking the constructor again. If you want the constructor invoked again at
+  each allocation (not common), use one of the other signatures to explicitly
+  provide a method for the allocator to call; that method can then invoke
+  the `ValueType` default constructor each time it is called.
+  @see drake::Value */
+  template <class MySystem, class MyContext, typename ValueType>
+  CacheEntry& DeclareCacheEntry(
+      std::string description,
+      void (MySystem::*calc)(const MyContext&, ValueType*) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  // Declares a cache entry via a calculator member function pointer only.
+  template <class MySystem, class MyContext, typename ValueType>
+  DRAKE_DEPRECATED("2021-11-01",
+      "This overload for DeclareCacheEntry is dispreferred because it might"
+      " not reuse heap storage from one calculation to the next, and so is"
+      " typically less efficient than the other overloads. A better option"
+      " is to change the ValueType returned by-value to be an output pointer"
+      " instead, and return void. If that is not possible, you may wrap a"
+      " ValueProducer around your existing method and call the primary"
+      " DeclareCacheEntry overload that takes a ValueProducer, instead.")
+  CacheEntry& DeclareCacheEntry(
+      std::string description,
+      ValueType (MySystem::*calc)(const MyContext&) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+  //@}
 
   /** (Internal use only) Adds an already-constructed input port to this System.
   Insists that the port already contains a reference to this System, and that

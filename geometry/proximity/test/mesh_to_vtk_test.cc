@@ -51,8 +51,8 @@ GTEST_TEST(MeshToVtkTest, BoxTetrahedraPressureField) {
   const auto pressure =
       MakeBoxPressureField<double>(box, &mesh, kElasticModulus);
   WriteVolumeMeshFieldLinearToVtk(
-      temp_directory() + "/" + "box_tet_pressure.vtk ", pressure,
-      "Pressure Field in Box");
+      temp_directory() + "/" + "box_tet_pressure.vtk ", "Pressure[Pa]",
+      pressure, "Pressure Field in Box");
 }
 
 // Helper function to create a contact surface between a soft box and a rigid
@@ -91,7 +91,8 @@ GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {
   ASSERT_NE(contact_pressure, nullptr);
   WriteSurfaceMeshFieldLinearToVtk(
       temp_directory() + "/" + "box_rigid_soft_contact_pressure.vtk",
-      *contact_pressure, "Pressure Distribution on Contact Surface");
+      "Pressure[Pa]", *contact_pressure,
+      "Pressure Distribution on Contact Surface");
 }
 
 }  // namespace internal

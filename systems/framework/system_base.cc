@@ -40,20 +40,6 @@ CacheEntry& SystemBase::DeclareCacheEntry(
       std::move(value_producer), std::move(prerequisites_of_calc));
 }
 
-// (This overload is deprecated.)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-CacheEntry& SystemBase::DeclareCacheEntry(
-    std::string description, CacheEntry::AllocCallback alloc_function,
-    CacheEntry::CalcCallback calc_function,
-    std::set<DependencyTicket> prerequisites_of_calc) {
-  return DeclareCacheEntry(
-      std::move(description),
-      ValueProducer(std::move(alloc_function), std::move(calc_function)),
-      std::move(prerequisites_of_calc));
-}
-#pragma GCC diagnostic pop
-
 CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
     DependencyTicket known_ticket, std::string description,
     ValueProducer value_producer,

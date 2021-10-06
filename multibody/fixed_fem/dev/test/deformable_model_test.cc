@@ -47,8 +47,7 @@ class DeformableModelTest : public ::testing::Test {
     /* All vertices of the box mesh lie on the surface. */
     std::vector<double> signed_distances(kNumVertices, 0.0);
     auto mesh_field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
-        "Approximated signed distance", std::move(signed_distances), mesh.get(),
-        false);
+        std::move(signed_distances), mesh.get(), false);
     return {std::move(mesh), std::move(mesh_field)};
   }
 

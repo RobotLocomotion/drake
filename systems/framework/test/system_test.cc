@@ -283,18 +283,6 @@ class SystemTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
 };
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Sanity check deprecated method.
-TEST_F(SystemTest, DeclareCacheEntryDeprecated) {
-  CacheEntry& dummy = system_.DeclareCacheEntry(
-      "dummy",
-       internal::AbstractValueCloner(0),
-       &ValueProducer::NoopCalc);
-  EXPECT_TRUE(dummy.has_default_prerequisites());
-}
-#pragma GCC diagnostic pop
-
 TEST_F(SystemTest, ContextBelongsWithSystem) {
   TestSystem system2;
 

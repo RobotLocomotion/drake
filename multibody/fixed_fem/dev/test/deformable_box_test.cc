@@ -108,7 +108,7 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
       reference_meshes.emplace_back(geometry.mesh());
     }
     auto* visualizer = builder.AddSystem<DeformableVisualizer>(
-        1.0 / 60.0, deformable_model_ptr->names(), reference_meshes);
+        1.0 / 64.0, deformable_model_ptr->names(), reference_meshes);
     builder.Connect(deformable_model_ptr->get_vertex_positions_output_port(),
                     visualizer->get_input_port());
 

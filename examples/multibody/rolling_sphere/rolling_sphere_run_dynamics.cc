@@ -171,7 +171,7 @@ int do_main() {
     }
     geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
                                              params);
-    ConnectContactResultsToDrakeVisualizer(&builder, plant);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
   }
   auto diagram = builder.Build();
 

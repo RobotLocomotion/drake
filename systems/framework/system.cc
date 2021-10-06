@@ -966,14 +966,6 @@ InputPort<T>& System<T>::DeclareInputPort(
   return *port_ptr;
 }
 
-// (This function is deprecated.)
-template <typename T>
-InputPort<T>& System<T>::DeclareInputPort(
-    PortDataType type, int size,
-    std::optional<RandomDistribution> random_type) {
-  return DeclareInputPort(kUseDefaultName, type, size, random_type);
-}
-
 template <typename T>
 SystemConstraintIndex System<T>::AddConstraint(
     std::unique_ptr<SystemConstraint<T>> constraint) {
