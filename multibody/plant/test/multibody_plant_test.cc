@@ -2664,7 +2664,7 @@ TEST_P(KukaArmTest, StateAccess) {
   Eigen::VectorBlock<const VectorX<double>> xc =
       plant_->GetPositionsAndVelocities(*context_);
   EXPECT_EQ(xc, xc_expected);
-
+  
   // Modify positions and change xc expected to reflect changes to positions.
   for (int i = 0; i < plant_->num_positions(); ++i)
     xc_expected[i] *= -1;
@@ -2755,7 +2755,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
       10 /* first number */,
       9 + plant_->num_velocities(arm2) /* last number */);
   VectorX<double> x(q.size() + qd.size());
-  x << q, qd;
+  x << q, qd;  
 
   // Set the positions, make sure that they're retrieved successfully, and
   // verify that no other multibody instance positions or velocities are
@@ -2798,6 +2798,16 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
     plant_->SetVelocities(*context_, &context_->get_mutable_state(),
                           arm2, v_block);
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
+  }
+
+  
+  // Verify that we can retrieve the state vector using the output variable version
+  // Changing xc should not use any dynamic memory
+  VectorX<double> qo(qv_block.size());
+  {      
+    drake::test::LimitMalloc guard;
+    plant_->GetPositionsAndVelocities(*context_, arm2, qo);
+    EXPECT_EQ(qo, qv_block);
   }
 }
 

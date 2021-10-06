@@ -1807,6 +1807,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsAndVelocities(context, model_instance);
   }
 
+  /// (Advanced) Takes in a vector q_v representing the the generalized positions q and
+  /// generalized velocities v of a specified model instance in a given Context.
+  /// Sets qv to a vector `[q; v]` containing generalized positions and velocities
+  /// @note Sets q_v to a dense vector of dimension
+  ///       `num_positions(model_instance) + num_velocities(model_instance)`
+  ///       associated with `model_instance` by copying from `context`.
+  /// @throws std::exception if `context` does not correspond to the Context
+  /// for a multibody model or `model_instance` is invalid.
+  /// Also throws if q_v does not have the proper size to store all positions and velocities
+  void GetPositionsAndVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance,
+      VectorX<T>& q_v) const {
+    this->ValidateContext(context);
+    DRAKE_THROW_UNLESS(q_v.size() == (num_positions() + num_velocities()));
+    q_v = internal_tree().GetPositionsAndVelocities(context, model_instance);
+  }
+
   /// (Advanced -- **see warning**) Returns a mutable vector reference `[q; v]`
   /// to the generalized positions q and generalized velocities v in a given
   /// Context.
