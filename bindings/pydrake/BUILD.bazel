@@ -133,6 +133,7 @@ drake_pybind_library(
     cc_srcs = [
         "geometry_py_all.cc",
         "geometry_py.h",
+        "geometry_py_common.cc",
         "geometry_py_optimization.cc",
     ],
     package_info = PACKAGE_INFO,
@@ -499,6 +500,15 @@ drake_py_unittest(
     name = "frame_id_test",
     deps = [
         ":geometry_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_common_test",
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
