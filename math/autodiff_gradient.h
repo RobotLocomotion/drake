@@ -92,18 +92,20 @@ ExtractGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix,
   return gradient;
 }
 
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01",
-//    "Used only in deprecated functions.")
 template <typename Derived>
-struct AutoDiffToGradientMatrix {
+struct DRAKE_DEPRECATED("2022-02-01", "Used only in deprecated functions.")
+    AutoDiffToGradientMatrix {
   typedef typename Gradient<
       Eigen::Matrix<typename Derived::Scalar::Scalar,
                     Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>,
       Eigen::Dynamic>::type type;
 };
 
+// This deprecated function uses the above deprecated struct.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename Derived>
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01", "Use ExtractGradient().")
+DRAKE_DEPRECATED("2022-02-01", "Use ExtractGradient().")
 typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
     const Eigen::MatrixBase<Derived>& autodiff_matrix,
     int num_derivatives = Eigen::Dynamic) {
@@ -112,6 +114,7 @@ typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
                              ? std::nullopt
                              : std::optional<int>(num_derivatives));
 }
+#pragma GCC diagnostic pop
 
 /** Initializes an AutoDiff matrix given a matrix of values and a gradient
 matrix.
@@ -171,7 +174,7 @@ void InitializeAutoDiff(
 
 template <typename DerivedValue, typename DerivedGradient,
           typename DerivedAutoDiff>
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01", "Use InitializeAutoDiff().")
+DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiff().")
 void initializeAutoDiffGivenGradientMatrix(
     const Eigen::MatrixBase<DerivedValue>& value,
     const Eigen::MatrixBase<DerivedGradient>& gradient,
@@ -202,8 +205,7 @@ InitializeAutoDiff(
 }
 
 template <typename DerivedValue, typename DerivedGradient>
-// TODO(sherm1) DRAKE_DEPRECATED("2022-01-01",
-//     "Use InitializeAutoDiff() instead")
+DRAKE_DEPRECATED("2022-02-01", "Use InitializeAutoDiff() instead")
 AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
 initializeAutoDiffGivenGradientMatrix(
     const Eigen::MatrixBase<DerivedValue>& val,
