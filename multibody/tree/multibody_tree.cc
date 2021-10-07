@@ -493,6 +493,15 @@ VectorX<T> MultibodyTree<T>::GetPositionsFromArray(
   return model_instances_.at(model_instance)->GetPositionsFromArray(q);
 }
 
+template <typename T>
+void MultibodyTree<T>::GetPositionsFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& q,
+    drake::EigenPtr<VectorX<T>> q_out,
+    int offset) const {
+    model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out, offset);
+}
+
 template <class T>
 void MultibodyTree<T>::SetPositionsInArray(
     ModelInstanceIndex model_instance,
@@ -506,6 +515,15 @@ VectorX<T> MultibodyTree<T>::GetVelocitiesFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v) const {
   return model_instances_.at(model_instance)->GetVelocitiesFromArray(v);
+}
+
+template <typename T>
+void MultibodyTree<T>::GetVelocitiesFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& v,
+    drake::EigenPtr<VectorX<T>> v_out,
+    int offset) const {
+  model_instances_.at(model_instance)->GetVelocitiesFromArray(v, v_out, offset);
 }
 
 template <class T>
@@ -761,18 +779,16 @@ VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
 
 template <typename T>
 void MultibodyTree<T>::GetPositionsAndVelocities(
-    const systems::Context<T>& context,
-    ModelInstanceIndex model_instance,
-    VectorX<T> q_v) const {
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance,
+      drake::EigenPtr<VectorX<T>> q_v) const {
   Eigen::VectorBlock<const VectorX<T>> state_vector =
       get_positions_and_velocities(context);
 
-  q_v.head(num_positions(model_instance)) =
-      GetPositionsFromArray(
-          model_instance, state_vector.head(num_positions()));
-  q_v.tail(num_velocities(model_instance)) =
-      GetVelocitiesFromArray(
-          model_instance, state_vector.tail(num_velocities()));
+  GetPositionsFromArray(
+          model_instance, state_vector.head(num_positions()), q_v, 0);
+  GetVelocitiesFromArray(
+          model_instance, state_vector.tail(num_velocities()), q_v, num_velocities(model_instance)); 
 }
 
 template <typename T>

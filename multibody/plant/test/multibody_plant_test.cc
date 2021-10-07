@@ -2799,16 +2799,23 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
                           arm2, v_block);
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
   }
-
   
   // Verify that we can retrieve the state vector using the output variable version
-  // Changing xc should not use any dynamic memory
-  VectorX<double> qo(qv_block.size());
+  // Populating these output vectors should not use any dynamic memory
+  VectorX<double> q_out(q_block.size());
+  VectorX<double> v_out(v_block.size());
+  VectorX<double> qv_out(qv_block.size());
   {      
-    drake::test::LimitMalloc guard;
-    plant_->GetPositionsAndVelocities(*context_, arm2, qo);
-    EXPECT_EQ(qo, qv_block);
+    // Ensure that getters accepting an output vector do not allocate.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    plant_->GetPositions(*context_, arm2, &q_out);
+    plant_->GetVelocities(*context_, arm2, &v_out);
+    plant_->GetPositionsAndVelocities(*context_, arm2, &qv_out);
   }
+  // Verify values
+  EXPECT_EQ(q_out, q_block);
+  EXPECT_EQ(v_out, v_block);
+  EXPECT_EQ(qv_out, qv_block);
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the

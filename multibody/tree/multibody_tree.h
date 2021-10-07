@@ -913,6 +913,13 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& q) const;
 
   // See MultibodyPlant method.
+  void GetPositionsFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& q,
+      drake::EigenPtr<VectorX<T>> q_out,
+      int offset) const;
+
+  // See MultibodyPlant method.
   void SetPositionsInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_instance,
@@ -922,6 +929,13 @@ class MultibodyTree {
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v) const;
+
+  // See MultibodyPlant method.
+  void GetVelocitiesFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& v,
+      drake::EigenPtr<VectorX<T>> v_out,
+      int offset) const;
 
   // Sets the vector of generalized velocities for `model_instance` in
   // `v` using `v_instance`, leaving all other elements in the array
@@ -978,6 +992,14 @@ class MultibodyTree {
   Eigen::VectorBlock<const VectorX<T>> get_positions_and_velocities(
       const systems::Context<T>& context) const;
 
+  // (Advanced) Takes output vector qv_out and poluates it with the vector
+  // `[q; v]` of the model with `q` the vector of generalized positions and
+  // `v` the vector of generalized velocities.
+  // @pre `context` is a valid multibody system Context.
+  void get_positions_and_velocities(
+      const systems::Context<T>& context,    
+    drake::EigenPtr<VectorX<T>> qv_out) const;
+
   // Returns a Eigen vector containing the multibody state `x = [q; v]`
   // of the model with `q` the vector of generalized positions and `v` the
   // vector of generalized velocities for model instance `model_instance`.
@@ -990,11 +1012,16 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
-  // TODO: Add comments
+  // (Advanced) Takes output vector qv_out and populates it with the multibody state 
+  // `x = [q; v]` of the model with `q` the vector of generalized positions 
+  // and `v` the vector of generalized velocities for model instance `model_instance`.
+  // @throws std::exception if the `context` does not correspond to the context
+  // for a multibody model or `model_instance` is invalid.
+  // @pre `context` is a valid multibody system Context.
   void GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
-      VectorX<T> q_v) const;
+      drake::EigenPtr<VectorX<T>> qv_out) const;
 
   // From a mutable State, returns a mutable Eigen vector containing the vector
   // `[q; v]` of the model with `q` the vector of generalized positions and `v`

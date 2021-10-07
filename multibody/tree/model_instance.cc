@@ -62,6 +62,23 @@ VectorX<T> ModelInstance<T>::GetPositionsFromArray(
   return positions;
 }
 
+template <typename T>
+void ModelInstance<T>::GetPositionsFromArray(
+    const Eigen::Ref<const VectorX<T>>& q_array,
+    drake::EigenPtr<VectorX<T>> q_out,
+    int offset) const {
+  if (q_array.size() != this->get_parent_tree().num_positions())
+    throw std::logic_error("Passed in array is not properly sized.");
+  int position_offset = 0 + offset;
+  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+    const int mobilizer_positions = mobilizer->num_positions();
+    q_out->segment(position_offset, mobilizer_positions) =
+        mobilizer->get_positions_from_array(q_array);
+    position_offset += mobilizer_positions;
+    DRAKE_DEMAND(position_offset <= q_out->size());
+  }
+}
+
 template <class T>
 void ModelInstance<T>::SetPositionsInArray(
     const Eigen::Ref<const VectorX<T>>& model_q,
@@ -96,6 +113,23 @@ VectorX<T> ModelInstance<T>::GetVelocitiesFromArray(
     DRAKE_DEMAND(velocity_offset <= velocities.size());
   }
   return velocities;
+}
+
+template <typename T>
+void ModelInstance<T>::GetVelocitiesFromArray(
+    const Eigen::Ref<const VectorX<T>>& v_array,
+    drake::EigenPtr<VectorX<T>> v_out,
+    int offset) const {
+  if (v_array.size() != this->get_parent_tree().num_velocities())
+    throw std::logic_error("Passed in array is not properly sized.");
+  int velocity_offset = 0 + offset;
+  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+    const int mobilizer_velocities = mobilizer->num_velocities();
+    v_out->segment(velocity_offset, mobilizer_velocities) =
+        mobilizer->get_velocities_from_array(v_array);
+    velocity_offset += mobilizer_velocities;
+    DRAKE_DEMAND(velocity_offset <= v_out->size());
+  }
 }
 
 template <class T>
