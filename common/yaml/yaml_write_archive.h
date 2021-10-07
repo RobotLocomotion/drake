@@ -311,7 +311,10 @@ class YamlWriteArchive final {
         || (full_name == "double")
         || (full_name == "int")) {
       // TODO(jwnimmer-tri) Add support for well-known YAML primitive types
-      // within variants (when placed other than at the 0'th index).
+      // within variants (when placed other than at the 0'th index).  To do
+      // that, we need to emit the tag as "!!str" instead of "!string" or
+      // !!float instead of "!double", etc., but our libyaml-cpp writer
+      // does not yet offer the ability to produce that kind of output.
       throw std::invalid_argument(fmt::format(
           "Cannot YamlWriteArchive the variant type {} with a non-zero index",
           full_name));
@@ -354,6 +357,11 @@ class YamlWriteArchive final {
 
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
+    // For now, we only allow std::string as the keys of a serialized std::map.
+    // In the future, we could imagine handling any other kind of scalar value
+    // that was convertible to a string (int, double, string_view, etc.) if we
+    // found that useful.  However, to remain compatible with JSON semantics,
+    // we should never allow a YAML Sequence or Mapping to be a used as a key.
     static_assert(std::is_same_v<Key, std::string>,
                   "Map keys must be strings");
     YAML::Node sub_node(YAML::NodeType::Map);
