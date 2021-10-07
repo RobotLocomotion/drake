@@ -11,13 +11,13 @@
 #include <variant>
 #include <vector>
 
-#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/yaml/yaml_node.h"
 
 namespace drake {
 namespace yaml {
@@ -81,15 +81,15 @@ class YamlWriteArchive final {
   template <typename Serializable>
   void Accept(const Serializable& serializable) {
     auto* serializable_mutable = const_cast<Serializable*>(&serializable);
-    root_ = {};
+    root_ = internal::Node::MakeMapping();
     visit_order_.clear();
     DoAccept(this, serializable_mutable, static_cast<int32_t>(0));
     if (!visit_order_.empty()) {
-      YAML::Node key_order(YAML::NodeType::Sequence);
+      auto key_order = internal::Node::MakeSequence();
       for (const std::string& key : visit_order_) {
-        key_order.push_back(key);
+        key_order.Add(internal::Node::MakeScalar(key));
       }
-      root_[kKeyOrderName] = std::move(key_order);
+      root_.Add(kKeyOrderName, std::move(key_order));
     }
   }
 
@@ -130,7 +130,7 @@ class YamlWriteArchive final {
   static const char* const kKeyOrderName;
 
   // Helper for EmitString.
-  static std::string YamlDumpWithSortedMaps(const YAML::Node&);
+  static std::string YamlDumpWithSortedMaps(const internal::Node&);
 
   // N.B. In the private details below, we use "NVP" to abbreviate the
   // "NameValuePair" template concept.
@@ -240,25 +240,23 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     sub_archive.Accept(value);
-    YAML::Node node = std::move(sub_archive.root_);
-    if (node.IsNull()) {
-      node = YAML::Node(YAML::NodeType::Map);
-    }
-    root_[nvp.name()] = std::move(node);
+    root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
+    internal::Node node;
     if constexpr (std::is_floating_point_v<T>) {
       // Different versions of fmt disagree on whether to omit the trailing
       // ".0" when formatting integer-valued floating-point numbers.  Force
       // the ".0" in all cases by using the "#" option.
-      root_[nvp.name()] = fmt::format("{:#}", value);
+      node = internal::Node::MakeScalar(fmt::format("{:#}", value));
     } else {
-      root_[nvp.name()] = fmt::format("{}", value);
+      node = internal::Node::MakeScalar(fmt::format("{}", value));
     }
+    root_.Add(nvp.name(), std::move(node));
   }
 
   template <typename NVP>
@@ -294,7 +292,7 @@ class YamlWriteArchive final {
       this->Visit(drake::MakeNameValue(name, &unwrapped));
       if (index != 0) {
         using T = decltype(unwrapped);
-        root_[name].SetTag(YamlWriteArchive::GetVariantTag<T>());
+        root_.At(name).SetTag(YamlWriteArchive::GetVariantTag<T>());
       }
     }, variant);
 
@@ -327,28 +325,28 @@ class YamlWriteArchive final {
 
   template <typename T>
   void VisitArrayLike(const char* name, size_t size, T* data) {
-    YAML::Node sub_node(YAML::NodeType::Sequence);
+    auto sub_node = internal::Node::MakeSequence();
     for (size_t i = 0; i < size; ++i) {
       T& item = data[i];
       YamlWriteArchive sub_archive;
       sub_archive.Visit(drake::MakeNameValue("i", &item));
-      sub_node.push_back(sub_archive.root_["i"]);
+      sub_node.Add(std::move(sub_archive.root_.At("i")));
     }
-    root_[name] = std::move(sub_node);
+    root_.Add(name, std::move(sub_node));
   }
 
   template <typename T, int Rows, int Cols,
       int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
   void VisitMatrix(const char* name,
       const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
-    YAML::Node sub_node(YAML::NodeType::Sequence);
+    auto sub_node = internal::Node::MakeSequence();
     for (int i = 0; i < matrix->rows(); ++i) {
       Eigen::Matrix<T, Cols, 1> row = matrix->row(i);
       YamlWriteArchive sub_archive;
       sub_archive.Visit(drake::MakeNameValue("i", &row));
-      sub_node.push_back(sub_archive.root_["i"]);
+      sub_node.Add(std::move(sub_archive.root_.At("i")));
     }
-    root_[name] = std::move(sub_node);
+    root_.Add(name, std::move(sub_node));
   }
 
 
@@ -356,21 +354,21 @@ class YamlWriteArchive final {
   void VisitMap(const NVP& nvp) {
     static_assert(std::is_same_v<Key, std::string>,
                   "Map keys must be strings");
-    YAML::Node sub_node(YAML::NodeType::Map);
+    auto sub_node = internal::Node::MakeMapping();
     // N.B. For std::unordered_map, this iteration order is non-deterministic,
-    // but because YamlDumpWithSortedMaps sorts the keys anyway, it doesn't
+    // but because internal::Node::MapData uses sorted keys anyway, it doesn't
     // matter what order we insert them here.
     for (auto& map_key_value_pair : *nvp.value()) {
       const std::string& key = map_key_value_pair.first;
       auto& value = map_key_value_pair.second;
       YamlWriteArchive sub_archive;
       sub_archive.Visit(drake::MakeNameValue(key.c_str(), &value));
-      sub_node[key] = sub_archive.root_[key];
+      sub_node.Add(key, std::move(sub_archive.root_.At(key)));
     }
-    root_[nvp.name()] = std::move(sub_node);
+    root_.Add(nvp.name(), std::move(sub_node));
   }
 
-  YAML::Node root_;
+  internal::Node root_ = internal::Node::MakeMapping();
   std::vector<std::string> visit_order_;
 };
 
