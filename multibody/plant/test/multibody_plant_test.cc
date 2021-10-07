@@ -278,6 +278,9 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const Joint<double>& pin_joint =
       plant->GetJointByName("pin");
   EXPECT_EQ(pin_joint.model_instance(), pendulum_model_instance);
+  const Joint<double>& weld_joint =
+      plant->GetJointByName("weld");
+  EXPECT_EQ(weld_joint.model_instance(), pendulum_model_instance);
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // Get force elements by index. In this case the default gravity field.
@@ -304,6 +307,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointIndices(pendulum_model_instance);
   EXPECT_EQ(pendulum_joint_indices.size(), 2);  // pin joint + weld joint.
   EXPECT_EQ(pendulum_joint_indices[0], pin_joint.index());
+  EXPECT_EQ(pendulum_joint_indices[1], weld_joint.index());
 
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
@@ -351,6 +355,26 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
+
+  // Get frame indices by model_instance
+  const std::vector<FrameIndex> acrobot_frame_indices =
+      plant->GetFrameIndices(default_model_instance());
+  ASSERT_EQ(acrobot_frame_indices.size(), 3);
+  EXPECT_EQ(acrobot_frame_indices[0], link1.body_frame().index());
+  EXPECT_EQ(acrobot_frame_indices[1], link2.body_frame().index());
+  EXPECT_EQ(acrobot_frame_indices[2], elbow_joint.frame_on_parent().index());
+
+  const Frame<double>& model_frame = plant->GetFrameByName("__model__");
+  EXPECT_EQ(model_frame.model_instance(), pendulum_model_instance);
+  const std::vector<FrameIndex> pendulum_frame_indices =
+      plant->GetFrameIndices(pendulum_model_instance);
+  ASSERT_EQ(pendulum_frame_indices.size(), 6);
+  EXPECT_EQ(pendulum_frame_indices[0], upper.body_frame().index());
+  EXPECT_EQ(pendulum_frame_indices[1], lower.body_frame().index());
+  EXPECT_EQ(pendulum_frame_indices[2], model_frame.index());
+  EXPECT_EQ(pendulum_frame_indices[3], pin_joint.frame_on_child().index());
+  EXPECT_EQ(pendulum_frame_indices[4], weld_joint.frame_on_parent().index());
+  EXPECT_EQ(pendulum_frame_indices[5], weld_joint.frame_on_child().index());
 }
 
 GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {

@@ -3712,6 +3712,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetFrameByName(name, model_instance);
   }
 
+  /// Returns a list of frame indices associated with `model_instance`.
+  std::vector<FrameIndex> GetFrameIndices(ModelInstanceIndex model_instance)
+  const {
+    return internal_tree().GetFrameIndices(model_instance);
+  }
+
   /// Returns the number of joint actuators in the model.
   /// @see AddJointActuator().
   int num_actuators() const {
