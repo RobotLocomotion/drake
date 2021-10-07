@@ -53,6 +53,15 @@ class Foo {
   // ...
 };
 </pre>
+
+When unit testing uses of this macro:
+- It is usually sufficient to test only one of the functions; usually the copy
+  constructor is the easiest one to test.
+- If it is important for performance that the move functions actually move
+  (instead of making a copy), then test for that as well.
+- The built-in "...CAN_COMPILE" failsafe will ensure that assignment also works,
+  but will not be compiled when Classname is a templated class; in that case,
+  either use an explicit template instantiation, or add a test for assignment.
 */
 #define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
   Classname(const Classname&) = default;                        \

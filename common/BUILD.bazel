@@ -410,6 +410,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "name_value",
+    srcs = ["name_value.cc"],
     hdrs = ["name_value.h"],
     deps = [
         ":essential",
