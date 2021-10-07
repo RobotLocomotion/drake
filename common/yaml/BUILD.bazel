@@ -15,8 +15,18 @@ drake_cc_package_library(
     name = "yaml",
     visibility = ["//visibility:public"],
     deps = [
+        ":yaml_node",
         ":yaml_read_archive",
         ":yaml_write_archive",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_node",
+    srcs = ["yaml_node.cc"],
+    hdrs = ["yaml_node.h"],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -54,6 +64,14 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:name_value",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_node_test",
+    deps = [
+        ":yaml_node",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
