@@ -132,6 +132,7 @@ public_headers_no_gen = [
     "include/ignition/math/detail/Cylinder.hh",
     "include/ignition/math/detail/Ellipsoid.hh",
     "include/ignition/math/detail/Sphere.hh",
+    "include/ignition/math/detail/WellOrderedVector.hh",
     "include/ignition/math/graph/Edge.hh",
     "include/ignition/math/graph/Graph.hh",
     "include/ignition/math/graph/GraphAlgorithms.hh",
