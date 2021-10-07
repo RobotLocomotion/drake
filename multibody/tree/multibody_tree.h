@@ -916,8 +916,7 @@ class MultibodyTree {
   void GetPositionsFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q,
-      drake::EigenPtr<VectorX<T>> q_out,
-      int offset) const;
+      EigenPtr<VectorX<T>> q_out) const;
 
   // See MultibodyPlant method.
   void SetPositionsInArray(
@@ -934,8 +933,7 @@ class MultibodyTree {
   void GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v,
-      drake::EigenPtr<VectorX<T>> v_out,
-      int offset) const;
+      EigenPtr<VectorX<T>> v_out) const;
 
   // Sets the vector of generalized velocities for `model_instance` in
   // `v` using `v_instance`, leaving all other elements in the array
@@ -998,7 +996,7 @@ class MultibodyTree {
   // @pre `context` is a valid multibody system Context.
   void get_positions_and_velocities(
       const systems::Context<T>& context,    
-    drake::EigenPtr<VectorX<T>> qv_out) const;
+       EigenPtr<VectorX<T>> qv_out) const;
 
   // Returns a Eigen vector containing the multibody state `x = [q; v]`
   // of the model with `q` the vector of generalized positions and `v` the
@@ -1021,7 +1019,7 @@ class MultibodyTree {
   void GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
-      drake::EigenPtr<VectorX<T>> qv_out) const;
+      EigenPtr<VectorX<T>> qv_out) const;
 
   // From a mutable State, returns a mutable Eigen vector containing the vector
   // `[q; v]` of the model with `q` the vector of generalized positions and `v`

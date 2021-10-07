@@ -497,9 +497,8 @@ template <typename T>
 void MultibodyTree<T>::GetPositionsFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& q,
-    drake::EigenPtr<VectorX<T>> q_out,
-    int offset) const {
-    model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out, offset);
+    drake::EigenPtr<VectorX<T>> q_out) const {
+    model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out);
 }
 
 template <class T>
@@ -521,9 +520,8 @@ template <typename T>
 void MultibodyTree<T>::GetVelocitiesFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v,
-    drake::EigenPtr<VectorX<T>> v_out,
-    int offset) const {
-  model_instances_.at(model_instance)->GetVelocitiesFromArray(v, v_out, offset);
+    drake::EigenPtr<VectorX<T>> v_out) const {
+  model_instances_.at(model_instance)->GetVelocitiesFromArray(v, v_out);
 }
 
 template <class T>
@@ -781,14 +779,17 @@ template <typename T>
 void MultibodyTree<T>::GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
-      drake::EigenPtr<VectorX<T>> q_v) const {
+      EigenPtr<VectorX<T>> qv_out) const {
   Eigen::VectorBlock<const VectorX<T>> state_vector =
       get_positions_and_velocities(context);
+      
+  auto qv_out_head = qv_out->head(num_positions(model_instance));
+  auto qv_out_tail = qv_out->tail(num_velocities(model_instance));
 
   GetPositionsFromArray(
-          model_instance, state_vector.head(num_positions()), q_v, 0);
+          model_instance, state_vector.head(num_positions()), &qv_out_head);
   GetVelocitiesFromArray(
-          model_instance, state_vector.tail(num_velocities()), q_v, num_velocities(model_instance)); 
+          model_instance, state_vector.tail(num_velocities()), &qv_out_tail); 
 }
 
 template <typename T>

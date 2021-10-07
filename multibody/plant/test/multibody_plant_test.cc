@@ -2800,8 +2800,8 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
   }
   
-  // Verify that we can retrieve the state vector using the output variable version
-  // Populating these output vectors should not use any dynamic memory
+  // Verify that we can retrieve the state vector using the output variable parameter version 
+  // and that populating these output vectors does not allocate any heap
   VectorX<double> q_out(q_block.size());
   VectorX<double> v_out(v_block.size());
   VectorX<double> qv_out(qv_block.size());

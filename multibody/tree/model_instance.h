@@ -120,12 +120,9 @@ class ModelInstance :
   // generalized positions for the entire MultibodyTree model.
   // @throws std::exception if `q` is not of size
   //         MultibodyTree::num_positions().
-  /// @param[in] offset Value representing any offset in populating the q_out
-  ///   array. This is utilized when collecting both positions and velocities
   void GetPositionsFromArray(
       const Eigen::Ref<const VectorX<T>>& q,
-      drake::EigenPtr<VectorX<T>> q_out,
-      int offset) const;
+      EigenPtr<VectorX<T>> q_out) const;
 
 
   // Sets the vector of generalized positions for `this` model instance in
@@ -154,12 +151,9 @@ class ModelInstance :
   // generalized velocities for the entire MultibodyTree model.
   // @throws std::exception if `v` is not of size
   //         MultibodyTree::num_velocities().
-  /// @param[in] offset Value representing any offset in populating the v_out
-  ///   array. This is utilized when collecting both positions and velocities
   void GetVelocitiesFromArray(
       const Eigen::Ref<const VectorX<T>>& v,
-      drake::EigenPtr<VectorX<T>> v_out,
-      int offset) const;
+      EigenPtr<VectorX<T>> v_out) const;
 
   // Sets the vector of generalized velocities for `this` model instance in
   // the relevant locations of an array corresponding to the velocities for the

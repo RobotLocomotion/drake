@@ -1807,22 +1807,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsAndVelocities(context, model_instance);
   }
 
-  /// (Advanced) Takes output vector qv_out representing the the generalized positions q and
+  /// (Advanced) Populates output vector qv_out representing the generalized positions q and
   /// generalized velocities v of a specified model instance in a given Context.
-  /// Populates qv_out with `[q; v]` containing generalized positions and velocities
   /// @note qv_out is a dense vector of dimensions `num_positions(model_instance) 
   ///       + num_velocities(model_instance)` associated with `model_instance` and
   ///       is populated by copying from `context`.
+  /// @note This function is guaranteed to allocate no heap
   /// @throws std::exception if `context` does not correspond to the Context
   /// for a multibody model or `model_instance` is invalid.
-  /// @throws std::exception throws if qv_out does not have the size 
+  /// @throws std::exception if qv_out does not have size 
   ///       `num_positions(model_instance) + num_velocities(model_instance)`
   void GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
-      drake::EigenPtr<VectorX<T>> qv_out) const {
+      EigenPtr<VectorX<T>> qv_out) const {
     this->ValidateContext(context);
-    DRAKE_THROW_UNLESS(qv_out->size() == (num_positions(model_instance) + num_velocities(model_instance)));
+    DRAKE_THROW_UNLESS(qv_out->size() == num_positions(model_instance) + num_velocities(model_instance));
     internal_tree().GetPositionsAndVelocities(context, model_instance, qv_out);
   }
 
@@ -1888,6 +1888,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// model instance in a given Context.
   /// @note Returns a dense vector of dimension `num_positions(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
+  /// @note This function is guaranteed to allocate no heap
   /// @throws std::exception if `context` does not correspond to the Context
   /// for a multibody model or `model_instance` is invalid.
   VectorX<T> GetPositions(
@@ -1898,8 +1899,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         model_instance, internal_tree().get_positions(context));
   }
 
-  /// (Advanced) Takes output vector q_out and populates it with the generalized 
-  /// positions q of a specified model instance in a given Context.
+  /// (Advanced) Populate output vector q_out with the generalized positions q
+  /// of a specified model instance in a given Context.
   /// @note q_out is set to a dense vector of dimension `num_positions(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
   /// @throws std::exception if `context` does not correspond to the Context
@@ -1907,10 +1908,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void GetPositions(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
-      drake::EigenPtr<VectorX<T>> q_out) const {
+      EigenPtr<VectorX<T>> q_out) const {
     this->ValidateContext(context);
     internal_tree().GetPositionsFromArray(
-        model_instance, internal_tree().get_positions(context), q_out, 0);
+        model_instance, internal_tree().get_positions(context), q_out);
   }
 
   /// (Advanced -- **see warning**) Returns a mutable vector reference to the
@@ -2014,19 +2015,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         model_instance, internal_tree().get_velocities(context));
   }
 
-  /// (Advanced) Takes output vector v_out and populates it with the generalized 
+  /// (Advanced) Populate output vector v_out with the generalized 
   /// velocities v of a specified model instance in a given Context.
   /// @note v_out is set to a dense vector of dimension `num_velocities(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
+  /// @note This function is guaranteed to allocate no heap
   /// @throws std::exception if `context` does not correspond to the Context
   /// for a multibody model or `model_instance` is invalid.
   void GetVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
-      drake::EigenPtr<VectorX<T>> v_out) const {
+      EigenPtr<VectorX<T>> v_out) const {
     this->ValidateContext(context);
-    return internal_tree().GetVelocitiesFromArray(
-        model_instance, internal_tree().get_velocities(context), v_out, 0);
+    internal_tree().GetVelocitiesFromArray(
+        model_instance, internal_tree().get_velocities(context), v_out);
   }
 
 
@@ -2176,18 +2178,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsFromArray(model_instance, q);
   }
 
-  /// (Advanced) Takes output vector q_out and populates it with the generalized 
+  /// (Advanced) Populates output vector q_out and with the generalized 
   /// positions for `model_instance` from a vector `q_array` of generalized 
   /// positions for the entire model model.  This method throws an exception 
   /// if `q` is not of size MultibodyPlant::num_positions().
-  /// @param[in] offset Value representing any offset in populating the q_out
-  ///   array. This is utilized when collecting both positions and velocities
   void GetPositionsFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q,
-      drake::EigenPtr<VectorX<T>> q_out,
-      int offset) const {
-    internal_tree().GetPositionsFromArray(model_instance, q, q_out, offset);
+      EigenPtr<VectorX<T>> q_out) const {
+    internal_tree().GetPositionsFromArray(model_instance, q, q_out);
   }
 
   /// Sets the vector of generalized positions for `model_instance` in
@@ -2213,18 +2212,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetVelocitiesFromArray(model_instance, v);
   }
 
-  /// (Advanced) Takes output vector v_out and populates it with the generalized 
+  /// (Advanced) Populates output vector v_out with the generalized 
   /// velocities for `model_instance` from a vector `v_array` of generalized 
   /// velocities for the entire model model.  This method throws an exception 
   /// if `v` is not of size MultibodyPlant::num_velocities().
-  /// @param[in] offset Value representing any offset in populating the v_out
-  ///   array. This is utilized when collecting both positions and velocities
   void GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v,
-      drake::EigenPtr<VectorX<T>> v_out,
-      int offset) const {
-    return internal_tree().GetVelocitiesFromArray(model_instance, v, v_out, offset);
+      EigenPtr<VectorX<T>> v_out) const {
+    internal_tree().GetVelocitiesFromArray(model_instance, v, v_out);
   }
 
   /// Sets the vector of generalized velocities for `model_instance` in
