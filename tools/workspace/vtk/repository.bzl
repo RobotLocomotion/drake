@@ -553,9 +553,10 @@ licenses([
             ":vtkCommonTransforms",
             ":vtkDICOMParser",
             ":vtkmetaio",
+            "@libtiff",
             "@libjpeg",
             "@libpng",
-            "@libtiff",
+            "@liblzma",
             "@zlib",
         ],
     )
@@ -641,8 +642,10 @@ licenses([
 
     if os_result.is_manylinux:
         vtk_glew_library = ":vtkglew"
+        vtk_opengl_linkopts = ["-lX11", "-lXt", "-lGLX"]
     else:
         vtk_glew_library = "@glew"
+        vtk_opengl_linkopts = []
 
     file_content += _vtk_cc_library(
         os_result,
@@ -672,6 +675,7 @@ licenses([
             vtk_glew_library,
             "@opengl",
         ],
+        linkopts = vtk_opengl_linkopts,
     )
 
     file_content += _vtk_cc_library(
