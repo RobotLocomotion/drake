@@ -61,7 +61,7 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
       for (const YAML::Node& merge_key_item : merge_key) {
         if (merge_key_item.Type() != YAML::NodeType::Map) {
           ReportError(
-              "has invalid merge key type (Sequence-of-non-Map) within");
+              "has invalid merge key type (Sequence-of-non-Mapping) within");
         }
         CopyMergeKeys(merge_key_item, node);
       }
@@ -218,7 +218,7 @@ const char* YamlReadArchive::to_string(YAML::NodeType::value x) {
     case YAML::NodeType::Null: return "Null";
     case YAML::NodeType::Scalar: return "Scalar";
     case YAML::NodeType::Sequence: return "Sequence";
-    case YAML::NodeType::Map: return "Map";
+    case YAML::NodeType::Map: return "Mapping";
   }
   return "UNKNOWN";
 }
