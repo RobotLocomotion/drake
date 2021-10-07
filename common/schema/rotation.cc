@@ -25,7 +25,7 @@ Rotation::Rotation(const math::RollPitchYaw<double>& arg) {
 
 bool Rotation::IsDeterministic() const {
   using Result = bool;
-  return std::visit(overloaded {
+  return std::visit(overloaded{
     [](const Identity&) -> Result {
       return true;
     },
@@ -71,7 +71,7 @@ Vector<Expression, Size> deg2rad(
 
 math::RotationMatrix<Expression> Rotation::ToSymbolic() const {
   using Result = math::RotationMatrix<Expression>;
-  return std::visit(overloaded {
+  return std::visit(overloaded{
     [](const Identity&) -> Result {
       return Result{};
     },
