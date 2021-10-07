@@ -8,7 +8,7 @@ def googlebenchmark_repository(
     github_archive(
         name = name,
         repository = "google/benchmark",
-        commit = "v1.5.6",
-        sha256 = "789f85b4810d13ff803834ea75999e41b326405d83d6a538baf01499eda96102",  # noqa
+        commit = "v1.6.0",
+        sha256 = "1f71c72ce08d2c1310011ea6436b31e39ccab8c2db94186d26657d41747c85d6",  # noqa
         mirrors = mirrors,
     )
