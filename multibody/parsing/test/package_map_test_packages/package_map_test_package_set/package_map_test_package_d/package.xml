@@ -8,4 +8,12 @@
   <maintainer email="user@example.com">John Doe</maintainer>
   <author>Jane Doe</author>
   <license>N/A</license>
+  <export>
+    <!--
+    Test empty tag to ensure we conform with REP 149.
+    Drake Developers should conform to normal deprecation messages.
+    See package_map_test_package_b for an example.
+    -->
+    <deprecated/>
+  </export>
 </package>

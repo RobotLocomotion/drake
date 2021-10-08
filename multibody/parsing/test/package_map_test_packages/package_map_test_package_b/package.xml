@@ -8,4 +8,10 @@
   <maintainer email="user@example.com">John Doe</maintainer>
   <author>Jane Doe</author>
   <license>N/A</license>
+  <export>
+    <deprecated>
+      package_map_test_package_b is deprecated, and will be removed on
+      or around 2038-01-19. Please use the 'drake' package instead.
+    </deprecated>
+  </export>
 </package>
