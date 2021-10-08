@@ -18,6 +18,7 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
@@ -1135,6 +1136,62 @@ void DoScalarIndependentDefinitions(py::module m) {
       &AddSoftHydroelasticPropertiesForHalfSpace, py::arg("slab_thickness"),
       py::arg("properties"), doc.AddSoftHydroelasticPropertiesForHalfSpace.doc);
 
+  // MeshcatAnimation
+  {
+    using Class = MeshcatAnimation;
+    constexpr auto& cls_doc = doc.MeshcatAnimation;
+    py::class_<Class> cls(m, "MeshcatAnimation", cls_doc.doc);
+    cls  // BR
+        .def(py::init<double>(), py::arg("frames_per_second") = 32.0,
+            cls_doc.ctor.doc)
+        .def("frame", &Class::frame, py::arg("time_from_start"),
+            cls_doc.frame.doc)
+        .def("autoplay", &Class::autoplay, cls_doc.autoplay.doc)
+        .def("loop_mode", &Class::loop_mode, cls_doc.loop_mode.doc)
+        .def("repetitions", &Class::repetitions, cls_doc.repetitions.doc)
+        .def("clamp_when_finished", &Class::clamp_when_finished,
+            cls_doc.clamp_when_finished.doc)
+        .def("set_autoplay", &Class::set_autoplay, py::arg("play"),
+            cls_doc.set_autoplay.doc)
+        .def("set_loop_mode", &Class::set_loop_mode, py::arg("mode"),
+            cls_doc.set_loop_mode.doc)
+        .def("set_repetitions", &Class::set_repetitions, py::arg("repetitions"),
+            cls_doc.set_repetitions.doc)
+        .def("set_clamp_when_finished", &Class::set_clamp_when_finished,
+            py::arg("clamp"), cls_doc.set_clamp_when_finished.doc)
+        .def("SetTransform", &Class::SetTransform, py::arg("frame"),
+            py::arg("path"), py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
+        .def("SetProperty",
+            // Note: overload_cast and overload_cast_explicit did not work here.
+            static_cast<void (Class::*)(int, const std::string&,
+                const std::string&, bool)>(&Class::SetProperty),
+            py::arg("frame"), py::arg("path"), py::arg("property"),
+            py::arg("value"), cls_doc.SetProperty.doc_bool)
+        .def("SetProperty",
+            static_cast<void (Class::*)(int, const std::string&,
+                const std::string&, double)>(&Class::SetProperty),
+            py::arg("frame"), py::arg("path"), py::arg("property"),
+            py::arg("value"), cls_doc.SetProperty.doc_double)
+        .def("SetProperty",
+            static_cast<void (Class::*)(int, const std::string&,
+                const std::string&, const std::vector<double>&)>(
+                &Class::SetProperty),
+            py::arg("frame"), py::arg("path"), py::arg("property"),
+            py::arg("value"), cls_doc.SetProperty.doc_vector_double);
+    // Note: We don't bind get_key_frame and get_javascript_type (at least
+    // not yet); they are meant primarily for testing.
+
+    // MeshcatAnimation::LoopMode enumeration
+    constexpr auto& loop_doc = doc.MeshcatAnimation.LoopMode;
+    py::enum_<MeshcatAnimation::LoopMode>(cls, "LoopMode", loop_doc.doc)
+        .value("kLoopOnce", MeshcatAnimation::LoopMode::kLoopOnce,
+            loop_doc.kLoopOnce.doc)
+        .value("kLoopRepeat", MeshcatAnimation::LoopMode::kLoopRepeat,
+            loop_doc.kLoopRepeat.doc)
+        .value("kLoopPingPong", MeshcatAnimation::LoopMode::kLoopPingPong,
+            loop_doc.kLoopPingPong.doc);
+  }
+
   // Meshcat
   {
     using Class = Meshcat;
@@ -1182,6 +1239,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const std::vector<double>&>(&Class::SetProperty),
             py::arg("path"), py::arg("property"), py::arg("value"),
             cls_doc.SetProperty.doc_vector_double)
+        .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
+            cls_doc.SetAnimation.doc)
         .def("AddButton", &Class::AddButton, py::arg("name"),
             cls_doc.AddButton.doc)
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
