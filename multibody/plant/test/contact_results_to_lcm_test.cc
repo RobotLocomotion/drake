@@ -31,7 +31,6 @@ using geometry::Sphere;
 using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using multibody::internal::FullBodyName;
@@ -150,8 +149,8 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
    looping through elements). The position of the vertices is offset by offset.
    The position of the vertices is irrelevant -- the mesh is just a collection
    of doubles that get copied. */
-  vector<SurfaceVertex<T>> vertices;
   vector<SurfaceFace> faces;
+  vector<Vector3<T>> vertices;
   vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5) + offset);
   vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5) + offset);
   vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5) + offset);
@@ -690,13 +689,13 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
       // clang-format off
       EXPECT_TRUE(CompareMatrices(
           Vector3<double>(tri_message.p_WA),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(0)).r_MV())));
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(0)))));
       EXPECT_TRUE(CompareMatrices(
           Vector3<double>(tri_message.p_WB),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(1)).r_MV())));
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(1)))));
       EXPECT_TRUE(CompareMatrices(
           Vector3<double>(tri_message.p_WC),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(2)).r_MV())));
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(2)))));
       // clang-format on
       EXPECT_EQ(
           tri_message.pressure_A,

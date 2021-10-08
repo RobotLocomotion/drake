@@ -19,7 +19,6 @@ using geometry::internal::IdentifyBoundaryFaces;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertex;
 using geometry::VolumeVertexIndex;
 
 namespace {
@@ -45,7 +44,7 @@ bool IsBoundaryTetrahedron(
  */
 template <typename T>
 void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
-                           std::vector<VolumeVertex<T>>* vertices) {
+                           std::vector<Vector3<T>>* vertices) {
   DRAKE_DEMAND(elements != nullptr);
   DRAKE_DEMAND(vertices != nullptr);
   const int num_elements_before = elements->size();
@@ -63,9 +62,9 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
   DRAKE_DEMAND(v2 < num_vertices_before);
   DRAKE_DEMAND(v3 < num_vertices_before);
 
-  VolumeVertex<T> star{((*vertices)[v0].r_MV() + (*vertices)[v1].r_MV() +
-                        (*vertices)[v2].r_MV() + (*vertices)[v3].r_MV()) /
-                       4.};
+  Vector3<T> star{
+      ((*vertices)[v0] + (*vertices)[v1] + (*vertices)[v2] + (*vertices)[v3]) /
+      4.};
   vertices->push_back(std::move(star));
   VolumeVertexIndex star_vertex(num_vertices_before);
 
@@ -94,7 +93,7 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
 template <typename T>
 VolumeMesh<T> StarRefineBoundaryTetrahedra(
     const VolumeMesh<T>& in) {
-  std::vector<VolumeVertex<T>> out_vertices(in.vertices());
+  std::vector<Vector3<T>> out_vertices(in.vertices());
   std::vector<VolumeElement> out_elements(in.tetrahedra());
 
   const std::vector<VolumeVertexIndex> boundary_vertices =
@@ -196,7 +195,7 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
       1 + static_cast<int>(ceil(box.height() / resolution_hint))};
 
   /* Initially generate vertices in box's frame B. */
-  std::vector<VolumeVertex<T>> vertices =
+  std::vector<Vector3<T>> vertices =
       geometry::internal::GenerateVertices<T>(box, num_vertices);
 
   // TODO(xuchenhan-tri): This is an expedient but expensive way to calculate
@@ -216,15 +215,15 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
       scene_graph.get_query_output_port()
           .template Eval<geometry::QueryObject<T>>(*context);
   std::vector<T> signed_distances;
-  for (const VolumeVertex<T>& vertex : vertices) {
-    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex.r_MV());
+  for (const Vector3<T>& vertex : vertices) {
+    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex);
     DRAKE_DEMAND(d.size() == 1);
     signed_distances.emplace_back(d[0].distance);
   }
 
-  for (VolumeVertex<T>& vertex : vertices) {
+  for (Vector3<T>& vertex : vertices) {
     // Transform to World frame.
-    vertex = VolumeVertex<T>(X_WB * vertex.r_MV());
+    vertex = Vector3<T>(X_WB * vertex);
   }
 
   std::vector<VolumeElement> elements =
@@ -266,7 +265,7 @@ VolumeMesh<T> MakeOctahedronVolumeMesh() {
       { 0,  0,  1},
       { 0,  0, -1}};
   // clang-format on
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   for (const auto& vertex : vertex_data) {
     vertices.emplace_back(vertex);
   }

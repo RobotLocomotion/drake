@@ -121,7 +121,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
     for (int fv = 0; fv < 3; ++fv) {
       const SurfaceVertexIndex v_i = face.vertex(fv);
       const Vector3<float> p_MV =
-          surface_mesh.vertex(v_i).r_MV().template cast<float>();
+          surface_mesh.vertex(v_i).template cast<float>();
       float_data[++v_index] = p_MV.x();
       float_data[++v_index] = p_MV.y();
       float_data[++v_index] = p_MV.z();

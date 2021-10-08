@@ -128,8 +128,7 @@ Vector3d Bvh<BvType, SourceMeshType>::ComputeCentroid(
   const auto& element = mesh.element(i);
   // Calculate average from all vertices.
   for (int v = 0; v < kElementVertexCount; ++v) {
-    const Vector3d& vertex =
-        convert_to_double(mesh.vertex(element.vertex(v)).r_MV());
+    const Vector3d& vertex = convert_to_double(mesh.vertex(element.vertex(v)));
     centroid += vertex;
   }
   centroid /= kElementVertexCount;

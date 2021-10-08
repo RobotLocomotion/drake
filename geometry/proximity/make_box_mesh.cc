@@ -194,7 +194,7 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
   // The mesh vertices comprise the eight box vertices and up to four unique
   // MA's vertices inside the box. Later each virtual frustum will comprise
   // eight (possibly with duplication) indices into mesh_vertices.
-  std::vector<VolumeVertex<T>> mesh_vertices;
+  std::vector<Vector3<T>> mesh_vertices;
   mesh_vertices.reserve(12);
 
   // The eight mesh vertices of the box are indexed by the 2x2x2 array `v`,
@@ -340,7 +340,7 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
 }
 
 template <typename T>
-std::vector<VolumeVertex<T>> GenerateVertices(
+std::vector<Vector3<T>> GenerateVertices(
     const Box& box, const Vector3<int>& num_vertices) {
   const T half_x = box.width() / T(2);
   const T half_y = box.depth() / T(2);
@@ -352,7 +352,7 @@ std::vector<VolumeVertex<T>> GenerateVertices(
   const auto z_coords =
       VectorX<T>::LinSpaced(num_vertices.z(), -half_z, half_z);
 
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   vertices.reserve(num_vertices.x() * num_vertices.y() * num_vertices.z());
   // The order of nested i-loop, j-loop, then k-loop makes the sequence of
   // vertices consistent with CalcSequentialIndex.
@@ -446,8 +446,7 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
       1 + static_cast<int>(ceil(box.depth() / resolution_hint)),
       1 + static_cast<int>(ceil(box.height() / resolution_hint))};
 
-  std::vector<VolumeVertex<T>> vertices =
-      GenerateVertices<T>(box, num_vertices);
+  std::vector<Vector3<T>> vertices = GenerateVertices<T>(box, num_vertices);
 
   std::vector<VolumeElement> elements = GenerateElements(num_vertices);
 

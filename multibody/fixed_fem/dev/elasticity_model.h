@@ -146,7 +146,7 @@ class ElasticityModel : public FemModel<Element> {
     const NodeIndex node_index_offset = NodeIndex(this->num_nodes());
     for (VolumeVertexIndex i(0); i < num_new_vertices; ++i) {
       reference_positions_.template segment<kDim>(
-          kDim * (i + node_index_offset)) = mesh.vertex(i).r_MV();
+          kDim * (i + node_index_offset)) = mesh.vertex(i);
     }
     /* Record the number of vertices *before* the input mesh is parsed. */
     const int num_vertices = this->num_nodes();

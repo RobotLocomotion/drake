@@ -171,7 +171,6 @@ GTEST_TEST(AabbTest, TestEqual) {
  elements of the mesh will be garbage). Then we'll successively build Aabb
  instances from subsets of the vertices. */
 GTEST_TEST(AabbMakerTest, Compute) {
-  using Vertex = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
 
   /* The vertices are all located at box corners.
@@ -189,7 +188,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
    V₀--------------V₄
    */
   const Vector3d half_size{0.5, 1.5, 1.25};
-  vector<Vertex> vertices;
+  vector<Vector3d> vertices;
   for (double x : {-1, 1}) {
     for (double y : {-1, 1}) {
       for (double z : {-1, 1}) {
@@ -211,7 +210,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
     const set<VIndex> fit_vertices = {VIndex(0)};
     const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
-    EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(VIndex(0)).r_MV()));
+    EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(VIndex(0))));
     EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d::Zero()));
   }
 

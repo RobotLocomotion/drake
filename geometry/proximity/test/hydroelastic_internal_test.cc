@@ -464,7 +464,7 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
 
   const SurfaceMesh<double>& mesh = sphere->mesh();
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), radius, 1e-15);
+    ASSERT_NEAR(mesh.vertex(v).norm(), radius, 1e-15);
   }
 }
 
@@ -490,7 +490,7 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   // to each vertex should be sqrt(3) * edge_len / 2.
   const double expected_dist = std::sqrt(3) * edge_len / 2;
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), expected_dist, 1e-15);
+    ASSERT_NEAR(mesh.vertex(v).norm(), expected_dist, 1e-15);
   }
 }
 
@@ -519,7 +519,7 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   EXPECT_EQ(mesh.num_vertices(), 8);
   EXPECT_EQ(mesh.num_faces(), 12);
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
+    const auto [x, y, z] = unpack(mesh.vertex(v));
     // Only check that the vertex is within the cylinder. It does not check
     // that the vertex is near the surface of the cylinder.  We rely on the
     // correctness of the mesh generator.
@@ -552,10 +552,9 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   EXPECT_EQ(mesh.num_vertices(), 8);
   EXPECT_EQ(mesh.num_faces(), 12);
 
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (const Vector3d& p_MV : mesh.vertices()) {
     // Check that the vertex is near the surface of the capsule.
-    ASSERT_NEAR(CalcDistanceToSurface(capsule_shape, mesh.vertex(v).r_MV()),
-                0.0, 1e-15);
+    ASSERT_NEAR(CalcDistanceToSurface(capsule_shape, p_MV), 0.0, 1e-15);
   }
 
   // Create rigid representation, passing a smaller resolution hint to verify
@@ -594,7 +593,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   EXPECT_EQ(mesh.num_vertices(), 6);
   EXPECT_EQ(mesh.num_faces(), 8);
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
+    const auto [x, y, z] = unpack(mesh.vertex(v));
     ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
   }
 }
@@ -629,7 +628,7 @@ void TestRigidMeshType() {
     // scale * sqrt(3) (because the original mesh was the unit sphere).
     const double expected_dist = std::sqrt(3) * scale;
     for (SurfaceVertexIndex v(0); v < surface_mesh.num_vertices(); ++v) {
-      const double dist = surface_mesh.vertex(v).r_MV().norm();
+      const double dist = surface_mesh.vertex(v).norm();
       ASSERT_NEAR(dist, expected_dist, scale * kEps)
           << "for scale: " << scale << " at vertex " << v;
     }
@@ -887,7 +886,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   for (const auto& soft_geometry : {*sphere1, *sphere2}) {
     const VolumeMesh<double>& mesh = soft_geometry.mesh();
     for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-      const double dist = mesh.vertex(v).r_MV().norm();
+      const double dist = mesh.vertex(v).norm();
       max_distance = std::max(max_distance, dist);
       ASSERT_LE(dist, kRadius);
     }
@@ -905,9 +904,9 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   const double kEps = std::numeric_limits<double>::epsilon();
   const VolumeMesh<double>& mesh = sphere1->mesh();
   for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const VolumeVertex<double>& vertex = mesh.vertex(v);
+    const Vector3d& vertex = mesh.vertex(v);
     // Zero on outside, 1 on inside.
-    const double expected_p = pressure(vertex.r_MV());
+    const double expected_p = pressure(vertex);
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
                 kEps * E);
   }

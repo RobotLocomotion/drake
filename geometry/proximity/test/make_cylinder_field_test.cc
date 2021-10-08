@@ -55,15 +55,14 @@ void CheckMinMaxBoundaryValue(
   VolumeVertexIndex center_vertex{0};
   bool has_center_vertex = false;
   for (VolumeVertexIndex v{0}; v < pressure_field.mesh().num_vertices(); ++v) {
-    if (pressure_field.mesh().vertex(v).r_MV() == Vector3d::Zero()) {
+    if (pressure_field.mesh().vertex(v) == Vector3d::Zero()) {
       center_vertex = v;
       has_center_vertex = true;
       break;
     }
   }
   if (has_center_vertex) {
-    ASSERT_EQ(Vector3d::Zero(),
-              pressure_field.mesh().vertex(center_vertex).r_MV());
+    ASSERT_EQ(Vector3d::Zero(), pressure_field.mesh().vertex(center_vertex));
     EXPECT_NEAR(max_pressure, pressure_field.EvaluateAtVertex(center_vertex),
                 tolerance);
   }

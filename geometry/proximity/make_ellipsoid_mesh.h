@@ -62,10 +62,10 @@ VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
       MakeSphereVolumeMesh<T>(Sphere(1.0), unit_sphere_resolution, strategy);
 
   const Vector3<T> scale{a, b, c};
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   vertices.reserve(unit_sphere_mesh.num_vertices());
   for (const auto& sphere_vertex : unit_sphere_mesh.vertices()) {
-    vertices.emplace_back(scale.cwiseProduct(sphere_vertex.r_MV()));
+    vertices.emplace_back(scale.cwiseProduct(sphere_vertex));
   }
   std::vector<VolumeElement> tetrahedra = unit_sphere_mesh.tetrahedra();
 

@@ -52,13 +52,12 @@ void CheckMinMaxBoundaryValue(
   // canonical frame.
   VolumeVertexIndex center_vertex{0};
   for (VolumeVertexIndex v{0}; v < pressure_field.mesh().num_vertices(); ++v) {
-    if (pressure_field.mesh().vertex(v).r_MV() == Vector3d::Zero()) {
+    if (pressure_field.mesh().vertex(v) == Vector3d::Zero()) {
       center_vertex = v;
       break;
     }
   }
-  ASSERT_EQ(Vector3d::Zero(),
-            pressure_field.mesh().vertex(center_vertex).r_MV());
+  ASSERT_EQ(Vector3d::Zero(), pressure_field.mesh().vertex(center_vertex));
   EXPECT_EQ(max_pressure, pressure_field.EvaluateAtVertex(center_vertex));
 }
 

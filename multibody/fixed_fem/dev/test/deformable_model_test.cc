@@ -131,7 +131,7 @@ TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
   const auto& expected_mesh = MakeBoxTetMesh();
   for (int i = 0; i < kNumVertices; ++i) {
     EXPECT_TRUE(CompareMatrices(
-        expected_mesh.vertex(geometry::VolumeVertexIndex(i)).r_MV(),
+        expected_mesh.vertex(geometry::VolumeVertexIndex(i)),
         vertex_positions.segment<3>(3 * i)));
   }
 }

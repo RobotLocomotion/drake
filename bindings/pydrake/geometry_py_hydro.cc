@@ -25,26 +25,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
 
-  // SurfaceVertex
-  {
-    using Class = SurfaceVertex<T>;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SurfaceVertex", param, doc.SurfaceVertex.doc);
-    cls  // BR
-        .def(py::init<const Vector3<T>&>(), py::arg("r_MV"),
-            doc.SurfaceVertex.ctor.doc)
-        .def("r_MV", &Class::r_MV, py_rvp::reference_internal,
-            doc.SurfaceVertex.r_MV.doc);
-  }
-
   // SurfaceMesh
   {
     using Class = SurfaceMesh<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SurfaceMesh", param, doc.SurfaceMesh.doc);
     cls  // BR
-        .def(
-            py::init<std::vector<SurfaceFace>, std::vector<SurfaceVertex<T>>>(),
+        .def(py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>>(),
             py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
         .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
         .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
@@ -57,8 +44,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "VolumeMesh", param, doc.VolumeMesh.doc);
     cls  // BR
-        .def(py::init<std::vector<VolumeElement>,
-                 std::vector<VolumeVertex<T>>>(),
+        .def(py::init<std::vector<VolumeElement>, std::vector<Vector3<T>>>(),
             py::arg("elements"), py::arg("vertices"), doc.VolumeMesh.ctor.doc)
         .def("vertices", &Class::vertices, py_rvp::reference_internal,
             doc.VolumeMesh.vertices.doc)
@@ -67,18 +53,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcTetrahedronVolume", &Class::CalcTetrahedronVolume,
             py::arg("e"), doc.VolumeMesh.CalcTetrahedronVolume.doc)
         .def("CalcVolume", &Class::CalcVolume, doc.VolumeMesh.CalcVolume.doc);
-  }
-
-  // VolumeVertex
-  {
-    using Class = VolumeVertex<T>;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "VolumeVertex", param, doc.VolumeVertex.doc);
-    cls  // BR
-        .def(py::init<const Vector3<T>&>(), py::arg("r_MV"),
-            doc.VolumeVertex.ctor.doc_1args)
-        .def("r_MV", &Class::r_MV, py_rvp::reference_internal,
-            doc.VolumeVertex.r_MV.doc);
   }
 
   m.def("ConvertVolumeToSurfaceMesh", &ConvertVolumeToSurfaceMesh<T>,

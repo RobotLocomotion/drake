@@ -25,9 +25,9 @@ Vector3<T> CalcFaceNormal(const SurfaceMesh<T>& surface,
 //  will update `normal_M_` when TransformVertices() and ReverseFaceWinding()
 //  of SurfaceMesh are called.
   const SurfaceFace& face = surface.element(face_index);
-  const Vector3<T>& r_MA = surface.vertex(face.vertex(0)).r_MV();
-  const Vector3<T>& r_MB = surface.vertex(face.vertex(1)).r_MV();
-  const Vector3<T>& r_MC = surface.vertex(face.vertex(2)).r_MV();
+  const Vector3<T>& r_MA = surface.vertex(face.vertex(0));
+  const Vector3<T>& r_MB = surface.vertex(face.vertex(1));
+  const Vector3<T>& r_MC = surface.vertex(face.vertex(2));
   const auto r_AB_M = r_MB - r_MA;
   const auto r_AC_M = r_MC - r_MA;
   const auto rhat_AB_M = r_AB_M.normalized();
@@ -118,8 +118,7 @@ void TestVolumeToSurfaceMesh() {
   // so we can use `set`.
   using Coords = std::tuple<T, T, T>;
   std::set<Coords> boundary_vertex_coords;
-  for (const VolumeVertex<T>& vertex : volume.vertices()) {
-    const Vector3<T>& r_MV = vertex.r_MV();
+  for (const Vector3<T>& r_MV : volume.vertices()) {
     // A vertex is on the boundary of a box when one of its coordinates
     // matches an extremal value.
     using std::abs;
@@ -135,8 +134,7 @@ void TestVolumeToSurfaceMesh() {
   // check that they are the same as vertices on the boundary of the
   // volume mesh.
   std::set<Coords> surface_vertex_coords;
-  for (SurfaceVertexIndex i(0); i < surface.num_vertices(); ++i) {
-    const Vector3<T>& r_MV = surface.vertex(i).r_MV();
+  for (const Vector3<T>& r_MV : surface.vertices()) {
     surface_vertex_coords.insert(Coords(r_MV.x(), r_MV.y(), r_MV.z()));
   }
   EXPECT_EQ(boundary_vertex_coords, surface_vertex_coords);
@@ -149,7 +147,7 @@ void TestVolumeToSurfaceMesh() {
     const Vector3<T> normal_M = internal::CalcFaceNormal(surface, f);
     // Position vector of the first vertex V of the face.
     const Vector3<T> r_MV =
-        surface.vertex(surface.element(f).vertex(0)).r_MV();
+        surface.vertex(surface.element(f).vertex(0));
     EXPECT_GT(normal_M.dot(r_MV), T(0.0));
   }
 }

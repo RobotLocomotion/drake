@@ -251,8 +251,8 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices);
      The linear sequence of vertices consistent with CalcSequentialIndex.
  */
 template <typename T>
-std::vector<VolumeVertex<T>> GenerateVertices(
-    const Box& box, const Vector3<int>& num_vertices);
+std::vector<Vector3<T>> GenerateVertices(const Box& box,
+                                         const Vector3<int>& num_vertices);
 
 /*
  Adds six tetrahedra of a given rectangular cell to the list of tetrahedral
