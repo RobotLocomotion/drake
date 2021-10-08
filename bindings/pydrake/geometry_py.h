@@ -14,6 +14,10 @@ namespace pydrake {
  geometry_py_common.cc. */
 void DefineGeometryCommon(py::module m);
 
+/** Defines all of the hydroelastic-specific entities. See geometry_py_hydro.cc
+ */
+void DefineGeometryHydro(py::module m);
+
 /** Defines all elements in the drake::geometry::optimization namespace.
  See geometry_py_optimization.cc. */
 void DefineGeometryOptimization(py::module m);
