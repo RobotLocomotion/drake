@@ -8,4 +8,9 @@
   <maintainer email="user@example.com">John Doe</maintainer>
   <author>Jane Doe</author>
   <license>N/A</license>
+  <export>
+    <deprecated>
+      Deprecation message for package_map_test_package_b.
+    </deprecated>
+  </export>
 </package>

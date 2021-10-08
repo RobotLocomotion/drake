@@ -29,12 +29,24 @@ class PackageMap final {
   /// different path, or if @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path);
 
+  /// Adds package @p package_name and its path, @p package_path, and a message
+  /// indicating whether the package has been deprecated, @p deprecated_msg.
+  /// Throws if @p package_name is already present in this PackageMap with a
+  /// different path, or if @p package_path does not exist.
+  void Add(const std::string& package_name, const std::string& package_path,
+           const std::string& deprecated_msg);
+
   /// Adds package->path mappings from another PackageMap @p other_map. Throws
   /// if the other PackageMap contains the same package with a different path.
   void AddMap(const PackageMap& other_map);
 
   /// Returns true if and only if this PackageMap contains @p package_name.
   bool Contains(const std::string& package_name) const;
+
+  /// Returns true if and only if @p package_name is declares itself as
+  /// deprecated. Aborts if no package named @p package_name exists in this
+  /// PackageMap.
+  bool IsDeprecated(const std::string& package_name) const;
 
   /// Removes package @p package_name and its previously added path.
   /// Throws if @p package_name is not present in this PackageMap.
@@ -93,6 +105,14 @@ class PackageMap final {
                                   const PackageMap& package_map);
 
  private:
+  // Information about a package.
+  struct PackageData {
+    // Directory in which the manifest resides.
+    std::string Path;
+    // Optional message declaring deprecation of the package.
+    std::string DeprecatedMessage;
+  };
+
   // A constructor that initializes a map by parsing a list of package.xml
   // file paths.
   PackageMap(std::initializer_list<std::string> manifest_paths);
@@ -108,7 +128,7 @@ class PackageMap final {
   // with a different path, then this method prints a warning and returns false
   // without adding the new path. Returns true otherwise.
   bool AddPackageIfNew(const std::string& package_name,
-      const std::string& path);
+      const std::string& path, const std::string& deprecated_msg);
 
   // Recursively searches up the directory path searching for package.xml files.
   // The @p directory must be a child of @p stop_at_directory.  Stops searching
@@ -119,9 +139,9 @@ class PackageMap final {
       const std::string& directory,
       const std::string& stop_at_directory);
 
-  // The key is the name of a ROS package and the value is the package's
-  // directory.
-  std::map<std::string, std::string> map_;
+  // The key is the name of a ROS package and the value is a struct containing
+  // information about that package.
+  std::map<std::string, struct PackageData> map_;
 };
 
 }  // namespace multibody

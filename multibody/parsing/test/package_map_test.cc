@@ -291,6 +291,17 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
             3);
 }
 
+// Tests that PackageMap is parsing deprecation messages
+GTEST_TEST(PackageMapTest, TestDeprecation) {
+  const string root_path = GetTestDataRoot();
+  PackageMap package_map = PackageMap::MakeEmpty();
+  package_map.PopulateFromFolder(root_path);
+  for (const auto& package_name : package_map.GetPackageNames()) {
+    EXPECT_EQ(package_map.IsDeprecated(package_name),
+              package_name == "package_map_test_package_b");
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
