@@ -291,6 +291,31 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
             3);
 }
 
+// Tests that PackageMap is parsing deprecation messages
+GTEST_TEST(PackageMapTest, TestDeprecation) {
+  const
+  std::map<std::string, std::optional<std::string>> expected_deprecations = {
+    {
+      "package_map_test_package_b",
+      "package_map_test_package_b is deprecated, and will be removed on or "
+          "around 2038-01-19. Please use the 'drake' package instead."
+    },
+    {"package_map_test_package_d", ""},
+  };
+  const string root_path = GetTestDataRoot();
+  PackageMap package_map;
+  package_map.PopulateFromFolder(root_path);
+  for (const auto& package_name : package_map.GetPackageNames()) {
+    const auto expected_message = expected_deprecations.find(package_name);
+    if (expected_message != expected_deprecations.end()) {
+      EXPECT_EQ(package_map.GetDeprecated(package_name),
+                expected_message->second);
+    } else {
+      EXPECT_FALSE(package_map.GetDeprecated(package_name).has_value());
+    }
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
