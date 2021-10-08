@@ -136,6 +136,7 @@ drake_pybind_library(
         "geometry_py_common.cc",
         "geometry_py_hydro.cc",
         "geometry_py_optimization.cc",
+        "geometry_py_visualizers.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -547,6 +548,18 @@ drake_py_unittest(
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_visualizers_test",
+    deps = [
+        ":geometry_py",
+        ":lcm_py",
+        ":perception_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:lcm_py",
     ],
 )
 
