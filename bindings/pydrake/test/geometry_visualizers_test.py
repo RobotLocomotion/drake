@@ -119,6 +119,33 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.DeleteSlider(name="slider")
         meshcat.DeleteAddedControls()
 
+    def test_meshcat_animation(self):
+        animation = mut.MeshcatAnimation(frames_per_second=64)
+        self.assertEqual(animation.frames_per_second(), 64)
+        self.assertEqual(animation.frame(1.0), 64)
+        animation.set_autoplay(play=False)
+        self.assertEqual(animation.autoplay(), False)
+        animation.set_loop_mode(mode=mut.MeshcatAnimation.LoopMode.kLoopOnce)
+        animation.set_loop_mode(mode=mut.MeshcatAnimation.LoopMode.kLoopRepeat)
+        animation.set_loop_mode(
+            mode=mut.MeshcatAnimation.LoopMode.kLoopPingPong)
+        self.assertEqual(animation.loop_mode(),
+                         mut.MeshcatAnimation.LoopMode.kLoopPingPong)
+        animation.set_repetitions(repetitions=20)
+        self.assertEqual(animation.repetitions(), 20)
+        animation.set_clamp_when_finished(clamp=False)
+        self.assertEqual(animation.clamp_when_finished(), False)
+        animation.SetTransform(frame=0, path="test",
+                               X_ParentPath=RigidTransform())
+        animation.SetProperty(frame=0, path="test", property="bool",
+                              value=True)
+        animation.SetProperty(frame=0, path="test", property="double",
+                              value=32.0)
+        animation.SetProperty(frame=0, path="test", property="vector_double",
+                              value=[1., 2., 3.])
+        meshcat = mut.Meshcat()
+        meshcat.SetAnimation(animation)
+
     @numpy_compare.check_nonsymbolic_types
     def test_meshcat_visualizer(self, T):
         meshcat = mut.Meshcat()

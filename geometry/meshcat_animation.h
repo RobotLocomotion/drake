@@ -154,7 +154,7 @@ class MeshcatAnimation {
   @throws std::exception if this path/property has already been set with a
                          different type.
 
-  @pydrake_mkdoc_identifier{double_vector}
+  @pydrake_mkdoc_identifier{vector_double}
   */
   void SetProperty(int frame, const std::string& path,
                    const std::string& property,
@@ -193,8 +193,8 @@ class MeshcatAnimation {
   }
 
   /** Returns the javascript type for a particular path/property, or the empty
-   * string if nothing has been set. This method is intended primarily for
-   * testing. */
+  string if nothing has been set. This method is intended primarily for
+  testing. */
   std::string get_javascript_type(const std::string& path,
                                   const std::string& property) const;
 
