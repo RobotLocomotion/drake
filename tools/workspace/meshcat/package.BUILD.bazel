@@ -4,10 +4,6 @@ load("@drake//tools/install:install.bzl", "install", "install_files")
 
 licenses(["notice"])  # MIT
 
-# TODO(jwnimmer-tri) The main.min.js embeds Three.js and possible other third-
-# party dependencies as well.  We probably need to install the transitive
-# licenses for those dependencies, since we are a derivative work.
-
 VIEWER_FILES = [
     "dist/index.html",
     "dist/main.min.js",
@@ -27,7 +23,11 @@ install_files(
 
 install(
     name = "install",
-    docs = ["LICENSE"],
+    docs = [
+        "LICENSE",
+        "dist/main.min.js.THIRD_PARTY_LICENSES.json",
+    ],
+    doc_strip_prefix = ["dist"],
     visibility = ["//visibility:public"],
     deps = [":install_viewer"],
 )
