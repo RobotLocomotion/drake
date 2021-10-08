@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "yaml",
     visibility = ["//visibility:public"],
     deps = [
+        ":yaml_io",
         ":yaml_node",
         ":yaml_read_archive",
         ":yaml_write_archive",
@@ -52,6 +53,16 @@ drake_cc_library(
         "//common:nice_type_name",
         "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
         "@yaml_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_io",
+    srcs = ["yaml_io.cc"],
+    hdrs = ["yaml_io.h"],
+    deps = [
+        ":yaml_read_archive",
+        ":yaml_write_archive",
     ],
 )
 
