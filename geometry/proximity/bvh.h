@@ -7,6 +7,7 @@
 #include <variant>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -41,6 +42,8 @@ struct MeshTraits<VolumeMesh<T>> {
 template <class BvType, class MeshType>
 class BvNode {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
+
   static constexpr int kMaxElementPerLeaf =
       MeshTraits<MeshType>::kMaxElementPerBvhLeaf;
 
@@ -66,8 +69,6 @@ class BvNode {
          std::unique_ptr<BvNode<BvType, MeshType>> right)
       : bv_(std::move(bv)),
         child_(NodeChildren(std::move(left), std::move(right))) {}
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
 
   /* Returns the bounding volume.  */
   const BvType& bv() const { return bv_; }
@@ -148,21 +149,31 @@ class BvNode {
   BvType& bv() { return bv_; }
 
   struct NodeChildren {
-    std::unique_ptr<BvNode<BvType, MeshType>> left;
-    std::unique_ptr<BvNode<BvType, MeshType>> right;
-
-    NodeChildren(std::unique_ptr<BvNode<BvType, MeshType>> left_in,
-                 std::unique_ptr<BvNode<BvType, MeshType>> right_in)
+    NodeChildren(std::unique_ptr<BvNode> left_in,
+                 std::unique_ptr<BvNode> right_in)
         : left(std::move(left_in)), right(std::move(right_in)) {
       DRAKE_DEMAND(left != nullptr);
       DRAKE_DEMAND(right != nullptr);
       DRAKE_DEMAND(left != right);
     }
 
+    // TODO(jwnimmer-tri) We should use copyable_unique_ptr here, but the
+    // dependency cycle of BvNode <=> NodeChildren somehow defeats us.
     NodeChildren(const NodeChildren& other)
-        : NodeChildren{
-              std::make_unique<BvNode<BvType, MeshType>>(*other.left),
-              std::make_unique<BvNode<BvType, MeshType>>(*other.right)} {}
+        : left(std::make_unique<BvNode>(*other.left)),
+          right(std::make_unique<BvNode>(*other.right)) {}
+    NodeChildren& operator=(const NodeChildren& other) {
+      if (this != &other) {
+        left = std::make_unique<BvNode>(*other.left);
+        right = std::make_unique<BvNode>(*other.right);
+      }
+      return *this;
+    }
+    NodeChildren(NodeChildren&& other) = default;
+    NodeChildren& operator=(NodeChildren&& other) = default;
+
+    std::unique_ptr<BvNode> left;
+    std::unique_ptr<BvNode> right;
   };
 
   BvType bv_;

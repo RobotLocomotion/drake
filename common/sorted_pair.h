@@ -24,7 +24,7 @@ namespace drake {
 /// pairs of objects.
 ///
 /// @tparam T A template type that provides `operator<` and supports default
-///           construction.
+///           construction, copy construction, and copy-assignment.
 template <class T>
 struct SortedPair {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SortedPair)

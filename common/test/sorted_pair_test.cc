@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/copyable_unique_ptr.h"
+
 namespace drake {
 namespace {
 
@@ -47,15 +49,15 @@ GTEST_TEST(SortedPair, Set) {
 
 // Verifies that the move assignment operator and move constructor work.
 GTEST_TEST(SortedPair, Move) {
-  auto a = std::make_unique<int>(2);
-  auto b = std::make_unique<int>(1);
-  SortedPair<std::unique_ptr<int>> y(std::move(a), std::move(b));
-  SortedPair<std::unique_ptr<int>> x;
+  copyable_unique_ptr<int> a(2);
+  copyable_unique_ptr<int> b(1);
+  SortedPair<copyable_unique_ptr<int>> y(std::move(a), std::move(b));
+  SortedPair<copyable_unique_ptr<int>> x;
   x = std::move(y);
   EXPECT_TRUE(x.first() < x.second());
   EXPECT_EQ(y.first().get(), nullptr);
   EXPECT_EQ(y.second().get(), nullptr);
-  y = SortedPair<std::unique_ptr<int>>(std::move(x));
+  y = SortedPair<copyable_unique_ptr<int>>(std::move(x));
   EXPECT_TRUE(y.first() < y.second());
   EXPECT_EQ(x.first().get(), nullptr);
   EXPECT_EQ(x.second().get(), nullptr);
@@ -108,7 +110,7 @@ GTEST_TEST(SortedPair, Hash) {
 
 // Checks expansion with STL vector.
 GTEST_TEST(SortedPair, VectorExp) {
-  std::vector<std::unique_ptr<SortedPair<int>>> v;
+  std::vector<copyable_unique_ptr<SortedPair<int>>> v;
   v.emplace_back(std::make_unique<SortedPair<int>>(1, 2));
   v.resize(v.capacity() + 1);
   EXPECT_EQ(v.front()->first(), 1);

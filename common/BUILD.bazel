@@ -864,6 +864,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sorted_pair_test",
     deps = [
+        ":copyable_unique_ptr",
         ":sorted_pair",
     ],
 )
