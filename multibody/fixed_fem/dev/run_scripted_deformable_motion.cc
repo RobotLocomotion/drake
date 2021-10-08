@@ -67,7 +67,7 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
     std::vector<geometry::VolumeVertex<double>> verts_W;
     /* Shift the vertices to world frame. */
     for (const auto& v : verts) {
-      verts_W.emplace_back(v.r_MV() + p_WM);
+      verts_W.emplace_back(v + p_WM);
     }
     meshes_.emplace_back(std::move(elements), std::move(verts_W));
     names_.emplace_back(std::move(name));
@@ -105,7 +105,7 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
       const double v = velocities_[i];
       const double h = amplitudes_[i];
       for (int j = 0; j < num_vertices; ++j) {
-        Vector3<double> r_MV = vertices[j].r_MV();
+        Vector3<double> r_MV = vertices[j];
         r_MV(2) += h * std::sin(frequency_ * (r_MV(0) + v * t));
         q.template segment<3>(3 * j) = r_MV;
       }

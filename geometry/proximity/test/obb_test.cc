@@ -452,7 +452,7 @@ bool Contain(const Obb& obb_M, const MeshType& mesh_M,
   const RigidTransformd& X_MB = obb_M.pose();
   const RigidTransformd X_BM = X_MB.inverse();
   for (const typename MeshType::VertexIndex& v : vertices) {
-    Vector3d p_MV = mesh_M.vertex(v).r_MV();
+    Vector3d p_MV = mesh_M.vertex(v);
     Vector3d p_BV = X_BM * p_MV;
     if ((p_BV.array() > obb_M.half_width().array()).any()) {
       return false;
@@ -646,7 +646,7 @@ GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
   ASSERT_EQ(surface_mesh.num_faces(), 12);
   std::set<SurfaceVertexIndex> test_vertices;
   for (SurfaceVertexIndex i(0); i < 8; ++i) {
-    const Vector3d& p_MV = surface_mesh.vertex(i).r_MV();
+    const Vector3d& p_MV = surface_mesh.vertex(i);
     // Omit vertices on a diagonal.
     if (CompareMatrices(p_MV, Vector3d(-3, -2, -1), 1e-5)) continue;
     if (CompareMatrices(p_MV, Vector3d(3, 2, 1), 1e-5)) continue;

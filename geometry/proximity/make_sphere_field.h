@@ -56,7 +56,7 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(const Sphere& sphere,
   const T kExtentEpsilon = 1e-14;
   for (const VolumeVertex<T>& vertex : mesh_S->vertices()) {
     // V is a vertex of the mesh of the sphere with frame S.
-    const Vector3<T>& r_SV = vertex.r_MV();
+    const Vector3<T>& r_SV = vertex;
     T extent = T(1.0) - r_SV.norm() / radius;
     if (extent < kExtentEpsilon) {
       extent = T(0.0);

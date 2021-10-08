@@ -404,14 +404,14 @@ class Intersector {
     polygon_D->clear();
     for (int i = 0; i < 3; ++i) {
       const SurfaceVertexIndex v = surface_R.element(face).vertex(i);
-      const Vector3<T> p_DV = X_DR * surface_R.vertex(v).r_MV().cast<T>();
+      const Vector3<T> p_DV = X_DR * surface_R.vertex(v).cast<T>();
       polygon_D->push_back({p_DV, tet_mesh_D.CalcBarycentric(p_DV, tet_index)});
     }
     // Get the positions, in Frame D, of the four vertices of the tet.
     Vector3<T> p_DVs[4];
     for (int i = 0; i < 4; ++i) {
       const VolumeVertexIndex v = tet_mesh_D.element(tet_index).vertex(i);
-      p_DVs[i] = tet_mesh_D.vertex(v).r_MV();
+      p_DVs[i] = tet_mesh_D.vertex(v);
     }
 
     /* Sets up the four half spaces associated with the four triangular faces of

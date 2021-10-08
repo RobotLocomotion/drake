@@ -108,7 +108,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   // negated "z" values.
   std::vector<double> e_MN(mesh->num_vertices());
   for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    e_MN[i] = -mesh->vertex(i).r_MV()[2];
+    e_MN[i] = -mesh->vertex(i).z();
 
   // Now transform the mesh to the world frame, as ContactSurface specifies.
   mesh->TransformVertices(X_WH);
@@ -795,7 +795,7 @@ class HydroelasticReportingTests
     // Create the e field values (i.e., "hydroelastic pressure").
     std::vector<double> e_MN(mesh->num_vertices());
     for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-      e_MN[i] = pressure(mesh->vertex(i).r_MV());
+      e_MN[i] = pressure(mesh->vertex(i));
 
     SurfaceMesh<double>* mesh_pointer = mesh.get();
     contact_surface_ = std::make_unique<ContactSurface<double>>(

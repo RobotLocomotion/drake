@@ -56,7 +56,7 @@ class BvhTester {
     for (auto it = start; it != end; ++it) {
       const auto& element = mesh_M.element(it->first);
       for (int i=0; i < MeshType::kVertexPerElement; ++i) {
-        const Vector3d p_MV = mesh_M.vertex(element.vertex(i)).r_MV();
+        const Vector3d p_MV = mesh_M.vertex(element.vertex(i));
         const Vector3d p_BV = X_BM * p_MV;
         if ((p_BV.array() > bv_M.half_width().array()).any()) {
           return false;

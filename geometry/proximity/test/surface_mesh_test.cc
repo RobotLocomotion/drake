@@ -131,7 +131,7 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
     EXPECT_EQ(X_WM * vertex_data_M[v],
-              surface_mesh_W->vertex(SurfaceVertexIndex(v)).r_MV());
+              surface_mesh_W->vertex(SurfaceVertexIndex(v)));
   for (int f = 0; f < 2; ++f)
     for (int v = 0; v < 3; ++v)
       EXPECT_EQ(face_data[f][v],
@@ -485,8 +485,8 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
   test_mesh->TransformVertices(X_FM);
 
   for (SurfaceVertexIndex v(0); v < test_mesh->num_vertices(); ++v) {
-    const Vector3d& p_FV_test = test_mesh->vertex(v).r_MV();
-    const Vector3d& p_MV_ref = ref_mesh->vertex(v).r_MV();
+    const Vector3d& p_FV_test = test_mesh->vertex(v);
+    const Vector3d& p_MV_ref = ref_mesh->vertex(v);
     const Vector3d p_FV_ref = X_FM * p_MV_ref;
     EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
   }
@@ -544,11 +544,11 @@ class ScalarMixingTest : public ::testing::Test {
     // only set the derivatives for vertex 1. That means, operations on
     // triangle 0 *must* have derivatives, but triangle 1 may not have them.
     std::vector<SurfaceVertex<AutoDiffXd>> vertices;
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)).r_MV());
+    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)));
     vertices.emplace_back(math::InitializeAutoDiff(
-        mesh_d_->vertex(SurfaceVertexIndex(1)).r_MV()));
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(2)).r_MV());
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(3)).r_MV());
+        mesh_d_->vertex(SurfaceVertexIndex(1))));
+    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(2)));
+    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(3)));
     std::vector<SurfaceFace> faces(mesh_d_->faces());
 
     mesh_ad_ = std::make_unique<SurfaceMesh<AutoDiffXd>>(std::move(faces),
@@ -556,7 +556,7 @@ class ScalarMixingTest : public ::testing::Test {
 
     p_WQ_d_ = Vector3d::Zero();
     for (SurfaceVertexIndex v(0); v < 3; ++v) {
-      p_WQ_d_ += mesh_d_->vertex(v).r_MV();
+      p_WQ_d_ += mesh_d_->vertex(v);
     }
     p_WQ_d_ /= 3;
     p_WQ_ad_ = math::InitializeAutoDiff(p_WQ_d_);

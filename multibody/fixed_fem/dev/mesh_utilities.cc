@@ -63,9 +63,9 @@ void StarRefineTetrahedron(int e, std::vector<VolumeElement>* elements,
   DRAKE_DEMAND(v2 < num_vertices_before);
   DRAKE_DEMAND(v3 < num_vertices_before);
 
-  VolumeVertex<T> star{((*vertices)[v0].r_MV() + (*vertices)[v1].r_MV() +
-                        (*vertices)[v2].r_MV() + (*vertices)[v3].r_MV()) /
-                       4.};
+  VolumeVertex<T> star{
+      ((*vertices)[v0] + (*vertices)[v1] + (*vertices)[v2] + (*vertices)[v3]) /
+      4.};
   vertices->push_back(std::move(star));
   VolumeVertexIndex star_vertex(num_vertices_before);
 
@@ -217,14 +217,14 @@ internal::ReferenceDeformableGeometry<T> MakeDiamondCubicBoxDeformableGeometry(
           .template Eval<geometry::QueryObject<T>>(*context);
   std::vector<T> signed_distances;
   for (const VolumeVertex<T>& vertex : vertices) {
-    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex.r_MV());
+    const auto& d = query_object.ComputeSignedDistanceToPoint(vertex);
     DRAKE_DEMAND(d.size() == 1);
     signed_distances.emplace_back(d[0].distance);
   }
 
   for (VolumeVertex<T>& vertex : vertices) {
     // Transform to World frame.
-    vertex = VolumeVertex<T>(X_WB * vertex.r_MV());
+    vertex = VolumeVertex<T>(X_WB * vertex);
   }
 
   std::vector<VolumeElement> elements =

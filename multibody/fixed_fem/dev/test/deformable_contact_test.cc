@@ -191,7 +191,7 @@ void TestComputeTetMeshTriMeshContact() {
     /* Calculate the centroid in cartesian coordinate by interpolating the
      positions of the tet vertices with the barycentric weights. */
     for (int j = 0; j < 4; ++j) {
-      centroid_D += b_centroid(j) * volume_D.vertex(tet.vertex(j)).r_MV();
+      centroid_D += b_centroid(j) * volume_D.vertex(tet.vertex(j));
     }
     calculated_centroids_D.push_back(centroid_D);
   }

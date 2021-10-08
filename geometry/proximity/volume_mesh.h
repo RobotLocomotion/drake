@@ -23,43 +23,13 @@ namespace geometry {
  */
 using VolumeVertexIndex = TypeSafeIndex<class VolumeVertexTag>;
 
+template <typename T>
+using VolumeVertex = Vector3<T>;
+
 /**
  Index for identifying a tetrahedral element in a volume mesh.
  */
 using VolumeElementIndex = TypeSafeIndex<class VolumeElementTag>;
-
-/** %VolumeVertex represents a vertex in VolumeMesh.
- @tparam T The underlying scalar type for coordinates, e.g., double or
-           AutoDiffXd. Must be a valid Eigen scalar.
- */
-template <class T>
-class VolumeVertex {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeVertex)
-
-  /** Constructs VolumeVertex.
-   @param r_MV displacement vector from the origin of M's frame to this
-               vertex, expressed in M's frame.
-   */
-  explicit VolumeVertex(const Vector3<T>& r_MV)
-      : r_MV_(r_MV) {}
-
-  /** Constructs VolumeVertex from the xyz components of a point V in a frame
-   M.
-   */
-  VolumeVertex(const T& Vx_M, const T& Vy_M, const T& Vz_M)
-      : r_MV_(Vx_M, Vy_M, Vz_M) {}
-
-  /** Returns the displacement vector from the origin of M's frame to this
-    vertex, expressed in M's frame.
-   */
-  const Vector3<T>& r_MV() const { return r_MV_; }
-
- private:
-  // Displacement vector from the origin of M's frame to this vertex,
-  // expressed in M's frame.
-  Vector3<T> r_MV_;
-};
 
 /** %VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
  topological entity in the sense that it only knows the indices of its vertices
@@ -239,10 +209,10 @@ class VolumeMesh {
     // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
     //  it. CalcTetrahedronVolume(VolumeElementIndex) will call
     //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
-    const Vector3<T>& a = vertices_[elements_[e].vertex(0)].r_MV();
-    const Vector3<T>& b = vertices_[elements_[e].vertex(1)].r_MV();
-    const Vector3<T>& c = vertices_[elements_[e].vertex(2)].r_MV();
-    const Vector3<T>& d = vertices_[elements_[e].vertex(3)].r_MV();
+    const Vector3<T>& a = vertices_[elements_[e].vertex(0)];
+    const Vector3<T>& b = vertices_[elements_[e].vertex(1)];
+    const Vector3<T>& c = vertices_[elements_[e].vertex(2)];
+    const Vector3<T>& d = vertices_[elements_[e].vertex(3)];
     // Assume the first three vertices a, b, c define a triangle with its
     // right-handed normal pointing towards the inside of the tetrahedra. The
     // fourth vertex, d, is on the positive side of the plane defined by a,
@@ -296,7 +266,7 @@ class VolumeMesh {
     using ReturnType = promoted_numerical_t<T, C>;
     Matrix4<ReturnType> A;
     for (int i = 0; i < 4; ++i) {
-      A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i)).r_MV();
+      A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i));
     }
     Vector4<ReturnType> b;
     b << ReturnType(1.0), p_MQ;
@@ -328,7 +298,7 @@ class VolumeMesh {
     }
     // Check vertices.
     for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {
-      if ((this->vertex(i).r_MV() - mesh.vertex(i).r_MV()).norm() >
+      if ((this->vertex(i) - mesh.vertex(i)).norm() >
           vertex_tolerance) {
         return false;
       }
@@ -384,10 +354,10 @@ Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
   // the tetrahedron. Their positions are expressed in frame M of the mesh.
-  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)].r_MV();
-  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)].r_MV();
-  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
-  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
+  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)];
+  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)];
+  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)];
+  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)];
 
   const Vector3<T> p_AV_M = p_MV - p_MA;
   const Vector3<T> p_AB_M = p_MB - p_MA;

@@ -44,8 +44,7 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   const int num_vertices = mesh.num_vertices();
   for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
     for (VolumeVertexIndex j(i + 1); j < num_vertices; ++j) {
-      const bool vertex_is_unique =
-          mesh.vertex(i).r_MV() != mesh.vertex(j).r_MV();
+      const bool vertex_is_unique = mesh.vertex(i) != mesh.vertex(j);
       EXPECT_TRUE(vertex_is_unique) << "The mesh has duplicated vertices.";
       if (!vertex_is_unique) {
         return false;
@@ -76,7 +75,7 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
             mesh.vertices().end() !=
             find_if(mesh.vertices().begin(), mesh.vertices().end(),
                     [&corner](const VolumeVertex<double>& v) -> bool {
-                      return v.r_MV() == corner.r_MV();
+                      return v == corner;
                     });
         EXPECT_TRUE(corner_is_a_mesh_vertex)
             << "A corner point of the box is missing from the mesh vertices.";
@@ -92,7 +91,7 @@ bool VerifyDiamondCubicBoxMesh(const VolumeMesh<double>& mesh, const Box& box,
   const double epsilon = 1e-14;
   for (VolumeVertexIndex i(0); i < num_vertices; ++i) {
     const bool vertex_is_inside_or_on_boundary =
-        ((X_WB.inverse() * mesh.vertex(i).r_MV()).array().abs() <=
+        ((X_WB.inverse() * mesh.vertex(i)).array().abs() <=
          (1 + epsilon) * half_size.array())
             .all();
     EXPECT_TRUE(vertex_is_inside_or_on_boundary)
@@ -163,7 +162,7 @@ GTEST_TEST(MeshUtilitiesTest, SignedDistanceField) {
       box_geometry.signed_distance();
   for (VolumeVertexIndex i(0); i < mesh.num_vertices(); ++i) {
     const double signed_distance = mesh_field.EvaluateAtVertex(i);
-    const Vector3d& r_WV = mesh.vertex(i).r_MV();
+    const Vector3d& r_WV = mesh.vertex(i);
     // clang-format off
     const std::array<double, 6> distance_to_box_faces = {
         half_Lx - r_WV(0), r_WV(0) + half_Lx,

@@ -277,10 +277,10 @@ std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
       medial_radius / cylinder.radius();
   for (int i = 0; i < num_vertices_per_circle; ++i) {
     const double x =
-        ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).r_MV().x()) *
+        ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).x()) *
         scale_cylinder_radius_to_medial_circle;
     const double y =
-        ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).r_MV().y()) *
+        ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).y()) *
         scale_cylinder_radius_to_medial_circle;
     medial[i] = VolumeVertexIndex(mesh_vertices->size());
     mesh_vertices->emplace_back(x, y, 0);

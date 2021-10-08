@@ -253,9 +253,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       const geometry::SurfaceVertex<T>& vB = mesh_W.vertex(face.vertex(1));
       const geometry::SurfaceVertex<T>& vC = mesh_W.vertex(face.vertex(2));
 
-      write_double3(vA.r_MV(), tri_msg.p_WA);
-      write_double3(vB.r_MV(), tri_msg.p_WB);
-      write_double3(vC.r_MV(), tri_msg.p_WC);
+      write_double3(vA, tri_msg.p_WA);
+      write_double3(vB, tri_msg.p_WB);
+      write_double3(vC, tri_msg.p_WC);
 
       // Record the pressures.
       tri_msg.pressure_A =

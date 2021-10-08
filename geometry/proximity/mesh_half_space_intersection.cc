@@ -45,8 +45,7 @@ Vector3<T> CalcEdgePlaneIntersection(
   // remainder on division, the assertion below should hold.
   DRAKE_DEMAND(t >= 0 && t <= 1);
   const Vector3<T> p_WV =
-      X_WF * (vertices_F[a].r_MV() +
-              t * (vertices_F[b].r_MV() - vertices_F[a].r_MV()));
+      X_WF * (vertices_F[a] + t * (vertices_F[b] - vertices_F[a]));
   return p_WV;
 }
 
@@ -104,10 +103,10 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
         vertices_to_newly_created_vertices->insert(
             {index, SurfaceVertexIndex(new_vertices_W->size())});
     DRAKE_DEMAND(inserted);
-    // Note: although r_MV is *always* Vector3<double>, we don't support
+    // Note: although the vertex is *always* Vector3<double>, we don't support
     // Vector3<AD> = RigidTransform<AD> * Vector3<double>. Therefore, we must
     // cast the vector to T to account for when it is AutoDiffXd.
-    const Vector3<T> p_WV = X_WF * vertices_F[index].r_MV().cast<T>();
+    const Vector3<T> p_WV = X_WF * vertices_F[index].cast<T>();
     new_vertices_W->emplace_back(p_WV);
   }
   return v_to_new_v_iter->second;
@@ -204,8 +203,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   T s[3];
   int num_positive = 0;
   for (int i = 0; i < 3; ++i) {
-    s[i] =
-        half_space_F.CalcSignedDistance(vertices_F[triangle.vertex(i)].r_MV());
+    s[i] = half_space_F.CalcSignedDistance(vertices_F[triangle.vertex(i)]);
     if (s[i] > 0) ++num_positive;
   }
 
@@ -239,9 +237,9 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
       case ContactPolygonRepresentation::kSingleTriangle: {
         AddPolygonToMeshDataAsOneTriangle(
             {
-                X_WF * vertices_F[triangle.vertex(0)].r_MV().cast<T>(),
-                X_WF * vertices_F[triangle.vertex(1)].r_MV().cast<T>(),
-                X_WF * vertices_F[triangle.vertex(2)].r_MV().cast<T>(),
+                X_WF * vertices_F[triangle.vertex(0)].cast<T>(),
+                X_WF * vertices_F[triangle.vertex(1)].cast<T>(),
+                X_WF * vertices_F[triangle.vertex(2)].cast<T>(),
             },
             nhat_W, new_faces, new_vertices_W);
         break;
@@ -299,8 +297,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
           }
           case ContactPolygonRepresentation::kSingleTriangle: {
             AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v1].r_MV().cast<T>(),
-                 X_WF * vertices_F[v2].r_MV().cast<T>(),
+                {X_WF * vertices_F[v1].cast<T>(),
+                 X_WF * vertices_F[v2].cast<T>(),
                  CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
                                            X_WF),
                  CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
@@ -352,7 +350,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
           }
           case ContactPolygonRepresentation::kSingleTriangle: {
             AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v0].r_MV().cast<T>(),
+                {X_WF * vertices_F[v0].cast<T>(),
                  CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
                                            X_WF),
                  CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
@@ -461,7 +459,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   const PosedHalfSpace<T> hs_W{X_WR.rotation() * hs_R.normal(), X_WR * p_RSo};
   vertex_pressures.reserve(mesh_W->num_vertices());
   for (SurfaceVertexIndex v(0); v < mesh_W->num_vertices(); ++v) {
-    const Vector3<T> p_WV = mesh_W->vertex(v).r_MV();
+    const Vector3<T> p_WV = mesh_W->vertex(v);
     // The signed distance of the point is the negative of the penetration
     // depth. We can use the pressure_scale to directly compute pressure at the
     // point.

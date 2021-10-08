@@ -37,7 +37,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
   pressure_values.reserve(mesh_B->num_vertices());
   for (const VolumeVertex<T>& vertex : mesh_B->vertices()) {
     // V is a vertex of the mesh of the box with frame B.
-    const Vector3<T>& r_BV = vertex.r_MV();
+    const Vector3<T>& r_BV = vertex;
     // N is for the nearest point of V on the boundary of the box,
     // and grad_B is the gradient vector of the signed distance function
     // of the box at V, expressed in frame B.

@@ -690,13 +690,13 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
       // clang-format off
       EXPECT_TRUE(CompareMatrices(
           Vector3<double>(tri_message.p_WA),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(0)).r_MV())));
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(0)))));
       EXPECT_TRUE(CompareMatrices(
           Vector3<double>(tri_message.p_WB),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(1)).r_MV())));
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(1)))));
       EXPECT_TRUE(CompareMatrices(
           Vector3<double>(tri_message.p_WC),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(2)).r_MV())));
+          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(2)))));
       // clang-format on
       EXPECT_EQ(
           tri_message.pressure_A,

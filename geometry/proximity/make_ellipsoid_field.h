@@ -68,7 +68,7 @@ VolumeMeshFieldLinear<T, T> MakeEllipsoidPressureField(
   const T kExtentEpsilon = 1e-14;
   for (const VolumeVertex<T>& vertex : mesh_E->vertices()) {
     // V is a vertex of the ellipsoid mesh with frame E.
-    const Vector3<T>& r_EV = vertex.r_MV();
+    const Vector3<T>& r_EV = vertex;
     // Scale V in the ellipsoid to U in the unit sphere.
     const Vector3<T> r_EU = scale.cwiseProduct(r_EV);
     T extent = T(1.0) - r_EU.norm();

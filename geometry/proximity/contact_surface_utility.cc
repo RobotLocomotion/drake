@@ -79,7 +79,7 @@ void ThrowIfInvalidForCentroid(const char* prefix,
   const int v_count = static_cast<int>(polygon.size());
   A.resize(v_count, 4);
   for (int i = 0; i < v_count; ++i) {
-    const Vector3<T>& v = vertices_F[polygon[i]].r_MV();
+    const Vector3<T>& v = vertices_F[polygon[i]];
     A.block(i, 0, 1, 4) << v(0), v(1), v(2), 1;
   }
 
@@ -138,9 +138,7 @@ Vector3<T> CalcPolygonCentroid(
   using V = SurfaceVertexIndex;
 
   auto triangle_centroid = [&vertices_F](V v0, V v1, V v2) {
-    return (vertices_F[v0].r_MV() + vertices_F[v1].r_MV() +
-        vertices_F[v2].r_MV()) /
-        3;
+    return (vertices_F[v0] + vertices_F[v1] + vertices_F[v2]) / 3;
   };
 
   // Triangles get special treatment.
@@ -162,9 +160,9 @@ Vector3<T> CalcPolygonCentroid(
   // ∑(Aᵢ * centroidᵢ) / ∑Aᵢ = ∑(kAᵢ * centroidᵢ) / ∑kAᵢ, k != 0.
   // The value of k comes from the scale and orientation of n_F.
   auto triangle_weight = [&vertices_F, &n_F](V v0, V v1, V v2) {
-    const Vector3<T>& r_MV0 = vertices_F[v0].r_MV();
-    const Vector3<T>& r_MV1 = vertices_F[v1].r_MV();
-    const Vector3<T>& r_MV2 = vertices_F[v2].r_MV();
+    const Vector3<T>& r_MV0 = vertices_F[v0];
+    const Vector3<T>& r_MV1 = vertices_F[v1];
+    const Vector3<T>& r_MV2 = vertices_F[v2];
     return (r_MV1 - r_MV0).cross(r_MV2 - r_MV0).dot(n_F);
   };
 
@@ -188,7 +186,7 @@ Vector3<T> CalcPolygonCentroid(
     // could just *pick* one of the vertices.
     p_FC_accum = Vector3<T>::Zero();
     for (int i = 0; i < v_count; ++i) {
-      p_FC_accum += vertices_F[polygon[i]].r_MV();
+      p_FC_accum += vertices_F[polygon[i]];
     }
     total_weight = v_count;
   }
@@ -206,7 +204,7 @@ Vector3<T> CalcPolygonCentroid(const std::vector<Vector3<T>>& p_FVs,
   std::vector<SurfaceVertex<T>> vertices_F;
   std::transform(p_FVs.begin(), p_FVs.end(), std::back_inserter(vertices_F),
                  [](const Vector3<T>& p_FV) -> SurfaceVertex<T> {
-                   return SurfaceVertex(p_FV);
+                   return SurfaceVertex<T>(p_FV);
                  });
 
   return CalcPolygonCentroid(polygon, n_F, vertices_F);

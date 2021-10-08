@@ -286,10 +286,10 @@ class ContactResultMaker final : public LeafSystem<double> {
         const SurfaceVertex<double>& vB = mesh_W.vertex(face.vertex(1));
         const SurfaceVertex<double>& vC = mesh_W.vertex(face.vertex(2));
 
-        write_double3(vA.r_MV(), tri_msg.p_WA);
-        write_double3(vB.r_MV(), tri_msg.p_WB);
-        write_double3(vC.r_MV(), tri_msg.p_WC);
-        write_double3((vA.r_MV() + vB.r_MV() + vC.r_MV()) / 3.0, quad_msg.p_WQ);
+        write_double3(vA, tri_msg.p_WA);
+        write_double3(vB, tri_msg.p_WB);
+        write_double3(vC, tri_msg.p_WC);
+        write_double3((vA + vB + vC) / 3.0, quad_msg.p_WQ);
 
         tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
         tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));

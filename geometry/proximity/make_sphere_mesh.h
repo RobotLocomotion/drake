@@ -132,15 +132,15 @@ void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
       const VIndex a = vertex_indices[i];
       const VIndex b = vertex_indices[j];
       square_edge_len[SortedPair<VIndex>(a, b)] = ExtractDoubleOrThrow(
-          (p_MVs[a].r_MV() - p_MVs[b].r_MV()).squaredNorm());
+          (p_MVs[a] - p_MVs[b]).squaredNorm());
     }
   }
 
   // Computes the volume of a single tetrahedron.
   auto volume = [&p_MVs](VIndex a, VIndex b, VIndex c, VIndex d) {
-    const Vector3<T> p_AB = p_MVs[b].r_MV() - p_MVs[a].r_MV();
-    const Vector3<T> p_AC = p_MVs[c].r_MV() - p_MVs[a].r_MV();
-    const Vector3<T> p_AD = p_MVs[d].r_MV() - p_MVs[a].r_MV();
+    const Vector3<T> p_AB = p_MVs[b] - p_MVs[a];
+    const Vector3<T> p_AC = p_MVs[c] - p_MVs[a];
+    const Vector3<T> p_AD = p_MVs[d] - p_MVs[a];
     return ExtractDoubleOrThrow(p_AB.cross(p_AC).dot(p_AD) / 6.0);
   };
 
@@ -319,8 +319,8 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
       if (edge_vertex_map.count(key) == 0) {
         // We haven't already split this edge; compute the vertex and determine
         // its boundary condition.
-        const Vector3<T>& p_MA = mesh.vertex(key.first()).r_MV();
-        const Vector3<T>& p_MB = mesh.vertex(key.second()).r_MV();
+        const Vector3<T>& p_MA = mesh.vertex(key.first());
+        const Vector3<T>& p_MB = mesh.vertex(key.second());
         Vector3<T> p_MV = (p_MA + p_MB) / 2.0;
         VIndex split_index(static_cast<int>(all_vertices.size()));
         const bool split_is_boundary =
@@ -398,8 +398,8 @@ std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
       if (edge_vertex_map.count(key) == 0) {
         // We haven't already split this edge; compute the vertex and determine
         // its boundary condition.
-        const Vector3<T>& p_MA = mesh.vertex(key.first()).r_MV();
-        const Vector3<T>& p_MB = mesh.vertex(key.second()).r_MV();
+        const Vector3<T>& p_MA = mesh.vertex(key.first());
+        const Vector3<T>& p_MB = mesh.vertex(key.second());
         Vector3<T> p_MV = (p_MA + p_MB) / 2.0;
         // "Inflate" the surface vertex to the unit sphere surface.
         p_MV.normalize();
@@ -602,7 +602,7 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
   std::vector<VolumeVertex<T>> vertices;
   vertices.reserve(unit_mesh.vertices().size());
   for (auto& v : unit_mesh.vertices()) {
-    vertices.emplace_back(v.r_MV() * r);
+    vertices.emplace_back(v * r);
   }
   std::vector<VolumeElement> elements(unit_mesh.tetrahedra());
   return VolumeMesh<T>(std::move(elements), std::move(vertices));

@@ -167,7 +167,7 @@ TYPED_TEST(BvhUpdaterTest, Update) {
   VectorX<T> p_MVs(3 * mesh.num_vertices());
   using VIndex = typename MeshType::VertexIndex;
   for (VIndex i(0); i < mesh.num_vertices(); ++i) {
-    p_MVs.segment(i * 3, 3) << R * mesh.vertex(i).r_MV();
+    p_MVs.segment(i * 3, 3) << R * mesh.vertex(i);
   }
   deformer.SetAllPositions(p_MVs);
   updater.Update();

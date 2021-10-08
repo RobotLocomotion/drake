@@ -211,7 +211,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
     const set<VIndex> fit_vertices = {VIndex(0)};
     const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
-    EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(VIndex(0)).r_MV()));
+    EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(VIndex(0))));
     EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d::Zero()));
   }
 

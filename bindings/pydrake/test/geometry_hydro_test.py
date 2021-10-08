@@ -74,12 +74,12 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(f_a.vertex(0), 3)
         self.assertEqual(f_b.vertex(1), 1)
 
-        v0 = mut.SurfaceVertex((-1,  1, 0))
-        v1 = mut.SurfaceVertex((1,  1, 0))
-        v2 = mut.SurfaceVertex((-1, -1, 0))
-        v3 = mut.SurfaceVertex((1, -1, 0))
+        v0 = (-1,  1, 0)
+        v1 = (1,  1, 0)
+        v2 = (-1, -1, 0)
+        v3 = (1, -1, 0)
 
-        self.assertListEqual(list(v0.r_MV()), [-1, 1, 0])
+        self.assertListEqual(list(v0), [-1, 1, 0])
 
         mesh = mut.SurfaceMesh(faces=(f_a, f_b), vertices=(v0, v1, v2, v3))
         self.assertEqual(len(mesh.faces()), 2)
@@ -113,13 +113,13 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(t_left.vertex(0), 2)
         self.assertEqual(t_right.vertex(1), 1)
 
-        v0 = mut.VolumeVertex((1, 0,  0))
-        v1 = mut.VolumeVertex((0, 0,  0))
-        v2 = mut.VolumeVertex((0, 1,  0))
-        v3 = mut.VolumeVertex((0, 0, 1))
-        v4 = mut.VolumeVertex((-1, 0,  0))
+        v0 = (1, 0,  0)
+        v1 = (0, 0,  0)
+        v2 = (0, 1,  0)
+        v3 = (0, 0, 1)
+        v4 = (-1, 0,  0)
 
-        self.assertListEqual(list(v0.r_MV()), [1, 0, 0])
+        self.assertListEqual(list(v0), [1, 0, 0])
 
         mesh = mut.VolumeMesh(elements=(t_left, t_right),
                               vertices=(v0, v1, v2, v3, v4))
@@ -127,7 +127,6 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(len(mesh.tetrahedra()), 2)
         self.assertIsInstance(mesh.tetrahedra()[0], mut.VolumeElement)
         self.assertEqual(len(mesh.vertices()), 5)
-        self.assertIsInstance(mesh.vertices()[0], mut.VolumeVertex)
 
         self.assertAlmostEqual(
             mesh.CalcTetrahedronVolume(e=mut.VolumeElementIndex(1)),
@@ -146,11 +145,11 @@ class TestGeometryHydro(unittest.TestCase):
                                     v2=mut.VolumeVertexIndex(2),
                                     v3=mut.VolumeVertexIndex(0))
 
-        v0 = mut.VolumeVertex((1, 0,  0))
-        v1 = mut.VolumeVertex((0, 0,  0))
-        v2 = mut.VolumeVertex((0, 1,  0))
-        v3 = mut.VolumeVertex((0, 0, -1))
-        v4 = mut.VolumeVertex((-1, 0,  0))
+        v0 = (1, 0,  0)
+        v1 = (0, 0,  0)
+        v2 = (0, 1,  0)
+        v3 = (0, 0, -1)
+        v4 = (-1, 0,  0)
 
         volume_mesh = mut.VolumeMesh(elements=(t_left, t_right),
                                      vertices=(v0, v1, v2, v3, v4))
@@ -177,4 +176,4 @@ class TestGeometryHydro(unittest.TestCase):
             [-1.000000,  1.000000, -1.000000],
         ]
         for i, expected in enumerate(expected_vertices):
-            self.assertListEqual(list(vertices[i].r_MV()), expected)
+            self.assertListEqual(list(vertices[i]), expected)

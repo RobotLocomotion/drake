@@ -169,13 +169,13 @@ RotationMatrixd ObbMaker<MeshType>::CalcOrientationByPca() const {
   // C is for centroid.
   Vector3d p_MC = Vector3d::Zero();
   for (typename MeshType::VertexIndex v : vertices_) {
-    p_MC += convert_to_double(mesh_M_.vertex(v).r_MV());
+    p_MC += convert_to_double(mesh_M_.vertex(v));
   }
   p_MC *= one_over_n;
 
   Matrix3d covariance_M = Matrix3d::Zero();
   for (typename MeshType::VertexIndex v : vertices_) {
-    const Vector3d& p_MV = convert_to_double(mesh_M_.vertex(v).r_MV());
+    const Vector3d& p_MV = convert_to_double(mesh_M_.vertex(v));
     const Vector3d p_CV_M = p_MV - p_MC;
     // covariance_M is a symmetric matrix because it's a sum of the
     // 3x3 symmetric matrices V*Vᵀ of column vectors V.
@@ -269,7 +269,7 @@ Obb ObbMaker<MeshType>::CalcOrientedBox(const RotationMatrixd& R_MB) const {
   for (typename MeshType::VertexIndex v : vertices_) {
     // Since frame F is a rotation of frame M with the same origin, we can use
     // the rotation R_FM for the transform X_FM.
-    const Vector3d p_FV = R_FM * convert_to_double(mesh_M_.vertex(v).r_MV());
+    const Vector3d p_FV = R_FM * convert_to_double(mesh_M_.vertex(v));
     p_FL = p_FL.cwiseMin(p_FV);
     p_FU = p_FU.cwiseMax(p_FV);
   }

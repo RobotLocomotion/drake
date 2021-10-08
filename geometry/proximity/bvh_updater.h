@@ -79,7 +79,7 @@ class BvhUpdater {
     std::vector<VertexType<double>> vertices_dbl;
     vertices_dbl.reserve(vertices.size());
     for (const auto& v : vertices) {
-      vertices_dbl.emplace_back(convert_to_double(v.r_MV()));
+      vertices_dbl.emplace_back(convert_to_double(v));
     }
     return vertices_dbl;
   }
@@ -104,8 +104,7 @@ class BvhUpdater {
       for (int e = 0; e < num_elements; ++e) {
         const auto& element = mesh_.element(node->element_index(e));
         for (int i = 0; i < kElementVertexCount; ++i) {
-          const Vector3d& p_MV =
-              convert_to_double(vertices[element.vertex(i)].r_MV());
+          const Vector3d& p_MV = convert_to_double(vertices[element.vertex(i)]);
           lower = lower.cwiseMin(p_MV);
           upper = upper.cwiseMax(p_MV);
         }

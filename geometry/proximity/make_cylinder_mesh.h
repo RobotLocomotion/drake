@@ -262,8 +262,8 @@ VolumeVertexIndex CreateNewVertex(
   const CylinderVertexType p_vertex_type =
       std::min(split_vertex_type[a], split_vertex_type[b]);
 
-  const Vector3<T>& A = split_mesh_vertices[a].r_MV();
-  const Vector3<T>& B = split_mesh_vertices[b].r_MV();
+  const Vector3<T>& A = split_mesh_vertices[a];
+  const Vector3<T>& B = split_mesh_vertices[b];
 
   const Vector3<T> p = ProjectMidPoint(A, B, p_vertex_type, radius);
 

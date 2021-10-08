@@ -295,7 +295,6 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     EXPECT_EQ(surfaces[0]
                   .mesh_W()
                   .vertex(SurfaceVertexIndex(0))
-                  .r_MV()
                   .x()
                   .derivatives()
                   .size(),
