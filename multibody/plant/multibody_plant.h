@@ -1812,11 +1812,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note qv_out is a dense vector of dimensions `num_positions(model_instance) 
   ///       + num_velocities(model_instance)` associated with `model_instance` and
   ///       is populated by copying from `context`.
-  /// @note This function is guaranteed to allocate no heap
+  /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
-  /// for a multibody model or `model_instance` is invalid.
+  ///         for a multibody model or `model_instance` is invalid.
   /// @throws std::exception if qv_out does not have size 
-  ///       `num_positions(model_instance) + num_velocities(model_instance)`
+  ///         `num_positions(model_instance) + num_velocities(model_instance)`
   void GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
@@ -1888,7 +1888,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// model instance in a given Context.
   /// @note Returns a dense vector of dimension `num_positions(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
-  /// @note This function is guaranteed to allocate no heap
+  /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
   /// for a multibody model or `model_instance` is invalid.
   VectorX<T> GetPositions(
@@ -1904,7 +1904,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note q_out is set to a dense vector of dimension `num_positions(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
   /// @throws std::exception if `context` does not correspond to the Context
-  /// for a multibody model or `model_instance` is invalid.
+  ///         for a multibody model or `model_instance` is invalid.
   void GetPositions(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
@@ -2019,9 +2019,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// velocities v of a specified model instance in a given Context.
   /// @note v_out is set to a dense vector of dimension `num_velocities(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
-  /// @note This function is guaranteed to allocate no heap
+  /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
-  /// for a multibody model or `model_instance` is invalid.
+  ///         for a multibody model or `model_instance` is invalid.
   void GetVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,

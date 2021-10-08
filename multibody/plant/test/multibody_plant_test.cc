@@ -2800,13 +2800,13 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
   }
   
-  // Verify that we can retrieve the state vector using the output variable parameter version 
-  // and that populating these output vectors does not allocate any heap
+  // Verify that we can retrieve the state vector using the output parameter version 
+  // and that populating these output vectors does not allocate any heap.
   VectorX<double> q_out(q_block.size());
   VectorX<double> v_out(v_block.size());
   VectorX<double> qv_out(qv_block.size());
   {      
-    // Ensure that getters accepting an output vector do not allocate.
+    // Ensure that getters accepting an output vector do not allocate heap.
     drake::test::LimitMalloc guard({.max_num_allocations = 0});
     plant_->GetPositions(*context_, arm2, &q_out);
     plant_->GetVelocities(*context_, arm2, &v_out);
