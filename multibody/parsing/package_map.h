@@ -2,6 +2,7 @@
 
 #include <initializer_list>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -34,7 +35,7 @@ class PackageMap final {
   /// Throws if @p package_name is already present in this PackageMap with a
   /// different path, or if @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path,
-           const std::string& deprecated_msg);
+           std::optional<const std::string> deprecated_msg);
 
   /// Adds package->path mappings from another PackageMap @p other_map. Throws
   /// if the other PackageMap contains the same package with a different path.
@@ -110,7 +111,7 @@ class PackageMap final {
     // Directory in which the manifest resides.
     std::string Path;
     // Optional message declaring deprecation of the package.
-    std::string DeprecatedMessage;
+    std::optional<std::string> DeprecatedMessage;
   };
 
   // A constructor that initializes a map by parsing a list of package.xml
@@ -127,8 +128,8 @@ class PackageMap final {
   // This method is the same as Add() except if package_name is already present
   // with a different path, then this method prints a warning and returns false
   // without adding the new path. Returns true otherwise.
-  bool AddPackageIfNew(const std::string& package_name,
-      const std::string& path, const std::string& deprecated_msg);
+  bool AddPackageIfNew(const std::string& package_name, const std::string& path,
+      const std::optional<const std::string> deprecated_msg);
 
   // Recursively searches up the directory path searching for package.xml files.
   // The @p directory must be a child of @p stop_at_directory.  Stops searching

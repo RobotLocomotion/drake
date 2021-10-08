@@ -34,11 +34,11 @@ PackageMap PackageMap::MakeEmpty() {
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
-  Add(package_name, package_path, "");
+  Add(package_name, package_path, std::nullopt);
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path,
-    const string& deprecated_msg) {
+    const std::optional<const string> deprecated_msg) {
   if (!AddPackageIfNew(package_name, package_path, deprecated_msg)) {
     throw std::runtime_error(fmt::format(
         "PackageMap already contains package \"{}\" with path \"{}\" that "
@@ -59,7 +59,7 @@ bool PackageMap::Contains(const string& package_name) const {
 
 bool PackageMap::IsDeprecated(const std::string& package_name) const {
   DRAKE_DEMAND(Contains(package_name));
-  return !map_.at(package_name).DeprecatedMessage.empty();
+  return map_.at(package_name).DeprecatedMessage.has_value();
 }
 
 void PackageMap::Remove(const string& package_name) {
@@ -87,10 +87,16 @@ std::vector<std::string> PackageMap::GetPackageNames() const {
 const string& PackageMap::GetPath(const string& package_name) const {
   DRAKE_DEMAND(Contains(package_name));
   const auto& package_data = map_.at(package_name);
-  if (!package_data.DeprecatedMessage.empty())
-    drake::log()->warn(
-      "PackageMap: Package \"{}\" is deprecated: {}",
-      package_name, package_data.DeprecatedMessage);
+  if (package_data.DeprecatedMessage.has_value()) {
+    if (package_data.DeprecatedMessage->empty())
+      drake::log()->warn(
+        "PackageMap: Package \"{}\" is deprecated.",
+        package_name);
+    else
+      drake::log()->warn(
+        "PackageMap: Package \"{}\" is deprecated: {}",
+        package_name, *package_data.DeprecatedMessage);
+  }
   return package_data.Path;
 }
 
@@ -134,7 +140,7 @@ string GetParentDirectory(const string& directory) {
 
 // Parses the package.xml file specified by package_xml_file. Finds and returns
 // the name of the package and an optional deprecation message.
-std::tuple<string, string> ParsePackageManifest(
+std::tuple<string, std::optional<string>> ParsePackageManifest(
     const string& package_xml_file) {
   DRAKE_DEMAND(!package_xml_file.empty());
   XMLDocument xml_doc;
@@ -164,19 +170,19 @@ std::tuple<string, string> ParsePackageManifest(
   const string package_name = name_node->FirstChild()->Value();
   DRAKE_THROW_UNLESS(package_name != "");
 
-  string deprecated_msg;
+  std::optional<string> deprecated_msg;
   XMLElement* export_node = package_node->FirstChildElement("export");
   if (export_node) {
     XMLElement* deprecated_node = export_node->FirstChildElement("deprecated");
-    if (deprecated_node && !deprecated_node->NoChildren()) {
-      deprecated_msg = deprecated_node->FirstChild()->Value();
-      deprecated_msg.erase(0, deprecated_msg.find_first_not_of(" \r\n\t"));
-      deprecated_msg.erase(deprecated_msg.find_last_not_of(" \r\n\t") + 1);
+    if (deprecated_node) {
+      if (deprecated_node->NoChildren()) {
+        deprecated_msg = {""};
+      } else {
+        deprecated_msg = {deprecated_node->FirstChild()->Value()};
+        deprecated_msg->erase(0, deprecated_msg->find_first_not_of(" \r\n\t"));
+        deprecated_msg->erase(deprecated_msg->find_last_not_of(" \r\n\t") + 1);
+      }
     }
-
-    // Tag is allowed to be empty.
-    if (deprecated_msg.empty())
-      deprecated_msg = "Package is deprecated.";
   }
 
   return {package_name, deprecated_msg};
@@ -185,7 +191,7 @@ std::tuple<string, string> ParsePackageManifest(
 }  // namespace
 
 bool PackageMap::AddPackageIfNew(const string& package_name,
-    const string& path, const string& deprecated_msg) {
+    const string& path, const std::optional<const string> deprecated_msg) {
   DRAKE_DEMAND(!package_name.empty());
   DRAKE_DEMAND(!path.empty());
   // Don't overwrite entries in the map.
