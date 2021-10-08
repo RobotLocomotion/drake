@@ -303,7 +303,7 @@ void PackageMap::CrawlForPackages(const string& path) {
 void PackageMap::AddPackageXml(const string& filename) {
   const auto [package_name, deprecated_msg] = ParsePackageManifest(filename);
   const string package_path = GetParentDirectory(filename);
-  Add(package_name, package_path);
+  Add(package_name, package_path, deprecated_msg);
 }
 
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
