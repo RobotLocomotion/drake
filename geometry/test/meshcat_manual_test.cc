@@ -1,9 +1,11 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -16,6 +18,7 @@ namespace geometry {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 
 int do_main() {
   auto meshcat = std::make_shared<Meshcat>();
@@ -53,7 +56,6 @@ int do_main() {
   cloud.mutable_rgbs() = (255.0 * (m.array() + 1.0) / 2.0).cast<uint8_t>();
   meshcat->SetObject("point_cloud", cloud, 0.01);
   meshcat->SetTransform("point_cloud", RigidTransformd(Vector3d{3, 0, 0}));
-
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -69,6 +71,52 @@ Open up your browser to the URL above.
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::cout << "Animations:\n";
+  MeshcatAnimation animation;
+  std::cout << "- the red sphere should move up and down in z.\n";
+  animation.SetTransform(0, "sphere", RigidTransformd(Vector3d{-3, 0, 0}));
+  animation.SetTransform(20, "sphere", RigidTransformd(Vector3d{-3, 0, 1}));
+  animation.SetTransform(40, "sphere", RigidTransformd(Vector3d{-3, 0, 0}));
+
+  std::cout << "- the blue box should spin clockwise about the +z axis.\n";
+  animation.SetTransform(0, "box",
+                         RigidTransformd(RotationMatrixd::MakeZRotation(0)));
+  animation.SetTransform(20, "box",
+                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
+  animation.SetTransform(
+      40, "box", RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI)));
+  animation.set_repetitions(4);
+  meshcat->SetAnimation(animation);
+
+  // TODO(russt): Do all of these in a single animation pending resolution of
+  // https://github.com/rdeits/meshcat/issues/105
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  MeshcatAnimation animation2;
+  animation2.SetProperty(0, "cylinder", "visible", true);
+  animation2.SetProperty(20, "cylinder", "visible", false);
+  animation2.SetProperty(40, "cylinder", "visible", true);
+  animation2.set_repetitions(4);
+  meshcat->SetAnimation(animation2);
+
+  std::cout << "- the green cylinder should appear and disappear.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  MeshcatAnimation animation3;
+  animation3.SetProperty(0, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation3.SetProperty(20, "ellipsoid/<object>", "material.opacity", 0.0);
+  animation3.SetProperty(40, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation3.set_repetitions(4);
+  meshcat->SetAnimation(animation3);
+
+  std::cout
+      << "- the pink ellipsoid should get less and then more transparent.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
 
   meshcat->Set2dRenderMode(math::RigidTransform(Eigen::Vector3d{0, -3, 0}), -4,
                            4, -2, 2);

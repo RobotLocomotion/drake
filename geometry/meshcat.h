@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -238,10 +239,28 @@ class Meshcat {
   */
   void SetProperty(std::string_view path, std::string property, double value);
 
+  /** Sets a single named property of the object at the given path. For example,
+  @verbatim
+  meshcat.SetProperty("box", "position", [1.0, 0.0, 0.0]);
+  @endverbatim
+  See @ref meshcat_path "Meshcat paths" for more details about these properties
+  and how to address them.
+
+  @param path a "/"-delimited string indicating the path in the scene tree.
+              See @ref meshcat_path for the semantics.
+  @param property the string name of the property to set
+  @param value the new value.
+
+  @pydrake_mkdoc_identifier{vector_double}
+  */
   void SetProperty(std::string_view path, std::string property,
                    const std::vector<double>& value);
 
-  // TODO(russt): Implement SetAnimation().
+  // TODO(russt): Support multiple animations, by name.  Currently "default" is
+  // hard-coded in the meshcat javascript.
+  /** Sets the MeshcatAnimation, which creates a slider interface element to
+  play/pause/rewind through a series of animation frames in the visualizer. */
+  void SetAnimation(const MeshcatAnimation& animation);
 
   /** @name Meshcat Controls
    Meshcat "Controls" are user interface elements in the browser.  These

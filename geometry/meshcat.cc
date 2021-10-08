@@ -667,6 +667,90 @@ class Meshcat::WebSocketPublisher {
     });
   }
 
+  void SetAnimation(const MeshcatAnimation& animation) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    std::stringstream message_stream;
+    // We pack this message in-place (rather than using structs to organize the
+    // packing) for a few reasons:
+    //  1) we want to avoid copying the big data nested structure,
+    //  2) this message type would require a nasty hairball of structs, and
+    //  3) the nested structures have path's inside that must be modified with
+    //     FullPath().
+    msgpack::packer o(message_stream);
+    // The details of this message have been extracted primarily from
+    // meshcat/test/animation.html and meshcat-python/src/meshcat/animation.py.
+    o.pack_map(3);
+    o.pack("type");
+    o.pack("set_animation");
+    o.pack("animations");
+    {
+      o.pack_array(animation.path_tracks_.size());
+      for (const auto& path_track : animation.path_tracks_) {
+        o.pack_map(2);
+        o.pack("path");
+        // TODO(russt): Handle the case where the FullPaths are not unique.
+        o.pack(FullPath(path_track.first));
+        o.pack("clip");
+        {
+            o.pack_map(3);
+            o.pack("fps");
+            o.pack(animation.frames_per_second());
+            o.pack("name");
+            o.pack("default");
+            o.pack("tracks");
+            {
+              o.pack_array(path_track.second.size());
+              for (const auto& property_track : path_track.second) {
+                o.pack_map(3);
+                o.pack("name");
+                o.pack("." + property_track.first);
+                o.pack("type");
+                o.pack(property_track.second.js_type);
+                o.pack("keys");
+                std::visit(
+                    [&o](const auto& track) {
+                      using T = std::decay_t<decltype(track)>;
+                      if constexpr (!std::is_same_v<T, std::monostate>) {
+                        o.pack_array(track.size());
+                        for (const auto& key : track) {
+                          o.pack_map(2);
+                          o.pack("time");
+                          o.pack(key.first);
+                          o.pack("value");
+                          o.pack(key.second);
+                        }
+                      }
+                    },
+                    property_track.second.track);
+              }
+            }
+        }
+      }
+    }
+    o.pack("options");
+    {
+      o.pack_map(4);
+      o.pack("play");
+      o.pack(animation.autoplay());
+      o.pack("loopMode");
+      o.pack(animation.loop_mode());
+      o.pack("repetitions");
+      o.pack(animation.repetitions());
+      o.pack("clampWhenFinished");
+      o.pack(animation.clamp_when_finished());
+    }
+
+    loop_->defer(
+        [this, message = message_stream.str()]() {
+          DRAKE_DEMAND(IsThread(websocket_thread_id_));
+          DRAKE_DEMAND(app_ != nullptr);
+          app_->publish("all", message, uWS::OpCode::BINARY, false);
+          animation_ = std::move(message);
+        });
+  }
+
   void AddButton(std::string name) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
@@ -969,6 +1053,9 @@ class Meshcat::WebSocketPublisher {
       ws->subscribe("all");
       // Update this new connection with previously published data.
       SendTree(ws);
+      if (!animation_.empty()) {
+        ws->send(animation_);
+      }
       std::lock_guard<std::mutex> lock(controls_mutex_);
       for (const auto& c : controls_) {
         auto b_iter = buttons_.find(c);
@@ -1102,6 +1189,7 @@ class Meshcat::WebSocketPublisher {
   // These variables should only be accessed in the websocket thread.
   std::thread::id websocket_thread_id_{};
   SceneTreeElement scene_tree_root_{};
+  std::string animation_;
   uWS::App* app_{nullptr};
   us_listen_socket_t* listen_socket_{nullptr};
   std::set<WebSocket*> websockets_{};
@@ -1174,6 +1262,10 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
 void Meshcat::SetProperty(std::string_view path, std::string property,
                           const std::vector<double>& value) {
   publisher_->SetProperty(path, std::move(property), value);
+}
+
+void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
+  publisher_->SetAnimation(animation);
 }
 
 void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,

@@ -411,6 +411,8 @@ class TestGeometry(unittest.TestCase):
                             value=True)
         meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
                             property="intensity", value=1.0)
+        meshcat.SetProperty(path="/test/cloud",
+                            property="position", value=[1, 0, 0])
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()
