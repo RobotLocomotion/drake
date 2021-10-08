@@ -37,11 +37,14 @@ PYBIND11_MODULE(scs, m) {
       .def_readonly("residue_infeasibility",
           &ScsSolverDetails::residue_infeasibility,
           doc.ScsSolverDetails.residue_infeasibility.doc)
-      .def_readonly("residue_unbounded", &ScsSolverDetails::residue_unbounded,
-          doc.ScsSolverDetails.residue_unbounded.doc)
-      .def_readonly("relative_duality_gap",
-          &ScsSolverDetails::relative_duality_gap,
-          doc.ScsSolverDetails.relative_duality_gap.doc)
+      .def_readonly("residue_unbounded_a",
+          &ScsSolverDetails::residue_unbounded_a,
+          doc.ScsSolverDetails.residue_unbounded_a.doc)
+      .def_readonly("residue_unbounded_p",
+          &ScsSolverDetails::residue_unbounded_a,
+          doc.ScsSolverDetails.residue_unbounded_p.doc)
+      .def_readonly("duality_gap", &ScsSolverDetails::duality_gap,
+          doc.ScsSolverDetails.duality_gap.doc)
       .def_readonly("scs_setup_time", &ScsSolverDetails::scs_setup_time,
           doc.ScsSolverDetails.scs_setup_time.doc)
       .def_readonly("scs_solve_time", &ScsSolverDetails::scs_solve_time,

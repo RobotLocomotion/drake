@@ -40,7 +40,7 @@ struct ScsSolverDetails {
   /// Equal to SCS_INFO.res_unbdd_a
   double residue_unbounded_a{};
   /// unbounded certificate residue.
-  /// Equal to SCS_INFO.res_unbdd_b
+  /// Equal to SCS_INFO.res_unbdd_p
   double residue_unbounded_p{};
   /// duality gap.
   /// Equal to SCS_INFO.gap.
