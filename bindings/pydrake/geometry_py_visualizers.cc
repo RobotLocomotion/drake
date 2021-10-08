@@ -1,3 +1,5 @@
+/* @file This contains the bindings for the various visualizer System types
+ found in drake::geometry. They can be found in the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
@@ -110,7 +112,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
   }
-}  // NOLINT(readability/fn_size)
+}
 
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -226,13 +228,14 @@ void DoScalarIndependentDefinitions(py::module m) {
             &MeshcatVisualizerParams::delete_on_initialization_event,
             cls_doc.delete_on_initialization_event.doc);
   }
-}  // NOLINT(readability/fn_size)
+}
 
-void def_geometry(py::module m) {
+}  // namespace
+
+void DefineGeometryVisualizers(py::module m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
 }
-}  // namespace
 }  // namespace pydrake
 }  // namespace drake

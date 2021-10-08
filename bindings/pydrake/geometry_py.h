@@ -22,5 +22,8 @@ void DefineGeometryHydro(py::module m);
  See geometry_py_optimization.cc. */
 void DefineGeometryOptimization(py::module m);
 
+/** Binds the visualizers in drake::geometry. See geometry_py_visualizers.cc. */
+void DefineGeometryVisualizers(py::module m);
+
 }  // namespace pydrake
 }  // namespace drake

@@ -2,12 +2,19 @@ import pydrake.geometry as mut
 
 import unittest
 
+import numpy as np
+
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
+from pydrake.math import RigidTransform
+from pydrake.perception import PointCloud
+from pydrake.systems.analysis import Simulator_
+from pydrake.systems.framework import DiagramBuilder_, InputPort_
 
 
+class TestGeometryVisualizers(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
     def test_drake_visualizer(self, T):
         # Test visualization API.

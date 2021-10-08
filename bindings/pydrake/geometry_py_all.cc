@@ -904,6 +904,7 @@ PYBIND11_MODULE(geometry, m) {
   def_geometry(m);
   def_geometry_render(m.def_submodule("render"));
   DefineGeometryOptimization(m.def_submodule("optimization"));
+  DefineGeometryVisualizers(m);
   def_geometry_all(m.def_submodule("all"));
 }
 
