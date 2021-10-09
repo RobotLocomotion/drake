@@ -24,7 +24,7 @@ namespace fem {
 template <class T>
 class DirichletBoundaryCondition {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DirichletBoundaryCondition);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirichletBoundaryCondition);
 
   /* Constructs a new %DirichletBoundaryCondition that applies to an FEM model
    that has the given `ode_order`. */
