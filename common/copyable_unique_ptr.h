@@ -13,6 +13,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -347,85 +348,21 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
 
   /**@}*/
  private:
-  // The can_copy() and can_clone() methods must be defined within the
-  // copyable_unique_ptr class so that they have the same method access as
-  // the class does. That way we can use them to determine whether
-  // copyable_unique_ptr can get access. That precludes using helper classes
-  // like drake::is_cloneable because those may have different access due to an
-  // explicit friend declaration giving copyable_unique_ptr<Foo> access to Foo's
-  // private business. The static_assert below ensures that at least one of
-  // these must return true.
-
-  // SFINAE magic explanation. We're combining several tricks here:
-  // (1) "..." as a parameter type is a last choice; an exact type match is
-  //     preferred in overload resolution.
-  // (2) Use a dummy template parameter U that is always just T but defers
-  //     instantiation so that substitution failure is not fatal.
-  // (3) We construct a non-evaluated copy constructor and Clone method in
-  //     templatized methods to prevent instantiation if the needed method
-  //     doesn't exist or isn't accessible. If instantiation is successful,
-  //     we produce an exact-match method that trumps the "..."-using method.
-  // (4) Make these constexpr so they can be used in static_assert.
-
-  // True iff type T provides a copy constructor that is accessible from
-  // %copyable_unique_ptr<T>. Invoke with `can_copy(1)`; the argument is used
-  // to select the right method. Note that if both `can_copy()` and
-  // `can_clone()` return true, we will prefer the copy constructor over the
-  // Clone() method.
-  static constexpr bool can_copy(...) { return false; }
-
-  // If this instantiates successfully it will be the preferred method called
-  // when an integer argument is provided.
-  template <typename U = T>
-  static constexpr std::enable_if_t<
-      std::is_same_v<decltype(U(std::declval<const U&>())), U>,
-      bool>
-  can_copy(int) {
-    return true;
-  }
-
-  // True iff type T provides a `Clone()` method with the appropriate
-  // signature (see class documentation) that is accessible from
-  // %copyable_unique_ptr<T>. Invoke with `can_clone(1)`; the argument is used
-  // to select the right method.
-  static constexpr bool can_clone(...) { return false; }
-
-  // If this instantiates successfully it will be the preferred method called
-  // when an integer argument is provide.
-  template <typename U = T>
-  static constexpr std::enable_if_t<
-      std::is_same_v<decltype(std::declval<const U>().Clone()),
-                     std::unique_ptr<std::remove_const_t<U>>>,
-      bool>
-  can_clone(int) {
-    return true;
-  }
-
-  static_assert(
-      can_copy(1) || can_clone(1),
-      "copyable_unique_ptr<T> can only be used with a 'copyable' class T, "
-      "requiring either a copy constructor or a Clone method of the form "
-      "'unique_ptr<T> Clone() const', accessible to copyable_unique_ptr<T>. "
-      "You may need to friend copyable_unique_ptr<T>.");
-
-  // Selects Clone iff there is no copy constructor and the Clone method is of
-  // the expected form.
-  template <typename U = T>
-  static typename std::enable_if_t<!can_copy(1) && can_clone(1), U*>
-  CopyOrNullHelper(const U* ptr, int) {
-    return ptr->Clone().release();
-  }
-
-  // Default to copy constructor if present.
-  template <typename U>
-  static
-  U* CopyOrNullHelper(const U* ptr, ...) {
-    return new U(*ptr);
-  }
-
   // If src is non-null, clone it; otherwise return nullptr.
-  static T* CopyOrNull(const T *ptr) {
-    return ptr ? CopyOrNullHelper(ptr, 1) : nullptr;
+  // The caller has ownership over the return value.
+  static T* CopyOrNull(const T* ptr) {
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+    // The copyable_unique_ptr<T> can only be used with a 'copyable' class T,
+    // requiring either a copy constructor or a Clone method of the form
+    // 'unique_ptr<T> Clone() const', accessible to copyable_unique_ptr<T>.
+    // You may need to friend copyable_unique_ptr<T>.
+    if constexpr (std::is_copy_constructible_v<T>) {
+      return new T(*ptr);
+    } else {
+      return ptr->Clone().release();
+    }
   }
 };
 
