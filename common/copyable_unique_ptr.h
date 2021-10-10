@@ -84,15 +84,8 @@ namespace drake {
  instead of `Derived`. Some mistakes that would lead to this degenerate
  behavior:
 
-   - The `Base` class has a public copy constructor.
    - The `Base` class's Clone() implementation does not invoke the `Derived`
    class's implementation of a suitable virtual method.
-
- @warning One important difference between unique_ptr and %copyable_unique_ptr
- is that a unique_ptr can be declared on a forward-declared class type. The
- %copyable_unique_ptr _cannot_. The class must be fully defined so that the
- %copyable_unique_ptr is able to determine if the type meets the requirements
- (i.e., public copy constructible or cloneable).
 
  <!--
  For future developers:
@@ -401,31 +394,25 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return true;
   }
 
-  static_assert(
-      can_copy(1) || can_clone(1),
-      "copyable_unique_ptr<T> can only be used with a 'copyable' class T, "
-      "requiring either a copy constructor or a Clone method of the form "
-      "'unique_ptr<T> Clone() const', accessible to copyable_unique_ptr<T>. "
-      "You may need to friend copyable_unique_ptr<T>.");
-
-  // Selects Clone iff there is no copy constructor and the Clone method is of
-  // the expected form.
-  template <typename U = T>
-  static typename std::enable_if_t<!can_copy(1) && can_clone(1), U*>
-  CopyOrNullHelper(const U* ptr, int) {
-    return ptr->Clone().release();
-  }
-
-  // Default to copy constructor if present.
-  template <typename U>
-  static
-  U* CopyOrNullHelper(const U* ptr, ...) {
-    return new U(*ptr);
-  }
-
   // If src is non-null, clone it; otherwise return nullptr.
-  static T* CopyOrNull(const T *ptr) {
-    return ptr ? CopyOrNullHelper(ptr, 1) : nullptr;
+  // The caller has ownership over the return value.
+  static T* CopyOrNull(const T* ptr) {
+    constexpr bool can_clone_private = can_clone(1);
+    constexpr bool can_copy_public = std::is_copy_constructible_v<T>;
+    constexpr bool can_copy_private = !can_copy_public && can_copy(1);
+    static_assert(
+        can_clone_private || can_copy_public || can_copy_private,
+        "copyable_unique_ptr<T> can only be used with a 'copyable' class T, "
+        "requiring either a copy constructor or a Clone method of the form "
+        "'unique_ptr<T> Clone() const'.");
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+    if constexpr (can_clone_private) {
+      return ptr->Clone().release();
+    } else {
+      return new T(*ptr);
+    }
   }
 };
 

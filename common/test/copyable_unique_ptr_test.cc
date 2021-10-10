@@ -121,7 +121,7 @@ GTEST_TEST(CopyableUniquePtrTest, FriendsWithBenefits) {
 }
 
 // A fully copyable class (has both copy constructor and Clone). Confirms that
-// in the presence of both, the copy constructor is preferred.
+// in the presence of both, the clone function is preferred.
 struct FullyCopyable : Base {
   explicit FullyCopyable(int v, Origin org = Origin::CONSTRUCT)
       : Base(v, org) {}
@@ -131,12 +131,12 @@ struct FullyCopyable : Base {
   }
 };
 
-// Confirms that the copy constructor is preferred when both exist.
+// Confirms that Clone is preferred when both exist.
 GTEST_TEST(CopyableUniquePtrTest, FullyCopyableSuccess) {
   cup<FullyCopyable> ptr(new FullyCopyable(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<FullyCopyable> copy(ptr);
-  EXPECT_EQ(copy->origin, Origin::COPY);
+  EXPECT_EQ(copy->origin, Origin::CLONE);
   EXPECT_EQ(copy->value, ptr->value);
   ++copy->value;
   EXPECT_NE(copy->value, ptr->value);
