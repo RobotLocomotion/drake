@@ -7,6 +7,7 @@
 #include <variant>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -41,6 +42,8 @@ struct MeshTraits<VolumeMesh<T>> {
 template <class BvType, class MeshType>
 class BvNode {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
+
   static constexpr int kMaxElementPerLeaf =
       MeshTraits<MeshType>::kMaxElementPerBvhLeaf;
 
@@ -66,8 +69,6 @@ class BvNode {
          std::unique_ptr<BvNode<BvType, MeshType>> right)
       : bv_(std::move(bv)),
         child_(NodeChildren(std::move(left), std::move(right))) {}
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
 
   /* Returns the bounding volume.  */
   const BvType& bv() const { return bv_; }
@@ -148,21 +149,18 @@ class BvNode {
   BvType& bv() { return bv_; }
 
   struct NodeChildren {
-    std::unique_ptr<BvNode<BvType, MeshType>> left;
-    std::unique_ptr<BvNode<BvType, MeshType>> right;
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(NodeChildren)
 
-    NodeChildren(std::unique_ptr<BvNode<BvType, MeshType>> left_in,
-                 std::unique_ptr<BvNode<BvType, MeshType>> right_in)
+    NodeChildren(std::unique_ptr<BvNode> left_in,
+                 std::unique_ptr<BvNode> right_in)
         : left(std::move(left_in)), right(std::move(right_in)) {
       DRAKE_DEMAND(left != nullptr);
       DRAKE_DEMAND(right != nullptr);
       DRAKE_DEMAND(left != right);
     }
 
-    NodeChildren(const NodeChildren& other)
-        : NodeChildren{
-              std::make_unique<BvNode<BvType, MeshType>>(*other.left),
-              std::make_unique<BvNode<BvType, MeshType>>(*other.right)} {}
+    copyable_unique_ptr<BvNode> left;
+    copyable_unique_ptr<BvNode> right;
   };
 
   BvType bv_;
@@ -205,23 +203,13 @@ using BvttCallback = std::function<BvttCallbackResult(
 template <class BvType, class SourceMeshType>
 class Bvh {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Bvh)
+
   using MeshType = SourceMeshType;
   using IndexType = typename MeshType::ElementIndex;
   using NodeType = BvNode<BvType, MeshType>;
 
   explicit Bvh(const MeshType& mesh);
-
-  Bvh(const Bvh& bvh) { *this = bvh; }
-
-  Bvh& operator=(const Bvh& bvh) {
-    if (&bvh == this) return *this;
-
-    root_node_ = std::make_unique<NodeType>(*bvh.root_node_);
-    return *this;
-  }
-
-  Bvh(Bvh&&) = default;
-  Bvh& operator=(Bvh&&) = default;
 
   const NodeType& root_node() const { return *root_node_; }
 
@@ -411,7 +399,7 @@ class Bvh {
 
   static constexpr int kElementVertexCount = MeshType::kVertexPerElement;
 
-  std::unique_ptr<NodeType> root_node_;
+  copyable_unique_ptr<NodeType> root_node_;
 };
 
 }  // namespace internal
