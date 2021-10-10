@@ -260,7 +260,7 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
 template <int Dim>
 class MinimalDistanceFromSphereProblem {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinimalDistanceFromSphereProblem);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimalDistanceFromSphereProblem);
 
   /** @param with_linear_cost If set to true, we add the quadratic cost as the
    * sum of a quadratic and a linear cost. Otherwise we add it as a single
@@ -317,7 +317,7 @@ class MinimalDistanceFromSphereProblem {
   Eigen::Matrix<symbolic::Variable, Dim, 1> x_;
   Eigen::Matrix<double, Dim, 1> pt_;
   Eigen::Matrix<double, Dim, 1> center_;
-  double radius_;
+  const double radius_;
 };
 
 void TestSocpDualSolution1(const SolverInterface& solver,
