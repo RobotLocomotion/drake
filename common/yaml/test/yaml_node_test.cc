@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 
 namespace drake {
 namespace yaml {
@@ -27,24 +28,6 @@ GTEST_TEST(YamlNodeTest, DefaultConstructor) {
   EXPECT_EQ(dut.GetType(), NodeType::kScalar);
   EXPECT_TRUE(dut.IsScalar());
   EXPECT_TRUE(dut.IsEmptyScalar());
-  EXPECT_EQ(dut.GetScalar(), "");
-}
-
-// Sanity check of defaulted operators.  We don't need to test them
-// exhaustively, because they are defaulted.
-GTEST_TEST(YamlNodeTest, DefaultCopyMove) {
-  Node dut = Node::MakeScalar("foo");
-
-  // Copy constructor.
-  Node foo(dut);
-  EXPECT_EQ(dut.GetScalar(), "foo");
-  EXPECT_EQ(foo.GetScalar(), "foo");
-
-  // Move constructor.
-  Node bar(std::move(dut));
-  EXPECT_EQ(bar.GetScalar(), "foo");
-  // It is important for performance that the move constructor actually moves
-  // the stored data, instead of copying it.
   EXPECT_EQ(dut.GetScalar(), "");
 }
 
@@ -123,6 +106,32 @@ TEST_P(YamlNodeParamaterizedTest, GetSetTag) {
   EXPECT_EQ(dut.GetTag(), "");
   dut.SetTag("tag");
   EXPECT_EQ(dut.GetTag(), "tag");
+}
+
+// It is important for our YAML subsystem performance that the Node's move
+// operations actually move the stored data, instead of copying it.
+TEST_P(YamlNodeParamaterizedTest, EfficientMoveConstructor) {
+  Node dut = MakeNonEmptyDut();
+
+  auto guard = std::make_unique<test::LimitMalloc>();
+  Node foo(std::move(dut));
+  guard.reset();
+
+  EXPECT_EQ(dut, MakeEmptyDut());
+  EXPECT_EQ(foo, MakeNonEmptyDut());
+}
+
+// Ditto per the prior test case.
+TEST_P(YamlNodeParamaterizedTest, EfficientMoveAssignment) {
+  Node dut = MakeNonEmptyDut();
+  Node foo;
+
+  auto guard = std::make_unique<test::LimitMalloc>();
+  foo = std::move(dut);
+  guard.reset();
+
+  EXPECT_EQ(dut, MakeEmptyDut());
+  EXPECT_EQ(foo, MakeNonEmptyDut());
 }
 
 // Check (non-)equality as affected by the stored type of empty nodes.
