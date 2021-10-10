@@ -9,6 +9,16 @@
 namespace drake {
 namespace {
 
+struct NoDefaultCtor {
+  explicit NoDefaultCtor(int value_in) : value(value_in) {}
+
+  bool operator<(const NoDefaultCtor& other) const {
+    return value < other.value;
+  }
+
+  int value{};
+};
+
 // Verifies behavior of the default constructor.
 GTEST_TEST(SortedPair, Default) {
   SortedPair<int> x;
@@ -18,6 +28,15 @@ GTEST_TEST(SortedPair, Default) {
   SortedPair<double> y;
   EXPECT_EQ(y.first(), 0.0);
   EXPECT_EQ(y.second(), 0.0);
+}
+
+// Usable even with non-default-constructible types
+GTEST_TEST(SortedPair, WithoutDefaultCtor) {
+  NoDefaultCtor a(2);
+  NoDefaultCtor b(1);
+  SortedPair<NoDefaultCtor> x(a, b);
+  EXPECT_EQ(x.first().value, 1);
+  EXPECT_EQ(x.second().value, 2);
 }
 
 // Verifies sorting occurs.
