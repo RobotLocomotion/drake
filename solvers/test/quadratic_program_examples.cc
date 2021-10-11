@@ -446,17 +446,16 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
     x_expected << 2.0 / 3.0, 1.0 / 3.0;
 
     prog.SetSolverOption(GurobiSolver::id(), "BarConvTol", 1E-9);
+    // The default accuracy in SCS isn't enough, we set it to 1E-6.
+    prog.SetSolverOption(ScsSolver::id(), "eps_abs", 1E-6);
+    prog.SetSolverOption(ScsSolver::id(), "eps_rel", 1E-6);
     MathematicalProgramResult result;
     ASSERT_NO_THROW(result = RunSolver(prog, solver));
 
     const auto& x_value = result.GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
-    double tol = 1E-5;
-    if (result.get_solver_id() == ScsSolver::id()) {
-      tol = 2E-5;
-    }
-    ExpectSolutionCostAccurate(prog, result, tol);
+    ExpectSolutionCostAccurate(prog, result, 1E-5);
   }
 }
 
