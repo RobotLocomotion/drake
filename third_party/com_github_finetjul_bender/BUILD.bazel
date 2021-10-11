@@ -12,6 +12,7 @@ cc_library(
     ],
     hdrs = ["vtkCapsuleSource.h"],
     licenses = ["notice"],  # Apache-2.0
+    linkstatic = True,
     tags = ["nolint"],
     visibility = ["//geometry:__subpackages__"],
     deps = [

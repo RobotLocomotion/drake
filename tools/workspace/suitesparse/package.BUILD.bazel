@@ -16,6 +16,9 @@ cc_library(
     linkopts = [
         "-L" + LIBDIR,
         "-lamd",
+        # Explicitly specify transitive dependencies; these are needed when
+        # using static SuiteSparse as in the PyPI wheel builds.
+        "-lsuitesparseconfig",
     ],
     licenses = ["notice"],  # BSD-3-Clause
 )

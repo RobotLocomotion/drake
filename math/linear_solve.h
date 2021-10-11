@@ -639,11 +639,31 @@ template <template <typename, int...> typename LinearSolverType,
           typename DerivedA>
 class LinearSolver {
  public:
+  using SolverType = internal::EigenLinearSolver<LinearSolverType, DerivedA>;
+
+  /**
+   * The return type of Solve() function.
+   * When both A and B contain the same scalar, and that scalar type
+   * is double or symbolic::Expression, then the return type is
+   * Eigen::Solve<Decomposition, DerivedB>, same as the return type of
+   * Decomposition::solve() function in Eigen. This avoids unnecessary copies
+   * and heap memory allocations if we were to evaluate
+   * Eigen::Solve<Decomposition, DerivedB> to a concrete Eigen::Matrix type.
+   * Othewise we return an Eigen::Matrix with the same size as DerivedB
+   * and proper scalar type.
+   */
   template <typename DerivedB>
-  using SolutionType = internal::Solution<DerivedA, DerivedB>;
+  using SolutionType = std::conditional_t<
+      std::is_same_v<typename DerivedA::Scalar, typename DerivedB::Scalar> &&
+          internal::is_double_or_symbolic_v<typename DerivedA::Scalar>,
+      Eigen::Solve<SolverType, DerivedB>,
+      internal::Solution<DerivedA, DerivedB>>;
+
+  /** Default constructor. Constructs an empty linear solver. */
+  LinearSolver() : eigen_linear_solver_() {}
 
   explicit LinearSolver(const Eigen::MatrixBase<DerivedA>& A)
-      : linear_solver_{GetLinearSolver<LinearSolverType>(A)} {
+      : eigen_linear_solver_{GetLinearSolver<LinearSolverType>(A)} {
     if constexpr (internal::is_autodiff_v<typename DerivedA::Scalar>) {
       A_.emplace(A);
     }
@@ -664,21 +684,38 @@ class LinearSolver {
 
     if constexpr (std::is_same_v<ScalarA, ScalarB> &&
                   !internal::is_autodiff_v<ScalarA>) {
-      return linear_solver_.solve(b);
+      return eigen_linear_solver_.solve(b);
       // NOLINTNEXTLINE(readability/braces)
     } else if constexpr (std::is_same_v<ScalarA, double> &&
                          internal::is_autodiff_v<ScalarB>) {
-      return SolveLinearSystem(linear_solver_, b);
+      return SolveLinearSystem(eigen_linear_solver_, b);
       // NOLINTNEXTLINE(readability/braces)
     } else if constexpr (internal::is_autodiff_v<ScalarA>) {
-      return SolveLinearSystem(linear_solver_, *A_, b);
+      return SolveLinearSystem(eigen_linear_solver_, *A_, b);
     }
     DRAKE_UNREACHABLE();
   }
 
+  /** Getter for the Eigen linear solver.
+   * The scalar type in the Eigen linear solver depends on the scalar type in A
+   * matrix, as shown in this table
+   * |      A       | double |  ADS   | Expr |
+   * |--------------|--------|--------|----- |
+   * |linear_solver | double | double | Expr |
+   *
+   * where ADS stands for Eigen::AutoDiffScalar, Expr stands for
+   * symbolic::Expression.
+   *
+   * Note that when A contains autodiffscalar, we only use the double version of
+   * Eigen linear solver. By using implicit-function theorem with the
+   * double-valued Eigen linear solver, we can compute the gradient of the
+   * solution much faster than directly autodiffing the Eigen linear solver.
+   *
+   */
+  const SolverType& eigen_linear_solver() const { return eigen_linear_solver_; }
+
  private:
-  using SolverType = internal::EigenLinearSolver<LinearSolverType, DerivedA>;
-  SolverType linear_solver_;
+  SolverType eigen_linear_solver_;
   std::optional<Eigen::Matrix<
       typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
       DerivedA::ColsAtCompileTime, Eigen::ColMajor,

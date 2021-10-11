@@ -394,6 +394,19 @@ std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
 }
 
 template <typename T>
+std::vector<FrameIndex> MultibodyTree<T>::GetFrameIndices(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  std::vector<FrameIndex> indices;
+  for (auto& frame : frames_) {
+    if (frame->model_instance() == model_instance) {
+      indices.emplace_back(frame->index());
+    }
+  }
+  return indices;
+}
+
+template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(std::string_view name) const {
   return GetElementByName(*this, name, std::nullopt, frame_name_to_index_);
 }

@@ -1,5 +1,4 @@
 import pydrake.geometry as mut
-import pydrake.geometry._testing as mut_testing
 
 import copy
 import unittest
@@ -7,21 +6,15 @@ from math import pi
 
 import numpy as np
 
-from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
-from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
-from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
-from pydrake.perception import PointCloud
 from pydrake.systems.analysis import (
     Simulator_,
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
-    DiagramBuilder_,
     InputPort_,
     OutputPort_,
 )
@@ -321,142 +314,6 @@ class TestGeometry(unittest.TestCase):
                 1)
 
     @numpy_compare.check_nonsymbolic_types
-    def test_drake_visualizer(self, T):
-        # Test visualization API.
-        SceneGraph = mut.SceneGraph_[T]
-        DiagramBuilder = DiagramBuilder_[T]
-        Simulator = Simulator_[T]
-        lcm = DrakeLcm()
-        role = mut.Role.kIllustration
-        params = mut.DrakeVisualizerParams(
-            publish_period=0.1, role=mut.Role.kIllustration,
-            default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4),
-            show_hydroelastic=False)
-        self.assertEqual(repr(params), "".join([
-            "DrakeVisualizerParams("
-            "publish_period=0.1, "
-            "role=Role.kIllustration, "
-            "default_color=Rgba(r=0.1, g=0.2, b=0.3, a=0.4), "
-            "show_hydroelastic=False)"]))
-
-        # Add some subscribers to detect message broadcast.
-        load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
-        draw_channel = "DRAKE_VIEWER_DRAW"
-        load_subscriber = Subscriber(
-            lcm, load_channel, lcmt_viewer_load_robot)
-        draw_subscriber = Subscriber(
-            lcm, draw_channel, lcmt_viewer_draw)
-
-        # There are three ways to configure DrakeVisualizer.
-        def by_hand(builder, scene_graph, params):
-            visualizer = builder.AddSystem(
-                mut.DrakeVisualizer_[T](lcm=lcm, params=params))
-            builder.Connect(scene_graph.get_query_output_port(),
-                            visualizer.query_object_input_port())
-
-        def auto_connect_to_system(builder, scene_graph, params):
-            mut.DrakeVisualizer_[T].AddToBuilder(builder=builder,
-                                                 scene_graph=scene_graph,
-                                                 lcm=lcm, params=params)
-
-        def auto_connect_to_port(builder, scene_graph, params):
-            mut.DrakeVisualizer_[T].AddToBuilder(
-                builder=builder,
-                query_object_port=scene_graph.get_query_output_port(),
-                lcm=lcm, params=params)
-
-        for func in [by_hand, auto_connect_to_system, auto_connect_to_port]:
-            # Build the diagram.
-            builder = DiagramBuilder()
-            scene_graph = builder.AddSystem(SceneGraph())
-            func(builder, scene_graph, params)
-
-            # Simulate to t = 0 to send initial load and draw messages.
-            diagram = builder.Build()
-            Simulator(diagram).AdvanceTo(0)
-            lcm.HandleSubscriptions(0)
-            self.assertEqual(load_subscriber.count, 1)
-            self.assertEqual(draw_subscriber.count, 1)
-            load_subscriber.clear()
-            draw_subscriber.clear()
-
-        # Ad hoc broadcasting.
-        scene_graph = SceneGraph()
-
-        mut.DrakeVisualizer_[T].DispatchLoadMessage(
-            scene_graph, lcm, params)
-        lcm.HandleSubscriptions(0)
-        self.assertEqual(load_subscriber.count, 1)
-        self.assertEqual(draw_subscriber.count, 0)
-        load_subscriber.clear()
-        draw_subscriber.clear()
-
-    def test_meshcat(self):
-        meshcat = mut.Meshcat(port=7051)
-        self.assertEqual(meshcat.port(), 7051)
-        with self.assertRaises(RuntimeError):
-            meshcat2 = mut.Meshcat(port=7051)
-        self.assertIn("http", meshcat.web_url())
-        self.assertIn("ws", meshcat.ws_url())
-        meshcat.SetObject(path="/test/box",
-                          shape=mut.Box(1, 1, 1),
-                          rgba=mut.Rgba(.5, .5, .5))
-        meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
-        cloud = PointCloud(4)
-        cloud.mutable_xyzs()[:] = np.zeros((3, 4))
-        meshcat.SetObject(path="/test/cloud", cloud=cloud,
-                          point_size=0.01, rgba=mut.Rgba(.5, .5, .5))
-        meshcat.SetProperty(path="/Background",
-                            property="visible",
-                            value=True)
-        meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
-                            property="intensity", value=1.0)
-        meshcat.Set2dRenderMode(
-            X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
-        meshcat.ResetRenderMode()
-        meshcat.AddButton(name="button")
-        self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
-        meshcat.DeleteButton(name="button")
-        meshcat.AddSlider(name="slider", min=0, max=1, step=0.01, value=0.5)
-        meshcat.SetSliderValue(name="slider", value=0.7)
-        self.assertAlmostEqual(meshcat.GetSliderValue(
-            name="slider"), 0.7, delta=1e-14)
-        meshcat.DeleteSlider(name="slider")
-        meshcat.DeleteAddedControls()
-
-    @numpy_compare.check_nonsymbolic_types
-    def test_meshcat_visualizer(self, T):
-        meshcat = mut.Meshcat()
-        params = mut.MeshcatVisualizerParams()
-        params.publish_period = 0.123
-        params.role = mut.Role.kIllustration
-        params.default_color = mut.Rgba(0.5, 0.5, 0.5)
-        params.prefix = "py_visualizer"
-        params.delete_on_initialization_event = False
-        vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
-        vis.Delete()
-        self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
-
-        builder = DiagramBuilder_[T]()
-        scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
-        mut.MeshcatVisualizerCpp_[T].AddToBuilder(builder=builder,
-                                                  scene_graph=scene_graph,
-                                                  meshcat=meshcat,
-                                                  params=params)
-        mut.MeshcatVisualizerCpp_[T].AddToBuilder(
-            builder=builder,
-            query_object_port=scene_graph.get_query_output_port(),
-            meshcat=meshcat,
-            params=params)
-
-    def test_meshcat_visualizer_scalar_conversion(self):
-        meshcat = mut.Meshcat()
-        vis = mut.MeshcatVisualizerCpp(meshcat)
-        vis_autodiff = vis.ToAutoDiffXd()
-        self.assertIsInstance(vis_autodiff,
-                              mut.MeshcatVisualizerCpp_[AutoDiffXd])
-
-    @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
         RigidTransform = RigidTransform_[T]
@@ -616,130 +473,6 @@ class TestGeometry(unittest.TestCase):
             camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
-
-    def test_surface_mesh(self):
-        # Create a mesh out of two triangles forming a quad.
-        #
-        #     0______1
-        #      |b  /|      Two faces: a and b.
-        #      |  / |      Four vertices: 0, 1, 2, and 3.
-        #      | /a |
-        #      |/___|
-        #     2      3
-
-        f_a = mut.SurfaceFace(v0=mut.SurfaceVertexIndex(3),
-                              v1=mut.SurfaceVertexIndex(1),
-                              v2=mut.SurfaceVertexIndex(2))
-        f_b = mut.SurfaceFace(v0=mut.SurfaceVertexIndex(2),
-                              v1=mut.SurfaceVertexIndex(1),
-                              v2=mut.SurfaceVertexIndex(0))
-        self.assertEqual(f_a.vertex(0), 3)
-        self.assertEqual(f_b.vertex(1), 1)
-
-        v0 = mut.SurfaceVertex((-1,  1, 0))
-        v1 = mut.SurfaceVertex((1,  1, 0))
-        v2 = mut.SurfaceVertex((-1, -1, 0))
-        v3 = mut.SurfaceVertex((1, -1, 0))
-
-        self.assertListEqual(list(v0.r_MV()), [-1, 1, 0])
-
-        mesh = mut.SurfaceMesh(faces=(f_a, f_b), vertices=(v0, v1, v2, v3))
-        self.assertEqual(len(mesh.faces()), 2)
-        self.assertEqual(len(mesh.vertices()), 4)
-        self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
-
-    def test_volume_mesh(self):
-        # Create a mesh out of two tetrahedra with a single, shared face
-        # (1, 2, 3).
-        #
-        #            +y
-        #            |
-        #            o v2
-        #            |
-        #       v4   | v1   v0
-        #    ───o────o─────o──  +x
-        #           /
-        #          /
-        #         o v3
-        #        /
-        #      +z
-
-        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(2),
-                                   v1=mut.VolumeVertexIndex(1),
-                                   v2=mut.VolumeVertexIndex(3),
-                                   v3=mut.VolumeVertexIndex(4))
-        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(3),
-                                    v1=mut.VolumeVertexIndex(1),
-                                    v2=mut.VolumeVertexIndex(2),
-                                    v3=mut.VolumeVertexIndex(0))
-        self.assertEqual(t_left.vertex(0), 2)
-        self.assertEqual(t_right.vertex(1), 1)
-
-        v0 = mut.VolumeVertex((1, 0,  0))
-        v1 = mut.VolumeVertex((0, 0,  0))
-        v2 = mut.VolumeVertex((0, 1,  0))
-        v3 = mut.VolumeVertex((0, 0, 1))
-        v4 = mut.VolumeVertex((-1, 0,  0))
-
-        self.assertListEqual(list(v0.r_MV()), [1, 0, 0])
-
-        mesh = mut.VolumeMesh(elements=(t_left, t_right),
-                              vertices=(v0, v1, v2, v3, v4))
-
-        self.assertEqual(len(mesh.tetrahedra()), 2)
-        self.assertIsInstance(mesh.tetrahedra()[0], mut.VolumeElement)
-        self.assertEqual(len(mesh.vertices()), 5)
-        self.assertIsInstance(mesh.vertices()[0], mut.VolumeVertex)
-
-        self.assertAlmostEqual(
-            mesh.CalcTetrahedronVolume(e=mut.VolumeElementIndex(1)),
-            1/6.0,
-            delta=1e-15)
-        self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)
-
-    def test_convert_volume_to_surface_mesh(self):
-        # Use the volume mesh from `test_volume_mesh()`.
-        t_left = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
-                                   v1=mut.VolumeVertexIndex(2),
-                                   v2=mut.VolumeVertexIndex(3),
-                                   v3=mut.VolumeVertexIndex(4))
-        t_right = mut.VolumeElement(v0=mut.VolumeVertexIndex(1),
-                                    v1=mut.VolumeVertexIndex(3),
-                                    v2=mut.VolumeVertexIndex(2),
-                                    v3=mut.VolumeVertexIndex(0))
-
-        v0 = mut.VolumeVertex((1, 0,  0))
-        v1 = mut.VolumeVertex((0, 0,  0))
-        v2 = mut.VolumeVertex((0, 1,  0))
-        v3 = mut.VolumeVertex((0, 0, -1))
-        v4 = mut.VolumeVertex((-1, 0,  0))
-
-        volume_mesh = mut.VolumeMesh(elements=(t_left, t_right),
-                                     vertices=(v0, v1, v2, v3, v4))
-
-        surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
-
-        self.assertIsInstance(surface_mesh, mut.SurfaceMesh)
-
-    def test_read_obj_to_surface_mesh(self):
-        mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
-        mesh = mut.ReadObjToSurfaceMesh(mesh_path)
-        vertices = mesh.vertices()
-
-        # This test relies on the specific content of the file quad_cube.obj.
-        # These coordinates came from the first section of quad_cube.obj.
-        expected_vertices = [
-            [1.000000, -1.000000, -1.000000],
-            [1.000000, -1.000000,  1.000000],
-            [-1.000000, -1.000000,  1.000000],
-            [-1.000000, -1.000000, -1.000000],
-            [1.000000,  1.000000, -1.000000],
-            [1.000000,  1.000000,  1.000000],
-            [-1.000000,  1.000000,  1.000000],
-            [-1.000000,  1.000000, -1.000000],
-        ]
-        for i, expected in enumerate(expected_vertices):
-            self.assertListEqual(list(vertices[i].r_MV()), expected)
 
     @numpy_compare.check_nonsymbolic_types
     def test_value_instantiations(self, T):

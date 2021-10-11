@@ -188,7 +188,7 @@ drake::VectorX<Expression> ToSymbolic(
 }
 
 bool IsDeterministic(const DistributionVariant& var) {
-  return std::visit(overloaded {
+  return std::visit(overloaded{
     [](const double&) -> bool {
       return true;
     },
@@ -355,7 +355,7 @@ drake::VectorX<Expression> UniformVector<Size>::ToSymbolic() const {
 template <int Size>
 unique_ptr<DistributionVector> ToDistributionVector(
     const DistributionVectorVariant<Size>& vec) {
-  return std::visit(overloaded {
+  return std::visit(overloaded{
     // NOLINTNEXTLINE(whitespace/line_length)
     [](const drake::Vector<double, Size>& arg) -> unique_ptr<DistributionVector> {
       return std::make_unique<DeterministicVector<Size>>(arg);
@@ -392,7 +392,7 @@ unique_ptr<DistributionVector> ToDistributionVector(
 
 template <int Size>
 bool IsDeterministic(const DistributionVectorVariant<Size>& vec) {
-  return std::visit(overloaded {
+  return std::visit(overloaded{
     [](const drake::Vector<double, Size>&) -> bool {
       return true;
     },
