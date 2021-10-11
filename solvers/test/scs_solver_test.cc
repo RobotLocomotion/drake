@@ -215,7 +215,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 4E-6);
+    prob.CheckSolution(result, 3E-4);
   }
 }
 
@@ -371,7 +371,7 @@ GTEST_TEST(TestScs, SimpleSos1) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, 2E-6);
   }
 }
 
@@ -380,7 +380,7 @@ GTEST_TEST(TestScs, MotzkinPolynomial) {
   ScsSolver solver;
   if (solver.is_available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, 5E-6);
   }
 }
 

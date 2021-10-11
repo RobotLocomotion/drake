@@ -242,7 +242,7 @@ void ParseLinearEqualityConstraint(
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
   }
-  cone->f += num_linear_equality_constraints_rows;
+  cone->z += num_linear_equality_constraints_rows;
 }
 
 void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
@@ -621,11 +621,23 @@ void SetScsSettings(
   if (it != solver_options_double->end()) {
     scs_settings->eps_abs = it->second;
     solver_options_double->erase(it);
+  } else {
+    // SCS 3.0 uses 1E-4 as the default value, see
+    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
+    // tolerance is too loose. We set the default tolerance to 1E-5 for better
+    // accuracy.
+    scs_settings->eps_abs = 1E-5;
   }
   it = solver_options_double->find("eps_rel");
   if (it != solver_options_double->end()) {
     scs_settings->eps_rel = it->second;
     solver_options_double->erase(it);
+  } else {
+    // SCS 3.0 uses 1E-4 as the default value, see
+    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
+    // tolerance is too loose. We set the default tolerance to 1E-5 for better
+    // accuracy.
+    scs_settings->eps_rel = 1E-5;
   }
   it = solver_options_double->find("eps_infeas");
   if (it != solver_options_double->end()) {
@@ -797,8 +809,9 @@ void ScsSolver::DoSolve(
   solver_details.dual_objective = scs_info.dobj;
   solver_details.primal_residue = scs_info.res_pri;
   solver_details.residue_infeasibility = scs_info.res_infeas;
-  solver_details.residue_unbounded = scs_info.res_unbdd;
-  solver_details.relative_duality_gap = scs_info.rel_gap;
+  solver_details.residue_unbounded_a = scs_info.res_unbdd_a;
+  solver_details.residue_unbounded_p = scs_info.res_unbdd_p;
+  solver_details.duality_gap = scs_info.gap;
   solver_details.scs_setup_time = scs_info.setup_time;
   solver_details.scs_solve_time = scs_info.solve_time;
 

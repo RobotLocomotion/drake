@@ -11,6 +11,7 @@
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -451,7 +452,11 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
     const auto& x_value = result.GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
-    ExpectSolutionCostAccurate(prog, result, 1E-5);
+    double tol = 1E-5;
+    if (result.get_solver_id() == ScsSolver::id()) {
+      tol = 2E-5;
+    }
+    ExpectSolutionCostAccurate(prog, result, tol);
   }
 }
 
