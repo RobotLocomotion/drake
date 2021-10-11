@@ -34,12 +34,7 @@ PackageMap PackageMap::MakeEmpty() {
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
-  Add(package_name, package_path, std::nullopt);
-}
-
-void PackageMap::Add(const string& package_name, const string& package_path,
-    const std::optional<const string> deprecated_msg) {
-  if (!AddPackageIfNew(package_name, package_path, deprecated_msg)) {
+  if (!AddPackageIfNew(package_name, package_path)) {
     throw std::runtime_error(fmt::format(
         "PackageMap already contains package \"{}\" with path \"{}\" that "
         "conflicts with provided path \"{}\"",
@@ -49,17 +44,13 @@ void PackageMap::Add(const string& package_name, const string& package_path,
 
 void PackageMap::AddMap(const PackageMap& other_map) {
   for (const auto& [package_name, data] : other_map.map_) {
-    Add(package_name, data.Path, data.DeprecatedMessage);
+    Add(package_name, data.Path);
+    SetDeprecated(package_name, data.DeprecatedMessage);
   }
 }
 
 bool PackageMap::Contains(const string& package_name) const {
   return map_.find(package_name) != map_.end();
-}
-
-bool PackageMap::IsDeprecated(const std::string& package_name) const {
-  DRAKE_DEMAND(Contains(package_name));
-  return map_.at(package_name).DeprecatedMessage.has_value();
 }
 
 void PackageMap::Remove(const string& package_name) {
@@ -70,8 +61,20 @@ void PackageMap::Remove(const string& package_name) {
   }
 }
 
+void PackageMap::SetDeprecated(const std::string& package_name,
+    const std::optional<const std::string> deprecated_msg) {
+  DRAKE_DEMAND(Contains(package_name));
+  map_.at(package_name).DeprecatedMessage = deprecated_msg;
+}
+
 int PackageMap::size() const {
   return map_.size();
+}
+
+std::optional<std::string> PackageMap::GetDeprecated(
+    const std::string& package_name) const {
+  DRAKE_DEMAND(Contains(package_name));
+  return map_.at(package_name).DeprecatedMessage;
 }
 
 std::vector<std::string> PackageMap::GetPackageNames() const {
@@ -191,7 +194,7 @@ std::tuple<string, std::optional<string>> ParsePackageManifest(
 }  // namespace
 
 bool PackageMap::AddPackageIfNew(const string& package_name,
-    const string& path, const std::optional<const string> deprecated_msg) {
+    const string& path) {
   DRAKE_DEMAND(!package_name.empty());
   DRAKE_DEMAND(!path.empty());
   // Don't overwrite entries in the map.
@@ -203,7 +206,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
           "Could not add package://" + package_name + " to the search path "
           "because directory " + path + " does not exist");
     }
-    map_.insert(make_pair(package_name, PackageData{path, deprecated_msg}));
+    map_.insert(make_pair(package_name, PackageData{path}));
   } else {
     // Don't warn if we've found the same path with a different spelling.
     const PackageData existing_data = map_.at(package_name);
@@ -232,7 +235,8 @@ void PackageMap::PopulateUpstreamToDrakeHelper(
   if (auto filename = GetPackageXmlFile(directory)) {
     const auto [package_name, deprecated_msg] = ParsePackageManifest(
         filename->string());
-    AddPackageIfNew(package_name, directory, deprecated_msg);
+    if (AddPackageIfNew(package_name, directory))
+      SetDeprecated(package_name, deprecated_msg);
   }
 
   // Continue searching in our parent directory.
@@ -301,7 +305,8 @@ void PackageMap::CrawlForPackages(const string& path) {
       const auto [package_name, deprecated_msg] = ParsePackageManifest(
           entry.path().string());
       const string package_path = entry.path().parent_path().string();
-      AddPackageIfNew(package_name, package_path + "/", deprecated_msg);
+      if (AddPackageIfNew(package_name, package_path + "/"))
+        SetDeprecated(package_name, deprecated_msg);
     }
   }
 }
@@ -309,7 +314,8 @@ void PackageMap::CrawlForPackages(const string& path) {
 void PackageMap::AddPackageXml(const string& filename) {
   const auto [package_name, deprecated_msg] = ParsePackageManifest(filename);
   const string package_path = GetParentDirectory(filename);
-  Add(package_name, package_path, deprecated_msg);
+  Add(package_name, package_path);
+  SetDeprecated(package_name, deprecated_msg);
 }
 
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {

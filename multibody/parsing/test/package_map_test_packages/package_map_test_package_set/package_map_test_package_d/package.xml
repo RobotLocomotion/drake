@@ -8,4 +8,7 @@
   <maintainer email="user@example.com">John Doe</maintainer>
   <author>Jane Doe</author>
   <license>N/A</license>
+  <export>
+    <deprecated/>
+  </export>
 </package>

@@ -30,13 +30,6 @@ class PackageMap final {
   /// different path, or if @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path);
 
-  /// Adds package @p package_name and its path, @p package_path, and a message
-  /// indicating whether the package has been deprecated, @p deprecated_msg.
-  /// Throws if @p package_name is already present in this PackageMap with a
-  /// different path, or if @p package_path does not exist.
-  void Add(const std::string& package_name, const std::string& package_path,
-           std::optional<const std::string> deprecated_msg);
-
   /// Adds package->path mappings from another PackageMap @p other_map. Throws
   /// if the other PackageMap contains the same package with a different path.
   void AddMap(const PackageMap& other_map);
@@ -44,17 +37,23 @@ class PackageMap final {
   /// Returns true if and only if this PackageMap contains @p package_name.
   bool Contains(const std::string& package_name) const;
 
-  /// Returns true if and only if @p package_name is declares itself as
-  /// deprecated. Aborts if no package named @p package_name exists in this
-  /// PackageMap.
-  bool IsDeprecated(const std::string& package_name) const;
-
   /// Removes package @p package_name and its previously added path.
   /// Throws if @p package_name is not present in this PackageMap.
   void Remove(const std::string& package_name);
 
+  /// Sets or clears the deprecation message for package @p package_name.
+  /// Aborts if no package named @p package_name exists in this PackageMap.
+  void SetDeprecated(const std::string& package_name,
+      const std::optional<const std::string> deprecated_msg);
+
   /// Returns the number of entries in this PackageMap.
   int size() const;
+
+  /// Returns the deprecation message for package @p package_name if it has
+  /// been set as deprecated. Aborts i no package named @p package_name exists
+  /// in this PackageMap.
+  std::optional<std::string> GetDeprecated(
+      const std::string& package_name) const;
 
   /// Returns the package names in this PackageMap. The order of package names
   /// returned is unspecified.
@@ -128,8 +127,8 @@ class PackageMap final {
   // This method is the same as Add() except if package_name is already present
   // with a different path, then this method prints a warning and returns false
   // without adding the new path. Returns true otherwise.
-  bool AddPackageIfNew(const std::string& package_name, const std::string& path,
-      const std::optional<const std::string> deprecated_msg);
+  bool AddPackageIfNew(const std::string& package_name,
+      const std::string& path);
 
   // Recursively searches up the directory path searching for package.xml files.
   // The @p directory must be a child of @p stop_at_directory.  Stops searching

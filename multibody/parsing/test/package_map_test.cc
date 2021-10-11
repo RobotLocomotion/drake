@@ -294,11 +294,12 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 // Tests that PackageMap is parsing deprecation messages
 GTEST_TEST(PackageMapTest, TestDeprecation) {
   const string root_path = GetTestDataRoot();
-  PackageMap package_map = PackageMap::MakeEmpty();
+  PackageMap package_map;
   package_map.PopulateFromFolder(root_path);
   for (const auto& package_name : package_map.GetPackageNames()) {
-    EXPECT_EQ(package_map.IsDeprecated(package_name),
-              package_name == "package_map_test_package_b");
+    EXPECT_EQ(package_map.GetDeprecated(package_name).has_value(),
+              package_name == "package_map_test_package_b" ||
+              package_name == "package_map_test_package_d");
   }
 }
 
