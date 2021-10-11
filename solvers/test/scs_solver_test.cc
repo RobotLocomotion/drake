@@ -215,11 +215,8 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    // This problem introduces a pyramid of second order cone constraints, each
-    // one depends on the solution of the other. Hence if the second order cone
-    // constraints on the bottom layer is inaccurate, the top second order cone
-    // constraint will be even more inaccurate. SCS 3.0 doesn't solve this
-    // problem as accurate as the previous version, we need a larger tolerance.
+    // Practically I observe SCS requires looser tolerance for this test. I
+    // don't know why.
     prob.CheckSolution(result, 3 * kTol);
   }
 }
