@@ -74,7 +74,7 @@ namespace drake {
  @code
  copyable_unique_ptr<Base> cu_ptr = make_unique<Derived>();
  copyable_unique_ptr<Base> other_cu_ptr = cu_ptr;           // Triggers a copy.
- is_dynamic_castable<Derived>(cu_other_ptr.get());          // Should be true.
+ is_dynamic_castable<Derived>(other_cu_ptr.get());          // Should be true.
  @endcode
 
  This works for well-designed polymorphic classes.
