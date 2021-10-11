@@ -31,8 +31,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SurfaceMesh", param, doc.SurfaceMesh.doc);
     cls  // BR
-        .def(
-            py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>>(),
+        .def(py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>>(),
             py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
         .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
         .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
@@ -45,8 +44,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "VolumeMesh", param, doc.VolumeMesh.doc);
     cls  // BR
-        .def(py::init<std::vector<VolumeElement>,
-                 std::vector<Vector3<T>>>(),
+        .def(py::init<std::vector<VolumeElement>, std::vector<Vector3<T>>>(),
             py::arg("elements"), py::arg("vertices"), doc.VolumeMesh.ctor.doc)
         .def("vertices", &Class::vertices, py_rvp::reference_internal,
             doc.VolumeMesh.vertices.doc)

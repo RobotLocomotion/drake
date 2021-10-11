@@ -346,9 +346,7 @@ class ObbMakerTestTriangle : public ::testing::Test {
       : ::testing::Test(),
         mesh_M_({SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(1),
                              SurfaceVertexIndex(2))},
-                {SurfaceVertex<double>(Vector3d::UnitX()),
-                 SurfaceVertex<double>(Vector3d::UnitY()),
-                 SurfaceVertex<double>(Vector3d::UnitZ())}),
+                {Vector3d::UnitX(), Vector3d::UnitY(), Vector3d::UnitZ()}),
         test_vertices_{SurfaceVertexIndex(0), SurfaceVertexIndex(1),
                        SurfaceVertexIndex(2)} {}
 
@@ -699,10 +697,8 @@ GTEST_TEST(ObbMakerTestAPI, ObbMakerCompute) {
                    SurfaceVertexIndex(2)),
        SurfaceFace(SurfaceVertexIndex(0), SurfaceVertexIndex(3),
                    SurfaceVertexIndex(1))},
-      {SurfaceVertex<double>(Vector3d::Zero()),
-       SurfaceVertex<double>(Vector3d::UnitX()),
-       SurfaceVertex<double>(2. * Vector3d::UnitY()),
-       SurfaceVertex<double>(3. * Vector3d::UnitZ())});
+      {Vector3d::Zero(), Vector3d::UnitX(), 2. * Vector3d::UnitY(),
+       3. * Vector3d::UnitZ()});
 
   const std::set<SurfaceVertexIndex> test_vertices{SurfaceVertexIndex(0),
                                                    SurfaceVertexIndex(1)};

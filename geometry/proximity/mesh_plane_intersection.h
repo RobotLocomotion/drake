@@ -87,7 +87,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                        const math::RigidTransform<T>& X_WM,
                        ContactPolygonRepresentation representation,
                        std::vector<SurfaceFace>* faces,
-                       std::vector<SurfaceVertex<T>>* vertices_W,
+                       std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
                        std::unordered_map<SortedPair<VolumeVertexIndex>,
                                           SurfaceVertexIndex>* cut_edges);

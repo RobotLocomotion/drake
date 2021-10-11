@@ -62,9 +62,9 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
   void RegisterBody(const geometry::VolumeMesh<double>& mesh, std::string name,
                     double amplitude, double velocity,
                     const Vector3<double>& p_WM) {
-    const std::vector<geometry::VolumeVertex<double>>& verts = mesh.vertices();
+    const std::vector<Vector3<double>>& verts = mesh.vertices();
     std::vector<geometry::VolumeElement> elements = mesh.tetrahedra();
-    std::vector<geometry::VolumeVertex<double>> verts_W;
+    std::vector<Vector3<double>> verts_W;
     /* Shift the vertices to world frame. */
     for (const auto& v : verts) {
       verts_W.emplace_back(v + p_WM);
@@ -98,8 +98,7 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
     output->resize(num_geometries());
     const double t = context.get_time();
     for (int i = 0; i < num_geometries(); ++i) {
-      const std::vector<geometry::VolumeVertex<double>> vertices =
-          meshes_[i].vertices();
+      const std::vector<Vector3<double>> vertices = meshes_[i].vertices();
       const int num_vertices = meshes_[i].num_vertices();
       VectorX<double> q(num_vertices * 3);
       const double v = velocities_[i];

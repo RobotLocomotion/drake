@@ -43,7 +43,7 @@ VolumeMesh<T> MakeCapsuleVolumeMesh(const Capsule& capsule,
   // to subdivide each cap into.
   const int num_circles_per_cap = num_vertices_per_circle / 2;
 
-  std::vector<VolumeVertex<T>> mesh_vertices;
+  std::vector<Vector3<T>> mesh_vertices;
   // 2 caps * number of circles per cap * number of verts per circle
   // + the two medial vertices and the two cap pole vertices.
   mesh_vertices.reserve(2 * num_circles_per_cap * num_vertices_per_circle + 4);

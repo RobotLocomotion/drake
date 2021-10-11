@@ -64,7 +64,7 @@ VolumeMesh<double> MakeUnitCubeTetMesh(
   DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
 
   std::vector<geometry::VolumeElement> elements = mesh.tetrahedra();
-  std::vector<geometry::VolumeVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   for (const auto& v : mesh.vertices()) {
     vertices.emplace_back(pose * v);
   }

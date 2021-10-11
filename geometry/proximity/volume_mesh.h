@@ -132,12 +132,6 @@ class VolumeMesh {
   /** Index for identifying a vertex.
    */
   using VertexIndex = VolumeVertexIndex;
-  /* Note: the vertex type itself is templated (as opposed to just being an
-   alias for VolumeVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
-   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
-   */
-  template <typename U = T>
-  using VertexType = VolumeVertex<U>;
 
   /** Index for identifying a tetrahedral element.
    */
@@ -170,7 +164,7 @@ class VolumeMesh {
    convention documented in the VolumeElement class. This class however does not
    enforce this convention and it is thus the responsibility of the user.  */
   VolumeMesh(std::vector<VolumeElement>&& elements,
-             std::vector<VolumeVertex<T>>&& vertices)
+             std::vector<Vector3<T>>&& vertices)
       : elements_(std::move(elements)), vertices_(std::move(vertices)) {
     if (elements_.empty()) {
       throw std::logic_error("A mesh must contain at least one tetrahedron");
@@ -186,12 +180,12 @@ class VolumeMesh {
    @param v  The index of the vertex.
    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
-  const VolumeVertex<T>& vertex(VertexIndex v) const {
+  const Vector3<T>& vertex(VertexIndex v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
   }
 
-  const std::vector<VolumeVertex<T>>& vertices() const { return vertices_; }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_; }
 
   const std::vector<VolumeElement>& tetrahedra() const { return elements_; }
 
@@ -342,7 +336,7 @@ class VolumeMesh {
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
   // The vertices that are shared between the tetrahedral elements.
-  std::vector<VolumeVertex<T>> vertices_;
+  std::vector<Vector3<T>> vertices_;
 
   friend class VolumeMeshTester<T>;
 };

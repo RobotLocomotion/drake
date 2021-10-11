@@ -109,11 +109,11 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   for (const double x : {-half_size.x(), half_size.x()}) {
     for (const double y : {-half_size.y(), half_size.y()}) {
       for (const double z : {-half_size.z(), half_size.z()}) {
-        const VolumeVertex<double> corner(x, y, z);
+        const Vector3d corner(x, y, z);
         const bool corner_is_a_mesh_vertex =
             mesh.vertices().end() !=
             find_if(mesh.vertices().begin(), mesh.vertices().end(),
-                    [&corner](const VolumeVertex<double>& v) -> bool {
+                    [&corner](const Vector3d& v) -> bool {
                       return v == corner;
                     });
         EXPECT_TRUE(corner_is_a_mesh_vertex)

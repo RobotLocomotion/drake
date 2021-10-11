@@ -30,7 +30,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
     // Seek to the beginning of the stream in each iteration.
     test_stream.seekg(0, test_stream.beg);
 
-    const std::vector<SurfaceVertex<double>> surface_vertices(
+    const std::vector<Vector3<double>> surface_vertices(
         ReadObjToSurfaceMesh(&test_stream, scale).vertices());
 
     EXPECT_EQ(3, surface_vertices.size());

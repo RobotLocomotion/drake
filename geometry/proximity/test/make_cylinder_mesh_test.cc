@@ -171,7 +171,7 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   const double squared_radius = cylinder.radius() * cylinder.radius();
   const double distance_tolerance = DistanceToPointRelativeTolerance(
       std::max(half_length, cylinder.radius()));
-  for (const VolumeVertex<double>& v : mesh.vertices()) {
+  for (const Vector3d& v : mesh.vertices()) {
     const double x = v.x();
     const double y = v.y();
     const double z = v.z();

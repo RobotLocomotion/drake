@@ -70,7 +70,6 @@ using geometry::SourceId;
 using geometry::Sphere;
 using geometry::SurfaceMesh;
 using geometry::SurfaceFaceIndex;
-using geometry::SurfaceVertex;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using std::make_unique;
@@ -291,9 +290,9 @@ class ContactResultMaker final : public LeafSystem<double> {
 
         // Get the three vertices.
         const auto& face = mesh_W.element(j);
-        const SurfaceVertex<double>& vA = mesh_W.vertex(face.vertex(0));
-        const SurfaceVertex<double>& vB = mesh_W.vertex(face.vertex(1));
-        const SurfaceVertex<double>& vC = mesh_W.vertex(face.vertex(2));
+        const Vector3d& vA = mesh_W.vertex(face.vertex(0));
+        const Vector3d& vB = mesh_W.vertex(face.vertex(1));
+        const Vector3d& vC = mesh_W.vertex(face.vertex(2));
 
         write_double3(vA, tri_msg.p_WA);
         write_double3(vB, tri_msg.p_WB);

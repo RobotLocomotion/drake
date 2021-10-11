@@ -144,9 +144,9 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   // semantics of vertices e-j as defined in the make unit sphere
   // infrastructure.
   const int a(0), b(1), c(2), d(3);
-  const std::vector<VolumeVertex<double>> tet_vertices{
-      VolumeVertex<double>(1, -1, -1), VolumeVertex<double>(1, 1, 1),
-      VolumeVertex<double>(-1, 1, -1), VolumeVertex<double>(-1, -1, 1)};
+  const std::vector<Vector3d> tet_vertices{
+      Vector3d(1, -1, -1), Vector3d(1, 1, 1),
+      Vector3d(-1, 1, -1), Vector3d(-1, -1, 1)};
 
   auto mid_point = [&tet_vertices](int i, int j) -> Vector3d {
     return (tet_vertices[i] + tet_vertices[j]) / 2;
@@ -157,13 +157,13 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   // e-j.
   const VIndex e(0), f(1), g(2), h(3), i(4), j(5);
   const std::array<VIndex, 6> octo_vertices{e, f, g, h, i, j};
-  const std::vector<VolumeVertex<double>> unit_p_MVs{
-      VolumeVertex<double>(mid_point(a, b)),  // e = (a + b) / 2
-      VolumeVertex<double>(mid_point(a, c)),  // f = (a + c) / 2
-      VolumeVertex<double>(mid_point(a, d)),  // g = (a + d) / 2
-      VolumeVertex<double>(mid_point(b, c)),  // h = (b + c) / 2
-      VolumeVertex<double>(mid_point(b, d)),  // i = (b + d) / 2
-      VolumeVertex<double>(mid_point(c, d))};  // j = (c + d) / 2
+  const std::vector<Vector3d> unit_p_MVs{
+      Vector3d(mid_point(a, b)),  // e = (a + b) / 2
+      Vector3d(mid_point(a, c)),  // f = (a + c) / 2
+      Vector3d(mid_point(a, d)),  // g = (a + d) / 2
+      Vector3d(mid_point(b, c)),  // h = (b + c) / 2
+      Vector3d(mid_point(b, d)),  // i = (b + d) / 2
+      Vector3d(mid_point(c, d))};  // j = (c + d) / 2
 
   // Confirm the tetrahedron works as advertised; that the vertices at edge
   // midpoints live where we expect them to.
@@ -196,11 +196,11 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
     Vector3d scale_factor{2, 2, 2};
     scale_factor(axis) = 1;
 
-    std::vector<VolumeVertex<double>> p_MVs;
+    std::vector<Vector3d> p_MVs;
     std::transform(
         unit_p_MVs.begin(), unit_p_MVs.end(), std::back_inserter(p_MVs),
-        [&scale_factor](const VolumeVertex<double>& v) {
-          return VolumeVertex<double>(v.cwiseProduct(scale_factor));
+        [&scale_factor](const Vector3d& v) {
+          return Vector3d(v.cwiseProduct(scale_factor));
         });
     std::vector<VolumeElement> split_tetrahedra;
 
@@ -237,8 +237,7 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
     // We arbitrarily pick the z = 0 equator (although x = 0 or y = 0 would work
     // equally well).
     std::vector<Vector3d> equator_vertices;
-    for (const auto& vertex : mesh.vertices()) {
-      const Vector3d& p_MV = vertex;
+    for (const auto& p_MV : mesh.vertices()) {
       const double d_squared = p_MV(0) * p_MV(0) + p_MV(1) * p_MV(1);
       if (p_MV(2) == 0.0 && d_squared >= r_squared - 1e-14) {
         equator_vertices.push_back(p_MV);

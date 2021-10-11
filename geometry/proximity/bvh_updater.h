@@ -64,19 +64,16 @@ class BvhUpdater {
   }
 
  private:
-  template <typename T>
-  using VertexType = typename MeshType::template VertexType<T>;
-
   // If the mesh type is already double-valued, simply return the mesh vertices.
-  static const std::vector<VertexType<double>>& GetMeshVertices(
-      const std::vector<VertexType<double>>& vertices) {
+  static const std::vector<Vector3<double>>& GetMeshVertices(
+      const std::vector<Vector3<double>>& vertices) {
     return vertices;
   }
 
   // If the mesh type is AutoDiffXd-valued, return double-valued vertices.
-  static const std::vector<VertexType<double>> GetMeshVertices(
-      const std::vector<VertexType<AutoDiffXd>>& vertices) {
-    std::vector<VertexType<double>> vertices_dbl;
+  static std::vector<Vector3<double>> GetMeshVertices(
+      const std::vector<Vector3<AutoDiffXd>>& vertices) {
+    std::vector<Vector3<double>> vertices_dbl;
     vertices_dbl.reserve(vertices.size());
     for (const auto& v : vertices) {
       vertices_dbl.emplace_back(convert_to_double(v));
@@ -85,10 +82,8 @@ class BvhUpdater {
   }
 
   // Helper function to perform a bottom-up refit.
-  void UpdateRecursive(
-      typename Bvh<Aabb, MeshType>::NodeType* node,
-      const std::vector<typename MeshType::template VertexType<double>>&
-          vertices) {
+  void UpdateRecursive(typename Bvh<Aabb, MeshType>::NodeType* node,
+                       const std::vector<Vector3<double>>& vertices) {
     using Vector3d = Eigen::Vector3d;
     /* Intentionally uninitialized. */
     Vector3d lower, upper;

@@ -20,8 +20,9 @@
 
 namespace drake {
 namespace geometry {
-
 namespace {
+
+using Eigen::Vector3d;
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
 //  ProximityEngine.
@@ -38,7 +39,7 @@ namespace {
  @pre
      The size of `tinyobj_vertices` is divisible by three.
  */
-std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
+std::vector<Vector3d> TinyObjToSurfaceVertices(
     const std::vector<tinyobj::real_t>& tinyobj_vertices, const double scale) {
   // Vertices from tinyobj are in a vector of floating-point numbers like this:
   //     tinyobj_vertices = {c₀,c₁,c₂, c₃,c₄,c₅, c₆,c₇,c₈,...}
@@ -48,7 +49,7 @@ std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
   //              = {    v0,         v1,         v2,...}
   const int num_coords = tinyobj_vertices.size();
   DRAKE_DEMAND(num_coords % 3 == 0);
-  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   vertices.reserve(num_coords / 3);
 
   auto iter = tinyobj_vertices.begin();
@@ -145,7 +146,7 @@ SurfaceMesh<double> DoReadObjToSurfaceMesh(
   if (shapes.size() == 0) {
     throw std::runtime_error("The Wavefront obj file has no faces.");
   }
-  std::vector<SurfaceVertex<double>> vertices =
+  std::vector<Vector3d> vertices =
       TinyObjToSurfaceVertices(attrib.vertices, scale);
 
   // tinyobj stores vertices from all objects in attrib.vertices but stores

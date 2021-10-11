@@ -115,12 +115,6 @@ class SurfaceMesh {
    Index for identifying a vertex.
    */
   using VertexIndex = SurfaceVertexIndex;
-  /* Note: the vertex type itself is templated (as opposed to just being an
-   alias for SurfaceVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
-   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
-   */
-  template <typename U = T>
-  using VertexType = SurfaceVertex<U>;
 
   /**
    Index for identifying a triangular element.
@@ -164,14 +158,14 @@ class SurfaceMesh {
   const std::vector<SurfaceFace>& faces() const { return faces_; }
 
   /** Returns the vertices. */
-  const std::vector<SurfaceVertex<T>>& vertices() const { return vertices_; }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_; }
 
   /**
    Returns the vertex identified by a given index.
    @param v  The index of the vertex.
    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
-  const SurfaceVertex<T>& vertex(VertexIndex v) const {
+  const Vector3<T>& vertex(VertexIndex v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
   }
@@ -194,7 +188,7 @@ class SurfaceMesh {
    @param vertices  The vertices.
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
-              std::vector<SurfaceVertex<T>>&& vertices)
+              std::vector<Vector3<T>>&& vertices)
       : faces_(std::move(faces)),
         vertices_(std::move(vertices)),
         area_(faces_.size()),  // Pre-allocate here, not yet calculated.
@@ -275,9 +269,9 @@ class SurfaceMesh {
   template <typename B>
   Vector3<promoted_numerical_t<T, B>> CalcCartesianFromBarycentric(
       ElementIndex element_index, const Barycentric<B>& b_Q) const {
-    const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
-    const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
-    const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
+    const Vector3<T> va = vertex(element(element_index).vertex(0));
+    const Vector3<T> vb = vertex(element(element_index).vertex(1));
+    const Vector3<T> vc = vertex(element(element_index).vertex(2));
 
     // This is just a linear transformation between the two coordinates,
     // Cartesian (C) and Barycentric (B). Form the transformation matrix:
@@ -448,7 +442,7 @@ class SurfaceMesh {
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
   // The vertices that are shared among the triangles.
-  std::vector<SurfaceVertex<T>> vertices_;
+  std::vector<Vector3<T>> vertices_;
 
   // Computed in initialization.
 

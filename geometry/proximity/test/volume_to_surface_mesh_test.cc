@@ -118,8 +118,7 @@ void TestVolumeToSurfaceMesh() {
   // so we can use `set`.
   using Coords = std::tuple<T, T, T>;
   std::set<Coords> boundary_vertex_coords;
-  for (const VolumeVertex<T>& vertex : volume.vertices()) {
-    const Vector3<T>& r_MV = vertex;
+  for (const Vector3<T>& r_MV : volume.vertices()) {
     // A vertex is on the boundary of a box when one of its coordinates
     // matches an extremal value.
     using std::abs;
@@ -135,8 +134,7 @@ void TestVolumeToSurfaceMesh() {
   // check that they are the same as vertices on the boundary of the
   // volume mesh.
   std::set<Coords> surface_vertex_coords;
-  for (SurfaceVertexIndex i(0); i < surface.num_vertices(); ++i) {
-    const Vector3<T>& r_MV = surface.vertex(i);
+  for (const Vector3<T>& r_MV : surface.vertices()) {
     surface_vertex_coords.insert(Coords(r_MV.x(), r_MV.y(), r_MV.z()));
   }
   EXPECT_EQ(boundary_vertex_coords, surface_vertex_coords);

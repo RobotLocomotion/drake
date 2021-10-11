@@ -552,10 +552,9 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   EXPECT_EQ(mesh.num_vertices(), 8);
   EXPECT_EQ(mesh.num_faces(), 12);
 
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (const Vector3d& p_MV : mesh.vertices()) {
     // Check that the vertex is near the surface of the capsule.
-    ASSERT_NEAR(CalcDistanceToSurface(capsule_shape, mesh.vertex(v)),
-                0.0, 1e-15);
+    ASSERT_NEAR(CalcDistanceToSurface(capsule_shape, p_MV), 0.0, 1e-15);
   }
 
   // Create rigid representation, passing a smaller resolution hint to verify
@@ -905,7 +904,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   const double kEps = std::numeric_limits<double>::epsilon();
   const VolumeMesh<double>& mesh = sphere1->mesh();
   for (VolumeVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    const VolumeVertex<double>& vertex = mesh.vertex(v);
+    const Vector3d& vertex = mesh.vertex(v);
     // Zero on outside, 1 on inside.
     const double expected_p = pressure(vertex);
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,

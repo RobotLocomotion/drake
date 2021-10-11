@@ -44,7 +44,7 @@ std::vector<VolumeElement> CalcLongCylinderVolumeMeshWithMa(
     const std::vector<VolumeVertexIndex>& bottom,
     const VolumeVertexIndex top_center,
     const std::vector<VolumeVertexIndex>& top,
-    std::vector<VolumeVertex<T>>* mesh_vertices) {
+    std::vector<Vector3<T>>* mesh_vertices) {
   const double top_z = cylinder.length() / 2.;
   const double tolerance =
       DistanceToPointRelativeTolerance(std::min(top_z, cylinder.radius()));
@@ -154,7 +154,7 @@ std::vector<VolumeElement> CalcMediumCylinderVolumeMeshWithMa(
     const std::vector<VolumeVertexIndex>& bottom,
     const VolumeVertexIndex top_center,
     const std::vector<VolumeVertexIndex>& top,
-    std::vector<VolumeVertex<T>>* mesh_vertices) {
+    std::vector<Vector3<T>>* mesh_vertices) {
   const double top_z = cylinder.length() / 2.;
   const double tolerance =
       DistanceToPointRelativeTolerance(std::min(top_z, cylinder.radius()));
@@ -252,7 +252,7 @@ std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
     const std::vector<VolumeVertexIndex>& bottom,
     const VolumeVertexIndex top_center,
     const std::vector<VolumeVertexIndex>& top,
-    std::vector<VolumeVertex<T>>* mesh_vertices) {
+    std::vector<Vector3<T>>* mesh_vertices) {
   const double top_z = cylinder.length() / 2.;
   const double tolerance =
       DistanceToPointRelativeTolerance(std::min(top_z, cylinder.radius()));
@@ -371,7 +371,7 @@ VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
       3,
       static_cast<int>(ceil(2. * M_PI * cylinder.radius() / resolution_hint)));
 
-  std::vector<VolumeVertex<T>> mesh_vertices;
+  std::vector<Vector3<T>> mesh_vertices;
   switch (cylinder_class) {
     case CylinderClass::kLong:
       mesh_vertices.reserve(2 * num_vertices_per_circle + 4);

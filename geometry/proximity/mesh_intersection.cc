@@ -306,7 +306,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   grad_eM_Ms->clear();
 
   std::vector<SurfaceFace> surface_faces;
-  std::vector<SurfaceVertex<T>> surface_vertices_M;
+  std::vector<Vector3<T>> surface_vertices_M;
   std::vector<T> surface_e;
   const VolumeMesh<double>& mesh_M = volume_field_M.mesh();
   // We know that each contact polygon has at most 7 vertices because

@@ -25,7 +25,6 @@ using geometry::SceneGraph;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -42,15 +41,16 @@ namespace internal {
 // an open box with five faces but, for simplicity, we'll only
 // use the bottom face (two triangles).
 std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
-  std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
 
   // Create the vertices, all of which are offset vectors defined in the
   // halfspace body frame.
-  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
+  std::vector<Vector3<double>> vertices = {
+      {0.5, 0.5, -0.5},
+      {-0.5, 0.5, -0.5},
+      {-0.5, -0.5, -0.5},
+      {0.5, -0.5, -0.5},
+  };
 
   // Create the face comprising two triangles. The box penetrates into the
   // z = 0 plane from above. The contact surface should be constructed such that
@@ -659,10 +659,11 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // report a centroid point (part of Data constructor).
   const Vector3<AutoDiffXd> p_WC =
       (X_WA.translation() + X_WB.translation()) / 2;
-  std::vector<SurfaceVertex<AutoDiffXd>> vertices;
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0));
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5));
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5));
+  std::vector<Vector3<AutoDiffXd>> vertices = {
+      p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0),
+      p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5),
+      p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
+  };
 
   std::vector<SurfaceFace> faces({SurfaceFace{
       SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2)}});

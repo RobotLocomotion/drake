@@ -76,7 +76,7 @@ void VerifyCapsuleMeshWithMa(const VolumeMesh<double>& mesh,
   // B. The mesh conforms to the capsule.
   const double tolerance = DistanceToPointRelativeTolerance(
       std::max(capsule.length() / 2., capsule.radius()));
-  for (const VolumeVertex<double>& v : mesh.vertices()) {
+  for (const Vector3d& v : mesh.vertices()) {
     ASSERT_TRUE(CalcDistanceToSurface(capsule, v) - tolerance <= 0)
         << "A mesh vertex is outside the capsule.";
   }

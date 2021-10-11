@@ -33,7 +33,7 @@ int sgn(const T& x) {
 template <typename T>
 Vector3<T> CalcEdgePlaneIntersection(
     SurfaceVertexIndex a, SurfaceVertexIndex b, const T& s_a, const T& s_b,
-    const std::vector<SurfaceVertex<double>>& vertices_F,
+    const std::vector<Vector3<double>>& vertices_F,
     const math::RigidTransform<T>& X_WF) {
   DRAKE_DEMAND(a != b);
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
@@ -61,11 +61,11 @@ Vector3<T> CalcEdgePlaneIntersection(
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
     SurfaceVertexIndex a, SurfaceVertexIndex b, const T& s_a, const T& s_b,
-    const std::vector<SurfaceVertex<double>>& vertices_F,
+    const std::vector<Vector3<double>>& vertices_F,
     const math::RigidTransform<T>& X_WF,
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices,
-    std::vector<SurfaceVertex<T>>* new_vertices_W) {
+    std::vector<Vector3<T>>* new_vertices_W) {
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
 
   SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
@@ -91,11 +91,11 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
  */
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
-    const std::vector<SurfaceVertex<double>>& vertices_F,
+    const std::vector<Vector3<double>>& vertices_F,
     SurfaceVertexIndex index, const math::RigidTransform<T>& X_WF,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
-    std::vector<SurfaceVertex<T>>* new_vertices_W) {
+    std::vector<Vector3<T>>* new_vertices_W) {
   auto v_to_new_v_iter = vertices_to_newly_created_vertices->find(index);
   if (v_to_new_v_iter == vertices_to_newly_created_vertices->end()) {
     bool inserted;
@@ -119,7 +119,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
-    std::vector<SurfaceVertex<T>>* new_vertices_W,
+    std::vector<Vector3<T>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
@@ -133,7 +133,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   DRAKE_DEMAND(vertices_to_newly_created_vertices != nullptr);
   DRAKE_DEMAND(edges_to_newly_created_vertices != nullptr);
 
-  const std::vector<SurfaceVertex<double>>& vertices_F = mesh_F.vertices();
+  const std::vector<Vector3<double>>& vertices_F = mesh_F.vertices();
   const SurfaceFace& triangle = mesh_F.element(tri_index);
 
   // TODO(SeanCurtis-TRI): This code _might_ look cleaner if it used the same
@@ -375,7 +375,7 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const std::vector<SurfaceFaceIndex>& tri_indices,
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation) {
-  std::vector<SurfaceVertex<T>> new_vertices_W;
+  std::vector<Vector3<T>> new_vertices_W;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
       vertices_to_newly_created_vertices;

@@ -30,7 +30,7 @@ namespace internal {
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   std::vector<VolumeElement> tetrahedra;
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
 
   // Level "0" consists of the octahedron with vertices on the surface of the
   // a sphere of unit radius, according to the diagram below:
@@ -102,7 +102,7 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
  */
 template <typename T>
 void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
-                     const std::vector<VolumeVertex<T>>& p_MVs,
+                     const std::vector<Vector3<T>>& p_MVs,
                      std::vector<VolumeElement>* tets) {
   // The interior octahedron can be split along three different axes: EJ, FI,
   // or GH. Ideally, we should look at the decomposition that arises from each
@@ -226,7 +226,7 @@ std::vector<VolumeElement> SplitTetrahedron(
     const VolumeElement& t,
     std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
         edge_map,
-    const std::vector<VolumeVertex<T>>& p_MVs) {
+    const std::vector<Vector3<T>>& p_MVs) {
   using Key = SortedPair<VolumeVertexIndex>;
   std::vector<VolumeElement> tets;
   tets.reserve(8);
@@ -302,7 +302,7 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
     const VolumeMesh<T>& mesh, const std::vector<bool>& is_boundary) {
   // Initialize the set of new vertices with all of the original vertices; we
   // will grow this set by splitting edges.
-  std::vector<VolumeVertex<T>> all_vertices(mesh.vertices());
+  std::vector<Vector3<T>> all_vertices(mesh.vertices());
   std::vector<bool> all_boundary(is_boundary);
 
   using VIndex = VolumeVertexIndex;
@@ -379,7 +379,7 @@ std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
     const VolumeMesh<T>& mesh, VolumeVertexIndex center_index) {
   // Initialize the set of new vertices with all of the original vertices; we
   // will grow this set by splitting edges.
-  std::vector<VolumeVertex<T>> all_vertices(mesh.vertices());
+  std::vector<Vector3<T>> all_vertices(mesh.vertices());
 
   using VIndex = VolumeVertexIndex;
   // A map from the indices of two vertices on an edge to the index of the
@@ -599,7 +599,7 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
   // dense mesh and 8 * 4^8 = 500K tetrahedra for a sparse mesh, satisfying the
   // promise that we won't produce unlimited tetrahedra.
   VolumeMesh<T> unit_mesh = MakeUnitSphereMesh<T>(std::min(L, 8), strategy);
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   vertices.reserve(unit_mesh.vertices().size());
   for (auto& v : unit_mesh.vertices()) {
     vertices.emplace_back(v * r);

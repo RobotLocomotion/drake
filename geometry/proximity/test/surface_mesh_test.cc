@@ -45,7 +45,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   // straightforward to check.
 
   // Create the vertices.
-  std::vector<SurfaceVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5));
   vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5));
   vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
@@ -65,7 +65,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
 
 // Generates an empty mesh.
 std::unique_ptr<SurfaceMesh<double>> GenerateEmptyMesh() {
-  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   std::vector<SurfaceFace> faces;
   return std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
@@ -76,7 +76,7 @@ std::unique_ptr<SurfaceMesh<double>> GenerateZeroAreaMesh() {
   // The surface mesh will consist of four vertices and two faces.
 
   // Create the vertices.
-  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   for (int i = 0; i < 4; ++i)
     vertices.emplace_back(Vector3<double>::Zero());
 
@@ -122,7 +122,7 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
-  std::vector<SurfaceVertex<T>> vertices_W;
+  std::vector<Vector3<T>> vertices_W;
   for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
   auto surface_mesh_W =
       std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices_W));
@@ -308,10 +308,9 @@ void TestCalcGradBarycentric() {
 
   // Create the mesh with vertex coordinates expressed in World frame to make
   // the test more realistic.
-  const SurfaceMesh<T> mesh_W(
-      {SurfaceFace(triangle)},
-      {SurfaceVertex<T>(X_WM * v0_M), SurfaceVertex<T>(X_WM * v1_M),
-       SurfaceVertex<T>(X_WM * v2_M)});
+  const SurfaceMesh<T> mesh_W({SurfaceFace(triangle)},
+                              {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
+                               Vector3<T>(X_WM * v2_M)});
 
   const SurfaceMeshTester<T> tester(mesh_W);
   const auto gradb0_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 0);
@@ -384,7 +383,7 @@ void TestCalcGradientVectorOfLinearField() {
   const Vector3<T> v2_M(0., 0., 1.);
   const SurfaceMesh<T> mesh_M(
       {SurfaceFace(triangle)},
-      {SurfaceVertex<T>(v0_M), SurfaceVertex<T>(v1_M), SurfaceVertex<T>(v2_M)});
+      {Vector3<T>(v0_M), Vector3<T>(v1_M), Vector3<T>(v2_M)});
   const std::array<T, 3> f{2., 3., 4.};
 
   const Vector3<T> gradf_M =
@@ -543,7 +542,7 @@ class ScalarMixingTest : public ::testing::Test {
     // We construct an AutoDiffXd-valued mesh from the double-valued mesh. We
     // only set the derivatives for vertex 1. That means, operations on
     // triangle 0 *must* have derivatives, but triangle 1 may not have them.
-    std::vector<SurfaceVertex<AutoDiffXd>> vertices;
+    std::vector<Vector3<AutoDiffXd>> vertices;
     vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)));
     vertices.emplace_back(math::InitializeAutoDiff(
         mesh_d_->vertex(SurfaceVertexIndex(1))));

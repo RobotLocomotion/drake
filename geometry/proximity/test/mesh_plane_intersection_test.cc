@@ -69,7 +69,7 @@ VolumeMesh<T> TrivialVolumeMesh(
     const RigidTransform<T>& X_FM = RigidTransform<T>::Identity(),
     bool minimum_vertices = true) {
   vector<VolumeElement> elements;
-  vector<VolumeVertex<T>> vertices;
+  vector<Vector3<T>> vertices;
   if (minimum_vertices) {
     const int element_data[2][4] = {{0, 1, 2, 3}, {0, 2, 1, 4}};
     for (const auto& element : element_data) {
@@ -352,7 +352,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   pair<vector<EdgeVertex>, ::testing::AssertionResult>
   CharacterizeEdgeVertices(
       SurfaceVertexIndex fan_index, const vector<SurfaceFace>& slice,
-      const vector<SurfaceVertex<double>>& slice_vertices_W,
+      const vector<Vector3d>& slice_vertices_W,
       VolumeElementIndex tet_index, const VolumeMesh<double>& mesh_F) const {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const VolumeElement& tet = mesh_F.element(tet_index);
@@ -534,8 +534,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     // values because the condition will be de facto false.
     constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
     const RigidTransformd X_FW = X_WF_.inverse();
-    for (const auto& V_W : vertices_W_) {
-      const Vector3d& p_WV = V_W;
+    for (const Vector3d& p_WV : vertices_W_) {
       const Vector3d& p_FV = X_FW * p_WV;
       const VolumeMesh<double>::Barycentric<double> b_V =
           field_F.mesh().CalcBarycentric(p_FV, tet_index);
@@ -600,7 +599,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
 
   /* The accumulators for the SliceTetWithPlane() method. */
   vector<SurfaceFace> faces_;
-  vector<SurfaceVertex<double>> vertices_W_;
+  vector<Vector3d> vertices_W_;
   vector<double> surface_pressure_;
   unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges_;
 };
@@ -935,7 +934,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   VolumeMeshFieldLinear<double, double> min_field_F{
       vector<double>{0, 0, 0, 1, -1}, &min_mesh_F};
   vector<SurfaceFace> min_faces;
-  vector<SurfaceVertex<double>> min_vertices_F;
+  vector<Vector3d> min_vertices_F;
   vector<double> min_surface_pressure;
   unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       min_cut_edges;
@@ -946,7 +945,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   VolumeMeshFieldLinear<double, double> dupe_field_F{
       vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
   vector<SurfaceFace> dupe_faces;
-  vector<SurfaceVertex<double>> dupe_vertices_F;
+  vector<Vector3d> dupe_vertices_F;
   vector<double> dupe_surface_pressure;
   unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       dupe_cut_edges;
@@ -1014,7 +1013,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
          ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
     vector<SurfaceFace> faces;
-    vector<SurfaceVertex<double>> vertices_W;
+    vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
     VolumeElementIndex tet_index{0};
@@ -1034,7 +1033,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
        ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
     vector<SurfaceFace> faces;
-    vector<SurfaceVertex<double>> vertices_W;
+    vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
     VolumeElementIndex tet_index{1};
@@ -1613,9 +1612,8 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       2. validation is expressed in terms of that gradient. */
     using VI = VolumeVertexIndex;
     vector<VolumeElement> elements({VolumeElement(VI(0), VI(1), VI(2), VI(3))});
-    using V = VolumeVertex<double>;
-    vector<V> vertices_S({V(Vector3d::Zero()), V(Vector3d::UnitX()),
-                          V(Vector3d::UnitY()), V(Vector3d::UnitZ())});
+    vector<Vector3d> vertices_S({Vector3d::Zero(), Vector3d::UnitX(),
+                                 Vector3d::UnitY(), Vector3d::UnitZ()});
     mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
@@ -1773,7 +1771,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
     // two simplifying assumptions:
     //   1. E actually does lie on *one* of the mesh edges.
     //   2. The edges are easily distinguishable by direction.
-    const vector<VolumeVertex<double>>& verts_S = field_S_->mesh().vertices();
+    const vector<Vector3d>& verts_S = field_S_->mesh().vertices();
     const vector<pair<int, int>> edges{{0, 1}, {0, 2}, {0, 3},
                                        {1, 2}, {1, 3}, {2, 3}};
     for (const auto& [a, b] : edges) {
