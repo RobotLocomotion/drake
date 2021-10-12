@@ -990,14 +990,6 @@ class MultibodyTree {
   Eigen::VectorBlock<const VectorX<T>> get_positions_and_velocities(
       const systems::Context<T>& context) const;
 
-  // (Advanced) Takes output vector qv_out and poluates it with the vector
-  // `[q; v]` of the model with `q` the vector of generalized positions and
-  // `v` the vector of generalized velocities.
-  // @pre `context` is a valid multibody system Context.
-  void get_positions_and_velocities(
-      const systems::Context<T>& context,    
-       EigenPtr<VectorX<T>> qv_out) const;
-
   // Returns a Eigen vector containing the multibody state `x = [q; v]`
   // of the model with `q` the vector of generalized positions and `v` the
   // vector of generalized velocities for model instance `model_instance`.
@@ -1010,11 +1002,13 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
-  // (Advanced) Takes output vector qv_out and populates it with the multibody state 
-  // `x = [q; v]` of the model with `q` the vector of generalized positions 
+  // (Advanced) Takes output vector qv_out and populates it with the multibody state
+  // `x = [q; v]` of the model with `q` the vector of generalized positions
   // and `v` the vector of generalized velocities for model instance `model_instance`.
   // @throws std::exception if the `context` does not correspond to the context
   // for a multibody model or `model_instance` is invalid.
+  // @throws std::exception if the size of `qv_out` is not equal to
+  //         'num_postions(model_instance)' + 'num_velocities(model_instance)'
   // @pre `context` is a valid multibody system Context.
   void GetPositionsAndVelocities(
       const systems::Context<T>& context,

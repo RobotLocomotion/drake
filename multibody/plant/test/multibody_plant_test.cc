@@ -2800,12 +2800,13 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
   }
   
-  // Verify that we can retrieve the state vector using the output parameter version 
-  // and that populating these output vectors does not allocate any heap.
+  // Verify that we can retrieve the state vector using the output parameter
+  // version and that populating these output vectors does not allocate any
+  // heap.
   VectorX<double> q_out(q_block.size());
   VectorX<double> v_out(v_block.size());
   VectorX<double> qv_out(qv_block.size());
-  {      
+  {
     // Ensure that getters accepting an output vector do not allocate heap.
     drake::test::LimitMalloc guard({.max_num_allocations = 0});
     plant_->GetPositions(*context_, arm2, &q_out);
@@ -2816,6 +2817,20 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   EXPECT_EQ(q_out, q_block);
   EXPECT_EQ(v_out, v_block);
   EXPECT_EQ(qv_out, qv_block);
+
+  // Verify error conditions
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetPositionsAndVelocities(*context_, arm2, &q_out),
+      std::logic_error,
+      "Output array is not properly sized.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetPositions(*context_, arm2, &qv_out),
+      std::logic_error,
+      "Output array is not properly sized.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetVelocities(*context_, arm2, &qv_out),
+      std::logic_error,
+      "Output array is not properly sized.");
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the

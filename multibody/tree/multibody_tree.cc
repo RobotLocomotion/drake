@@ -782,14 +782,14 @@ void MultibodyTree<T>::GetPositionsAndVelocities(
       EigenPtr<VectorX<T>> qv_out) const {
   Eigen::VectorBlock<const VectorX<T>> state_vector =
       get_positions_and_velocities(context);
-      
+
   auto qv_out_head = qv_out->head(num_positions(model_instance));
   auto qv_out_tail = qv_out->tail(num_velocities(model_instance));
 
   GetPositionsFromArray(
           model_instance, state_vector.head(num_positions()), &qv_out_head);
   GetVelocitiesFromArray(
-          model_instance, state_vector.tail(num_velocities()), &qv_out_tail); 
+          model_instance, state_vector.tail(num_velocities()), &qv_out_tail);
 }
 
 template <typename T>

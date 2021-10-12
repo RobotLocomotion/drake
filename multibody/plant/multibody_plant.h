@@ -1807,22 +1807,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsAndVelocities(context, model_instance);
   }
 
-  /// (Advanced) Populates output vector qv_out representing the generalized positions q and
-  /// generalized velocities v of a specified model instance in a given Context.
-  /// @note qv_out is a dense vector of dimensions `num_positions(model_instance) 
-  ///       + num_velocities(model_instance)` associated with `model_instance` and
-  ///       is populated by copying from `context`.
+  /// (Advanced) Populates output vector qv_out representing the generalized
+  /// positions q and generalized velocities v of a specified model instance
+  /// in a given Context.
+  /// @note qv_out is a dense vector of dimensions
+  ///       `num_positions(model_instance) + num_velocities(model_instance)`
+  ///       associated with `model_instance` and is populated by copying from
+  ///       `context`.
   /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
   ///         for a multibody model or `model_instance` is invalid.
-  /// @throws std::exception if qv_out does not have size 
+  /// @throws std::exception if qv_out does not have size
   ///         `num_positions(model_instance) + num_velocities(model_instance)`
   void GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance,
       EigenPtr<VectorX<T>> qv_out) const {
     this->ValidateContext(context);
-    DRAKE_THROW_UNLESS(qv_out->size() == num_positions(model_instance) + num_velocities(model_instance));
+    if (qv_out->size() != num_positions(model_instance) +
+        num_velocities(model_instance))
+      throw std::logic_error("Output array is not properly sized.");
     internal_tree().GetPositionsAndVelocities(context, model_instance, qv_out);
   }
 
@@ -1888,7 +1892,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// model instance in a given Context.
   /// @note Returns a dense vector of dimension `num_positions(model_instance)`
   ///       associated with `model_instance` by copying from `context`.
-  /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
   /// for a multibody model or `model_instance` is invalid.
   VectorX<T> GetPositions(
@@ -1901,8 +1904,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// (Advanced) Populate output vector q_out with the generalized positions q
   /// of a specified model instance in a given Context.
-  /// @note q_out is set to a dense vector of dimension `num_positions(model_instance)`
-  ///       associated with `model_instance` by copying from `context`.
+  /// @note q_out is a dense vector of dimensions
+  ///       `num_positions(model_instance)' associated with `model_instance`
+  ///       and is populated by copying from `context`.
+  /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
   ///         for a multibody model or `model_instance` is invalid.
   void GetPositions(
@@ -2015,10 +2020,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         model_instance, internal_tree().get_velocities(context));
   }
 
-  /// (Advanced) Populate output vector v_out with the generalized 
+  /// (Advanced) Populate output vector v_out with the generalized
   /// velocities v of a specified model instance in a given Context.
-  /// @note v_out is set to a dense vector of dimension `num_velocities(model_instance)`
-  ///       associated with `model_instance` by copying from `context`.
+  /// @note v_out is a dense vector of dimensions
+  ///       `num_velocities(model_instance)' associated with `model_instance`
+  ///       and is populated by copying from `context`.
   /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context
   ///         for a multibody model or `model_instance` is invalid.
@@ -2178,9 +2184,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsFromArray(model_instance, q);
   }
 
-  /// (Advanced) Populates output vector q_out and with the generalized 
-  /// positions for `model_instance` from a vector `q_array` of generalized 
-  /// positions for the entire model model.  This method throws an exception 
+  /// (Advanced) Populates output vector q_out and with the generalized
+  /// positions for `model_instance` from a vector `q_array` of generalized
+  /// positions for the entire model model.  This method throws an exception
   /// if `q` is not of size MultibodyPlant::num_positions().
   void GetPositionsFromArray(
       ModelInstanceIndex model_instance,
@@ -2212,9 +2218,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetVelocitiesFromArray(model_instance, v);
   }
 
-  /// (Advanced) Populates output vector v_out with the generalized 
-  /// velocities for `model_instance` from a vector `v_array` of generalized 
-  /// velocities for the entire model model.  This method throws an exception 
+  /// (Advanced) Populates output vector v_out with the generalized
+  /// velocities for `model_instance` from a vector `v_array` of generalized
+  /// velocities for the entire model model.  This method throws an exception
   /// if `v` is not of size MultibodyPlant::num_velocities().
   void GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
