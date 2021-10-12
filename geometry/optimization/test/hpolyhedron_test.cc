@@ -166,7 +166,7 @@ GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
   HPolyhedron H = HPolyhedron::MakeUnitBox(3);
   Hyperellipsoid E = H.MaximumVolumeInscribedEllipsoid();
   // The exact tolerance will be solver dependent; this is (hopefully)
-  // conservative enough. 
+  // conservative enough.
   const double kTol = 1e-4;
   EXPECT_TRUE(CompareMatrices(E.center(), Vector3d::Zero(), kTol));
   EXPECT_TRUE(CompareMatrices(E.A().transpose() * E.A(),
