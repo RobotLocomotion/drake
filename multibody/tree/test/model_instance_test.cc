@@ -97,7 +97,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   instance2_pos_expected << 1, 2, 3, 4, 5, 6, 7, 9;
   EXPECT_TRUE(CompareMatrices(instance2_pos, instance2_pos_expected));
 
-  // Check the advanced variant for GetPositionsFromArray that uses no heap
+  // Check the advanced variant for GetPositionsFromArray() that uses no heap.
   Eigen::VectorXd instance2_pos_out(8);
   {
     // Ensure that getters accepting an output vector do not allocate heap.
@@ -109,7 +109,8 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::VectorXd instance2_pos_out_err(10);
   // Verify error conditions
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.GetPositionsFromArray(instance2, pos_vector, &instance2_pos_out_err),
+      tree.GetPositionsFromArray(instance2, pos_vector, 
+        &instance2_pos_out_err),
       std::exception,
       "Output array is not properly sized.");
 
@@ -132,7 +133,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   instance2_vel_expected << 11, 12, 13, 14, 15, 16, 18;
   EXPECT_TRUE(CompareMatrices(instance2_vel, instance2_vel_expected));
 
-  // Check the advanced variant for GetVelocitiesFromArray that uses no heap
+  // Check the advanced variant for GetVelocitiesFromArray() that uses no heap.
   Eigen::VectorXd instance2_vel_out(7);
   {
     // Ensure that getters accepting an output vector do not allocate heap.
@@ -144,7 +145,8 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::VectorXd instance2_vel_out_err(10);
   // Verify error conditions
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.GetVelocitiesFromArray(instance2, vel_vector, &instance2_vel_out_err),
+      tree.GetVelocitiesFromArray(instance2, vel_vector, 
+        &instance2_vel_out_err),
       std::exception,
       "Output array is not properly sized.");
 
