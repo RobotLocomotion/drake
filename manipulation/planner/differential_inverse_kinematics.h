@@ -11,6 +11,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -38,13 +39,23 @@ struct DifferentialInverseKinematicsResult {
 };
 
 /**
- * Computes the pose "difference" between @p pose1 and @p pose0 s.t.
+ * Computes the pose "difference" between @p X_C0 and @p X_C1 such that
  * the linear part equals p_C1 - p_C0, and the angular part equals
  * R_C1 * R_C0.inv(), where p and R stand for the position and rotation parts,
  * and C is the common frame.
  */
-Vector6<double> ComputePoseDiffInCommonFrame(const Isometry3<double>& X_C0,
-                                             const Isometry3<double>& X_C1);
+Vector6<double> ComputePoseDiffInCommonFrame(
+    const math::RigidTransform<double>& X_C0,
+    const math::RigidTransform<double>& X_C1);
+
+DRAKE_DEPRECATED("2022-02-01", "Use RigidTransform instead of Isometry3")
+inline Vector6<double> ComputePoseDiffInCommonFrame(
+      const Isometry3<double>& X_C0,
+      const Isometry3<double>& X_C1) {
+  return ComputePoseDiffInCommonFrame(
+      math::RigidTransform<double>(X_C0),
+      math::RigidTransform<double>(X_C1));
+}
 
 /**
  * Contains parameters for differential inverse kinematics.
@@ -337,9 +348,21 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
-    const Isometry3<double>& X_WE_desired,
+    const math::RigidTransform<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
+
+DRAKE_DEPRECATED("2022-02-01", "Use RigidTransform instead of Isometry3")
+inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const multibody::MultibodyPlant<double>& robot,
+    const systems::Context<double>& context,
+    const Isometry3<double>& X_WE_desired,
+    const multibody::Frame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters) {
+  return DoDifferentialInverseKinematics(
+      robot, context, math::RigidTransform<double>(X_WE_desired), frame_E,
+      parameters);
+}
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {

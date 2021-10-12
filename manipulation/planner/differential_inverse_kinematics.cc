@@ -83,15 +83,17 @@ void DifferentialInverseKinematicsParameters::ClearLinearVelocityConstraints() {
   linear_velocity_constraints_.clear();
 }
 
-Vector6<double> ComputePoseDiffInCommonFrame(const Isometry3<double>& pose0,
-                                             const Isometry3<double>& pose1) {
+Vector6<double> ComputePoseDiffInCommonFrame(
+    const math::RigidTransform<double>& X_C0,
+    const math::RigidTransform<double>& X_C1) {
   Vector6<double> diff = Vector6<double>::Zero();
 
   // Linear.
-  diff.tail<3>() = (pose1.translation() - pose0.translation());
+  diff.tail<3>() = (X_C1.translation() - X_C0.translation());
 
   // Angular.
-  AngleAxis<double> rot_err(pose1.linear() * pose0.linear().transpose());
+  AngleAxis<double> rot_err =
+      (X_C1.rotation() * X_C0.rotation().transpose()).ToAngleAxis();
   diff.head<3>() = rot_err.axis() * rot_err.angle();
 
   return diff;
@@ -261,14 +263,14 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const Isometry3<double>& X_WE_desired,
+    const math::RigidTransform<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const math::RigidTransform<double> X_WE =
       plant.EvalBodyPoseInWorld(context, frame_E.body()) *
       frame_E.CalcPoseInBodyFrame(context);
   const Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE.GetAsIsometry3(), X_WE_desired) /
+      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
       parameters.get_timestep();
   return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_E,
                                          parameters);
