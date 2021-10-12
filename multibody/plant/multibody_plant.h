@@ -1456,8 +1456,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// sections remain planar after compression. Another possibility is to
   /// specify `E = E*`, with `E*` the effective elastic modulus given by the
   /// Hertz theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
-  /// estimation of `elastic_modulus` starts with the Young's modulus of the
-  /// material.
+  /// estimation of `hydroelastic_modulus` starts with the Young's modulus of
+  /// the material.
   ///
   /// We use a dissipation model inspired by the model in
   /// [Hunt and Crossley, 1975], parameterized by a dissipation constant with

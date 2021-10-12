@@ -15,8 +15,8 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
     const Box& box, const VolumeMesh<T>* mesh_B,
-    const T elastic_modulus) {
-  DRAKE_DEMAND(elastic_modulus > T(0));
+    const T hydroelastic_modulus) {
+  DRAKE_DEMAND(hydroelastic_modulus > T(0));
   const Vector3<double> half_size = box.size() / 2.0;
   const double min_half_size = half_size.minCoeff();
 
@@ -47,7 +47,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
     // Map signed_distance ∈ [-min_half_size, 0] to extent e ∈ [0, 1],
     // -min_half_size ⇝ 1, 0 ⇝ 0.
     T extent = -signed_distance / T(min_half_size);
-    pressure_values.push_back(elastic_modulus * extent);
+    pressure_values.push_back(hydroelastic_modulus * extent);
   }
 
   return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_B);

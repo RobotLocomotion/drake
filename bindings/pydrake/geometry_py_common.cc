@@ -7,6 +7,7 @@
 #include "pybind11/operators.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/collision_filter_declaration.h"
@@ -482,6 +483,22 @@ void DoScalarIndependentDefinitions(py::module m) {
           const std::optional<double>&, const std::optional<double>&,
           const std::optional<multibody::CoulombFriction<double>>&,
           ProximityProperties*>(&AddContactMaterial),
+      py::arg("hydroelastic_modulus") = std::nullopt,
+      py::arg("dissipation") = std::nullopt,
+      py::arg("point_stiffness") = std::nullopt,
+      py::arg("friction") = std::nullopt, py::arg("properties"),
+      doc.AddContactMaterial.doc_5args);
+  // Bind the deprecated spelling of the argument `elastic_modulus`.
+  constexpr char doc_AddContactMaterial_deprecated[] =
+      "AddContactMaterial(elastic_modulus) is deprecated, and will be "
+      "removed on or around 2022-02-01. Please use "
+      "AddContactMaterial(hydroleastic_modulus) instead.";
+  m.def("AddContactMaterial",
+      WrapDeprecated(doc_AddContactMaterial_deprecated,
+          py::overload_cast<const std::optional<double>&,
+              const std::optional<double>&, const std::optional<double>&,
+              const std::optional<multibody::CoulombFriction<double>>&,
+              ProximityProperties*>(&AddContactMaterial)),
       py::arg("elastic_modulus") = std::nullopt,
       py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,

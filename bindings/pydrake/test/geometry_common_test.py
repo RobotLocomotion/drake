@@ -239,13 +239,15 @@ class TestGeometryCore(unittest.TestCase):
         """
         props = mut.ProximityProperties()
         reference_friction = CoulombFriction(0.25, 0.125)
-        mut.AddContactMaterial(elastic_modulus=1.5,
+        mut.AddContactMaterial(hydroelastic_modulus=1.5,
                                dissipation=2.7,
                                point_stiffness=3.9,
                                friction=reference_friction,
                                properties=props)
-        self.assertTrue(props.HasProperty("material", "elastic_modulus"))
-        self.assertEqual(props.GetProperty("material", "elastic_modulus"), 1.5)
+        self.assertTrue(
+            props.HasProperty("material", "hydroelastic_modulus"))
+        self.assertEqual(
+            props.GetProperty("material", "hydroelastic_modulus"), 1.5)
         self.assertTrue(
             props.HasProperty("material", "hunt_crossley_dissipation"))
         self.assertEqual(
@@ -302,6 +304,28 @@ class TestGeometryCore(unittest.TestCase):
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
         self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
                          slab_thickness)
+
+    def test_deprecated_for_elastic_modulus(self):
+        """
+        Tests deprecation of AddContactMaterial's argument `elastic_modulus`,
+        which is replaced by `hydroelastic_modulus`.
+        """
+        props = mut.ProximityProperties()
+        reference_friction = CoulombFriction(0.25, 0.125)
+
+        with catch_drake_warnings(expected_count=1) as w:
+            mut.AddContactMaterial(elastic_modulus=1.5,
+                                   dissipation=2.7,
+                                   point_stiffness=3.9,
+                                   friction=reference_friction,
+                                   properties=props)
+            self.assertIn(
+                "AddContactMaterial(elastic_modulus)", str(w[0].message))
+
+        self.assertTrue(
+            props.HasProperty("material", "hydroelastic_modulus"))
+        self.assertEqual(
+            props.GetProperty("material", "hydroelastic_modulus"), 1.5)
 
     def test_rgba_api(self):
         r, g, b, a = 0.75, 0.5, 0.25, 1.
