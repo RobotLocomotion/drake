@@ -29,7 +29,7 @@ namespace bouncing_ball {
 ///   The radius of the ball.
 /// @param[in] mass
 ///   The mass of the ball.
-/// @param[in] elastic_modulus
+/// @param[in] hydroelastic_modulus
 ///   The modulus of elasticity for the ball. Only used when modeled with the
 ///   hydroelastic model. See @ref mbp_hydroelastic_materials_properties
 ///   "Hydroelastic contact" documentation for details.
@@ -58,7 +58,7 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeBouncingBallPlant(
     double mbp_dt,
     double radius, double mass,
-    double elastic_modulus, double dissipation,
+    double hydroelastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
     geometry::SceneGraph<double>* scene_graph = nullptr);

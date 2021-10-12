@@ -20,7 +20,7 @@ using geometry::ProximityProperties;
 using geometry::SceneGraphInspector;
 
 struct MaterialProperties {
-  double elastic_modulus{-1};
+  double hydroelastic_modulus{-1};
   double dissipation{-1};
 };
 
@@ -31,11 +31,11 @@ MaterialProperties GetMaterials(GeometryId id,
   MaterialProperties material;
   if (const ProximityProperties* properties =
           inspector.GetProximityProperties(id)) {
-    material.elastic_modulus =
-        properties->GetPropertyOrDefault("material", "elastic_modulus", kInf);
+    material.hydroelastic_modulus = properties->GetPropertyOrDefault(
+        "material", "hydroelastic_modulus", kInf);
     material.dissipation = properties->GetPropertyOrDefault(
         "material", "hunt_crossley_dissipation", 0.0);
-    DRAKE_DEMAND(material.elastic_modulus > 0);
+    DRAKE_DEMAND(material.hydroelastic_modulus > 0);
     DRAKE_DEMAND(material.dissipation >= 0);
   } else {
     throw std::runtime_error(fmt::format(
@@ -55,8 +55,8 @@ double HydroelasticEngine<T>::CalcCombinedElasticModulus(
   const MaterialProperties material_A = GetMaterials(id_A, inspector);
   const MaterialProperties material_B = GetMaterials(id_B, inspector);
 
-  const double E_A = material_A.elastic_modulus;
-  const double E_B = material_B.elastic_modulus;
+  const double E_A = material_A.hydroelastic_modulus;
+  const double E_B = material_B.hydroelastic_modulus;
   if (E_A == kInf) return E_B;
   if (E_B == kInf) return E_A;
   return E_A * E_B / (E_A + E_B);
@@ -73,8 +73,8 @@ double HydroelasticEngine<T>::CalcCombinedDissipation(
   const MaterialProperties material_A = GetMaterials(id_A, inspector);
   const MaterialProperties material_B = GetMaterials(id_B, inspector);
 
-  const double E_A = material_A.elastic_modulus;
-  const double E_B = material_B.elastic_modulus;
+  const double E_A = material_A.hydroelastic_modulus;
+  const double E_B = material_B.hydroelastic_modulus;
   const double d_A = material_A.dissipation;
   const double d_B = material_B.dissipation;
   const double Estar = CalcCombinedElasticModulus(id_A, id_B, inspector);

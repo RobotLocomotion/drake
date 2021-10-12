@@ -48,11 +48,11 @@ class HydroelasticEngineTest : public ::testing::Test {
 
   /** Adds a geometry with the given name and assigns soft hydroelastic geometry
    properties.  */
-  GeometryId AddSoftGeometry(const std::string& name, double elastic_modulus,
-                             double dissipation) {
+  GeometryId AddSoftGeometry(const std::string& name,
+                             double hydroelastic_modulus, double dissipation) {
     GeometryId id = AddGeometry(name);
     ProximityProperties props;
-    props.AddProperty("material", "elastic_modulus", elastic_modulus);
+    props.AddProperty("material", "hydroelastic_modulus", hydroelastic_modulus);
     props.AddProperty("material", "hunt_crossley_dissipation", dissipation);
     scene_graph_.AssignRole(source_id_, id, props);
     return id;
