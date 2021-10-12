@@ -10,6 +10,25 @@
 namespace drake {
 namespace yaml {
 
+YAML::Node YamlReadArchive::LoadFileAsNode(
+    const std::string& filename,
+    const std::optional<std::string>& child_name) {
+  // Nominally, we will parse starting from the root.
+  YAML::Node root = YAML::LoadFile(filename);
+  if (!child_name.has_value()) {
+    return root;
+  }
+
+  // However, if the user provided a child_name, then use that instead.
+  YAML::Node child_node = root[*child_name];
+  if (!child_node) {
+    throw std::runtime_error(fmt::format(
+        "When loading '{}', there was no such top-level map entry '{}'",
+        filename, *child_name));
+  }
+  return child_node;
+}
+
 YamlReadArchive::YamlReadArchive(const YAML::Node& root)
     : YamlReadArchive(root, Options{}) {}
 
