@@ -45,6 +45,20 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
         .value("kLogarithmic", IntervalBinning::kLogarithmic)
         .value("kLinear", IntervalBinning::kLinear);
   }
+
+  m.def(
+      "AddBilinearProductMcCormickEnvelopeSos2",
+      [](MathematicalProgram* prog, const symbolic::Variable& x,
+          const symbolic::Variable& y, const symbolic::Expression& w,
+          const VectorX<double>& phi_x, const VectorX<double>& phi_y,
+          const VectorX<symbolic::Expression>& Bx,
+          const VectorX<symbolic::Expression>& By, IntervalBinning binning) {
+        return AddBilinearProductMcCormickEnvelopeSos2(
+            prog, x, y, w, phi_x, phi_y, Bx, By, binning);
+      },
+      py::arg("prog"), py::arg("x"), py::arg("y"), py::arg("w"),
+      py::arg("phi_x"), py::arg("phi_y"), py::arg("Bx"), py::arg("By"),
+      py::arg("binning"), doc.AddBilinearProductMcCormickEnvelopeSos2.doc);
 }
 }  // namespace pydrake
 }  // namespace drake
