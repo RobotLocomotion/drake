@@ -407,6 +407,25 @@ class MeshcatShapeReifier : public ShapeReifier {
     ImplementMesh(mesh, data);
   }
 
+  void ImplementGeometry(const MeshcatCone& cone, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radiusBottom = 0;
+    geometry->radiusTop = 1.0;
+    geometry->height = cone.height();
+    lumped.geometry = std::move(geometry);
+
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        Eigen::Vector4d{cone.a(), cone.b(), 1.0, 1.0}.asDiagonal() *
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0),
+                        Eigen::Vector3d{0, 0, cone.height() / 2.0})
+            .GetAsMatrix4();
+  }
+
  private:
   uuids::uuid_random_generator* const uuid_generator_{};
 };
@@ -607,13 +626,13 @@ class Meshcat::WebSocketPublisher {
   }
 
   void SetTransform(std::string_view path,
-                    const RigidTransformd& X_ParentPath) {
+                    const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::SetTransformData data;
     data.path = FullPath(path);
-    Eigen::Map<Eigen::Matrix4d>(data.matrix) = X_ParentPath.GetAsMatrix4();
+    Eigen::Map<Eigen::Matrix4d>(data.matrix) = matrix;
 
     loop_->defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1244,7 +1263,12 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
-  publisher_->SetTransform(path, X_ParentPath);
+  publisher_->SetTransform(path, X_ParentPath.GetAsMatrix4());
+}
+
+void Meshcat::SetTransform(std::string_view path,
+                           const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
+  publisher_->SetTransform(path, matrix);
 }
 
 void Meshcat::Delete(std::string_view path) { publisher_->Delete(path); }

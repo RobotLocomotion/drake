@@ -8,6 +8,7 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
+#include "drake/geometry/meshcat_contact_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
 
 namespace drake {
@@ -112,6 +113,52 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference,
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
+  }
+
+  // MeshcatContactVisualizer
+  {
+    using Class = MeshcatContactVisualizer<T>;
+    constexpr auto& cls_doc = doc.MeshcatContactVisualizer;
+    // Note that we are temporarily re-mapping MeshcatContactVisualizer =>
+    // MeshcatContactVisualizerCpp to avoid collisions with the python
+    // MeshcatContactVisualizer.  See #13038.
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatContactVisualizerCpp", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<std::shared_ptr<Meshcat>,
+                 MeshcatContactVisualizerParams>(),
+            py::arg("meshcat"),
+            py::arg("params") = MeshcatContactVisualizerParams{},
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            cls_doc.ctor.doc)
+        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("contact_results_input_port", &Class::contact_results_input_port,
+            py_rvp::reference_internal, cls_doc.contact_results_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*, const multibody::MultibodyPlant<T>&,
+                std::shared_ptr<Meshcat>, MeshcatContactVisualizerParams>(
+                &MeshcatContactVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("plant"), py::arg("meshcat"),
+            py::arg("params") = MeshcatContactVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_plant_meshcat_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, std::shared_ptr<Meshcat>,
+                MeshcatContactVisualizerParams>(
+                &MeshcatContactVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("contact_results_port"),
+            py::arg("meshcat"),
+            py::arg("params") = MeshcatContactVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            py_rvp::reference,
+            cls_doc.AddToBuilder
+                .doc_4args_builder_contact_results_port_meshcat_params);
   }
 }
 
@@ -234,8 +281,14 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.Set2dRenderMode.doc)
         .def("ResetRenderMode", &Class::ResetRenderMode,
             cls_doc.ResetRenderMode.doc)
-        .def("SetTransform", &Class::SetTransform, py::arg("path"),
-            py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
+        .def("SetTransform",
+            py::overload_cast<std::string_view, const math::RigidTransformd&>(
+                &Class::SetTransform),
+            py::arg("path"), py::arg("X_ParentPath"), cls_doc.SetTransform.doc_RigidTransform)
+        .def("SetTransform",
+            py::overload_cast<std::string_view, const Eigen::Ref<const Eigen::Matrix4d>&>(
+                &Class::SetTransform),
+            py::arg("path"), py::arg("matrix"), cls_doc.SetTransform.doc_matrix)
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, bool>(
@@ -288,6 +341,35 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("delete_on_initialization_event",
             &MeshcatVisualizerParams::delete_on_initialization_event,
             cls_doc.delete_on_initialization_event.doc);
+  }
+
+  // MeshcatContactVisualizerParams
+  {
+    using Class = MeshcatContactVisualizerParams;
+    constexpr auto& cls_doc = doc.MeshcatContactVisualizerParams;
+    py::class_<Class>(
+        m, "MeshcatContactVisualizerParams", py::dynamic_attr(), cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("publish_period",
+            &MeshcatContactVisualizerParams::publish_period,
+            cls_doc.publish_period.doc)
+        .def_readwrite(
+            "role", &MeshcatContactVisualizerParams::role, cls_doc.role.doc)
+        .def_readwrite(
+            "color", &MeshcatContactVisualizerParams::color, cls_doc.color.doc)
+        .def_readwrite("prefix", &MeshcatContactVisualizerParams::prefix,
+            cls_doc.prefix.doc)
+        .def_readwrite("delete_on_initialization_event",
+            &MeshcatContactVisualizerParams::delete_on_initialization_event,
+            cls_doc.delete_on_initialization_event.doc)
+        .def_readwrite("force_threshold",
+            &MeshcatContactVisualizerParams::force_threshold,
+            cls_doc.force_threshold.doc)
+        .def_readwrite("newtons_per_meter",
+            &MeshcatContactVisualizerParams::newtons_per_meter,
+            cls_doc.newtons_per_meter.doc)
+        .def_readwrite("radius", &MeshcatContactVisualizerParams::radius,
+            cls_doc.radius.doc);
   }
 }
 

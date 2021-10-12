@@ -199,15 +199,36 @@ class Meshcat {
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param X_ParentPath the relative transform from the path to its immediate
   parent.
+
+  @pydrake_mkdoc_identifier{RigidTransform}
   */
   void SetTransform(std::string_view path,
                     const math::RigidTransformd& X_ParentPath);
 
+  /** Set the homogeneous transform for a given path in the scene tree. An
+  object's pose is the concatenation of all of the transforms along its path,
+  so setting the transform of "/foo" will move the objects at "/foo/box1" and
+  "/foo/robots/HAL9000".
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param matrix the relative transform from the path to its immediate
+  parent.
+
+  Note: Prefer to use the overload which takes a RigidTransformd unless you need
+  the fully parameterized homogeneous transform (which additionally allows
+  scale and sheer).
+
+  @pydrake_mkdoc_identifier{matrix}
+  */
+  void SetTransform(std::string_view path,
+                    const Eigen::Ref<const Eigen::Matrix4d>& matrix);
+
   /** Deletes the object at the given `path` as well as all of its children.
-  See @ref meshcat_path for the detailed semantics of deletion. */
+   See @ref meshcat_path for the detailed semantics of deletion. */
   void Delete(std::string_view path = "");
 
-  /** Sets a single named property of the object at the given path. For example,
+  /** Sets a single named property of the object at the given path. For
+  example,
   @verbatim
   meshcat.SetProperty("/Background", "visible", false);
   @endverbatim
@@ -223,12 +244,13 @@ class Meshcat {
   */
   void SetProperty(std::string_view path, std::string property, bool value);
 
-  /** Sets a single named property of the object at the given path. For example,
+  /** Sets a single named property of the object at the given path. For
+  example,
   @verbatim
   meshcat.SetProperty("/Lights/DirectionalLight/<object>", "intensity", 1.0);
   @endverbatim
-  See @ref meshcat_path "Meshcat paths" for more details about these properties
-  and how to address them.
+  See @ref meshcat_path "Meshcat paths" for more details about these
+  properties and how to address them.
 
   @param path a "/"-delimited string indicating the path in the scene tree.
               See @ref meshcat_path for the semantics.
@@ -239,12 +261,13 @@ class Meshcat {
   */
   void SetProperty(std::string_view path, std::string property, double value);
 
-  /** Sets a single named property of the object at the given path. For example,
+  /** Sets a single named property of the object at the given path. For
+  example,
   @verbatim
   meshcat.SetProperty("box", "position", [1.0, 0.0, 0.0]);
   @endverbatim
-  See @ref meshcat_path "Meshcat paths" for more details about these properties
-  and how to address them.
+  See @ref meshcat_path "Meshcat paths" for more details about these
+  properties and how to address them.
 
   @param path a "/"-delimited string indicating the path in the scene tree.
               See @ref meshcat_path for the semantics.
@@ -256,8 +279,8 @@ class Meshcat {
   void SetProperty(std::string_view path, std::string property,
                    const std::vector<double>& value);
 
-  // TODO(russt): Support multiple animations, by name.  Currently "default" is
-  // hard-coded in the meshcat javascript.
+  // TODO(russt): Support multiple animations, by name.  Currently "default"
+  // is hard-coded in the meshcat javascript.
   /** Sets the MeshcatAnimation, which creates a slider interface element to
   play/pause/rewind through a series of animation frames in the visualizer. */
   void SetAnimation(const MeshcatAnimation& animation);
@@ -274,8 +297,8 @@ class Meshcat {
      replaced by the slider, etc.
    - Users of this Meshcat instance are responsible for polling the GUI to
      retrieve the user interface events.
-   - Controls can be added/deleted/accessed anytime during the lifetime of this
-     Meshcat instance.
+   - Controls can be added/deleted/accessed anytime during the lifetime of
+   this Meshcat instance.
   */
   //@{
 
@@ -296,7 +319,8 @@ class Meshcat {
   /** Adds a slider with the label `name` to the meshcat browser controls GUI.
    The slider range is given by [`min`, `max`]. `step` is the smallest
    increment by which the slider can change values (and therefore send updates
-   back to this Meshcat instance). `value` specifies the initial value; it will
+   back to this Meshcat instance). `value` specifies the initial value; it
+   will
    be truncated to the slider range and rounded to the nearest increment. */
   void AddSlider(std::string name, double min, double max, double step,
                  double value);
@@ -316,20 +340,21 @@ class Meshcat {
    @throws std::exception if `name` is not a registered slider. */
   void DeleteSlider(std::string name);
 
-  /** Removes all buttons and sliders from the GUI that have been registered by
-   this Meshcat instance. It does *not* clear the default GUI elements set in
-   the meshcat browser (e.g. for cameras and lights). */
+  /** Removes all buttons and sliders from the GUI that have been registered
+   by this Meshcat instance. It does *not* clear the default GUI elements set
+   in the meshcat browser (e.g. for cameras and lights). */
   void DeleteAddedControls();
 
   //@}
 
-  /* These remaining public methods are intended to primarily for testing. These
-  calls must safely acquire the data from the websocket thread and will block
-  execution waiting for that data to be acquired. They are intentionally
+  /* These remaining public methods are intended to primarily for testing.
+  These calls must safely acquire the data from the websocket thread and will
+  block execution waiting for that data to be acquired. They are intentionally
   excluded from doxygen.
 
-  The SceneTree has a directory-like structure.  If HasPath() is true, then that
-  path optionally has an object, a transform, and any number of properties.
+  The SceneTree has a directory-like structure.  If HasPath() is true, then
+  that path optionally has an object, a transform, and any number of
+  properties.
   */
 
   /* Returns true iff `path` exists in the current internal (server) tree.
@@ -342,9 +367,9 @@ class Meshcat {
   object has been set at `path`. */
   std::string GetPackedObject(std::string_view path) const;
 
-  /* Returns the msgpack representation of the transform stored in the internal
-  (server) tree at `path`, or the empty string if `path` does not exist or no
-  transform has been set at `path`. */
+  /* Returns the msgpack representation of the transform stored in the
+  internal (server) tree at `path`, or the empty string if `path` does not
+  exist or no transform has been set at `path`. */
   std::string GetPackedTransform(std::string_view path) const;
 
   /* Returns the msgpack representation of the `property` stored in the
