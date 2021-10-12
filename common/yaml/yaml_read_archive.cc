@@ -127,6 +127,9 @@ YAML::Node YamlReadArchive::GetSubNode(
 }
 
 void YamlReadArchive::CheckAllAccepted() const {
+  // This function is only ever called on Serializeable nodes (i.e., where we
+  // have a real Mapping node).  Calling it with a map-ish key (i.e., while
+  // parsing a sequence) would mean that YamlReadArchive went off the rails.
   DRAKE_DEMAND(mapish_item_key_ == nullptr);
   DRAKE_DEMAND(root_->Type() == YAML::NodeType::Map);
   if (options_.allow_yaml_with_no_cpp) {

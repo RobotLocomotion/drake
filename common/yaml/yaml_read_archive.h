@@ -62,6 +62,40 @@ namespace yaml {
 ///
 /// YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
 ///
+/// When reading into a std::variant<>, we match its YAML tag to the shortened
+/// C++ class name of the variant selection.  For example, to read into this
+/// sample struct:
+///
+/// @code
+/// struct Foo {
+///   std::string data;
+/// };
+/// struct Bar {
+///   std::variant<std::string, double, Foo> value;
+/// };
+/// @endcode
+///
+/// Some valid YAML examples are:
+///
+/// @code
+/// # For the first type declared in the variant<>, the tag is optional.
+/// bar:
+///   value: hello
+///
+/// # YAML has built-in tags for string, float, int.
+/// bar2:
+///   value: !!str hello
+///
+/// # For any other type within the variant<>, the tag is required.
+/// bar3:
+///   value: !!float 1.0
+///
+/// # User-defined types use a single exclamation point.
+/// bar4:
+///   value: !Foo
+///     data: hello
+/// @endcode
+///
 /// For inspiration and background, see:
 /// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
 class YamlReadArchive final {
@@ -343,6 +377,8 @@ class YamlReadArchive final {
   template <size_t I, typename Variant, typename T, typename... Remaining>
   void VariantHelperImpl(
       const std::string& tag, const char* name, Variant* storage) {
+    // For the first type declared in the variant<> (I == 0), the tag can be
+    // absent; otherwise, the tag must match one of the variant's types.
     if (((I == 0) && (tag.empty() || (tag == "?"))) ||
         IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
       T typed_storage{};
@@ -469,6 +505,11 @@ class YamlReadArchive final {
 
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
+    // For now, we only allow std::string as the keys of a serialized std::map.
+    // In the future, we could imagine handling any other kind of scalar value
+    // that was convertible to a string (int, double, string_view, etc.) if we
+    // found that useful.  However, to remain compatible with JSON semantics,
+    // we should never allow a YAML Sequence or Mapping to be a used as a key.
     static_assert(std::is_same_v<Key, std::string>,
                   "std::map keys must be strings");
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
