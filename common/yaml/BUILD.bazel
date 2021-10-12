@@ -74,6 +74,7 @@ drake_cc_googletest(
     deps = [
         ":yaml_node",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
