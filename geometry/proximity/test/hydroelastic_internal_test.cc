@@ -32,9 +32,9 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
       sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
-  const double elastic_modulus = 1e+7;
+  const double hydroelastic_modulus = 1e+7;
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+      MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
   const SoftMesh original(std::move(mesh), std::move(pressure));
 
@@ -125,9 +125,9 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
       sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
-  const double elastic_modulus = 1e+7;
+  const double hydroelastic_modulus = 1e+7;
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+      MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
   const SoftGeometry original(SoftMesh(std::move(mesh), std::move(pressure)));
 
