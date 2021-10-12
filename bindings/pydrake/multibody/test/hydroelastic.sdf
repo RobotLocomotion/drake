@@ -27,7 +27,7 @@
           <drake:mu_dynamic>0.5</drake:mu_dynamic>
           <drake:mu_static>0.5</drake:mu_static>
           <drake:mesh_resolution_hint>0.1</drake:mesh_resolution_hint>
-          <drake:elastic_modulus>0.5e9</drake:elastic_modulus>
+          <drake:hydroelastic_modulus>0.5e9</drake:hydroelastic_modulus>
           <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
           <drake:rigid_hydroelastic/>
         </drake:proximity_properties>
@@ -55,7 +55,7 @@
           <drake:mu_dynamic>0.5</drake:mu_dynamic>
           <drake:mu_static>0.5</drake:mu_static>
           <drake:mesh_resolution_hint>0.2</drake:mesh_resolution_hint>
-          <drake:elastic_modulus>180.0e9</drake:elastic_modulus>
+          <drake:hydroelastic_modulus>180.0e9</drake:hydroelastic_modulus>
           <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
           <drake:soft_hydroelastic/>
         </drake:proximity_properties>

@@ -34,7 +34,21 @@ geometry::ProximityProperties ParseProximityProperties(
     }
   }
 
-  std::optional<double> elastic_modulus = read_double("drake:elastic_modulus");
+  std::optional<double> hydroelastic_modulus =
+      read_double("drake:hydroelastic_modulus");
+  {
+    std::optional<double> elastic_modulus =
+        read_double("drake:elastic_modulus");
+    if (elastic_modulus.has_value()) {
+      static const logging::Warn log_once(
+          "The tag drake:elastic_modulus is deprecated, and will be removed on"
+          " or around 2022-02-01. Please use drake:hydroelastic_modulus"
+          " instead.");
+    }
+    if (!hydroelastic_modulus.has_value()) {
+      hydroelastic_modulus = elastic_modulus;
+    }
+  }
 
   std::optional<double> dissipation =
       read_double("drake:hunt_crossley_dissipation");
@@ -55,7 +69,7 @@ geometry::ProximityProperties ParseProximityProperties(
     friction = CoulombFriction<double>(*mu_static, *mu_static);
   }
 
-  geometry::AddContactMaterial(elastic_modulus, dissipation, stiffness,
+  geometry::AddContactMaterial(hydroelastic_modulus, dissipation, stiffness,
                                friction, &properties);
 
   return properties;

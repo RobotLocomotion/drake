@@ -558,7 +558,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
     unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint value="2.5"/>
-    <drake:elastic_modulus value="3.5" />
+    <drake:hydroelastic_modulus value="3.5" />
     <drake:hunt_crossley_dissipation value="3.5" />
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
