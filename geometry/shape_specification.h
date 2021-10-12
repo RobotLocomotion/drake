@@ -318,6 +318,39 @@ class Convex final : public Shape {
   double scale_;
 };
 
+// TODO(russt): Rename this to `Cone` if/when it is supported by more of the
+// geometry engine.
+/** Definition of a cone. Its point is at the origin, its height extends in the
+ direction of the frame's +z axis. Or, more formally: a finite section of a
+ Lorentz cone (aka "second-order cone"), defined by
+
+      sqrt(x²/a² + y²/b²) ≤ z;  z ∈ [0, height],
+
+ where `a` and `b` are the lengths of the principle semi-axes of the horizontal
+ section at `z=1`.
+
+ This shape is currently only supported by Meshcat. It will not appear in any
+ renderings, proximity queries, or other visualizers.
+*/
+class MeshcatCone final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone)
+
+  /** Constructs the parameterized cone.
+   @throws std::exception if `height`, `a`, or `b` are not strictly positive.
+   */
+  explicit MeshcatCone(double height, double a = 1.0, double b = 1.0);
+
+  double height() const { return height_; }
+  double a() const { return a_; }
+  double b() const { return b_; }
+
+ private:
+  double height_;
+  double a_;
+  double b_;
+};
+
 /** The interface for converting shape descriptions to real shapes. Any entity
  that consumes shape descriptions _must_ implement this interface.
 
@@ -379,6 +412,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data);
   virtual void ImplementGeometry(const Mesh& mesh, void* user_data);
   virtual void ImplementGeometry(const Convex& convex, void* user_data);
+  virtual void ImplementGeometry(const MeshcatCone& cone, void* user_data);
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
@@ -449,6 +483,9 @@ class ShapeName final : public ShapeReifier {
   }
   void ImplementGeometry(const Convex&, void*) final {
     string_ = "Convex";
+  }
+  void ImplementGeometry(const MeshcatCone&, void*) final {
+    string_ = "MeshcatCone";
   }
 
   //@}

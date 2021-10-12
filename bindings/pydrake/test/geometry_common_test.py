@@ -329,7 +329,8 @@ class TestGeometryCore(unittest.TestCase):
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(absolute_filename="arbitrary/path", scale=1.0),
-            mut.Convex(absolute_filename="arbitrary/path", scale=1.0)
+            mut.Convex(absolute_filename="arbitrary/path", scale=1.0),
+            mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
@@ -404,3 +405,11 @@ class TestGeometryCore(unittest.TestCase):
         assert_shape_api(sphere)
         self.assertEqual(sphere.radius(), 1.0)
         assert_pickle(self, sphere, mut.Sphere.radius)
+
+        cone = mut.MeshcatCone(height=1.2, a=3.4, b=5.6)
+        assert_shape_api(cone)
+        self.assertEqual(cone.height(), 1.2)
+        self.assertEqual(cone.a(), 3.4)
+        self.assertEqual(cone.b(), 5.6)
+        assert_pickle(self, cone, lambda shape: [
+                      shape.height(), shape.a(), shape.b()])
