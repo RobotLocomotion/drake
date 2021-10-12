@@ -35,9 +35,11 @@ drake_cc_library(
     srcs = ["yaml_read_archive.cc"],
     hdrs = ["yaml_read_archive.h"],
     deps = [
+        ":yaml_node",
         "//common:essential",
         "//common:name_value",
         "//common:nice_type_name",
+        "//common:unused",
         "@yaml_cpp",
     ],
 )
