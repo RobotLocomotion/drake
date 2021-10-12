@@ -149,13 +149,28 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
   }
 }
 
-// Confirms successful parsing of elastic modulus.
-GTEST_TEST(ParseProximityPropertiesTest, ElasticModulus) {
+// Confirms successful parsing of hydroelastic modulus.
+GTEST_TEST(ParseProximityPropertiesTest, HydroelasticModulus) {
+  const double kValue = 1.75;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:hydroelastic_modulus", kValue), !rigid, !soft);
+  EXPECT_TRUE(ExpectScalar(kMaterialGroup, kElastic, kValue, properties));
+  // Hydroelastic modulus is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
+// TODO(DamrongGuoy): Remove this test when we remove the support of the tag
+//  drake:elastic_modulus. See ParseProximityProperties().
+
+// Confirms the tag drake:elastic_modulus is still working.
+// The tag drake:elastic_modulus is deprecated, and will be removed on or
+// around 2022-02-01.
+GTEST_TEST(ParseProximityPropertiesTest, DeprecateElasticModulus) {
   const double kValue = 1.75;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:elastic_modulus", kValue), !rigid, !soft);
   EXPECT_TRUE(ExpectScalar(kMaterialGroup, kElastic, kValue, properties));
-  // Elastic modulus is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
 }

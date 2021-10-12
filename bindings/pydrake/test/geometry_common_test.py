@@ -239,13 +239,15 @@ class TestGeometryCore(unittest.TestCase):
         """
         props = mut.ProximityProperties()
         reference_friction = CoulombFriction(0.25, 0.125)
-        mut.AddContactMaterial(elastic_modulus=1.5,
+        mut.AddContactMaterial(hydroelastic_modulus=1.5,
                                dissipation=2.7,
                                point_stiffness=3.9,
                                friction=reference_friction,
                                properties=props)
-        self.assertTrue(props.HasProperty("material", "elastic_modulus"))
-        self.assertEqual(props.GetProperty("material", "elastic_modulus"), 1.5)
+        self.assertTrue(
+            props.HasProperty("material", "hydroelastic_modulus"))
+        self.assertEqual(
+            props.GetProperty("material", "hydroelastic_modulus"), 1.5)
         self.assertTrue(
             props.HasProperty("material", "hunt_crossley_dissipation"))
         self.assertEqual(

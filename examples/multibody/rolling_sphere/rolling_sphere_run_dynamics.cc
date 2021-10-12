@@ -24,8 +24,9 @@ DEFINE_double(simulation_time, 2.0,
 // Contact model parameters.
 DEFINE_string(contact_model, "point",
               "Contact model. Options are: 'point', 'hydroelastic', 'hybrid'.");
-DEFINE_double(elastic_modulus, 5.0e4,
-              "For hydroelastic (and hybrid) contact, elastic modulus, [Pa].");
+DEFINE_double(hydroelastic_modulus, 5.0e4,
+              "For hydroelastic (and hybrid) contact, "
+              "hydroelastic modulus, [Pa].");
 DEFINE_double(dissipation, 5.0,
               "For hydroelastic (and hybrid) contact, Hunt & Crossley "
               "dissipation, [s/m].");
@@ -112,7 +113,7 @@ int do_main() {
       FLAGS_friction_coefficient /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
-      FLAGS_mbp_dt, radius, mass, FLAGS_elastic_modulus, FLAGS_dissipation,
+      FLAGS_mbp_dt, radius, mass, FLAGS_hydroelastic_modulus, FLAGS_dissipation,
       coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_rigid_ball,
       FLAGS_soft_ground, &scene_graph));
 
