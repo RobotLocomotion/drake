@@ -2,6 +2,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -95,6 +97,22 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   instance2_pos_expected << 1, 2, 3, 4, 5, 6, 7, 9;
   EXPECT_TRUE(CompareMatrices(instance2_pos, instance2_pos_expected));
 
+  // Check the advanced variant for GetPositionsFromArray that uses no heap
+  Eigen::VectorXd instance2_pos_out(8);
+  {
+    // Ensure that getters accepting an output vector do not allocate heap.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    tree.GetPositionsFromArray(instance2, pos_vector, &instance2_pos_out);
+  }
+  EXPECT_TRUE(CompareMatrices(instance2_pos_out, instance2_pos_expected));
+
+  Eigen::VectorXd instance2_pos_out_err(10);
+  // Verify error conditions
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree.GetPositionsFromArray(instance2, pos_vector, &instance2_pos_out_err),
+      std::exception,
+      "Output array is not properly sized.");
+
   Eigen::VectorXd vel_vector(9);
   vel_vector << 11, 12, 13, 14, 15, 16, 17, 18, 19;
 
@@ -113,6 +131,22 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::VectorXd instance2_vel_expected(7);
   instance2_vel_expected << 11, 12, 13, 14, 15, 16, 18;
   EXPECT_TRUE(CompareMatrices(instance2_vel, instance2_vel_expected));
+
+  // Check the advanced variant for GetVelocitiesFromArray that uses no heap
+  Eigen::VectorXd instance2_vel_out(7);
+  {
+    // Ensure that getters accepting an output vector do not allocate heap.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    tree.GetVelocitiesFromArray(instance2, vel_vector, &instance2_vel_out);
+  }
+  EXPECT_TRUE(CompareMatrices(instance2_vel_out, instance2_vel_expected));
+
+  Eigen::VectorXd instance2_vel_out_err(10);
+  // Verify error conditions
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree.GetVelocitiesFromArray(instance2, vel_vector, &instance2_vel_out_err),
+      std::exception,
+      "Output array is not properly sized.");
 
   // Create a MultibodyTreeSystem so that we can get a context.
   internal::MultibodyTreeSystem<double> mb_system(std::move(tree_pointer));

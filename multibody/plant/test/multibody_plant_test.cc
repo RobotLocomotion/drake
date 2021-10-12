@@ -2799,7 +2799,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
                           arm2, v_block);
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
   }
-  
+
   // Verify that we can retrieve the state vector using the output parameter
   // version and that populating these output vectors does not allocate any
   // heap.
@@ -2821,15 +2821,15 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   // Verify error conditions
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetPositionsAndVelocities(*context_, arm2, &q_out),
-      std::logic_error,
+      std::exception,
       "Output array is not properly sized.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetPositions(*context_, arm2, &qv_out),
-      std::logic_error,
+      std::exception,
       "Output array is not properly sized.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetVelocities(*context_, arm2, &qv_out),
-      std::logic_error,
+      std::exception,
       "Output array is not properly sized.");
 }
 

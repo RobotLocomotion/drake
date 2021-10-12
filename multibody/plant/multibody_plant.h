@@ -1904,7 +1904,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// (Advanced) Populate output vector q_out with the generalized positions q
   /// of a specified model instance in a given Context.
-  /// @note q_out is a dense vector of dimensions
+  /// @note q_out is a dense vector of dimension
   ///       `num_positions(model_instance)' associated with `model_instance`
   ///       and is populated by copying from `context`.
   /// @note This function is guaranteed to allocate no heap.
@@ -2022,8 +2022,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// (Advanced) Populate output vector v_out with the generalized
   /// velocities v of a specified model instance in a given Context.
-  /// @note v_out is a dense vector of dimensions
-  ///       `num_velocities(model_instance)' associated with `model_instance`
+  /// @note v_out is a dense vector of dimension
+  ///       `num_velocities(model_instance)` associated with `model_instance`
   ///       and is populated by copying from `context`.
   /// @note This function is guaranteed to allocate no heap.
   /// @throws std::exception if `context` does not correspond to the Context

@@ -391,7 +391,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.SetActuationInArray.doc)
         .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
             py::arg("model_instance"), py::arg("q"),
-            cls_doc.GetPositionsFromArray.doc)
+            cls_doc.GetPositionsFromArray.doc_2args)
         .def(
             "SetPositionsInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
@@ -403,7 +403,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.SetPositionsInArray.doc)
         .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
             py::arg("model_instance"), py::arg("v"),
-            cls_doc.GetVelocitiesFromArray.doc)
+            cls_doc.GetVelocitiesFromArray.doc_2args)
         .def(
             "SetVelocitiesInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
