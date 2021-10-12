@@ -470,6 +470,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "mixed_integer_optimization_util_test",
     deps = [
+        ":branch_and_bound_py",
+        ":clp_py",
         ":mixed_integer_optimization_util_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
