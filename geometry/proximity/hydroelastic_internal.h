@@ -324,6 +324,8 @@ class Geometries final : public ShapeReifier {
     const ProximityProperties& properties;
   };
 
+  using ShapeReifier::ImplementGeometry;
+
   void ImplementGeometry(const Sphere& sphere, void* user_data) override;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
   void ImplementGeometry(const HalfSpace&, void* user_data) override;

@@ -407,6 +407,25 @@ class MeshcatShapeReifier : public ShapeReifier {
     ImplementMesh(mesh, data);
   }
 
+  void ImplementGeometry(const MeshcatCone& cone, void* data) override {
+    DRAKE_DEMAND(data != nullptr);
+    auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
+    auto& mesh = lumped.object.emplace<internal::MeshData>();
+
+    auto geometry = std::make_unique<internal::CylinderGeometryData>();
+    geometry->uuid = uuids::to_string((*uuid_generator_)());
+    geometry->radiusBottom = 0;
+    geometry->radiusTop = 1.0;
+    geometry->height = cone.height();
+    lumped.geometry = std::move(geometry);
+
+    Eigen::Map<Eigen::Matrix4d>(mesh.matrix) =
+        Eigen::Vector4d{cone.a(), cone.b(), 1.0, 1.0}.asDiagonal() *
+        RigidTransformd(RotationMatrixd::MakeXRotation(M_PI / 2.0),
+                        Eigen::Vector3d{0, 0, cone.height() / 2.0})
+            .GetAsMatrix4();
+  }
+
  private:
   uuids::uuid_random_generator* const uuid_generator_{};
 };
