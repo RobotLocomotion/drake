@@ -41,7 +41,7 @@ PYBIND11_MODULE(scs, m) {
           &ScsSolverDetails::residue_unbounded_a,
           doc.ScsSolverDetails.residue_unbounded_a.doc)
       .def_readonly("residue_unbounded_p",
-          &ScsSolverDetails::residue_unbounded_a,
+          &ScsSolverDetails::residue_unbounded_p,
           doc.ScsSolverDetails.residue_unbounded_p.doc)
       .def_readonly("duality_gap", &ScsSolverDetails::duality_gap,
           doc.ScsSolverDetails.duality_gap.doc)
