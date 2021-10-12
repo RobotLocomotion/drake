@@ -29,11 +29,8 @@ PYBIND11_MODULE(parsing, m) {
     constexpr auto& cls_doc = doc.PackageMap;
     py::class_<Class>(m, "PackageMap", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("Add",
-            overload_cast_explicit<void, const string&, const string&>(
-                &Class::Add),
-            py::arg("package_name"), py::arg("package_path"),
-            cls_doc.Add.doc_2args)
+        .def("Add", &Class::Add, py::arg("package_name"),
+            py::arg("package_path"), cls_doc.Add.doc)
         .def("AddMap", &Class::AddMap, py::arg("other_map"), cls_doc.AddMap.doc)
         .def("Contains", &Class::Contains, py::arg("package_name"),
             cls_doc.Contains.doc)
