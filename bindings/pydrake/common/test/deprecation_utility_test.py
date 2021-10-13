@@ -55,3 +55,18 @@ class TestDeprecationExample(unittest.TestCase):
         with catch_drake_warnings(expected_count=1) as w:
             obj.overload(0)
             self.assertIn("Do not use overload(int)", str(w[0].message))
+
+    def test_cc_wrap_deprecated_for_old_kwarg(self):
+        obj = mut_cc.ExampleCppClass()
+
+        x = 1  # Input
+        y = x + 1  # Output
+
+        # Not deprecated.
+        self.assertEqual(obj.FunctionWithArgumentName(x), y)
+        self.assertEqual(obj.FunctionWithArgumentName(new_name=x), y)
+
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertEqual(obj.FunctionWithArgumentName(old_name=1), y)
+            self.assertIn(
+                "FunctionWithArgumentName(old_name)", str(w[0].message))
