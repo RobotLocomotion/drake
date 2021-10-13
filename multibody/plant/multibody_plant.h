@@ -1807,6 +1807,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsAndVelocities(context, model_instance);
   }
 
+  /// (Advanced) Populates output vector qv_out representing the generalized
+  /// positions q and generalized velocities v of a specified model instance
+  /// in a given Context.
+  /// @note qv_out is a dense vector of dimensions
+  ///       `num_positions(model_instance) + num_velocities(model_instance)`
+  ///       associated with `model_instance` and is populated by copying from
+  ///       `context`.
+  /// @note This function is guaranteed to allocate no heap.
+  /// @throws std::exception if `context` does not correspond to the Context
+  ///         for a multibody model or `model_instance` is invalid.
+  /// @throws std::exception if qv_out does not have size
+  ///         `num_positions(model_instance) + num_velocities(model_instance)`
+  void GetPositionsAndVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance,
+      EigenPtr<VectorX<T>> qv_out) const {
+    this->ValidateContext(context);
+    internal_tree().GetPositionsAndVelocities(context, model_instance, qv_out);
+  }
+
   /// (Advanced -- **see warning**) Returns a mutable vector reference `[q; v]`
   /// to the generalized positions q and generalized velocities v in a given
   /// Context.
@@ -1877,6 +1897,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     return internal_tree().GetPositionsFromArray(
         model_instance, internal_tree().get_positions(context));
+  }
+
+  /// (Advanced) Populates output vector q_out with the generalized positions q
+  /// of a specified model instance in a given Context.
+  /// @note q_out is a dense vector of dimension
+  ///       `num_positions(model_instance)' associated with `model_instance`
+  ///       and is populated by copying from `context`.
+  /// @note This function is guaranteed to allocate no heap.
+  /// @throws std::exception if `context` does not correspond to the Context
+  ///         for a multibody model or `model_instance` is invalid.
+  void GetPositions(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance,
+      EigenPtr<VectorX<T>> q_out) const {
+    this->ValidateContext(context);
+    internal_tree().GetPositionsFromArray(
+        model_instance, internal_tree().get_positions(context), q_out);
   }
 
   /// (Advanced -- **see warning**) Returns a mutable vector reference to the
@@ -1979,6 +2016,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetVelocitiesFromArray(
         model_instance, internal_tree().get_velocities(context));
   }
+
+  /// (Advanced) Populates output vector v_out with the generalized
+  /// velocities v of a specified model instance in a given Context.
+  /// @note v_out is a dense vector of dimension
+  ///       `num_velocities(model_instance)` associated with `model_instance`
+  ///       and is populated by copying from `context`.
+  /// @note This function is guaranteed to allocate no heap.
+  /// @throws std::exception if `context` does not correspond to the Context
+  ///         for a multibody model or `model_instance` is invalid.
+  void GetVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance,
+      EigenPtr<VectorX<T>> v_out) const {
+    this->ValidateContext(context);
+    internal_tree().GetVelocitiesFromArray(
+        model_instance, internal_tree().get_velocities(context), v_out);
+  }
+
 
   /// (Advanced -- **see warning**) Returns a mutable vector reference to the
   /// generalized velocities v in a given Context.
@@ -2126,6 +2181,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionsFromArray(model_instance, q);
   }
 
+  /// (Advanced) Populates output vector q_out and with the generalized
+  /// positions for `model_instance` from a vector `q` of generalized
+  /// positions for the entire model.  This method throws an exception
+  /// if `q` is not of size MultibodyPlant::num_positions().
+  void GetPositionsFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& q,
+      EigenPtr<VectorX<T>> q_out) const {
+    internal_tree().GetPositionsFromArray(model_instance, q, q_out);
+  }
+
   /// Sets the vector of generalized positions for `model_instance` in
   /// `q` using `q_instance`, leaving all other elements in the array
   /// untouched. This method throws an exception if `q` is not of size
@@ -2147,6 +2213,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v) const {
     return internal_tree().GetVelocitiesFromArray(model_instance, v);
+  }
+
+  /// (Advanced) Populates output vector v_out with the generalized
+  /// velocities for `model_instance` from a vector `v` of generalized
+  /// velocities for the entire model.  This method throws an exception
+  /// if `v` is not of size MultibodyPlant::num_velocities().
+  void GetVelocitiesFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& v,
+      EigenPtr<VectorX<T>> v_out) const {
+    internal_tree().GetVelocitiesFromArray(model_instance, v, v_out);
   }
 
   /// Sets the vector of generalized velocities for `model_instance` in

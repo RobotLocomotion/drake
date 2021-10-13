@@ -506,6 +506,14 @@ VectorX<T> MultibodyTree<T>::GetPositionsFromArray(
   return model_instances_.at(model_instance)->GetPositionsFromArray(q);
 }
 
+template <typename T>
+void MultibodyTree<T>::GetPositionsFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& q,
+    drake::EigenPtr<VectorX<T>> q_out) const {
+  model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out);
+}
+
 template <class T>
 void MultibodyTree<T>::SetPositionsInArray(
     ModelInstanceIndex model_instance,
@@ -519,6 +527,14 @@ VectorX<T> MultibodyTree<T>::GetVelocitiesFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& v) const {
   return model_instances_.at(model_instance)->GetVelocitiesFromArray(v);
+}
+
+template <typename T>
+void MultibodyTree<T>::GetVelocitiesFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& v,
+    drake::EigenPtr<VectorX<T>> v_out) const {
+  model_instances_.at(model_instance)->GetVelocitiesFromArray(v, v_out);
 }
 
 template <class T>
@@ -758,18 +774,34 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
     const systems::Context<T>& context,
     ModelInstanceIndex model_instance) const {
+  VectorX<T> instance_state_vector(num_states(model_instance));
+
+  GetPositionsAndVelocities(context, model_instance, &instance_state_vector);
+
+  return instance_state_vector;
+}
+
+template <typename T>
+void MultibodyTree<T>::GetPositionsAndVelocities(
+    const systems::Context<T>& context,
+    ModelInstanceIndex model_instance,
+    EigenPtr<VectorX<T>> qv_out) const {
+  DRAKE_DEMAND(qv_out != nullptr);
+
   Eigen::VectorBlock<const VectorX<T>> state_vector =
       get_positions_and_velocities(context);
 
-  VectorX<T> instance_state_vector(num_states(model_instance));
-  instance_state_vector.head(num_positions(model_instance)) =
-      GetPositionsFromArray(
-          model_instance, state_vector.head(num_positions()));
-  instance_state_vector.tail(num_velocities(model_instance)) =
-      GetVelocitiesFromArray(
-          model_instance, state_vector.tail(num_velocities()));
+  if (qv_out->size() != num_positions(model_instance) +
+      num_velocities(model_instance))
+    throw std::logic_error("Output array is not properly sized.");
 
-  return instance_state_vector;
+  auto qv_out_head = qv_out->head(num_positions(model_instance));
+  auto qv_out_tail = qv_out->tail(num_velocities(model_instance));
+
+  GetPositionsFromArray(
+      model_instance, state_vector.head(num_positions()), &qv_out_head);
+  GetVelocitiesFromArray(
+      model_instance, state_vector.tail(num_velocities()), &qv_out_tail);
 }
 
 template <typename T>

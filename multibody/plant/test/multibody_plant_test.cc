@@ -2823,6 +2823,71 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
                           arm2, v_block);
     plant_->SetPositionsAndVelocities(context_.get(), arm2, qv_block);
   }
+
+  // Verify that we can retrieve the state vector using the output parameter
+  // version and that populating these output vectors does not allocate any
+  // heap.
+  VectorX<double> q_out(q_block.size());
+  VectorX<double> v_out(v_block.size());
+  VectorX<double> qv_out(qv_block.size());
+  {
+    // Ensure that getters accepting an output vector do not allocate heap.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    plant_->GetPositions(*context_, arm2, &q_out);
+    plant_->GetVelocities(*context_, arm2, &v_out);
+    plant_->GetPositionsAndVelocities(*context_, arm2, &qv_out);
+  }
+  // Verify values.
+  EXPECT_EQ(q_out, q_block);
+  EXPECT_EQ(v_out, v_block);
+  EXPECT_EQ(qv_out, qv_block);
+
+  // Verify error conditions.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetPositionsAndVelocities(*context_, arm2, &q_out),
+      std::exception,
+      "Output array is not properly sized.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetPositions(*context_, arm2, &qv_out),
+      std::exception,
+      "Output array is not properly sized.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetVelocities(*context_, arm2, &qv_out),
+      std::exception,
+      "Output array is not properly sized.");
+
+  // Test the GetPositionsFromArray and GetVelocitiesFromArray functionality.
+  // Use qv_out as the state vector.
+  VectorX<double> q_out_array(q_block.size());
+  VectorX<double> v_out_array(v_block.size());
+  VectorX<double> state_vector = plant_->GetPositionsAndVelocities(*context_);
+
+  {
+    // Ensure that getters accepting an output vector do not allocate heap.
+    drake::test::LimitMalloc guard({.max_num_allocations = 0});
+    plant_->GetPositionsFromArray(arm2,
+        state_vector.head(plant_->num_positions()), &q_out_array);
+    plant_->GetVelocitiesFromArray(arm2,
+        state_vector.tail(plant_->num_velocities()), &v_out_array);
+  }
+
+  // Verify values.
+  EXPECT_EQ(q_out_array, q_block);
+  EXPECT_EQ(v_out_array, v_block);
+
+  // Verify GetPositionsFromArray and GetVelocitiesFromArray error case.
+  VectorX<double> q_out_array_err(q_block.size()+1);
+  VectorX<double> v_out_array_err(v_block.size()+1);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetPositionsFromArray(arm2,
+        state_vector.head(plant_->num_positions()), &q_out_array_err),
+      std::exception,
+      "Output array is not properly sized.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->GetVelocitiesFromArray(arm2,
+        state_vector.tail(plant_->num_velocities()), &v_out_array_err),
+      std::exception,
+      "Output array is not properly sized.");
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the

@@ -917,6 +917,12 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& q) const;
 
   // See MultibodyPlant method.
+  void GetPositionsFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& q,
+      EigenPtr<VectorX<T>> q_out) const;
+
+  // See MultibodyPlant method.
   void SetPositionsInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_instance,
@@ -926,6 +932,12 @@ class MultibodyTree {
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v) const;
+
+  // See MultibodyPlant method.
+  void GetVelocitiesFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& v,
+      EigenPtr<VectorX<T>> v_out) const;
 
   // Sets the vector of generalized velocities for `model_instance` in
   // `v` using `v_instance`, leaving all other elements in the array
@@ -993,6 +1005,20 @@ class MultibodyTree {
   VectorX<T> GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
+
+  // Takes output vector qv_out and populates it with the multibody
+  // state `x = [q; v]` of the model with `q` the vector of generalized
+  // positions and `v` the vector of generalized velocities for model instance
+  // `model_instance`.
+  // @throws std::exception if the `context` does not correspond to the context
+  // for a multibody model or `model_instance` is invalid.
+  // @throws std::exception if the size of `qv_out` is not equal to
+  //         'num_postions(model_instance)' + 'num_velocities(model_instance)'
+  // @pre `context` is a valid multibody system Context.
+  void GetPositionsAndVelocities(
+      const systems::Context<T>& context,
+      ModelInstanceIndex model_instance,
+      EigenPtr<VectorX<T>> qv_out) const;
 
   // From a mutable State, returns a mutable Eigen vector containing the vector
   // `[q; v]` of the model with `q` the vector of generalized positions and `v`
