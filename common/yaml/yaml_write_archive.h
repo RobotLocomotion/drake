@@ -133,7 +133,7 @@ class YamlWriteArchive final {
   static std::string YamlDumpWithSortedMaps(const internal::Node&);
 
   // N.B. In the private details below, we use "NVP" to abbreviate the
-  // "NameValuePair" template concept.
+  // "NameValuePair<T>" template concept.
 
   // --------------------------------------------------------------------------
   // @name Overloads for the Accept() implementation
@@ -234,6 +234,7 @@ class YamlWriteArchive final {
   // --------------------------------------------------------------------------
   // @name Implementations of Visit() once the shape is known
 
+  // This is used for structs with a Serialize member or free function.
   template <typename NVP>
   void VisitSerializable(const NVP& nvp) {
     YamlWriteArchive sub_archive;
@@ -243,6 +244,7 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
+  // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
@@ -259,6 +261,7 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(node));
   }
 
+  // This is used for std::optional or similar.
   template <typename NVP>
   void VisitOptional(const NVP& nvp) {
     // Bail out if the optional was unset.
@@ -281,6 +284,7 @@ class YamlWriteArchive final {
     this->visit_order_.pop_back();
   }
 
+  // This is used for std::variant or similar.
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
     // Visit the unpacked variant as if it weren't wrapped in variant<>,
@@ -309,7 +313,10 @@ class YamlWriteArchive final {
         || (full_name == "double")
         || (full_name == "int")) {
       // TODO(jwnimmer-tri) Add support for well-known YAML primitive types
-      // within variants (when placed other than at the 0'th index).
+      // within variants (when placed other than at the 0'th index).  To do
+      // that, we need to emit the tag as "!!str" instead of "!string" or
+      // !!float instead of "!double", etc., but our libyaml-cpp writer
+      // does not yet offer the ability to produce that kind of output.
       throw std::invalid_argument(fmt::format(
           "Cannot YamlWriteArchive the variant type {} with a non-zero index",
           full_name));
@@ -323,6 +330,10 @@ class YamlWriteArchive final {
     return short_name;
   }
 
+  // This is used for std::array, std::vector, Eigen::Vector, or similar.
+  // @param size is the number of items pointed to by data
+  // @param data is the base pointer to the array to serialize
+  // @tparam T is the element type of the array
   template <typename T>
   void VisitArrayLike(const char* name, size_t size, T* data) {
     auto sub_node = internal::Node::MakeSequence();
@@ -350,17 +361,22 @@ class YamlWriteArchive final {
   }
 
 
+  // This is used for std::map, std::unordered_map, or similar.
+  // The map key must be a string; the value can be anything that serializes.
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
+    // For now, we only allow std::string as the keys of a serialized std::map.
+    // In the future, we could imagine handling any other kind of scalar value
+    // that was convertible to a string (int, double, string_view, etc.) if we
+    // found that useful.  However, to remain compatible with JSON semantics,
+    // we should never allow a YAML Sequence or Mapping to be a used as a key.
     static_assert(std::is_same_v<Key, std::string>,
                   "Map keys must be strings");
     auto sub_node = internal::Node::MakeMapping();
     // N.B. For std::unordered_map, this iteration order is non-deterministic,
     // but because internal::Node::MapData uses sorted keys anyway, it doesn't
     // matter what order we insert them here.
-    for (auto& map_key_value_pair : *nvp.value()) {
-      const std::string& key = map_key_value_pair.first;
-      auto& value = map_key_value_pair.second;
+    for (auto&& [key, value] : *nvp.value()) {
       YamlWriteArchive sub_archive;
       sub_archive.Visit(drake::MakeNameValue(key.c_str(), &value));
       sub_node.Add(key, std::move(sub_archive.root_.At(key)));
