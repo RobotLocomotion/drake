@@ -43,8 +43,8 @@ copy-assignment defaults are well-formed.  Note that the defaulted move
 functions could conceivably still be ill-formed, in which case they will
 effectively not be declared or used -- but because the copy constructor exists
 the type will still be MoveConstructible.  Drake's Doxygen is customized to
-render the functions in detail, with appropriate comments.  Invoke this macro
-in the public section of the class declaration, e.g.:
+render the functions in detail, with appropriate comments.  Typically, you
+should invoke this macro in the public section of the class declaration, e.g.:
 <pre>
 class Foo {
  public:
@@ -53,14 +53,38 @@ class Foo {
   // ...
 };
 </pre>
+
+However, if Foo has a virtual destructor (i.e., is subclassable), then
+typically you should use either DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN in the
+public section or else DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN in the
+protected section, to prevent
+<a href="https://en.wikipedia.org/wiki/Object_slicing">object slicing</a>.
+
+The macro contains a built-in self-check that copy-assignment is well-formed.
+This self-check proves that the Classname is CopyConstructible, CopyAssignable,
+MoveConstructible, and MoveAssignable (in all but the most arcane cases where a
+member of the Classname is somehow CopyAssignable but not CopyConstructible).
+Therefore, classes that use this macro typically will not need to have any unit
+tests that check for the presence nor correctness of these functions.
+
+However, the self-check does not provide any checks of the runtime efficiency
+of the functions.  If it is important for performance that the move functions
+actually move (instead of making a copy), then you should consider capturing
+that in a unit test.
 */
 #define DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
   Classname(const Classname&) = default;                        \
   Classname& operator=(const Classname&) = default;             \
   Classname(Classname&&) = default;                             \
   Classname& operator=(Classname&&) = default;                  \
-  /* Fails at compile-time if default-copy doesn't work. */     \
-  static void DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE() {        \
-    (void) static_cast<Classname& (Classname::*)(               \
-        const Classname&)>(&Classname::operator=);              \
-  }
+  /* Fails at compile-time if copy-assign doesn't compile. */   \
+  /* Note that we do not test the copy-ctor here, because  */   \
+  /* it will not exist when Classname is abstract.         */   \
+  static void DrakeDefaultCopyAndMoveAndAssign_DoAssign(        \
+      Classname* a, const Classname& b) { *a = b; }             \
+  static_assert(                                                \
+      &DrakeDefaultCopyAndMoveAndAssign_DoAssign ==             \
+      &DrakeDefaultCopyAndMoveAndAssign_DoAssign,               \
+      "This assertion is never false; its only purpose is to "  \
+      "generate 'use of deleted function: operator=' errors "   \
+      "when Classname is a template.");
