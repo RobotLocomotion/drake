@@ -307,8 +307,7 @@ drake_cc_googletest(
     name = "model_instance_test",
     deps = [
         ":tree",
-        "//common/test_utilities",
-        "//common/test_utilities:limit_malloc",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

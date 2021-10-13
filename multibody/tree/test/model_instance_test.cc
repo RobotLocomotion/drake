@@ -2,8 +2,6 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/prismatic_joint.h"
