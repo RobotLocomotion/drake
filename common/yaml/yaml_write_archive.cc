@@ -22,6 +22,12 @@ constexpr const char* const kKeyOrder = "__key_order";
 
 // This function uses the same approach as YAML::NodeEvents::Emit.
 // https://github.com/jbeder/yaml-cpp/blob/release-0.5.2/src/nodeevents.cpp#L55
+//
+// The `sink` object keeps track of document state.  Our job is to feed it with
+// an event stream (e.g., start mapping, "foo", start sequence, "1", "2",
+// end sequence, end mapping) and then its job is to spit out the equivalent
+// YAML syntax for that stream (e.g., "foo: [1, 2]") with appropriately matched
+// delimiters (i.e., `:` or `{}` or `[]`) and horizontal indentation levels.
 void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
   const YAML::Mark no_mark;
   const YAML::anchor_t no_anchor = YAML::NullAnchor;
