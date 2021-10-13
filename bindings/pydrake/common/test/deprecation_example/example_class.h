@@ -54,6 +54,18 @@ class ExampleCppClass {
     unused(x);
   }
 
+  // This will be bound with two spellings in Python:
+  // - FunctionWithArgumentName(new_name) - not deprecated
+  // - FunctionWithArgumentName(old_name) - deprecated
+  void FunctionWithArgumentName(int new_name) {
+    // This toy function does no actual work where a real function would do
+    // work with the parameters. Using unused minimally satisfies the
+    // compiler's need that all named parameters be "used". We can't simply
+    // omit the parameter name because python doc extraction depends on those
+    // names, and we expose the kwarg in the function signature.
+    unused(new_name);
+  }
+
   /// Good property.
   int prop{};
 };
