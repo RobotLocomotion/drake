@@ -50,7 +50,7 @@ class PackageMap final {
   int size() const;
 
   /// Returns the deprecation message for package @p package_name if it has
-  /// been set as deprecated. Aborts i no package named @p package_name exists
+  /// been set as deprecated. Aborts if no package named @p package_name exists
   /// in this PackageMap.
   std::optional<std::string> GetDeprecated(
       const std::string& package_name) const;
