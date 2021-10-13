@@ -2844,7 +2844,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
     plant_->GetPositionsFromArray(arm2,
         state_vector.head(plant_->num_positions()), &q_out_array);
     plant_->GetVelocitiesFromArray(arm2,
-        state_vector.tail(plant_->num_positions()), &v_out_array);
+        state_vector.tail(plant_->num_velocities()), &v_out_array);
   }
 
   // Verify values.
@@ -2861,7 +2861,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
       "Output array is not properly sized.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetVelocitiesFromArray(arm2,
-        state_vector.tail(plant_->num_positions()), &v_out_array_err),
+        state_vector.tail(plant_->num_velocities()), &v_out_array_err),
       std::exception,
       "Output array is not properly sized.");
 }
