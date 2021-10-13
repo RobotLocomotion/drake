@@ -103,7 +103,7 @@ CPP_OPERATORS = OrderedDict(
 
 # 'Broadphase' culling; do not recurse inside these symbols.
 SKIP_RECURSE_NAMES = [
-    'DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE',
+    'DrakeDefaultCopyAndMoveAndAssign_DoAssign',
     'Eigen',
     'detail',
     'dev',
