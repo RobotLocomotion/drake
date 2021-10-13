@@ -68,7 +68,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                        const math::RigidTransform<T>& X_WM,
                        ContactPolygonRepresentation representation,
                        std::vector<SurfaceFace>* faces,
-                       std::vector<SurfaceVertex<T>>* vertices_W,
+                       std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
                        std::unordered_map<SortedPair<VolumeVertexIndex>,
                                           SurfaceVertexIndex>* cut_edges) {
@@ -79,7 +79,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
   int intersection_code = 0;
   for (int i = 0; i < 4; ++i) {
     const VolumeVertexIndex v = mesh_M.element(tet_index).vertex(i);
-    distance[i] = plane_M.CalcHeight(mesh_M.vertex(v).r_MV());
+    distance[i] = plane_M.CalcHeight(mesh_M.vertex(v));
     if (distance[i] > T(0)) intersection_code |= 1 << i;
   }
 
@@ -117,8 +117,8 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
       // Need to compute the result; but we already know that this edge
       // intersects the plane based on the signed distances of its two
       // vertices.
-      const Vector3<double>& p_MV0 = mesh_M.vertex(v0).r_MV();
-      const Vector3<double>& p_MV1 = mesh_M.vertex(v1).r_MV();
+      const Vector3<double>& p_MV0 = mesh_M.vertex(v0);
+      const Vector3<double>& p_MV1 = mesh_M.vertex(v1);
       const T d_v0 = distance[tet_edge.first];
       const T d_v1 = distance[tet_edge.second];
       // Note: It should be impossible for the denominator to be zero. By
@@ -165,7 +165,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
     }
   }
   for (size_t v = before; v < vertices_W->size(); ++v) {
-    const Vector3<T> p_MV = X_WM.inverse() * vertices_W->at(v).r_MV();
+    const Vector3<T> p_MV = X_WM.inverse() * vertices_W->at(v);
     surface_e->emplace_back(field_M.EvaluateCartesian(tet_index, p_MV));
   }
 }
@@ -181,7 +181,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   if (tet_indices.size() == 0) return nullptr;
 
   std::vector<SurfaceFace> faces;
-  std::vector<SurfaceVertex<T>> vertices_W;
+  std::vector<Vector3<T>> vertices_W;
   std::vector<T> surface_e;
   std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       cut_edges;

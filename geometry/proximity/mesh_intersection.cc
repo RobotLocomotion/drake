@@ -204,9 +204,7 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   polygon_M->clear();
   for (int i = 0; i < 3; ++i) {
     SurfaceVertexIndex v = surface_N.element(face).vertex(i);
-    // TODO(SeanCurtis-TRI): The `M` in `r_MV()` is different from the M in this
-    //  function. More evidence that the `vertex(v).r_MV()` notation is *bad*.
-    const Vector3<T>& p_NV = surface_N.vertex(v).r_MV().cast<T>();
+    const Vector3<T>& p_NV = surface_N.vertex(v).cast<T>();
     polygon_M->push_back(X_MN * p_NV);
   }
   // Get the positions, in M's frame, of the four vertices of the tetrahedral
@@ -216,7 +214,7 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   Vector3<double> p_MVs[4];
   for (int i = 0; i < 4; ++i) {
     VolumeVertexIndex v = volume_M.element(element).vertex(i);
-    p_MVs[i] = volume_M.vertex(v).r_MV();
+    p_MVs[i] = volume_M.vertex(v);
   }
   // Sets up the four half spaces associated with the four triangular faces of
   // the tetrahedron. Assume the tetrahedron has the fourth vertex seeing the
@@ -308,7 +306,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   grad_eM_Ms->clear();
 
   std::vector<SurfaceFace> surface_faces;
-  std::vector<SurfaceVertex<T>> surface_vertices_M;
+  std::vector<Vector3<T>> surface_vertices_M;
   std::vector<T> surface_e;
   const VolumeMesh<double>& mesh_M = volume_field_M.mesh();
   // We know that each contact polygon has at most 7 vertices because
@@ -380,7 +378,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const int num_current_vertices = surface_vertices_M.size();
     // Calculate values of the pressure field at the new vertices.
     for (int v = num_previous_vertices; v < num_current_vertices; ++v) {
-      const Vector3<T>& r_MV = surface_vertices_M[v].r_MV();
+      const Vector3<T>& r_MV = surface_vertices_M[v];
       const T pressure = volume_field_M.EvaluateCartesian(tet_index, r_MV);
       surface_e.push_back(pressure);
     }

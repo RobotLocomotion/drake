@@ -65,7 +65,7 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
   const Vector3<T> vertex_data[5] = {Vector3<T>::Zero(), Vector3<T>::UnitX(),
                                      Vector3<T>::UnitY(), Vector3<T>::UnitZ(),
                                      -Vector3<T>::UnitZ()};
-  std::vector<VolumeVertex<T>> vertices_W;
+  std::vector<Vector3<T>> vertices_W;
   for (int v = 0; v < 5; ++v) vertices_W.emplace_back(X_WM * vertex_data[v]);
   auto volume_mesh_W = std::make_unique<VolumeMesh<T>>(std::move(elements),
                                                        std::move(vertices_W));
@@ -73,7 +73,7 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
   EXPECT_EQ(5, volume_mesh_W->num_vertices());
   for (int v = 0; v < 5; ++v)
     EXPECT_EQ(X_WM * vertex_data[v],
-              volume_mesh_W->vertex(VolumeVertexIndex(v)).r_MV());
+              volume_mesh_W->vertex(VolumeVertexIndex(v)));
   for (int e = 0; e < 2; ++e)
     for (int v = 0; v < 4; ++v)
       EXPECT_EQ(element_data[e][v],
@@ -116,7 +116,7 @@ void TestVolumeMeshEqual() {
 
   // Different tetrahedral connectivity.
   {
-    std::vector<VolumeVertex<T>> vertices_copy = mesh->vertices();
+    std::vector<Vector3<T>> vertices_copy = mesh->vertices();
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
     // Re-order vertices of the first tetrahedron.
     tetrahedra[0] = VolumeElement(tetrahedra[0].vertex(1),
@@ -130,7 +130,7 @@ void TestVolumeMeshEqual() {
 
   // Different number of vertices.
   {
-    std::vector<VolumeVertex<T>> vertices = mesh->vertices();
+    std::vector<Vector3<T>> vertices = mesh->vertices();
     vertices.emplace_back(1.2, 3.7, 0.15);
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
     VolumeMesh<T> another_mesh(std::move(tetrahedra), std::move(vertices));
@@ -139,7 +139,7 @@ void TestVolumeMeshEqual() {
 
   // Different number of tetrahedra.
   {
-    std::vector<VolumeVertex<T>> vertices = mesh->vertices();
+    std::vector<Vector3<T>> vertices = mesh->vertices();
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
     tetrahedra.pop_back();
     VolumeMesh<T> another_mesh(std::move(tetrahedra), std::move(vertices));
@@ -293,8 +293,8 @@ void TestCalcGradBarycentric() {
   // the test more realistic.
   const VolumeMesh<T> mesh_W(
       {VolumeElement(tetrahedron)},
-      {VolumeVertex<T>(X_WM * v0_M), VolumeVertex<T>(X_WM * v1_M),
-       VolumeVertex<T>(X_WM * v2_M), VolumeVertex<T>(X_WM * v3_M)});
+      {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
+       Vector3<T>(X_WM * v2_M), Vector3<T>(X_WM * v3_M)});
 
   const VolumeMeshTester<T> tester(mesh_W);
   const auto gradb0_W = tester.CalcGradBarycentric(VolumeElementIndex(0), 0);
@@ -451,13 +451,13 @@ class ScalarMixingTest : public ::testing::Test {
     // We construct an AutoDiffXd-valued mesh from the double-valued mesh. We
     // only set the derivatives for vertex 3. That means, operations on
     // test 0 *must* have derivatives, but tet 1 may not have them.
-    std::vector<VolumeVertex<AutoDiffXd>> vertices;
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(0)).r_MV());
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(1)).r_MV());
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(2)).r_MV());
+    std::vector<Vector3<AutoDiffXd>> vertices;
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(0)));
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(1)));
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(2)));
     vertices.emplace_back(math::InitializeAutoDiff(
-        mesh_d_->vertex(VolumeVertexIndex(3)).r_MV()));
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(4)).r_MV());
+        mesh_d_->vertex(VolumeVertexIndex(3))));
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(4)));
     std::vector<VolumeElement> elements(mesh_d_->tetrahedra());
 
     mesh_ad_ = std::make_unique<VolumeMesh<AutoDiffXd>>(std::move(elements),
@@ -475,7 +475,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
   Vector3<double> p_WQ_d = Vector3<double>::Zero();
   for (VolumeVertexIndex v(0); v < 4; ++v) {
-    p_WQ_d += mesh_d_->vertex(v).r_MV();
+    p_WQ_d += mesh_d_->vertex(v);
   }
   p_WQ_d /= 4;
   const Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ_d);

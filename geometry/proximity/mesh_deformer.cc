@@ -19,8 +19,7 @@ void MeshDeformer<MeshType>::SetAllPositions(
         mesh_.num_vertices(), p_MVs.size()));
   }
   for (int v = 0, i = 0; v < mesh_.num_vertices(); ++v, i += 3) {
-    mesh_.vertices_[v] =
-        VertexType(Vector3<T>(p_MVs[i], p_MVs[i + 1], p_MVs[i + 2]));
+    mesh_.vertices_[v] = Vector3<T>(p_MVs[i], p_MVs[i + 1], p_MVs[i + 2]);
   }
 }
 

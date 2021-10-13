@@ -489,9 +489,9 @@ class MeshcatVisualizer(LeafSystem):
                     mesh_verts = surface_mesh.vertices()
                     v = 0
                     for face in surface_mesh.faces():
-                        p_MA = mesh_verts[int(face.vertex(0))].r_MV()
-                        p_MB = mesh_verts[int(face.vertex(1))].r_MV()
-                        p_MC = mesh_verts[int(face.vertex(2))].r_MV()
+                        p_MA = mesh_verts[int(face.vertex(0))]
+                        p_MB = mesh_verts[int(face.vertex(1))]
+                        p_MC = mesh_verts[int(face.vertex(2))]
                         vertices[v, :] = tuple(p_MA)
                         vertices[v + 1, :] = tuple(p_MB)
                         vertices[v + 2, :] = tuple(p_MC)

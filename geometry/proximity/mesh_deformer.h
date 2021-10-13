@@ -57,8 +57,6 @@ class MeshDeformer {
   void SetAllPositions(const Eigen::Ref<const VectorX<T>>& p_MVs);
 
  private:
-  using VertexType = typename MeshType::template VertexType<T>;
-
   MeshType& mesh_;
 };
 

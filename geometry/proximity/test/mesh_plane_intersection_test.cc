@@ -69,7 +69,7 @@ VolumeMesh<T> TrivialVolumeMesh(
     const RigidTransform<T>& X_FM = RigidTransform<T>::Identity(),
     bool minimum_vertices = true) {
   vector<VolumeElement> elements;
-  vector<VolumeVertex<T>> vertices;
+  vector<Vector3<T>> vertices;
   if (minimum_vertices) {
     const int element_data[2][4] = {{0, 1, 2, 3}, {0, 2, 1, 4}};
     for (const auto& element : element_data) {
@@ -261,7 +261,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
 
     // Check vertices_W_.
     for (size_t v = 0; v < vertices_W_.size(); ++v) {
-      const Vector3d& p_WV = vertices_W_.at(v).r_MV();
+      const Vector3d& p_WV = vertices_W_.at(v);
       const Vector3d p_FV = X_WF_.inverse() * p_WV;
       const double height = plane_F.CalcHeight(p_FV);
       if (std::abs(height) > kEps) {
@@ -275,7 +275,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     // Check surface_pressure_.
     for (SurfaceVertexIndex v(0); v < vertices_W_.size(); ++v) {
       const double pressure = surface_pressure_[v];
-      const Vector3d& p_WV = vertices_W_[v].r_MV();
+      const Vector3d& p_WV = vertices_W_[v];
       const Vector3d p_FV = X_WF_.inverse() * p_WV;
       const double expected_pressure =
           field_F.EvaluateCartesian(tet_index, p_FV);
@@ -352,7 +352,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   pair<vector<EdgeVertex>, ::testing::AssertionResult>
   CharacterizeEdgeVertices(
       SurfaceVertexIndex fan_index, const vector<SurfaceFace>& slice,
-      const vector<SurfaceVertex<double>>& slice_vertices_W,
+      const vector<Vector3d>& slice_vertices_W,
       VolumeElementIndex tet_index, const VolumeMesh<double>& mesh_F) const {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const VolumeElement& tet = mesh_F.element(tet_index);
@@ -375,12 +375,12 @@ class SliceTetWithPlaneTest : public ::testing::Test {
         if (slice_vertex_indices.count(v) > 0) continue;
         slice_vertex_indices.insert(v);
         // The slice polygon vertex S in the mesh frame F.
-        const Vector3d p_FS = X_FW * slice_vertices_W[v].r_MV();
+        const Vector3d p_FS = X_FW * slice_vertices_W[v];
         for (int e = 0; e < 6; ++e) {
           const VolumeVertexIndex V0 = tet.vertex(tet_edges[e][0]);
           const VolumeVertexIndex V1 = tet.vertex(tet_edges[e][1]);
-          const Vector3d p_FV0 = mesh_F.vertex(V0).r_MV();
-          const Vector3d p_FV1 = mesh_F.vertex(V1).r_MV();
+          const Vector3d p_FV0 = mesh_F.vertex(V0);
+          const Vector3d p_FV1 = mesh_F.vertex(V1);
           const Vector3d p_V0V1_F = p_FV1 - p_FV0;
           const double d_V0V1 = p_V0V1_F.norm();
           const Vector3d p_V0S_F = p_FS - p_FV0;
@@ -448,9 +448,9 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     for (const auto& edge_vertex : edge_vertices) {
       polygon.push_back(edge_vertex.slice_vertex);
     }
-    const Vector3d nhat_W = CalcPlaneNormal(vertices_W_[polygon[0]].r_MV(),
-                                            vertices_W_[polygon[1]].r_MV(),
-                                            vertices_W_[polygon[2]].r_MV());
+    const Vector3d nhat_W = CalcPlaneNormal(vertices_W_[polygon[0]],
+                                            vertices_W_[polygon[1]],
+                                            vertices_W_[polygon[2]]);
     return CalcPolygonCentroid(polygon, nhat_W, vertices_W_);
   }
 
@@ -463,7 +463,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
       SurfaceVertexIndex centroid_index) const {
     constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
     const Vector3d p_WC = CentroidFromFan(edge_vertices);
-    return CompareMatrices(p_WC, vertices_W_[centroid_index].r_MV(), kEps);
+    return CompareMatrices(p_WC, vertices_W_[centroid_index], kEps);
   }
 
   /* Confirms that the pressures stored in surface_pressure_ can be reproduced
@@ -534,8 +534,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     // values because the condition will be de facto false.
     constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
     const RigidTransformd X_FW = X_WF_.inverse();
-    for (const auto& V_W : vertices_W_) {
-      const Vector3d& p_WV = V_W.r_MV();
+    for (const Vector3d& p_WV : vertices_W_) {
       const Vector3d& p_FV = X_FW * p_WV;
       const VolumeMesh<double>::Barycentric<double> b_V =
           field_F.mesh().CalcBarycentric(p_FV, tet_index);
@@ -571,7 +570,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     // Accumulator for the position of the centroid C in the mesh frame M.
     Vector3d p_MC = Vector3d::Zero();
     for (int i = 0; i < 4; ++i) {
-      const Vector3d& p_MVi = mesh_M.vertex(tet.vertex(i)).r_MV();
+      const Vector3d& p_MVi = mesh_M.vertex(tet.vertex(i));
       p_MC += p_MVi;
     }
     return p_MC / 4.0;
@@ -582,9 +581,9 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   ::testing::AssertionResult FaceNormalMatches(
       int tri_index, const Vector3d& expected_n_W) const {
     const SurfaceFace& tri = faces_[tri_index];
-    const Vector3d& r_WV0 = vertices_W_[tri.vertex(0)].r_MV();
-    const Vector3d& r_WV1 = vertices_W_[tri.vertex(1)].r_MV();
-    const Vector3d& r_WV2 = vertices_W_[tri.vertex(2)].r_MV();
+    const Vector3d& r_WV0 = vertices_W_[tri.vertex(0)];
+    const Vector3d& r_WV1 = vertices_W_[tri.vertex(1)];
+    const Vector3d& r_WV2 = vertices_W_[tri.vertex(2)];
     const Vector3d n_W = ((r_WV1 - r_WV0).cross(r_WV2 - r_WV0)).normalized();
     // The difference between computing the normal like this and the
     // transformation of nhat_F into nhat_W for the space of arbitrary R_WF used
@@ -600,7 +599,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
 
   /* The accumulators for the SliceTetWithPlane() method. */
   vector<SurfaceFace> faces_;
-  vector<SurfaceVertex<double>> vertices_W_;
+  vector<Vector3d> vertices_W_;
   vector<double> surface_pressure_;
   unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges_;
 };
@@ -757,7 +756,7 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
       SCOPED_TRACE(fmt::format("i = {}; 0 <= i < 4", i));
       // The position of the "isolated" vertex -- the lone vertex lying on one
       // side of the plane.
-      const Vector3d& p_FVi = mesh_F.vertex(tet.vertex(i)).r_MV();
+      const Vector3d& p_FVi = mesh_F.vertex(tet.vertex(i));
       const Vector3d p_CVi_F = p_FVi - p_FC;
       const Vector3d nhat_F = p_CVi_F.normalized();
       // Define a point P halfway between isolated vertex Vi and centroid; the
@@ -776,7 +775,7 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
         EXPECT_GT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
         for (int j = 0; j < 4; ++j) {
           if (i != j) {
-            const Vector3d& p_FVj = mesh_F.vertex(tet.vertex(j)).r_MV();
+            const Vector3d& p_FVj = mesh_F.vertex(tet.vertex(j));
             // All other vertices are on the opposite side of the plane.
             EXPECT_LT(plane_sign * plane_F.CalcHeight(p_FVj), 0);
           }
@@ -861,8 +860,8 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
     for (const auto& [v0, v1] :
          vector<pair<int, int>>{{0, 1}, {0, 2}, {0, 3}}) {
       SCOPED_TRACE(fmt::format("[v0, v1] = [{}, {}]", v0, v1));
-      const Vector3d& p_FV0 = mesh_F.vertex(tet.vertex(v0)).r_MV();
-      const Vector3d& p_FV1 = mesh_F.vertex(tet.vertex(v1)).r_MV();
+      const Vector3d& p_FV0 = mesh_F.vertex(tet.vertex(v0));
+      const Vector3d& p_FV1 = mesh_F.vertex(tet.vertex(v1));
       // Position on edge E nearest the centroid.
       const Vector3d p_FE = nearest_point_to_edge(p_FC, p_FV0, p_FV1);
       const Vector3d p_CE_F = p_FE - p_FC;
@@ -881,7 +880,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
         // Confirm configuration; all four vertices are on the expected side
         // of the plane.
         for (int i = 0; i < 4; ++i) {
-          const Vector3d& p_FVi = mesh_F.vertex(tet.vertex(i)).r_MV();
+          const Vector3d& p_FVi = mesh_F.vertex(tet.vertex(i));
           if (i == v0 || i == v1) {
             EXPECT_GT(plane_sign * plane_F.CalcHeight(p_FVi), 0.0);
           } else {
@@ -935,7 +934,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   VolumeMeshFieldLinear<double, double> min_field_F{
       vector<double>{0, 0, 0, 1, -1}, &min_mesh_F};
   vector<SurfaceFace> min_faces;
-  vector<SurfaceVertex<double>> min_vertices_F;
+  vector<Vector3d> min_vertices_F;
   vector<double> min_surface_pressure;
   unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       min_cut_edges;
@@ -946,7 +945,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   VolumeMeshFieldLinear<double, double> dupe_field_F{
       vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
   vector<SurfaceFace> dupe_faces;
-  vector<SurfaceVertex<double>> dupe_vertices_F;
+  vector<Vector3d> dupe_vertices_F;
   vector<double> dupe_surface_pressure;
   unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       dupe_cut_edges;
@@ -976,8 +975,8 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
     const SurfaceFace& min_face = min_faces[0];
     const SurfaceFace& dupe_face = dupe_faces[0];
     for (int v = 0; v < 3; ++v) {
-      const Vector3d& p_FVm = min_vertices_F[min_face.vertex(v)].r_MV();
-      const Vector3d& p_FVd = dupe_vertices_F[dupe_face.vertex(v)].r_MV();
+      const Vector3d& p_FVm = min_vertices_F[min_face.vertex(v)];
+      const Vector3d& p_FVd = dupe_vertices_F[dupe_face.vertex(v)];
       EXPECT_NEAR((p_FVm - p_FVd).norm(), 0, kEps);
     }
   }
@@ -1014,7 +1013,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
          ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
     vector<SurfaceFace> faces;
-    vector<SurfaceVertex<double>> vertices_W;
+    vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
     VolumeElementIndex tet_index{0};
@@ -1034,7 +1033,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
        ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
     vector<SurfaceFace> faces;
-    vector<SurfaceVertex<double>> vertices_W;
+    vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
     VolumeElementIndex tet_index{1};
@@ -1177,7 +1176,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   {
     // For tet 0, the z-value of the last vertex should be > 0.
     const Vector3d& p_WV =
-        contact_surface_0->mesh_W().vertices().back().r_MV();
+        contact_surface_0->mesh_W().vertices().back();
     const Vector3d& p_MV = X_MW * p_WV;
     EXPECT_GT(p_MV(2), 0);
   }
@@ -1190,7 +1189,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   {
     // For tet 0, the z-value of the last vertex should be > 0.
     const Vector3d& p_WV =
-        contact_surface_0->mesh_W().vertices().back().r_MV();
+        contact_surface_0->mesh_W().vertices().back();
     const Vector3d& p_MV = X_MW * p_WV;
     EXPECT_GT(p_MV(2), 0);
   }
@@ -1204,7 +1203,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   {
     // For tet 1, the z-value of the last vertex should be < 0.
     const Vector3d& p_WV =
-        contact_surface_1->mesh_W().vertices().back().r_MV();
+        contact_surface_1->mesh_W().vertices().back();
     const Vector3d& p_MV = X_MW * p_WV;
     EXPECT_LT(p_MV(2), 0);
   }
@@ -1217,7 +1216,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   {
     // For tet 1, the z-value of the last vertex should be < 0.
     const Vector3d& p_WV =
-        contact_surface_1->mesh_W().vertices().back().r_MV();
+        contact_surface_1->mesh_W().vertices().back();
     const Vector3d& p_MV = X_MW * p_WV;
     EXPECT_LT(p_MV(2), 0);
   }
@@ -1268,9 +1267,9 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // O(N^2) test comparing all vertex distances; report the minimum distance.
     double min_distance = std::numeric_limits<double>::infinity();
     for (SurfaceVertexIndex i{0}; i < 5; ++i) {
-      const Vector3d& p_WVi = contact_mesh_W.vertex(i).r_MV();
+      const Vector3d& p_WVi = contact_mesh_W.vertex(i);
       for (SurfaceVertexIndex j{i + 1}; j < 6; ++j) {
-        const Vector3d& p_WVj = contact_mesh_W.vertex(j).r_MV();
+        const Vector3d& p_WVj = contact_mesh_W.vertex(j);
         min_distance = std::min(min_distance, (p_WVj - p_WVi).norm());
       }
     }
@@ -1302,9 +1301,9 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     int duplicate_count = 0;
     for (SurfaceVertexIndex i{0}; i < 5; ++i) {
-      const Vector3d& p_WVi = contact_mesh_W.vertex(i).r_MV();
+      const Vector3d& p_WVi = contact_mesh_W.vertex(i);
       for (SurfaceVertexIndex j{i + 1}; j < 6; ++j) {
-        const Vector3d& p_WVj = contact_mesh_W.vertex(j).r_MV();
+        const Vector3d& p_WVj = contact_mesh_W.vertex(j);
         if ((p_WVj - p_WVi).norm() < kEps) ++duplicate_count;
       }
     }
@@ -1519,7 +1518,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
     // Sample the vertex positions: in the S frame they should all have x = 0.5.
     const Vector3d& p_WV =
-        contact_surface->mesh_W().vertex(SurfaceVertexIndex{0}).r_MV();
+        contact_surface->mesh_W().vertex(SurfaceVertexIndex{0});
     const Vector3d p_SV = X_WS.inverse() * p_WV;
     EXPECT_NEAR(p_SV(0), 0.5, kEps);
   }
@@ -1613,9 +1612,8 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       2. validation is expressed in terms of that gradient. */
     using VI = VolumeVertexIndex;
     vector<VolumeElement> elements({VolumeElement(VI(0), VI(1), VI(2), VI(3))});
-    using V = VolumeVertex<double>;
-    vector<V> vertices_S({V(Vector3d::Zero()), V(Vector3d::UnitX()),
-                          V(Vector3d::UnitY()), V(Vector3d::UnitZ())});
+    vector<Vector3d> vertices_S({Vector3d::Zero(), Vector3d::UnitX(),
+                                 Vector3d::UnitY(), Vector3d::UnitZ()});
     mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
@@ -1730,10 +1728,10 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       /* Reality check: confirm the edges *are* parallel with the plane. */
       const RotationMatrixd R_WR_d = convert_to_double(X_WR_).rotation();
       const RotationMatrixd R_WS_d = R_WR_d * R_RS_d;
-      const Vector3d v0_S = mesh_S_->vertex(VolumeVertexIndex(0)).r_MV();
-      const Vector3d v1_S = mesh_S_->vertex(VolumeVertexIndex(1)).r_MV();
-      const Vector3d v2_S = mesh_S_->vertex(VolumeVertexIndex(2)).r_MV();
-      const Vector3d v3_S = mesh_S_->vertex(VolumeVertexIndex(3)).r_MV();
+      const Vector3d& v0_S = mesh_S_->vertex(VolumeVertexIndex(0));
+      const Vector3d& v1_S = mesh_S_->vertex(VolumeVertexIndex(1));
+      const Vector3d& v2_S = mesh_S_->vertex(VolumeVertexIndex(2));
+      const Vector3d& v3_S = mesh_S_->vertex(VolumeVertexIndex(3));
       const Vector3d e03_S = v3_S - v0_S;
       const Vector3d e12_S = v2_S - v1_S;
       const Vector3d e03_W = R_WS_d * e03_S;
@@ -1773,12 +1771,12 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
     // two simplifying assumptions:
     //   1. E actually does lie on *one* of the mesh edges.
     //   2. The edges are easily distinguishable by direction.
-    const vector<VolumeVertex<double>>& verts_S = field_S_->mesh().vertices();
+    const vector<Vector3d>& verts_S = field_S_->mesh().vertices();
     const vector<pair<int, int>> edges{{0, 1}, {0, 2}, {0, 3},
                                        {1, 2}, {1, 3}, {2, 3}};
     for (const auto& [a, b] : edges) {
-      const Vector3d& p_AB_S = verts_S[b].r_MV() - verts_S[a].r_MV();
-      const Vector3d p_AE_S = p_SE - verts_S[a].r_MV();
+      const Vector3d p_AB_S = verts_S[b] - verts_S[a];
+      const Vector3d p_AE_S = p_SE - verts_S[a];
       const double lhs = std::pow(p_AB_S.dot(p_AE_S), 2);
       const double rhs = p_AB_S.squaredNorm() * p_AE_S.squaredNorm();
       if (std::abs(lhs - rhs) < 1e-15) {
@@ -1879,9 +1877,9 @@ TEST_F(MeshPlaneDerivativesTest, Area) {
     double area_expected = 0;
     Vector3d dArea_dSo_expected = Vector3d::Zero();
     for (const auto& tri : triangles) {
-      const auto& p_WA_ad = mesh_W.vertex(tri[0]).r_MV();
-      const auto& p_WB_ad = mesh_W.vertex(tri[1]).r_MV();
-      const auto& p_WC_ad = mesh_W.vertex(tri[2]).r_MV();
+      const auto& p_WA_ad = mesh_W.vertex(tri[0]);
+      const auto& p_WB_ad = mesh_W.vertex(tri[1]);
+      const auto& p_WC_ad = mesh_W.vertex(tri[2]);
       const Vector3d p_WA = convert_to_double(p_WA_ad);
       const Vector3d p_WB = convert_to_double(p_WB_ad);
       const Vector3d p_WC = convert_to_double(p_WC_ad);
@@ -1997,7 +1995,7 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);
     const RotationMatrixd& R_WS = X_WS.rotation();
     for (VIndex v(0); v < mesh_W.num_vertices() - 1; ++v) {
-      const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v).r_MV();
+      const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v);
       const Vector3d& p_WV = convert_to_double(p_WV_ad);
       const Vector3d e_R = R_RW * R_WS * GetEdgeDirInS(X_WS.inverse() * p_WV);
       const double in_normal_dir = e_R.dot(n_R);
@@ -2023,10 +2021,10 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
         /* The derivative should simply be the mean of the first three. */
         Matrix3<double> expected_J_W = Matrix3<double>::Zero();
         for (VIndex v(0); v < 3; ++v) {
-          expected_J_W += math::ExtractGradient(mesh_W.vertex(v).r_MV());
+          expected_J_W += math::ExtractGradient(mesh_W.vertex(v));
         }
         expected_J_W /= 3;
-        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3)).r_MV();
+        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3));
         const Matrix3<double> J_W = math::ExtractGradient(p_WC);
         EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
         break;
@@ -2153,7 +2151,7 @@ TEST_F(MeshPlaneDerivativesTest, Pressure) {
     const Vector3d grad_p_W = X_WS_d.rotation() * grad_p_S;
     for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
       const Matrix3<double> dp_WQ_dp_WSo_W =
-          math::ExtractGradient(surface.mesh_W().vertex(v).r_MV());
+          math::ExtractGradient(surface.mesh_W().vertex(v));
       const Vector3d dp_dp_WSo_W_expected =
           grad_p_W.transpose() * (dp_WQ_dp_WSo_W - Matrix3<double>::Identity());
       const AutoDiffXd& p = surface.e_MN().EvaluateAtVertex(v);

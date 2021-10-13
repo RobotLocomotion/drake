@@ -30,7 +30,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
     // Seek to the beginning of the stream in each iteration.
     test_stream.seekg(0, test_stream.beg);
 
-    const std::vector<SurfaceVertex<double>> surface_vertices(
+    const std::vector<Vector3<double>> surface_vertices(
         ReadObjToSurfaceMesh(&test_stream, scale).vertices());
 
     EXPECT_EQ(3, surface_vertices.size());
@@ -41,7 +41,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
     };
 
     for (int i = 0; i < 3; ++i) {
-      EXPECT_EQ(expect_vertices[i], surface_vertices[i].r_MV());
+      EXPECT_EQ(expect_vertices[i], surface_vertices[i]);
     }
   }
 }
@@ -98,7 +98,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   // clang-format on
 
   for (int i = 0; i < 8; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)).r_MV());
+    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)));
   }
 
   // TODO(SeanCurtis-TRI) Devise a formulation of this that is less sensitive
@@ -230,7 +230,7 @@ f 1 2 3
     {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, { 0.0, 0.0, 1.0 }
   };
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)).r_MV());
+    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)));
   }
   ASSERT_EQ(1, surface.num_faces());
   int expect_face[3] = {0, 1, 2};
@@ -261,7 +261,7 @@ f 4 5 6
       {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
       {2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
   for (int i = 0; i < 6; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)).r_MV());
+    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)));
   }
   ASSERT_EQ(2, surface.num_faces());
   int expect_faces[2][3]{{0, 1, 2}, {3, 4, 5}};

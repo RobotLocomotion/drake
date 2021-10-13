@@ -382,15 +382,11 @@ template<typename T>
 unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
   const int face_data[3] = {0, 1, 2};
   std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
-  const Vector3<T> vertex_data[3] = {
+  std::vector<Vector3<T>> vertices = {
       Vector3<T>::Zero(),
       Vector3<T>::UnitX(),
       Vector3<T>::UnitY()
   };
-  std::vector<SurfaceVertex<T>> vertices;
-  for (auto& vertex : vertex_data) {
-    vertices.emplace_back(vertex);
-  }
   return std::make_unique<SurfaceMesh<T>>(std::move(faces),
                                           std::move(vertices));
 }
@@ -421,17 +417,13 @@ unique_ptr<VolumeMesh<T>> TrivialVolumeMesh(
   for (const auto& element : element_data) {
     elements.emplace_back(element);
   }
-  const Vector3<T> vertex_data[5] = {
+  std::vector<Vector3<T>> vertices = {
       X_MN * Vector3<T>::Zero(),
       X_MN * Vector3<T>::UnitX(),
       X_MN * Vector3<T>::UnitY(),
       X_MN * Vector3<T>::UnitZ(),
       X_MN * (-Vector3<T>::UnitZ())
   };
-  std::vector<VolumeVertex<T>> vertices;
-  for (auto& vertex : vertex_data) {
-    vertices.emplace_back(vertex);
-  }
   return std::make_unique<VolumeMesh<T>>(std::move(elements),
                                          std::move(vertices));
 }
@@ -664,17 +656,13 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
     const int element_data[4] = {0, 1, 2, 3};
     std::vector<VolumeElement> elements{VolumeElement(element_data)};
     // clang-format off
-    const Vector3d vertex_data[4] = {
+    std::vector<Vector3d> vertices = {
         { 2,  0,  2},
         {-2,  0,  2},
         { 0,  2, -2},
         { 0, -2, -2}
     };
     // clang-format on
-    std::vector<VolumeVertex<double>> vertices;
-    for (auto& vertex : vertex_data) {
-      vertices.emplace_back(vertex);
-    }
     volume_M = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                     std::move(vertices));
   }
@@ -683,15 +671,11 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
     const int face_data[3] = {0, 1, 2};
     std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
     // clang-format off
-    const Vector3d vertex_data[3] = {
+    std::vector<Vector3d> vertices = {
         {1.5,   1.5, 0.},
         {-1.5,  0.,  0.},
         {0.,   -1.5, 0.}};
     // clang-format on
-    std::vector<SurfaceVertex<double>> vertices;
-    for (auto& vertex : vertex_data) {
-      vertices.emplace_back(vertex);
-    }
     surface_N = std::make_unique<SurfaceMesh<double>>(std::move(faces),
                                                       std::move(vertices));
   }
@@ -775,7 +759,7 @@ VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
                                      SurfaceFaceIndex f,
                                      const VolumeMesh<double>& volume_V,
                                      const RigidTransform<T>& X_VS) {
-  const std::vector<SurfaceVertex<T>>& vertices_S = surface_S.vertices();
+  const std::vector<Vector3<T>>& vertices_S = surface_S.vertices();
 
   // Each triangle lies completely within one tet in the volume mesh. The
   // gradient value reported should be that of that tet. So, we'll grab
@@ -783,8 +767,8 @@ VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
   // that the pressure gradient on that triangle matches the tet.
   const SurfaceFace& face = surface_S.element(f);
   const Vector3<T> p_SC =
-      (vertices_S[face.vertex(0)].r_MV() + vertices_S[face.vertex(1)].r_MV() +
-       vertices_S[face.vertex(2)].r_MV()) /
+      (vertices_S[face.vertex(0)] + vertices_S[face.vertex(1)] +
+       vertices_S[face.vertex(2)]) /
       3;
   const Vector3<T> p_VC = X_VS * p_SC;
   for (VolumeElementIndex e(0); e < volume_V.num_elements(); ++e) {
@@ -843,10 +827,10 @@ class MeshIntersectionFixture : public testing::Test {
     // for *this* test. Note: we're skipping the vertices located at the
     // triangle centroids.
     const double kEpsPressure = kEps * 1e10;
-    const std::vector<SurfaceVertex<double>>& vertices = surface_S->vertices();
+    const std::vector<Vector3<double>>& vertices = surface_S->vertices();
     bool domain_checked[] = {false, false, false};
     for (SurfaceVertexIndex v(0); v < surface_S->num_vertices(); ++v) {
-      const double p_SV_z = vertices[v].r_MV()[2];
+      const double p_SV_z = vertices[v][2];
       if (std::abs(p_SV_z) < kEps) {
         ASSERT_NEAR(e_field->EvaluateAtVertex(v), 0.0, kEpsPressure);
         domain_checked[0] = true;
@@ -916,8 +900,8 @@ class MeshIntersectionFixture : public testing::Test {
 
     // Test one and assume all share the same property.
     const SurfaceVertexIndex v_index(0);
-    EXPECT_TRUE(CompareMatrices(contact_SR->mesh_W().vertex(v_index).r_MV(),
-                                contact_RS->mesh_W().vertex(v_index).r_MV()));
+    EXPECT_TRUE(CompareMatrices(contact_SR->mesh_W().vertex(v_index),
+                                contact_RS->mesh_W().vertex(v_index)));
 
     // TODO(SeanCurtis-TRI): Test that the face winding has been reversed, once
     //  that is officially documented as a property of the ContactSurface.
@@ -1088,9 +1072,8 @@ class MeshMeshDerivativesTest : public ::testing::Test {
       2. validation is expressed in terms of that gradient. */
     using VI = VolumeVertexIndex;
     vector<VolumeElement> elements({VolumeElement(VI(0), VI(1), VI(2), VI(3))});
-    using V = VolumeVertex<double>;
-    vector<V> vertices_S({V(Vector3d::Zero()), V(Vector3d::UnitX()),
-                          V(Vector3d::UnitY()), V(Vector3d::UnitZ())});
+    vector<Vector3d> vertices_S({Vector3d::Zero(), Vector3d::UnitX(),
+                                 Vector3d::UnitY(), Vector3d::UnitZ()});
     tet_mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
                                               std::move(vertices_S));
     field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
@@ -1099,10 +1082,9 @@ class MeshMeshDerivativesTest : public ::testing::Test {
 
     /* Rigid triangle mesh; tilt and offset the triangle's plane so things are
      interesting. */
-    using Vertex = SurfaceVertex<double>;
-    vector<Vertex> vertices{Vertex{Vector3d{-5, -5, 0}},
-                            Vertex{Vector3d{5, -5, 0}},
-                            Vertex{Vector3d{0, 5, 0}}};
+    vector<Vector3d> vertices{Vector3d{-5, -5, 0},
+                              Vector3d{5, -5, 0},
+                              Vector3d{0, 5, 0}};
     using VIndex = SurfaceVertexIndex;
     vector<SurfaceFace> faces({SurfaceFace{VIndex(0), VIndex(1), VIndex(2)}});
     tri_mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
@@ -1214,10 +1196,10 @@ class MeshMeshDerivativesTest : public ::testing::Test {
       /* Reality check: confirm the edges *are* parallel with the triangle. */
       const RotationMatrixd R_WR_d = convert_to_double(X_WR_).rotation();
       const RotationMatrixd R_WS_d = R_WR_d * R_RS_d;
-      const Vector3d v0_S = tet_mesh_S_->vertex(VolumeVertexIndex(0)).r_MV();
-      const Vector3d v1_S = tet_mesh_S_->vertex(VolumeVertexIndex(1)).r_MV();
-      const Vector3d v2_S = tet_mesh_S_->vertex(VolumeVertexIndex(2)).r_MV();
-      const Vector3d v3_S = tet_mesh_S_->vertex(VolumeVertexIndex(3)).r_MV();
+      const Vector3d& v0_S = tet_mesh_S_->vertex(VolumeVertexIndex(0));
+      const Vector3d& v1_S = tet_mesh_S_->vertex(VolumeVertexIndex(1));
+      const Vector3d& v2_S = tet_mesh_S_->vertex(VolumeVertexIndex(2));
+      const Vector3d& v3_S = tet_mesh_S_->vertex(VolumeVertexIndex(3));
       const Vector3d e03_S = v3_S - v0_S;
       const Vector3d e12_S = v2_S - v1_S;
       const Vector3d e03_W = R_WS_d * e03_S;
@@ -1257,12 +1239,12 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     // two simplifying assumptions:
     //   1. E actually does lie on *one* of the mesh edges.
     //   2. The edges are easily distinguishable by direction.
-    const vector<VolumeVertex<double>>& verts_S = field_S_->mesh().vertices();
+    const vector<Vector3d>& verts_S = field_S_->mesh().vertices();
     const vector<pair<int, int>> edges{{0, 1}, {0, 2}, {0, 3},
                                        {1, 2}, {1, 3}, {2, 3}};
     for (const auto& [a, b] : edges) {
-      const Vector3d& p_AB_S = verts_S[b].r_MV() - verts_S[a].r_MV();
-      const Vector3d p_AE_S = p_SE - verts_S[a].r_MV();
+      const Vector3d p_AB_S = verts_S[b] - verts_S[a];
+      const Vector3d p_AE_S = p_SE - verts_S[a];
       const double lhs = std::pow(p_AB_S.dot(p_AE_S), 2);
       const double rhs = p_AB_S.squaredNorm() * p_AE_S.squaredNorm();
       if (std::abs(lhs - rhs) < 1e-15) {
@@ -1365,9 +1347,9 @@ TEST_F(MeshMeshDerivativesTest, Area) {
     double area_expected = 0;
     Vector3d dArea_dSo_expected = Vector3d::Zero();
     for (const auto& tri : triangles) {
-      const auto& p_WA_ad = mesh_W.vertex(tri[0]).r_MV();
-      const auto& p_WB_ad = mesh_W.vertex(tri[1]).r_MV();
-      const auto& p_WC_ad = mesh_W.vertex(tri[2]).r_MV();
+      const auto& p_WA_ad = mesh_W.vertex(tri[0]);
+      const auto& p_WB_ad = mesh_W.vertex(tri[1]);
+      const auto& p_WC_ad = mesh_W.vertex(tri[2]);
       const Vector3d p_WA = convert_to_double(p_WA_ad);
       const Vector3d p_WB = convert_to_double(p_WB_ad);
       const Vector3d p_WC = convert_to_double(p_WC_ad);
@@ -1484,7 +1466,7 @@ TEST_F(MeshMeshDerivativesTest, VertexPosition) {
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);
     const RotationMatrixd& R_WS = X_WS.rotation();
     for (VIndex v(0); v < mesh_W.num_vertices() - 1; ++v) {
-      const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v).r_MV();
+      const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v);
       const Vector3d& p_WV = convert_to_double(p_WV_ad);
       const Vector3d e_R = R_RW * R_WS * GetEdgeDirInS(X_WS.inverse() * p_WV);
       const double in_normal_dir = e_R.dot(n_R);
@@ -1510,10 +1492,10 @@ TEST_F(MeshMeshDerivativesTest, VertexPosition) {
         /* The derivative should simply be the mean of the first three. */
         Matrix3<double> expected_J_W = Matrix3<double>::Zero();
         for (VIndex v(0); v < 3; ++v) {
-          expected_J_W += math::ExtractGradient(mesh_W.vertex(v).r_MV());
+          expected_J_W += math::ExtractGradient(mesh_W.vertex(v));
         }
         expected_J_W /= 3;
-        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3)).r_MV();
+        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3));
         const Matrix3<double> J_W = math::ExtractGradient(p_WC);
         EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
         break;
@@ -1641,7 +1623,7 @@ TEST_F(MeshMeshDerivativesTest, Pressure) {
     const Vector3d grad_p_W = X_WS_d.rotation() * grad_p_S;
     for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
       const Matrix3<double> dp_WQ_dp_WSo_W =
-          math::ExtractGradient(surface.mesh_W().vertex(v).r_MV());
+          math::ExtractGradient(surface.mesh_W().vertex(v));
       const Vector3d dp_dp_WSo_W_expected =
           grad_p_W.transpose() * (dp_WQ_dp_WSo_W - Matrix3<double>::Identity());
       const AutoDiffXd& p = surface.e_MN().EvaluateAtVertex(v);

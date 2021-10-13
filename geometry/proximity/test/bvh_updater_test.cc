@@ -53,19 +53,18 @@ class BvhUpdaterTest : public ::testing::Test {
                  (i.e., vertices 6 and 7).  */
   static MeshType MakeMesh(double dist = 2) {
     using T = typename MeshType::ScalarType;
-    using V = typename MeshType::template VertexType<T>;
     using VI = typename MeshType::VertexIndex;
     const Vector3<T> offset{dist, 0, 0};
     // clang-format off
-    vector<V> vertices{
-        {V(Vector3<T>{0, -1, 0} + offset),
-         V(Vector3<T>{1, 0, 0} + offset),
-         V(Vector3<T>{0, 0, 1} + offset),
-         V(Vector3<T>{0, -1, 0} - offset),
-         V(Vector3<T>{-1, 0, 0} - offset),
-         V(Vector3<T>{0, 0, 1} - offset),
-         V(offset),
-         V(-offset)}};
+    vector<Vector3<T>> vertices{
+        {Vector3<T>{0, -1, 0} + offset,
+         Vector3<T>{1, 0, 0} + offset,
+         Vector3<T>{0, 0, 1} + offset,
+         Vector3<T>{0, -1, 0} - offset,
+         Vector3<T>{-1, 0, 0} - offset,
+         Vector3<T>{0, 0, 1} - offset,
+         offset,
+         -offset}};
     // clang-format on
     if constexpr (std::is_same_v<MeshType, SurfaceMesh<T>>) {
       /* The winding of the triangles don't matter. */
@@ -167,7 +166,7 @@ TYPED_TEST(BvhUpdaterTest, Update) {
   VectorX<T> p_MVs(3 * mesh.num_vertices());
   using VIndex = typename MeshType::VertexIndex;
   for (VIndex i(0); i < mesh.num_vertices(); ++i) {
-    p_MVs.segment(i * 3, 3) << R * mesh.vertex(i).r_MV();
+    p_MVs.segment(i * 3, 3) << R * mesh.vertex(i);
   }
   deformer.SetAllPositions(p_MVs);
   updater.Update();

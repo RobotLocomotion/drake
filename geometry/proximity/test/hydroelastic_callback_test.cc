@@ -274,7 +274,7 @@ class TestScene {
   const SurfaceVertexIndex v0(0);
   const SurfaceFaceIndex f0(0);
   const auto& mesh_W = surface.mesh_W();
-  if (mesh_W.vertex(v0).r_MV().x().derivatives().size() != 3) {
+  if (mesh_W.vertex(v0).x().derivatives().size() != 3) {
     return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
   }
 

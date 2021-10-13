@@ -283,7 +283,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     # Get mesh scaling.
                     scale = shape.scale()
                     mesh = ReadObjToSurfaceMesh(filename, scale)
-                    patch_G = np.vstack([v.r_MV() for v in mesh.vertices()])
+                    patch_G = np.vstack(mesh.vertices())
                     # Only store the vertices of the (3D) convex hull of the
                     # mesh, as any interior vertices will still be interior
                     # vertices after projection, and will therefore be removed

@@ -40,10 +40,10 @@ class ContactSurfaceUtilityTest : public ::testing::Test {
   // Compute the average vertex position of the given `polygon`.
   static Vector3d AverageVertex(
       const vector<SurfaceVertexIndex>& polygon,
-      const vector<SurfaceVertex<double>>& vertices_F) {
+      const vector<Vector3d>& vertices_F) {
     Vector3d v = Vector3d::Zero();
     for (const auto& i : polygon) {
-      v += vertices_F[i].r_MV();
+      v += vertices_F[i];
     }
     return v / polygon.size();
   }
@@ -104,7 +104,6 @@ class ContactSurfaceUtilityTest : public ::testing::Test {
 // We then transform these vertices into various frames to make sure that it
 // works with rotation matrices that have no zero-values.
 TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
-  using V = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
 
   const double kEps = std::numeric_limits<double>::epsilon();
@@ -112,17 +111,17 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
   // Create a number of vertices in mesh frame M. All vertices lie on the Mz = 0
   // plane (such that Mz is a good normal direction). We'll construct polygons
   // on these vertices.
-  const vector<V> vertices_M{V{Vector3d{0, 0, 0}}, V{Vector3d{1, 0, 0}},
-                       V{Vector3d{0, 1, 0}}, V{Vector3d{1, 1, 0}},
-                       V{Vector3d{1.5, 1.5, 0}}, V{Vector3d{kEps, 1, 0}},
-                       V{Vector3d{-1, -0.25, 0}}, V{Vector3d{-2, 0, 0}}};
+  const vector<Vector3d> vertices_M{
+      Vector3d{0, 0, 0},      Vector3d{1, 0, 0},     Vector3d{0, 1, 0},
+      Vector3d{1, 1, 0},      Vector3d{1.5, 1.5, 0}, Vector3d{kEps, 1, 0},
+      Vector3d{-1, -0.25, 0}, Vector3d{-2, 0, 0}};
 
   for (const auto& X_FM : X_FMs_) {
     // Now put the vertices in an arbitrary frame F.
-    vector<V> vertices_F;
-    std::transform(vertices_M.begin(), vertices_M.end(),
-                   std::back_inserter(vertices_F),
-                   [&X_FM](const V& v_M) -> V { return V{X_FM * v_M.r_MV()}; });
+    vector<Vector3d> vertices_F;
+    std::transform(
+        vertices_M.begin(), vertices_M.end(), std::back_inserter(vertices_F),
+        [&X_FM](const Vector3d& v_M) -> Vector3d { return X_FM * v_M; });
     const Vector3d& nhat_F = X_FM.rotation().matrix().col(2);
 
     {
@@ -188,48 +187,44 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
 // is irrelevant. The vertex positions imply a frame and the centroid is
 // computed in that same frame.
 TEST_F(ContactSurfaceUtilityTest, ZeroAreaPolygon) {
-  using V = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
   constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
 
   // We'll use two primitives from two points:
   // Triangle: (a, a, b)
   // Quad: (a, a, b, b)
-  const vector<V> vertices{V{Vector3d{0.25, 1.5, -3}},
-                           V{Vector3d{-0.75, 0.25, 1.25}}};
+  const vector<Vector3d> vertices{Vector3d{0.25, 1.5, -3},
+                                  Vector3d{-0.75, 0.25, 1.25}};
   const VIndex a{0};
   const VIndex b{1};
 
-  const Vector3d p_AB = vertices[b].r_MV() - vertices[a].r_MV();
+  const Vector3d p_AB = vertices[b] - vertices[a];
   const Vector3d normal = Vector3d{0, p_AB(2), -p_AB(1)}.normalized();
 
   {
     const vector<VIndex> triangle{a, a, b};
     const Vector3d centroid = CalcPolygonCentroid(triangle, normal, vertices);
-    const Vector3d expected_centroid =
-        (2 * vertices[a].r_MV() + vertices[b].r_MV()) / 3.0;
+    const Vector3d expected_centroid = (2 * vertices[a] + vertices[b]) / 3.0;
     EXPECT_TRUE(CompareMatrices(centroid, expected_centroid, kEps));
   }
 
   {
     const vector<VIndex> quad{a, a, b, b};
     const Vector3d centroid = CalcPolygonCentroid(quad, normal, vertices);
-    const Vector3d expected_centroid =
-        (2 * vertices[a].r_MV() + 2 * vertices[b].r_MV()) / 4;
+    const Vector3d expected_centroid = (2 * vertices[a] + 2 * vertices[b]) / 4;
     EXPECT_TRUE(CompareMatrices(centroid, expected_centroid, kEps));
   }
 }
 
 // This confirms that with assertions armed, non-planar polygons are detected.
 TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
-  using V = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
   constexpr double kEps = 11 * std::numeric_limits<double>::epsilon();
   if (kDrakeAssertIsArmed) {
     const Vector3d Mz = Vector3d::UnitZ();
-    const vector<V> vertices_M{
-        V{Vector3d{-1.5, -0.25, kEps}}, V{Vector3d{1, 0, -kEps}},
-        V{Vector3d{0.75, 1.25, -kEps}}, V{Vector3d{0, 1, -kEps}}};
+    const vector<Vector3d> vertices_M{
+        Vector3d{-1.5, -0.25, kEps}, Vector3d{1, 0, -kEps},
+        Vector3d{0.75, 1.25, -kEps}, Vector3d{0, 1, -kEps}};
     const vector<VIndex> quad{VIndex(0), VIndex(1), VIndex(2), VIndex(3)};
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcPolygonCentroid(quad, Mz, vertices_M), std::runtime_error,
@@ -240,13 +235,12 @@ TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
 // This confirms that with assertions armed, normal perpendicularity is ignored
 // for degenerate polygons (lines and points).
 TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
-  using V = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
 
   if (kDrakeAssertIsArmed) {
-    const vector<V> vertices_M{
-        V{Vector3d{-1.5, -0.25, 0}}, V{Vector3d{1, 0, 0}},
-        V{Vector3d{0.75, 1.25, 0}}, V{Vector3d{0, 1, 0}}};
+    const vector<Vector3d> vertices_M{
+        Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
+        Vector3d{0.75, 1.25, 0}, Vector3d{0, 1, 0}};
     const Vector3d My = Vector3d::UnitY();
 
     {
@@ -283,14 +277,13 @@ TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
 //   2. The "normalness" doesn't really matter that much
 //   3. A zero vector destroys the answer.
 TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
-  using V = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
 
   const double kEps = std::numeric_limits<double>::epsilon();
 
   // Vertices sufficient to support a well-defined quad.
-  const vector<V> vertices_M{V{Vector3d{-1.5, -0.25, 0}}, V{Vector3d{1, 0, 0}},
-                             V{Vector3d{0.75, 1.25, 0}}, V{Vector3d{0, 1, 0}}};
+  const vector<Vector3d> vertices_M{Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
+                                    Vector3d{0.75, 1.25, 0}, Vector3d{0, 1, 0}};
   // A quad formed with a duplicate index; this forces the function to perform
   // full area calculations, but it should still have the expected value of
   // the corresponding triangle.
@@ -311,8 +304,8 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
     } else {
       // Without assertions, we compute the average vertex position.
       const Vector3d expected_centroid =
-          (vertices_M[quad[0]].r_MV() + vertices_M[quad[1]].r_MV() +
-           vertices_M[quad[2]].r_MV() + vertices_M[quad[3]].r_MV()) /
+          (vertices_M[quad[0]] + vertices_M[quad[1]] + vertices_M[quad[2]] +
+           vertices_M[quad[3]]) /
           4;
       EXPECT_TRUE(CompareMatrices(
           CalcPolygonCentroid(quad, kZeroVec, vertices_M), expected_centroid));
@@ -353,10 +346,8 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
       // zero. In those cases, there will be non-zero weights and _a_ centroid
       // will be computed. This tests the magical condition of exactly zero.
       const Vector3d expected_centroid =
-          (vertices_M[pseudo_triangle[0]].r_MV() +
-           vertices_M[pseudo_triangle[1]].r_MV() +
-           vertices_M[pseudo_triangle[2]].r_MV() +
-           vertices_M[pseudo_triangle[3]].r_MV()) /
+          (vertices_M[pseudo_triangle[0]] + vertices_M[pseudo_triangle[1]] +
+           vertices_M[pseudo_triangle[2]] + vertices_M[pseudo_triangle[3]]) /
           4;
       EXPECT_TRUE(
           CompareMatrices(CalcPolygonCentroid(pseudo_triangle, Fy, vertices_M),
@@ -365,10 +356,10 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
   }
 
   for (const auto& X_FM : X_FMs_) {
-    vector<V> vertices_F;
-    std::transform(vertices_M.begin(), vertices_M.end(),
-                   std::back_inserter(vertices_F),
-                   [&X_FM](const V& v_M) -> V { return V{X_FM * v_M.r_MV()}; });
+    vector<Vector3d> vertices_F;
+    std::transform(
+        vertices_M.begin(), vertices_M.end(), std::back_inserter(vertices_F),
+        [&X_FM](const Vector3d& v_M) -> Vector3d { return X_FM * v_M; });
     const Vector3d p_FC_expected = X_FM * p_MC_expected;
     const Vector3d& Mz_F = X_FM.rotation().matrix().col(2);
 
@@ -402,7 +393,6 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
 //   4. Each of the triangles have winding that produce a normal in the same
 //      direction as the input polygons.
 TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
-  using V = SurfaceVertex<double>;
   using VIndex = SurfaceVertexIndex;
 
   // Vertices sufficient to support a well-defined quad.
@@ -419,22 +409,20 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
   //       o     │
   //       v0    │
   //             │
-  const vector<V> vertices_source{
-      V{Vector3d{-1.5, -0.25, 0}}, V{Vector3d{1, 0, 0}},
-      V{Vector3d{0.75, 1.25, 0}}, V{Vector3d{0, 1, 0}}};
+  const vector<Vector3d> vertices_source{
+      Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
+      Vector3d{0.75, 1.25, 0}, Vector3d{0, 1, 0}};
 
   vector<SurfaceFace> faces;
-  vector<V> vertices_M(vertices_source);
+  vector<Vector3d> vertices_M(vertices_source);
   const vector<VIndex> quad{VIndex{0}, VIndex{1}, VIndex{2}, VIndex{3}};
   const Vector3d nhat_M{0, 0, 1};
   AddPolygonToMeshData(quad, nhat_M, &faces, &vertices_M);
 
   auto triangle_normal = [](VIndex v0, VIndex v1, VIndex v2,
-                            const vector<V>& vertices_F) -> Vector3d {
-    const Vector3d phat_V0V1_F =
-        (vertices_F[v1].r_MV() - vertices_F[v0].r_MV()).normalized();
-    const Vector3d phat_V0V2_F =
-        (vertices_F[v2].r_MV() - vertices_F[v0].r_MV()).normalized();
+                            const vector<Vector3d>& vertices_F) -> Vector3d {
+    const Vector3d phat_V0V1_F = (vertices_F[v1] - vertices_F[v0]).normalized();
+    const Vector3d phat_V0V2_F = (vertices_F[v2] - vertices_F[v0]).normalized();
     return phat_V0V1_F.cross(phat_V0V2_F).normalized();
   };
 
@@ -443,7 +431,7 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
 
   ASSERT_EQ(vertices_M.size(), vertices_source.size() + 1);
   ASSERT_TRUE(
-      CompareMatrices(vertices_M.back().r_MV(),
+      CompareMatrices(vertices_M.back(),
                       CalcPolygonCentroid(quad, nhat_M, vertices_M)));
   const VIndex centroid_index(vertices_M.size() - 1);
 
@@ -492,15 +480,15 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
 //     The unit normal vector of the polygon, expressed in frame F. We assume
 //     the winding of the polygon vertices is consistent with this normal
 //     vector.
-void VerifyRepresentativeTriangle(
-    SurfaceFaceIndex triangle_index, const vector<SurfaceFace>& faces,
-    const vector<SurfaceVertex<double>>& vertices_F,
-    const vector<Vector3d>& polygon_F, const Vector3d& nhat_F) {
+void VerifyRepresentativeTriangle(SurfaceFaceIndex triangle_index,
+                                  const vector<SurfaceFace>& faces,
+                                  const vector<Vector3d>& vertices_F,
+                                  const vector<Vector3d>& polygon_F,
+                                  const Vector3d& nhat_F) {
   const SurfaceFace& face = faces.at(triangle_index);
-  // The notation r_MV() does not work well. Here frame M is actually frame F.
-  const Vector3d p_FV0 = vertices_F.at(face.vertex(0)).r_MV();
-  const Vector3d p_FV1 = vertices_F.at(face.vertex(1)).r_MV();
-  const Vector3d p_FV2 = vertices_F.at(face.vertex(2)).r_MV();
+  const Vector3d& p_FV0 = vertices_F.at(face.vertex(0));
+  const Vector3d& p_FV1 = vertices_F.at(face.vertex(1));
+  const Vector3d& p_FV2 = vertices_F.at(face.vertex(2));
   const vector<Vector3d> triangle_F{p_FV0, p_FV1, p_FV2};
 
   const double triangle_area = CalcPolygonArea(triangle_F, nhat_F);
@@ -564,7 +552,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle) {
   }
 
   vector<SurfaceFace> faces;
-  vector<SurfaceVertex<double>> vertices_F;
+  vector<Vector3d> vertices_F;
   for (int i = 0; i < 2; ++i) {
     AddPolygonToMeshDataAsOneTriangle<double>(polygons_F[i], nhats_F[i], &faces,
                                               &vertices_F);
@@ -586,7 +574,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_3Gon) {
   const Vector3d nhat_F = Vector3d::UnitZ();
 
   vector<SurfaceFace> faces;
-  vector<SurfaceVertex<double>> vertices_F;
+  vector<Vector3d> vertices_F;
   AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                             &vertices_F);
   ASSERT_EQ(faces.size(), 1);
@@ -595,9 +583,9 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_3Gon) {
   EXPECT_EQ(faces[0].vertex(2), SurfaceVertexIndex(2));
 
   ASSERT_EQ(vertices_F.size(), 3);
-  EXPECT_EQ(vertices_F[0].r_MV(), polygon_F[0]);
-  EXPECT_EQ(vertices_F[1].r_MV(), polygon_F[1]);
-  EXPECT_EQ(vertices_F[2].r_MV(), polygon_F[2]);
+  EXPECT_EQ(vertices_F[0], polygon_F[0]);
+  EXPECT_EQ(vertices_F[1], polygon_F[1]);
+  EXPECT_EQ(vertices_F[2], polygon_F[2]);
 }
 
 // Tests AddPolygonToMeshDataAsOneTriangle() with AutoDiffXd. It's only a
@@ -611,10 +599,10 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_AutoDiff) {
   const Vector3ad nhat_F = Vector3ad::UnitZ();
 
   vector<SurfaceFace> faces;
-  vector<SurfaceVertex<AutoDiffXd>> vertices_F;
+  vector<Vector3<AutoDiffXd>> vertices_F;
   AddPolygonToMeshDataAsOneTriangle<AutoDiffXd>(polygon_F, nhat_F, &faces,
                                             &vertices_F);
-  EXPECT_EQ(vertices_F[0].r_MV()[0].derivatives().size(), 3);
+  EXPECT_EQ(vertices_F[0][0].derivatives().size(), 3);
 }
 
 // Tests AddPolygonToMeshDataAsOneTriangle() for a special case of an input
@@ -629,7 +617,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_ZeroArea) {
     const Vector3d nhat_F = Vector3d::UnitZ();
 
     vector<SurfaceFace> faces;
-    vector<SurfaceVertex<double>> vertices_F;
+    vector<Vector3d> vertices_F;
     AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                               &vertices_F);
     EXPECT_EQ(faces.size(), 0);
@@ -644,7 +632,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_ZeroArea) {
     const Vector3d nhat_F = Vector3d::UnitZ();
 
     vector<SurfaceFace> faces;
-    vector<SurfaceVertex<double>> vertices_F;
+    vector<Vector3d> vertices_F;
     AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                               &vertices_F);
     // We only check that its representative triangle was added, but we do

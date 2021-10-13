@@ -56,7 +56,7 @@ class BvhTester {
     for (auto it = start; it != end; ++it) {
       const auto& element = mesh_M.element(it->first);
       for (int i=0; i < MeshType::kVertexPerElement; ++i) {
-        const Vector3d p_MV = mesh_M.vertex(element.vertex(i)).r_MV();
+        const Vector3d p_MV = mesh_M.vertex(element.vertex(i));
         const Vector3d p_BV = X_BM * p_MV;
         if ((p_BV.array() > bv_M.half_width().array()).any()) {
           return false;
@@ -182,12 +182,8 @@ TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
                    SurfaceVertexIndex(2)),
        SurfaceFace(SurfaceVertexIndex(3), SurfaceVertexIndex(4),
                    SurfaceVertexIndex(5))},
-      {SurfaceVertex<double>(Vector3d(0, 0, 1)),
-       SurfaceVertex<double>(Vector3d(1, 0, 1)),
-       SurfaceVertex<double>(Vector3d(0, 1, 1)),
-       SurfaceVertex<double>(Vector3d(0, 0, -1)),
-       SurfaceVertex<double>(Vector3d(1, 0, -1)),
-       SurfaceVertex<double>(Vector3d(0, 1, -1))});
+      {Vector3d(0, 0, 1), Vector3d(1, 0, 1), Vector3d(0, 1, 1),
+       Vector3d(0, 0, -1), Vector3d(1, 0, -1), Vector3d(0, 1, -1)});
 
   using FaceCentroidPair = std::pair<SurfaceFaceIndex, Vector3d>;
   // The positions of centroids are not relevant to this test.
@@ -403,13 +399,12 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
         to exactly *two* invocations of the callback (tet, tri1) and
         (tet, tri2). */
 
-  using SVertex = SurfaceVertex<double>;
   using STri = SurfaceFace;
   using SVIndex = SurfaceVertexIndex;
-  std::vector<SVertex> vertices_S{{SVertex(Vector3d(0, 0, 0)),     // P
-                                   SVertex(Vector3d(1, 0, 1)),     // Q
-                                   SVertex(Vector3d(2, 0, 0)),     // R
-                                   SVertex(Vector3d(1, 0, -1))}};  // S
+  std::vector<Vector3d> vertices_S{{Vector3d(0, 0, 0),     // P
+                                    Vector3d(1, 0, 1),     // Q
+                                    Vector3d(2, 0, 0),     // R
+                                    Vector3d(1, 0, -1)}};  // S
   std::vector<STri> faces_S{{STri(SVIndex(0), SVIndex(3), SVIndex(1)),
                              STri(SVIndex(3), SVIndex(2), SVIndex(1))}};
   const SurfaceMesh<double> mesh_S(std::move(faces_S), std::move(vertices_S));
@@ -417,17 +412,16 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
   // Confirm the expected topology (one leaf with two tris).
   ASSERT_EQ(CountLeafNodes(bvh_S.root_node()), 1);
 
-  using VVertex = VolumeVertex<double>;
   using VTet = VolumeElement;
   using VVindex = VolumeVertexIndex;
-  std::vector<VVertex> vertices_V{
-      {VVertex(Vector3d(1, 0, 1)),     // A
-       VVertex(Vector3d(1, 0, -1)),    // B
-       VVertex(Vector3d(1, 1, 0)),     // C
-       VVertex(Vector3d(0, 0, 0)),     // D
-       VVertex(Vector3d(-1, 0, 1)),    // E
-       VVertex(Vector3d(-1, 0, -1)),   // F
-       VVertex(Vector3d(-1, 1, 0))}};  // G
+  std::vector<Vector3d> vertices_V{
+      {Vector3d(1, 0, 1),     // A
+       Vector3d(1, 0, -1),    // B
+       Vector3d(1, 1, 0),     // C
+       Vector3d(0, 0, 0),     // D
+       Vector3d(-1, 0, 1),    // E
+       Vector3d(-1, 0, -1),   // F
+       Vector3d(-1, 1, 0)}};  // G
   std::vector<VTet> tets_V{
       {VTet(VVindex(0), VVindex(2), VVindex(1), VVindex(3)),
        VTet(VVindex(4), VVindex(5), VVindex(6), VVindex(3))}};
@@ -546,21 +540,16 @@ TYPED_TEST(BvhTest, TestEqual) {
         std::vector<VolumeElement>{
             VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
                           VolumeVertexIndex(2), VolumeVertexIndex(3))},
-        std::vector<VolumeVertex<double>>{
-            VolumeVertex<double>(Vector3d::Zero()),
-            VolumeVertex<double>(Vector3d::UnitX()),
-            VolumeVertex<double>(Vector3d::UnitY()),
-            VolumeVertex<double>(Vector3d::UnitZ())});
+        std::vector<Vector3<double>>{Vector3d::Zero(), Vector3d::UnitX(),
+                                     Vector3d::UnitY(), Vector3d::UnitZ()});
     const Bvh<BvType, VolumeMesh<double>> smaller(smaller_tetrahedron);
     const VolumeMesh<double> bigger_tetrahedron(
         std::vector<VolumeElement>{
             VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
                           VolumeVertexIndex(2), VolumeVertexIndex(3))},
-        std::vector<VolumeVertex<double>>{
-            VolumeVertex<double>(Vector3d::Zero()),
-            VolumeVertex<double>(2. * Vector3d::UnitX()),
-            VolumeVertex<double>(2. * Vector3d::UnitY()),
-            VolumeVertex<double>(2. * Vector3d::UnitZ())});
+        std::vector<Vector3<double>>{Vector3d::Zero(), 2. * Vector3d::UnitX(),
+                                     2. * Vector3d::UnitY(),
+                                     2. * Vector3d::UnitZ()});
     const Bvh<BvType, VolumeMesh<double>> bigger(bigger_tetrahedron);
     // Verify that each tree has the same structure. Each has only one node.
     ASSERT_TRUE(smaller.root_node().is_leaf());
@@ -577,22 +566,20 @@ TYPED_TEST(BvhTest, TestEqual) {
   // Tests that two BVHs are not equal due to different tree structures even
   // though every node has the same bounding volume.
   {
-    const std::vector<VolumeVertex<double>> vertices{
-        VolumeVertex<double>(Vector3d::Zero()),
-        VolumeVertex<double>(Vector3d::UnitX()),
-        VolumeVertex<double>(Vector3d::UnitY()),
-        VolumeVertex<double>(Vector3d::UnitZ())};
+    const std::vector<Vector3<double>> vertices{
+        Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
+        Vector3d::UnitZ()};
     const VolumeElement element(VolumeVertexIndex(0), VolumeVertexIndex(1),
                                 VolumeVertexIndex(2), VolumeVertexIndex(3));
     const VolumeMesh<double> one_tetrahedron(
         std::vector<VolumeElement>{element},
-        std::vector<VolumeVertex<double>>(vertices));
+        std::vector<Vector3d>(vertices));
     const Bvh<BvType, VolumeMesh<double>> one_node(one_tetrahedron);
     const VolumeMesh<double> duplicated_tetrahedra(
         // Both elements are the same tetrahedron, so every Bvh node will have
         // the same bounding volume.
         std::vector<VolumeElement>{element, element},
-        std::vector<VolumeVertex<double>>(vertices));
+        std::vector<Vector3d>(vertices));
     const Bvh<BvType, VolumeMesh<double>> three_nodes(duplicated_tetrahedra);
     // Verify that the two trees have different structures.
     ASSERT_TRUE(one_node.root_node().is_leaf());

@@ -64,9 +64,9 @@ VolumeMesh<double> MakeUnitCubeTetMesh(
   DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
 
   std::vector<geometry::VolumeElement> elements = mesh.tetrahedra();
-  std::vector<geometry::VolumeVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   for (const auto& v : mesh.vertices()) {
-    vertices.emplace_back(pose * v.r_MV());
+    vertices.emplace_back(pose * v);
   }
   return {std::move(elements), std::move(vertices)};
 }
@@ -294,7 +294,7 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
        i < deformed_meshes[0].mesh().num_vertices(); ++i) {
     const Vector3<double> p_WV = current_positions[0].segment<3>(3 * i);
     EXPECT_TRUE(
-        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i).r_MV()));
+        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
   }
 }
 

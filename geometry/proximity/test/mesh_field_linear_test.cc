@@ -45,7 +45,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data[4] = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
-  std::vector<SurfaceVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh =
       std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices));
@@ -203,7 +203,7 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
     int num_positive_or_zero = 0;
     int num_negative_or_zero = 0;
     for (int i = 0; i < 4; ++i) {
-      const Vector3d p_MV = mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV();
+      const Vector3d p_MV = mesh_M.vertex(mesh_M.element(e).vertex(i));
       if (p_MV.x() >= 0) ++num_positive_or_zero;
       if (p_MV.x() <= 0) ++num_negative_or_zero;
     }
@@ -242,8 +242,8 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   };
 
   std::vector<double> values;
-  for (const VolumeVertex<double>& v : mesh_M.vertices()) {
-    values.push_back(f(v.r_MV()));
+  for (const Vector3d& p_MV : mesh_M.vertices()) {
+    values.push_back(f(p_MV));
   }
   std::vector<double> values_copy = values;
 
@@ -269,7 +269,7 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
       for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
         Vector3d p_MQ{0, 0, 0};
         for (int i = 0; i < 4; ++i) {
-          p_MQ += mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV() * b_Q(i);
+          p_MQ += mesh_M.vertex(mesh_M.element(e).vertex(i)) * b_Q(i);
         }
         const double expect = f(p_MQ);
         constexpr double tolerance = 2e-15;
@@ -340,7 +340,7 @@ class ScalarMixingTest : public ::testing::Test {
 
     p_WQ_d_ = Vector3d::Zero();
     for (SurfaceVertexIndex v(0); v < 3; ++v) {
-      p_WQ_d_ += mesh_d_->vertex(v).r_MV();
+      p_WQ_d_ += mesh_d_->vertex(v);
     }
     p_WQ_d_ /= 3;
     p_WQ_ad_ = math::InitializeAutoDiff(p_WQ_d_);

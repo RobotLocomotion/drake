@@ -245,7 +245,7 @@ Vector3<T> ProjectMidPoint(const Vector3<T>& x, const Vector3<T>& y,
 template <typename T>
 VolumeVertexIndex CreateNewVertex(
     VolumeVertexIndex a, VolumeVertexIndex b,
-    std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
+    std::vector<Vector3<T>>* split_mesh_vertices_ptr,
     std::vector<CylinderVertexType>* split_vertex_type_ptr,
     std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>*
         vertex_map_ptr,
@@ -254,7 +254,7 @@ VolumeVertexIndex CreateNewVertex(
   DRAKE_DEMAND(split_vertex_type_ptr != nullptr);
   DRAKE_DEMAND(vertex_map_ptr != nullptr);
 
-  std::vector<VolumeVertex<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
+  std::vector<Vector3<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
   std::vector<CylinderVertexType>& split_vertex_type = *split_vertex_type_ptr;
   std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
       vertex_map = *vertex_map_ptr;
@@ -262,8 +262,8 @@ VolumeVertexIndex CreateNewVertex(
   const CylinderVertexType p_vertex_type =
       std::min(split_vertex_type[a], split_vertex_type[b]);
 
-  const Vector3<T>& A = split_mesh_vertices[a].r_MV();
-  const Vector3<T>& B = split_mesh_vertices[b].r_MV();
+  const Vector3<T>& A = split_mesh_vertices[a];
+  const Vector3<T>& B = split_mesh_vertices[b];
 
   const Vector3<T> p = ProjectMidPoint(A, B, p_vertex_type, radius);
 
@@ -294,7 +294,7 @@ VolumeVertexIndex CreateNewVertex(
 template <typename T>
 void RefineCylinderTetrahdron(
     const VolumeElement& tet,
-    std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
+    std::vector<Vector3<T>>* split_mesh_vertices_ptr,
     std::vector<VolumeElement>* split_mesh_tetrahedra_ptr,
     std::vector<CylinderVertexType>* split_vertex_type_ptr,
     std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>*
@@ -305,7 +305,7 @@ void RefineCylinderTetrahdron(
   DRAKE_DEMAND(split_vertex_type_ptr != nullptr);
   DRAKE_DEMAND(vertex_map_ptr != nullptr);
 
-  std::vector<VolumeVertex<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
+  std::vector<Vector3<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
   std::vector<CylinderVertexType>& split_vertex_type = *split_vertex_type_ptr;
   std::vector<VolumeElement>& split_mesh_tetrahedra =
       *split_mesh_tetrahedra_ptr;
@@ -383,7 +383,7 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
     const std::vector<CylinderVertexType>& vertex_type, const double radius) {
   // Copy the vertex, and boundary information into the vectors for the
   // new subdivided mesh
-  std::vector<VolumeVertex<T>> split_mesh_vertices = mesh.vertices();
+  std::vector<Vector3<T>> split_mesh_vertices = mesh.vertices();
   std::vector<CylinderVertexType> split_vertex_type = vertex_type;
 
   // Original tets are all subdivied, so split_mesh_tetrahedra will only
@@ -413,7 +413,7 @@ template <typename T>
 std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
 MakeCylinderMeshLevel0(const double& height, const double& radius) {
   std::vector<VolumeElement> tetrahedra;
-  std::vector<VolumeVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
 
   // Initial subdivisions along the length of the cylinder are made based on
   // the aspect ratio so that, for a long cylinder, initial tetrahedra are

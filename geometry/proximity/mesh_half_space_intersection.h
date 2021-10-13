@@ -86,7 +86,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
-    std::vector<SurfaceVertex<T>>* new_vertices_W,
+    std::vector<Vector3<T>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
