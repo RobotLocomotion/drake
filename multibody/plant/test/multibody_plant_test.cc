@@ -2664,7 +2664,7 @@ TEST_P(KukaArmTest, StateAccess) {
   Eigen::VectorBlock<const VectorX<double>> xc =
       plant_->GetPositionsAndVelocities(*context_);
   EXPECT_EQ(xc, xc_expected);
-  
+
   // Modify positions and change xc expected to reflect changes to positions.
   for (int i = 0; i < plant_->num_positions(); ++i)
     xc_expected[i] *= -1;
@@ -2755,7 +2755,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
       10 /* first number */,
       9 + plant_->num_velocities(arm2) /* last number */);
   VectorX<double> x(q.size() + qd.size());
-  x << q, qd;  
+  x << q, qd;
 
   // Set the positions, make sure that they're retrieved successfully, and
   // verify that no other multibody instance positions or velocities are
@@ -2813,12 +2813,12 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
     plant_->GetVelocities(*context_, arm2, &v_out);
     plant_->GetPositionsAndVelocities(*context_, arm2, &qv_out);
   }
-  // Verify values
+  // Verify values.
   EXPECT_EQ(q_out, q_block);
   EXPECT_EQ(v_out, v_block);
   EXPECT_EQ(qv_out, qv_block);
 
-  // Verify error conditions
+  // Verify error conditions.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetPositionsAndVelocities(*context_, arm2, &q_out),
       std::exception,

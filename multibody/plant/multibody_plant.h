@@ -1824,9 +1824,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       EigenPtr<VectorX<T>> qv_out) const {
     this->ValidateContext(context);
-    if (qv_out->size() != num_positions(model_instance) +
-        num_velocities(model_instance))
-      throw std::logic_error("Output array is not properly sized.");
     internal_tree().GetPositionsAndVelocities(context, model_instance, qv_out);
   }
 
@@ -1902,7 +1899,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         model_instance, internal_tree().get_positions(context));
   }
 
-  /// (Advanced) Populate output vector q_out with the generalized positions q
+  /// (Advanced) Populates output vector q_out with the generalized positions q
   /// of a specified model instance in a given Context.
   /// @note q_out is a dense vector of dimension
   ///       `num_positions(model_instance)' associated with `model_instance`
@@ -2020,7 +2017,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         model_instance, internal_tree().get_velocities(context));
   }
 
-  /// (Advanced) Populate output vector v_out with the generalized
+  /// (Advanced) Populates output vector v_out with the generalized
   /// velocities v of a specified model instance in a given Context.
   /// @note v_out is a dense vector of dimension
   ///       `num_velocities(model_instance)` associated with `model_instance`
@@ -2185,7 +2182,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// (Advanced) Populates output vector q_out and with the generalized
-  /// positions for `model_instance` from a vector `q_array` of generalized
+  /// positions for `model_instance` from a vector `q` of generalized
   /// positions for the entire model model.  This method throws an exception
   /// if `q` is not of size MultibodyPlant::num_positions().
   void GetPositionsFromArray(
@@ -2219,7 +2216,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// (Advanced) Populates output vector v_out with the generalized
-  /// velocities for `model_instance` from a vector `v_array` of generalized
+  /// velocities for `model_instance` from a vector `v` of generalized
   /// velocities for the entire model model.  This method throws an exception
   /// if `v` is not of size MultibodyPlant::num_velocities().
   void GetVelocitiesFromArray(

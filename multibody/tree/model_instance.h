@@ -124,7 +124,6 @@ class ModelInstance :
       const Eigen::Ref<const VectorX<T>>& q,
       EigenPtr<VectorX<T>> q_out) const;
 
-
   // Sets the vector of generalized positions for `this` model instance in
   // the relevant locations of an array that corresponds to the positions for
   // the entire MultibodyTree model. Elements of the array that do not

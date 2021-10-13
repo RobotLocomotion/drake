@@ -498,7 +498,7 @@ void MultibodyTree<T>::GetPositionsFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& q,
     drake::EigenPtr<VectorX<T>> q_out) const {
-    model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out);
+  model_instances_.at(model_instance)->GetPositionsFromArray(q, q_out);
 }
 
 template <class T>
@@ -777,19 +777,25 @@ VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
 
 template <typename T>
 void MultibodyTree<T>::GetPositionsAndVelocities(
-      const systems::Context<T>& context,
-      ModelInstanceIndex model_instance,
-      EigenPtr<VectorX<T>> qv_out) const {
+    const systems::Context<T>& context,
+    ModelInstanceIndex model_instance,
+    EigenPtr<VectorX<T>> qv_out) const {
+  DRAKE_DEMAND(qv_out != nullptr);
+
   Eigen::VectorBlock<const VectorX<T>> state_vector =
       get_positions_and_velocities(context);
+
+  if (qv_out->size() != num_positions(model_instance) +
+      num_velocities(model_instance))
+    throw std::logic_error("Output array is not properly sized.");
 
   auto qv_out_head = qv_out->head(num_positions(model_instance));
   auto qv_out_tail = qv_out->tail(num_velocities(model_instance));
 
   GetPositionsFromArray(
-          model_instance, state_vector.head(num_positions()), &qv_out_head);
+      model_instance, state_vector.head(num_positions()), &qv_out_head);
   GetVelocitiesFromArray(
-          model_instance, state_vector.tail(num_velocities()), &qv_out_tail);
+      model_instance, state_vector.tail(num_velocities()), &qv_out_tail);
 }
 
 template <typename T>

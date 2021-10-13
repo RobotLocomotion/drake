@@ -107,9 +107,9 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   EXPECT_TRUE(CompareMatrices(instance2_pos_out, instance2_pos_expected));
 
   Eigen::VectorXd instance2_pos_out_err(10);
-  // Verify error conditions
+  // Verify error conditions.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.GetPositionsFromArray(instance2, pos_vector, 
+      tree.GetPositionsFromArray(instance2, pos_vector,
         &instance2_pos_out_err),
       std::exception,
       "Output array is not properly sized.");
@@ -143,9 +143,9 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   EXPECT_TRUE(CompareMatrices(instance2_vel_out, instance2_vel_expected));
 
   Eigen::VectorXd instance2_vel_out_err(10);
-  // Verify error conditions
+  // Verify error conditions.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.GetVelocitiesFromArray(instance2, vel_vector, 
+      tree.GetVelocitiesFromArray(instance2, vel_vector,
         &instance2_vel_out_err),
       std::exception,
       "Output array is not properly sized.");
