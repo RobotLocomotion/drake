@@ -2832,7 +2832,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
       std::exception,
       "Output array is not properly sized.");
 
-  // Test the GetPostionsFromArray and GetVelocitiesFromArray functionality.
+  // Test the GetPositionsFromArray and GetVelocitiesFromArray functionality.
   // Use qv_out as the state vector.
   VectorX<double> q_out_array(q_block.size());
   VectorX<double> v_out_array(v_block.size());
@@ -2851,7 +2851,7 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   EXPECT_EQ(q_out_array, q_block);
   EXPECT_EQ(v_out_array, v_block);
 
-  // Verify GetPostionsFromArray and GetVelocitiesFromArray error case.
+  // Verify GetPositionsFromArray and GetVelocitiesFromArray error case.
   VectorX<double> q_out_array_err(q_block.size()+1);
   VectorX<double> v_out_array_err(v_block.size()+1);
   DRAKE_EXPECT_THROWS_MESSAGE(

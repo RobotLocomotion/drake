@@ -2217,7 +2217,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// (Advanced) Populates output vector v_out with the generalized
   /// velocities for `model_instance` from a vector `v` of generalized
-  /// velocities for the entire model model.  This method throws an exception
+  /// velocities for the entire model.  This method throws an exception
   /// if `v` is not of size MultibodyPlant::num_velocities().
   void GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
