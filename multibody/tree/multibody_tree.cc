@@ -761,16 +761,9 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
     const systems::Context<T>& context,
     ModelInstanceIndex model_instance) const {
-  Eigen::VectorBlock<const VectorX<T>> state_vector =
-      get_positions_and_velocities(context);
-
   VectorX<T> instance_state_vector(num_states(model_instance));
-  instance_state_vector.head(num_positions(model_instance)) =
-      GetPositionsFromArray(
-          model_instance, state_vector.head(num_positions()));
-  instance_state_vector.tail(num_velocities(model_instance)) =
-      GetVelocitiesFromArray(
-          model_instance, state_vector.tail(num_velocities()));
+
+  GetPositionsAndVelocities(context, model_instance, &instance_state_vector);
 
   return instance_state_vector;
 }

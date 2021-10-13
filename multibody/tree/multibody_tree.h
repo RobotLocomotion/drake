@@ -1002,9 +1002,9 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
-  // (Advanced) Takes output vector qv_out and populates it with the multibody
+  // Takes output vector qv_out and populates it with the multibody
   // state `x = [q; v]` of the model with `q` the vector of generalized
-  // positionsand `v` the vector of generalized velocities for model instance
+  // positions and `v` the vector of generalized velocities for model instance
   // `model_instance`.
   // @throws std::exception if the `context` does not correspond to the context
   // for a multibody model or `model_instance` is invalid.

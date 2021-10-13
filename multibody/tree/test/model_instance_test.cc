@@ -97,23 +97,6 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   instance2_pos_expected << 1, 2, 3, 4, 5, 6, 7, 9;
   EXPECT_TRUE(CompareMatrices(instance2_pos, instance2_pos_expected));
 
-  // Check the advanced variant for GetPositionsFromArray() that uses no heap.
-  Eigen::VectorXd instance2_pos_out(8);
-  {
-    // Ensure that getters accepting an output vector do not allocate heap.
-    drake::test::LimitMalloc guard({.max_num_allocations = 0});
-    tree.GetPositionsFromArray(instance2, pos_vector, &instance2_pos_out);
-  }
-  EXPECT_TRUE(CompareMatrices(instance2_pos_out, instance2_pos_expected));
-
-  Eigen::VectorXd instance2_pos_out_err(10);
-  // Verify error conditions.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      tree.GetPositionsFromArray(instance2, pos_vector,
-        &instance2_pos_out_err),
-      std::exception,
-      "Output array is not properly sized.");
-
   Eigen::VectorXd vel_vector(9);
   vel_vector << 11, 12, 13, 14, 15, 16, 17, 18, 19;
 

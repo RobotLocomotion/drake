@@ -2183,7 +2183,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// (Advanced) Populates output vector q_out and with the generalized
   /// positions for `model_instance` from a vector `q` of generalized
-  /// positions for the entire model model.  This method throws an exception
+  /// positions for the entire model.  This method throws an exception
   /// if `q` is not of size MultibodyPlant::num_positions().
   void GetPositionsFromArray(
       ModelInstanceIndex model_instance,

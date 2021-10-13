@@ -389,7 +389,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
             cls_doc.SetActuationInArray.doc)
-        .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
+        .def("GetPositionsFromArray",
+            overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &Class::GetPositionsFromArray),
             py::arg("model_instance"), py::arg("q"),
             cls_doc.GetPositionsFromArray.doc_2args)
         .def(
@@ -401,7 +404,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             cls_doc.SetPositionsInArray.doc)
-        .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
+        .def("GetVelocitiesFromArray",
+            overload_cast_explicit<VectorX<T>, ModelInstanceIndex,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &Class::GetVelocitiesFromArray),
             py::arg("model_instance"), py::arg("v"),
             cls_doc.GetVelocitiesFromArray.doc_2args)
         .def(
