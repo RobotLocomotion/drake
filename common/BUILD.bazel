@@ -780,6 +780,13 @@ alias(
 )
 
 drake_cc_googletest(
+    name = "drake_copyable_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_cloneable_test",
     deps = [
         ":is_cloneable",

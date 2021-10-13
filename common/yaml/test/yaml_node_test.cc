@@ -31,17 +31,6 @@ GTEST_TEST(YamlNodeTest, DefaultConstructor) {
   EXPECT_EQ(dut.GetScalar(), "");
 }
 
-// Sanity check of defaulted operators.  We don't need to test them
-// exhaustively, because they are defaulted.
-GTEST_TEST(YamlNodeTest, DefaultCopy) {
-  Node dut = Node::MakeScalar("foo");
-
-  // Copy constructor.
-  Node foo(dut);
-  EXPECT_EQ(dut.GetScalar(), "foo");
-  EXPECT_EQ(foo.GetScalar(), "foo");
-}
-
 // Parameterize the remainder of the tests across the three possible types.
 using Param = std::tuple<NodeType, std::string_view>;
 class YamlNodeParamaterizedTest : public testing::TestWithParam<Param> {
