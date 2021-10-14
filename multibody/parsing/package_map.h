@@ -41,17 +41,18 @@ class PackageMap final {
   /// Throws if @p package_name is not present in this PackageMap.
   void Remove(const std::string& package_name);
 
-  /// Sets or clears the deprecation message for package @p package_name.
-  /// Aborts if no package named @p package_name exists in this PackageMap.
+  /// Sets or clears the deprecation message for package @p package_name. A
+  /// value of std::nullopt implies no deprecation. Aborts if no package named
+  /// @p package_name exists in this PackageMap.
   void SetDeprecated(const std::string& package_name,
-      const std::optional<const std::string> deprecated_msg);
+      std::optional<std::string> deprecated_message);
 
   /// Returns the number of entries in this PackageMap.
   int size() const;
 
   /// Returns the deprecation message for package @p package_name if it has
-  /// been set as deprecated. Aborts if no package named @p package_name exists
-  /// in this PackageMap.
+  /// been set as deprecated. A value of std::nullopt implies no deprecation.
+  /// Aborts if no package named @p package_name exists in this PackageMap.
   std::optional<std::string> GetDeprecated(
       const std::string& package_name) const;
 
@@ -108,9 +109,9 @@ class PackageMap final {
   // Information about a package.
   struct PackageData {
     // Directory in which the manifest resides.
-    std::string Path;
+    std::string path;
     // Optional message declaring deprecation of the package.
-    std::optional<std::string> DeprecatedMessage;
+    std::optional<std::string> deprecated_message;
   };
 
   // A constructor that initializes a map by parsing a list of package.xml

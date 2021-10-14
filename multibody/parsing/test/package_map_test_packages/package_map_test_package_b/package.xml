@@ -10,7 +10,7 @@
   <license>N/A</license>
   <export>
     <deprecated>
-      Deprecation message for package_map_test_package_b.
+      package_map_test_package_b is deprecated, and will be removed on or around 2038-01-19. Please the 'drake' package instead.
     </deprecated>
   </export>
 </package>
