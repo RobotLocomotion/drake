@@ -1425,8 +1425,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @name                    Contact modeling
   /// Use methods in this section to choose the contact model and to provide
   /// parameters for that model. Currently Drake supports an advanced compliant
-  /// contact model we call _Hydroelastic contact_ that is still experimental,
-  /// and a penalty-based point contact model as a reliable fallback.
+  /// contact model we call _Hydroelastic contact_ and a penalty-based point
+  /// contact model as a reliable fallback.
   ///
   /// @anchor mbp_hydroelastic_materials_properties
   ///                      #### Hydroelastic contact
@@ -1437,19 +1437,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// For brevity, here we limit ourselves to state the relationship between the
   /// material properties and the computation of the normal traction or
   /// "pressure" `p(x)` at each point `x` in the contact patch.
-  /// Given two bodies A and B, with elastic moduli `Eᵃ` and `Eᵇ` respectively
-  /// and dissipation `dᵃ` and `dᵇ` respectively, we define the effective
-  /// material properties of the pair according to: <pre>
+  /// Given two bodies A and B, with hydroelastic moduli `Eᵃ` and `Eᵇ`
+  /// respectively and dissipation `dᵃ` and `dᵇ` respectively, we define the
+  /// effective material properties of the pair according to: <pre>
   ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
   ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
   /// </pre>
-  /// The effective modulus of elasticity is computed in accordance with the
-  /// Hertz theory of contact. Dissipation is weighted in accordance with the
+  /// The effective hydroelastic modulus computation is based on that of the
+  /// effective elastic modulus in the Hertz theory of contact.
+  /// Dissipation is weighted in accordance with the
   /// fact that the softer material will deform more and faster and thus the
-  /// softer material dissipation is given more importance. Elastic modulus has
-  /// units of pressure, i.e. `Pa (N/m²)`. The elastic modulus is often
-  /// estimated based on the Young's modulus of the material though in the
-  /// hydroelastic model it represents an effective elastic property. For
+  /// softer material dissipation is given more importance. Hydroelastic
+  /// modulus has units of pressure, i.e. `Pa (N/m²)`. The hydroelastic modulus
+  /// is often estimated based on the Young's modulus of the material though in
+  /// the hydroelastic model it represents an effective elastic property. For
   /// instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the P-wave
   /// elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
   /// ratio, consistent with the theory of layered solids in which plane
@@ -1459,9 +1460,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// estimation of `hydroelastic_modulus` starts with the Young's modulus of
   /// the material.
   ///
-  /// @note `hydroelastic_modulus` serves a similar role as Young's modulus
-  /// and has the same units (stress/strain measured in Pascal or N/m²) but
-  /// is quantitatively different. Therefore, it may require experimentation
+  /// @note `hydroelastic_modulus` has units of stress/strain, measured in
+  /// Pascal or N/m² like the more-familiar elastic moduli discussed above.
+  /// However, it is quantitatively different and may require experimentation
   /// to match empirical behavior.
   ///
   /// We use a dissipation model inspired by the model in
