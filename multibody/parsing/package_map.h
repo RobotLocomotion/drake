@@ -42,8 +42,8 @@ class PackageMap final {
   void Remove(const std::string& package_name);
 
   /// Sets or clears the deprecation message for package @p package_name. A
-  /// value of std::nullopt implies no deprecation. Aborts if no package named
-  /// @p package_name exists in this PackageMap.
+  /// @p deprecated_message value of std::nullopt implies no deprecation. Aborts
+  /// if no package named @p package_name exists in this PackageMap.
   void SetDeprecated(const std::string& package_name,
       std::optional<std::string> deprecated_message);
 
