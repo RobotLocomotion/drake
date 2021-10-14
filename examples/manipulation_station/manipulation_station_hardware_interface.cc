@@ -24,7 +24,6 @@ namespace drake {
 namespace examples {
 namespace manipulation_station {
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using multibody::MultibodyPlant;
 using multibody::Parser;
