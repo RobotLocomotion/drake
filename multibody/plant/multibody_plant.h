@@ -1456,8 +1456,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// sections remain planar after compression. Another possibility is to
   /// specify `E = E*`, with `E*` the effective elastic modulus given by the
   /// Hertz theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
-  /// estimation of `elastic_modulus` starts with the Young's modulus of the
-  /// material.
+  /// estimation of `hydroelastic_modulus` starts with the Young's modulus of
+  /// the material.
+  ///
+  /// @note `hydroelastic_modulus` serves a similar role as Young's modulus
+  /// and has the same units (stress/strain measured in Pascal or N/m²) but
+  /// is quantitatively different. Therefore, it may require experimentation
+  /// to match empirical behavior.
   ///
   /// We use a dissipation model inspired by the model in
   /// [Hunt and Crossley, 1975], parameterized by a dissipation constant with
@@ -1494,6 +1499,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   pressure field model for fast, robust approximation of net contact force
   ///   and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf.
   ///   on Intelligent Robots and Systems (IROS), 2019.
+  ///
   /// [Hunt and Crossley 1975] Hunt, KH and Crossley, FRE, 1975. Coefficient
   ///   of restitution interpreted as damping in vibroimpact. Journal of Applied
   ///   Mechanics, vol. 42, pp. 440–445.
