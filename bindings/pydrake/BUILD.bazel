@@ -122,21 +122,20 @@ drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
-        "//lcmtypes:viewer",
     ],
     cc_srcs = [
-        "geometry_py_all.cc",
+        "geometry_py.cc",
         "geometry_py.h",
         "geometry_py_common.cc",
         "geometry_py_hydro.cc",
         "geometry_py_optimization.cc",
         "geometry_py_render.cc",
+        "geometry_py_scene_graph.cc",
         "geometry_py_visualizers.cc",
     ],
     package_info = PACKAGE_INFO,
@@ -484,15 +483,6 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "geometry_all_test",
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/systems:sensors_py",
-    ],
-)
-
-drake_py_unittest(
     name = "frame_id_test",
     deps = [
         ":geometry_py",
@@ -547,6 +537,15 @@ drake_py_unittest(
 drake_py_unittest(
     name = "geometry_render_engine_subclass_test",
     flaky = True,
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_scene_graph_test",
     deps = [
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",

@@ -26,6 +26,10 @@ void DefineGeometryOptimization(py::module m);
  See geometry_py_render.cc. */
 void DefineGeometryRender(py::module m);
 
+/** Binds SceneGraph and its query-related classes. See
+geometry_py_scene_graph.cc. */
+void DefineGeometrySceneGraph(py::module m);
+
 /** Binds the visualizers in drake::geometry. See geometry_py_visualizers.cc. */
 void DefineGeometryVisualizers(py::module m);
 
