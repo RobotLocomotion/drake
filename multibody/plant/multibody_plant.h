@@ -1437,19 +1437,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// For brevity, here we limit ourselves to state the relationship between the
   /// material properties and the computation of the normal traction or
   /// "pressure" `p(x)` at each point `x` in the contact patch.
-  /// Given two bodies A and B, with elastic moduli `Eᵃ` and `Eᵇ` respectively
-  /// and dissipation `dᵃ` and `dᵇ` respectively, we define the effective
-  /// material properties of the pair according to: <pre>
+  /// Given two bodies A and B, with hydroelastic moduli `Eᵃ` and `Eᵇ`
+  /// respectively and dissipation `dᵃ` and `dᵇ` respectively, we define the
+  /// effective material properties of the pair according to: <pre>
   ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
   ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
   /// </pre>
-  /// The effective modulus of elasticity is computed in accordance with the
-  /// Hertz theory of contact. Dissipation is weighted in accordance with the
+  /// The effective hydroelastic modulus computation is based on that of the
+  /// effective elastic modulus in the Hertz theory of contact.
+  /// Dissipation is weighted in accordance with the
   /// fact that the softer material will deform more and faster and thus the
-  /// softer material dissipation is given more importance. Elastic modulus has
-  /// units of pressure, i.e. `Pa (N/m²)`. The elastic modulus is often
-  /// estimated based on the Young's modulus of the material though in the
-  /// hydroelastic model it represents an effective elastic property. For
+  /// softer material dissipation is given more importance. Hydroelastic
+  /// modulus has units of pressure, i.e. `Pa (N/m²)`. The hydroelastic modulus
+  /// is often estimated based on the Young's modulus of the material though in
+  /// the hydroelastic model it represents an effective elastic property. For
   /// instance, [R. Elandt 2019] chooses to use `E = G`, with `G` the P-wave
   /// elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
   /// ratio, consistent with the theory of layered solids in which plane
