@@ -271,14 +271,13 @@ class TestScene {
 // soft mesh.
 ::testing::AssertionResult ValidateDerivatives(
     const ContactSurface<AutoDiffXd>& surface) {
-  const SurfaceVertexIndex v0(0);
   const SurfaceFaceIndex f0(0);
   const auto& mesh_W = surface.mesh_W();
-  if (mesh_W.vertex(v0).x().derivatives().size() != 3) {
+  if (mesh_W.vertex(0).x().derivatives().size() != 3) {
     return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
   }
 
-  if (surface.e_MN().EvaluateAtVertex(v0).derivatives().size() != 3) {
+  if (surface.e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
     return ::testing::AssertionFailure()
            << "Pressure field at vertex 0 is missing derivatives";
   }

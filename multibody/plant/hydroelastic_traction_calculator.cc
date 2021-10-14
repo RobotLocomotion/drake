@@ -17,7 +17,6 @@ using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::SurfaceMeshFieldLinear;
-using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 
 namespace multibody {

@@ -54,10 +54,8 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   // Create the two triangles. Note that SurfaceMesh does not specify (or use) a
   // particular winding.
   std::vector<SurfaceFace> faces;
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
 
   return std::make_unique<SurfaceMesh<T>>(
       std::move(faces), std::move(vertices));
@@ -82,10 +80,8 @@ std::unique_ptr<SurfaceMesh<double>> GenerateZeroAreaMesh() {
 
   // Create the two triangles.
   std::vector<SurfaceFace> faces;
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
 
   return std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
@@ -130,8 +126,7 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   EXPECT_EQ(2, surface_mesh_W->num_faces());
   EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
-    EXPECT_EQ(X_WM * vertex_data_M[v],
-              surface_mesh_W->vertex(SurfaceVertexIndex(v)));
+    EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W->vertex(v));
   for (int f = 0; f < 2; ++f)
     for (int v = 0; v < 3; ++v)
       EXPECT_EQ(face_data[f][v],
@@ -483,7 +478,7 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
                        Vector3d{1, 2, 3}};
   test_mesh->TransformVertices(X_FM);
 
-  for (SurfaceVertexIndex v(0); v < test_mesh->num_vertices(); ++v) {
+  for (int v = 0; v < test_mesh->num_vertices(); ++v) {
     const Vector3d& p_FV_test = test_mesh->vertex(v);
     const Vector3d& p_MV_ref = ref_mesh->vertex(v);
     const Vector3d p_FV_ref = X_FM * p_MV_ref;
@@ -543,18 +538,17 @@ class ScalarMixingTest : public ::testing::Test {
     // only set the derivatives for vertex 1. That means, operations on
     // triangle 0 *must* have derivatives, but triangle 1 may not have them.
     std::vector<Vector3<AutoDiffXd>> vertices;
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)));
-    vertices.emplace_back(math::InitializeAutoDiff(
-        mesh_d_->vertex(SurfaceVertexIndex(1))));
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(2)));
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(3)));
+    vertices.emplace_back(mesh_d_->vertex(0));
+    vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(1)));
+    vertices.emplace_back(mesh_d_->vertex(2));
+    vertices.emplace_back(mesh_d_->vertex(3));
     std::vector<SurfaceFace> faces(mesh_d_->faces());
 
     mesh_ad_ = std::make_unique<SurfaceMesh<AutoDiffXd>>(std::move(faces),
                                                          std::move(vertices));
 
     p_WQ_d_ = Vector3d::Zero();
-    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+    for (int v = 0; v < 3; ++v) {
       p_WQ_d_ += mesh_d_->vertex(v);
     }
     p_WQ_d_ /= 3;

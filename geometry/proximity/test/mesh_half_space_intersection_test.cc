@@ -64,20 +64,19 @@ SurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
        X_FB * Vector3d(1, 1, -1), X_FB * Vector3d(1, 1, 1)}};
 
   // Set the twelve box faces using a counter-clockwise winding.
-  typedef SurfaceVertexIndex VIndex;
   std::vector<SurfaceFace> faces;
-  faces.emplace_back(VIndex(4), VIndex(6), VIndex(7));  // +X face
-  faces.emplace_back(VIndex(7), VIndex(5), VIndex(4));  // +X face
-  faces.emplace_back(VIndex(1), VIndex(3), VIndex(2));  // -X face
-  faces.emplace_back(VIndex(2), VIndex(0), VIndex(1));  // -X face
-  faces.emplace_back(VIndex(2), VIndex(3), VIndex(7));  // +Y face
-  faces.emplace_back(VIndex(7), VIndex(6), VIndex(2));  // +Y face
-  faces.emplace_back(VIndex(4), VIndex(5), VIndex(1));  // -Y face
-  faces.emplace_back(VIndex(1), VIndex(0), VIndex(4));  // -Y face
-  faces.emplace_back(VIndex(7), VIndex(3), VIndex(1));  // +Z face
-  faces.emplace_back(VIndex(1), VIndex(5), VIndex(7));  // +Z face
-  faces.emplace_back(VIndex(4), VIndex(0), VIndex(2));  // -Z face
-  faces.emplace_back(VIndex(2), VIndex(6), VIndex(4));  // -Z face
+  faces.emplace_back(4, 6, 7);  // +X face
+  faces.emplace_back(7, 5, 4);  // +X face
+  faces.emplace_back(1, 3, 2);  // -X face
+  faces.emplace_back(2, 0, 1);  // -X face
+  faces.emplace_back(2, 3, 7);  // +Y face
+  faces.emplace_back(7, 6, 2);  // +Y face
+  faces.emplace_back(4, 5, 1);  // -Y face
+  faces.emplace_back(1, 0, 4);  // -Y face
+  faces.emplace_back(7, 3, 1);  // +Z face
+  faces.emplace_back(1, 5, 7);  // +Z face
+  faces.emplace_back(4, 0, 2);  // -Z face
+  faces.emplace_back(2, 6, 4);  // -Z face
 
   // Construct the mesh.
   return {move(faces), move(vertices_F)};
@@ -94,7 +93,6 @@ SurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
 template <typename T>
 static SurfaceMesh<double> CreateMeshWithCentroids(
     const SurfaceMesh<double>& mesh_F, const RigidTransform<T>& X_WF) {
-  using VIndex = SurfaceVertexIndex;
   using FIndex = SurfaceFaceIndex;
   constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
   const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
@@ -115,7 +113,7 @@ static SurfaceMesh<double> CreateMeshWithCentroids(
     const SurfaceFace& f = mesh_F.element(f_index);
     // We want to add the triangle fan for the existing face, but also want to
     // confirm that the new faces have normals that match the input face.
-    std::vector<VIndex> polygon{f.vertex(0), f.vertex(1), f.vertex(2)};
+    std::vector<int> polygon{f.vertex(0), f.vertex(1), f.vertex(2)};
     const Vector3d& nhat_W = R_WF * mesh_F.face_normal(f_index);
     AddPolygonToMeshData(polygon, nhat_W, &new_faces, &new_vertices_W);
 
@@ -159,8 +157,7 @@ SurfaceMesh<double> CreateMeshOfIndependentTriangles(
   const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
   for (const auto& face : mesh_F.faces()) {
     const size_t v = vertices_W.size();
-    faces.emplace_back(SurfaceVertexIndex(v), SurfaceVertexIndex(v + 1),
-                       SurfaceVertexIndex(v + 2));
+    faces.emplace_back(v, v + 1, v + 2);
     vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(0)));
     vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(1)));
     vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(2)));
@@ -174,8 +171,7 @@ SurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
                                           const Vector3d& v2) {
   std::vector<Vector3d> vertices{{v0, v1, v2}};
 
-  std::vector<SurfaceFace> faces = {SurfaceFace(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2))};
+  std::vector<SurfaceFace> faces = {SurfaceFace(0, 1, 2)};
 
   return SurfaceMesh<double>(move(faces), move(vertices));
 }
@@ -189,12 +185,10 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   // Accessors for data structures used repeatedly.
   std::vector<Vector3<T>>& new_vertices_W() { return new_vertices_W_; }
   std::vector<SurfaceFace>& new_faces() { return new_faces_; }
-  std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>&
-  vertices_to_newly_created_vertices() {
+  std::unordered_map<int, int>& vertices_to_newly_created_vertices() {
     return vertices_to_newly_created_vertices_;
   }
-  std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>&
-  edges_to_newly_created_vertices() {
+  std::unordered_map<SortedPair<int>, int>& edges_to_newly_created_vertices() {
     return edges_to_newly_created_vertices_;
   }
 
@@ -217,11 +211,8 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
     // triangles align. Each of these faces encodes an "acceptable" triangle
     // winding. They are "acceptable" because they represent triangles with the
     // same winding and, therefore, the same normal.
-    typedef SurfaceVertexIndex Index;
     std::array<SurfaceFace, 3> permutations = {
-        SurfaceFace(Index(0), Index(1), Index(2)),
-        SurfaceFace(Index(1), Index(2), Index(0)),
-        SurfaceFace(Index(2), Index(0), Index(1))};
+        SurfaceFace(0, 1, 2), SurfaceFace(1, 2, 0), SurfaceFace(2, 0, 1)};
 
     // Verify that at least one of the permutations gives essentially the
     // vertices from fb. We use epsilon because the centroid vertex may have
@@ -311,10 +302,8 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
 
   std::vector<Vector3<T>> new_vertices_W_;
   std::vector<SurfaceFace> new_faces_;
-  std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
-      vertices_to_newly_created_vertices_;
-  std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
-      edges_to_newly_created_vertices_;
+  std::unordered_map<int, int> vertices_to_newly_created_vertices_;
+  std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices_;
   // In this test harness, the half space is always simply defined in the
   // mesh's frame F.
   std::unique_ptr<PosedHalfSpace<T>> half_space_F_;
@@ -423,10 +412,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
     SCOPED_TRACE(fmt::format("represenation = {}", representation));
     std::vector<Vector3d> vertices = {Vector3d(4, 5, 2), Vector3d(3, 5, 2),
                                       Vector3d(3, 5, 1), Vector3d(2, 5, 2)};
-    typedef SurfaceVertexIndex Index;
-    std::vector<SurfaceFace> faces = {
-        SurfaceFace(Index(0), Index(1), Index(2)),
-        SurfaceFace(Index(2), Index(1), Index(3))};
+    std::vector<SurfaceFace> faces = {SurfaceFace(0, 1, 2),
+                                      SurfaceFace(2, 1, 3)};
     const SurfaceMesh<double> mesh_F(move(faces), move(vertices));
 
     // Verify the intersection.
@@ -494,11 +481,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
         std::vector<Vector3d> expected_vertices_W = {
             X_WF_d * Vector3d(3, 5, 2), X_WF_d * Vector3d(3, 5, 2),
             X_WF_d * Vector3d(3, 5, 2), X_WF_d * Vector3d(3, 5, 2)};
-        typedef SurfaceVertexIndex Index;
         std::vector<SurfaceFace> expected_faces = {
-            SurfaceFace(Index(0), Index(1), Index(3)),
-            SurfaceFace(Index(1), Index(2), Index(3)),
-            SurfaceFace(Index(2), Index(0), Index(3))};
+            SurfaceFace(0, 1, 3), SurfaceFace(1, 2, 3), SurfaceFace(2, 0, 3)};
         const SurfaceMesh<double> expected_mesh_W(move(expected_faces),
                                                   move(expected_vertices_W));
         const SurfaceMesh<T> actual_mesh_W(move(this->new_faces()),
@@ -604,8 +588,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
             X_WF_d * Vector3d(4, 5, 2),
             X_WF_d * Vector3d(2, 5, 2),
             X_WF_d * Vector3d(3, 5, 2)};
-        typedef SurfaceVertexIndex Index;
-        const Index b(0), c(1), d(2), e(3), f(4);
+        const int b{0}, c{1}, d{2}, e{3}, f{4};
         std::vector<SurfaceFace> expected_faces = {
             SurfaceFace(b, c, f), SurfaceFace(c, d, f), SurfaceFace(d, e, f),
             SurfaceFace(e, b, f)};
@@ -734,10 +717,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
         expected_vertices_W = quad_W;
-
-        typedef SurfaceVertexIndex Index;
-        const Index b(0), c(1), d(2), e(3);
-        const std::vector<Index> polygon{b, c, d, e};
+        const int b{0}, c{1}, d{2}, e{3};
+        const std::vector<int> polygon{b, c, d, e};
         AddPolygonToMeshData(polygon, nhat_W, &expected_faces,
                              &expected_vertices_W);
         break;
@@ -822,9 +803,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
         expected_vertices_W = degenerated_quadrilateral_W;
-        typedef SurfaceVertexIndex Index;
-        const Index b(0), c(1), d(2), e(3);
-        std::vector<Index> polygon{b, c, d, e};
+        const int b{0}, c{1}, d{2}, e{3};
+        std::vector<int> polygon{b, c, d, e};
         AddPolygonToMeshData(polygon, nhat_W, &expected_faces,
                              &expected_vertices_W);
         break;
@@ -893,8 +873,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
         expected_vertices_W = triangle_W;
-        typedef SurfaceVertexIndex Index;
-        std::vector<Index> polygon{Index(0), Index(1), Index(2)};
+        std::vector<int> polygon{0, 1, 2};
         AddPolygonToMeshData(polygon, nhat_W, &expected_faces,
                              &expected_vertices_W);
         break;
@@ -1102,7 +1081,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
     // Simply test each vertex and confirm that the corresponding pressure
     // value is expected.
     const SurfaceMesh<double>& mesh_W = contact_surface->mesh_W();
-    for (SurfaceVertexIndex v(0); v < mesh_W.num_vertices(); ++v) {
+    for (int v = 0; v < mesh_W.num_vertices(); ++v) {
       const double pressure = contact_surface->e_MN().EvaluateAtVertex(v);
       const Vector3d& p_WV = mesh_W.vertex(v);
       // Pressure is a function of _penetration depth_ = -signed distance.
@@ -1323,9 +1302,8 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     /* Set up the *rigid* mesh. */
     vector<Vector3d> vertices{Vector3d{0, 0, 0}, Vector3d{1, 0, 0},
                               Vector3d{0, 0, -1}};
-    using VIndex = SurfaceVertexIndex;
     using Face = SurfaceFace;
-    vector<Face> faces{{Face{VIndex(0), VIndex(1), VIndex(2)}}};
+    vector<Face> faces{{Face{0, 1, 2}}};
     id_R_ = GeometryId::get_new_id();
     mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
     bvh_R_ = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*mesh_R_);
@@ -1392,7 +1370,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
       const RotationMatrixd R_SR_d = RotationMatrixd::MakeXRotation(-M_PI / 7) *
                                      RotationMatrixd::MakeYRotation(-M_PI / 6);
 
-      const Vector3d p_RoV2_S = R_SR_d * mesh_R_->vertex(SurfaceVertexIndex(2));
+      const Vector3d p_RoV2_S = R_SR_d * mesh_R_->vertex(2);
       const Vector3d p_SV2 = p_SN + Vector3d{0, 0, -kDepth};
       const Vector3d p_SR_d = p_SV2 - p_RoV2_S;
       configurations.push_back(
@@ -1410,7 +1388,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
       const RotationMatrixd R_SR_d = RotationMatrixd::MakeXRotation(-M_PI / 7) *
                                    RotationMatrixd::MakeYRotation(M_PI / 4.5);
 
-      const Vector3d p_RoV2_S = R_SR_d * mesh_R_->vertex(SurfaceVertexIndex(2));
+      const Vector3d p_RoV2_S = R_SR_d * mesh_R_->vertex(2);
       const Vector3d p_SV2 = p_SN + Vector3d{0, 0, -kDepth};
       const Vector3d p_SR_d = p_SV2 - p_RoV2_S;
       configurations.push_back({"Skewed quad", p_SR_d, R_SR_d, 4, kSkewQuad});
@@ -1521,20 +1499,19 @@ TEST_F(MeshHalfSpaceDerivativesTest, Area) {
      changes, these hard-coded indices could become invalid. A more robust
      solution would be to *infer* the boundary polygon edges from the contact
      surface, but that's a lot of effort for little present value. */
-    using VIndex = SurfaceVertexIndex;
-    vector<vector<VIndex>> triangles;
+    vector<vector<int>> triangles;
     switch (pose) {
       case TriPose::kHorizontalSlice:
       case TriPose::kSkewTriangle:
-        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
+        triangles.emplace_back(vector<int>{0, 1, 2});
         break;
       case TriPose::kSkewQuad:
         /* This is a bit brittle and is predicated on knowledge of how
          the intersection algorithm processes the particular geometry. If that
          proves to be too brittle, we'll need to reconstruct this by looking
          at the provided mesh. */
-        triangles.emplace_back(vector<VIndex>{VIndex(2), VIndex(1), VIndex(0)});
-        triangles.emplace_back(vector<VIndex>{VIndex(2), VIndex(3), VIndex(1)});
+        triangles.emplace_back(vector<int>{2, 1, 0});
+        triangles.emplace_back(vector<int>{2, 3, 1});
         break;
     }
 
@@ -1668,7 +1645,6 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
                                  const RigidTransform<AutoDiffXd>& X_WR_ad,
                                  TriPose pose) {
     constexpr double kEps = 5 * std::numeric_limits<double>::epsilon();
-    using VIndex = SurfaceVertexIndex;
 
     /* The test is set up so there is only ever a single intersecting polygon.
      So, there is *one* centroid (the last vertex). All other vertices come
@@ -1683,7 +1659,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
     const RigidTransformd X_WR = convert_to_double(X_WR_ad);
     const RotationMatrixd& R_WR = X_WR.rotation();
 
-    for (VIndex v(0); v < mesh_W.num_vertices() - 1; ++v) {
+    for (int v = 0; v < mesh_W.num_vertices() - 1; ++v) {
       const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v);
       const Vector3d p_WV = convert_to_double(p_WV_ad);
       const Vector3d p_SV = X_WS.inverse() * p_WV;
@@ -1716,11 +1692,11 @@ TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
         /* The derivative of the centroid should simply be the mean of the first
          three vertices' derivatives. */
         Matrix3<double> expected_J_W = Matrix3<double>::Zero();
-        for (VIndex v(0); v < 3; ++v) {
+        for (int v = 0; v < 3; ++v) {
           expected_J_W += math::ExtractGradient(mesh_W.vertex(v));
         }
         expected_J_W /= 3;
-        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3));
+        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(3);
         const Matrix3<double> J_W = math::ExtractGradient(p_WC);
         EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
         break;
@@ -1837,7 +1813,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, Pressure) {
                                 double theta) {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const Vector3d& n_W = X_WS.rotation().col(2);
-    for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
+    for (int v = 0; v < surface.mesh_W().num_vertices(); ++v) {
       const auto& p_WV = surface.mesh_W().vertex(v);
       const Matrix3<double> dV_dRo = math::ExtractGradient(p_WV);
       const Vector3d expected_dp_dRo = -E * n_W.transpose() * dV_dRo;

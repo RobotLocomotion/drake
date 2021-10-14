@@ -25,7 +25,6 @@ using geometry::SceneGraph;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using math::RigidTransformd;
 using systems::Context;
@@ -67,10 +66,8 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   //       /     /|   /
   //   v2 /_____/_|__/ v3
   //           /  |
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(2), SurfaceVertexIndex(1));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(0), SurfaceVertexIndex(3));
+  faces.emplace_back(0, 2, 1);
+  faces.emplace_back(2, 0, 3);
 
   auto mesh = std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
@@ -107,7 +104,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   // Create the "e" field values (i.e., "hydroelastic pressure") using
   // negated "z" values.
   std::vector<double> e_MN(mesh->num_vertices());
-  for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+  for (int i = 0; i < mesh->num_vertices(); ++i)
     e_MN[i] = -mesh->vertex(i).z();
 
   // Now transform the mesh to the world frame, as ContactSurface specifies.
@@ -665,8 +662,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
       p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
   };
 
-  std::vector<SurfaceFace> faces({SurfaceFace{
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2)}});
+  std::vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
   auto mesh_W = std::make_unique<geometry::SurfaceMesh<AutoDiffXd>>(
       std::move(faces), std::move(vertices));
   // Note: these values are garbage. They merely allow us to instantiate the
@@ -795,7 +791,7 @@ class HydroelasticReportingTests
 
     // Create the e field values (i.e., "hydroelastic pressure").
     std::vector<double> e_MN(mesh->num_vertices());
-    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+    for (int i = 0; i < mesh->num_vertices(); ++i)
       e_MN[i] = pressure(mesh->vertex(i));
 
     SurfaceMesh<double>* mesh_pointer = mesh.get();

@@ -463,7 +463,7 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
   ASSERT_FALSE(sphere->is_half_space());
 
   const SurfaceMesh<double>& mesh = sphere->mesh();
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     ASSERT_NEAR(mesh.vertex(v).norm(), radius, 1e-15);
   }
 }
@@ -489,7 +489,7 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   // Because it is a cube centered at the origin, the distance from the origin
   // to each vertex should be sqrt(3) * edge_len / 2.
   const double expected_dist = std::sqrt(3) * edge_len / 2;
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     ASSERT_NEAR(mesh.vertex(v).norm(), expected_dist, 1e-15);
   }
 }
@@ -518,7 +518,7 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   const SurfaceMesh<double>& mesh = cylinder->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
   EXPECT_EQ(mesh.num_faces(), 12);
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v));
     // Only check that the vertex is within the cylinder. It does not check
     // that the vertex is near the surface of the cylinder.  We rely on the
@@ -592,7 +592,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   const SurfaceMesh<double>& mesh = ellipsoid->mesh();
   EXPECT_EQ(mesh.num_vertices(), 6);
   EXPECT_EQ(mesh.num_faces(), 8);
-  for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
+  for (int v = 0; v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v));
     ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
   }
@@ -627,7 +627,7 @@ void TestRigidMeshType() {
     // the expected distance of the vertex to the origin should be:
     // scale * sqrt(3) (because the original mesh was the unit sphere).
     const double expected_dist = std::sqrt(3) * scale;
-    for (SurfaceVertexIndex v(0); v < surface_mesh.num_vertices(); ++v) {
+    for (int v = 0; v < surface_mesh.num_vertices(); ++v) {
       const double dist = surface_mesh.vertex(v).norm();
       ASSERT_NEAR(dist, expected_dist, scale * kEps)
           << "for scale: " << scale << " at vertex " << v;

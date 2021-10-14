@@ -132,8 +132,8 @@ SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
 
   std::vector<Vector3<T>> surface_vertices;
   surface_vertices.reserve(boundary_vertices.size());
-  std::unordered_map<VolumeVertexIndex, SurfaceVertexIndex> volume_to_surface;
-  for (SurfaceVertexIndex i(0); i < boundary_vertices.size(); ++i) {
+  std::unordered_map<VolumeVertexIndex, int> volume_to_surface;
+  for (int i(0); i < static_cast<int>(boundary_vertices.size()); ++i) {
     surface_vertices.emplace_back(volume.vertex(boundary_vertices[i]));
     volume_to_surface.emplace(boundary_vertices[i], i);
   }

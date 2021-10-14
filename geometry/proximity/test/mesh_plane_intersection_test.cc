@@ -249,9 +249,8 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     }
     // Assume that AddPolygonToMeshDataAsOneTriangle() sets up the face-vertex
     // connectivity this way.
-    if (faces_[0].vertex(0) != SurfaceVertexIndex(0) ||
-        faces_[0].vertex(1) != SurfaceVertexIndex(1) ||
-        faces_[0].vertex(2) != SurfaceVertexIndex(2)) {
+    if (faces_[0].vertex(0) != 0 || faces_[0].vertex(1) != 1 ||
+        faces_[0].vertex(2) != 2) {
       return ::testing::AssertionFailure()
              << "\nFailed SliceIsConsistentWithSingleTriangleRepresentation:\n"
              << " Incorrect face-vertex connectivity.";
@@ -273,7 +272,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     }
 
     // Check surface_pressure_.
-    for (SurfaceVertexIndex v(0); v < vertices_W_.size(); ++v) {
+    for (int v = 0; v < static_cast<int>(vertices_W_.size()); ++v) {
       const double pressure = surface_pressure_[v];
       const Vector3d& p_WV = vertices_W_[v];
       const Vector3d p_FV = X_WF_.inverse() * p_WV;
@@ -293,14 +292,14 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   /* Determine which vertex is the center of the triangle fan; it should be the
    single vertex referenced by every face (all other vertices should be
    referenced twice). */
-  static pair<SurfaceVertexIndex, ::testing::AssertionResult> IdentifyFanVertex(
+  static pair<int, ::testing::AssertionResult> IdentifyFanVertex(
       const vector<SurfaceFace>& faces) {
     const int num_faces = static_cast<int>(faces.size());
-    SurfaceVertexIndex centroid_index;
-    std::unordered_map<SurfaceVertexIndex, int> vertex_references;
+    int centroid_index = -1;
+    std::unordered_map<int, int> vertex_references;
     for (const auto& face : faces) {
       for (int i = 0; i < 3; ++i) {
-        SurfaceVertexIndex v = face.vertex(i);
+        int v = face.vertex(i);
         // This relies on unordered_map's value initialization of the value
         // type. In this case, int gets initialized to zero and then
         // incremented.
@@ -323,6 +322,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
                     << " is neither boundary nor centroid"};
       }
     }
+    DRAKE_DEMAND(centroid_index >= 0);
     // There is one and only one centroid candidate.
     if (num_perim_vertex != num_faces) {
       return {{},
@@ -341,7 +341,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    weight * P(edge.first) + (1 - weight) * P(edge.second), where P(v) is the
    position of the volume vertex with index v.  */
   struct EdgeVertex {
-    SurfaceVertexIndex slice_vertex;
+    int slice_vertex;
     SortedPair<VolumeVertexIndex> edge;
     double weight{};
   };
@@ -351,7 +351,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    classification fails for any vertex, report failure (without edge data). */
   pair<vector<EdgeVertex>, ::testing::AssertionResult>
   CharacterizeEdgeVertices(
-      SurfaceVertexIndex fan_index, const vector<SurfaceFace>& slice,
+      int fan_index, const vector<SurfaceFace>& slice,
       const vector<Vector3d>& slice_vertices_W,
       VolumeElementIndex tet_index, const VolumeMesh<double>& mesh_F) const {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
@@ -368,10 +368,10 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     // We include the fan index in the set of vertices already processed so that
     // we don't attempt to process it (it is the one vertex we presume should
     // _not_ lie on any edge).
-    set<SurfaceVertexIndex> slice_vertex_indices{fan_index};
+    set<int> slice_vertex_indices{fan_index};
     for (const auto& face : slice) {
       for (int i = 0; i < 3; ++i) {
-        const SurfaceVertexIndex v = face.vertex(i);
+        const int v = face.vertex(i);
         if (slice_vertex_indices.count(v) > 0) continue;
         slice_vertex_indices.insert(v);
         // The slice polygon vertex S in the mesh frame F.
@@ -444,7 +444,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   /* Given the edge vertices (assuming they are properly ordered to form a
    coherent polygon), computes the centroid. */
   Vector3d CentroidFromFan(const vector<EdgeVertex>& edge_vertices) const {
-    vector<SurfaceVertexIndex> polygon;
+    vector<int> polygon;
     for (const auto& edge_vertex : edge_vertices) {
       polygon.push_back(edge_vertex.slice_vertex);
     }
@@ -459,8 +459,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    vertices to be ordered properly (i.e., around the perimeter and not
    jumbled up). */
   ::testing::AssertionResult FanVertexIsCentroid(
-      const vector<EdgeVertex>& edge_vertices,
-      SurfaceVertexIndex centroid_index) const {
+      const vector<EdgeVertex>& edge_vertices, int centroid_index) const {
     constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
     const Vector3d p_WC = CentroidFromFan(edge_vertices);
     return CompareMatrices(p_WC, vertices_W_[centroid_index], kEps);
@@ -470,8 +469,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    by linearly interpolating pressure values on the `tet` based on the
    data in `edge_vertices`. */
   ::testing::AssertionResult PressuresMatchVertices(
-      VolumeElementIndex tet_index,
-      SurfaceVertexIndex centroid_index,
+      VolumeElementIndex tet_index, int centroid_index,
       const vector<EdgeVertex>& edge_vertices,
       const VolumeMeshFieldLinear<double, double>& field_F) const {
     constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
@@ -484,7 +482,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
       // Combine using the weight as documented in EdgeVertex.
       const double expected_pressure =
           p0 * edge_vertex.weight + (1 - edge_vertex.weight) * p1;
-      const SurfaceVertexIndex test_vertex_index = edge_vertex.slice_vertex;
+      const int test_vertex_index = edge_vertex.slice_vertex;
       const double pressure = surface_pressure_[test_vertex_index];
       if (std::abs(pressure - expected_pressure) > kEps) {
         return ::testing::AssertionFailure()
@@ -601,7 +599,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   vector<SurfaceFace> faces_;
   vector<Vector3d> vertices_W_;
   vector<double> surface_pressure_;
-  unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges_;
+  unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges_;
 };
 
 /* This tests the *boundaries* of intersection. Confirms that a tet lying
@@ -936,8 +934,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   vector<SurfaceFace> min_faces;
   vector<Vector3d> min_vertices_F;
   vector<double> min_surface_pressure;
-  unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
-      min_cut_edges;
+  unordered_map<SortedPair<VolumeVertexIndex>, int> min_cut_edges;
 
   // The infrastructure for the mesh with duplicate vertices.
   VolumeMesh<double> dupe_mesh_F =
@@ -947,8 +944,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   vector<SurfaceFace> dupe_faces;
   vector<Vector3d> dupe_vertices_F;
   vector<double> dupe_surface_pressure;
-  unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
-      dupe_cut_edges;
+  unordered_map<SortedPair<VolumeVertexIndex>, int> dupe_cut_edges;
 
   // The common slicing plane.
   Plane<double> plane_F{Vector3d::UnitX(), Vector3d{0.5, 0, 0}};
@@ -982,7 +978,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   }
 
   // Confirm that all of the vertices in the duplicate mesh are referenced.
-  set<SurfaceVertexIndex> vertex_indices;
+  set<int> vertex_indices;
   for (const auto& face : dupe_faces) {
     for (int i = 0; i < 3; ++i) vertex_indices.insert(face.vertex(i));
   }
@@ -1015,7 +1011,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<SurfaceFace> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
-    unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
+    unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges;
     VolumeElementIndex tet_index{0};
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation, &faces,
                       &vertices_W, &surface_pressure, &cut_edges);
@@ -1035,7 +1031,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<SurfaceFace> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
-    unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex> cut_edges;
+    unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges;
     VolumeElementIndex tet_index{1};
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation,
                       &faces, &vertices_W, &surface_pressure, &cut_edges);
@@ -1266,9 +1262,9 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
 
     // O(N^2) test comparing all vertex distances; report the minimum distance.
     double min_distance = std::numeric_limits<double>::infinity();
-    for (SurfaceVertexIndex i{0}; i < 5; ++i) {
+    for (int i = 0; i < 5; ++i) {
       const Vector3d& p_WVi = contact_mesh_W.vertex(i);
-      for (SurfaceVertexIndex j{i + 1}; j < 6; ++j) {
+      for (int j = i + 1; j < 6; ++j) {
         const Vector3d& p_WVj = contact_mesh_W.vertex(j);
         min_distance = std::min(min_distance, (p_WVj - p_WVi).norm());
       }
@@ -1300,9 +1296,9 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // vertices). We expect two vertices to be duplicated.
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     int duplicate_count = 0;
-    for (SurfaceVertexIndex i{0}; i < 5; ++i) {
+    for (int i = 0; i < 5; ++i) {
       const Vector3d& p_WVi = contact_mesh_W.vertex(i);
-      for (SurfaceVertexIndex j{i + 1}; j < 6; ++j) {
+      for (int j = i + 1; j < 6; ++j) {
         const Vector3d& p_WVj = contact_mesh_W.vertex(j);
         if ((p_WVj - p_WVi).norm() < kEps) ++duplicate_count;
       }
@@ -1518,7 +1514,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
     // Sample the vertex positions: in the S frame they should all have x = 0.5.
     const Vector3d& p_WV =
-        contact_surface->mesh_W().vertex(SurfaceVertexIndex{0});
+        contact_surface->mesh_W().vertex(0);
     const Vector3d p_SV = X_WS.inverse() * p_WV;
     EXPECT_NEAR(p_SV(0), 0.5, kEps);
   }
@@ -1853,20 +1849,19 @@ TEST_F(MeshPlaneDerivativesTest, Area) {
      these hard-coded indices could become invalid. A more robust solution would
      be to *infer* the boundary polygon edges from the contact surface, but
      that's a lot of effort for little present value. */
-    using VIndex = SurfaceVertexIndex;
-    vector<vector<VIndex>> triangles;
+    vector<vector<int>> triangles;
     switch (pose) {
       case TetPose::kHorizontalSlice:
       case TetPose::kTriangleSlice:
-        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
+        triangles.emplace_back(vector<int>{0, 1, 2});
         break;
       case TetPose::kQuadSlice:
         /* This is a bit brittle and is predicated on knowledge of how
          the intersection algorithm processes the particular geometry. If that
          proves to be too brittle, we'll need to reconstruct this by looking
          at the provided mesh. */
-        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
-        triangles.emplace_back(vector<VIndex>{VIndex(2), VIndex(3), VIndex(1)});
+        triangles.emplace_back(vector<int>{0, 1, 2});
+        triangles.emplace_back(vector<int>{2, 3, 1});
         break;
     }
 
@@ -1982,7 +1977,6 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
                                  const RigidTransform<AutoDiffXd>& X_WS_ad,
                                  TetPose pose) {
     constexpr double kEps = 5 * std::numeric_limits<double>::epsilon();
-    using VIndex = SurfaceVertexIndex;
 
     /* The test is set up so there is only ever a single intersecting polygon.
      So, there is *one* centroid (the last vertex). All other vertices come
@@ -1994,7 +1988,7 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
     const RotationMatrixd R_RW = R_WR.inverse();
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);
     const RotationMatrixd& R_WS = X_WS.rotation();
-    for (VIndex v(0); v < mesh_W.num_vertices() - 1; ++v) {
+    for (int v = 0; v < mesh_W.num_vertices() - 1; ++v) {
       const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v);
       const Vector3d& p_WV = convert_to_double(p_WV_ad);
       const Vector3d e_R = R_RW * R_WS * GetEdgeDirInS(X_WS.inverse() * p_WV);
@@ -2020,11 +2014,11 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
       case kTriangleSlice: {
         /* The derivative should simply be the mean of the first three. */
         Matrix3<double> expected_J_W = Matrix3<double>::Zero();
-        for (VIndex v(0); v < 3; ++v) {
+        for (int v = 0; v < 3; ++v) {
           expected_J_W += math::ExtractGradient(mesh_W.vertex(v));
         }
         expected_J_W /= 3;
-        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3));
+        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(3);
         const Matrix3<double> J_W = math::ExtractGradient(p_WC);
         EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
         break;
@@ -2149,7 +2143,7 @@ TEST_F(MeshPlaneDerivativesTest, Pressure) {
     constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
     const RigidTransform<double> X_WS_d = convert_to_double(X_WS);
     const Vector3d grad_p_W = X_WS_d.rotation() * grad_p_S;
-    for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
+    for (int v = 0; v < surface.mesh_W().num_vertices(); ++v) {
       const Matrix3<double> dp_WQ_dp_WSo_W =
           math::ExtractGradient(surface.mesh_W().vertex(v));
       const Vector3d dp_dp_WSo_W_expected =

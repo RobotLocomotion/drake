@@ -14,7 +14,6 @@ namespace fem {
 
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertexIndex;
 using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
 using geometry::VolumeVertexIndex;
@@ -403,7 +402,7 @@ class Intersector {
     // surface_R.
     polygon_D->clear();
     for (int i = 0; i < 3; ++i) {
-      const SurfaceVertexIndex v = surface_R.element(face).vertex(i);
+      const int v = surface_R.element(face).vertex(i);
       const Vector3<T> p_DV = X_DR * surface_R.vertex(v).cast<T>();
       polygon_D->push_back({p_DV, tet_mesh_D.CalcBarycentric(p_DV, tet_index)});
     }

@@ -292,13 +292,7 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     // We'll poke *one* quantity of the surface mesh to confirm it has
     // derivatives. We won't consider the *value*, just the existence as proof
     // that it has been wired up to code that has already tested value.
-    EXPECT_EQ(surfaces[0]
-                  .mesh_W()
-                  .vertex(SurfaceVertexIndex(0))
-                  .x()
-                  .derivatives()
-                  .size(),
-              3);
+    EXPECT_EQ(surfaces[0].mesh_W().vertex(0).x().derivatives().size(), 3);
   }
 
   // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
