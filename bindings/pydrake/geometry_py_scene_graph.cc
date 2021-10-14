@@ -1,23 +1,14 @@
-#include <sstream>
+/* @file This includes the SceneGraph class and the major components of its
+ API: SceneGraphInspector and QueryObject for examining its state and performing
+ queries, and the query result types as well. They can be found in the
+ pydrake.geometry module. */
 
-#include "pybind11/eigen.h"
-#include "pybind11/eval.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
-#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/bindings/pydrake/geometry_py.h"
-#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/geometry/geometry_frame.h"
-#include "drake/geometry/proximity_properties.h"
-#include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
 
 // TODO(SeanCurtis-TRI) When pybind issue 3019 gets resolved, we won't need to
@@ -43,16 +34,8 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-using Eigen::Vector3d;
-using geometry::GeometryId;
-using geometry::PerceptionProperties;
-using geometry::Shape;
-using math::RigidTransformd;
 using systems::Context;
 using systems::LeafSystem;
-using systems::sensors::ImageDepth32F;
-using systems::sensors::ImageLabel16I;
-using systems::sensors::ImageRgba8U;
 
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
@@ -566,40 +549,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("id_N", &Class::id_N, doc.ContactSurface.id_N.doc)
         .def("mesh_W", &Class::mesh_W, doc.ContactSurface.mesh_W.doc);
   }
-}  // NOLINT(readability/fn_size)
+}
+}  // namespace
 
-void def_geometry(py::module m) {
+void DefineGeometrySceneGraph(py::module m) {
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
 }
-
-void def_geometry_all(py::module m) {
-  py::dict vars = m.attr("__dict__");
-  py::exec(
-      "from pydrake.geometry import *\n"
-      "from pydrake.geometry.render import *\n"
-      "from pydrake.geometry.optimization import *\n",
-      py::globals(), vars);
-}
-
-PYBIND11_MODULE(geometry, m) {
-  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.math");
-  py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.systems.lcm");
-
-  /* The order of execution matters -- a module may rely on the definition
-   of bindings executed prior to it. */
-  DefineGeometryCommon(m);
-  DefineGeometryHydro(m);
-  def_geometry(m);
-  DefineGeometryRender(m.def_submodule("render"));
-  DefineGeometryOptimization(m.def_submodule("optimization"));
-  DefineGeometryVisualizers(m);
-  def_geometry_all(m.def_submodule("all"));
-}
-
-}  // namespace
 }  // namespace pydrake
 }  // namespace drake

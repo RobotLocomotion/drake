@@ -7,10 +7,7 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform_
-from pydrake.systems.framework import (
-    InputPort_,
-    OutputPort_,
-)
+from pydrake.systems.framework import InputPort_, OutputPort_
 from pydrake.systems.sensors import (
     CameraInfo,
     ImageRgba8U,
@@ -18,14 +15,8 @@ from pydrake.systems.sensors import (
     ImageLabel16I,
 )
 
-PROPERTY_CLS_LIST = [
-    mut.ProximityProperties,
-    mut.IllustrationProperties,
-    mut.PerceptionProperties,
-]
 
-
-class TestGeometry(unittest.TestCase):
+class TestGeometrySceneGraph(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
@@ -439,4 +430,3 @@ class TestGeometry(unittest.TestCase):
     def test_value_instantiations(self, T):
         Value[mut.FramePoseVector_[T]]
         Value[mut.QueryObject_[T]]
-        Value[mut.Rgba]
