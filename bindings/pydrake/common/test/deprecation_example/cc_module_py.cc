@@ -89,6 +89,25 @@ PYBIND11_MODULE(cc_module, m) {
         py::arg("x"), cls_doc.overload.doc_deprecated);
 #pragma GCC diagnostic pop
 
+    // Example: A C++ function with an argument name that has been renamed.
+    // In C++, we simply change the function signature name with no ill effect
+    // on the public API. However, in Python, the argument name is part of the
+    // function signature, so we should deprecate the old spelling.
+    // - Bind the *undeprecated* spelling *first*. This way, a user calling this
+    // function without specifying the argument name will not come across the
+    // deprecation.
+    cls.def("FunctionWithArgumentName", &Class::FunctionWithArgumentName,
+        py::arg("new_name"), cls_doc.FunctionWithArgumentName.doc);
+    // - Now bind the deprecated spelling.
+    constexpr char doc_FunctionWithArgumentName_deprecated[] =
+        "FunctionWithArgumentName(old_name) is deprecated, and will be "
+        "removed on or around 2038-01-18. Please use "
+        "FunctionWithArgumentName(new_name) instead.";
+    cls.def("FunctionWithArgumentName",
+        WrapDeprecated(doc_FunctionWithArgumentName_deprecated,
+            &Class::FunctionWithArgumentName),
+        py::arg("old_name"), doc_FunctionWithArgumentName_deprecated);
+
     // Example: A C++ method with multiple overloads, where we wish to
     // deprecate all of the overloads in the bindings. One option is to
     // deprecate each overload, but instead we instead deprecate all overloads

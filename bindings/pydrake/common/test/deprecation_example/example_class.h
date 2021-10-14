@@ -54,6 +54,11 @@ class ExampleCppClass {
     unused(x);
   }
 
+  // This will be bound with two spellings in Python:
+  // - FunctionWithArgumentName(new_name) - not deprecated
+  // - FunctionWithArgumentName(old_name) - deprecated
+  int FunctionWithArgumentName(int new_name) { return new_name + 1; }
+
   /// Good property.
   int prop{};
 };
