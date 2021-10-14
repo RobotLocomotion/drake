@@ -32,6 +32,8 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::PixelType;
 
+namespace {
+
 class PyRenderEngine : public py::wrapper<RenderEngine> {
  public:
   using Base = RenderEngine;
@@ -99,14 +101,13 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
   }
 };
 
-void DefineGeometryRender(py::module m) {
+void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry::render;
-  m.doc() = "Local bindings for `drake::geometry::render`";
   constexpr auto& doc = pydrake_doc.drake.geometry.render;
 
   {
@@ -326,6 +327,12 @@ void DefineGeometryRender(py::module m) {
   }
 
   AddValueInstantiation<RenderLabel>(m);
+}
+}  // namespace
+
+void DefineGeometryRender(py::module m) {
+  m.doc() = "Local bindings for `drake::geometry::render`";
+  DoScalarIndependentDefinitions(m);
 }
 
 }  // namespace pydrake
