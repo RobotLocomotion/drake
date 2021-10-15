@@ -14,7 +14,6 @@ namespace fem {
 
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
-using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
 using geometry::internal::Aabb;
 using geometry::internal::Bvh;
@@ -391,7 +390,7 @@ class Intersector {
           tetrahedron (non-zero area restriction still applies).
    */
   const std::vector<IntersectionVertex<T>>& ClipTriangleByTetrahedron(
-      VolumeElementIndex tet_index, const VolumeMesh<T>& tet_mesh_D,
+      int tet_index, const VolumeMesh<T>& tet_mesh_D,
       SurfaceFaceIndex face, const SurfaceMesh<double>& surface_R,
       const math::RigidTransform<T>& X_DR) {
     // Although polygon_D starts out pointing to polygon_[0], that is not an

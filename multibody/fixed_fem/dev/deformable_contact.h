@@ -42,7 +42,7 @@ struct ContactPolygonData {
   Vector4<T> b_centroid;
   /** The index of the tetrahedron element in the intersecting tet-mesh in which
    this data's polygon is completely contained.  */
-  geometry::VolumeElementIndex tet_index;
+  int tet_index{};
 };
 
 /** Characterization of the contact surface between a deformable volume (tet)

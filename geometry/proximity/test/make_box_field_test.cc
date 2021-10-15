@@ -91,7 +91,7 @@ GTEST_TEST(MakeBoxFieldTest, MakeBoxPressureFieldInMeshWithMedialAxis) {
   // Check that there is no constant-pressure tetrahedron.
   const double kPressureTolerance =
       kElasticModulus * std::numeric_limits<double>::epsilon();
-  for (VolumeElementIndex e(0); e < mesh.num_elements(); ++e) {
+  for (int e = 0; e < mesh.num_elements(); ++e) {
     const double pressure_v0 =
         pressure_field.EvaluateAtVertex(mesh.element(e).vertex(0));
     bool same_pressure = true;
