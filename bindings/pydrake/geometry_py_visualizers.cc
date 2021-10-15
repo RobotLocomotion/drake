@@ -26,6 +26,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.systems.lcm");
 
   // DrakeVisualizer
   {
