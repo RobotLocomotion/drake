@@ -86,7 +86,12 @@ class Node final {
   /* Returns an empty Mapping node. */
   static Node MakeMapping();
 
-  /* Creates an empty Scalar node. */
+  /* Returns a null Scalar node.
+  Refer to https://yaml.org/spec/1.2.2/#null for details. */
+  static Node MakeNull();
+
+  /* Creates an empty Scalar node.  Note that this is _not_ a `null` node; for
+  that, use MakeNull() instead. */
   Node() = default;
 
   /* Returns type of stored value. */
@@ -102,9 +107,6 @@ class Node final {
 
   /* Returns true iff this Node's type is Scalar. */
   bool IsScalar() const;
-
-  /* Returns true iff this Node's type is Scalar and the value is empty. */
-  bool IsEmptyScalar() const;
 
   /* Returns true iff this Node's type is Sequence. */
   bool IsSequence() const;
@@ -125,6 +127,18 @@ class Node final {
   The tag is not checked for well-formedness nor consistency with the node's
   type nor value.  The caller is responsible for providing a valid tag. */
   void SetTag(std::string);
+
+  // https://yaml.org/spec/1.2.2/#floating-point
+  static constexpr std::string_view kTagFloat{"tag:yaml.org,2002:float"};
+
+  // https://yaml.org/spec/1.2.2/#integer
+  static constexpr std::string_view kTagInt{"tag:yaml.org,2002:int"};
+
+  // https://yaml.org/spec/1.2.2/#null
+  static constexpr std::string_view kTagNull{"tag:yaml.org,2002:null"};
+
+  // https://yaml.org/spec/1.2.2/#generic-string
+  static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
 
   // @name Scalar-only Functions
   // These functions may only be called when IsScalar() is true;
@@ -209,10 +223,14 @@ class Node final {
   struct MappingData final {
     // Even though YAML mappings are notionally unordered, we use an ordered
     // map here to ensure program determinism.
-    std::map<std::string, Node> map;
+    std::map<std::string, Node> mapping;
 
     friend bool operator==(const MappingData&, const MappingData&);
   };
+
+  /* Displays the given node using flow style.  Intended only for debugging,
+  not serialization. */
+  friend std::ostream& operator<<(std::ostream&, const Node&);
 
  private:
   using Variant = std::variant<ScalarData, SequenceData, MappingData>;
