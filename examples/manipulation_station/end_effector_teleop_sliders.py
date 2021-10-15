@@ -142,7 +142,8 @@ class EndEffectorTeleop(LeafSystem):
 
     def SetPose(self, pose):
         """
-        @param pose is an Isometry3.
+        @param pose is a RigidTransform or else any type accepted by
+                    RigidTransform's constructor
         """
         tf = RigidTransform(pose)
         self.SetRPY(RollPitchYaw(tf.rotation()))

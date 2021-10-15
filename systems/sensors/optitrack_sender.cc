@@ -10,10 +10,10 @@ namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
-void PopulateRigidBody(const Eigen::Isometry3d& T_WF,
+void PopulateRigidBody(const math::RigidTransformd& T_WF,
                        optitrack::optitrack_rigid_body_t* msg) {
     const Eigen::Vector3d trans = T_WF.translation();
-    const Eigen::Quaterniond rot = Eigen::Quaterniond(T_WF.linear());
+    const Eigen::Quaterniond rot = T_WF.rotation().ToQuaternion();
 
     msg->xyz[0] = static_cast<float>(trans[0]);
     msg->xyz[1] = static_cast<float>(trans[1]);
@@ -52,7 +52,7 @@ void OptitrackLcmFrameSender::PopulatePoseMessage(
 
   int output_index = 0;
   for (const auto& frame : frame_map_) {
-    const Eigen::Isometry3d& pose = poses.value(frame.first).GetAsIsometry3();
+    const math::RigidTransformd& pose = poses.value(frame.first);
     output->rigid_bodies[output_index].id = frame.second.second;
     PopulateRigidBody(pose, &(output->rigid_bodies[output_index++]));
   }

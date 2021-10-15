@@ -80,7 +80,7 @@ class DifferentialIK(LeafSystem):
             self, context, events, discrete_state):
         rpy_xyz_desired = self.EvalVectorInput(context, 0).get_value()
         X_WE_desired = RigidTransform(RollPitchYaw(rpy_xyz_desired[:3]),
-                                      rpy_xyz_desired[-3:]).GetAsIsometry3()
+                                      rpy_xyz_desired[-3:])
         q_last = context.get_discrete_state_vector().get_value()
 
         x = self.robot.GetMutablePositionsAndVelocities(
