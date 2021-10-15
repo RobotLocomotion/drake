@@ -59,19 +59,17 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   // pointing towards the inside. The fourth vertex is on the "positive" side
   // of the plane defined by this normal.
 
-  using V = VolumeVertexIndex;
-
   // Top tetrahedra.
-  tetrahedra.emplace_back(V(1), V(5), V(2), V(0));
-  tetrahedra.emplace_back(V(2), V(5), V(3), V(0));
-  tetrahedra.emplace_back(V(3), V(5), V(4), V(0));
-  tetrahedra.emplace_back(V(4), V(5), V(1), V(0));
+  tetrahedra.emplace_back(1, 5, 2, 0);
+  tetrahedra.emplace_back(2, 5, 3, 0);
+  tetrahedra.emplace_back(3, 5, 4, 0);
+  tetrahedra.emplace_back(4, 5, 1, 0);
 
   // Bottom tetrahedra.
-  tetrahedra.emplace_back(V(2), V(6), V(1), V(0));
-  tetrahedra.emplace_back(V(3), V(6), V(2), V(0));
-  tetrahedra.emplace_back(V(4), V(6), V(3), V(0));
-  tetrahedra.emplace_back(V(1), V(6), V(4), V(0));
+  tetrahedra.emplace_back(2, 6, 1, 0);
+  tetrahedra.emplace_back(3, 6, 2, 0);
+  tetrahedra.emplace_back(4, 6, 3, 0);
+  tetrahedra.emplace_back(1, 6, 4, 0);
 
   // Indicate what vertices are on the surface of the sphere.
   // All vertices are boundaries but the first one at (0, 0, 0).
@@ -101,7 +99,7 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
  @tparam T  The Eigen-compatible scalar for representing vertex positions.
  */
 template <typename T>
-void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
+void SplitOctohedron(const std::array<int, 6>& vertex_indices,
                      const std::vector<Vector3<T>>& p_MVs,
                      std::vector<VolumeElement>* tets) {
   // The interior octahedron can be split along three different axes: EJ, FI,
@@ -123,21 +121,19 @@ void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
   //   4. v^2 and ∑lᵢᵀ⋅lᵢ are strictly positive. So, we can get rid of the
   //      cube-root by defining Q' = v²/(∑lᵢᵀ⋅lᵢ)³.
 
-  using VIndex = VolumeVertexIndex;
-
   // Pre-computes all squared edge lengths.
-  std::unordered_map<SortedPair<VIndex>, double> square_edge_len;
+  std::unordered_map<SortedPair<int>, double> square_edge_len;
   for (int i = 0; i < 6; ++i) {
     for (int j = i + 1; j < 6; ++j) {
-      const VIndex a = vertex_indices[i];
-      const VIndex b = vertex_indices[j];
-      square_edge_len[SortedPair<VIndex>(a, b)] = ExtractDoubleOrThrow(
+      const int a = vertex_indices[i];
+      const int b = vertex_indices[j];
+      square_edge_len[SortedPair<int>(a, b)] = ExtractDoubleOrThrow(
           (p_MVs[a] - p_MVs[b]).squaredNorm());
     }
   }
 
   // Computes the volume of a single tetrahedron.
-  auto volume = [&p_MVs](VIndex a, VIndex b, VIndex c, VIndex d) {
+  auto volume = [&p_MVs](int a, int b, int c, int d) {
     const Vector3<T> p_AB = p_MVs[b] - p_MVs[a];
     const Vector3<T> p_AC = p_MVs[c] - p_MVs[a];
     const Vector3<T> p_AD = p_MVs[d] - p_MVs[a];
@@ -148,18 +144,18 @@ void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
   // vertex indices (i.e., in the range [0, 5]).
   auto tet_quality = [&square_edge_len, &volume,
                       &vertex_indices](const std::array<int, 4>& local_i) {
-    const VIndex a = vertex_indices[local_i[0]];
-    const VIndex b = vertex_indices[local_i[1]];
-    const VIndex c = vertex_indices[local_i[2]];
-    const VIndex d = vertex_indices[local_i[3]];
+    const int a = vertex_indices[local_i[0]];
+    const int b = vertex_indices[local_i[1]];
+    const int c = vertex_indices[local_i[2]];
+    const int d = vertex_indices[local_i[3]];
     const double v = volume(a, b, c, d);
     double denom = 0.0;
-    denom += square_edge_len.at(SortedPair<VIndex>(a, b));
-    denom += square_edge_len.at(SortedPair<VIndex>(a, c));
-    denom += square_edge_len.at(SortedPair<VIndex>(a, d));
-    denom += square_edge_len.at(SortedPair<VIndex>(b, c));
-    denom += square_edge_len.at(SortedPair<VIndex>(b, d));
-    denom += square_edge_len.at(SortedPair<VIndex>(c, d));
+    denom += square_edge_len.at(SortedPair<int>(a, b));
+    denom += square_edge_len.at(SortedPair<int>(a, c));
+    denom += square_edge_len.at(SortedPair<int>(a, d));
+    denom += square_edge_len.at(SortedPair<int>(b, c));
+    denom += square_edge_len.at(SortedPair<int>(b, d));
+    denom += square_edge_len.at(SortedPair<int>(c, d));
     return v * v / (denom * denom * denom);
   };
 
@@ -224,22 +220,20 @@ void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
 template <typename T>
 std::vector<VolumeElement> SplitTetrahedron(
     const VolumeElement& t,
-    std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
-        edge_map,
+    const std::unordered_map<SortedPair<int>, int>& edge_map,
     const std::vector<Vector3<T>>& p_MVs) {
-  using Key = SortedPair<VolumeVertexIndex>;
+  using Key = SortedPair<int>;
   std::vector<VolumeElement> tets;
   tets.reserve(8);
   // Indices of the original four vertices.
-  const VolumeVertexIndex a(t.vertex(0)), b(t.vertex(1)), c(t.vertex(2)),
-      d(t.vertex(3));
+  const int a(t.vertex(0)), b(t.vertex(1)), c(t.vertex(2)), d(t.vertex(3));
   // Indices of the vertices that split each of the edges.
-  const VolumeVertexIndex e(edge_map.at(Key(a, b)));
-  const VolumeVertexIndex f(edge_map.at(Key(a, c)));
-  const VolumeVertexIndex g(edge_map.at(Key(a, d)));
-  const VolumeVertexIndex h(edge_map.at(Key(b, c)));
-  const VolumeVertexIndex i(edge_map.at(Key(b, d)));
-  const VolumeVertexIndex j(edge_map.at(Key(c, d)));
+  const int e(edge_map.at(Key(a, b)));
+  const int f(edge_map.at(Key(a, c)));
+  const int g(edge_map.at(Key(a, d)));
+  const int h(edge_map.at(Key(b, c)));
+  const int i(edge_map.at(Key(b, d)));
+  const int j(edge_map.at(Key(c, d)));
 
   //                +Z
   //                 |
@@ -305,24 +299,23 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
   std::vector<Vector3<T>> all_vertices(mesh.vertices());
   std::vector<bool> all_boundary(is_boundary);
 
-  using VIndex = VolumeVertexIndex;
   // A map from the indices of two vertices on an edge to the index of the
   // new vertex that sits in the middle of that same edge.
-  std::unordered_map<SortedPair<VIndex>, VIndex> edge_vertex_map;
+  std::unordered_map<SortedPair<int>, int> edge_vertex_map;
   // An enumeration of all of the edges of a tet.
   const std::vector<std::pair<int, int>> kEdges{{0, 1}, {0, 2}, {0, 3},
                                                 {1, 2}, {1, 3}, {2, 3}};
   for (const auto& t : mesh.tetrahedra()) {
     for (const auto& v_pair : kEdges) {
-      const SortedPair<VIndex> key{t.vertex(v_pair.first),
-                                   t.vertex(v_pair.second)};
+      const SortedPair<int> key{t.vertex(v_pair.first),
+                                t.vertex(v_pair.second)};
       if (edge_vertex_map.count(key) == 0) {
         // We haven't already split this edge; compute the vertex and determine
         // its boundary condition.
         const Vector3<T>& p_MA = mesh.vertex(key.first());
         const Vector3<T>& p_MB = mesh.vertex(key.second());
         Vector3<T> p_MV = (p_MA + p_MB) / 2.0;
-        VIndex split_index(static_cast<int>(all_vertices.size()));
+        int split_index(static_cast<int>(all_vertices.size()));
         const bool split_is_boundary =
             is_boundary[key.first()] && is_boundary[key.second()];
         if (split_is_boundary) p_MV.normalize();
@@ -375,16 +368,15 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
  @tparam T  The Eigen scalar for the underlying vertex position representation.
  */
 template <typename T>
-std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
-    const VolumeMesh<T>& mesh, VolumeVertexIndex center_index) {
+std::pair<VolumeMesh<T>, int> RefineUnitSphereMeshOnSurface(
+    const VolumeMesh<T>& mesh, int center_index) {
   // Initialize the set of new vertices with all of the original vertices; we
   // will grow this set by splitting edges.
   std::vector<Vector3<T>> all_vertices(mesh.vertices());
 
-  using VIndex = VolumeVertexIndex;
   // A map from the indices of two vertices on an edge to the index of the
   // new vertex that sits in the middle of that same edge.
-  std::unordered_map<SortedPair<VIndex>, VIndex> edge_vertex_map;
+  std::unordered_map<SortedPair<int>, int> edge_vertex_map;
   // An enumeration of the edges of the tets that lie on the surface; we rely on
   // the documented behavior that the level 0 mesh has the origin as the fourth
   // vertex in each tet and preserves this property on all refined tetrahedra.
@@ -392,8 +384,8 @@ std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
   for (const auto& t : mesh.tetrahedra()) {
     DRAKE_DEMAND(t.vertex(3) == center_index);
     for (const auto& v_pair : kEdges) {
-      const SortedPair<VIndex> key{t.vertex(v_pair.first),
-                                   t.vertex(v_pair.second)};
+      const SortedPair<int> key{t.vertex(v_pair.first),
+                                t.vertex(v_pair.second)};
       // TODO(SeanCurtis-TRI): Refactor edge refinement into a single method.
       if (edge_vertex_map.count(key) == 0) {
         // We haven't already split this edge; compute the vertex and determine
@@ -403,7 +395,7 @@ std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
         Vector3<T> p_MV = (p_MA + p_MB) / 2.0;
         // "Inflate" the surface vertex to the unit sphere surface.
         p_MV.normalize();
-        VIndex split_index(static_cast<int>(all_vertices.size()));
+        int split_index = static_cast<int>(all_vertices.size());
 
         all_vertices.emplace_back(p_MV);
         edge_vertex_map.insert({key, split_index});
@@ -433,16 +425,16 @@ std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
              ● a
             ╱
   */
-  const VIndex v0 = center_index;
+  const int v0 = center_index;
   for (const auto& t : mesh.tetrahedra()) {
     // We've already confirmed that vertex 3 of every tetrahedron is the center
     // vertex.
-    const VIndex a = t.vertex(0);
-    const VIndex b = t.vertex(1);
-    const VIndex c = t.vertex(2);
-    const VIndex d = edge_vertex_map.at(SortedPair<VIndex>{b, c});
-    const VIndex e = edge_vertex_map.at(SortedPair<VIndex>{a, b});
-    const VIndex f = edge_vertex_map.at(SortedPair<VIndex>{a, c});
+    const int a = t.vertex(0);
+    const int b = t.vertex(1);
+    const int c = t.vertex(2);
+    const int d = edge_vertex_map.at(SortedPair<int>{b, c});
+    const int e = edge_vertex_map.at(SortedPair<int>{a, b});
+    const int f = edge_vertex_map.at(SortedPair<int>{a, c});
     all_tets.emplace_back(a, e, f, v0);
     all_tets.emplace_back(b, d, e, v0);
     all_tets.emplace_back(c, f, d, v0);
@@ -483,9 +475,8 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level,
 
   switch (strategy) {
     case TessellationStrategy::kSingleInteriorVertex: {
-      using VIndex = VolumeVertexIndex;
-      VIndex center_index{};
-      for (VIndex i(0); i < is_boundary.size(); ++i) {
+      int center_index = -1;
+      for (int i = 0; i < static_cast<int>(is_boundary.size()); ++i) {
         if (is_boundary[i] == false) {
           // There should be only *one* vertex not on the boundary of the level
           // 0 mesh -- the center vertex.
@@ -493,8 +484,7 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level,
           break;
         }
       }
-
-      DRAKE_DEMAND(center_index.is_valid());
+      DRAKE_DEMAND(center_index >= 0);
       for (int level = 1; level <= refinement_level; ++level) {
         std::tie(mesh, center_index) =
             RefineUnitSphereMeshOnSurface<T>(mesh, center_index);

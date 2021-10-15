@@ -342,7 +342,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    position of the volume vertex with index v.  */
   struct EdgeVertex {
     int slice_vertex;
-    SortedPair<VolumeVertexIndex> edge;
+    SortedPair<int> edge;
     double weight{};
   };
 
@@ -377,8 +377,8 @@ class SliceTetWithPlaneTest : public ::testing::Test {
         // The slice polygon vertex S in the mesh frame F.
         const Vector3d p_FS = X_FW * slice_vertices_W[v];
         for (int e = 0; e < 6; ++e) {
-          const VolumeVertexIndex V0 = tet.vertex(tet_edges[e][0]);
-          const VolumeVertexIndex V1 = tet.vertex(tet_edges[e][1]);
+          const int V0 = tet.vertex(tet_edges[e][0]);
+          const int V1 = tet.vertex(tet_edges[e][1]);
           const Vector3d p_FV0 = mesh_F.vertex(V0);
           const Vector3d p_FV1 = mesh_F.vertex(V1);
           const Vector3d p_V0V1_F = p_FV1 - p_FV0;
@@ -419,7 +419,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     // Every edge I've identified should be located in the clipping algorithm's
     // cache: cut_edges_. Make sure they line up.
     for (const auto& edge_vertex : edge_vertices) {
-      const SortedPair<VolumeVertexIndex>& computed_edge = edge_vertex.edge;
+      const SortedPair<int>& computed_edge = edge_vertex.edge;
       if (cut_edges_.count(computed_edge) == 0) {
         return {{},
                 ::testing::AssertionFailure()
@@ -599,7 +599,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   vector<SurfaceFace> faces_;
   vector<Vector3d> vertices_W_;
   vector<double> surface_pressure_;
-  unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges_;
+  unordered_map<SortedPair<int>, int> cut_edges_;
 };
 
 /* This tests the *boundaries* of intersection. Confirms that a tet lying
@@ -934,7 +934,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   vector<SurfaceFace> min_faces;
   vector<Vector3d> min_vertices_F;
   vector<double> min_surface_pressure;
-  unordered_map<SortedPair<VolumeVertexIndex>, int> min_cut_edges;
+  unordered_map<SortedPair<int>, int> min_cut_edges;
 
   // The infrastructure for the mesh with duplicate vertices.
   VolumeMesh<double> dupe_mesh_F =
@@ -944,7 +944,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   vector<SurfaceFace> dupe_faces;
   vector<Vector3d> dupe_vertices_F;
   vector<double> dupe_surface_pressure;
-  unordered_map<SortedPair<VolumeVertexIndex>, int> dupe_cut_edges;
+  unordered_map<SortedPair<int>, int> dupe_cut_edges;
 
   // The common slicing plane.
   Plane<double> plane_F{Vector3d::UnitX(), Vector3d{0.5, 0, 0}};
@@ -1011,7 +1011,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<SurfaceFace> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
-    unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges;
+    unordered_map<SortedPair<int>, int> cut_edges;
     VolumeElementIndex tet_index{0};
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation, &faces,
                       &vertices_W, &surface_pressure, &cut_edges);
@@ -1031,7 +1031,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<SurfaceFace> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
-    unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges;
+    unordered_map<SortedPair<int>, int> cut_edges;
     VolumeElementIndex tet_index{1};
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation,
                       &faces, &vertices_W, &surface_pressure, &cut_edges);
@@ -1606,8 +1606,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
     /* The pressure field is arbitrary, but
       1. its orientation doesn't lead to culling of intersection polygons, and
       2. validation is expressed in terms of that gradient. */
-    using VI = VolumeVertexIndex;
-    vector<VolumeElement> elements({VolumeElement(VI(0), VI(1), VI(2), VI(3))});
+    vector<VolumeElement> elements({VolumeElement(0, 1, 2, 3)});
     vector<Vector3d> vertices_S({Vector3d::Zero(), Vector3d::UnitX(),
                                  Vector3d::UnitY(), Vector3d::UnitZ()});
     mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
@@ -1724,10 +1723,10 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       /* Reality check: confirm the edges *are* parallel with the plane. */
       const RotationMatrixd R_WR_d = convert_to_double(X_WR_).rotation();
       const RotationMatrixd R_WS_d = R_WR_d * R_RS_d;
-      const Vector3d& v0_S = mesh_S_->vertex(VolumeVertexIndex(0));
-      const Vector3d& v1_S = mesh_S_->vertex(VolumeVertexIndex(1));
-      const Vector3d& v2_S = mesh_S_->vertex(VolumeVertexIndex(2));
-      const Vector3d& v3_S = mesh_S_->vertex(VolumeVertexIndex(3));
+      const Vector3d& v0_S = mesh_S_->vertex(0);
+      const Vector3d& v1_S = mesh_S_->vertex(1);
+      const Vector3d& v2_S = mesh_S_->vertex(2);
+      const Vector3d& v3_S = mesh_S_->vertex(3);
       const Vector3d e03_S = v3_S - v0_S;
       const Vector3d e12_S = v2_S - v1_S;
       const Vector3d e03_W = R_WS_d * e03_S;

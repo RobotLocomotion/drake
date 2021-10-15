@@ -408,7 +408,6 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
   ASSERT_EQ(CountLeafNodes(bvh_S.root_node()), 1);
 
   using VTet = VolumeElement;
-  using VVindex = VolumeVertexIndex;
   std::vector<Vector3d> vertices_V{
       {Vector3d(1, 0, 1),     // A
        Vector3d(1, 0, -1),    // B
@@ -417,9 +416,7 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
        Vector3d(-1, 0, 1),    // E
        Vector3d(-1, 0, -1),   // F
        Vector3d(-1, 1, 0)}};  // G
-  std::vector<VTet> tets_V{
-      {VTet(VVindex(0), VVindex(2), VVindex(1), VVindex(3)),
-       VTet(VVindex(4), VVindex(5), VVindex(6), VVindex(3))}};
+  std::vector<VTet> tets_V{{VTet(0, 2, 1, 3), VTet(4, 5, 6, 3)}};
   const VolumeMesh<double> mesh_V(std::move(tets_V), std::move(vertices_V));
   const Bvh<BvType, VolumeMesh<double>> bvh_V(mesh_V);
   // Confirm the expected topology (two leaves, one per tet).
@@ -532,16 +529,12 @@ TYPED_TEST(BvhTest, TestEqual) {
   // bounding volumes are not equal. Each tree has only one node.
   {
     const VolumeMesh<double> smaller_tetrahedron(
-        std::vector<VolumeElement>{
-            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
-                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
+        std::vector<VolumeElement>{VolumeElement(0, 1, 2, 3)},
         std::vector<Vector3<double>>{Vector3d::Zero(), Vector3d::UnitX(),
                                      Vector3d::UnitY(), Vector3d::UnitZ()});
     const Bvh<BvType, VolumeMesh<double>> smaller(smaller_tetrahedron);
     const VolumeMesh<double> bigger_tetrahedron(
-        std::vector<VolumeElement>{
-            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
-                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
+        std::vector<VolumeElement>{VolumeElement(0, 1, 2, 3)},
         std::vector<Vector3<double>>{Vector3d::Zero(), 2. * Vector3d::UnitX(),
                                      2. * Vector3d::UnitY(),
                                      2. * Vector3d::UnitZ()});
@@ -564,8 +557,7 @@ TYPED_TEST(BvhTest, TestEqual) {
     const std::vector<Vector3<double>> vertices{
         Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
         Vector3d::UnitZ()};
-    const VolumeElement element(VolumeVertexIndex(0), VolumeVertexIndex(1),
-                                VolumeVertexIndex(2), VolumeVertexIndex(3));
+    const VolumeElement element(0, 1, 2, 3);
     const VolumeMesh<double> one_tetrahedron(
         std::vector<VolumeElement>{element},
         std::vector<Vector3d>(vertices));

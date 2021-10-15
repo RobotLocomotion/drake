@@ -70,15 +70,14 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                        std::vector<SurfaceFace>* faces,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
-                       std::unordered_map<SortedPair<VolumeVertexIndex>,
-                                          int>* cut_edges) {
+                       std::unordered_map<SortedPair<int>, int>* cut_edges) {
   const VolumeMesh<double>& mesh_M = field_M.mesh();
 
   T distance[4];
   // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
   int intersection_code = 0;
   for (int i = 0; i < 4; ++i) {
-    const VolumeVertexIndex v = mesh_M.element(tet_index).vertex(i);
+    const int v = mesh_M.element(tet_index).vertex(i);
     distance[i] = plane_M.CalcHeight(mesh_M.vertex(v));
     if (distance[i] > T(0)) intersection_code |= 1 << i;
   }
@@ -102,11 +101,9 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
     if (edge_index == -1) break;
     ++num_intersections;
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
-    const VolumeVertexIndex v0 =
-        mesh_M.element(tet_index).vertex(tet_edge.first);
-    const VolumeVertexIndex v1 =
-        mesh_M.element(tet_index).vertex(tet_edge.second);
-    const SortedPair<VolumeVertexIndex> mesh_edge{v0, v1};
+    const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
+    const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
+    const SortedPair<int> mesh_edge{v0, v1};
 
     auto iter = cut_edges->find(mesh_edge);
     if (representation == ContactPolygonRepresentation::kCentroidSubdivision &&
@@ -183,7 +180,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   std::vector<SurfaceFace> faces;
   std::vector<Vector3<T>> vertices_W;
   std::vector<T> surface_e;
-  std::unordered_map<SortedPair<VolumeVertexIndex>, int> cut_edges;
+  std::unordered_map<SortedPair<int>, int> cut_edges;
 
   auto grad_eM_W = std::make_unique<std::vector<Vector3<T>>>();
   size_t old_face_count = 0;
