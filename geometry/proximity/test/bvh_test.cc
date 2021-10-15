@@ -428,7 +428,7 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
    the candidates and the total number of candidates we get. */
   bool intersecting_included = false;
   int total_count = 0;
-  auto callback = [&intersecting_included, &total_count](VolumeElementIndex v,
+  auto callback = [&intersecting_included, &total_count](int v,
                                                          SurfaceFaceIndex s) {
     ++total_count;
     if (v == 0 && s == 0) intersecting_included = true;
@@ -516,7 +516,7 @@ TYPED_TEST(BvhTest, TestComputeCentroid) {
   auto volume_mesh = MakeEllipsoidVolumeMesh<double>(
       Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
   centroid = BvhTester::ComputeCentroid<BvType, VolumeMesh<double>>(
-      volume_mesh, VolumeElementIndex(0));
+      volume_mesh, 0 /* tet_index */);
   // The first face of our octahedron is a tet with vertices at 1, 2, and 3
   // along each respective axis and the origin 0, so its centroid should
   // average out to 1/4, 2/4, and 3/4.

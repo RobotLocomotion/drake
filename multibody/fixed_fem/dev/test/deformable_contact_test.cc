@@ -24,7 +24,6 @@ namespace {
 using Eigen::Vector3d;
 using geometry::SurfaceMesh;
 using geometry::VolumeElement;
-using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
 using geometry::internal::Bvh;
@@ -180,7 +179,7 @@ void TestComputeTetMeshTriMeshContact() {
   calculated_centroids_D.clear();
   for (int i = 0; i < kNumPolys; ++i) {
     const Vector4<T> b_centroid = contact_data[i].b_centroid;
-    const VolumeElementIndex tet_index = contact_data[i].tet_index;
+    const int tet_index = contact_data[i].tet_index;
     const VolumeElement& tet = volume_D.element(tet_index);
     Vector3<T> centroid_D(0, 0, 0);
     /* Calculate the centroid in cartesian coordinate by interpolating the

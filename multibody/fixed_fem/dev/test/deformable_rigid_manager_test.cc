@@ -277,8 +277,7 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
                reference_configuration_geometries[0].mesh().num_elements());
   /* Verify that the elements of the deformed mesh is the same as the elements
    of the initial mesh. */
-  for (geometry::VolumeElementIndex i(0);
-       i < deformed_meshes[0].mesh().num_elements(); ++i) {
+  for (int i = 0; i < deformed_meshes[0].mesh().num_elements(); ++i) {
     EXPECT_EQ(deformed_meshes[0].mesh().element(i),
               reference_configuration_geometries[0].mesh().element(i));
   }

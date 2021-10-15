@@ -63,7 +63,6 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
     constexpr int kNumDofs = kDim * kNumNodes;
     DRAKE_THROW_UNLESS(kNumNodes == 4);
 
-    using geometry::VolumeElementIndex;
     /* Record the reference positions of the input mesh. The returned offset is
      from before the new tets are added. */
     const NodeIndex node_index_offset(this->ParseTetMesh(mesh));
@@ -71,7 +70,7 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
     /* Builds and adds new elements. */
     const VectorX<T>& X = this->reference_positions();
     std::array<NodeIndex, kNumNodes> element_node_indices;
-    for (VolumeElementIndex i(0); i < mesh.num_elements(); ++i) {
+    for (int i = 0; i < mesh.num_elements(); ++i) {
       for (int j = 0; j < kNumNodes; ++j) {
         /* To obtain the global node index, offset the local index of the nodes
          in the mesh (starting from 0) by the existing number of nodes

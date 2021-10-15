@@ -168,7 +168,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     vertices_W_.clear();
     surface_pressure_.clear();
     cut_edges_.clear();
-    VolumeElementIndex tet_index{0};
+    int tet_index{0};
     SliceTetWithPlane(tet_index, field_F, plane_F, X_WF_, representation_,
                       &faces_, &vertices_W_, &surface_pressure_, &cut_edges_);
     if (do_analysis) {
@@ -237,8 +237,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    AddPolygonToMeshDataAsOneTriangle() in another file.
   */
   ::testing::AssertionResult SliceIsConsistentWithSingleTriangleRepresentation(
-      VolumeElementIndex tet_index,
-      const VolumeMeshFieldLinear<double, double>& field_F,
+      int tet_index, const VolumeMeshFieldLinear<double, double>& field_F,
       const Plane<double>& plane_F) const {
     // Check faces_.
     if (faces_.size() != 1) {
@@ -352,8 +351,8 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   pair<vector<EdgeVertex>, ::testing::AssertionResult>
   CharacterizeEdgeVertices(
       int fan_index, const vector<SurfaceFace>& slice,
-      const vector<Vector3d>& slice_vertices_W,
-      VolumeElementIndex tet_index, const VolumeMesh<double>& mesh_F) const {
+      const vector<Vector3d>& slice_vertices_W, int tet_index,
+      const VolumeMesh<double>& mesh_F) const {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const VolumeElement& tet = mesh_F.element(tet_index);
 
@@ -469,7 +468,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    by linearly interpolating pressure values on the `tet` based on the
    data in `edge_vertices`. */
   ::testing::AssertionResult PressuresMatchVertices(
-      VolumeElementIndex tet_index, int centroid_index,
+      int tet_index, int centroid_index,
       const vector<EdgeVertex>& edge_vertices,
       const VolumeMeshFieldLinear<double, double>& field_F) const {
     constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
@@ -525,7 +524,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
          of its edge vertex values just like the vertex position is -- using
          the same weight. */
   ::testing::AssertionResult SliceIsConsistentWithCentroidSubdivision(
-      VolumeElementIndex tet_index,
+      int tet_index,
       const VolumeMeshFieldLinear<double, double>& field_F) const {
     // Confirms that the triangles lie within the tetrahedron; the barycentric
     // coordinates should all lie within [0, 1]. This will also catch NaN
@@ -734,7 +733,7 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
   // we simply need to position the plane such that we partition the vertices as
   // expected.
 
-  const VolumeElementIndex tet_index{0};
+  const int tet_index{0};
 
   vector<RigidTransformd> X_FMs{
       RigidTransformd::Identity(),
@@ -824,7 +823,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
    point on the corresponding edge and the plane will pass through a point
    midway between centroid and the nearest point on the edge. */
 
-  const VolumeElementIndex tet_index{0};
+  const int tet_index{0};
 
   vector<RigidTransformd> X_FMs{
       RigidTransformd::Identity(), RigidTransformd{Vector3d{1.5, 2.5, 3.5}},
@@ -949,7 +948,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   // The common slicing plane.
   Plane<double> plane_F{Vector3d::UnitX(), Vector3d{0.5, 0, 0}};
 
-  for (VolumeElementIndex i{0}; i < 2; ++i) {
+  for (int i = 0; i < 2; ++i) {
     SliceTetWithPlane(i, min_field_F, plane_F, X_WF_,
                       ContactPolygonRepresentation::kCentroidSubdivision,
                       &min_faces, &min_vertices_F, &min_surface_pressure,
@@ -1012,7 +1011,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<int>, int> cut_edges;
-    VolumeElementIndex tet_index{0};
+    int tet_index{0};
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation, &faces,
                       &vertices_W, &surface_pressure, &cut_edges);
     switch (representation) {
@@ -1032,7 +1031,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<int>, int> cut_edges;
-    VolumeElementIndex tet_index{1};
+    int tet_index{1};
     SliceTetWithPlane(tet_index, field_M, plane_M, I, representation,
                       &faces, &vertices_W, &surface_pressure, &cut_edges);
     EXPECT_EQ(faces.size(), 0);
@@ -1083,10 +1082,9 @@ class ComputeContactSurfaceTest : public ::testing::Test {
   GeometryId plane_id_;
 
   // Vectors of tet indices; to facilitate calls to ComputeContactSurface.
-  using VIndex = VolumeElementIndex;
-  const vector<VIndex> both_tets_{VIndex(0), VIndex(1)};
-  const vector<VIndex> only_tet_0_{VIndex(0)};
-  const vector<VIndex> only_tet_1_{VIndex(1)};
+  const vector<int> both_tets_{0, 1};
+  const vector<int> only_tet_0_{0};
+  const vector<int> only_tet_1_{1};
 
   // Three frames:
   //   - the query frame F
@@ -1376,9 +1374,9 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
   const Plane<double> plane_F{Mx_F, p_FB};
 
   const Vector3d& grad_eMesh_W_expected0 =
-      X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(0));
+      X_WF_.rotation() * field_F_->EvaluateGradient(0);
   const Vector3d& grad_eMesh_W_expected1 =
-      X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(1));
+      X_WF_.rotation() * field_F_->EvaluateGradient(1);
 
   // Case: plane slices through both tets. The resulting surface should have
   // six triangles. The gradient for pressure field on M should be defined, N
@@ -2134,7 +2132,7 @@ TEST_F(MeshPlaneDerivativesTest, Pressure) {
 
    ∂p_WQ/∂p_WSo are the derivatives that were confirmed in the VertexPosition
    test, so we can use those to compute the expected pressure derivative. */
-  const Vector3d grad_p_S = field_S_->EvaluateGradient(VolumeElementIndex(0));
+  const Vector3d grad_p_S = field_S_->EvaluateGradient(0);
   auto evaluate_pressure = [X_WR = convert_to_double(this->X_WR_), &grad_p_S](
                                const ContactSurface<AutoDiffXd>& surface,
                                const RigidTransform<AutoDiffXd>& X_WS,

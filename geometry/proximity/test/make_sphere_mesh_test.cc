@@ -51,7 +51,7 @@ GTEST_TEST(MakeSphereMesh, InvariantsOfLevelZeroMesh) {
 
   // Every vertex references the center index _and_ it is the fourth vertex
   // in each tet.
-  for (VolumeElementIndex t(0); t < mesh.num_elements(); ++t) {
+  for (int t = 0; t < mesh.num_elements(); ++t) {
     const VolumeElement& tet = mesh.element(t);
     EXPECT_EQ(tet.vertex(3), center_index);
   }
@@ -62,7 +62,7 @@ GTEST_TEST(MakeSphereMesh, InvariantsOfLevelZeroMesh) {
 double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
   double volume = 0.0;
   for (int e = 0; e < mesh.num_elements(); ++e) {
-    volume += mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
+    volume += mesh.CalcTetrahedronVolume(e);
   }
   return volume;
 }

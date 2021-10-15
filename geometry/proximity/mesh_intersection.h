@@ -212,7 +212,7 @@ class SurfaceVolumeIntersector {
           tetrahedron (non-zero area restriction still applies).
    */
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
-      VolumeElementIndex element, const VolumeMesh<double>& volume_M,
+      int element, const VolumeMesh<double>& volume_M,
       SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN);
 
@@ -298,7 +298,7 @@ class SurfaceVolumeIntersector {
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const SurfaceMesh<double>& surface_N,
       const math::RigidTransform<double>& X_MN,
-      const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
+      int tet_index, const SurfaceFaceIndex& tri_index);
 
   // To avoid heap allocation by std::vector in low-level functions, we use
   // these member variables instead of local variables in the functions.

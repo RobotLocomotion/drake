@@ -40,7 +40,7 @@ class SurfaceVolumeIntersectorTester {
     intersect_.RemoveDuplicateVertices(polygon);
   }
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
-      VolumeElementIndex element, const VolumeMesh<double>& volume_M,
+      int element, const VolumeMesh<double>& volume_M,
       SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN) {
     return intersect_.ClipTriangleByTetrahedron(element, volume_M, face,
@@ -49,7 +49,7 @@ class SurfaceVolumeIntersectorTester {
   bool IsFaceNormalAlongPressureGradient(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const SurfaceMesh<double>& surface_N, const math::RigidTransform<T>& X_MN,
-      const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
+      int tet_index, const SurfaceFaceIndex& tri_index) {
     return intersect_.IsFaceNormalAlongPressureGradient(
         volume_field_M, surface_N, X_MN, tet_index, tri_index);
   }
@@ -505,8 +505,8 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   //  TetrahedronIndex and TriangleIndex (or TetIndex and TriIndex,
   //  respectively) as being far more literal. It's not like each of those
   //  surface types are ever designed to support any other kind of "element".
-  const VolumeElementIndex element0(0);
-  const VolumeElementIndex element1(1);
+  const int element0 = 0;
+  const int element1 = 1;
   SurfaceFaceIndex face(0);
   const std::vector<Vector3d> empty_polygon;
 
@@ -679,7 +679,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
     surface_N = std::make_unique<SurfaceMesh<double>>(std::move(faces),
                                                       std::move(vertices));
   }
-  const VolumeElementIndex tetrahedron(0);
+  const int tetrahedron = 0;
   const SurfaceFaceIndex triangle(0);
   const auto X_MN = RigidTransformd::Identity();
   const std::vector<Vector3d> polygon_M =
@@ -747,7 +747,7 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
     EXPECT_EQ(t.expect_result,
               SurfaceVolumeIntersectorTester<double>()
                   .IsFaceNormalAlongPressureGradient(
-                      *volume_field_M, *rigid_N, X_MN, VolumeElementIndex(0),
+                      *volume_field_M, *rigid_N, X_MN, 0 /*test_index*/,
                       SurfaceFaceIndex(0)));
   }
 }
@@ -755,10 +755,9 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
 // Given a triangle in a surface mesh, reports the tet in the volume mesh that
 // completely contains the triangle. Throws if a test cannot be identified.
 template <typename T>
-VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
-                                     SurfaceFaceIndex f,
-                                     const VolumeMesh<double>& volume_V,
-                                     const RigidTransform<T>& X_VS) {
+int GetTetForTriangle(const SurfaceMesh<T>& surface_S, SurfaceFaceIndex f,
+                      const VolumeMesh<double>& volume_V,
+                      const RigidTransform<T>& X_VS) {
   const std::vector<Vector3<T>>& vertices_S = surface_S.vertices();
 
   // Each triangle lies completely within one tet in the volume mesh. The
@@ -771,7 +770,7 @@ VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
        vertices_S[face.vertex(2)]) /
       3;
   const Vector3<T> p_VC = X_VS * p_SC;
-  for (VolumeElementIndex e(0); e < volume_V.num_elements(); ++e) {
+  for (int e = 0; e < volume_V.num_elements(); ++e) {
     auto bary_e = volume_V.CalcBarycentric(p_VC, e);
     if ((bary_e.array() >= 0).all() && (bary_e.array() <= 1).all()) {
       return e;
@@ -869,8 +868,7 @@ class MeshIntersectionFixture : public testing::Test {
     const std::vector<SurfaceFace>& faces = surface_S->faces();
     ASSERT_EQ(faces.size(), grad_eS_S.size());
     for (FIndex f(0); f < surface_S->num_elements(); ++f) {
-      const VolumeElementIndex t =
-          GetTetForTriangle(*surface_S, f, *mesh_S_, {});
+      const int t = GetTetForTriangle(*surface_S, f, *mesh_S_, {});
       ASSERT_TRUE(
           CompareMatrices(grad_eS_S[f], field_S_->EvaluateGradient(t)));
     }
@@ -918,9 +916,8 @@ class MeshIntersectionFixture : public testing::Test {
     // surface. We'll confirm that its gradient has been transformed to the
     // world frame.
     const SurfaceFaceIndex f0(0);
-    const VolumeElementIndex t =
-        GetTetForTriangle<double>(contact_SR->mesh_W(), f0, *mesh_S_,
-                                  X_WS.inverse());
+    const int t = GetTetForTriangle<double>(contact_SR->mesh_W(), f0, *mesh_S_,
+                                            X_WS.inverse());
     EXPECT_TRUE(CompareMatrices(contact_SR->EvaluateGradE_M_W(f0),
                                 X_WS.rotation() * field_S_->EvaluateGradient(t),
                                 4. * kEps));
@@ -1608,7 +1605,7 @@ TEST_F(MeshMeshDerivativesTest, Pressure) {
 
    ∂p_WQ/∂p_WSo are the derivatives that were confirmed in the VertexPosition
    test, so we can use those to compute the expected pressure derivative. */
-  const Vector3d grad_p_S = field_S_->EvaluateGradient(VolumeElementIndex(0));
+  const Vector3d grad_p_S = field_S_->EvaluateGradient(0);
   auto evaluate_pressure = [X_WR = convert_to_double(this->X_WR_), &grad_p_S](
                                const ContactSurface<AutoDiffXd>& surface,
                                const RigidTransform<AutoDiffXd>& X_WS,
