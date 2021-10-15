@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_node.h"
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -18,17 +19,30 @@ static void PrintTo(const NodeType& node_type, std::ostream* os) {
 
 namespace {
 
-// Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
 // Check the default constructor.
 GTEST_TEST(YamlNodeTest, DefaultConstructor) {
   Node dut;
   EXPECT_EQ(dut.GetType(), NodeType::kScalar);
   EXPECT_TRUE(dut.IsScalar());
-  EXPECT_TRUE(dut.IsEmptyScalar());
   EXPECT_EQ(dut.GetScalar(), "");
+}
+
+// Check that the tag constants exist.
+GTEST_TEST(YamlNodeTest, TagConstants) {
+  EXPECT_GT(Node::kTagFloat.size(), 0);
+  EXPECT_GT(Node::kTagInt.size(), 0);
+  EXPECT_GT(Node::kTagNull.size(), 0);
+  EXPECT_GT(Node::kTagStr.size(), 0);
+}
+
+// Check the null-returning factory function.
+GTEST_TEST(YamlNodeTest, MakeNull) {
+  Node dut = Node::MakeNull();
+  EXPECT_EQ(dut.GetType(), NodeType::kScalar);
+  EXPECT_EQ(dut.GetScalar(), "null");
+  EXPECT_EQ(dut.GetTag(), Node::kTagNull);
+
+  EXPECT_TRUE(Node::MakeNull() == Node::MakeNull());
 }
 
 // Parameterize the remainder of the tests across the three possible types.
@@ -90,7 +104,6 @@ TEST_P(YamlNodeParamaterizedTest, GetType) {
   EXPECT_EQ(dut.GetType(), GetExpectedType());
   EXPECT_EQ(dut.GetTypeString(), GetExpectedTypeString());
   EXPECT_EQ(dut.IsScalar(), GetExpectedType() == NodeType::kScalar);
-  EXPECT_EQ(dut.IsEmptyScalar(), GetExpectedType() == NodeType::kScalar);
   EXPECT_EQ(dut.IsSequence(), GetExpectedType() == NodeType::kSequence);
   EXPECT_EQ(dut.IsMapping(), GetExpectedType() == NodeType::kMapping);
 }
@@ -164,7 +177,6 @@ TEST_P(YamlNodeParamaterizedTest, ScalarOps) {
     Node dut2 = MakeNonEmptyDut();
     EXPECT_FALSE(dut == dut2);
     EXPECT_EQ(dut2.GetScalar(), "foo");
-    EXPECT_FALSE(dut2.IsEmptyScalar());
   } else {
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut.GetScalar(), GetExpectedCannot("GetScalar"));
@@ -227,12 +239,12 @@ struct VisitorThatCopies {
     sequence = data.sequence;
   }
   void operator()(const Node::MappingData& data) {
-    map = data.map;
+    mapping = data.mapping;
   }
 
   std::optional<std::string> scalar;
   std::optional<std::vector<Node>> sequence;
-  std::optional<std::map<std::string, Node>> map;
+  std::optional<std::map<std::string, Node>> mapping;
 };
 
 // Check visiting.
@@ -242,28 +254,38 @@ TEST_P(YamlNodeParamaterizedTest, Visiting) {
   dut.Visit(visitor);
   switch (GetExpectedType()) {
     case NodeType::kScalar: {
-      EXPECT_EQ(visitor.scalar, std::optional<std::string>{"foo"});
+      const std::string empty;
+      EXPECT_EQ(visitor.scalar.value_or(empty), "foo");
       EXPECT_FALSE(visitor.sequence.has_value());
-      EXPECT_FALSE(visitor.map.has_value());
+      EXPECT_FALSE(visitor.mapping.has_value());
       return;
     }
     case NodeType::kSequence: {
-      ASSERT_EQ(visitor.sequence.value_or(std::vector<Node>{}).size(), 1);
+      const std::vector<Node> empty;
+      ASSERT_EQ(visitor.sequence.value_or(empty).size(), 1);
       EXPECT_EQ(visitor.sequence->front().GetScalar(), "item");
       EXPECT_FALSE(visitor.scalar.has_value());
-      EXPECT_FALSE(visitor.map.has_value());
+      EXPECT_FALSE(visitor.mapping.has_value());
       return;
     }
     case NodeType::kMapping: {
-      ASSERT_EQ(visitor.map.value_or(std::map<std::string, Node>{}).size(), 1);
-      EXPECT_EQ(visitor.map->begin()->first, "key");
-      EXPECT_EQ(visitor.map->at("key").GetScalar(), "value");
+      const std::map<std::string, Node> empty;
+      ASSERT_EQ(visitor.mapping.value_or(empty).size(), 1);
+      EXPECT_EQ(visitor.mapping->begin()->first, "key");
+      EXPECT_EQ(visitor.mapping->at("key").GetScalar(), "value");
       EXPECT_FALSE(visitor.scalar.has_value());
       EXPECT_FALSE(visitor.sequence.has_value());
       return;
     }
   }
   DRAKE_UNREACHABLE();
+}
+
+// Check debug printing.
+TEST_P(YamlNodeParamaterizedTest, ToString) {
+  Node dut = MakeNonEmptyDut();
+  const std::string to_string = fmt::format("{}", dut);
+  EXPECT_GT(to_string.size(), 0);
 }
 
 INSTANTIATE_TEST_SUITE_P(Suite, YamlNodeParamaterizedTest, testing::Values(
