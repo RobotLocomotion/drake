@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":internal_geometry",
         ":meshcat",
         ":meshcat_animation",
+        ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
         ":proximity_engine",
@@ -457,6 +458,30 @@ drake_cc_googletest(
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_point_cloud_visualizer",
+    srcs = ["meshcat_point_cloud_visualizer.cc"],
+    hdrs = ["meshcat_point_cloud_visualizer.h"],
+    deps = [
+        ":meshcat",
+        ":rgba",
+        ":utilities",
+        "//perception:point_cloud",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_point_cloud_visualizer_test",
+    deps = [
+        ":meshcat_point_cloud_visualizer",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:constant_value_source",
     ],
 )
 

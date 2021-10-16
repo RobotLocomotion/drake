@@ -6,6 +6,7 @@ import numpy as np
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.value import AbstractValue
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
@@ -177,3 +178,23 @@ class TestGeometryVisualizers(unittest.TestCase):
         vis_autodiff = vis.ToAutoDiffXd()
         self.assertIsInstance(vis_autodiff,
                               mut.MeshcatVisualizerCpp_[AutoDiffXd])
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_meshcat_point_cloud_visualizer(self, T):
+        meshcat = mut.Meshcat()
+        visualizer = mut.MeshcatPointCloudVisualizerCpp_[T](
+            meshcat=meshcat, path="cloud", publish_period=1/12.0)
+        visualizer.set_point_size(0.1)
+        visualizer.set_default_rgba(mut.Rgba(0, 0, 1, 1))
+        context = visualizer.CreateDefaultContext()
+        cloud = PointCloud(4)
+        cloud.mutable_xyzs()[:] = np.zeros((3, 4))
+        visualizer.cloud_input_port().FixValue(
+          context, AbstractValue.Make(cloud))
+        self.assertIsInstance(visualizer.pose_input_port(), InputPort_[T])
+        visualizer.Publish(context)
+        visualizer.Delete()
+        if T == float:
+            ad_visualizer = visualizer.ToAutoDiffXd()
+            self.assertIsInstance(
+                ad_visualizer, mut.MeshcatPointCloudVisualizerCpp_[AutoDiffXd])

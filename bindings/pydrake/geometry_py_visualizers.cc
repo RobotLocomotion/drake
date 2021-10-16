@@ -8,6 +8,7 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
+#include "drake/geometry/meshcat_point_cloud_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
 
 namespace drake {
@@ -113,6 +114,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference,
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
+  }
+
+  // MeshcatPointCloudVisualizer
+  {
+    using Class = MeshcatPointCloudVisualizer<T>;
+    constexpr auto& cls_doc = doc.MeshcatPointCloudVisualizer;
+    // Note that we are temporarily re-mapping MeshcatPointCloudVisualizer =>
+    // MeshcatPointCloudVisualizerCpp to avoid collisions with the python
+    // MeshcatPointCloudVisualizer.  See #13038.
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "MeshcatPointCloudVisualizerCpp", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<std::shared_ptr<Meshcat>, std::string, double>(),
+            py::arg("meshcat"), py::arg("path"),
+            py::arg("publish_period") = 1 / 32.0,
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            cls_doc.ctor.doc)
+        .def("set_point_size", &Class::set_point_size,
+            cls_doc.set_point_size.doc)
+        .def("set_default_rgba", &Class::set_default_rgba,
+            cls_doc.set_default_rgba.doc)
+        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("cloud_input_port", &Class::cloud_input_port,
+            py_rvp::reference_internal, cls_doc.cloud_input_port.doc)
+        .def("pose_input_port", &Class::pose_input_port,
+            py_rvp::reference_internal, cls_doc.pose_input_port.doc);
   }
 }
 
