@@ -174,7 +174,8 @@ Open up your browser to the URL above.
   builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
   MeshcatVisualizerParams params;
   params.delete_on_initialization_event = false;
-  MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat, params);
+  auto& visualizer =
+      MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat, params);
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -194,7 +195,16 @@ Open up your browser to the URL above.
 
   systems::Simulator<double> simulator(*diagram, std::move(context));
   simulator.set_target_realtime_rate(1.0);
+  visualizer.start_recording();
   simulator.AdvanceTo(4.0);
+  visualizer.PublishRecording();
+
+  std::cout << "The recorded simulation results should now be available as an "
+               "animation.  Use the animation GUI to confirm."
+            << std::endl;
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
   meshcat->AddButton("ButtonTest");
   meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5);

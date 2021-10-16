@@ -88,6 +88,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("start_recording", &Class::start_recording,
+            cls_doc.start_recording.doc)
+        .def("stop_recording", &Class::stop_recording,
+            cls_doc.stop_recording.doc)
+        .def("PublishRecording", &Class::PublishRecording,
+            cls_doc.PublishRecording.doc)
+        .def("DeleteRecording", &Class::DeleteRecording,
+            cls_doc.DeleteRecording.doc)
+        .def("get_mutable_recording", &Class::get_mutable_recording,
+            cls_doc.get_mutable_recording.doc)
         .def("query_object_input_port", &Class::query_object_input_port,
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
         .def_static("AddToBuilder",
