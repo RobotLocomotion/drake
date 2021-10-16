@@ -7,6 +7,10 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,6 +21,7 @@ drake_cc_package_library(
         ":convex_set",
         ":graph_of_convex_sets",
         ":iris",
+        ":spheres_cover",
     ],
 )
 
@@ -69,6 +74,15 @@ drake_cc_library(
         "//multibody/plant",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "spheres_cover",
+    srcs = ["spheres_cover.cc"],
+    hdrs = ["spheres_cover.h"],
+    deps = [
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -153,6 +167,16 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spheres_cover_test",
+    tags = gurobi_test_tags(),
+    deps = [
+        ":spheres_cover",
+        "//solvers:gurobi_solver",
+        "//solvers:solve",
     ],
 )
 
