@@ -91,6 +91,13 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
     int derivative_order) const {
   if (derivative_order == 0) {
     return this->Clone();
+  } else if (derivative_order > basis_.degree()) {
+    std::vector<T> derivative_knots(basis_.knots().begin() + basis_.degree(),
+                                    basis_.knots().end() - basis_.degree());
+    std::vector<MatrixX<T>> control_points(num_control_points() -
+        basis_.degree(), MatrixX<T>::Zero(rows(), cols()));
+    return std::make_unique<BsplineTrajectory<T>>(
+        BsplineBasis<T>(1, derivative_knots), control_points);
   } else if (derivative_order > 1) {
     return this->MakeDerivative(1)->MakeDerivative(derivative_order - 1);
   } else if (derivative_order == 1) {

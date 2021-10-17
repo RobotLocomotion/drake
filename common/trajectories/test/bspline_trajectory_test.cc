@@ -162,6 +162,19 @@ TYPED_TEST(BsplineTrajectoryTests, MakeDerivativeTest) {
         calc_value, Vector1<T>{t(k)}, NumericalGradientOption{method});
     EXPECT_TRUE(CompareMatrices(derivative, expected_derivative, tolerance));
   }
+
+  // Verify that MakeDerivative() returns 0 matrix for derivative of order
+  // higher than basis degree
+  for (int o = 1; o < 3; ++o) {
+    derivative_trajectory = trajectory.MakeDerivative(
+        trajectory.basis().degree() + o);
+    for (int k = 0; k < num_times; ++k) {
+      MatrixX<T> derivative = derivative_trajectory->value(t(k));
+      MatrixX<T> expected_derivative = MatrixX<T>::Zero(derivative.rows(),
+                                                        derivative.cols());
+      EXPECT_TRUE(CompareMatrices(derivative, expected_derivative, 0.0));
+    }
+  }
 }
 
 // Verifies that EvalDerivative() works as expected.
