@@ -757,6 +757,7 @@ Eigen::Vector3d ParseVector3(const sdf::ElementPtr node,
 }
 
 const Frame<double>& ParseFrame(const sdf::ElementPtr node,
+                                ModelInstanceIndex model_instance,
                                 MultibodyPlant<double>* plant,
                                 const char* element_name) {
   if (!node->HasElement(element_name)) {
@@ -767,18 +768,19 @@ const Frame<double>& ParseFrame(const sdf::ElementPtr node,
 
   const std::string frame_name = node->Get<std::string>(element_name);
 
-  if (!plant->HasFrameNamed(frame_name)) {
+  if (!plant->HasFrameNamed(frame_name, model_instance)) {
     throw std::runtime_error(fmt::format(
         "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
         node->GetName(), frame_name, element_name));
   }
 
-  return plant->GetFrameByName(frame_name);
+  return plant->GetFrameByName(frame_name, model_instance);
 }
 
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
 void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
+                                    ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
   if (!node->HasAttribute("type")) {
     throw std::runtime_error(
@@ -797,8 +799,10 @@ void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
         "<drake:joint> does not yet support the <pose> child tag.");
   }
 
-  const Frame<double>& parent_frame = ParseFrame(node, plant, "drake:parent");
-  const Frame<double>& child_frame = ParseFrame(node, plant, "drake:child");
+  const Frame<double>& parent_frame =
+      ParseFrame(node, model_instance, plant, "drake:parent");
+  const Frame<double>& child_frame =
+      ParseFrame(node, model_instance, plant, "drake:child");
 
   if (joint_type == "planar") {
     // TODO(eric.cousineau): Error out when there are unused tags.
@@ -813,7 +817,9 @@ void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
 }
 
 const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
-    const sdf::ElementPtr node, MultibodyPlant<double>* plant) {
+    const sdf::ElementPtr node,
+    ModelInstanceIndex model_instance,
+    MultibodyPlant<double>* plant) {
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
   // Throws an error if the tag does not exist.
@@ -826,8 +832,9 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // Throws an error if the tag does not exist or if the frame does not exist in
   // the plant.
   auto read_frame = [node,
+                     model_instance,
                      plant](const char* element_name) -> const Frame<double>& {
-    return ParseFrame(node, plant, element_name);
+    return ParseFrame(node, model_instance, plant, element_name);
   };
 
   return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
@@ -989,7 +996,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     for (sdf::ElementPtr joint_node =
              model.Element()->GetElement("drake:joint");
          joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
-      AddDrakeJointFromSpecification(joint_node, plant);
+      AddDrakeJointFromSpecification(joint_node, model_instance, plant);
     }
   }
 
@@ -999,7 +1006,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
              model.Element()->GetElement("drake:linear_bushing_rpy");
          bushing_node; bushing_node = bushing_node->GetNextElement(
                            "drake:linear_bushing_rpy")) {
-      AddBushingFromSpecification(bushing_node, plant);
+      AddBushingFromSpecification(bushing_node, model_instance, plant);
     }
   }
 

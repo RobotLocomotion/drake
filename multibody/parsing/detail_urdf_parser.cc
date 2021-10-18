@@ -607,7 +607,9 @@ void ParseFrame(ModelInstanceIndex model_instance,
       name, body.body_frame(), X_BF));
 }
 
-void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
+void ParseBushing(ModelInstanceIndex model_instance,
+                  XMLElement* node,
+                  MultibodyPlant<double>* plant) {
   // Functor to read a child element with a vector valued `value` attribute
   // Throws an error if unable to find the tag or if the value attribute is
   // improperly formed.
@@ -634,19 +636,20 @@ void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
   // Functor to read a child element with a string valued `name` attribute.
   // Throws an error if unable to find the tag of if the name attribute is
   // improperly formed.
-  auto read_frame = [node,
+  auto read_frame = [model_instance,
+                     node,
                      plant](const char* element_name) -> const Frame<double>& {
     XMLElement* value_node = node->FirstChildElement(element_name);
 
     if (value_node != nullptr) {
       std::string frame_name;
       if (ParseStringAttribute(value_node, "name", &frame_name)) {
-        if (!plant->HasFrameNamed(frame_name)) {
+        if (!plant->HasFrameNamed(frame_name, model_instance)) {
           throw std::runtime_error(fmt::format(
               "Frame: {} specified for <{}> does not exist in the model.",
               frame_name, element_name));
         }
-        return plant->GetFrameByName(frame_name);
+        return plant->GetFrameByName(frame_name, model_instance);
 
       } else {
         throw std::runtime_error(
@@ -757,7 +760,7 @@ ModelInstanceIndex ParseUrdf(
            node->FirstChildElement("drake:linear_bushing_rpy");
        bushing_node; bushing_node = bushing_node->NextSiblingElement(
                          "drake:linear_bushing_rpy")) {
-    ParseBushing(bushing_node, plant);
+    ParseBushing(model_instance, bushing_node, plant);
   }
 
   return model_instance;

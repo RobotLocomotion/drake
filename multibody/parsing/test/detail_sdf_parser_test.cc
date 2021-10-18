@@ -773,14 +773,16 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   package_map.PopulateUpstreamToDrake(full_name);
 
   // Read in the SDF file.
-  AddModelFromSdfFile(full_name, "", package_map, &plant, &scene_graph);
+  const std::vector<ModelInstanceIndex> instances =
+      AddModelsFromSdfFile(full_name, package_map, &plant, &scene_graph);
+  const ModelInstanceIndex instance1 = instances.front();
   plant.Finalize();
 
   // Revolute joint
   DRAKE_EXPECT_NO_THROW(
-      plant.GetJointByName<RevoluteJoint>("revolute_joint"));
+      plant.GetJointByName<RevoluteJoint>("revolute_joint", instance1));
   const RevoluteJoint<double>& revolute_joint =
-      plant.GetJointByName<RevoluteJoint>("revolute_joint");
+      plant.GetJointByName<RevoluteJoint>("revolute_joint", instance1);
   EXPECT_EQ(revolute_joint.name(), "revolute_joint");
   EXPECT_EQ(revolute_joint.parent_body().name(), "link1");
   EXPECT_EQ(revolute_joint.child_body().name(), "link2");
@@ -801,9 +803,9 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
 
   // Prismatic joint
   DRAKE_EXPECT_NO_THROW(
-      plant.GetJointByName<PrismaticJoint>("prismatic_joint"));
+      plant.GetJointByName<PrismaticJoint>("prismatic_joint", instance1));
   const PrismaticJoint<double>& prismatic_joint =
-      plant.GetJointByName<PrismaticJoint>("prismatic_joint");
+      plant.GetJointByName<PrismaticJoint>("prismatic_joint", instance1);
   EXPECT_EQ(prismatic_joint.name(), "prismatic_joint");
   EXPECT_EQ(prismatic_joint.parent_body().name(), "link2");
   EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
@@ -824,9 +826,11 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
 
   // Limitless revolute joint
   DRAKE_EXPECT_NO_THROW(
-      plant.GetJointByName<RevoluteJoint>("revolute_joint_no_limits"));
+      plant.GetJointByName<RevoluteJoint>("revolute_joint_no_limits",
+                                          instance1));
   const RevoluteJoint<double>& no_limit_joint =
-      plant.GetJointByName<RevoluteJoint>("revolute_joint_no_limits");
+      plant.GetJointByName<RevoluteJoint>("revolute_joint_no_limits",
+                                          instance1);
   EXPECT_EQ(no_limit_joint.name(), "revolute_joint_no_limits");
   EXPECT_EQ(no_limit_joint.parent_body().name(), "link3");
   EXPECT_EQ(no_limit_joint.child_body().name(), "link4");
@@ -842,9 +846,10 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.acceleration_upper_limits(), inf));
 
   // Ball joint
-  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<BallRpyJoint>("ball_joint"));
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<BallRpyJoint>("ball_joint",
+                                                           instance1));
   const BallRpyJoint<double>& ball_joint =
-      plant.GetJointByName<BallRpyJoint>("ball_joint");
+      plant.GetJointByName<BallRpyJoint>("ball_joint", instance1);
   EXPECT_EQ(ball_joint.name(), "ball_joint");
   EXPECT_EQ(ball_joint.parent_body().name(), "link4");
   EXPECT_EQ(ball_joint.child_body().name(), "link5");
@@ -862,9 +867,9 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
 
   // Universal joint
   DRAKE_EXPECT_NO_THROW(
-      plant.GetJointByName<UniversalJoint>("universal_joint"));
+      plant.GetJointByName<UniversalJoint>("universal_joint", instance1));
   const UniversalJoint<double>& universal_joint =
-      plant.GetJointByName<UniversalJoint>("universal_joint");
+      plant.GetJointByName<UniversalJoint>("universal_joint", instance1);
   EXPECT_EQ(universal_joint.name(), "universal_joint");
   EXPECT_EQ(universal_joint.parent_body().name(), "link5");
   EXPECT_EQ(universal_joint.child_body().name(), "link6");
@@ -881,17 +886,37 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
 
   // Planar joint
-  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint"));
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint",
+                                                          instance1));
   const PlanarJoint<double>& planar_joint =
-      plant.GetJointByName<PlanarJoint>("planar_joint");
+      plant.GetJointByName<PlanarJoint>("planar_joint", instance1);
   EXPECT_EQ(planar_joint.name(), "planar_joint");
   EXPECT_EQ(planar_joint.parent_body().name(), "link6");
+  EXPECT_EQ(planar_joint.parent_body().model_instance(), instance1);
   EXPECT_EQ(planar_joint.child_body().name(), "link7");
+  EXPECT_EQ(planar_joint.child_body().model_instance(), instance1);
   EXPECT_TRUE(CompareMatrices(planar_joint.damping(), Vector3d::Constant(0.1)));
   EXPECT_TRUE(CompareMatrices(planar_joint.position_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint.position_upper_limits(), inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint.velocity_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(planar_joint.velocity_upper_limits(), inf3));
+
+  const ModelInstanceIndex instance2 = instances.back();
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint",
+                                                          instance2));
+  const PlanarJoint<double>& planar_joint2 =
+      plant.GetJointByName<PlanarJoint>("planar_joint", instance2);
+  EXPECT_EQ(planar_joint2.name(), "planar_joint");
+  EXPECT_EQ(planar_joint2.parent_body().name(), "link6");
+  EXPECT_EQ(planar_joint2.parent_body().model_instance(), instance2);
+  EXPECT_EQ(planar_joint2.child_body().name(), "link7");
+  EXPECT_EQ(planar_joint2.child_body().model_instance(), instance2);
+  EXPECT_TRUE(CompareMatrices(planar_joint2.damping(),
+                              Vector3d::Constant(0.2)));
+  EXPECT_TRUE(CompareMatrices(planar_joint2.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint2.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint2.velocity_upper_limits(), inf3));
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
@@ -1242,36 +1267,66 @@ GTEST_TEST(SdfParser, VisualGeometryParsing) {
 }
 
 GTEST_TEST(SdfParser, BushingParsing) {
-  // Test successful parsing
+  // Test successful parsing.  Add two copies of the model to make sure the
+  // bushings are associated with the proper model instance.
   auto [plant, scene_graph] = ParseTestString(R"(
-    <model name='BushingModel'>
-      <link name='A'/>
-      <link name='C'/>
-      <frame name='frameA' attached_to='A'/>
-      <frame name='frameC' attached_to='C'/>
-      <drake:linear_bushing_rpy>
-        <drake:bushing_frameA>frameA</drake:bushing_frameA>
-        <drake:bushing_frameC>frameC</drake:bushing_frameC>
-        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
-        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
-        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
-        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
-      </drake:linear_bushing_rpy>
-    </model>)");
+    <world name='BushingWorld'>
+      <model name='BushingModel'>
+        <link name='A'/>
+        <link name='C'/>
+        <frame name='frameA' attached_to='A'/>
+        <frame name='frameC' attached_to='C'/>
+        <drake:linear_bushing_rpy>
+          <drake:bushing_frameA>frameA</drake:bushing_frameA>
+          <drake:bushing_frameC>frameC</drake:bushing_frameC>
+          <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+          <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+          <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+          <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+        </drake:linear_bushing_rpy>
+      </model>
+      <model name='BushingModel2'>
+        <link name='A'/>
+        <link name='C'/>
+        <frame name='frameA' attached_to='A'/>
+        <frame name='frameC' attached_to='C'/>
+        <drake:linear_bushing_rpy>
+          <drake:bushing_frameA>frameA</drake:bushing_frameA>
+          <drake:bushing_frameC>frameC</drake:bushing_frameC>
+          <drake:bushing_torque_stiffness>11 12 13</drake:bushing_torque_stiffness>
+          <drake:bushing_torque_damping>14 15 16</drake:bushing_torque_damping>
+          <drake:bushing_force_stiffness>17 18 19</drake:bushing_force_stiffness>
+          <drake:bushing_force_damping>20 21 22</drake:bushing_force_damping>
+        </drake:linear_bushing_rpy>
+      </model>
+    </world>)");
 
   // MBP will always create a UniformGravityField, so the only other
-  // ForceElement should be the LinearBushingRollPitchYaw element parsed.
-  EXPECT_EQ(plant->num_force_elements(), 2);
+  // ForceElements should be the LinearBushingRollPitchYaw elements parsed.
+  EXPECT_EQ(plant->num_force_elements(), 3);
 
   const LinearBushingRollPitchYaw<double>& bushing =
       plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
 
   EXPECT_STREQ(bushing.frameA().name().c_str(), "frameA");
   EXPECT_STREQ(bushing.frameC().name().c_str(), "frameC");
+  EXPECT_EQ(bushing.frameA().model_instance(), bushing.model_instance());
   EXPECT_EQ(bushing.torque_stiffness_constants(), Eigen::Vector3d(1, 2, 3));
   EXPECT_EQ(bushing.torque_damping_constants(), Eigen::Vector3d(4, 5, 6));
   EXPECT_EQ(bushing.force_stiffness_constants(), Eigen::Vector3d(7, 8, 9));
   EXPECT_EQ(bushing.force_damping_constants(), Eigen::Vector3d(10, 11, 12));
+
+  const LinearBushingRollPitchYaw<double>& bushing2 =
+      plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(2));
+
+  EXPECT_STREQ(bushing2.frameA().name().c_str(), "frameA");
+  EXPECT_STREQ(bushing2.frameC().name().c_str(), "frameC");
+  EXPECT_EQ(bushing2.frameA().model_instance(), bushing2.model_instance());
+  EXPECT_NE(bushing.model_instance(), bushing2.model_instance());
+  EXPECT_EQ(bushing2.torque_stiffness_constants(), Eigen::Vector3d(11, 12, 13));
+  EXPECT_EQ(bushing2.torque_damping_constants(), Eigen::Vector3d(14, 15, 16));
+  EXPECT_EQ(bushing2.force_stiffness_constants(), Eigen::Vector3d(17, 18, 19));
+  EXPECT_EQ(bushing2.force_damping_constants(), Eigen::Vector3d(20, 21, 22));
 
   // Test missing frame tag
   DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
