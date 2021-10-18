@@ -29,6 +29,8 @@ template <typename T> std::string_view GetNiceVariantName(const T&) {
 
 }  // namespace
 
+Node::Node() = default;
+
 Node Node::MakeScalar(std::string value) {
   Node result;
   result.data_ = ScalarData{std::move(value)};
@@ -44,6 +46,13 @@ Node Node::MakeSequence() {
 Node Node::MakeMapping() {
   Node result;
   result.data_ = MappingData{};
+  return result;
+}
+
+Node Node::MakeNull() {
+  Node result;
+  result.data_ = ScalarData{"null"};
+  result.tag_ = kTagNull;
   return result;
 }
 
@@ -80,10 +89,6 @@ bool Node::IsScalar() const {
   return std::holds_alternative<ScalarData>(data_);
 }
 
-bool Node::IsEmptyScalar() const {
-  return IsScalar() && GetScalar().empty();
-}
-
 bool Node::IsSequence() const {
   return std::holds_alternative<SequenceData>(data_);
 }
@@ -105,7 +110,7 @@ bool operator==(const Node::SequenceData& a, const Node::SequenceData& b) {
 }
 
 bool operator==(const Node::MappingData& a, const Node::MappingData& b) {
-  return a.map == b.map;
+  return a.mapping == b.mapping;
 }
 
 const std::string& Node::GetTag() const {
@@ -155,7 +160,7 @@ void Node::Add(Node value) {
 const std::map<std::string, Node>& Node::GetMapping() const {
   return std::visit(overloaded{
     [](const MappingData& data) -> const std::map<std::string, Node>& {
-      return data.map;
+      return data.mapping;
     },
     [](auto&& data) -> const std::map<std::string, Node>& {
       throw std::logic_error(fmt::format(
@@ -167,7 +172,8 @@ const std::map<std::string, Node>& Node::GetMapping() const {
 void Node::Add(std::string key, Node value) {
   return std::visit(overloaded{
       [&key, &value](MappingData& data) -> void {
-      const auto result = data.map.insert({std::move(key), std::move(value)});
+      const auto result = data.mapping.insert({
+          std::move(key), std::move(value)});
       const bool inserted = result.second;
       if (!inserted) {
         // Our 'key' argument is now empty (because it has been moved-from), so
@@ -187,7 +193,7 @@ void Node::Add(std::string key, Node value) {
 Node& Node::At(std::string_view key) {
   return std::visit(overloaded{
     [key](MappingData& data) -> Node& {
-      return data.map.at(std::string{key});
+      return data.mapping.at(std::string{key});
     },
     [](auto&& data) -> Node& {
       throw std::logic_error(fmt::format(
@@ -199,7 +205,7 @@ Node& Node::At(std::string_view key) {
 void Node::Remove(std::string_view key) {
   return std::visit(overloaded{
     [key](MappingData& data) -> void {
-      auto erased = data.map.erase(std::string{key});
+      auto erased = data.mapping.erase(std::string{key});
       if (!erased) {
         throw std::logic_error(fmt::format(
             "No such key '{}' during Node::Remove(key)", key));
@@ -210,6 +216,42 @@ void Node::Remove(std::string_view key) {
           "Cannot Node::Remove(key) on a {}", GetNiceVariantName(data)));
     },
   }, data_);
+}
+
+std::ostream& operator<<(std::ostream& os, const Node& node) {
+  if (!node.GetTag().empty()) {
+    os << "!<" << node.GetTag() << "> ";
+  }
+  node.Visit(overloaded{
+    [&](const Node::ScalarData& data) {
+      os << '"' << data.scalar << '"';
+    },
+    [&](const Node::SequenceData& data) {
+      os << "[";
+      bool first = true;
+      for (const auto& child : data.sequence) {
+        if (!first) {
+          os << ", ";
+        }
+        first = false;
+        os << child;
+      }
+      os << "]";
+    },
+    [&](const Node::MappingData& data) {
+      os << "{";
+      bool first = true;
+      for (const auto& [key, child] : data.mapping) {
+        if (!first) {
+          os << ", ";
+        }
+        first = false;
+        os << '"' << key << '"' << ": " << child;
+      }
+      os << "}";
+    },
+  });
+  return os;
 }
 
 }  // namespace internal

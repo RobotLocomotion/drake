@@ -54,7 +54,7 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
       // If there are no children, then format this map onto a single line;
       // otherwise, format over multiple "key: value\n" lines.
       auto style = YAML::EmitterStyle::Block;
-      if (data.map.empty()) {
+      if (data.mapping.empty()) {
         style = YAML::EmitterStyle::Flow;
       }
       sink->OnMapStart(no_mark, node.GetTag(), no_anchor, style);
@@ -62,26 +62,26 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
       // member function in our header file), use it to specify output order;
       // otherwise, use alphabetical order.
       std::vector<std::string> key_order;
-      if (data.map.count(kKeyOrder)) {
-        const internal::Node& key_order_node = data.map.at(kKeyOrder);
+      if (data.mapping.count(kKeyOrder)) {
+        const internal::Node& key_order_node = data.mapping.at(kKeyOrder);
         // Use Accept()'s ordering.  (If EraseMatchingMaps has been called,
         // some of the keys may have disappeared.)
         for (const auto& item : key_order_node.GetSequence()) {
           const std::string& key = item.GetScalar();
-          if (data.map.count(key)) {
+          if (data.mapping.count(key)) {
             key_order.push_back(key);
           }
         }
       } else {
         // Use alphabetical ordering.
-        for (const auto& [key, value] : data.map) {
+        for (const auto& [key, value] : data.mapping) {
           unused(value);
           key_order.push_back(key);
         }
       }
       for (const auto& string_key : key_order) {
         RecursiveEmit(internal::Node::MakeScalar(string_key), sink);
-        RecursiveEmit(data.map.at(string_key), sink);
+        RecursiveEmit(data.mapping.at(string_key), sink);
       }
       sink->OnMapEnd();
     },
