@@ -249,16 +249,13 @@ class YamlWriteArchive final {
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    internal::Node node;
-    if constexpr (std::is_floating_point_v<T>) {
-      // Different versions of fmt disagree on whether to omit the trailing
-      // ".0" when formatting integer-valued floating-point numbers.  Force
-      // the ".0" in all cases by using the "#" option.
-      node = internal::Node::MakeScalar(fmt::format("{:#}", value));
-    } else {
-      node = internal::Node::MakeScalar(fmt::format("{}", value));
-    }
-    root_.Add(nvp.name(), std::move(node));
+    // Different versions of fmt disagree on whether to omit the trailing
+    // ".0" when formatting integer-valued floating-point numbers.  Force
+    // the ".0" in all cases by using the "#" option for floats.
+    constexpr std::string_view pattern =
+        std::is_floating_point_v<T> ? "{:#}" : "{}";
+    root_.Add(nvp.name(), internal::Node::MakeScalar(
+        fmt::format(pattern, value)));
   }
 
   // This is used for std::optional or similar.
