@@ -142,8 +142,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   };
 
   for (int i = 0; i < 12; ++i) {
-    EXPECT_TRUE(face_equal(SurfaceFace(expect_faces[i]),
-                           surface.element(SurfaceFaceIndex(i))));
+    EXPECT_TRUE(face_equal(SurfaceFace(expect_faces[i]), surface.element(i)));
   }
 }
 
@@ -235,8 +234,7 @@ f 1 2 3
   ASSERT_EQ(1, surface.num_faces());
   int expect_face[3] = {0, 1, 2};
   for (int v = 0; v < 3; ++v) {
-    EXPECT_EQ(expect_face[v],
-              surface.element(SurfaceFaceIndex(0)).vertex(v));
+    EXPECT_EQ(expect_face[v], surface.element(0).vertex(v));
   }
 }
 
@@ -267,8 +265,7 @@ f 4 5 6
   int expect_faces[2][3]{{0, 1, 2}, {3, 4, 5}};
   for (int f = 0; f < 2; ++f) {
     for (int v = 0; v < 3; ++v) {
-      EXPECT_EQ(expect_faces[f][v],
-                surface.element(SurfaceFaceIndex(f)).vertex(v));
+      EXPECT_EQ(expect_faces[f][v], surface.element(f).vertex(v));
     }
   }
 }

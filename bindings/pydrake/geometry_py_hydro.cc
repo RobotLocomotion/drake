@@ -64,12 +64,6 @@ void DoScalarIndependentDefinitions(py::module m) {
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc.drake.geometry;
 
-  // All the index types up front, so they'll be available to every other type.
-  {
-    BindTypeSafeIndex<SurfaceFaceIndex>(
-        m, "SurfaceFaceIndex", doc.SurfaceFaceIndex.doc);
-  }
-
   // SurfaceFace
   {
     using Class = SurfaceFace;

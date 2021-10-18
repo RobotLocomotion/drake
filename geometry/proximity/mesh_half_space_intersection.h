@@ -83,7 +83,7 @@ namespace internal {
 */
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
+    const SurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
@@ -124,8 +124,7 @@ template <typename T>
 std::unique_ptr<SurfaceMesh<T>>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
-    const PosedHalfSpace<T>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const PosedHalfSpace<T>& half_space_F, const std::vector<int>& tri_indices,
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation);
 

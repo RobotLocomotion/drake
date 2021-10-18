@@ -93,7 +93,6 @@ SurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
 template <typename T>
 static SurfaceMesh<double> CreateMeshWithCentroids(
     const SurfaceMesh<double>& mesh_F, const RigidTransform<T>& X_WF) {
-  using FIndex = SurfaceFaceIndex;
   constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
   const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
 
@@ -109,7 +108,7 @@ static SurfaceMesh<double> CreateMeshWithCentroids(
                  });
 
   const RotationMatrix<double>& R_WF = X_WF_d.rotation();
-  for (FIndex f_index(0); f_index < mesh_F.num_faces(); ++f_index) {
+  for (int f_index = 0; f_index < mesh_F.num_faces(); ++f_index) {
     const SurfaceFace& f = mesh_F.element(f_index);
     // We want to add the triangle fan for the existing face, but also want to
     // confirm that the new faces have normals that match the input face.
@@ -120,8 +119,9 @@ static SurfaceMesh<double> CreateMeshWithCentroids(
     // Confirm polygon winding matches between source triangle and triangles
     // in the new fan.
     // The triangle fan consists of the last three faces in `new_faces`.
-    const int first_new_face_index = static_cast<int>(new_faces.size()) - 3;
-    for (FIndex j(first_new_face_index); j < new_faces.size(); ++j) {
+    const int num_new_faces = static_cast<int>(new_faces.size());
+    const int first_new_face_index = num_new_faces - 3;
+    for (int j = first_new_face_index; j < num_new_faces; ++j) {
       const SurfaceFace& new_face = new_faces[j];
       const Vector3d& a = new_vertices_W[new_face.vertex(0)];
       const Vector3d& b = new_vertices_W[new_face.vertex(1)];
@@ -281,7 +281,7 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
       const SurfaceMesh<double>& mesh_F, const RigidTransform<T> X_WF,
       ContactPolygonRepresentation representation) {
     ClearConstructionDataStructures();
-    for (SurfaceFaceIndex f_index(0); f_index < mesh_F.num_elements();
+    for (int f_index = 0; f_index < mesh_F.num_elements();
          ++f_index) {
       ConstructTriangleHalfspaceIntersectionPolygon(
           mesh_F, f_index, *this->half_space_F_, X_WF, representation,
@@ -914,13 +914,12 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, BoxMesh) {
   // Construct the half-space.
   const Vector3<T> Bz_F = X_FB.rotation().col(2);
   const PosedHalfSpace<T> half_space_F(Bz_F, X_FB.translation());
-  typedef SurfaceFaceIndex FIndex;
 
   {
     // Case: Plane doesn't intersect. In fact, the plane _does_ intersect the
     // mesh, but we will simulate non-intersection by providing indices to
     // triangles that _don't_ intersect (the two triangles on the +z face).
-    std::vector<FIndex> tri_indices{FIndex{8}, FIndex{9}};
+    std::vector<int> tri_indices{8, 9};
     EXPECT_EQ(ConstructSurfaceMeshFromMeshHalfspaceIntersection(
                   mesh_F, half_space_F, tri_indices, X_WF,
                   ContactPolygonRepresentation::kCentroidSubdivision),
@@ -938,8 +937,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, BoxMesh) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
 
     // We pass in indices of *all* the triangles.
-    std::vector<FIndex> tri_indices(mesh_F.num_elements());
-    std::iota(tri_indices.begin(), tri_indices.end(), FIndex{0});
+    std::vector<int> tri_indices(mesh_F.num_elements());
+    std::iota(tri_indices.begin(), tri_indices.end(), 0);
 
     const std::unique_ptr<SurfaceMesh<T>> intersection_mesh_W =
         ConstructSurfaceMeshFromMeshHalfspaceIntersection(
@@ -1114,8 +1113,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       EXPECT_TRUE(contact_surface->HasGradE_N());
 
       EXPECT_GT(contact_surface->mesh_W().num_faces(), 0);
-      for (SurfaceFaceIndex f(0); f < contact_surface->mesh_W().num_faces();
-           ++f) {
+      for (int f = 0; f < contact_surface->mesh_W().num_faces(); ++f) {
         ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
                                     grad_eH_W_expected));
       }
@@ -1131,8 +1129,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       EXPECT_FALSE(contact_surface->HasGradE_N());
 
       EXPECT_GT(contact_surface->mesh_W().num_faces(), 0);
-      for (SurfaceFaceIndex f(0); f < contact_surface->mesh_W().num_faces();
-           ++f) {
+      for (int f = 0; f < contact_surface->mesh_W().num_faces(); ++f) {
         ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
                                     grad_eH_W_expected));
       }
@@ -1232,7 +1229,7 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
     //      lines of code do to define the gradient direction vector.
     const double grad_scale = contact_surface->id_N() == mesh_id ? 1.0 : -1.0;
     const Vector3<double> grad_p_W = grad_scale * -normal_W;
-    for (SurfaceFaceIndex tri(0); tri < contact_mesh_W.num_faces(); ++tri) {
+    for (int tri = 0; tri < contact_mesh_W.num_faces(); ++tri) {
       // Everything is defined in the world frame; so the transform X_WM = I.
       ASSERT_TRUE(
           IsFaceNormalInNormalDirection(grad_p_W, contact_mesh_W, tri, {}))
@@ -1717,7 +1714,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtPosition) {
                              const RigidTransform<AutoDiffXd>&, TriPose) {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
     const Matrix3<double> zero_matrix = Matrix3<double>::Zero();
-    for (SurfaceFaceIndex t(0); t < surface.mesh_W().num_elements(); ++t) {
+    for (int t = 0; t < surface.mesh_W().num_elements(); ++t) {
       const Vector3<AutoDiffXd> n_W = surface.mesh_W().face_normal(t);
       EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n_W),
                                   zero_matrix, 32 * kEps));
@@ -1782,7 +1779,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
     /* Test dn̂/dθ = v̂ × n̂  = v̂ × Ry. */
     const Vector3d Ry_W = math::ExtractValue(X_WR.rotation().col(1));
     const Vector3d expected_deriv = v_W.cross(Ry_W);
-    for (SurfaceFaceIndex t(0); t < surface->mesh_W().num_elements(); ++t) {
+    for (int t = 0; t < surface->mesh_W().num_elements(); ++t) {
       const auto& n = surface->mesh_W().face_normal(t);
       /* Precision decreases as the mesh gets closer to lying parallel to the
        half space surface. This simple switch accounts for the observed

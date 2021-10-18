@@ -323,7 +323,7 @@ void AddPolygonToMeshDataAsOneTriangle(const std::vector<Vector3<T>>& polygon_F,
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
                                    const SurfaceMesh<T>& surface_M,
-                                   SurfaceFaceIndex tri_index,
+                                   int tri_index,
                                    const math::RotationMatrix<T>& R_FM) {
   const Vector3<T>& face_normal_F = R_FM * surface_M.face_normal(tri_index);
   // Given the rotation, we're re-normalizing the face normal to guard against

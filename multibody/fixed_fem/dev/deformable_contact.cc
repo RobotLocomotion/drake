@@ -12,7 +12,6 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::VolumeMesh;
 using geometry::internal::Aabb;
@@ -390,8 +389,8 @@ class Intersector {
           tetrahedron (non-zero area restriction still applies).
    */
   const std::vector<IntersectionVertex<T>>& ClipTriangleByTetrahedron(
-      int tet_index, const VolumeMesh<T>& tet_mesh_D,
-      SurfaceFaceIndex face, const SurfaceMesh<double>& surface_R,
+      int tet_index, const VolumeMesh<T>& tet_mesh_D, int face,
+      const SurfaceMesh<double>& surface_R,
       const math::RigidTransform<T>& X_DR) {
     // Although polygon_D starts out pointing to polygon_[0], that is not an
     // invariant in this function.

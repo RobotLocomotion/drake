@@ -114,7 +114,7 @@ int GetVertexAddIfNeeded(
 
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
+    const SurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
@@ -364,7 +364,7 @@ std::unique_ptr<SurfaceMesh<T>>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const std::vector<int>& tri_indices,
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation) {
   std::vector<Vector3<T>> new_vertices_W;
@@ -398,12 +398,12 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation) {
-  std::vector<SurfaceFaceIndex> tri_indices;
+  std::vector<int> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
   auto bvh_callback = [&tri_indices, &mesh_R,
                        R_WS = convert_to_double(X_WS).rotation(),
-                       R_WR = convert_to_double(X_WR).rotation()](
-                          SurfaceFaceIndex tri_index) {
+                       R_WR =
+                           convert_to_double(X_WR).rotation()](int tri_index) {
     // The gradient of the half space pressure field lies in the _opposite_
     // direction as its normal. Its normal is Sz. So, unit_grad_p_W = -Sz_W.
     const Eigen::Vector3d& unit_grad_p_W = -R_WS.col(2);
