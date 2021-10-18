@@ -49,7 +49,7 @@ enum class NodeType {
   //
   // Note that even though YAML in general allows the keys of a mapping to be
   // any type of node, in our implementation we limit keys to be only strings,
-  // for better compaibility with other serialization formats such as JSON.
+  // for better compatibility with other serialization formats such as JSON.
   kMapping,
 };
 
@@ -63,7 +63,7 @@ Refer to https://yaml.org/spec/1.2.2/#nodes for details.
 
 Note that even though YAML in general allows the keys of a mapping to be
 any type of node, in our implementation we limit keys to be only strings,
-for better compaibility with other serialization formats such as JSON.
+for better compatibility with other serialization formats such as JSON.
 
 Each node may also have a tag.  By default (i.e., at construction time),
 the tag will be empty.  Use GetTag() and SetTag() to query and adjust it.
@@ -86,8 +86,10 @@ class Node final {
   /* Returns an empty Mapping node. */
   static Node MakeMapping();
 
-  /* Creates an empty Scalar node. */
-  Node() = default;
+  /* Returns a null Scalar node.
+  The returned node's tag is kTagNull and value is "null".
+  Refer to https://yaml.org/spec/1.2.2/#null for details. */
+  static Node MakeNull();
 
   /* Returns type of stored value. */
   NodeType GetType() const;
@@ -102,9 +104,6 @@ class Node final {
 
   /* Returns true iff this Node's type is Scalar. */
   bool IsScalar() const;
-
-  /* Returns true iff this Node's type is Scalar and the value is empty. */
-  bool IsEmptyScalar() const;
 
   /* Returns true iff this Node's type is Sequence. */
   bool IsSequence() const;
@@ -125,6 +124,18 @@ class Node final {
   The tag is not checked for well-formedness nor consistency with the node's
   type nor value.  The caller is responsible for providing a valid tag. */
   void SetTag(std::string);
+
+  // https://yaml.org/spec/1.2.2/#floating-point
+  static constexpr std::string_view kTagFloat{"tag:yaml.org,2002:float"};
+
+  // https://yaml.org/spec/1.2.2/#integer
+  static constexpr std::string_view kTagInt{"tag:yaml.org,2002:int"};
+
+  // https://yaml.org/spec/1.2.2/#null
+  static constexpr std::string_view kTagNull{"tag:yaml.org,2002:null"};
+
+  // https://yaml.org/spec/1.2.2/#generic-string
+  static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
 
   // @name Scalar-only Functions
   // These functions may only be called when IsScalar() is true;
@@ -209,12 +220,19 @@ class Node final {
   struct MappingData final {
     // Even though YAML mappings are notionally unordered, we use an ordered
     // map here to ensure program determinism.
-    std::map<std::string, Node> map;
+    std::map<std::string, Node> mapping;
 
     friend bool operator==(const MappingData&, const MappingData&);
   };
 
+  /* Displays the given node using flow style.  Intended only for debugging,
+  not serialization. */
+  friend std::ostream& operator<<(std::ostream&, const Node&);
+
  private:
+  /* No-op for use only by the public "Make..." functions. */
+  Node();
+
   using Variant = std::variant<ScalarData, SequenceData, MappingData>;
 
   std::string tag_;
