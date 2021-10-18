@@ -1425,8 +1425,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @name                    Contact modeling
   /// Use methods in this section to choose the contact model and to provide
   /// parameters for that model. Currently Drake supports an advanced compliant
-  /// contact model we call _Hydroelastic contact_ that is still experimental,
-  /// and a penalty-based point contact model as a reliable fallback.
+  /// contact model we call _Hydroelastic contact_ and a penalty-based point
+  /// contact model as a reliable fallback.
   ///
   /// @anchor mbp_hydroelastic_materials_properties
   ///                      #### Hydroelastic contact
