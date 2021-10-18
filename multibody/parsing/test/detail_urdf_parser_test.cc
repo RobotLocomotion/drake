@@ -489,18 +489,24 @@ struct PlantAndSceneGraph {
   std::unique_ptr<SceneGraph<double>> scene_graph;
 };
 
-PlantAndSceneGraph ParseTestString(const std::string& inner) {
+void ParseTestString(const std::string& inner,
+                     const std::string& model_name,
+                     MultibodyPlant<double>* plant) {
   const std::string filename = temp_directory() + "/test_string.urdf";
   std::ofstream file(filename);
   file << "<?xml version='1.0' ?>\n" << inner << "\n\n";
   file.close();
+  PackageMap package_map;
+  drake::log()->debug("inner: {}", inner);
+  AddModelFromUrdfFile(filename, model_name, package_map, plant);
+}
+
+PlantAndSceneGraph ParseTestString(const std::string& inner) {
   PlantAndSceneGraph pair;
   pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
   pair.scene_graph = std::make_unique<SceneGraph<double>>();
-  PackageMap package_map;
   pair.plant->RegisterAsSourceForSceneGraph(pair.scene_graph.get());
-  drake::log()->debug("inner: {}", inner);
-  AddModelFromUrdfFile(filename, {}, package_map, pair.plant.get());
+  ParseTestString(inner, "", pair.plant.get());
   return pair;
 }
 
@@ -625,8 +631,8 @@ GTEST_TEST(MultibodyPlantUrdfParserDeathTest, ZeroMassNonZeroInertia) {
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
-  // Test successful parsing
-  auto [plant, scene_graph] = ParseTestString(R"(
+  // Test successful parsing.
+  const std::string good_bushing_model = R"(
     <robot name="bushing_test">
         <link name='A'/>
         <link name='C'/>
@@ -640,11 +646,14 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
-    </robot>)");
+    </robot>)";
+
+  auto [plant, scene_graph] = ParseTestString(good_bushing_model);
+  ParseTestString(good_bushing_model, "bushing2", plant.get());
 
   // MBP will always create a UniformGravityField, so the only other
   // ForceElement should be the LinearBushingRollPitchYaw element parsed.
-  EXPECT_EQ(plant->num_force_elements(), 2);
+  EXPECT_EQ(plant->num_force_elements(), 3);
 
   const LinearBushingRollPitchYaw<double>& bushing =
       plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
@@ -655,6 +664,14 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
   EXPECT_EQ(bushing.torque_damping_constants(), Eigen::Vector3d(4, 5, 6));
   EXPECT_EQ(bushing.force_stiffness_constants(), Eigen::Vector3d(7, 8, 9));
   EXPECT_EQ(bushing.force_damping_constants(), Eigen::Vector3d(10, 11, 12));
+
+  const LinearBushingRollPitchYaw<double>& bushing2 =
+      plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(2));
+
+  EXPECT_STREQ(bushing2.frameA().name().c_str(), "frameA");
+  EXPECT_STREQ(bushing2.frameC().name().c_str(), "frameC");
+  EXPECT_EQ(bushing2.frameA().model_instance(), bushing2.model_instance());
+  EXPECT_NE(bushing.model_instance(), bushing2.model_instance());
 
   // Test missing frame tag
   DRAKE_EXPECT_THROWS_MESSAGE(
