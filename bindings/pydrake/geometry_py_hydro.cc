@@ -68,8 +68,6 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     BindTypeSafeIndex<SurfaceFaceIndex>(
         m, "SurfaceFaceIndex", doc.SurfaceFaceIndex.doc);
-    BindTypeSafeIndex<VolumeElementIndex>(
-        m, "VolumeElementIndex", doc.VolumeElementIndex.doc);
   }
 
   // SurfaceFace

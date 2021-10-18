@@ -119,7 +119,7 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(len(mesh.vertices()), 5)
 
         self.assertAlmostEqual(
-            mesh.CalcTetrahedronVolume(e=mut.VolumeElementIndex(1)),
+            mesh.CalcTetrahedronVolume(e=1),
             1/6.0,
             delta=1e-15)
         self.assertAlmostEqual(mesh.CalcVolume(), 1/3.0, delta=1e-15)

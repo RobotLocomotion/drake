@@ -450,7 +450,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
   double volume = 0.0;
   for (int e = 0; e < box_mesh.num_elements(); ++e) {
     double tetrahedron_volume =
-        box_mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
+        box_mesh.CalcTetrahedronVolume(e);
     EXPECT_GT(tetrahedron_volume, 0.0);
     volume += tetrahedron_volume;
   }

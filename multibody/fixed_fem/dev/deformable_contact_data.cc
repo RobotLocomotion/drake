@@ -65,8 +65,7 @@ void DeformableContactData<T>::CalcParticipatingVertices(
     const DeformableContactSurface<T>& contact_surface =
         contact_pairs_[i].contact_surface;
     for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const geometry::VolumeElementIndex tet_in_contact =
-          contact_surface.polygon_data(j).tet_index;
+      const int tet_in_contact = contact_surface.polygon_data(j).tet_index;
       for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
         const int v = deformable_mesh.element(tet_in_contact).vertex(k);
         if (permuted_vertex_indexes_[v] == -1) {

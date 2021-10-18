@@ -62,7 +62,7 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
 }  // namespace
 
 template <typename T>
-void SliceTetWithPlane(VolumeElementIndex tet_index,
+void SliceTetWithPlane(int tet_index,
                        const VolumeMeshFieldLinear<double, double>& field_M,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
@@ -172,7 +172,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     GeometryId mesh_id,
     const VolumeMeshFieldLinear<double, double>& mesh_field_M,
     GeometryId plane_id, const Plane<T>& plane_M,
-    const std::vector<VolumeElementIndex>& tet_indices,
+    const std::vector<int>& tet_indices,
     const math::RigidTransform<T>& X_WM,
     ContactPolygonRepresentation representation) {
   if (tet_indices.size() == 0) return nullptr;
@@ -220,9 +220,9 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation) {
-  std::vector<VolumeElementIndex> tet_indices;
+  std::vector<int> tet_indices;
   tet_indices.reserve(field_S.mesh().num_elements());
-  auto callback = [&tet_indices](VolumeElementIndex tet_index) {
+  auto callback = [&tet_indices](int tet_index) {
     tet_indices.push_back(tet_index);
     return BvttCallbackResult::Continue;
   };

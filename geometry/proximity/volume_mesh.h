@@ -21,10 +21,9 @@ namespace geometry {
  will disappear imminently. */
 using VolumeVertexIndex = int;
 
-/**
- Index for identifying a tetrahedral element in a volume mesh.
- */
-using VolumeElementIndex = TypeSafeIndex<class VolumeElementTag>;
+/** Index used to identify a tetrahedral element in a volume mesh. Use `int`
+ instead; this will disappear imminently. */
+using VolumeElementIndex = int;
 
 /** %VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
  topological entity in the sense that it only knows the indices of its vertices
@@ -129,7 +128,7 @@ class VolumeMesh {
 
   /** Index for identifying a tetrahedral element.
    */
-  using ElementIndex = VolumeElementIndex;
+  using ElementIndex = int;
 
   // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
   //  templated class doesn't depend on the class template parameter, but
@@ -192,10 +191,11 @@ class VolumeMesh {
   int num_vertices() const { return vertices_.size(); }
 
   /** Calculates volume of a tetrahedral element.
+   @pre `f ∈ [0, num_elements())`.
    */
-  T CalcTetrahedronVolume(VolumeElementIndex e) const {
+  T CalcTetrahedronVolume(int e) const {
     // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
-    //  it. CalcTetrahedronVolume(VolumeElementIndex) will call
+    //  it. CalcTetrahedronVolume(index) will call
     //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
     const Vector3<T>& a = vertices_[elements_[e].vertex(0)];
     const Vector3<T>& b = vertices_[elements_[e].vertex(1)];
@@ -217,7 +217,7 @@ class VolumeMesh {
   T CalcVolume() const {
     T volume(0.0);
     for (int e = 0; e < num_elements(); ++e) {
-      volume += CalcTetrahedronVolume(VolumeElementIndex(e));
+      volume += CalcTetrahedronVolume(e);
     }
     return volume;
   }
@@ -281,7 +281,7 @@ class VolumeMesh {
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
     // Check tetrahedral elements.
-    for (VolumeElementIndex i(0); i < this->num_elements(); ++i) {
+    for (int i = 0; i < this->num_elements(); ++i) {
       if (!this->element(i).Equal(mesh.element(i))) return false;
     }
     // Check vertices.
@@ -306,8 +306,7 @@ class VolumeMesh {
    */
   template <typename FieldValue>
   Vector3<promoted_numerical_t<T, FieldValue>> CalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 4>& field_value,
-      VolumeElementIndex e) const {
+      const std::array<FieldValue, 4>& field_value, int e) const {
     using ReturnType = promoted_numerical_t<T, FieldValue>;
     Vector3<ReturnType> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
     for (int i = 1; i < 4; ++i) {
@@ -324,7 +323,7 @@ class VolumeMesh {
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 4.
-  Vector3<T> CalcGradBarycentric(VolumeElementIndex e, int i) const;
+  Vector3<T> CalcGradBarycentric(int e, int i) const;
 
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
@@ -335,8 +334,7 @@ class VolumeMesh {
 };
 
 template <typename T>
-Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
-                                              int i) const {
+Vector3<T> VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
   DRAKE_DEMAND(0 <= i && i < 4);
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
