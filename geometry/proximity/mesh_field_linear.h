@@ -167,8 +167,10 @@ class MeshFieldLinear {
 
   /** Evaluates the field value at a vertex.
    @param v The index of the vertex.
+   @pre v ∈ [0, this->mesh().num_vertices()).
    */
-  const T& EvaluateAtVertex(typename MeshType::VertexIndex v) const {
+  const T& EvaluateAtVertex(int v) const {
+    DRAKE_ASSERT(v >= 0 && v < mesh_->num_vertices());
     return values_[v];
   }
 
@@ -184,7 +186,7 @@ class MeshFieldLinear {
    */
   template <typename B>
   promoted_numerical_t<B, T> Evaluate(
-      typename MeshType::ElementIndex e,
+      int e,
       // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
       const typename MeshType::template Barycentric<B>& b) const {
     const auto& element = this->mesh().element(e);
@@ -212,8 +214,8 @@ class MeshFieldLinear {
                coordinates. M is the frame of the mesh.
    */
   template <typename C>
-  promoted_numerical_t<C, T> EvaluateCartesian(
-      typename MeshType::ElementIndex e, const Vector3<C>& p_MQ) const {
+  promoted_numerical_t<C, T> EvaluateCartesian(int e,
+                                               const Vector3<C>& p_MQ) const {
     if (gradients_.size() == 0) {
       return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
     } else {
@@ -228,7 +230,7 @@ class MeshFieldLinear {
   will particularly lie parallel to the plane of the corresponding triangle.
   @throws std::exception if the gradient vector was not calculated.
   */
-  Vector3<T> EvaluateGradient(typename MeshType::ElementIndex e) const {
+  Vector3<T> EvaluateGradient(int e) const {
     if (gradients_.size() == 0) {
       throw std::runtime_error("Gradient vector was not calculated.");
     }
@@ -278,8 +280,7 @@ class MeshFieldLinear {
     if (!this->mesh().Equal(field.mesh())) return false;
 
     // Check field value at each vertex.
-    for (typename MeshType::VertexIndex i(0); i < this->mesh().num_vertices();
-         ++i) {
+    for (int i = 0; i < this->mesh().num_vertices(); ++i) {
       if (values_.at(i) != field.values_.at(i)) return false;
     }
     if (gradients_ != field.gradients_) return false;
@@ -297,13 +298,12 @@ class MeshFieldLinear {
   void CalcGradientField() {
     gradients_.clear();
     gradients_.reserve(this->mesh().num_elements());
-    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
-         ++e) {
+    for (int e = 0; e < this->mesh().num_elements(); ++e) {
       gradients_.push_back(CalcGradientVector(e));
     }
   }
 
-  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const {
+  Vector3<T> CalcGradientVector(int e) const {
     std::array<T, MeshType::kVertexPerElement> u;
     for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
       u[i] = values_[this->mesh().element(e).vertex(i)];
@@ -314,15 +314,14 @@ class MeshFieldLinear {
   void CalcValueAtMeshOriginForAllElements() {
     values_at_Mo_.clear();
     values_at_Mo_.reserve(this->mesh().num_elements());
-    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
-         ++e) {
+    for (int e = 0; e < this->mesh().num_elements(); ++e) {
       values_at_Mo_.push_back(CalcValueAtMeshOrigin(e));
     }
   }
 
-  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const {
-    DRAKE_DEMAND(e < static_cast<int>(gradients_.size()));
-    const typename MeshType::VertexIndex v0 = this->mesh().element(e).vertex(0);
+  T CalcValueAtMeshOrigin(int e) const {
+    DRAKE_DEMAND(0 <= e && e < static_cast<int>(gradients_.size()));
+    const int v0 = this->mesh().element(e).vertex(0);
     const Vector3<T>& p_MV0 = this->mesh().vertex(v0);
     // f(V₀) = ∇fᵉ⋅p_MV₀ + fᵉ(Mo)
     // fᵉ(Mo) = f(V₀) - ∇fᵉ⋅p_MV₀

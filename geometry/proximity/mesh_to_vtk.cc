@@ -44,7 +44,7 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
   const int num_vertices_per_element = Mesh::kVertexPerElement;
   const int num_integers = num_elements * (num_vertices_per_element + 1);
   out << "CELLS " << num_elements << " " << num_integers << std::endl;
-  for (typename Mesh::ElementIndex i(0); i < num_elements; ++i) {
+  for (int i = 0; i < num_elements; ++i) {
     const auto& element = mesh.element(i);
     out << fmt::format("{}", num_vertices_per_element);
     for (int v = 0; v < num_vertices_per_element; ++v) {

@@ -27,8 +27,7 @@ class BvhTester {
   BvhTester() = delete;
 
   template <class BvType, class MeshType>
-  static Vector3d ComputeCentroid(const MeshType& mesh,
-                                  const typename MeshType::ElementIndex i) {
+  static Vector3d ComputeCentroid(const MeshType& mesh, int i) {
     return Bvh<BvType, MeshType>::ComputeCentroid(mesh, i);
   }
 

@@ -14,8 +14,6 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-using geometry::internal::SortedTriplet;
-
 std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
     const std::vector<VolumeElement>& tetrahedra) {
   // We want to identify a triangle ABC from all six permutations of A,B,C

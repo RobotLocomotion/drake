@@ -12,19 +12,10 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/type_safe_index.h"
 #include "drake/geometry/proximity/mesh_traits.h"
 
 namespace drake {
 namespace geometry {
-/** Index used to identify a vertex in a volume mesh. Use `int` instead; this
- will disappear imminently. */
-using VolumeVertexIndex = int;
-
-/** Index used to identify a tetrahedral element in a volume mesh. Use `int`
- instead; this will disappear imminently. */
-using VolumeElementIndex = int;
-
 /** %VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
  topological entity in the sense that it only knows the indices of its vertices
  but not their coordinates.
@@ -122,14 +113,6 @@ class VolumeMesh {
    */
   static constexpr int kVertexPerElement = 4;
 
-  /** Index for identifying a vertex.
-   */
-  using VertexIndex = int;
-
-  /** Index for identifying a tetrahedral element.
-   */
-  using ElementIndex = int;
-
   // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
   //  templated class doesn't depend on the class template parameter, but
   //  depends on some non-template-dependent property (kVertexPerElement).
@@ -164,7 +147,7 @@ class VolumeMesh {
     }
   }
 
-  const VolumeElement& element(ElementIndex e) const {
+  const VolumeElement& element(int e) const {
     DRAKE_DEMAND(0 <= e && num_elements());
     return elements_[e];
   }
@@ -238,7 +221,7 @@ class VolumeMesh {
    */
   template <typename C>
   Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, ElementIndex e) const {
+      const Vector3<C>& p_MQ, int e) const {
     // We have two conditions to satisfy.
     // 1. b₀ + b₁ + b₂ + b₃ = 1
     // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
