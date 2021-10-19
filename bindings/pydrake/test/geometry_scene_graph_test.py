@@ -52,7 +52,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
                                           shape=mut.Sphere(1.),
                                           name="sphere3"))
         props = mut.ProximityProperties()
-        mut.AddContactMaterial(elastic_modulus=1e8, properties=props)
+        mut.AddContactMaterial(hydroelastic_modulus=1e8, properties=props)
         mut.AddSoftHydroelasticProperties(resolution_hint=1, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_3,
                                properties=props)

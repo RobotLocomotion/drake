@@ -5,7 +5,7 @@ namespace geometry {
 namespace internal {
 
 const char* const kMaterialGroup = "material";
-const char* const kElastic = "elastic_modulus";
+const char* const kElastic = "hydroelastic_modulus";
 const char* const kFriction = "coulomb_friction";
 const char* const kHcDissipation = "hunt_crossley_dissipation";
 const char* const kPointStiffness = "point_contact_stiffness";
@@ -35,26 +35,28 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
 }  // namespace internal
 
 void AddContactMaterial(
-    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& hydroelastic_modulus,
     const std::optional<double>& dissipation,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties) {
-  AddContactMaterial(elastic_modulus, dissipation, {}, friction, properties);
+  AddContactMaterial(hydroelastic_modulus, dissipation, {}, friction,
+                     properties);
 }
 
 void AddContactMaterial(
-    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& hydroelastic_modulus,
     const std::optional<double>& dissipation,
     const std::optional<double>& point_stiffness,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties) {
-  if (elastic_modulus.has_value()) {
-    if (*elastic_modulus <= 0) {
-      throw std::logic_error(fmt::format(
-          "The elastic modulus must be positive; given {}", *elastic_modulus));
+  if (hydroelastic_modulus.has_value()) {
+    if (*hydroelastic_modulus <= 0) {
+      throw std::logic_error(
+          fmt::format("The hydroelastic modulus must be positive; given {}",
+                      *hydroelastic_modulus));
     }
     properties->AddProperty(internal::kMaterialGroup, internal::kElastic,
-                            *elastic_modulus);
+                            *hydroelastic_modulus);
   }
   if (dissipation.has_value()) {
     if (*dissipation < 0) {

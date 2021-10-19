@@ -273,11 +273,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeSphereVolumeMesh<double>(sphere, edge_length, strategy));
 
-  const double elastic_modulus =
+  const double hydroelastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+      MakeSpherePressureField(sphere, mesh.get(), hydroelastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
@@ -289,11 +289,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto mesh =
       make_unique<VolumeMesh<double>>(MakeBoxVolumeMeshWithMa<double>(box));
 
-  const double elastic_modulus =
+  const double hydroelastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeBoxPressureField(box, mesh.get(), elastic_modulus));
+      MakeBoxPressureField(box, mesh.get(), hydroelastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
@@ -306,11 +306,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeCylinderVolumeMeshWithMa<double>(cylinder, edge_length));
 
-  const double elastic_modulus =
+  const double hydroelastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeCylinderPressureField(cylinder, mesh.get(), elastic_modulus));
+      MakeCylinderPressureField(cylinder, mesh.get(), hydroelastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
@@ -323,11 +323,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeCapsuleVolumeMesh<double>(capsule, edge_length));
 
-  const double elastic_modulus =
+  const double hydroelastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeCapsulePressureField(capsule, mesh.get(), elastic_modulus));
+      MakeCapsulePressureField(capsule, mesh.get(), hydroelastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
@@ -344,11 +344,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length, strategy));
 
-  const double elastic_modulus =
+  const double hydroelastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
-      MakeEllipsoidPressureField(ellipsoid, mesh.get(), elastic_modulus));
+      MakeEllipsoidPressureField(ellipsoid, mesh.get(), hydroelastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
@@ -360,10 +360,10 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const double thickness =
       validator.Extract(props, kHydroGroup, kSlabThickness);
 
-  const double elastic_modulus =
+  const double hydroelastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
-  return SoftGeometry(SoftHalfSpace{elastic_modulus / thickness});
+  return SoftGeometry(SoftHalfSpace{hydroelastic_modulus / thickness});
 }
 
 }  // namespace hydroelastic

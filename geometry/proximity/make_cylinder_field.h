@@ -12,8 +12,8 @@ namespace internal {
  Generates a piecewise-linear pressure field inside the given cylinder as
  represented by the given volume mesh. The pressure at a point is defined
  as E * e(x) where e ∈ [0,1] is the extent -- a measure of penetration into
- the volume, and E is the given `elastic_modulus`. The pressure is zero on the
- boundary with maximum E in the interior.
+ the volume, and E is the given `hydroelastic_modulus`. The pressure is zero on
+ the boundary with maximum E in the interior.
 
  For hydroelastics, a desirable mesh (`mesh_C` parameter) for this field can
  be created by MakeCylinderMeshWithMa(), which has these properties:
@@ -39,9 +39,9 @@ namespace internal {
                          remain alive as long as the field. The position
                          vectors of mesh vertices are expressed in the
                          cylinder's frame C.
- @param[in] elastic_modulus  Scale extent to pressure.
+ @param[in] hydroelastic_modulus  Scale extent to pressure.
  @return                 The pressure field defined on the tetrahedral mesh.
- @pre                    `elastic_modulus` is strictly positive.
+ @pre                    `hydroelastic_modulus` is strictly positive.
                          `mesh_C` represents the cylinder and has enough
                          resolution to represent the pressure field.
  @tparam_nonsymbolic_scalar
@@ -49,7 +49,7 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const Cylinder& cylinder, const VolumeMesh<T>* mesh_C,
-    const T elastic_modulus);
+    const T hydroelastic_modulus);
 
 }  // namespace internal
 }  // namespace geometry

@@ -141,7 +141,7 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
                             canonical frame) and the world frame W.
  @param[in] pressure_scale  A linear scale factor that transforms penetration
                             depth into pressure values. Generally,
-                            `pressure_scale = elastic_modulus / thickness`.
+                            `pressure_scale = hydroelastic_modulus / thickness`.
  @param[in] id_R            The id of the rigid mesh.
  @param[in] mesh_R          The rigid mesh. The field mesh vertices are measured
                             and expressed in Frame R.

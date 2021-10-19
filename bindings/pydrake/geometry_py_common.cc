@@ -482,7 +482,7 @@ void DoScalarIndependentDefinitions(py::module m) {
           const std::optional<double>&, const std::optional<double>&,
           const std::optional<multibody::CoulombFriction<double>>&,
           ProximityProperties*>(&AddContactMaterial),
-      py::arg("elastic_modulus") = std::nullopt,
+      py::arg("hydroelastic_modulus") = std::nullopt,
       py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
       py::arg("friction") = std::nullopt, py::arg("properties"),

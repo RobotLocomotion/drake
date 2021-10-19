@@ -16,8 +16,8 @@ namespace internal {
 template <typename T>
 VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const Cylinder& cylinder, const VolumeMesh<T>* mesh_C,
-    const T elastic_modulus) {
-  DRAKE_DEMAND(elastic_modulus > T(0));
+    const T hydroelastic_modulus) {
+  DRAKE_DEMAND(hydroelastic_modulus > T(0));
   const double radius = cylinder.radius();
   const double length = cylinder.length();
   const double min_half_size = std::min(radius, length / 2.0);
@@ -57,7 +57,8 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const T extent = -signed_distance / T(min_half_size);
     using std::min;
     // Bound the pressure values in [0, E], where E is the elastic modulus.
-    pressure_values.push_back(min(elastic_modulus * extent, elastic_modulus));
+    pressure_values.push_back(
+        min(hydroelastic_modulus * extent, hydroelastic_modulus));
   }
 
   // Make sure the boundary vertices have zero pressure. Numerical rounding

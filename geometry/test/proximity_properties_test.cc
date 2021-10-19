@@ -40,7 +40,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     EXPECT_EQ(mu_stored.dynamic_friction(), mu.dynamic_friction());
   }
 
-  // Error case: Already has elastic_modulus.
+  // Error case: Already has hydroelastic_modulus.
   {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kElastic, E);

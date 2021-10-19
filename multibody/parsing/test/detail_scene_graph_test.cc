@@ -1078,7 +1078,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
-    <drake:elastic_modulus>3.5</drake:elastic_modulus>
+    <drake:hydroelastic_modulus>3.5</drake:hydroelastic_modulus>
     <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
