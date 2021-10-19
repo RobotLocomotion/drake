@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <optional>
+#include <regex>
 #include <sstream>
 #include <tuple>
 #include <utility>
@@ -142,12 +143,13 @@ string GetParentDirectory(const string& directory) {
   return filesystem::path(directory).parent_path().string();
 }
 
-// Removes leading and trailing whitespace from a string.
-string Trim(string target) {
+// Removes leading and trailing whitespace and line breaks from a string.
+string RemoveBreaksAndIndentation(string target) {
+  static const std::regex midspan_breaks("\\s*\\n\\s*");
   static const string whitespace_characters = " \r\n\t";
   target.erase(0, target.find_first_not_of(whitespace_characters));
   target.erase(target.find_last_not_of(whitespace_characters) + 1);
-  return target;
+  return std::regex_replace(target, midspan_breaks, " ");
 }
 
 // Parses the package.xml file specified by package_xml_file. Finds and returns
@@ -190,7 +192,9 @@ std::tuple<string, std::optional<string>> ParsePackageManifest(
       if (deprecated_node->NoChildren()) {
         deprecated_message = {""};
       } else {
-        deprecated_message = {Trim(deprecated_node->FirstChild()->Value())};
+        deprecated_message = {
+          RemoveBreaksAndIndentation(deprecated_node->FirstChild()->Value())
+        };
       }
     }
   }
