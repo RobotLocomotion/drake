@@ -47,9 +47,9 @@ Sample uses: @code
   };
 
   // Type alias goes before the '='.
-  using NewType
+  using OldType
       DRAKE_DEPRECATED("2038-01-19", "Use NewType instead.")
-      = OldType;
+      = NewType;
 @endcode
 */
 #define DRAKE_DEPRECATED(removal_date, message)
