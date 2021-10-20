@@ -14,8 +14,8 @@ def voxelized_geometry_tools_repository(
         repository = "ToyotaResearchInstitute/voxelized_geometry_tools",
         # When updating, ensure that any new unit tests are reflected in
         # package.BUILD.bazel and BUILD.bazel in drake.
-        commit = "f4fdbfa75bffa225afda13f5adce6e3edf9538ee",
-        sha256 = "a52a869a5050ccf5822a0095e24208d58e29262a334ad0db36193c2457621b92",  # noqa
+        commit = "677127a546984c3c0fb0e42fb694217328f66923",
+        sha256 = "227f0c35dfccfca32ef816a3d66fb56c6e80e851b974863337de087838db6b3f",  # noqa
         build_file = "@drake//tools/workspace/voxelized_geometry_tools:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )

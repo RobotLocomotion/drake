@@ -14,8 +14,8 @@ def common_robotics_utilities_repository(
         repository = "ToyotaResearchInstitute/common_robotics_utilities",
         # When updating, ensure that any new unit tests are reflected in
         # package.BUILD.bazel and BUILD.bazel in drake.
-        commit = "bbd315e222b97fb6dbf69e1f2efbe994e749874c",
-        sha256 = "4dba27e69f9557a1c4ce38358ee52bd877a73e02de3f1705aafd095e63a9de07",  # noqa
+        commit = "2d5593f89e4245946b06fdbd5402519f65c15ded",
+        sha256 = "8c7a1f79809975cdfeb2e6bf78687f643e446b35983d34447d6cea965486ea4a",  # noqa
         build_file = "@drake//tools/workspace/common_robotics_utilities:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )
