@@ -142,6 +142,8 @@ class CollisionObjects : public geometry::ShapeReifier {
     math::RigidTransform<T> pose_in_world;
   };
 
+  using ShapeReifier::ImplementGeometry;
+
   void ImplementGeometry(const geometry::Sphere& sphere,
                          void* user_data) override;
   void ImplementGeometry(const geometry::Cylinder& cylinder,
