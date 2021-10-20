@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
@@ -49,32 +50,30 @@ void FlattenModelDirectives(const ModelDirectives& directives,
                             const drake::multibody::PackageMap& package_map,
                             ModelDirectives* out);
 
-// TODO(#13520) This rather ugly mechanism was added because a caller cannot
-// add model error after `ProcessModelDirectives` and so needs to pass any
-// requested error in beforehand.  However:
-// TODO(#14084) It is likely that we will remove this mechanism in the future
-// and replace it with a separate model directives transform stage.
-//
-/// (Advanced) Provides a magical way to inject error into model directives,
-/// for instance if the caller has modeling error to add that is not reflected
-/// in the directives file.  Maps from (parent_frame, child_frame) -> X_PCe,
-/// where Ce is the perturbed child frame pose w.r.t. parent frame P. If there
-/// is no error, then nullopt should be returned.
-using ModelWeldErrorFunction =
-    std::function<std::optional<drake::math::RigidTransformd>(
-        const std::string& parent,
-        const std::string& child)>;
-
 /// Processes model directives for a given MultibodyPlant.
-///
-/// @note the ModelWeldErrorFunction argument, described above, is likely to
-/// go away when a cleaner mechanism is developed.
 void ProcessModelDirectives(
     const ModelDirectives& directives,
     drake::multibody::MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models = nullptr,
-    drake::multibody::Parser* parser = nullptr,
-    ModelWeldErrorFunction = nullptr);
+    drake::multibody::Parser* parser = nullptr);
+
+// To be removed on 2022-02-01.
+using ModelWeldErrorFunctionToBeDeprecated =
+    std::function<std::optional<drake::math::RigidTransformd>(
+        const std::string& parent,
+        const std::string& child)>;
+
+DRAKE_DEPRECATED("2022-02-01", "ModelWeldErrorFunction is no longer supported.")
+void ProcessModelDirectives(
+    const ModelDirectives& directives,
+    drake::multibody::MultibodyPlant<double>* plant,
+    std::vector<ModelInstanceInfo>* added_models,
+    drake::multibody::Parser* parser,
+    ModelWeldErrorFunctionToBeDeprecated);
+
+using ModelWeldErrorFunction
+    DRAKE_DEPRECATED("2022-02-01", "This feature is no longer supported.")
+    = ModelWeldErrorFunctionToBeDeprecated;
 
 }  // namespace parsing
 }  // namespace multibody
