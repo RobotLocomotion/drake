@@ -103,6 +103,8 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Test the model error mechanism.
 GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
   const RigidTransformd error_transform({0.1, 0., 0.1}, {2, 3, 4});
@@ -152,6 +154,7 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
     }
   }
 }
+#pragma GCC diagnostic pop
 
 // Make sure we have good error messages.
 GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {

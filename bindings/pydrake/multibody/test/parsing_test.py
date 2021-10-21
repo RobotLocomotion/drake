@@ -128,7 +128,3 @@ class TestParsing(unittest.TestCase):
         AddFrame.X_PF
         frame = GetScopedFrameByName(plant, "world")
         self.assertIsNotNone(GetScopedFrameName(plant, frame))
-
-    def test_model_directives_doc(self):
-        """Check that the warning note in the docstring was added."""
-        self.assertIn("Note:\n", ProcessModelDirectives.__doc__)
