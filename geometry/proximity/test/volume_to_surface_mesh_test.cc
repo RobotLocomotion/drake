@@ -24,7 +24,7 @@ Vector3<T> CalcFaceNormal(const TriangleSurfaceMesh<T>& surface,
   //  by adding a member variable `normal_M_` similar to `area_`. Consequently
   //  we will update `normal_M_` when TransformVertices() and
   //  ReverseFaceWinding() of TriangleSurfaceMesh are called.
-  const SurfaceFace& face = surface.element(face_index);
+  const SurfaceTriangle& face = surface.element(face_index);
   const Vector3<T>& r_MA = surface.vertex(face.vertex(0));
   const Vector3<T>& r_MB = surface.vertex(face.vertex(1));
   const Vector3<T>& r_MC = surface.vertex(face.vertex(2));

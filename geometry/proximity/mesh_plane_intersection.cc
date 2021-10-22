@@ -67,7 +67,7 @@ void SliceTetWithPlane(int tet_index,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
                        ContactPolygonRepresentation representation,
-                       std::vector<SurfaceFace>* faces,
+                       std::vector<SurfaceTriangle>* faces,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
                        std::unordered_map<SortedPair<int>, int>* cut_edges) {
@@ -177,7 +177,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     ContactPolygonRepresentation representation) {
   if (tet_indices.size() == 0) return nullptr;
 
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   std::vector<Vector3<T>> vertices_W;
   std::vector<T> surface_e;
   std::unordered_map<SortedPair<int>, int> cut_edges;

@@ -87,7 +87,7 @@ unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
 //   v0(0,0,0)  v1(1,0,0)
 //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   vector<Vector3<T>> vertices = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
@@ -342,7 +342,8 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   EXPECT_EQ(dut.id_N(), id_M);
 
   // Determines if two faces have the same indices in the same order.
-  auto are_identical = [](const SurfaceFace& f1, const SurfaceFace& f2) {
+  auto are_identical = [](const SurfaceTriangle& f1,
+                          const SurfaceTriangle& f2) {
     return f1.vertex(0) == f2.vertex(0) && f1.vertex(1) == f2.vertex(1) &&
            f1.vertex(2) == f2.vertex(2);
   };

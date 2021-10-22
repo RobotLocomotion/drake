@@ -41,7 +41,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
 //   v0(0,0,0)  v1(1,0,0)
 //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data[4] = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};

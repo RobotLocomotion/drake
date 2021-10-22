@@ -73,7 +73,7 @@ std::vector<Vector3d> TinyObjToSurfaceVertices(
      Every face is a triangle.
  */
 void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
-                           std::vector<SurfaceFace>* faces) {
+                           std::vector<SurfaceTriangle>* faces) {
   //
   // In general, tinyobj::mesh_t::num_face_vertices is a list of number
   // of vertices of each polygonal face like this:
@@ -159,7 +159,7 @@ TriangleSurfaceMesh<double> DoReadObjToSurfaceMesh(
                       [](int sum, const tinyobj::shape_t& shape) {
                         return sum + shape.mesh.num_face_vertices.size();
                       });
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   faces.reserve(total_num_faces);
   for (const tinyobj::shape_t& shape : shapes) {
     TinyObjToSurfaceFaces(shape.mesh, &faces);

@@ -22,7 +22,7 @@ using geometry::ContactSurface;
 using geometry::GeometryId;
 using geometry::MeshFieldLinear;
 using geometry::SceneGraph;
-using geometry::SurfaceFace;
+using geometry::SurfaceTriangle;
 using geometry::TriangleSurfaceMesh;
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -39,7 +39,7 @@ namespace internal {
 // an open box with five faces but, for simplicity, we'll only
 // use the bottom face (two triangles).
 std::unique_ptr<TriangleSurfaceMesh<double>> CreateSurfaceMesh() {
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
 
   // Create the vertices, all of which are offset vectors defined in the
   // halfspace body frame.
@@ -660,7 +660,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
       p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
   };
 
-  std::vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
+  std::vector<SurfaceTriangle> faces({SurfaceTriangle{0, 1, 2}});
   auto mesh_W = std::make_unique<geometry::TriangleSurfaceMesh<AutoDiffXd>>(
       std::move(faces), std::move(vertices));
   // Note: these values are garbage. They merely allow us to instantiate the

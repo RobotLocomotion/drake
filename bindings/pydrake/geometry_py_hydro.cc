@@ -31,7 +31,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "TriangleSurfaceMesh", param, doc.TriangleSurfaceMesh.doc);
     cls  // BR
-        .def(py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>>(),
+        .def(py::init<std::vector<SurfaceTriangle>, std::vector<Vector3<T>>>(),
             py::arg("faces"), py::arg("vertices"),
             doc.TriangleSurfaceMesh.ctor.doc)
         .def("faces", &Class::faces, doc.TriangleSurfaceMesh.faces.doc)
@@ -66,11 +66,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc.drake.geometry;
 
-  // SurfaceFace
+  // SurfaceTriangle
   {
-    using Class = SurfaceFace;
-    constexpr auto& cls_doc = doc.SurfaceFace;
-    py::class_<Class> cls(m, "SurfaceFace", cls_doc.doc);
+    using Class = SurfaceTriangle;
+    constexpr auto& cls_doc = doc.SurfaceTriangle;
+    py::class_<Class> cls(m, "SurfaceTriangle", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), cls_doc.ctor.doc_3args)

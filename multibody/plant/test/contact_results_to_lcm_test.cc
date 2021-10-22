@@ -28,7 +28,7 @@ using geometry::MeshFieldLinear;
 using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using geometry::SurfaceFace;
+using geometry::SurfaceTriangle;
 using geometry::TriangleSurfaceMesh;
 using math::RigidTransform;
 using multibody::internal::FullBodyName;
@@ -147,7 +147,7 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
    looping through elements). The position of the vertices is offset by offset.
    The position of the vertices is irrelevant -- the mesh is just a collection
    of doubles that get copied. */
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   vector<Vector3<T>> vertices;
   vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5) + offset);
   vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5) + offset);

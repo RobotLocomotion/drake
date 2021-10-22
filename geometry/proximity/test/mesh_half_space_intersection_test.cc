@@ -64,7 +64,7 @@ TriangleSurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
        X_FB * Vector3d(1, 1, -1), X_FB * Vector3d(1, 1, 1)}};
 
   // Set the twelve box faces using a counter-clockwise winding.
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   faces.emplace_back(4, 6, 7);  // +X face
   faces.emplace_back(7, 5, 4);  // +X face
   faces.emplace_back(1, 3, 2);  // -X face
@@ -99,7 +99,7 @@ static TriangleSurfaceMesh<double> CreateMeshWithCentroids(
   // All of the original vertices are part of the final mesh. And each face
   // is a polygon we want to add to the new mesh. So, we copy the vertices
   // and then simply add polygon after polygon.
-  std::vector<SurfaceFace> new_faces;
+  std::vector<SurfaceTriangle> new_faces;
   std::vector<Vector3d> new_vertices_W;
   std::transform(mesh_F.vertices().begin(), mesh_F.vertices().end(),
                  std::back_inserter(new_vertices_W),
@@ -109,7 +109,7 @@ static TriangleSurfaceMesh<double> CreateMeshWithCentroids(
 
   const RotationMatrix<double>& R_WF = X_WF_d.rotation();
   for (int f_index = 0; f_index < mesh_F.num_faces(); ++f_index) {
-    const SurfaceFace& f = mesh_F.element(f_index);
+    const SurfaceTriangle& f = mesh_F.element(f_index);
     // We want to add the triangle fan for the existing face, but also want to
     // confirm that the new faces have normals that match the input face.
     std::vector<int> polygon{f.vertex(0), f.vertex(1), f.vertex(2)};
@@ -122,7 +122,7 @@ static TriangleSurfaceMesh<double> CreateMeshWithCentroids(
     const int num_new_faces = static_cast<int>(new_faces.size());
     const int first_new_face_index = num_new_faces - 3;
     for (int j = first_new_face_index; j < num_new_faces; ++j) {
-      const SurfaceFace& new_face = new_faces[j];
+      const SurfaceTriangle& new_face = new_faces[j];
       const Vector3d& a = new_vertices_W[new_face.vertex(0)];
       const Vector3d& b = new_vertices_W[new_face.vertex(1)];
       const Vector3d& c = new_vertices_W[new_face.vertex(2)];
@@ -153,7 +153,7 @@ template <typename T>
 TriangleSurfaceMesh<double> CreateMeshOfIndependentTriangles(
     const TriangleSurfaceMesh<double>& mesh_F, const RigidTransform<T>& X_WF) {
   std::vector<Vector3d> vertices_W;
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
   for (const auto& face : mesh_F.faces()) {
     const size_t v = vertices_W.size();
@@ -172,7 +172,7 @@ TriangleSurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
                                           const Vector3d& v2) {
   std::vector<Vector3d> vertices{{v0, v1, v2}};
 
-  std::vector<SurfaceFace> faces = {SurfaceFace(0, 1, 2)};
+  std::vector<SurfaceTriangle> faces = {SurfaceTriangle(0, 1, 2)};
 
   return TriangleSurfaceMesh<double>(move(faces), move(vertices));
 }
@@ -185,7 +185,7 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
  public:
   // Accessors for data structures used repeatedly.
   std::vector<Vector3<T>>& new_vertices_W() { return new_vertices_W_; }
-  std::vector<SurfaceFace>& new_faces() { return new_faces_; }
+  std::vector<SurfaceTriangle>& new_faces() { return new_faces_; }
   std::unordered_map<int, int>& vertices_to_newly_created_vertices() {
     return vertices_to_newly_created_vertices_;
   }
@@ -196,9 +196,9 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   // Checks whether two faces from two meshes are equivalent, which we define
   // to mean as some permutation of acceptable windings for the vertices of
   // `fb` yields vertices coincident with those of `fa`.
-  bool AreFacesEquivalent(const SurfaceFace& fa,
+  bool AreFacesEquivalent(const SurfaceTriangle& fa,
                           const TriangleSurfaceMesh<double>& mesh_a,
-                          const SurfaceFace& fb,
+                          const SurfaceTriangle& fb,
                           const TriangleSurfaceMesh<T>& mesh_b) {
     constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
     // Get the three vertices from each.
@@ -213,8 +213,9 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
     // triangles align. Each of these faces encodes an "acceptable" triangle
     // winding. They are "acceptable" because they represent triangles with the
     // same winding and, therefore, the same normal.
-    std::array<SurfaceFace, 3> permutations = {
-        SurfaceFace(0, 1, 2), SurfaceFace(1, 2, 0), SurfaceFace(2, 0, 1)};
+    std::array<SurfaceTriangle, 3> permutations = {SurfaceTriangle(0, 1, 2),
+                                                   SurfaceTriangle(1, 2, 0),
+                                                   SurfaceTriangle(2, 0, 1)};
 
     // Verify that at least one of the permutations gives essentially the
     // vertices from fb. We use epsilon because the centroid vertex may have
@@ -246,8 +247,8 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
     // second mesh that is within the given tolerance. This is a quadratic
     // time algorithm (in the number of faces of the meshes) but we expect the
     // number of faces that this algorithm is run on to be small.
-    std::vector<SurfaceFace> faces_from_mesh_b = mesh_b.faces();
-    for (const SurfaceFace& f1 : mesh_a.faces()) {
+    std::vector<SurfaceTriangle> faces_from_mesh_b = mesh_b.faces();
+    for (const SurfaceTriangle& f1 : mesh_a.faces()) {
       bool found_match = false;
       for (int i = 0; i < static_cast<int>(faces_from_mesh_b.size()); ++i) {
         if (AreFacesEquivalent(f1, mesh_a, faces_from_mesh_b[i], mesh_b)) {
@@ -303,7 +304,7 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   }
 
   std::vector<Vector3<T>> new_vertices_W_;
-  std::vector<SurfaceFace> new_faces_;
+  std::vector<SurfaceTriangle> new_faces_;
   std::unordered_map<int, int> vertices_to_newly_created_vertices_;
   std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices_;
   // In this test harness, the half space is always simply defined in the
@@ -414,8 +415,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
     SCOPED_TRACE(fmt::format("represenation = {}", representation));
     std::vector<Vector3d> vertices = {Vector3d(4, 5, 2), Vector3d(3, 5, 2),
                                       Vector3d(3, 5, 1), Vector3d(2, 5, 2)};
-    std::vector<SurfaceFace> faces = {SurfaceFace(0, 1, 2),
-                                      SurfaceFace(2, 1, 3)};
+    std::vector<SurfaceTriangle> faces = {SurfaceTriangle(0, 1, 2),
+                                          SurfaceTriangle(2, 1, 3)};
     const TriangleSurfaceMesh<double> mesh_F(move(faces), move(vertices));
 
     // Verify the intersection.
@@ -483,8 +484,9 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
         std::vector<Vector3d> expected_vertices_W = {
             X_WF_d * Vector3d(3, 5, 2), X_WF_d * Vector3d(3, 5, 2),
             X_WF_d * Vector3d(3, 5, 2), X_WF_d * Vector3d(3, 5, 2)};
-        std::vector<SurfaceFace> expected_faces = {
-            SurfaceFace(0, 1, 3), SurfaceFace(1, 2, 3), SurfaceFace(2, 0, 3)};
+        std::vector<SurfaceTriangle> expected_faces = {
+            SurfaceTriangle(0, 1, 3), SurfaceTriangle(1, 2, 3),
+            SurfaceTriangle(2, 0, 3)};
         const TriangleSurfaceMesh<double> expected_mesh_W(move(expected_faces),
                                                   move(expected_vertices_W));
         const TriangleSurfaceMesh<T> actual_mesh_W(move(this->new_faces()),
@@ -591,9 +593,9 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
             X_WF_d * Vector3d(2, 5, 2),
             X_WF_d * Vector3d(3, 5, 2)};
         const int b{0}, c{1}, d{2}, e{3}, f{4};
-        std::vector<SurfaceFace> expected_faces = {
-            SurfaceFace(b, c, f), SurfaceFace(c, d, f), SurfaceFace(d, e, f),
-            SurfaceFace(e, b, f)};
+        std::vector<SurfaceTriangle> expected_faces = {
+            SurfaceTriangle(b, c, f), SurfaceTriangle(c, d, f),
+            SurfaceTriangle(d, e, f), SurfaceTriangle(e, b, f)};
 
         SCOPED_TRACE(
             "Triangle outside half space has single edge on the plane");
@@ -715,7 +717,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
                                           X_WF_d * Vector3d(3.5, 5, 2),   // d
                                           X_WF_d * Vector3d(2.5, 5, 2)};  // e
     std::vector<Vector3d> expected_vertices_W;
-    std::vector<SurfaceFace> expected_faces;
+    std::vector<SurfaceTriangle> expected_faces;
     const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
@@ -803,7 +805,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
         X_WF_d * Vector3d(3.5, 5, 2),   // d
         X_WF_d * Vector3d(2.5, 5, 2)};  // e
     std::vector<Vector3d> expected_vertices_W;
-    std::vector<SurfaceFace> expected_faces;
+    std::vector<SurfaceTriangle> expected_faces;
     const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
@@ -875,7 +877,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
                                                X_WF_d * Vector3d(3, 5.5, 2),
                                                X_WF_d * Vector3d(3.5, 5.5, 2)};
     std::vector<Vector3d> expected_vertices_W;
-    std::vector<SurfaceFace> expected_faces;
+    std::vector<SurfaceTriangle> expected_faces;
     const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
@@ -1309,7 +1311,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     /* Set up the *rigid* mesh. */
     vector<Vector3d> vertices{Vector3d{0, 0, 0}, Vector3d{1, 0, 0},
                               Vector3d{0, 0, -1}};
-    using Face = SurfaceFace;
+    using Face = SurfaceTriangle;
     vector<Face> faces{{Face{0, 1, 2}}};
     id_R_ = GeometryId::get_new_id();
     mesh_R_ =

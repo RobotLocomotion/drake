@@ -381,7 +381,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
 template<typename T>
 unique_ptr<TriangleSurfaceMesh<T>> TrivialSurfaceMesh() {
   const int face_data[3] = {0, 1, 2};
-  std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
+  std::vector<SurfaceTriangle> faces{SurfaceTriangle(face_data)};
   std::vector<Vector3<T>> vertices = {
       Vector3<T>::Zero(),
       Vector3<T>::UnitX(),
@@ -669,7 +669,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
   unique_ptr<TriangleSurfaceMesh<double>> surface_N;
   {
     const int face_data[3] = {0, 1, 2};
-    std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
+    std::vector<SurfaceTriangle> faces{SurfaceTriangle(face_data)};
     // clang-format off
     std::vector<Vector3d> vertices = {
         {1.5,   1.5, 0.},
@@ -764,7 +764,7 @@ int GetTetForTriangle(const TriangleSurfaceMesh<T>& surface_S, int f,
   // gradient value reported should be that of that tet. So, we'll grab
   // the centroid of each triangle, find the tet it lies in, and confirm
   // that the pressure gradient on that triangle matches the tet.
-  const SurfaceFace& face = surface_S.element(f);
+  const SurfaceTriangle& face = surface_S.element(f);
   const Vector3<T> p_SC =
       (vertices_S[face.vertex(0)] + vertices_S[face.vertex(1)] +
        vertices_S[face.vertex(2)]) /
@@ -865,7 +865,7 @@ class MeshIntersectionFixture : public testing::Test {
     }
 
     // Only the soft volume mesh provides gradients.
-    const std::vector<SurfaceFace>& faces = surface_S->faces();
+    const std::vector<SurfaceTriangle>& faces = surface_S->faces();
     ASSERT_EQ(faces.size(), grad_eS_S.size());
     for (int f = 0; f < surface_S->num_elements(); ++f) {
       const int t = GetTetForTriangle(*surface_S, f, *mesh_S_, {});
@@ -1080,7 +1080,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     vector<Vector3d> vertices{Vector3d{-5, -5, 0},
                               Vector3d{5, -5, 0},
                               Vector3d{0, 5, 0}};
-    vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
+    vector<SurfaceTriangle> faces({SurfaceTriangle{0, 1, 2}});
     tri_mesh_R_ =
         make_unique<TriangleSurfaceMesh<double>>(move(faces), move(vertices));
     bvh_R_ = make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*tri_mesh_R_);

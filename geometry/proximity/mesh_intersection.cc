@@ -305,7 +305,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   DRAKE_DEMAND(grad_eM_Ms != nullptr);
   grad_eM_Ms->clear();
 
-  std::vector<SurfaceFace> surface_faces;
+  std::vector<SurfaceTriangle> surface_faces;
   std::vector<Vector3<T>> surface_vertices_M;
   std::vector<T> surface_e;
   const VolumeMesh<double>& mesh_M = volume_field_M.mesh();

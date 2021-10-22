@@ -65,10 +65,10 @@ class TestGeometryHydro(unittest.TestCase):
         #      |/___|
         #     2      3
 
-        f_a = mut.SurfaceFace(v0=3, v1=1, v2=2)
-        f_b = mut.SurfaceFace(v0=2, v1=1, v2=0)
-        self.assertEqual(f_a.vertex(0), 3)
-        self.assertEqual(f_b.vertex(1), 1)
+        t_a = mut.SurfaceTriangle(v0=3, v1=1, v2=2)
+        t_b = mut.SurfaceTriangle(v0=2, v1=1, v2=0)
+        self.assertEqual(t_a.vertex(0), 3)
+        self.assertEqual(t_b.vertex(1), 1)
 
         v0 = (-1,  1, 0)
         v1 = (1,  1, 0)

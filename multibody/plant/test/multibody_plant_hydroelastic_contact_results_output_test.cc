@@ -12,7 +12,6 @@ using Eigen::Vector3d;
 namespace drake {
 
 using geometry::ContactSurface;
-using geometry::SurfaceFace;
 
 namespace multibody {
 namespace {

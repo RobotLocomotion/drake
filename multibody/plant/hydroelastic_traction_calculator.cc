@@ -13,7 +13,7 @@
 namespace drake {
 
 using geometry::ContactSurface;
-using geometry::SurfaceFace;
+using geometry::SurfaceTriangle;
 using geometry::TriangleSurfaceMesh;
 using geometry::SurfaceMeshFieldLinear;
 using math::RigidTransform;

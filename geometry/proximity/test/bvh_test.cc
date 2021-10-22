@@ -176,7 +176,7 @@ TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
   using BvType = TypeParam;
   // A mesh of two triangles that are well separated by X-Y plane.
   const TriangleSurfaceMesh<double> mesh(
-      {SurfaceFace(0, 1, 2), SurfaceFace(3, 4, 5)},
+      {SurfaceTriangle(0, 1, 2), SurfaceTriangle(3, 4, 5)},
       {Vector3d(0, 0, 1), Vector3d(1, 0, 1), Vector3d(0, 1, 1),
        Vector3d(0, 0, -1), Vector3d(1, 0, -1), Vector3d(0, 1, -1)});
 
@@ -395,7 +395,7 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
         to exactly *two* invocations of the callback (tet, tri1) and
         (tet, tri2). */
 
-  using STri = SurfaceFace;
+  using STri = SurfaceTriangle;
   std::vector<Vector3d> vertices_S{{Vector3d(0, 0, 0),     // P
                                     Vector3d(1, 0, 1),     // Q
                                     Vector3d(2, 0, 0),     // R

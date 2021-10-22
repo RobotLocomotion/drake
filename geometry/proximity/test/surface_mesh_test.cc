@@ -55,7 +55,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
 
   // Create the two triangles. Note that TriangleSurfaceMesh does not specify
   // (or use) a particular winding.
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
@@ -66,7 +66,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
 // Generates an empty mesh.
 std::unique_ptr<TriangleSurfaceMesh<double>> GenerateEmptyMesh() {
   std::vector<Vector3d> vertices;
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   return std::make_unique<TriangleSurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 }
@@ -81,7 +81,7 @@ std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
     vertices.emplace_back(Vector3<double>::Zero());
 
   // Create the two triangles.
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
@@ -116,7 +116,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   // frame.
   //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
@@ -305,7 +305,7 @@ void TestCalcGradBarycentric() {
   // Create the mesh with vertex coordinates expressed in World frame to make
   // the test more realistic.
   const TriangleSurfaceMesh<T> mesh_W(
-      {SurfaceFace(triangle)},
+      {SurfaceTriangle(triangle)},
       {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
        Vector3<T>(X_WM * v2_M)});
 
@@ -379,7 +379,7 @@ void TestCalcGradientVectorOfLinearField() {
   const Vector3<T> v1_M(0., 1., 0.);
   const Vector3<T> v2_M(0., 0., 1.);
   const TriangleSurfaceMesh<T> mesh_M(
-      {SurfaceFace(triangle)},
+      {SurfaceTriangle(triangle)},
       {Vector3<T>(v0_M), Vector3<T>(v1_M), Vector3<T>(v2_M)});
   const std::array<T, 3> f{2., 3., 4.};
 
@@ -418,8 +418,8 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   auto test_mesh = std::make_unique<TriangleSurfaceMesh<double>>(*ref_mesh);
 
   // Simply confirms the two faces have the same indices in the same order.
-  auto faces_match = [](const SurfaceFace& ref_face,
-                            const SurfaceFace& test_face) {
+  auto faces_match = [](const SurfaceTriangle& ref_face,
+                        const SurfaceTriangle& test_face) {
     for (int i = 0; i < 3; ++i) {
       if (ref_face.vertex(i) != test_face.vertex(i)) return false;
     }
@@ -433,8 +433,8 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   test_mesh->ReverseFaceWinding();
 
   // Confirms that the two faces have the same indices but in reverse order.
-  auto winding_reversed = [](const SurfaceFace& ref_face,
-                             const SurfaceFace& test_face) {
+  auto winding_reversed = [](const SurfaceTriangle& ref_face,
+                             const SurfaceTriangle& test_face) {
     int test_first = test_face.vertex(0);
     int ref_first = -1;
     for (int i = 0; i < 3; ++i) {
@@ -541,7 +541,7 @@ class ScalarMixingTest : public ::testing::Test {
     vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(1)));
     vertices.emplace_back(mesh_d_->vertex(2));
     vertices.emplace_back(mesh_d_->vertex(3));
-    std::vector<SurfaceFace> faces(mesh_d_->faces());
+    std::vector<SurfaceTriangle> faces(mesh_d_->faces());
 
     mesh_ad_ = std::make_unique<TriangleSurfaceMesh<AutoDiffXd>>(
         std::move(faces), std::move(vertices));

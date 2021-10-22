@@ -118,7 +118,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
-    std::vector<SurfaceFace>* new_faces,
+    std::vector<SurfaceTriangle>* new_faces,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
     std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices) {
   // TODO(SeanCurtis-TRI): This needs to support the "backface" culling that is
@@ -130,7 +130,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   DRAKE_DEMAND(edges_to_newly_created_vertices != nullptr);
 
   const std::vector<Vector3<double>>& vertices_F = mesh_F.vertices();
-  const SurfaceFace& triangle = mesh_F.element(tri_index);
+  const SurfaceTriangle& triangle = mesh_F.element(tri_index);
 
   // TODO(SeanCurtis-TRI): This code _might_ look cleaner if it used the same
   //  pattern as plane-mesh intersection. I.e., use a bit-encoding of the sign
@@ -368,7 +368,7 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation) {
   std::vector<Vector3<T>> new_vertices_W;
-  std::vector<SurfaceFace> new_faces;
+  std::vector<SurfaceTriangle> new_faces;
   std::unordered_map<int, int> vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices;
 

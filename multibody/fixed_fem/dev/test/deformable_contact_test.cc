@@ -60,7 +60,7 @@ TriangleSurfaceMesh<T> MakePyramidSurface() {
                                {3, 2, 0},
                                {2, 1, 0},
                                {1, 4, 0}};
-  vector<geometry::SurfaceFace> faces;
+  vector<geometry::SurfaceTriangle> faces;
   for (auto& face : face_data) {
     faces.emplace_back(face);
   }
@@ -207,7 +207,7 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   /* Creates a surface mesh with a single, large-enough, triangle in the
    z-plane. */
   int face[3] = {0, 1, 2};
-  vector<geometry::SurfaceFace> faces;
+  vector<geometry::SurfaceTriangle> faces;
   faces.emplace_back(face);
   vector<Vector3<double>> tri_vertices = {{10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
   const TriangleSurfaceMesh<double> surface_R(std::move(faces),

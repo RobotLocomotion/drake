@@ -15,26 +15,27 @@
 
 namespace drake {
 namespace geometry {
-/** %SurfaceFace represents a triangular face in a TriangleSurfaceMesh.
+/** %SurfaceTriangle represents a triangular face in a TriangleSurfaceMesh.
  */
-class SurfaceFace {
+class SurfaceTriangle {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceFace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceTriangle)
 
-  /** Constructs SurfaceFace.
+  /** Constructs SurfaceTriangle.
    @param v0 Index of the first vertex in TriangleSurfaceMesh.
    @param v1 Index of the second vertex in TriangleSurfaceMesh.
    @param v2 Index of the last vertex in TriangleSurfaceMesh.
    @pre index values are non-negative. */
-  SurfaceFace(int v0, int v1, int v2) : vertex_({v0, v1, v2}) {
+  SurfaceTriangle(int v0, int v1, int v2) : vertex_({v0, v1, v2}) {
     DRAKE_DEMAND(v0 >= 0 && v1 >= 0 && v2 >= 0);
   }
 
-  /** Constructs SurfaceFace.
+  /** Constructs SurfaceTriangle.
    @param v  array of three integer indices of the vertices of the face in
              TriangleSurfaceMesh.
    @pre index values are non-negative. */
-  explicit SurfaceFace(const int v[3]) : SurfaceFace(v[0], v[1], v[2]) {}
+  explicit SurfaceTriangle(const int v[3])
+      : SurfaceTriangle(v[0], v[1], v[2]) {}
 
   /** Returns the vertex index in TriangleSurfaceMesh of the i-th vertex of this
    face.
@@ -120,13 +121,13 @@ class TriangleSurfaceMesh {
     @param e   The index of the triangular element.
     @pre e ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const SurfaceFace& element(int e) const {
+  const SurfaceTriangle& element(int e) const {
     DRAKE_DEMAND(0 <= e && e < num_faces());
     return faces_[e];
   }
 
   /** Returns the faces. */
-  const std::vector<SurfaceFace>& faces() const { return faces_; }
+  const std::vector<SurfaceTriangle>& faces() const { return faces_; }
 
   /** Returns the vertices. */
   const std::vector<Vector3<T>>& vertices() const { return vertices_; }
@@ -158,7 +159,7 @@ class TriangleSurfaceMesh {
    @param faces     The triangular faces.
    @param vertices  The vertices.
    */
-  TriangleSurfaceMesh(std::vector<SurfaceFace>&& faces,
+  TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& faces,
               std::vector<Vector3<T>>&& vertices)
       : faces_(std::move(faces)),
         vertices_(std::move(vertices)),
@@ -184,7 +185,7 @@ class TriangleSurfaceMesh {
   }
 
   /** Reverses the ordering of all the faces' indices -- see
-    SurfaceFace::ReverseWinding().
+    SurfaceTriangle::ReverseWinding().
    */
   void ReverseFaceWinding() {
     for (auto& f : faces_) {
@@ -374,8 +375,8 @@ class TriangleSurfaceMesh {
 
     // Check face indices.
     for (int i = 0; i < this->num_faces(); ++i) {
-      const SurfaceFace& face1 = this->element(i);
-      const SurfaceFace& face2 = mesh.element(i);
+      const SurfaceTriangle& face1 = this->element(i);
+      const SurfaceTriangle& face2 = mesh.element(i);
       for (int j = 0; j < 3; ++j)
         if (face1.vertex(j) != face2.vertex(j)) return false;
     }
@@ -418,7 +419,7 @@ class TriangleSurfaceMesh {
   Vector3<T> CalcGradBarycentric(int f, int i) const;
 
   // The triangles that comprise the surface.
-  std::vector<SurfaceFace> faces_;
+  std::vector<SurfaceTriangle> faces_;
   // The vertices that are shared among the triangles.
   std::vector<Vector3<T>> vertices_;
 
@@ -444,7 +445,7 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   p_MSc_.setZero();
 
   for (int f = 0; f < num_faces(); ++f) {
-    const SurfaceFace& face = faces_[f];
+    const SurfaceTriangle& face = faces_[f];
     const Vector3<T>& r_MA = vertices_[face.vertex(0)];
     const Vector3<T>& r_MB = vertices_[face.vertex(1)];
     const Vector3<T>& r_MC = vertices_[face.vertex(2)];

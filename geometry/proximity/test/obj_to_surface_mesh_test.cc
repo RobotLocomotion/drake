@@ -58,19 +58,20 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
       "f 1 2 3\n"
       "f 1 3 4\n"};
 
-  const std::vector<SurfaceFace> surface_faces(
+  const std::vector<SurfaceTriangle> surface_faces(
       ReadObjToSurfaceMesh(&test_stream).faces());
 
   EXPECT_EQ(2, surface_faces.size());
   // Vertex indices in obj file start with 1, but vertex indices in our
   // TriangleSurfaceMesh start with 0.
   const int expect_faces[2][3]{{0, 1, 2}, {0, 2, 3}};
-  auto face_equal = [](const SurfaceFace& f, const SurfaceFace& g) -> bool {
+  auto face_equal = [](const SurfaceTriangle& f,
+                       const SurfaceTriangle& g) -> bool {
     return std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2)) ==
-        std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
+           std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
   };
   for (int i = 0; i < 2; ++i) {
-    EXPECT_TRUE(face_equal(SurfaceFace(expect_faces[i]), surface_faces[i]));
+    EXPECT_TRUE(face_equal(SurfaceTriangle(expect_faces[i]), surface_faces[i]));
   }
 }
 
@@ -128,8 +129,8 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
       {4, 0, 7}, {0, 3, 7}   // face 5 1 4 8 in quad_cube.obj
   };
 
-  auto face_equal = [](const SurfaceFace& f,
-                       const SurfaceFace& g) -> ::testing::AssertionResult {
+  auto face_equal = [](const SurfaceTriangle& f,
+                       const SurfaceTriangle& g) -> ::testing::AssertionResult {
     const auto f_indices =
         std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2));
     const auto g_indices =
@@ -142,7 +143,8 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   };
 
   for (int i = 0; i < 12; ++i) {
-    EXPECT_TRUE(face_equal(SurfaceFace(expect_faces[i]), surface.element(i)));
+    EXPECT_TRUE(
+        face_equal(SurfaceTriangle(expect_faces[i]), surface.element(i)));
   }
 }
 

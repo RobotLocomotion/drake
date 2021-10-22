@@ -67,10 +67,10 @@ class BvhUpdaterTest : public ::testing::Test {
     // clang-format on
     if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
       /* The winding of the triangles don't matter. */
-      vector<SurfaceFace> triangles;
+      vector<SurfaceTriangle> triangles;
       for (int i = 0; i < MeshTraits<MeshType>::kMaxElementPerBvhLeaf; ++i) {
-        triangles.push_back(SurfaceFace(0, 1, 2));
-        triangles.push_back(SurfaceFace(3, 4, 5));
+        triangles.push_back(SurfaceTriangle(0, 1, 2));
+        triangles.push_back(SurfaceTriangle(3, 4, 5));
       }
       return MeshType(std::move(triangles), std::move(vertices));
     } else {

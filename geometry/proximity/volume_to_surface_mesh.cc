@@ -135,7 +135,7 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
     volume_to_surface.emplace(boundary_vertices[i], i);
   }
 
-  std::vector<SurfaceFace> surface_faces;
+  std::vector<SurfaceTriangle> surface_faces;
   surface_faces.reserve(boundary_faces.size());
   for (const auto& face_vertices : boundary_faces) {
     surface_faces.emplace_back(volume_to_surface.at(face_vertices[0]),
