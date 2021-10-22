@@ -77,7 +77,8 @@ class TestGeometryHydro(unittest.TestCase):
 
         self.assertListEqual(list(v0), [-1, 1, 0])
 
-        mesh = mut.SurfaceMesh(faces=(f_a, f_b), vertices=(v0, v1, v2, v3))
+        mesh = mut.TriangleSurfaceMesh(faces=(f_a, f_b),
+                                       vertices=(v0, v1, v2, v3))
         self.assertEqual(len(mesh.faces()), 2)
         self.assertEqual(len(mesh.vertices()), 4)
         self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
@@ -140,7 +141,7 @@ class TestGeometryHydro(unittest.TestCase):
 
         surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
 
-        self.assertIsInstance(surface_mesh, mut.SurfaceMesh)
+        self.assertIsInstance(surface_mesh, mut.TriangleSurfaceMesh)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")

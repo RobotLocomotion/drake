@@ -25,17 +25,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
 
-  // SurfaceMesh
+  // TriangleSurfaceMesh
   {
-    using Class = SurfaceMesh<T>;
+    using Class = TriangleSurfaceMesh<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SurfaceMesh", param, doc.SurfaceMesh.doc);
+        m, "TriangleSurfaceMesh", param, doc.TriangleSurfaceMesh.doc);
     cls  // BR
         .def(py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>>(),
-            py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
-        .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
-        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
-        .def("centroid", &Class::centroid, doc.SurfaceMesh.centroid.doc);
+            py::arg("faces"), py::arg("vertices"),
+            doc.TriangleSurfaceMesh.ctor.doc)
+        .def("faces", &Class::faces, doc.TriangleSurfaceMesh.faces.doc)
+        .def("vertices", &Class::vertices, doc.TriangleSurfaceMesh.vertices.doc)
+        .def(
+            "centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc);
   }
 
   // VolumeMesh

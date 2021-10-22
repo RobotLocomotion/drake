@@ -23,7 +23,7 @@ void WriteVtkHeader(std::ofstream& out, const std::string& title) {
 }
 
 /*
- @tparam Mesh  VolumeMesh<double> or SurfaceMesh<double>
+ @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
 template <typename Mesh>
 void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
@@ -67,7 +67,7 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
 }
 
 /*
- @tparam Mesh  VolumeMesh<double> or SurfaceMesh<double>
+ @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
 template<typename Mesh>
 void WriteMeshToVtk(const std::string& file_name,
@@ -129,7 +129,7 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
 }
 
 void WriteSurfaceMeshToVtk(const std::string& file_name,
-                           const SurfaceMesh<double>& mesh,
+                           const TriangleSurfaceMesh<double>& mesh,
                            const std::string& title) {
   WriteMeshToVtk(file_name, mesh, title);
 }

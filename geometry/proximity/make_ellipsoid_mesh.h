@@ -87,8 +87,8 @@ VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
            positions.
 */
 template <typename T>
-SurfaceMesh<T> MakeEllipsoidSurfaceMesh(const Ellipsoid& ellipsoid,
-                                        double resolution_hint) {
+TriangleSurfaceMesh<T> MakeEllipsoidSurfaceMesh(const Ellipsoid& ellipsoid,
+                                                double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(MakeEllipsoidVolumeMesh<T>(
       ellipsoid, resolution_hint, TessellationStrategy::kSingleInteriorVertex));

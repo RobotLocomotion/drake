@@ -26,7 +26,7 @@ namespace internal {
  maintain those associations for its entire lifetime (see DeformableVolumeMesh
  as an example).
 
- @tparam MeshType SurfaceMesh<T> or VolumeMesh<T> where T is double or
+ @tparam MeshType TriangleSurfaceMesh<T> or VolumeMesh<T> where T is double or
                   AutoDiffXd. */
 template <typename MeshType>
 class BvhUpdater {

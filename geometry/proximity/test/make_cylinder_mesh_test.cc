@@ -432,7 +432,7 @@ GTEST_TEST(MakeCylinderSurfaceMesh, GenerateSurface) {
   const double length = 2.0;
   const double resolution_hint = 3.0;
   const Cylinder cylinder(radius, length);
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeCylinderSurfaceMesh<double>(cylinder, resolution_hint);
   EXPECT_EQ(surface_mesh.num_faces(), 12);
   EXPECT_EQ(surface_mesh.num_vertices(), 8);

@@ -242,7 +242,7 @@ class ObbMakerTestRectangularBox : public ::testing::Test {
   }
 
  protected:
-  SurfaceMesh<double> mesh_M_;
+  TriangleSurfaceMesh<double> mesh_M_;
   std::set<int> test_vertices_;
 };
 
@@ -254,7 +254,7 @@ TEST_F(ObbMakerTestRectangularBox, CalcOrientationByPca) {
   // B is the frame of PCA solution for the oriented bounding box. We will
   // check it against the tested box's frame M.
   const RotationMatrixd R_MB =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_M_, test_vertices_)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_M_, test_vertices_)
           .CalcOrientationByPca();
   const Vector3d Mx_M = Vector3d::UnitX();
   const Vector3d My_M = Vector3d::UnitY();
@@ -298,10 +298,10 @@ TEST_F(ObbMakerTestRectangularBox, CalcOrientationByPca) {
   mesh_M_.TransformVertices(X_FM);
   // Now we use alias mesh_F because `mesh_M_` has been transformed; its stored
   // vertices are now measured and expressed in frame F.
-  const SurfaceMesh<double>& mesh_F = mesh_M_;
+  const TriangleSurfaceMesh<double>& mesh_F = mesh_M_;
 
   const RotationMatrixd R_FB =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_F, test_vertices_)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_F, test_vertices_)
           .CalcOrientationByPca();
   const Vector3d& Bx_F = R_FB.col(0);
   const Vector3d& By_F = R_FB.col(1);
@@ -348,7 +348,7 @@ class ObbMakerTestTriangle : public ::testing::Test {
         test_vertices_{0, 1, 2} {}
 
  protected:
-  SurfaceMesh<double> mesh_M_;
+  TriangleSurfaceMesh<double> mesh_M_;
   const std::set<int> test_vertices_;
 };
 
@@ -356,7 +356,7 @@ TEST_F(ObbMakerTestTriangle, CalcOrientationByPca) {
   // B is the frame of PCA solution for the oriented bounding box. We will check
   // it against the mesh's frame M.
   const RotationMatrixd R_MB =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_M_, test_vertices_)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_M_, test_vertices_)
           .CalcOrientationByPca();
   const Vector3d Bx_M = R_MB.col(0);
   const Vector3d By_M = R_MB.col(1);
@@ -390,10 +390,10 @@ TEST_F(ObbMakerTestTriangle, CalcOrientationByPca) {
   mesh_M_.TransformVertices(X_FM);
   // Now we use alias mesh_F because `mesh_M_` has been transformed; its stored
   // vertices are now measured and expressed in frame F.
-  const SurfaceMesh<double>& mesh_F = mesh_M_;
+  const TriangleSurfaceMesh<double>& mesh_F = mesh_M_;
 
   const RotationMatrixd R_FB =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_F, test_vertices_)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_F, test_vertices_)
           .CalcOrientationByPca();
   const Vector3d& Bx_F = R_FB.col(0);
   const Vector3d& By_F = R_FB.col(1);
@@ -418,8 +418,9 @@ TEST_F(ObbMakerTestTriangle, CalcOrientedBox) {
           Vector3d(0., 1., -1.).normalized(),
           Vector3d(1., 1., 1.).normalized());
 
-  const Obb obb = ObbMakerTester<SurfaceMesh<double>>(mesh_M_, test_vertices_)
-                      .CalcOrientedBox(R_MB);
+  const Obb obb =
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_M_, test_vertices_)
+          .CalcOrientedBox(R_MB);
 
   // Check the input R_MB passes to the output obb exactly.
   EXPECT_TRUE(obb.pose().rotation().IsExactlyEqualTo(R_MB));
@@ -470,7 +471,7 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
       Vector3d(-0.2, 2, 1.5));
   // The first line calls it mesh_M even though it's actually mesh_E. The
   // second line correctly makes it mesh_M.
-  SurfaceMesh<double> mesh_M =
+  TriangleSurfaceMesh<double> mesh_M =
       MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
   mesh_M.TransformVertices(X_ME);
   // Confirm that it is an octahedron.
@@ -486,7 +487,7 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
   ASSERT_TRUE(Contain(initial_obb_M, mesh_M, test_vertices));
 
   const Obb optimized_obb_M =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_M, test_vertices)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_M, test_vertices)
           .OptimizeObbVolume(initial_obb_M);
   EXPECT_TRUE(Contain(optimized_obb_M, mesh_M, test_vertices));
   const double percent_improvement =
@@ -520,7 +521,7 @@ class ObbMakerTestOctahedron : public ::testing::Test {
   void SetUp() override { ASSERT_EQ(mesh_M_.num_vertices(), 6); }
 
  protected:
-  SurfaceMesh<double> mesh_M_;
+  TriangleSurfaceMesh<double> mesh_M_;
   const std::set<int> test_vertices_;
 };
 
@@ -529,7 +530,7 @@ TEST_F(ObbMakerTestOctahedron, CalcOrientationByPca) {
   // B is the frame of PCA solution for the oriented bounding box. We will check
   // it against the mesh's frame M.
   const RotationMatrixd R_MB =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_M_, test_vertices_)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_M_, test_vertices_)
           .CalcOrientationByPca();
   const Vector3d Bx_M = R_MB.col(0);
   const Vector3d By_M = R_MB.col(1);
@@ -551,10 +552,10 @@ TEST_F(ObbMakerTestOctahedron, CalcOrientationByPca) {
   mesh_M_.TransformVertices(X_FM);
   // Now we use alias mesh_F because `mesh_M_` has been transformed; its stored
   // vertices are now measured and expressed in frame F.
-  const SurfaceMesh<double>& mesh_F = mesh_M_;
+  const TriangleSurfaceMesh<double>& mesh_F = mesh_M_;
 
   const RotationMatrixd R_FB =
-      ObbMakerTester<SurfaceMesh<double>>(mesh_F, test_vertices_)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_F, test_vertices_)
           .CalcOrientationByPca();
   const Vector3d& Bx_F = R_FB.col(0);
   const Vector3d& By_F = R_FB.col(1);
@@ -602,7 +603,7 @@ TEST_F(ObbMakerTestOctahedron, ObbMakerCompute) {
   mesh_M_.TransformVertices(X_MF);
   // Now we use alias mesh_F because `mesh_M_` has been transformed; its stored
   // vertices are now measured and expressed in frame F.
-  const SurfaceMesh<double>& mesh_F = mesh_M_;
+  const TriangleSurfaceMesh<double>& mesh_F = mesh_M_;
 
   const Obb obb_F = ObbMaker(mesh_F, test_vertices_).Compute();
   EXPECT_TRUE(Contain(obb_F, mesh_F, test_vertices_));
@@ -651,7 +652,7 @@ GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
   // The final basis is the same as the PCA basis -- optimization couldn't
   // improve it which implies we're at a local optimum.
   const RotationMatrixd R_MB =
-      ObbMakerTester<SurfaceMesh<double>>(surface_mesh, test_vertices)
+      ObbMakerTester<TriangleSurfaceMesh<double>>(surface_mesh, test_vertices)
           .CalcOrientationByPca();
   EXPECT_TRUE(CompareMatrices(R_MB.matrix(), obb.pose().rotation().matrix()));
 
@@ -684,7 +685,7 @@ GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
 
 // Tests API of ObbMaker that it respects the input vertex indices.
 GTEST_TEST(ObbMakerTestAPI, ObbMakerCompute) {
-  const SurfaceMesh<double> mesh(
+  const TriangleSurfaceMesh<double> mesh(
       // The triangles are not relevant to the test.
       {SurfaceFace(0, 1, 2), SurfaceFace(0, 3, 1)},
       {Vector3d::Zero(), Vector3d::UnitX(), 2. * Vector3d::UnitY(),

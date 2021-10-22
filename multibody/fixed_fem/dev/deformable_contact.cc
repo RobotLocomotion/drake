@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::VolumeMesh;
 using geometry::internal::Aabb;
 using geometry::internal::Bvh;
@@ -56,8 +56,8 @@ class Intersector {
             between the two meshes.  */
   DeformableContactSurface<T> Intersect(
       const DeformableVolumeMesh<T>& tet_mesh_D,
-      const SurfaceMesh<double>& surface_R,
-      const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+      const TriangleSurfaceMesh<double>& surface_R,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
       const math::RigidTransform<T>& X_DR) {
     // The collection of contact data. We will aggregate into this.
     vector<ContactPolygonData<T>> out_poly_data;
@@ -390,7 +390,7 @@ class Intersector {
    */
   const std::vector<IntersectionVertex<T>>& ClipTriangleByTetrahedron(
       int tet_index, const VolumeMesh<T>& tet_mesh_D, int face,
-      const SurfaceMesh<double>& surface_R,
+      const TriangleSurfaceMesh<double>& surface_R,
       const math::RigidTransform<T>& X_DR) {
     // Although polygon_D starts out pointing to polygon_[0], that is not an
     // invariant in this function.
@@ -481,8 +481,8 @@ class Intersector {
 template <typename T>
 DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
     const DeformableVolumeMesh<T>& tet_mesh_D,
-    const SurfaceMesh<double>& tri_mesh_R,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    const TriangleSurfaceMesh<double>& tri_mesh_R,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_DR) {
   return Intersector<T>().Intersect(tet_mesh_D, tri_mesh_R, bvh_R, X_DR);
 }

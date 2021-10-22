@@ -41,15 +41,15 @@ class SurfaceVolumeIntersectorTester {
   }
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
       int element, const VolumeMesh<double>& volume_M, int face,
-      const SurfaceMesh<double>& surface_N,
+      const TriangleSurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN) {
     return intersect_.ClipTriangleByTetrahedron(element, volume_M, face,
                                                 surface_N, X_MN);
   }
   bool IsFaceNormalAlongPressureGradient(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const SurfaceMesh<double>& surface_N, const math::RigidTransform<T>& X_MN,
-      int tet_index, int tri_index) {
+      const TriangleSurfaceMesh<double>& surface_N,
+      const math::RigidTransform<T>& X_MN, int tet_index, int tri_index) {
     return intersect_.IsFaceNormalAlongPressureGradient(
         volume_field_M, surface_N, X_MN, tet_index, tri_index);
   }
@@ -379,7 +379,7 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
 // +X
 //
 template<typename T>
-unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
+unique_ptr<TriangleSurfaceMesh<T>> TrivialSurfaceMesh() {
   const int face_data[3] = {0, 1, 2};
   std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
   std::vector<Vector3<T>> vertices = {
@@ -387,8 +387,8 @@ unique_ptr<SurfaceMesh<T>> TrivialSurfaceMesh() {
       Vector3<T>::UnitX(),
       Vector3<T>::UnitY()
   };
-  return std::make_unique<SurfaceMesh<T>>(std::move(faces),
-                                          std::move(vertices));
+  return std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
+                                                  std::move(vertices));
 }
 
 // Generates a trivial volume mesh consisting of two tetrahedrons with
@@ -666,7 +666,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
     volume_M = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                     std::move(vertices));
   }
-  unique_ptr<SurfaceMesh<double>> surface_N;
+  unique_ptr<TriangleSurfaceMesh<double>> surface_N;
   {
     const int face_data[3] = {0, 1, 2};
     std::vector<SurfaceFace> faces{SurfaceFace(face_data)};
@@ -676,7 +676,7 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
         {-1.5,  0.,  0.},
         {0.,   -1.5, 0.}};
     // clang-format on
-    surface_N = std::make_unique<SurfaceMesh<double>>(std::move(faces),
+    surface_N = std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
                                                       std::move(vertices));
   }
   const int tetrahedron = 0;
@@ -718,7 +718,7 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
   // in +Z direction of N's frame.
   const auto rigid_N = TrivialSurfaceMesh<double>();
 
-  // We will set the pose of SurfaceMesh N in frame M so that triangle
+  // We will set the pose of TriangleSurfaceMesh N in frame M so that triangle
   // Face_0 of N has its face normal vector make various angles with the
   // gradient vector in tetrahedron Element_0.
   struct TestData {
@@ -755,7 +755,7 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
 // Given a triangle in a surface mesh, reports the tet in the volume mesh that
 // completely contains the triangle. Throws if a test cannot be identified.
 template <typename T>
-int GetTetForTriangle(const SurfaceMesh<T>& surface_S, int f,
+int GetTetForTriangle(const TriangleSurfaceMesh<T>& surface_S, int f,
                       const VolumeMesh<double>& volume_V,
                       const RigidTransform<T>& X_VS) {
   const std::vector<Vector3<T>>& vertices_S = surface_S.vertices();
@@ -795,7 +795,8 @@ class MeshIntersectionFixture : public testing::Test {
     field_S_ = TrivialVolumeMeshField<double>(mesh_S_.get());
     // The rigid surface mesh is expressed in frame R.
     surface_R_ = TrivialSurfaceMesh<double>();
-    bvh_surface_R_ = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*surface_R_);
+    bvh_surface_R_ =
+        make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*surface_R_);
     // Transform the surface (single triangle) so that it intersects with *both*
     // tets in the volume mesh. The surface lies on the y = 0.75 plane.
     // Each tet gets intersected into a isosceles right triangle with a leg
@@ -807,7 +808,7 @@ class MeshIntersectionFixture : public testing::Test {
   // This helper function verifies the output (surface_S, e_field, and
   // grad_eS_S) of SampleVolumeFieldOnSurface().
   void VerifySampleVolumeFieldOnSurface(
-      const unique_ptr<SurfaceMesh<double>>& surface_S,
+      const unique_ptr<TriangleSurfaceMesh<double>>& surface_S,
       const unique_ptr<SurfaceMeshFieldLinear<double, double>>& e_field,
       const vector<Vector3<double>>& grad_eS_S) {
     // The two geometries intersect such that both tets get sliced into
@@ -903,7 +904,7 @@ class MeshIntersectionFixture : public testing::Test {
     //  that is officially documented as a property of the ContactSurface.
 
     // The "pressure" field is frame invariant and should be equal.
-    const SurfaceMesh<double>::Barycentric<double> centroid(
+    const TriangleSurfaceMesh<double>::Barycentric<double> centroid(
         1. / 3., 1. / 3., 1. / 3.);
     const int f_index = 0;
     EXPECT_EQ(contact_SR->e_MN().Evaluate(f_index, centroid),
@@ -928,8 +929,8 @@ class MeshIntersectionFixture : public testing::Test {
   unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
 
   // Rigid surface mesh.
-  unique_ptr<SurfaceMesh<double>> surface_R_;
-  unique_ptr<Bvh<Obb, SurfaceMesh<double>>> bvh_surface_R_;
+  unique_ptr<TriangleSurfaceMesh<double>> surface_R_;
+  unique_ptr<Bvh<Obb, TriangleSurfaceMesh<double>>> bvh_surface_R_;
 
   RigidTransformd X_SR_;
 
@@ -938,7 +939,7 @@ class MeshIntersectionFixture : public testing::Test {
 
 TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   vector<Vector3<double>> grad_eS_S;
-  unique_ptr<SurfaceMesh<double>> surface_S;
+  unique_ptr<TriangleSurfaceMesh<double>> surface_S;
   unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
 
   {
@@ -1080,8 +1081,9 @@ class MeshMeshDerivativesTest : public ::testing::Test {
                               Vector3d{5, -5, 0},
                               Vector3d{0, 5, 0}};
     vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
-    tri_mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
-    bvh_R_ = make_unique<Bvh<Obb, SurfaceMesh<double>>>(*tri_mesh_R_);
+    tri_mesh_R_ =
+        make_unique<TriangleSurfaceMesh<double>>(move(faces), move(vertices));
+    bvh_R_ = make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*tri_mesh_R_);
     X_WR_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
                                 Vector3d{0.25, 0.1, -0.2})
                 .cast<AutoDiffXd>();
@@ -1256,8 +1258,8 @@ class MeshMeshDerivativesTest : public ::testing::Test {
 
   /* Rigid triangle mesh. */
   RigidTransform<AutoDiffXd> X_WR_;
-  unique_ptr<SurfaceMesh<double>> tri_mesh_R_;
-  unique_ptr<Bvh<Obb, SurfaceMesh<double>>> bvh_R_;
+  unique_ptr<TriangleSurfaceMesh<double>> tri_mesh_R_;
+  unique_ptr<Bvh<Obb, TriangleSurfaceMesh<double>>> bvh_R_;
   GeometryId id_R_;
 
   /* The amount I penetrate triangle into the tet.  */
@@ -1451,7 +1453,7 @@ TEST_F(MeshMeshDerivativesTest, VertexPosition) {
      from intersecting a tet edge with the triangle. We'll evaluate all of those
      and then handle the centroid specially. */
     const Vector3d n_R{0, 0, 1};
-    const SurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
+    const TriangleSurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
     const RotationMatrixd R_WR = convert_to_double(this->X_WR_).rotation();
     const RotationMatrixd R_RW = R_WR.inverse();
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);

@@ -15,16 +15,16 @@
 
 namespace drake {
 namespace geometry {
-/** %SurfaceFace represents a triangular face in a SurfaceMesh.
+/** %SurfaceFace represents a triangular face in a TriangleSurfaceMesh.
  */
 class SurfaceFace {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceFace)
 
   /** Constructs SurfaceFace.
-   @param v0 Index of the first vertex in SurfaceMesh.
-   @param v1 Index of the second vertex in SurfaceMesh.
-   @param v2 Index of the last vertex in SurfaceMesh.
+   @param v0 Index of the first vertex in TriangleSurfaceMesh.
+   @param v1 Index of the second vertex in TriangleSurfaceMesh.
+   @param v2 Index of the last vertex in TriangleSurfaceMesh.
    @pre index values are non-negative. */
   SurfaceFace(int v0, int v1, int v2) : vertex_({v0, v1, v2}) {
     DRAKE_DEMAND(v0 >= 0 && v1 >= 0 && v2 >= 0);
@@ -32,11 +32,12 @@ class SurfaceFace {
 
   /** Constructs SurfaceFace.
    @param v  array of three integer indices of the vertices of the face in
-             SurfaceMesh.
+             TriangleSurfaceMesh.
    @pre index values are non-negative. */
   explicit SurfaceFace(const int v[3]) : SurfaceFace(v[0], v[1], v[2]) {}
 
-  /** Returns the vertex index in SurfaceMesh of the i-th vertex of this face.
+  /** Returns the vertex index in TriangleSurfaceMesh of the i-th vertex of this
+   face.
    @param i  The local index of the vertex in this face.
    @pre 0 <= i < 3
    */
@@ -59,27 +60,28 @@ namespace internal {
 template <typename> class MeshDeformer;
 }  // namespace internal
 
-// Forward declaration of SurfaceMeshTester<T>. SurfaceMesh<T> will
+// Forward declaration of SurfaceMeshTester<T>. TriangleSurfaceMesh<T> will
 // grant friend access to SurfaceMeshTester<T>.
 template <typename T> class SurfaceMeshTester;
 
 // TODO(DamrongGuoy): mention interesting properties of the mesh, e.g., open
 //  meshes, meshes with holes, non-manifold surface.
-/** %SurfaceMesh represents a triangulated surface.
+/** %TriangleSurfaceMesh represents a triangulated surface.
  @tparam T The underlying scalar type for coordinates, e.g., double
            or AutoDiffXd. Must be a valid Eigen scalar.
  */
 template <class T>
-class SurfaceMesh {
+class TriangleSurfaceMesh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TriangleSurfaceMesh)
 
   /**
    @name Mesh type traits
 
    A collection of type traits to enable mesh consumers to be templated on mesh
    type. Each mesh type provides specific definitions of _vertex_, _element_,
-   and _barycentric coordinates_. For %SurfaceMesh, an element is a triangle.
+   and _barycentric coordinates_. For %TriangleSurfaceMesh, an element is a
+   triangle.
    */
   //@{
 
@@ -94,11 +96,11 @@ class SurfaceMesh {
   //  templated class doesn't depend on the class template parameter, but
   //  depends on some non-template-dependent property (kVertexPerElement).
   //  That means we *apparently* have different types:
-  //    SurfaceMesh<double>::Barycentric<double>
-  //    SurfaceMesh<AutoDiffXd>::Barycentric<double>
+  //    TriangleSurfaceMesh<double>::Barycentric<double>
+  //    TriangleSurfaceMesh<AutoDiffXd>::Barycentric<double>
   // But, ultimately both become Vector3d and, because they are simply aliases,
   // are interchangeable. It would be nice to have some way of formulating this
-  // that *doesn't* imply dependency on the scalar type of SurfaceMesh.
+  // that *doesn't* imply dependency on the scalar type of TriangleSurfaceMesh.
   /**
    Type of barycentric coordinates on a triangular element. Barycentric
    coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1. It corresponds to a
@@ -143,7 +145,7 @@ class SurfaceMesh {
    */
   int num_vertices() const { return vertices_.size(); }
 
-  /** Returns the number of triangles in the mesh. For %SurfaceMesh, an
+  /** Returns the number of triangles in the mesh. For %TriangleSurfaceMesh, an
    element is a triangle. Returns the same number as num_faces() and enables
    mesh consumers to be templated on mesh type.
    */
@@ -152,11 +154,11 @@ class SurfaceMesh {
   //@}
 
   /**
-   Constructs a SurfaceMesh from faces and vertices.
+   Constructs a TriangleSurfaceMesh from faces and vertices.
    @param faces     The triangular faces.
    @param vertices  The vertices.
    */
-  SurfaceMesh(std::vector<SurfaceFace>&& faces,
+  TriangleSurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<Vector3<T>>&& vertices)
       : faces_(std::move(faces)),
         vertices_(std::move(vertices)),
@@ -336,7 +338,7 @@ class SurfaceMesh {
   //
 
   // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
-  //  Currently we have a problem that SurfaceMesh and its vertices are
+  //  Currently we have a problem that TriangleSurfaceMesh and its vertices are
   //  templated on T, but Obb is for double only.
   /**
    Calculates the axis-aligned bounding box of this surface mesh M.
@@ -358,12 +360,13 @@ class SurfaceMesh {
   }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
-  /** Checks to see whether the given SurfaceMesh object is equal via deep
-   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+  /** Checks to see whether the given TriangleSurfaceMesh object is equal via
+   deep exact comparison. NaNs are treated as not equal as per the IEEE
+   standard.
    @param mesh The mesh for comparison.
    @returns `true` if the given mesh is equal.
    */
-  bool Equal(const SurfaceMesh<T>& mesh) const {
+  bool Equal(const TriangleSurfaceMesh<T>& mesh) const {
     if (this == &mesh) return true;
 
     if (this->num_faces() != mesh.num_faces()) return false;
@@ -402,7 +405,7 @@ class SurfaceMesh {
 
  private:
   // Client attorney class that provides a means to modify vertex positions.
-  friend class internal::MeshDeformer<SurfaceMesh<T>>;
+  friend class internal::MeshDeformer<TriangleSurfaceMesh<T>>;
 
   // Calculates the areas and face normals of each triangle, the total area,
   // and the centroid of the surface.
@@ -436,7 +439,7 @@ class SurfaceMesh {
 };
 
 template <class T>
-void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
+void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   total_area_ = 0;
   p_MSc_.setZero();
 
@@ -472,7 +475,7 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
 }
 
 template <typename T>
-Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
+Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
   DRAKE_DEMAND(0 <= f && f < num_faces());
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
@@ -534,7 +537,7 @@ Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
 }
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class SurfaceMesh)
+    class TriangleSurfaceMesh)
 
 }  // namespace geometry
 }  // namespace drake

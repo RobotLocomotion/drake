@@ -1254,7 +1254,8 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
             mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
             ContactPolygonRepresentation::kCentroidSubdivision);
     ASSERT_NE(contact_surface, nullptr);
-    const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+    const TriangleSurfaceMesh<double>& contact_mesh_W =
+        contact_surface->mesh_W();
     EXPECT_EQ(contact_mesh_W.num_elements(), 6);
     EXPECT_EQ(contact_mesh_W.num_vertices(), 6);
 
@@ -1286,7 +1287,8 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
             mesh_id_, dupe_field_F, plane_id_, plane_F, both_tets_, X_WF_,
             ContactPolygonRepresentation::kCentroidSubdivision);
     ASSERT_NE(contact_surface, nullptr);
-    const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+    const TriangleSurfaceMesh<double>& contact_mesh_W =
+        contact_surface->mesh_W();
     EXPECT_EQ(contact_mesh_W.num_elements(), 6);
     EXPECT_EQ(contact_mesh_W.num_vertices(), 8);
 
@@ -1353,7 +1355,7 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
       // NOTE: When we set the normals directly from the plane, this precision
       // will improve.
       constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
-      const SurfaceMesh<double>& mesh_W = contact->mesh_W();
+      const TriangleSurfaceMesh<double>& mesh_W = contact->mesh_W();
       for (int f = 0; f < mesh_W.num_faces(); ++f) {
         SCOPED_TRACE(fmt::format("Face index f = {}", f));
         EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
@@ -1980,7 +1982,7 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
      from intersecting a tet edge with the plane. We'll evaluate all of those
      and then handle the centroid specially. */
     const Vector3d n_R{0, 0, 1};
-    const SurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
+    const TriangleSurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
     const RotationMatrixd R_WR = convert_to_double(this->X_WR_).rotation();
     const RotationMatrixd R_RW = R_WR.inverse();
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);

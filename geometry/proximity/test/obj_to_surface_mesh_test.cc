@@ -63,7 +63,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
 
   EXPECT_EQ(2, surface_faces.size());
   // Vertex indices in obj file start with 1, but vertex indices in our
-  // SurfaceMesh start with 0.
+  // TriangleSurfaceMesh start with 0.
   const int expect_faces[2][3]{{0, 1, 2}, {0, 2, 3}};
   auto face_equal = [](const SurfaceFace& f, const SurfaceFace& g) -> bool {
     return std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2)) ==
@@ -77,7 +77,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
 GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(filename);
+  TriangleSurfaceMesh<double> surface = ReadObjToSurfaceMesh(filename);
 
   ASSERT_EQ(surface.num_vertices(), 8);
   ASSERT_EQ(surface.num_faces(), 12);
@@ -223,7 +223,8 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 f 1 2 3
 )"};
-  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(&faces_without_objects);
+  TriangleSurfaceMesh<double> surface =
+      ReadObjToSurfaceMesh(&faces_without_objects);
   ASSERT_EQ(3, surface.num_vertices());
   std::vector<Vector3<double>> expect_vertices {
     {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, { 0.0, 0.0, 1.0 }
@@ -253,7 +254,7 @@ v 0.0 2.0 0.0
 v 0.0 0.0 2.0
 f 4 5 6
 )"};
-  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(&two_objects);
+  TriangleSurfaceMesh<double> surface = ReadObjToSurfaceMesh(&two_objects);
   ASSERT_EQ(6, surface.num_vertices());
   std::vector<Vector3<double>> expect_vertices{
       {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},

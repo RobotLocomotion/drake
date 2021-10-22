@@ -214,7 +214,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint);
            AutoDiffXd.
  */
 template <typename T>
-SurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box, double resolution_hint) {
+TriangleSurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box,
+                                          double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.);
   // TODO(SeanCurtis-TRI): Consider putting an upper limit - as with the sphere.
   return ConvertVolumeToSurfaceMesh<T>(

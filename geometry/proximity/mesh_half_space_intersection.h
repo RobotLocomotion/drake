@@ -25,7 +25,7 @@ namespace internal {
  unimportant (see note below).
 
  This function is a component of the larger operation of clipping a
- SurfaceMesh by a half space.
+ TriangleSurfaceMesh by a half space.
 
  For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
  we do not introduce any duplicate vertices (beyond those already in the input
@@ -83,7 +83,7 @@ namespace internal {
 */
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, int tri_index,
+    const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
@@ -116,14 +116,14 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
      The relative pose of Frame F with the world frame W.
  @param[in] representation
      The preferred representation of each intersected polygon.
- @retval `mesh_W`, the SurfaceMesh corresponding to the intersection between
-         the mesh and the half space; the vertices are measured and expressed in
-         Frame W. `nullptr` if there is no intersection.
+ @retval `mesh_W`, the TriangleSurfaceMesh corresponding to the intersection
+         between the mesh and the half space; the vertices are measured and
+         expressed in Frame W. `nullptr` if there is no intersection.
  */
 template <typename T>
-std::unique_ptr<SurfaceMesh<T>>
+std::unique_ptr<TriangleSurfaceMesh<T>>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<double>& input_mesh_F,
+    const TriangleSurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F, const std::vector<int>& tri_indices,
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation);
@@ -162,8 +162,8 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
-    GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation);
 

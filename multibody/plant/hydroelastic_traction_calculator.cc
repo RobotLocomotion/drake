@@ -14,7 +14,7 @@ namespace drake {
 
 using geometry::ContactSurface;
 using geometry::SurfaceFace;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::SurfaceMeshFieldLinear;
 using math::RigidTransform;
 
@@ -131,7 +131,8 @@ HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data, int face_index,
     // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
-    const typename SurfaceMesh<T>::template Barycentric<T>& Q_barycentric,
+    const typename TriangleSurfaceMesh<T>::template Barycentric<T>&
+        Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
   const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(

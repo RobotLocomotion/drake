@@ -613,8 +613,8 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
             positions.
  */
 template <typename T>
-SurfaceMesh<T> MakeSphereSurfaceMesh(const Sphere& sphere,
-                                     double resolution_hint) {
+TriangleSurfaceMesh<T> MakeSphereSurfaceMesh(const Sphere& sphere,
+                                             double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(MakeSphereVolumeMesh<T>(
       sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));

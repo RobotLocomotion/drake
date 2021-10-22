@@ -50,7 +50,7 @@ std::vector<int> CollectUniqueVertices(
                 boundary triangles of the volume.
  @tparam_nonsymbolic_scalar */
 template <class T>
-SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume);
 
 }  // namespace geometry
 }  // namespace drake

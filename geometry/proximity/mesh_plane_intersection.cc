@@ -201,8 +201,8 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   DRAKE_DEMAND(vertices_W.size() == surface_e.size());
   if (faces.empty()) return nullptr;
 
-  auto mesh_W =
-      std::make_unique<SurfaceMesh<T>>(std::move(faces), std::move(vertices_W));
+  auto mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
+                                                         std::move(vertices_W));
   auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
       std::move(surface_e), mesh_W.get(), false /* calculate_gradient */);
   // SliceTetWithPlane promises to make the surface normals point in the plane

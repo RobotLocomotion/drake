@@ -2080,7 +2080,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
-        const geometry::SurfaceMesh<T>& mesh = s.mesh_W();
+        const geometry::TriangleSurfaceMesh<T>& mesh = s.mesh_W();
         num_quadrature_pairs += num_quad_points * mesh.num_faces();
       }
     }
@@ -2118,7 +2118,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
-        const geometry::SurfaceMesh<T>& mesh_W = s.mesh_W();
+        const geometry::TriangleSurfaceMesh<T>& mesh_W = s.mesh_W();
 
         // Combined Hunt & Crossley dissipation.
         const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(

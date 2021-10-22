@@ -212,7 +212,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     const geometry::ContactSurface<T>& contact_surface =
         hydroelastic_contact_info.contact_surface();
-    const geometry::SurfaceMesh<T>& mesh_W = contact_surface.mesh_W();
+    const geometry::TriangleSurfaceMesh<T>& mesh_W = contact_surface.mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
     surface_msg.num_quadrature_points = quadrature_point_data.size();

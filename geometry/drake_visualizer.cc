@@ -57,9 +57,9 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   DRAKE_DEMAND(!std::holds_alternative<std::monostate>(hydro_mesh));
   // SceneGraphInspector guarantees whichever pointer is "held" in the variant
   // is non-null.
-  const SurfaceMesh<double>& surface_mesh =
-      std::holds_alternative<const SurfaceMesh<double>*>(hydro_mesh)
-          ? *std::get<const SurfaceMesh<double>*>(hydro_mesh)
+  const TriangleSurfaceMesh<double>& surface_mesh =
+      std::holds_alternative<const TriangleSurfaceMesh<double>*>(hydro_mesh)
+          ? *std::get<const TriangleSurfaceMesh<double>*>(hydro_mesh)
           : ConvertVolumeToSurfaceMesh(
                 *std::get<const VolumeMesh<double>*>(hydro_mesh));
 

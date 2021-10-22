@@ -139,7 +139,7 @@ class ContactSurface {
 
     id_M_ = surface.id_M_;
     id_N_ = surface.id_N_;
-    mesh_W_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_W_);
+    mesh_W_ = std::make_unique<TriangleSurfaceMesh<T>>(*surface.mesh_W_);
 
     // We can't simply copy the mesh fields; the copies must contain pointers
     // to the new mesh. So, we use CloneAndSetMesh() instead.
@@ -174,7 +174,7 @@ class ContactSurface {
          reveal if such a swap has occurred.
    */
   ContactSurface(GeometryId id_M, GeometryId id_N,
-                 std::unique_ptr<SurfaceMesh<T>> mesh_W,
+                 std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W,
                  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN)
       : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN), nullptr,
                        nullptr) {}
@@ -198,7 +198,7 @@ class ContactSurface {
          reveal if such a swap has occurred.
    */
   ContactSurface(GeometryId id_M, GeometryId id_N,
-                 std::unique_ptr<SurfaceMesh<T>> mesh_W,
+                 std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W,
                  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W)
@@ -281,7 +281,7 @@ class ContactSurface {
   /** Returns a reference to the surface mesh whose vertex
    positions are measured and expressed in the world frame.
    */
-  const SurfaceMesh<T>& mesh_W() const {
+  const TriangleSurfaceMesh<T>& mesh_W() const {
     DRAKE_DEMAND(mesh_W_ != nullptr);
     return *mesh_W_;
   }
@@ -329,7 +329,7 @@ class ContactSurface {
   // The id of the second geometry N.
   GeometryId id_N_;
   // The surface mesh of the contact surface 𝕊ₘₙ between M and N.
-  std::unique_ptr<SurfaceMesh<T>> mesh_W_;
+  std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W_;
   // TODO(SeanCurtis-TRI): We can only construct from a linear field, so store
   //  it as such for now. This can be promoted once there's a construction that
   //  uses a different derivation.

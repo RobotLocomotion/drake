@@ -22,7 +22,7 @@ namespace fem {
 namespace {
 
 using Eigen::Vector3d;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
@@ -49,7 +49,7 @@ using std::vector;
            +X
 */
 template <typename T>
-SurfaceMesh<T> MakePyramidSurface() {
+TriangleSurfaceMesh<T> MakePyramidSurface() {
   const int face_data[8][3] = {// The top four faces share the apex vertex v5.
                                {1, 2, 5},
                                {2, 3, 5},
@@ -74,7 +74,7 @@ SurfaceMesh<T> MakePyramidSurface() {
       { 0,  0, 1}
   };
   // clang-format on
-  return SurfaceMesh<T>(std::move(faces), std::move(vertices));
+  return TriangleSurfaceMesh<T>(std::move(faces), std::move(vertices));
 }
 
 /* Returns true if
@@ -102,8 +102,8 @@ DeformableContactSurface<T> MakeDeformableContactSurface(
   const DeformableVolumeMesh<T> volume_D(MakeOctahedronVolumeMesh<T>());
   /* Deformable contact assumes the rigid surface is double-valued, regardless
    of the scalar value for the volume mesh.  */
-  const SurfaceMesh<double> surface_R = MakePyramidSurface<double>();
-  const Bvh<Obb, SurfaceMesh<double>> bvh_R(surface_R);
+  const TriangleSurfaceMesh<double> surface_R = MakePyramidSurface<double>();
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_R(surface_R);
   return ComputeTetMeshTriMeshContact<T>(volume_D, surface_R, bvh_R, X_DR);
 }
 
@@ -210,9 +210,9 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   vector<geometry::SurfaceFace> faces;
   faces.emplace_back(face);
   vector<Vector3<double>> tri_vertices = {{10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
-  const SurfaceMesh<double> surface_R(std::move(faces),
-                                      std::move(tri_vertices));
-  const Bvh<Obb, SurfaceMesh<double>> bvh_R(surface_R);
+  const TriangleSurfaceMesh<double> surface_R(std::move(faces),
+                                              std::move(tri_vertices));
+  const Bvh<Obb, TriangleSurfaceMesh<double>> bvh_R(surface_R);
 
   /* Creates a tetrahedral mesh with a single tet whose intersection with the
    surface mesh is a axis-aligned unit square [-0.5, 0.5]x[-0.5, 0.5]x{0} in the

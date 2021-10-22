@@ -156,7 +156,7 @@ class Aabb {
  This serves as the interface to Bvh, allowing the Bvh to fit volumes to
  geometry without knowing the details of the bounding volume types.
 
- @tparam MeshType is either SurfaceMesh<T> or VolumeMesh<T>, where T is
+ @tparam MeshType is either TriangleSurfaceMesh<T> or VolumeMesh<T>, where T is
          double or AutoDiffXd.  */
 template <class MeshType>
 class AabbMaker {

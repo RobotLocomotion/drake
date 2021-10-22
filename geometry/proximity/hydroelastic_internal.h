@@ -182,30 +182,31 @@ class RigidMesh {
  public:
   RigidMesh() = default;
 
-  explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh)
+  explicit RigidMesh(std::unique_ptr<TriangleSurfaceMesh<double>> mesh)
       : mesh_(std::move(mesh)),
-        bvh_(std::make_unique<Bvh<Obb, SurfaceMesh<double>>>(
+        bvh_(std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(
             *mesh_)) {}
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
 
-  const SurfaceMesh<double>& mesh() const {
+  const TriangleSurfaceMesh<double>& mesh() const {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
   }
-  const Bvh<Obb, SurfaceMesh<double>>& bvh() const {
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh() const {
     DRAKE_DEMAND(bvh_ != nullptr);
     return *bvh_;
   }
 
  private:
-  copyable_unique_ptr<SurfaceMesh<double>> mesh_;
-  copyable_unique_ptr<Bvh<Obb, SurfaceMesh<double>>> bvh_;
+  copyable_unique_ptr<TriangleSurfaceMesh<double>> mesh_;
+  copyable_unique_ptr<Bvh<Obb, TriangleSurfaceMesh<double>>> bvh_;
 };
 
 /* The base representation of rigid geometries. Generally, a rigid geometry
- is represented with a SurfaceMesh. However, half spaces do not get tessellated
- and are treated as primitives. This class contains either representation.  */
+ is represented with a TriangleSurfaceMesh. However, half spaces do not get
+ tessellated and are treated as primitives. This class contains either
+ representation.  */
 class RigidGeometry {
  public:
   /* Constructs a rigid half space representation -- the half space, like its
@@ -225,7 +226,7 @@ class RigidGeometry {
 
   /* Returns a reference to the surface mesh -- calling this will throw unless
    is_half_space() returns false.  */
-  const SurfaceMesh<double>& mesh() const {
+  const TriangleSurfaceMesh<double>& mesh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "RigidGeometry::mesh() cannot be invoked for rigid half space");
@@ -235,7 +236,7 @@ class RigidGeometry {
 
   /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw unless is_half_space() returns false.  */
-  const Bvh<Obb, SurfaceMesh<double>>& bvh() const {
+  const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "RigidGeometry::bvh() cannot be invoked for rigid half space");

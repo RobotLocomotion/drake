@@ -12,8 +12,8 @@ namespace geometry {
 namespace internal {
 
 /* @name Export Volume/Surface Mesh and Field for visualization in ParaView.
- These functions export VolumeMesh, SurfaceMesh, VolumeMeshFieldLinear, or
- SurfaceMeshFieldLinear to VTK files (legacy, serial format) for
+ These functions export VolumeMesh, TriangleSurfaceMesh, VolumeMeshFieldLinear,
+ or SurfaceMeshFieldLinear to VTK files (legacy, serial format) for
  visualization in ParaView. The file format is described in:
  https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
  */
@@ -32,7 +32,7 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
                           const std::string& title);
 
 /*
- Writes SurfaceMesh to VTK file.
+ Writes TriangleSurfaceMesh to VTK file.
  @param file_name  A file name with absolute path or relative path.
  @param mesh       A triangulated surface mesh.
  @param title      Name of the data set will be written on the second line of
@@ -40,7 +40,7 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
  @throws std::exception if unable to create the file.
  */
 void WriteSurfaceMeshToVtk(const std::string& file_name,
-                           const SurfaceMesh<double>& mesh,
+                           const TriangleSurfaceMesh<double>& mesh,
                            const std::string& title);
 
 /*

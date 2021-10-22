@@ -28,7 +28,7 @@ namespace geometry {
      file has no faces.
  @return surface mesh
  */
-SurfaceMesh<double> ReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> ReadObjToSurfaceMesh(
     const std::string& filename,
     double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
@@ -37,7 +37,7 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(
  Overload of @ref ReadObjToSurfaceMesh(const std::string&, double) with the
  Wavefront .obj file given in std::istream.
  */
-SurfaceMesh<double> ReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> ReadObjToSurfaceMesh(
     std::istream* input_stream,
     double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});

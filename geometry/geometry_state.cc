@@ -391,7 +391,7 @@ const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
 }
 
 template <typename T>
-std::variant<std::monostate, const SurfaceMesh<double>*,
+std::variant<std::monostate, const TriangleSurfaceMesh<double>*,
              const VolumeMesh<double>*>
 GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
   const auto& hydro_geometries = geometry_engine_->hydroelastic_geometries();

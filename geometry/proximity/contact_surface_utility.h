@@ -194,7 +194,7 @@ enum class ContactPolygonRepresentation {
  @tparam_nonsymbolic_scalar */
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
-                                   const SurfaceMesh<T>& surface_M,
+                                   const TriangleSurfaceMesh<T>& surface_M,
                                    int tri_index,
                                    const math::RotationMatrix<T>& R_FM);
 

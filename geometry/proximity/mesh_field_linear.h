@@ -89,7 +89,7 @@ namespace geometry {
  Notice that (0,0,0) may or may not lie in element E.
 
  @tparam T  a valid Eigen scalar for field values.
- @tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh.
+ @tparam MeshType    the type of the meshes: TriangleSurfaceMesh or VolumeMesh.
  */
 template <class T, class MeshType>
 class MeshFieldLinear {
@@ -339,7 +339,7 @@ class MeshFieldLinear {
   std::vector<T> values_;
   // The gradients are indexed in the same way as elements, i.e.,
   // gradients_[i] is the gradient vector on elements_[i]. The elements could
-  // be tetrahedra for VolumeMesh or triangles for SurfaceMesh.
+  // be tetrahedra for VolumeMesh or triangles for TriangleSurfaceMesh.
   std::vector<Vector3<T>> gradients_;
   // values_at_Mo_[i] is the value of the linear function that represents the
   // piecewise linear field on the mesh elements_[i] at Mo the origin of

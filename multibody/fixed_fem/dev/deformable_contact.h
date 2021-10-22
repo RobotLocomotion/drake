@@ -102,9 +102,9 @@ class DeformableContactSurface {
 template <typename T>
 DeformableContactSurface<T> ComputeTetMeshTriMeshContact(
     const geometry::internal::DeformableVolumeMesh<T>& tet_mesh_D,
-    const geometry::SurfaceMesh<double>& tri_mesh_R,
+    const geometry::TriangleSurfaceMesh<double>& tri_mesh_R,
     const geometry::internal::Bvh<geometry::internal::Obb,
-                                  geometry::SurfaceMesh<double>>& bvh_R,
+                                  geometry::TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_DR);
 }  // namespace fem
 }  // namespace multibody
