@@ -59,7 +59,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
       "f 1 3 4\n"};
 
   const std::vector<SurfaceTriangle> surface_faces(
-      ReadObjToSurfaceMesh(&test_stream).faces());
+      ReadObjToSurfaceMesh(&test_stream).triangles());
 
   EXPECT_EQ(2, surface_faces.size());
   // Vertex indices in obj file start with 1, but vertex indices in our
@@ -81,7 +81,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   TriangleSurfaceMesh<double> surface = ReadObjToSurfaceMesh(filename);
 
   ASSERT_EQ(surface.num_vertices(), 8);
-  ASSERT_EQ(surface.num_faces(), 12);
+  ASSERT_EQ(surface.num_triangles(), 12);
 
   // This test relies on the specific content of the file quad_cube.obj.
   // These coordinates came from the first section of quad_cube.obj.
@@ -234,7 +234,7 @@ f 1 2 3
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(expect_vertices[i], surface.vertex(i));
   }
-  ASSERT_EQ(1, surface.num_faces());
+  ASSERT_EQ(1, surface.num_triangles());
   int expect_face[3] = {0, 1, 2};
   for (int v = 0; v < 3; ++v) {
     EXPECT_EQ(expect_face[v], surface.element(0).vertex(v));
@@ -264,7 +264,7 @@ f 4 5 6
   for (int i = 0; i < 6; ++i) {
     EXPECT_EQ(expect_vertices[i], surface.vertex(i));
   }
-  ASSERT_EQ(2, surface.num_faces());
+  ASSERT_EQ(2, surface.num_triangles());
   int expect_faces[2][3]{{0, 1, 2}, {3, 4, 5}};
   for (int f = 0; f < 2; ++f) {
     for (int v = 0; v < 3; ++v) {

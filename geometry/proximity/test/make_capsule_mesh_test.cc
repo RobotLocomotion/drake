@@ -306,7 +306,7 @@ GTEST_TEST(MakeCapsuleSurfaceMesh, GenerateSurface) {
   const Capsule capsule(radius, length);
   const TriangleSurfaceMesh<double> surface_mesh =
       MakeCapsuleSurfaceMesh<double>(capsule, resolution_hint);
-  EXPECT_EQ(surface_mesh.num_faces(), 12);
+  EXPECT_EQ(surface_mesh.num_triangles(), 12);
   EXPECT_EQ(surface_mesh.num_vertices(), 8);
 }
 

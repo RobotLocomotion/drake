@@ -278,7 +278,7 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_msg.body2_name = "Id_" + to_string(contacts[i].id_N());
 
       const TriangleSurfaceMesh<double>& mesh_W = contacts[i].mesh_W();
-      surface_msg.num_triangles = mesh_W.num_faces();
+      surface_msg.num_triangles = mesh_W.num_triangles();
       surface_msg.triangles.resize(surface_msg.num_triangles);
 
       // Loop through each contact triangle on the contact surface.

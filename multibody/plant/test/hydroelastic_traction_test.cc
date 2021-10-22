@@ -71,7 +71,7 @@ std::unique_ptr<TriangleSurfaceMesh<double>> CreateSurfaceMesh() {
   auto mesh = std::make_unique<TriangleSurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 
-  for (int f = 0; f < mesh->num_faces(); ++f) {
+  for (int f = 0; f < mesh->num_triangles(); ++f) {
     // Can't use an ASSERT_TRUE here because it interferes with the return
     // value.
     if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),

@@ -119,15 +119,15 @@ class TriangleSurfaceMesh {
 
   /** Returns the triangular element identified by a given index.
     @param e   The index of the triangular element.
-    @pre e ∈ {0, 1, 2,..., num_faces()-1}.
+    @pre e ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   const SurfaceTriangle& element(int e) const {
-    DRAKE_DEMAND(0 <= e && e < num_faces());
+    DRAKE_DEMAND(0 <= e && e < num_triangles());
     return faces_[e];
   }
 
   /** Returns the faces. */
-  const std::vector<SurfaceTriangle>& faces() const { return faces_; }
+  const std::vector<SurfaceTriangle>& triangles() const { return faces_; }
 
   /** Returns the vertices. */
   const std::vector<Vector3<T>>& vertices() const { return vertices_; }
@@ -147,10 +147,10 @@ class TriangleSurfaceMesh {
   int num_vertices() const { return vertices_.size(); }
 
   /** Returns the number of triangles in the mesh. For %TriangleSurfaceMesh, an
-   element is a triangle. Returns the same number as num_faces() and enables
+   element is a triangle. Returns the same number as num_triangles() and enables
    mesh consumers to be templated on mesh type.
    */
-  int num_elements() const { return num_faces(); }
+  int num_elements() const { return num_triangles(); }
 
   //@}
 
@@ -198,13 +198,13 @@ class TriangleSurfaceMesh {
 
   /** Returns the number of triangular elements in the mesh.
    */
-  int num_faces() const { return faces_.size(); }
+  int num_triangles() const { return faces_.size(); }
 
   /** Returns area of a triangular element.
-   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
+   @pre f ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   const T& area(int f) const {
-    DRAKE_DEMAND(0 <= f && f < num_faces());
+    DRAKE_DEMAND(0 <= f && f < num_triangles());
     return area_[f];
   }
 
@@ -215,10 +215,10 @@ class TriangleSurfaceMesh {
   /** Returns the unit face normal vector of a triangle. It respects the
    right-handed normal rule. A near-zero-area triangle may get an unreliable
    normal vector. A zero-area triangle will get a zero vector.
-   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
+   @pre f ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   const Vector3<T>& face_normal(int f) const {
-    DRAKE_DEMAND(0 <= f && f < num_faces());
+    DRAKE_DEMAND(0 <= f && f < num_triangles());
     return face_normals_[f];
   }
 
@@ -241,7 +241,7 @@ class TriangleSurfaceMesh {
    The return type depends on both the mesh's vertex position scalar type `T`
    and the Barycentric coordinate type `B` of the query point.  See
    @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
-   @pre `element_index` ∈ {0, 1, 2,..., num_faces()-1}.
+   @pre `element_index` ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   template <typename B>
   Vector3<promoted_numerical_t<T, B>> CalcCartesianFromBarycentric(
@@ -277,7 +277,7 @@ class TriangleSurfaceMesh {
    @note  If Q' is outside the triangle, the barycentric coordinates
           (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
           negative.
-   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
+   @pre f ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   template <typename C>
   Vector3<promoted_numerical_t<T, C>> CalcBarycentric(const Vector3<C>& p_MQ,
@@ -370,11 +370,11 @@ class TriangleSurfaceMesh {
   bool Equal(const TriangleSurfaceMesh<T>& mesh) const {
     if (this == &mesh) return true;
 
-    if (this->num_faces() != mesh.num_faces()) return false;
+    if (this->num_triangles() != mesh.num_triangles()) return false;
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
     // Check face indices.
-    for (int i = 0; i < this->num_faces(); ++i) {
+    for (int i = 0; i < this->num_triangles(); ++i) {
       const SurfaceTriangle& face1 = this->element(i);
       const SurfaceTriangle& face2 = mesh.element(i);
       for (int j = 0; j < 3; ++j)
@@ -444,7 +444,7 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   total_area_ = 0;
   p_MSc_.setZero();
 
-  for (int f = 0; f < num_faces(); ++f) {
+  for (int f = 0; f < num_triangles(); ++f) {
     const SurfaceTriangle& face = faces_[f];
     const Vector3<T>& r_MA = vertices_[face.vertex(0)];
     const Vector3<T>& r_MB = vertices_[face.vertex(1)];
@@ -478,7 +478,7 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
 template <typename T>
 Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
-  DRAKE_DEMAND(0 <= f && f < num_faces());
+  DRAKE_DEMAND(0 <= f && f < num_triangles());
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
   // indexed by `f`. A and B are the other two vertices of the triangle.
   // Positions of the vertices are expressed in frame M of the mesh.

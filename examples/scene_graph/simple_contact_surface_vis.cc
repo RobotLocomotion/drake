@@ -263,7 +263,7 @@ class ContactResultMaker final : public LeafSystem<double> {
           inspector.GetFrameId(id2), Role::kProximity);
 
       const TriangleSurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
-      surface_msg.num_triangles = mesh_W.num_faces();
+      surface_msg.num_triangles = mesh_W.num_triangles();
       surface_msg.triangles.resize(surface_msg.num_triangles);
       write_double3(mesh_W.centroid(), surface_msg.centroid_W);
       surface_msg.num_quadrature_points = surface_msg.num_triangles;

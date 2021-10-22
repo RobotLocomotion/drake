@@ -124,7 +124,7 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
 
   // The following crude quadrature process relies upon there being three
   // quadrature points per triangle.
-  ASSERT_EQ(results.contact_surface().mesh_W().num_faces() * 3,
+  ASSERT_EQ(results.contact_surface().mesh_W().num_triangles() * 3,
             results.quadrature_point_data().size());
 
   // Sanity check that geometry ID is consistent with direction of spatial

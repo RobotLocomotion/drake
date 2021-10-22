@@ -98,7 +98,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   // so DrakeVisualizer can't smooth over vertices. So, that means for T
   // triangles we have 3T vertices. Experimentation suggests this redundancy
   // is the simplest way to get a faceted mesh.
-  const int num_tris = surface_mesh.num_faces();
+  const int num_tris = surface_mesh.num_triangles();
   const int num_verts = 3 * num_tris;
   const int header_floats = 2;
   geometry_data.num_float_data = header_floats + 3 * num_tris + 3 * num_verts;
@@ -116,7 +116,7 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   // The index of the most recently added vertex (whose position measures are
   // written at v_index, v_index + 1, and v_index + 2 in float_data).
   int newest_vertex_index = -1;
-  for (int f = 0; f < surface_mesh.num_faces(); ++f) {
+  for (int f = 0; f < surface_mesh.num_triangles(); ++f) {
     const auto& face = surface_mesh.element(f);
     for (int fv = 0; fv < 3; ++fv) {
       const int v_i = face.vertex(fv);

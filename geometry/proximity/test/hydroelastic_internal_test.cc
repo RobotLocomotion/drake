@@ -518,7 +518,7 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   // Smoke test the surface mesh.
   const TriangleSurfaceMesh<double>& mesh = cylinder->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
-  EXPECT_EQ(mesh.num_faces(), 12);
+  EXPECT_EQ(mesh.num_triangles(), 12);
   for (int v = 0; v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v));
     // Only check that the vertex is within the cylinder. It does not check
@@ -551,7 +551,7 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   // Smoke test the surface mesh.
   const TriangleSurfaceMesh<double>& mesh = capsule->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
-  EXPECT_EQ(mesh.num_faces(), 12);
+  EXPECT_EQ(mesh.num_triangles(), 12);
 
   for (const Vector3d& p_MV : mesh.vertices()) {
     // Check that the vertex is near the surface of the capsule.
@@ -592,7 +592,7 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   // Smoke test the surface mesh.
   const TriangleSurfaceMesh<double>& mesh = ellipsoid->mesh();
   EXPECT_EQ(mesh.num_vertices(), 6);
-  EXPECT_EQ(mesh.num_faces(), 8);
+  EXPECT_EQ(mesh.num_triangles(), 8);
   for (int v = 0; v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v));
     ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
@@ -622,7 +622,7 @@ void TestRigidMeshType() {
     // the obj file.
     const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
     EXPECT_EQ(surface_mesh.num_vertices(), 8);
-    EXPECT_EQ(surface_mesh.num_faces(), 12);
+    EXPECT_EQ(surface_mesh.num_triangles(), 12);
 
     // The scale factor multiplies the measure of every vertex position, so
     // the expected distance of the vertex to the origin should be:

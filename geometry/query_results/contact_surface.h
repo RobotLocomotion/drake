@@ -252,7 +252,7 @@ class ContactSurface {
 
   /** Returns the value of ∇eₘ for the triangle with index `index`.
    @throws std::exception if HasGradE_M() returns false.
-   @pre `index ∈ [0, mesh().num_faces())`.  */
+   @pre `index ∈ [0, mesh().num_triangles())`.  */
   const Vector3<T>& EvaluateGradE_M_W(int index) const {
     if (grad_eM_W_ == nullptr) {
       throw std::runtime_error(
@@ -265,7 +265,7 @@ class ContactSurface {
 
   /** Returns the value of ∇eₙ for the triangle with index `index`.
    @throws std::exception if HasGradE_N() returns false.
-   @pre `index ∈ [0, mesh().num_faces())`.  */
+   @pre `index ∈ [0, mesh().num_triangles())`.  */
   const Vector3<T>& EvaluateGradE_N_W(int index) const {
     if (grad_eN_W_ == nullptr) {
       throw std::runtime_error(

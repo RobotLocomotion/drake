@@ -133,7 +133,7 @@ void TestVolumeToSurfaceMesh() {
   EXPECT_EQ(surface_vertex_coords.size(), surface.num_vertices());
 
   // Check that the face normal vectors are in the outward direction.
-  for (int f = 0; f < surface.num_faces(); ++f) {
+  for (int f = 0; f < surface.num_triangles(); ++f) {
     const Vector3<T> normal_M = internal::CalcFaceNormal(surface, f);
     // Position vector of the first vertex V of the face.
     const Vector3<T> r_MV =

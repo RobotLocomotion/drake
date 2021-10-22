@@ -475,7 +475,7 @@ GTEST_TEST(ObbMakerTest, TestOptimizeObbVolume) {
       MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6);
   mesh_M.TransformVertices(X_ME);
   // Confirm that it is an octahedron.
-  ASSERT_EQ(8, mesh_M.num_faces());
+  ASSERT_EQ(8, mesh_M.num_triangles());
   ASSERT_EQ(6, mesh_M.num_vertices());
   const std::set<int> test_vertices{0, 1, 2, 3, 4, 5};
 
@@ -635,7 +635,7 @@ GTEST_TEST(ObbMakerTest, TestTruncatedBox) {
   // should get the coarsest mesh: 8 vertices, 12 triangles.
   auto surface_mesh = MakeBoxSurfaceMesh<double>(Box(6, 4, 2), 10);
   ASSERT_EQ(surface_mesh.num_vertices(), 8);
-  ASSERT_EQ(surface_mesh.num_faces(), 12);
+  ASSERT_EQ(surface_mesh.num_triangles(), 12);
   std::set<int> test_vertices;
   for (int i = 0; i < 8; ++i) {
     const Vector3d& p_MV = surface_mesh.vertex(i);

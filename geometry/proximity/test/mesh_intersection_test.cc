@@ -858,14 +858,14 @@ class MeshIntersectionFixture : public testing::Test {
     // have the same normal.
     ASSERT_TRUE(
         CompareMatrices(surface_R_->face_normal(0), Vector3d::UnitZ()));
-    for (int f = 0; f < surface_S->num_faces(); ++f) {
+    for (int f = 0; f < surface_S->num_triangles(); ++f) {
       EXPECT_TRUE(CompareMatrices(surface_S->face_normal(f),
                                   X_SR_.rotation() * Vector3d::UnitZ(),
                                   4 * kEps));
     }
 
     // Only the soft volume mesh provides gradients.
-    const std::vector<SurfaceTriangle>& faces = surface_S->faces();
+    const std::vector<SurfaceTriangle>& faces = surface_S->triangles();
     ASSERT_EQ(faces.size(), grad_eS_S.size());
     for (int f = 0; f < surface_S->num_elements(); ++f) {
       const int t = GetTetForTriangle(*surface_S, f, *mesh_S_, {});
@@ -891,8 +891,8 @@ class MeshIntersectionFixture : public testing::Test {
       const RigidTransformd& X_WS) {
     // Mesh invariants:
     // Meshes are the same "size" (topologically).
-    EXPECT_EQ(contact_SR->mesh_W().num_faces(),
-              contact_RS->mesh_W().num_faces());
+    EXPECT_EQ(contact_SR->mesh_W().num_triangles(),
+              contact_RS->mesh_W().num_triangles());
     EXPECT_EQ(contact_SR->mesh_W().num_vertices(),
               contact_RS->mesh_W().num_vertices());
 
@@ -949,7 +949,7 @@ TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
         ContactPolygonRepresentation::kCentroidSubdivision,
         &surface_S, &e_field, &grad_eS_S);
 
-    EXPECT_EQ(6, surface_S->num_faces());
+    EXPECT_EQ(6, surface_S->num_triangles());
     VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);
   }
   {
@@ -959,7 +959,7 @@ TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
         ContactPolygonRepresentation::kSingleTriangle,
         &surface_S, &e_field, &grad_eS_S);
 
-    EXPECT_EQ(2, surface_S->num_faces());
+    EXPECT_EQ(2, surface_S->num_triangles());
     VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);
   }
 }
@@ -1218,7 +1218,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
-      ASSERT_EQ(surface->mesh_W().num_faces(), config.num_faces);
+      ASSERT_EQ(surface->mesh_W().num_triangles(), config.num_faces);
 
       evaluate_quantity(*surface, X_WS, config.pose);
     }

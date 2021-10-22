@@ -163,7 +163,7 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
   std::iota(e_MN.begin(), e_MN.end(), 1);
 
   TriangleSurfaceMesh<T>* mesh_pointer = mesh.get();
-  EXPECT_EQ(mesh->num_faces(), kNumFaces);
+  EXPECT_EQ(mesh->num_triangles(), kNumFaces);
   return ContactSurface<T>(
       id_M, id_N, move(mesh),
       make_unique<MeshFieldLinear<T, TriangleSurfaceMesh<T>>>(move(e_MN),
@@ -677,10 +677,10 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     // clang-format on
 
     /* Compare meshes and pressure fields. */
-    EXPECT_EQ(pair_message.num_triangles, mesh.num_faces());
-    EXPECT_EQ(pair_message.triangles.size(), mesh.num_faces());
+    EXPECT_EQ(pair_message.num_triangles, mesh.num_triangles());
+    EXPECT_EQ(pair_message.triangles.size(), mesh.num_triangles());
     const auto& field = surface.e_MN();
-    for (int f = 0; f < mesh.num_faces(); ++f) {
+    for (int f = 0; f < mesh.num_triangles(); ++f) {
       const auto& tri_message = pair_message.triangles[f];
       const auto& tri_data = mesh.element(f);
       // clang-format off
@@ -711,7 +711,7 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     EXPECT_EQ(pair_message.num_quadrature_points, data_quads.size());
     EXPECT_EQ(message_quads.size(), data_quads.size());
     EXPECT_EQ(pair_message.num_quadrature_points,
-              mesh.num_faces() * kNumPointPerTri);
+              mesh.num_triangles() * kNumPointPerTri);
     for (int q = 0; q < static_cast<int>(data_quads.size()); ++q) {
       // clang-format off
       EXPECT_TRUE(CompareMatrices(

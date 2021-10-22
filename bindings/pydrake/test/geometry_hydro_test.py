@@ -79,7 +79,7 @@ class TestGeometryHydro(unittest.TestCase):
 
         mesh = mut.TriangleSurfaceMesh(faces=(f_a, f_b),
                                        vertices=(v0, v1, v2, v3))
-        self.assertEqual(len(mesh.faces()), 2)
+        self.assertEqual(len(mesh.triangles()), 2)
         self.assertEqual(len(mesh.vertices()), 4)
         self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
 

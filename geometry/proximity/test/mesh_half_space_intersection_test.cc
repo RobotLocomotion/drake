@@ -108,7 +108,7 @@ static TriangleSurfaceMesh<double> CreateMeshWithCentroids(
                  });
 
   const RotationMatrix<double>& R_WF = X_WF_d.rotation();
-  for (int f_index = 0; f_index < mesh_F.num_faces(); ++f_index) {
+  for (int f_index = 0; f_index < mesh_F.num_triangles(); ++f_index) {
     const SurfaceTriangle& f = mesh_F.element(f_index);
     // We want to add the triangle fan for the existing face, but also want to
     // confirm that the new faces have normals that match the input face.
@@ -155,7 +155,7 @@ TriangleSurfaceMesh<double> CreateMeshOfIndependentTriangles(
   std::vector<Vector3d> vertices_W;
   std::vector<SurfaceTriangle> faces;
   const RigidTransform<double>& X_WF_d = convert_to_double(X_WF);
-  for (const auto& face : mesh_F.faces()) {
+  for (const auto& face : mesh_F.triangles()) {
     const size_t v = vertices_W.size();
     faces.emplace_back(v, v + 1, v + 2);
     vertices_W.emplace_back(X_WF_d * mesh_F.vertex(face.vertex(0)));
@@ -240,15 +240,15 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   void VerifyMeshesEquivalent(const TriangleSurfaceMesh<double>& mesh_a,
                               const TriangleSurfaceMesh<T>& mesh_b) {
     // Simple checks first.
-    ASSERT_EQ(mesh_a.num_faces(), mesh_b.num_faces());
+    ASSERT_EQ(mesh_a.num_triangles(), mesh_b.num_triangles());
     ASSERT_EQ(mesh_a.num_vertices(), mesh_b.num_vertices());
 
     // Iterate through each face of the first mesh, looking for a face from the
     // second mesh that is within the given tolerance. This is a quadratic
     // time algorithm (in the number of faces of the meshes) but we expect the
     // number of faces that this algorithm is run on to be small.
-    std::vector<SurfaceTriangle> faces_from_mesh_b = mesh_b.faces();
-    for (const SurfaceTriangle& f1 : mesh_a.faces()) {
+    std::vector<SurfaceTriangle> faces_from_mesh_b = mesh_b.triangles();
+    for (const SurfaceTriangle& f1 : mesh_a.triangles()) {
       bool found_match = false;
       for (int i = 0; i < static_cast<int>(faces_from_mesh_b.size()); ++i) {
         if (AreFacesEquivalent(f1, mesh_a, faces_from_mesh_b[i], mesh_b)) {
@@ -971,13 +971,13 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, BoxMesh) {
         //   -----------------------------------------------
         //   -Z triangles, each fanned around centroid:    6
         //   4 X new triangles per box face:      7 * 4 = 28
-        ASSERT_EQ(intersection_mesh_W->num_faces(), 34);
+        ASSERT_EQ(intersection_mesh_W->num_triangles(), 34);
         break;
       case ContactPolygonRepresentation::kSingleTriangle:
         // Each of the ±X, ±Y, and -Z square faces of the box contribute two
         // intersecting polygons for the total of 10 polygons. Each polygon
         // has one representative triangle.
-        ASSERT_EQ(intersection_mesh_W->num_faces(), 10);
+        ASSERT_EQ(intersection_mesh_W->num_triangles(), 10);
         // The ten representative triangles do not share vertices, so there
         // are 3x10 = 30 vertices with some duplication.
         ASSERT_EQ(intersection_mesh_W->num_vertices(), 30);
@@ -1075,11 +1075,11 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision:
         EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 22);
-        EXPECT_EQ(contact_surface->mesh_W().num_faces(), 34);
+        EXPECT_EQ(contact_surface->mesh_W().num_triangles(), 34);
         break;
       case ContactPolygonRepresentation::kSingleTriangle:
         EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 30);
-        EXPECT_EQ(contact_surface->mesh_W().num_faces(), 10);
+        EXPECT_EQ(contact_surface->mesh_W().num_triangles(), 10);
         break;
     }
 
@@ -1123,8 +1123,8 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       EXPECT_FALSE(contact_surface->HasGradE_M());
       EXPECT_TRUE(contact_surface->HasGradE_N());
 
-      EXPECT_GT(contact_surface->mesh_W().num_faces(), 0);
-      for (int f = 0; f < contact_surface->mesh_W().num_faces(); ++f) {
+      EXPECT_GT(contact_surface->mesh_W().num_triangles(), 0);
+      for (int f = 0; f < contact_surface->mesh_W().num_triangles(); ++f) {
         ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
                                     grad_eH_W_expected));
       }
@@ -1139,8 +1139,8 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       EXPECT_TRUE(contact_surface->HasGradE_M());
       EXPECT_FALSE(contact_surface->HasGradE_N());
 
-      EXPECT_GT(contact_surface->mesh_W().num_faces(), 0);
-      for (int f = 0; f < contact_surface->mesh_W().num_faces(); ++f) {
+      EXPECT_GT(contact_surface->mesh_W().num_triangles(), 0);
+      for (int f = 0; f < contact_surface->mesh_W().num_triangles(); ++f) {
         ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
                                     grad_eH_W_expected));
       }
@@ -1209,14 +1209,14 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
         // vertices, we'll include all but one of the input mesh's vertices (7),
         // and introduce one vertex per input triangle (6) for a total of 13
         // vertices.
-        ASSERT_EQ(contact_mesh_W.num_faces(), 18);
+        ASSERT_EQ(contact_mesh_W.num_triangles(), 18);
         ASSERT_EQ(contact_mesh_W.num_vertices(), 13);
         break;
       case ContactPolygonRepresentation::kSingleTriangle:
         // Because the half space normal is along a diagonal of the box,
         // only three box's faces contribute to the contact surface. Each
         // box's face has two triangles, so there are 3x2 = 6 contact triangles.
-        ASSERT_EQ(contact_mesh_W.num_faces(), 6);
+        ASSERT_EQ(contact_mesh_W.num_triangles(), 6);
         // Triangles do not share vertices, so there are 3x6 = 18 vertices
         // with some duplication.
         ASSERT_EQ(contact_mesh_W.num_vertices(), 18);
@@ -1241,7 +1241,7 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
     //      lines of code do to define the gradient direction vector.
     const double grad_scale = contact_surface->id_N() == mesh_id ? 1.0 : -1.0;
     const Vector3<double> grad_p_W = grad_scale * -normal_W;
-    for (int tri = 0; tri < contact_mesh_W.num_faces(); ++tri) {
+    for (int tri = 0; tri < contact_mesh_W.num_triangles(); ++tri) {
       // Everything is defined in the world frame; so the transform X_WM = I.
       ASSERT_TRUE(
           IsFaceNormalInNormalDirection(grad_p_W, contact_mesh_W, tri, {}))
@@ -1416,7 +1416,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
-      ASSERT_EQ(surface->mesh_W().num_faces(), config.expected_num_faces);
+      ASSERT_EQ(surface->mesh_W().num_triangles(), config.expected_num_faces);
 
       evaluate_quantity(*surface, X_WR, config.pose);
     }

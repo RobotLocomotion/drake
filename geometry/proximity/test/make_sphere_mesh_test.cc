@@ -305,7 +305,7 @@ GTEST_TEST(MakeSphereSurfaceMesh, GenerateSurface) {
   const double edge_length = 3 * sphere.radius();
   TriangleSurfaceMesh<double> surface_mesh =
       MakeSphereSurfaceMesh<double>(sphere, edge_length);
-  EXPECT_EQ(surface_mesh.num_faces(), 8);
+  EXPECT_EQ(surface_mesh.num_triangles(), 8);
   EXPECT_EQ(surface_mesh.num_vertices(), 6);
 }
 

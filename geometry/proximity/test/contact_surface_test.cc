@@ -124,7 +124,7 @@ ContactSurface<T> TestContactSurface() {
   // Check memory address of the mesh. We don't want to compare the mesh
   // objects themselves.
   EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh_W());
-  EXPECT_EQ(2, contact_surface.mesh_W().num_faces());
+  EXPECT_EQ(2, contact_surface.mesh_W().num_triangles());
   EXPECT_EQ(4, contact_surface.mesh_W().num_vertices());
   // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
@@ -272,9 +272,9 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
 
   EXPECT_EQ(original.id_M(), copy.id_M());
   EXPECT_EQ(original.id_N(), copy.id_N());
-  // We use `num_faces()` as a representative of the mesh. We do not check
+  // We use `num_triangles()` as a representative of the mesh. We do not check
   // everything in the mesh.
-  EXPECT_EQ(original.mesh_W().num_faces(), copy.mesh_W().num_faces());
+  EXPECT_EQ(original.mesh_W().num_triangles(), copy.mesh_W().num_triangles());
 
   // We check evaluation of field values only at one position.
   const int f{0};
@@ -348,7 +348,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
            f1.vertex(2) == f2.vertex(2);
   };
   // Face winding is changed.
-  for (int f = 0; f < original.mesh_W().num_faces(); ++f) {
+  for (int f = 0; f < original.mesh_W().num_triangles(); ++f) {
     EXPECT_FALSE(
         are_identical(dut.mesh_W().element(f), original.mesh_W().element(f)));
   }
@@ -356,7 +356,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // Evaluate the mesh field, once per face for an arbitrary point Q on the
   // interior of the triangle. We expect e_MN function hasn't changed.
   const TriangleSurfaceMesh<double>::Barycentric<double> b_Q{0.25, 0.25, 0.5};
-  for (int f = 0; f < original.mesh_W().num_faces(); ++f) {
+  for (int f = 0; f < original.mesh_W().num_triangles(); ++f) {
     EXPECT_EQ(dut.e_MN().Evaluate(f, b_Q), original.e_MN().Evaluate(f, b_Q));
   }
 }

@@ -588,7 +588,7 @@ TYPED_TEST(BvhTest, TestEqual) {
   // enough depth.
   const TriangleSurfaceMesh<double> mesh_ellipsoid =
       MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6.);
-  ASSERT_EQ(8, mesh_ellipsoid.num_faces());
+  ASSERT_EQ(8, mesh_ellipsoid.num_triangles());
   const Bvh<BvType, TriangleSurfaceMesh<double>> bvh_ellipsoid(mesh_ellipsoid);
   const Bvh<BvType, TriangleSurfaceMesh<double>> bvh_ellipsoid_too(
       mesh_ellipsoid);

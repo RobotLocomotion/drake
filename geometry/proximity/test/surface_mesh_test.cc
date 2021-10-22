@@ -125,7 +125,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   auto surface_mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(
       move(faces), std::move(vertices_W));
 
-  EXPECT_EQ(2, surface_mesh_W->num_faces());
+  EXPECT_EQ(2, surface_mesh_W->num_triangles());
   EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
     EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W->vertex(v));
@@ -139,12 +139,12 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
 // scalar type.
 GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshDouble) {
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  EXPECT_EQ(surface_mesh->num_faces(), 2);
+  EXPECT_EQ(surface_mesh->num_triangles(), 2);
 }
 
 GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
   auto surface_mesh = TestSurfaceMesh<double>();
-  EXPECT_EQ(surface_mesh->num_faces(), 2);
+  EXPECT_EQ(surface_mesh->num_triangles(), 2);
 }
 
 // Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose
@@ -152,7 +152,7 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
 // differentiation.
 GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
   auto surface_mesh = GenerateTwoTriangleMesh<AutoDiffXd>();
-  EXPECT_EQ(surface_mesh->num_faces(), 2);
+  EXPECT_EQ(surface_mesh->num_triangles(), 2);
 }
 
 // Checks the area calculations.
@@ -484,7 +484,7 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
     EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
   }
 
-  for (int f = 0; f < test_mesh->num_faces(); ++f) {
+  for (int f = 0; f < test_mesh->num_triangles(); ++f) {
     const Vector3d& nhat_F_test = test_mesh->face_normal(f);
     const Vector3d& nhat_M_ref = ref_mesh->face_normal(f);
     const Vector3d nhat_F_ref = X_FM.rotation() * nhat_M_ref;
@@ -541,7 +541,7 @@ class ScalarMixingTest : public ::testing::Test {
     vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(1)));
     vertices.emplace_back(mesh_d_->vertex(2));
     vertices.emplace_back(mesh_d_->vertex(3));
-    std::vector<SurfaceTriangle> faces(mesh_d_->faces());
+    std::vector<SurfaceTriangle> faces(mesh_d_->triangles());
 
     mesh_ad_ = std::make_unique<TriangleSurfaceMesh<AutoDiffXd>>(
         std::move(faces), std::move(vertices));

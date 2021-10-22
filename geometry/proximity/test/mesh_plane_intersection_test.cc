@@ -1356,7 +1356,7 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
       // will improve.
       constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
       const TriangleSurfaceMesh<double>& mesh_W = contact->mesh_W();
-      for (int f = 0; f < mesh_W.num_faces(); ++f) {
+      for (int f = 0; f < mesh_W.num_triangles(); ++f) {
         SCOPED_TRACE(fmt::format("Face index f = {}", f));
         EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
       }
@@ -1678,7 +1678,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       std::string name;
       Vector3d p_RS_d;
       RotationMatrixd R_RS_d;
-      int num_faces{};
+      int num_triangles{};
       TetPose pose;
     };
     vector<Configuration> configurations;
@@ -1750,7 +1750,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
-      ASSERT_EQ(surface->mesh_W().num_faces(), config.num_faces);
+      ASSERT_EQ(surface->mesh_W().num_triangles(), config.num_triangles);
 
       evaluate_quantity(*surface, X_WS, config.pose);
     }
