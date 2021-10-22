@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -28,16 +28,16 @@ namespace geometry {
      file has no faces.
  @return surface mesh
  */
-SurfaceMesh<double> ReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const std::string& filename,
     double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
 
 /**
- Overload of @ref ReadObjToSurfaceMesh(const std::string&, double) with the
- Wavefront .obj file given in std::istream.
+ Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double) with
+ the Wavefront .obj file given in std::istream.
  */
-SurfaceMesh<double> ReadObjToSurfaceMesh(
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     std::istream* input_stream,
     double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});

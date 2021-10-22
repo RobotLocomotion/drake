@@ -401,7 +401,7 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
       Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
       Vector3d{0.75, 1.25, 0}, Vector3d{0, 1, 0}};
 
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   vector<Vector3d> vertices_M(vertices_source);
   const vector<int> quad{0, 1, 2, 3};
   const Vector3d nhat_M{0, 0, 1};
@@ -468,11 +468,11 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
 //     the winding of the polygon vertices is consistent with this normal
 //     vector.
 void VerifyRepresentativeTriangle(int triangle_index,
-                                  const vector<SurfaceFace>& faces,
+                                  const vector<SurfaceTriangle>& faces,
                                   const vector<Vector3d>& vertices_F,
                                   const vector<Vector3d>& polygon_F,
                                   const Vector3d& nhat_F) {
-  const SurfaceFace& face = faces.at(triangle_index);
+  const SurfaceTriangle& face = faces.at(triangle_index);
   const Vector3d& p_FV0 = vertices_F.at(face.vertex(0));
   const Vector3d& p_FV1 = vertices_F.at(face.vertex(1));
   const Vector3d& p_FV2 = vertices_F.at(face.vertex(2));
@@ -538,7 +538,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle) {
     }
   }
 
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   vector<Vector3d> vertices_F;
   for (int i = 0; i < 2; ++i) {
     AddPolygonToMeshDataAsOneTriangle<double>(polygons_F[i], nhats_F[i], &faces,
@@ -560,7 +560,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_3Gon) {
                                    3 * Vector3d::UnitY()};
   const Vector3d nhat_F = Vector3d::UnitZ();
 
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   vector<Vector3d> vertices_F;
   AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                             &vertices_F);
@@ -585,7 +585,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_AutoDiff) {
                                     Vector3ad::UnitY()};
   const Vector3ad nhat_F = Vector3ad::UnitZ();
 
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   vector<Vector3<AutoDiffXd>> vertices_F;
   AddPolygonToMeshDataAsOneTriangle<AutoDiffXd>(polygon_F, nhat_F, &faces,
                                             &vertices_F);
@@ -603,7 +603,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_ZeroArea) {
                                      l * Vector3d::UnitY()};
     const Vector3d nhat_F = Vector3d::UnitZ();
 
-    vector<SurfaceFace> faces;
+    vector<SurfaceTriangle> faces;
     vector<Vector3d> vertices_F;
     AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                               &vertices_F);
@@ -618,7 +618,7 @@ GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle_ZeroArea) {
                                      l * Vector3d::UnitY()};
     const Vector3d nhat_F = Vector3d::UnitZ();
 
-    vector<SurfaceFace> faces;
+    vector<SurfaceTriangle> faces;
     vector<Vector3d> vertices_F;
     AddPolygonToMeshDataAsOneTriangle<double>(polygon_F, nhat_F, &faces,
                                               &vertices_F);

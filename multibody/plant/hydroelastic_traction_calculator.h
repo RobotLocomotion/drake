@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -26,7 +26,8 @@ namespace internal {
  Intelligent Robots and Systems (IROS), 2019.
 
  This class is only compatible with 'double' and 'AutoDiffXd' scalar types since
- it relies on SurfaceMesh functionality limited to the those same scalar types.
+ it relies on TriangleSurfaceMesh functionality limited to the those same scalar
+ types.
  */
 template <typename T>
 class HydroelasticTractionCalculator {
@@ -143,7 +144,7 @@ class HydroelasticTractionCalculator {
 
   HydroelasticQuadraturePointData<T> CalcTractionAtPoint(
       const Data& data, int face_index,
-      const typename geometry::SurfaceMesh<T>::template Barycentric<T>&
+      const typename geometry::TriangleSurfaceMesh<T>::template Barycentric<T>&
           Q_barycentric,
       double dissipation, double mu_coulomb) const;
 

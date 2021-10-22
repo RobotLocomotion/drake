@@ -43,7 +43,7 @@ using Eigen::VectorXd;
 using geometry::GeometryId;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
 using math::RigidTransformd;
@@ -243,7 +243,7 @@ TEST_F(DeformableRigidManagerTest, RegisterCollisionGeometry) {
   GeometryId id;
   get_collision_geometry(&id);
   /* Verify the surface mesh is as expected. */
-  const SurfaceMesh<double> expected_surface_mesh =
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
       geometry::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects.mesh(id)));
   /* Verify proximity property is as expected. */

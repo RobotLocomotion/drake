@@ -108,8 +108,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     if (soft.is_half_space()) {
       DRAKE_DEMAND(!rigid.is_half_space());
       // Soft half space with rigid mesh.
-      const SurfaceMesh<double>& mesh_R = rigid.mesh();
-      const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
+      const TriangleSurfaceMesh<double>& mesh_R = rigid.mesh();
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R = rigid.bvh();
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
           id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR,
           representation);
@@ -126,8 +126,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const VolumeMeshFieldLinear<double, double>& field_S =
         soft.pressure_field();
     const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
-    const SurfaceMesh<double>& mesh_R = rigid.mesh();
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
+    const TriangleSurfaceMesh<double>& mesh_R = rigid.mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R = rigid.bvh();
 
     return ComputeContactSurfaceFromSoftVolumeRigidSurface(
         id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR, representation);

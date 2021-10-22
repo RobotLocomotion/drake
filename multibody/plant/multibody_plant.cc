@@ -2080,8 +2080,8 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
-        const geometry::SurfaceMesh<T>& mesh = s.mesh_W();
-        num_quadrature_pairs += num_quad_points * mesh.num_faces();
+        const geometry::TriangleSurfaceMesh<T>& mesh = s.mesh_W();
+        num_quadrature_pairs += num_quad_points * mesh.num_triangles();
       }
     }
 
@@ -2118,13 +2118,13 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
-        const geometry::SurfaceMesh<T>& mesh_W = s.mesh_W();
+        const geometry::TriangleSurfaceMesh<T>& mesh_W = s.mesh_W();
 
         // Combined Hunt & Crossley dissipation.
         const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
             s.id_M(), s.id_N(), inspector);
 
-        for (int face = 0; face < mesh_W.num_faces(); ++face) {
+        for (int face = 0; face < mesh_W.num_triangles(); ++face) {
           const T& Ae = mesh_W.area(face);  // Face element area.
 
           // We found out that the hydroelastic query might report

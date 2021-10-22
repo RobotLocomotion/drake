@@ -13,7 +13,7 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/posed_half_space.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -194,7 +194,8 @@ template <typename T>
 const std::vector<Vector3<T>>&
 SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
     int element, const VolumeMesh<double>& volume_M, int face,
-    const SurfaceMesh<double>& surface_N, const math::RigidTransform<T>& X_MN) {
+    const TriangleSurfaceMesh<double>& surface_N,
+    const math::RigidTransform<T>& X_MN) {
   // Although polygon_M starts out pointing to polygon_[0] that is not an
   // invariant in this function.
   std::vector<Vector3<T>>* polygon_M = &(polygon_[0]);
@@ -280,7 +281,7 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
 template <typename T>
 bool SurfaceVolumeIntersector<T>::IsFaceNormalAlongPressureGradient(
     const VolumeMeshFieldLinear<double, double>& volume_field_M,
-    const SurfaceMesh<double>& surface_N,
+    const TriangleSurfaceMesh<double>& surface_N,
     const math::RigidTransform<double>& X_MN,
     int tet_index, int tri_index) {
   const Vector3<double> grad_p_M = volume_field_M.EvaluateGradient(tet_index);
@@ -292,19 +293,19 @@ template <typename T>
 void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const VolumeMeshFieldLinear<double, double>& volume_field_M,
     const Bvh<Obb, VolumeMesh<double>>& bvh_M,
-    const SurfaceMesh<double>& surface_N,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_N,
+    const TriangleSurfaceMesh<double>& surface_N,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
     const math::RigidTransform<T>& X_MN,
     ContactPolygonRepresentation representation,
-    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+    std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
+    std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
   DRAKE_DEMAND(surface_MN_M != nullptr);
   DRAKE_DEMAND(e_MN != nullptr);
   DRAKE_DEMAND(grad_eM_Ms != nullptr);
   grad_eM_Ms->clear();
 
-  std::vector<SurfaceFace> surface_faces;
+  std::vector<SurfaceTriangle> surface_faces;
   std::vector<Vector3<T>> surface_vertices_M;
   std::vector<T> surface_e;
   const VolumeMesh<double>& mesh_M = volume_field_M.mesh();
@@ -387,10 +388,10 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
   if (surface_faces.empty()) return;
 
-  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
+  *surface_MN_M = std::make_unique<TriangleSurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
   const bool calculate_gradient = false;
-  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+  *e_MN = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
       std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
@@ -400,8 +401,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const SurfaceMesh<double>& mesh_R,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    const TriangleSurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
@@ -421,8 +422,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 
   // The mesh will be computed in Frame S and then transformed to the world
   // frame.
-  std::unique_ptr<SurfaceMesh<T>> surface_SR;
-  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
+  std::unique_ptr<TriangleSurfaceMesh<T>> surface_SR;
+  std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>> e_SR;
   std::vector<Vector3<T>> grad_eS_S;
 
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(

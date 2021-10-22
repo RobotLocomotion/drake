@@ -19,9 +19,9 @@ using geometry::Cylinder;
 using geometry::Ellipsoid;
 using geometry::HalfSpace;
 using geometry::Mesh;
-using geometry::ReadObjToSurfaceMesh;
+using geometry::ReadObjToTriangleSurfaceMesh;
 using geometry::Sphere;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::internal::MakeBoxSurfaceMesh;
 using geometry::internal::MakeCapsuleSurfaceMesh;
 using geometry::internal::MakeCylinderSurfaceMesh;
@@ -29,7 +29,8 @@ using geometry::internal::MakeEllipsoidSurfaceMesh;
 using geometry::internal::MakeSphereSurfaceMesh;
 
 template <typename ShapeType>
-SurfaceMesh<double> MakeRigidSurfaceMesh(const ShapeType& shape, double) {
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const ShapeType& shape,
+                                                 double) {
   throw std::logic_error(fmt::format(
       "Trying to make a rigid surface mesh for an unsupported type shape. "
       "The types supported are: Sphere, Box, Cylinder, Capsule, Ellipsoid, "
@@ -38,39 +39,42 @@ SurfaceMesh<double> MakeRigidSurfaceMesh(const ShapeType& shape, double) {
   DRAKE_UNREACHABLE();
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Sphere& sphere,
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Sphere& sphere,
                                          double resolution_hint) {
   return MakeSphereSurfaceMesh<double>(sphere, resolution_hint);
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Box& box, double) {
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Box& box, double) {
   // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
   // resolution-hint argument is larger than the box size, so the mesh
   // will have only 8 vertices and 12 triangles.
   return MakeBoxSurfaceMesh<double>(box, 1.1 * box.size().maxCoeff());
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Cylinder& cylinder,
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Cylinder& cylinder,
                                          double resolution_hint) {
   return MakeCylinderSurfaceMesh<double>(cylinder, resolution_hint);
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Capsule& capsule,
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Capsule& capsule,
                                          double resolution_hint) {
   return MakeCapsuleSurfaceMesh<double>(capsule, resolution_hint);
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Ellipsoid& ellipsoid,
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Ellipsoid& ellipsoid,
                                          double resolution_hint) {
   return MakeEllipsoidSurfaceMesh<double>(ellipsoid, resolution_hint);
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Mesh& mesh_spec, double) {
-  return ReadObjToSurfaceMesh(mesh_spec.filename(), mesh_spec.scale());
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Mesh& mesh_spec,
+                                                 double) {
+  return ReadObjToTriangleSurfaceMesh(mesh_spec.filename(), mesh_spec.scale());
 }
 
-SurfaceMesh<double> MakeRigidSurfaceMesh(const Convex& convex_spec, double) {
-  return ReadObjToSurfaceMesh(convex_spec.filename(), convex_spec.scale());
+TriangleSurfaceMesh<double> MakeRigidSurfaceMesh(const Convex& convex_spec,
+                                                 double) {
+  return ReadObjToTriangleSurfaceMesh(convex_spec.filename(),
+                                      convex_spec.scale());
 }
 
 template <typename T>
@@ -130,7 +134,7 @@ void CollisionObjects<T>::MakeRigidRepresentation(const ShapeType& shape,
   // TODO(SeanCurtis-TRI) Define a final name for this property and document it
   // appropriately.
   rigid_representations_[data.id] = {
-      std::make_unique<SurfaceMesh<double>>(MakeRigidSurfaceMesh(
+      std::make_unique<TriangleSurfaceMesh<double>>(MakeRigidSurfaceMesh(
           shape, data.properties.GetPropertyOrDefault(
                      "fem/dev", "resolution_hint", kDefaultResolutionHint))),
       data.properties};

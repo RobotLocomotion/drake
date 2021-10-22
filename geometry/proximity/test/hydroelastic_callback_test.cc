@@ -335,10 +335,10 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
       EXPECT_TRUE(ValidateDerivatives(*surface));
       switch (representation) {
         case ContactPolygonRepresentation::kCentroidSubdivision:
-          EXPECT_EQ(100, surface->mesh_W().num_faces());
+          EXPECT_EQ(100, surface->mesh_W().num_triangles());
           break;
         case ContactPolygonRepresentation::kSingleTriangle:
-          EXPECT_EQ(28, surface->mesh_W().num_faces());
+          EXPECT_EQ(28, surface->mesh_W().num_triangles());
       }
     }
 

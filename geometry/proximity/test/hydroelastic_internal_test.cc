@@ -209,7 +209,7 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
 GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
   const double resolution_hint = 0.5;
-  auto mesh = make_unique<SurfaceMesh<double>>(
+  auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, resolution_hint));
 
   const RigidMesh original(std::move(mesh));
@@ -248,8 +248,8 @@ GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
-    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
-    const Bvh<Obb, SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     RigidMesh move_constructed(std::move(start));
@@ -273,8 +273,9 @@ GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
 // (already tested). If RigidGeometry changes its implementation details, this
 // logic would need to be revisited.
 GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
-  const RigidGeometry original(RigidMesh(make_unique<SurfaceMesh<double>>(
-      MakeSphereSurfaceMesh<double>(Sphere(1.25), 2.0))));
+  const RigidGeometry original(
+      RigidMesh(make_unique<TriangleSurfaceMesh<double>>(
+          MakeSphereSurfaceMesh<double>(Sphere(1.25), 2.0))));
 
   // Test copy-assignment operator.
   {
@@ -312,8 +313,8 @@ GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
 
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
-    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
-    const Bvh<Obb, SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+    const TriangleSurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const Bvh<Obb, TriangleSurfaceMesh<double>>* const bvh_ptr = &start.bvh();
 
     // Test move constructor.
     RigidGeometry move_constructed(std::move(start));
@@ -462,7 +463,7 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
   ASSERT_NE(sphere, std::nullopt);
   ASSERT_FALSE(sphere->is_half_space());
 
-  const SurfaceMesh<double>& mesh = sphere->mesh();
+  const TriangleSurfaceMesh<double>& mesh = sphere->mesh();
   for (int v = 0; v < mesh.num_vertices(); ++v) {
     ASSERT_NEAR(mesh.vertex(v).norm(), radius, 1e-15);
   }
@@ -484,7 +485,7 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   ASSERT_NE(box, std::nullopt);
   ASSERT_FALSE(box->is_half_space());
 
-  const SurfaceMesh<double>& mesh = box->mesh();
+  const TriangleSurfaceMesh<double>& mesh = box->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
   // Because it is a cube centered at the origin, the distance from the origin
   // to each vertex should be sqrt(3) * edge_len / 2.
@@ -515,9 +516,9 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
   ASSERT_FALSE(cylinder->is_half_space());
 
   // Smoke test the surface mesh.
-  const SurfaceMesh<double>& mesh = cylinder->mesh();
+  const TriangleSurfaceMesh<double>& mesh = cylinder->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
-  EXPECT_EQ(mesh.num_faces(), 12);
+  EXPECT_EQ(mesh.num_triangles(), 12);
   for (int v = 0; v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v));
     // Only check that the vertex is within the cylinder. It does not check
@@ -548,9 +549,9 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   ASSERT_FALSE(capsule->is_half_space());
 
   // Smoke test the surface mesh.
-  const SurfaceMesh<double>& mesh = capsule->mesh();
+  const TriangleSurfaceMesh<double>& mesh = capsule->mesh();
   EXPECT_EQ(mesh.num_vertices(), 8);
-  EXPECT_EQ(mesh.num_faces(), 12);
+  EXPECT_EQ(mesh.num_triangles(), 12);
 
   for (const Vector3d& p_MV : mesh.vertices()) {
     // Check that the vertex is near the surface of the capsule.
@@ -563,7 +564,7 @@ TEST_F(HydroelasticRigidGeometryTest, Capsule) {
   std::optional<RigidGeometry> capsule_fine =
       MakeRigidRepresentation(capsule_shape, props_fine);
 
-  const SurfaceMesh<double>& mesh_fine = capsule_fine->mesh();
+  const TriangleSurfaceMesh<double>& mesh_fine = capsule_fine->mesh();
   EXPECT_GT(mesh_fine.num_vertices(), mesh.num_vertices());
   EXPECT_GT(mesh_fine.num_elements(), mesh.num_elements());
 }
@@ -589,9 +590,9 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   ASSERT_FALSE(ellipsoid->is_half_space());
 
   // Smoke test the surface mesh.
-  const SurfaceMesh<double>& mesh = ellipsoid->mesh();
+  const TriangleSurfaceMesh<double>& mesh = ellipsoid->mesh();
   EXPECT_EQ(mesh.num_vertices(), 6);
-  EXPECT_EQ(mesh.num_faces(), 8);
+  EXPECT_EQ(mesh.num_triangles(), 8);
   for (int v = 0; v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v));
     ASSERT_NEAR(pow(x / a, 2) + pow(y / b, 2) + pow(z / c, 2), 1.0, 1e-15);
@@ -619,9 +620,9 @@ void TestRigidMeshType() {
     // We only check that the obj file was read by verifying the number of
     // vertices and triangles, which depend on the specific content of
     // the obj file.
-    const SurfaceMesh<double>& surface_mesh = geometry->mesh();
+    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
     EXPECT_EQ(surface_mesh.num_vertices(), 8);
-    EXPECT_EQ(surface_mesh.num_faces(), 12);
+    EXPECT_EQ(surface_mesh.num_triangles(), 12);
 
     // The scale factor multiplies the measure of every vertex position, so
     // the expected distance of the vertex to the origin should be:

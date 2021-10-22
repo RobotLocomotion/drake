@@ -41,9 +41,10 @@ struct MeshData {
 
 /* Loads a mesh's vertices and indices (faces) from an OBJ description given
  in the input stream. It does not load textures. Note that while this
- functionality seems similar to ReadObjToSurfaceMesh, RenderEngineGl cannot use
- SurfaceMesh. Rendering requires normals and texture coordinates; SurfaceMesh
- was not designed with those quantities in mind.
+ functionality seems similar to ReadObjToTriangleSurfaceMesh, RenderEngineGl
+ cannot use TriangleSurfaceMesh. Rendering requires normals and texture
+ coordinates; TriangleSurfaceMesh was not designed with those quantities in
+ mind.
 
  If no texture coordinates are specified by the file, it will be indicated in
  the returned MeshData. See MeshData::has_tex_coord for more detail.
