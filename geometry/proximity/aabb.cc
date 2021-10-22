@@ -2,7 +2,7 @@
 
 #include "drake/geometry/proximity/boxes_overlap.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {

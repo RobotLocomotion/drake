@@ -13,7 +13,7 @@
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/mesh_traits.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {

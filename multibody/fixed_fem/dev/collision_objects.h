@@ -9,7 +9,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 

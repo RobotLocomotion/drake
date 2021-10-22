@@ -8,7 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/deformable_volume_mesh.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

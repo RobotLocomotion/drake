@@ -11,7 +11,7 @@
 
 #include "drake/common/never_destroyed.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/plant/contact_results.h"
