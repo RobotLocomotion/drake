@@ -32,7 +32,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "TriangleSurfaceMesh", param, doc.TriangleSurfaceMesh.doc);
     cls  // BR
         .def(py::init<std::vector<SurfaceTriangle>, std::vector<Vector3<T>>>(),
-            py::arg("faces"), py::arg("vertices"),
+            py::arg("triangles"), py::arg("vertices"),
             doc.TriangleSurfaceMesh.ctor.doc)
         .def("triangles", &Class::triangles,
             doc.TriangleSurfaceMesh.triangles.doc)

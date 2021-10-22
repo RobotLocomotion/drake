@@ -31,28 +31,28 @@ class SurfaceTriangle {
   }
 
   /** Constructs SurfaceTriangle.
-   @param v  array of three integer indices of the vertices of the face in
+   @param v  array of three integer indices of the vertices of the triangle in
              TriangleSurfaceMesh.
    @pre index values are non-negative. */
   explicit SurfaceTriangle(const int v[3])
       : SurfaceTriangle(v[0], v[1], v[2]) {}
 
   /** Returns the vertex index in TriangleSurfaceMesh of the i-th vertex of this
-   face.
-   @param i  The local index of the vertex in this face.
+   triangle.
+   @param i  The local index of the vertex in this triangle.
    @pre 0 <= i < 3
    */
   int vertex(int i) const { return vertex_.at(i); }
 
   /** Reverses the order of the vertex indices -- this essentially flips the
-   face normal based on the right-handed normal rule.
+   triangle normal based on the right-handed normal rule.
    */
   void ReverseWinding() {
     std::swap(vertex_[0], vertex_[1]);
   }
 
  private:
-  // The vertices of this face.
+  // The vertices of this triangle.
   std::array<int, 3> vertex_;
 };
 
@@ -67,9 +67,10 @@ template <typename T> class SurfaceMeshTester;
 
 // TODO(DamrongGuoy): mention interesting properties of the mesh, e.g., open
 //  meshes, meshes with holes, non-manifold surface.
-/** %TriangleSurfaceMesh represents a triangulated surface.
- @tparam T The underlying scalar type for coordinates, e.g., double
-           or AutoDiffXd. Must be a valid Eigen scalar.
+/** %TriangleSurfaceMesh represents a union of triangles. The surface is not
+ necessarily continuous.
+
+ @tparam_nonsymbolic_scalar
  */
 template <class T>
 class TriangleSurfaceMesh {
@@ -123,11 +124,11 @@ class TriangleSurfaceMesh {
    */
   const SurfaceTriangle& element(int e) const {
     DRAKE_DEMAND(0 <= e && e < num_triangles());
-    return faces_[e];
+    return triangles_[e];
   }
 
-  /** Returns the faces. */
-  const std::vector<SurfaceTriangle>& triangles() const { return faces_; }
+  /** Returns the triangles. */
+  const std::vector<SurfaceTriangle>& triangles() const { return triangles_; }
 
   /** Returns the vertices. */
   const std::vector<Vector3<T>>& vertices() const { return vertices_; }
@@ -155,22 +156,26 @@ class TriangleSurfaceMesh {
   //@}
 
   /**
-   Constructs a TriangleSurfaceMesh from faces and vertices.
-   @param faces     The triangular faces.
+   Constructs a TriangleSurfaceMesh from triangles and vertices.
+   @param triangles The triangular triangles.
    @param vertices  The vertices.
    */
-  TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& faces,
+  TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& triangles,
               std::vector<Vector3<T>>&& vertices)
-      : faces_(std::move(faces)),
+      : triangles_(std::move(triangles)),
         vertices_(std::move(vertices)),
-        area_(faces_.size()),  // Pre-allocate here, not yet calculated.
-        face_normals_(faces_.size()) {  // Pre-allocate, not yet calculated.
-    if (faces_.empty()) {
+        area_(triangles_.size()),  // Pre-allocate here, not yet calculated.
+        face_normals_(triangles_.size()) {  // Pre-allocate, not yet calculated.
+    if (triangles_.empty()) {
       throw std::logic_error("A mesh must contain at least one triangle");
     }
     CalcAreasNormalsAndCentroid();
   }
 
+  // TODO(SeanCurtis-TRI) This shouldn't be called "TransformVertices"; the name
+  //  is misleading. It transforms more than just vertex positions. It should
+  //  simply be called Transform and documented as "transforming the mesh's
+  //  frame-dependent quantities from frame M to the new frame N".
   /** Transforms the vertices of this mesh from its initial frame M to the new
    frame N.
    */
@@ -184,11 +189,11 @@ class TriangleSurfaceMesh {
     p_MSc_ = X_NM * p_MSc_;
   }
 
-  /** Reverses the ordering of all the faces' indices -- see
+  /** Reverses the ordering of all the triangles' indices -- see
     SurfaceTriangle::ReverseWinding().
    */
   void ReverseFaceWinding() {
-    for (auto& f : faces_) {
+    for (auto& f : triangles_) {
       f.ReverseWinding();
     }
     for (auto& n : face_normals_) {
@@ -196,30 +201,30 @@ class TriangleSurfaceMesh {
     }
   }
 
-  /** Returns the number of triangular elements in the mesh.
+  /** Returns the number of triangles in the mesh.
    */
-  int num_triangles() const { return faces_.size(); }
+  int num_triangles() const { return triangles_.size(); }
 
-  /** Returns area of a triangular element.
-   @pre f ∈ {0, 1, 2,..., num_triangles()-1}.
+  /** Returns area of triangle `t`.
+   @pre t ∈ {0, 1, 2,..., num_triangles()-1}.
    */
-  const T& area(int f) const {
-    DRAKE_DEMAND(0 <= f && f < num_triangles());
-    return area_[f];
+  const T& area(int t) const {
+    DRAKE_DEMAND(0 <= t && t < num_triangles());
+    return area_[t];
   }
 
-  /** Returns the total area of all the faces of this surface mesh.
+  /** Returns the total area of all the triangles of this surface mesh.
    */
   const T& total_area() const { return total_area_; }
 
   /** Returns the unit face normal vector of a triangle. It respects the
    right-handed normal rule. A near-zero-area triangle may get an unreliable
    normal vector. A zero-area triangle will get a zero vector.
-   @pre f ∈ {0, 1, 2,..., num_triangles()-1}.
+   @pre t ∈ {0, 1, 2,..., num_triangles()-1}.
    */
-  const Vector3<T>& face_normal(int f) const {
-    DRAKE_DEMAND(0 <= f && f < num_triangles());
-    return face_normals_[f];
+  const Vector3<T>& face_normal(int t) const {
+    DRAKE_DEMAND(0 <= t && t < num_triangles());
+    return face_normals_[t];
   }
 
   /** Returns the area-weighted geometric centroid of this surface mesh. The
@@ -230,7 +235,7 @@ class TriangleSurfaceMesh {
    zero, we define the centroid to be (0,0,0).
 
    The centroid location is calculated _per face_ not _per vertex_ so is
-   insensitive to whether vertices are shared by faces.
+   insensitive to whether vertices are shared by triangles.
    */
   const Vector3<T>& centroid() const { return p_MSc_; }
 
@@ -260,9 +265,9 @@ class TriangleSurfaceMesh {
     return T_CB * b_Q;
   }
 
-  /** Calculate barycentric coordinates with respect to the triangular face `f`
+  /** Calculate barycentric coordinates with respect to the triange `t`
    of the point Q'. Q' is the projection of the provided point Q on the plane
-   of triangle `f`. If Q lies on the plane, Q = Q'. This operation is expensive
+   of triangle `t`. If Q lies on the plane, Q = Q'. This operation is expensive
    compared with going from barycentric to Cartesian.
 
    The return type depends on both the mesh's vertex position scalar type `T`
@@ -271,20 +276,20 @@ class TriangleSurfaceMesh {
 
    @param p_MQ   The position of point Q measured and expressed in the mesh's
                  frame M.
-   @param f      The index of a triangular face.
-   @retval b_Q'  The barycentric coordinates of Q' (projection of Q onto `f`'s
-                 plane) relative to triangle f.
+   @param t      The index of a triangle.
+   @retval b_Q'  The barycentric coordinates of Q' (projection of Q onto `t`'s
+                 plane) relative to triangle t.
    @note  If Q' is outside the triangle, the barycentric coordinates
           (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
           negative.
-   @pre f ∈ {0, 1, 2,..., num_triangles()-1}.
+   @pre t ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   template <typename C>
   Vector3<promoted_numerical_t<T, C>> CalcBarycentric(const Vector3<C>& p_MQ,
-                                                      int f) const {
-    const Vector3<T>& v0 = vertex(element(f).vertex(0));
-    const Vector3<T>& v1 = vertex(element(f).vertex(1));
-    const Vector3<T>& v2 = vertex(element(f).vertex(2));
+                                                      int t) const {
+    const Vector3<T>& v0 = vertex(element(t).vertex(0));
+    const Vector3<T>& v1 = vertex(element(t).vertex(1));
+    const Vector3<T>& v2 = vertex(element(t).vertex(2));
     // Translate the triangle to the origin to simplify calculations;
     // barycentric coordinates stay the same.
     //     u⃗i = v⃗i - v0
@@ -390,17 +395,17 @@ class TriangleSurfaceMesh {
     return true;
   }
 
-  /** Calculates the gradient ∇u of a linear field u on the triangle `f`.
+  /** Calculates the gradient ∇u of a linear field u on the triangle `t`.
    Field u is defined by the three field values `field_value[i]` at the i-th
    vertex of the triangle. The gradient ∇u is expressed in the coordinates
    frame of this mesh M.
    */
   template <typename FieldValue>
   Vector3<FieldValue> CalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 3>& field_value, int f) const {
-    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(f, 0);
-    gradu_M += field_value[1] * CalcGradBarycentric(f, 1);
-    gradu_M += field_value[2] * CalcGradBarycentric(f, 2);
+      const std::array<FieldValue, 3>& field_value, int t) const {
+    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(t, 0);
+    gradu_M += field_value[1] * CalcGradBarycentric(t, 1);
+    gradu_M += field_value[2] * CalcGradBarycentric(t, 2);
     return gradu_M;
   }
 
@@ -413,13 +418,13 @@ class TriangleSurfaceMesh {
   void CalcAreasNormalsAndCentroid();
 
   // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
-  // function bᵢ of the i-th vertex of the triangle `f`. The gradient
+  // function bᵢ of the i-th vertex of the triangle `t`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 3.
-  Vector3<T> CalcGradBarycentric(int f, int i) const;
+  Vector3<T> CalcGradBarycentric(int t, int i) const;
 
   // The triangles that comprise the surface.
-  std::vector<SurfaceTriangle> faces_;
+  std::vector<SurfaceTriangle> triangles_;
   // The vertices that are shared among the triangles.
   std::vector<Vector3<T>> vertices_;
 
@@ -445,7 +450,7 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   p_MSc_.setZero();
 
   for (int f = 0; f < num_triangles(); ++f) {
-    const SurfaceTriangle& face = faces_[f];
+    const SurfaceTriangle& face = triangles_[f];
     const Vector3<T>& r_MA = vertices_[face.vertex(0)];
     const Vector3<T>& r_MB = vertices_[face.vertex(1)];
     const Vector3<T>& r_MC = vertices_[face.vertex(2)];
@@ -476,15 +481,15 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
 }
 
 template <typename T>
-Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
+Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int t, int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
-  DRAKE_DEMAND(0 <= f && f < num_triangles());
+  DRAKE_DEMAND(0 <= t && t < num_triangles());
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
-  // indexed by `f`. A and B are the other two vertices of the triangle.
+  // indexed by `t`. A and B are the other two vertices of the triangle.
   // Positions of the vertices are expressed in frame M of the mesh.
-  const Vector3<T>& p_MV = vertices_[faces_[f].vertex(i)];
-  const Vector3<T>& p_MA = vertices_[faces_[f].vertex((i + 1) % 3)];
-  const Vector3<T>& p_MB = vertices_[faces_[f].vertex((i + 2) % 3)];
+  const Vector3<T>& p_MV = vertices_[triangles_[t].vertex(i)];
+  const Vector3<T>& p_MA = vertices_[triangles_[t].vertex((i + 1) % 3)];
+  const Vector3<T>& p_MB = vertices_[triangles_[t].vertex((i + 2) % 3)];
 
   // TODO(DamrongGuoy): Provide a mechanism for users to set the gradient
   //  vector in SurfaceMeshFieldLinear since this calculation is not reliable

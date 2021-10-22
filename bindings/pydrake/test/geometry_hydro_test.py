@@ -59,7 +59,7 @@ class TestGeometryHydro(unittest.TestCase):
         # Create a mesh out of two triangles forming a quad.
         #
         #     0______1
-        #      |b  /|      Two faces: a and b.
+        #      |b  /|      Two triangles: a and b.
         #      |  / |      Four vertices: 0, 1, 2, and 3.
         #      | /a |
         #      |/___|
@@ -77,7 +77,7 @@ class TestGeometryHydro(unittest.TestCase):
 
         self.assertListEqual(list(v0), [-1, 1, 0])
 
-        mesh = mut.TriangleSurfaceMesh(faces=(f_a, f_b),
+        mesh = mut.TriangleSurfaceMesh(triangles=(t_a, t_b),
                                        vertices=(v0, v1, v2, v3))
         self.assertEqual(len(mesh.triangles()), 2)
         self.assertEqual(len(mesh.vertices()), 4)
