@@ -8,7 +8,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
@@ -25,17 +25,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
 
-  // SurfaceMesh
+  // TriangleSurfaceMesh
   {
-    using Class = SurfaceMesh<T>;
+    using Class = TriangleSurfaceMesh<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SurfaceMesh", param, doc.SurfaceMesh.doc);
+        m, "TriangleSurfaceMesh", param, doc.TriangleSurfaceMesh.doc);
     cls  // BR
-        .def(py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>>(),
-            py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
-        .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
-        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
-        .def("centroid", &Class::centroid, doc.SurfaceMesh.centroid.doc);
+        .def(py::init<std::vector<SurfaceTriangle>, std::vector<Vector3<T>>>(),
+            py::arg("triangles"), py::arg("vertices"),
+            doc.TriangleSurfaceMesh.ctor.doc)
+        .def("triangles", &Class::triangles,
+            doc.TriangleSurfaceMesh.triangles.doc)
+        .def("vertices", &Class::vertices, doc.TriangleSurfaceMesh.vertices.doc)
+        .def(
+            "centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc);
   }
 
   // VolumeMesh
@@ -64,11 +67,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   using namespace drake::geometry;
   constexpr auto& doc = pydrake_doc.drake.geometry;
 
-  // SurfaceFace
+  // SurfaceTriangle
   {
-    using Class = SurfaceFace;
-    constexpr auto& cls_doc = doc.SurfaceFace;
-    py::class_<Class> cls(m, "SurfaceFace", cls_doc.doc);
+    using Class = SurfaceTriangle;
+    constexpr auto& cls_doc = doc.SurfaceTriangle;
+    py::class_<Class> cls(m, "SurfaceTriangle", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, int>(), py::arg("v0"), py::arg("v1"),
             py::arg("v2"), cls_doc.ctor.doc_3args)
@@ -91,13 +94,13 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   m.def(
-      "ReadObjToSurfaceMesh",
+      "ReadObjToTriangleSurfaceMesh",
       [](const std::string& filename, double scale) {
-        return geometry::ReadObjToSurfaceMesh(filename, scale);
+        return geometry::ReadObjToTriangleSurfaceMesh(filename, scale);
       },
       py::arg("filename"), py::arg("scale") = 1.0,
       // N.B. We have not bound the optional "on_warning" argument.
-      doc.ReadObjToSurfaceMesh.doc_3args_filename_scale_on_warning);
+      doc.ReadObjToTriangleSurfaceMesh.doc_3args_filename_scale_on_warning);
 
   m.def("AddRigidHydroelasticProperties",
       py::overload_cast<double, ProximityProperties*>(

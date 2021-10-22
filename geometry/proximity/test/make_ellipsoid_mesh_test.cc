@@ -48,14 +48,14 @@ GTEST_TEST(MakeEllipsoidMeshTest, MakeEllipsoidSurfaceMesh) {
   {
     const auto coarse_mesh = MakeEllipsoidSurfaceMesh<double>(ellipsoid, 0.16);
     EXPECT_EQ(6, coarse_mesh.num_vertices());
-    EXPECT_EQ(8, coarse_mesh.num_faces());
+    EXPECT_EQ(8, coarse_mesh.num_triangles());
   }
 
   // Cutting the resolution_hint in half from 16cm down to 8cm increases
   // the number of triangles by 4X.
   {
     const auto medium_mesh = MakeEllipsoidSurfaceMesh<double>(ellipsoid, 0.08);
-    EXPECT_EQ(32, medium_mesh.num_faces());
+    EXPECT_EQ(32, medium_mesh.num_triangles());
   }
 }
 

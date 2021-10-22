@@ -292,7 +292,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    single vertex referenced by every face (all other vertices should be
    referenced twice). */
   static pair<int, ::testing::AssertionResult> IdentifyFanVertex(
-      const vector<SurfaceFace>& faces) {
+      const vector<SurfaceTriangle>& faces) {
     const int num_faces = static_cast<int>(faces.size());
     int centroid_index = -1;
     std::unordered_map<int, int> vertex_references;
@@ -350,7 +350,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    classification fails for any vertex, report failure (without edge data). */
   pair<vector<EdgeVertex>, ::testing::AssertionResult>
   CharacterizeEdgeVertices(
-      int fan_index, const vector<SurfaceFace>& slice,
+      int fan_index, const vector<SurfaceTriangle>& slice,
       const vector<Vector3d>& slice_vertices_W, int tet_index,
       const VolumeMesh<double>& mesh_F) const {
     constexpr double kEps = std::numeric_limits<double>::epsilon();
@@ -577,7 +577,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    matches the given expected normal. */
   ::testing::AssertionResult FaceNormalMatches(
       int tri_index, const Vector3d& expected_n_W) const {
-    const SurfaceFace& tri = faces_[tri_index];
+    const SurfaceTriangle& tri = faces_[tri_index];
     const Vector3d& r_WV0 = vertices_W_[tri.vertex(0)];
     const Vector3d& r_WV1 = vertices_W_[tri.vertex(1)];
     const Vector3d& r_WV2 = vertices_W_[tri.vertex(2)];
@@ -595,7 +595,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   RigidTransformd X_WF_;
 
   /* The accumulators for the SliceTetWithPlane() method. */
-  vector<SurfaceFace> faces_;
+  vector<SurfaceTriangle> faces_;
   vector<Vector3d> vertices_W_;
   vector<double> surface_pressure_;
   unordered_map<SortedPair<int>, int> cut_edges_;
@@ -930,7 +930,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
       TrivialVolumeMesh(X_FM, true /* min_vertices */);
   VolumeMeshFieldLinear<double, double> min_field_F{
       vector<double>{0, 0, 0, 1, -1}, &min_mesh_F};
-  vector<SurfaceFace> min_faces;
+  vector<SurfaceTriangle> min_faces;
   vector<Vector3d> min_vertices_F;
   vector<double> min_surface_pressure;
   unordered_map<SortedPair<int>, int> min_cut_edges;
@@ -940,7 +940,7 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
       TrivialVolumeMesh(X_FM, false /* min_vertices */);
   VolumeMeshFieldLinear<double, double> dupe_field_F{
       vector<double>{0, 0, 0, 1, 0, 0, 0, -1}, &dupe_mesh_F};
-  vector<SurfaceFace> dupe_faces;
+  vector<SurfaceTriangle> dupe_faces;
   vector<Vector3d> dupe_vertices_F;
   vector<double> dupe_surface_pressure;
   unordered_map<SortedPair<int>, int> dupe_cut_edges;
@@ -967,8 +967,8 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   // results are in the exact same order with the constituent vertices also in
   // same order.
   for (int f = 0; f < 6; ++f) {
-    const SurfaceFace& min_face = min_faces[0];
-    const SurfaceFace& dupe_face = dupe_faces[0];
+    const SurfaceTriangle& min_face = min_faces[0];
+    const SurfaceTriangle& dupe_face = dupe_faces[0];
     for (int v = 0; v < 3; ++v) {
       const Vector3d& p_FVm = min_vertices_F[min_face.vertex(v)];
       const Vector3d& p_FVd = dupe_vertices_F[dupe_face.vertex(v)];
@@ -1007,7 +1007,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
         {ContactPolygonRepresentation::kCentroidSubdivision,
          ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
-    vector<SurfaceFace> faces;
+    vector<SurfaceTriangle> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<int>, int> cut_edges;
@@ -1027,7 +1027,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
       {ContactPolygonRepresentation::kCentroidSubdivision,
        ContactPolygonRepresentation::kSingleTriangle}) {
     SCOPED_TRACE(fmt::format("representation = {}", representation));
-    vector<SurfaceFace> faces;
+    vector<SurfaceTriangle> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<int>, int> cut_edges;
@@ -1254,7 +1254,8 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
             mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
             ContactPolygonRepresentation::kCentroidSubdivision);
     ASSERT_NE(contact_surface, nullptr);
-    const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+    const TriangleSurfaceMesh<double>& contact_mesh_W =
+        contact_surface->mesh_W();
     EXPECT_EQ(contact_mesh_W.num_elements(), 6);
     EXPECT_EQ(contact_mesh_W.num_vertices(), 6);
 
@@ -1286,7 +1287,8 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
             mesh_id_, dupe_field_F, plane_id_, plane_F, both_tets_, X_WF_,
             ContactPolygonRepresentation::kCentroidSubdivision);
     ASSERT_NE(contact_surface, nullptr);
-    const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
+    const TriangleSurfaceMesh<double>& contact_mesh_W =
+        contact_surface->mesh_W();
     EXPECT_EQ(contact_mesh_W.num_elements(), 6);
     EXPECT_EQ(contact_mesh_W.num_vertices(), 8);
 
@@ -1353,8 +1355,8 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
       // NOTE: When we set the normals directly from the plane, this precision
       // will improve.
       constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
-      const SurfaceMesh<double>& mesh_W = contact->mesh_W();
-      for (int f = 0; f < mesh_W.num_faces(); ++f) {
+      const TriangleSurfaceMesh<double>& mesh_W = contact->mesh_W();
+      for (int f = 0; f < mesh_W.num_triangles(); ++f) {
         SCOPED_TRACE(fmt::format("Face index f = {}", f));
         EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
       }
@@ -1676,7 +1678,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       std::string name;
       Vector3d p_RS_d;
       RotationMatrixd R_RS_d;
-      int num_faces{};
+      int num_triangles{};
       TetPose pose;
     };
     vector<Configuration> configurations;
@@ -1748,7 +1750,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
-      ASSERT_EQ(surface->mesh_W().num_faces(), config.num_faces);
+      ASSERT_EQ(surface->mesh_W().num_triangles(), config.num_triangles);
 
       evaluate_quantity(*surface, X_WS, config.pose);
     }
@@ -1980,7 +1982,7 @@ TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
      from intersecting a tet edge with the plane. We'll evaluate all of those
      and then handle the centroid specially. */
     const Vector3d n_R{0, 0, 1};
-    const SurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
+    const TriangleSurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
     const RotationMatrixd R_WR = convert_to_double(this->X_WR_).rotation();
     const RotationMatrixd R_RW = R_WR.inverse();
     const RigidTransformd X_WS = convert_to_double(X_WS_ad);

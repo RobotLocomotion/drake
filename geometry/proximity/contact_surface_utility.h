@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -111,7 +111,7 @@ T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
 template <typename T>
 void AddPolygonToMeshData(const std::vector<int>& polygon,
                           const Vector3<T>& n_F,
-                          std::vector<SurfaceFace>* faces,
+                          std::vector<SurfaceTriangle>* faces,
                           std::vector<Vector3<T>>* vertices_F);
 
 // Any polygon with area less than this threshold is considered having
@@ -164,7 +164,7 @@ constexpr double kMinimumPolygonArea = 1e-13;
 template <typename T>
 void AddPolygonToMeshDataAsOneTriangle(
     const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& nhat_F,
-    std::vector<SurfaceFace>* faces, std::vector<Vector3<T>>* vertices_F);
+    std::vector<SurfaceTriangle>* faces, std::vector<Vector3<T>>* vertices_F);
 
 enum class ContactPolygonRepresentation {
   // Each contact polygon is subdivided into triangles sharing the centroid
@@ -194,7 +194,7 @@ enum class ContactPolygonRepresentation {
  @tparam_nonsymbolic_scalar */
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
-                                   const SurfaceMesh<T>& surface_M,
+                                   const TriangleSurfaceMesh<T>& surface_M,
                                    int tri_index,
                                    const math::RotationMatrix<T>& R_FM);
 

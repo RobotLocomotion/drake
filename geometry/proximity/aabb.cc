@@ -2,7 +2,7 @@
 
 #include "drake/geometry/proximity/boxes_overlap.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -67,8 +67,8 @@ Aabb AabbMaker<MeshType>::Compute() const {
   return Aabb(center, half_width);
 }
 
-template class AabbMaker<SurfaceMesh<double>>;
-template class AabbMaker<SurfaceMesh<AutoDiffXd>>;
+template class AabbMaker<TriangleSurfaceMesh<double>>;
+template class AabbMaker<TriangleSurfaceMesh<AutoDiffXd>>;
 template class AabbMaker<VolumeMesh<double>>;
 template class AabbMaker<VolumeMesh<AutoDiffXd>>;
 

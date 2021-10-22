@@ -159,7 +159,7 @@ drake_cc_library(
         "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
-        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 

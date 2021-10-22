@@ -5,7 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -67,7 +67,7 @@ void SliceTetWithPlane(int tet_index,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
                        ContactPolygonRepresentation representation,
-                       std::vector<SurfaceFace>* faces,
+                       std::vector<SurfaceTriangle>* faces,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
                        std::unordered_map<SortedPair<int>, int>* cut_edges) {
@@ -177,7 +177,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     ContactPolygonRepresentation representation) {
   if (tet_indices.size() == 0) return nullptr;
 
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   std::vector<Vector3<T>> vertices_W;
   std::vector<T> surface_e;
   std::unordered_map<SortedPair<int>, int> cut_edges;
@@ -201,9 +201,9 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   DRAKE_DEMAND(vertices_W.size() == surface_e.size());
   if (faces.empty()) return nullptr;
 
-  auto mesh_W =
-      std::make_unique<SurfaceMesh<T>>(std::move(faces), std::move(vertices_W));
-  auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+  auto mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
+                                                         std::move(vertices_W));
+  auto field_W = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
       std::move(surface_e), mesh_W.get(), false /* calculate_gradient */);
   // SliceTetWithPlane promises to make the surface normals point in the plane
   // normal direction (i.e., out of the plane and into the mesh).

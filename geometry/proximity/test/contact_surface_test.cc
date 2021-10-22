@@ -9,8 +9,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/math/rigid_transform.h"
 
 // TODO(DamrongGuoy): Move to geometry/query_results/test/.
@@ -25,12 +25,12 @@ class ContactSurfaceTester {
   explicit ContactSurfaceTester(const geometry::ContactSurface<T>& surface)
       : surface_(surface) {}
 
-  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
+  const TriangleSurfaceMeshFieldLinear<T, T>& e_MN() const {
     DRAKE_DEMAND(surface_.e_MN_ != nullptr);
     return *(surface_.e_MN_);
   }
 
-  SurfaceMesh<T>& mutable_mesh_W() const {
+  TriangleSurfaceMesh<T>& mutable_mesh_W() const {
     DRAKE_DEMAND(surface_.mesh_W_ != nullptr);
     return *(surface_.mesh_W_);
   }
@@ -68,7 +68,7 @@ GTEST_TEST(ContactSurfaceTest, TestContactSurfaceAutoDiffXd) {
 }
 
 template <typename T>
-unique_ptr<SurfaceMesh<T>> GenerateMesh() {
+unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
 // A simple mesh for a contact surface. It consists of two right
 // triangles that make a square.
 //
@@ -87,12 +87,12 @@ unique_ptr<SurfaceMesh<T>> GenerateMesh() {
 //   v0(0,0,0)  v1(1,0,0)
 //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
-  vector<SurfaceFace> faces;
+  vector<SurfaceTriangle> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   vector<Vector3<T>> vertices = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
   auto surface_mesh =
-      make_unique<SurfaceMesh<T>>(move(faces), move(vertices));
+      make_unique<TriangleSurfaceMesh<T>>(move(faces), move(vertices));
   return surface_mesh;
 }
 
@@ -112,8 +112,8 @@ ContactSurface<T> TestContactSurface() {
   const T e2{2.};
   const T e3{3.};
   vector<T> e_values = {e0, e1, e2, e3};
-  auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(move(e_values),
-                                                           surface_mesh.get());
+  auto e_field = make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
+      move(e_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, move(surface_mesh),
                                     move(e_field));
@@ -124,13 +124,13 @@ ContactSurface<T> TestContactSurface() {
   // Check memory address of the mesh. We don't want to compare the mesh
   // objects themselves.
   EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh_W());
-  EXPECT_EQ(2, contact_surface.mesh_W().num_faces());
+  EXPECT_EQ(2, contact_surface.mesh_W().num_triangles());
   EXPECT_EQ(4, contact_surface.mesh_W().num_vertices());
   // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
     const int f0{0};
-    const typename SurfaceMesh<T>::template Barycentric<double> b{0.2, 0.3,
-                                                                  0.5};
+    const typename TriangleSurfaceMesh<T>::template Barycentric<double> b{
+        0.2, 0.3, 0.5};
     const T expect_e = b(0) * e0 + b(1) * e1 + b(2) * e2;
     EXPECT_EQ(expect_e, contact_surface.e_MN().Evaluate(f0, b));
   }
@@ -154,10 +154,10 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   const auto id_B = GeometryId::get_new_id();
   ASSERT_LT(id_A, id_B);
 
-  unique_ptr<SurfaceMesh<double>> surface_mesh = GenerateMesh<double>();
-  auto make_e_field = [](SurfaceMesh<double>* mesh) {
+  unique_ptr<TriangleSurfaceMesh<double>> surface_mesh = GenerateMesh<double>();
+  auto make_e_field = [](TriangleSurfaceMesh<double>* mesh) {
     vector<double> e_values{0, 1, 2, 3};
-    return make_unique<SurfaceMeshFieldLinear<double, double>>(
+    return make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
         move(e_values), mesh, false /* calc_gradient */);
   };
   vector<Vector3d> grad_e;
@@ -168,7 +168,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   {
     // Case: Neither constituent gradient field is defined.
     const ContactSurface<double> surface(
-        id_A, id_B, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_A, id_B, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), nullptr, nullptr);
     EXPECT_FALSE(surface.HasGradE_M());
     EXPECT_THROW(surface.EvaluateGradE_M_W(1), std::runtime_error);
@@ -180,7 +180,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
     // Case: The first gradient is defined and id_A is first --> M has the
     // gradient.
     const ContactSurface<double> surface(
-        id_A, id_B, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_A, id_B, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
         nullptr);
     EXPECT_TRUE(surface.HasGradE_M());
@@ -193,7 +193,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
     // Case: The first gradient is defined and id_B is first --> N has the
     // gradient.
     const ContactSurface<double> surface(
-        id_B, id_A, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_B, id_A, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
         nullptr);
     EXPECT_FALSE(surface.HasGradE_M());
@@ -206,7 +206,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
     // Case: The second gradient is defined and id_B is second --> N has the
     // gradient.
     const ContactSurface<double> surface(
-        id_A, id_B, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_A, id_B, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), nullptr,
         make_unique<vector<Vector3d>>(grad_e));
     EXPECT_FALSE(surface.HasGradE_M());
@@ -219,7 +219,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
     // Case: The second gradient is defined and id_A is second --> M has the
     // gradient.
     const ContactSurface<double> surface(
-        id_B, id_A, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_B, id_A, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), nullptr,
         make_unique<vector<Vector3d>>(grad_e));
     EXPECT_TRUE(surface.HasGradE_M());
@@ -236,7 +236,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
     // Case: Gradients 1 and 2 are given for A and B, so M has gradient 1 and
     // N has gradient 2.
     const ContactSurface<double> surface(
-        id_A, id_B, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_A, id_B, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
         make_unique<vector<Vector3d>>(grad_e2));
     EXPECT_TRUE(surface.HasGradE_M());
@@ -249,7 +249,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
     // Case: Gradients 1 and 2 are given for B and A, so M has gradient 2 and
     // N has gradient 1.
     const ContactSurface<double> surface(
-        id_B, id_A, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        id_B, id_A, make_unique<TriangleSurfaceMesh<double>>(*surface_mesh),
         make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
         make_unique<vector<Vector3d>>(grad_e2));
     EXPECT_TRUE(surface.HasGradE_M());
@@ -272,13 +272,14 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
 
   EXPECT_EQ(original.id_M(), copy.id_M());
   EXPECT_EQ(original.id_N(), copy.id_N());
-  // We use `num_faces()` as a representative of the mesh. We do not check
+  // We use `num_triangles()` as a representative of the mesh. We do not check
   // everything in the mesh.
-  EXPECT_EQ(original.mesh_W().num_faces(), copy.mesh_W().num_faces());
+  EXPECT_EQ(original.mesh_W().num_triangles(), copy.mesh_W().num_triangles());
 
   // We check evaluation of field values only at one position.
   const int f{0};
-  const typename SurfaceMesh<double>::Barycentric<double> b{0.2, 0.3, 0.5};
+  const typename TriangleSurfaceMesh<double>::Barycentric<double> b{0.2, 0.3,
+                                                                    0.5};
   EXPECT_EQ(original.e_MN().Evaluate(f, b), copy.e_MN().Evaluate(f, b));
 }
 
@@ -298,12 +299,12 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
 
   // Equal mesh, Different pressure field.
   // First, copy the mesh.
-  auto mesh2 = make_unique<SurfaceMesh<double>>(surface.mesh_W());
-  const SurfaceMeshFieldLinear<double, double>& field = surface.e_MN();
+  auto mesh2 = make_unique<TriangleSurfaceMesh<double>>(surface.mesh_W());
+  const TriangleSurfaceMeshFieldLinear<double, double>& field = surface.e_MN();
   // Then, copy the field values and change it.
   vector<double> field2_values(field.values());
   field2_values.at(0) += 2.0;
-  auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
+  auto field2 = make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
       move(field2_values), mesh2.get());
   auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
                                          move(mesh2), move(field2));
@@ -315,8 +316,8 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
 GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // Create the original contact surface for comparison later.
   const ContactSurface<double> original = TestContactSurface<double>();
-  auto mesh = make_unique<SurfaceMesh<double>>(original.mesh_W());
-  SurfaceMesh<double>* mesh_pointer = mesh.get();
+  auto mesh = make_unique<TriangleSurfaceMesh<double>>(original.mesh_W());
+  TriangleSurfaceMesh<double>* mesh_pointer = mesh.get();
   // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
   //  direct access to e_MN.
   const ContactSurfaceTester<double> original_tester(original);
@@ -329,8 +330,8 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   ASSERT_LT(id_N, id_M);
   ContactSurface<double> dut(
       id_M, id_N, move(mesh),
-      make_unique<SurfaceMeshFieldLinear<double, double>>(move(e_MN_values),
-                                                          mesh_pointer));
+      make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
+          move(e_MN_values), mesh_pointer));
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
   // These tests are just to confirm that those things changed where we
@@ -341,20 +342,21 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   EXPECT_EQ(dut.id_N(), id_M);
 
   // Determines if two faces have the same indices in the same order.
-  auto are_identical = [](const SurfaceFace& f1, const SurfaceFace& f2) {
+  auto are_identical = [](const SurfaceTriangle& f1,
+                          const SurfaceTriangle& f2) {
     return f1.vertex(0) == f2.vertex(0) && f1.vertex(1) == f2.vertex(1) &&
            f1.vertex(2) == f2.vertex(2);
   };
   // Face winding is changed.
-  for (int f = 0; f < original.mesh_W().num_faces(); ++f) {
+  for (int f = 0; f < original.mesh_W().num_triangles(); ++f) {
     EXPECT_FALSE(
         are_identical(dut.mesh_W().element(f), original.mesh_W().element(f)));
   }
 
   // Evaluate the mesh field, once per face for an arbitrary point Q on the
   // interior of the triangle. We expect e_MN function hasn't changed.
-  const SurfaceMesh<double>::Barycentric<double> b_Q{0.25, 0.25, 0.5};
-  for (int f = 0; f < original.mesh_W().num_faces(); ++f) {
+  const TriangleSurfaceMesh<double>::Barycentric<double> b_Q{0.25, 0.25, 0.5};
+  for (int f = 0; f < original.mesh_W().num_triangles(); ++f) {
     EXPECT_EQ(dut.e_MN().Evaluate(f, b_Q), original.e_MN().Evaluate(f, b_Q));
   }
 }

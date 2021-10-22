@@ -29,8 +29,8 @@ struct BoxMaker<T, VolumeMesh> {
 };
 
 template <typename T>
-struct BoxMaker<T, SurfaceMesh> {
-  static SurfaceMesh<T> make(const Box& box) {
+struct BoxMaker<T, TriangleSurfaceMesh> {
+  static TriangleSurfaceMesh<T> make(const Box& box) {
     return ConvertVolumeToSurfaceMesh(MakeBoxVolumeMeshWithMa<T>(box));
   }
 };
@@ -112,7 +112,7 @@ TYPED_TEST(VolumeMeshDeformerTest, SetAllPositions) {
 }
 
 template <typename T>
-using SurfaceMeshDeformerTest = MeshDeformerTest<T, SurfaceMesh>;
+using SurfaceMeshDeformerTest = MeshDeformerTest<T, TriangleSurfaceMesh>;
 TYPED_TEST_SUITE(SurfaceMeshDeformerTest, ScalarTypes);
 
 TYPED_TEST(SurfaceMeshDeformerTest, Construction) {

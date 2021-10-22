@@ -173,7 +173,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
                 geometry_id=global_geometry))
         self.assertIsInstance(
             inspector.maybe_get_hydroelastic_mesh(
-                geometry_id=sphere_2), mut.SurfaceMesh)
+                geometry_id=sphere_2), mut.TriangleSurfaceMesh)
         self.assertIsInstance(
             inspector.maybe_get_hydroelastic_mesh(
                 geometry_id=sphere_3), mut.VolumeMesh)

@@ -463,7 +463,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
 GTEST_TEST(MakeBoxSurfaceMeshTest, GenerateSurface) {
   const Box box(0.2, 0.4, 0.8);
   const double target_edge_length = 0.1;
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeBoxSurfaceMesh<double>(box, target_edge_length);
 
   const int expect_num_vertices = 114;

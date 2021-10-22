@@ -13,9 +13,8 @@
 namespace drake {
 
 using geometry::ContactSurface;
-using geometry::SurfaceFace;
-using geometry::SurfaceMesh;
-using geometry::SurfaceMeshFieldLinear;
+using geometry::TriangleSurfaceMesh;
+using geometry::TriangleSurfaceMeshFieldLinear;
 using math::RigidTransform;
 
 namespace multibody {
@@ -48,10 +47,10 @@ void HydroelasticTractionCalculator<T>::
   // Reserve enough memory to keep from doing repeated heap allocations in the
   // quadrature process.
   traction_at_quadrature_points->clear();
-  traction_at_quadrature_points->reserve(data.surface.mesh_W().num_faces());
+  traction_at_quadrature_points->reserve(data.surface.mesh_W().num_triangles());
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (int i = 0; i < data.surface.mesh_W().num_faces(); ++i) {
+  for (int i = 0; i < data.surface.mesh_W().num_triangles(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
@@ -131,7 +130,8 @@ HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data, int face_index,
     // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
-    const typename SurfaceMesh<T>::template Barycentric<T>& Q_barycentric,
+    const typename TriangleSurfaceMesh<T>::template Barycentric<T>&
+        Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
   const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(

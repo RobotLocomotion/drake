@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 #include <memory>
 #include <utility>
@@ -17,14 +17,15 @@ namespace geometry {
 // TODO(DamrongGuoy): Remove this helper class if we change
 //  CalcGradBarycentric() from private to public.
 template <typename T>
-class SurfaceMeshTester {
+class TriangleSurfaceMeshTester {
  public:
-  explicit SurfaceMeshTester(const SurfaceMesh<T>& mesh) : mesh_(mesh) {}
+  explicit TriangleSurfaceMeshTester(const TriangleSurfaceMesh<T>& mesh)
+      : mesh_(mesh) {}
   Vector3<T> CalcGradBarycentric(int f, int i) const {
     return mesh_.CalcGradBarycentric(f, i);
   }
  private:
-  const SurfaceMesh<T>& mesh_;
+  const TriangleSurfaceMesh<T>& mesh_;
 };
 
 namespace {
@@ -37,9 +38,10 @@ using math::RigidTransformd;
 //  toy meshes for examining mesh functions. This should be distilled back down
 //  to just one.
 
-// Used for testing instantiation of SurfaceMesh and inspecting its components.
+// Used for testing instantiation of TriangleSurfaceMesh and inspecting its
+// components.
 template <typename T>
-std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
+std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
   // The surface mesh will consist of four vertices and two co-planar faces and
   // will be constructed such that area and geometric centroid are
   // straightforward to check.
@@ -51,26 +53,26 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
   vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5));
 
-  // Create the two triangles. Note that SurfaceMesh does not specify (or use) a
-  // particular winding.
-  std::vector<SurfaceFace> faces;
+  // Create the two triangles. Note that TriangleSurfaceMesh does not specify
+  // (or use) a particular winding.
+  std::vector<SurfaceTriangle> faces;
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
-  return std::make_unique<SurfaceMesh<T>>(
+  return std::make_unique<TriangleSurfaceMesh<T>>(
       std::move(faces), std::move(vertices));
 }
 
 // Generates an empty mesh.
-std::unique_ptr<SurfaceMesh<double>> GenerateEmptyMesh() {
+std::unique_ptr<TriangleSurfaceMesh<double>> GenerateEmptyMesh() {
   std::vector<Vector3d> vertices;
-  std::vector<SurfaceFace> faces;
-  return std::make_unique<SurfaceMesh<double>>(
+  std::vector<SurfaceTriangle> faces;
+  return std::make_unique<TriangleSurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 }
 
 // Generates a zero-area mesh.
-std::unique_ptr<SurfaceMesh<double>> GenerateZeroAreaMesh() {
+std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
   // The surface mesh will consist of four vertices and two faces.
 
   // Create the vertices.
@@ -79,19 +81,19 @@ std::unique_ptr<SurfaceMesh<double>> GenerateZeroAreaMesh() {
     vertices.emplace_back(Vector3<double>::Zero());
 
   // Create the two triangles.
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
-  return std::make_unique<SurfaceMesh<double>>(
+  return std::make_unique<TriangleSurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 }
 
-// Test instantiation of SurfaceMesh of a surface M and inspecting its
+// Test instantiation of TriangleSurfaceMesh of a surface M and inspecting its
 // components. By default, the vertex positions are expressed in M's frame.
 // The optional parameter X_WM will change the vertex positions to W's frame.
 template<typename T>
-std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
+std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
     const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity()) {
   // A simple surface mesh comprises of two co-planar triangles with vertices on
   // the coordinate axes and the origin like this:
@@ -114,16 +116,16 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   // frame.
   //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
-  std::vector<SurfaceFace> faces;
+  std::vector<SurfaceTriangle> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
   std::vector<Vector3<T>> vertices_W;
   for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
-  auto surface_mesh_W =
-      std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices_W));
+  auto surface_mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(
+      move(faces), std::move(vertices_W));
 
-  EXPECT_EQ(2, surface_mesh_W->num_faces());
+  EXPECT_EQ(2, surface_mesh_W->num_triangles());
   EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
     EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W->vertex(v));
@@ -133,16 +135,16 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   return surface_mesh_W;
 }
 
-// Test instantiation of SurfaceMesh using `double` as the underlying scalar
-// type.
+// Test instantiation of TriangleSurfaceMesh using `double` as the underlying
+// scalar type.
 GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshDouble) {
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  EXPECT_EQ(surface_mesh->num_faces(), 2);
+  EXPECT_EQ(surface_mesh->num_triangles(), 2);
 }
 
 GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
   auto surface_mesh = TestSurfaceMesh<double>();
-  EXPECT_EQ(surface_mesh->num_faces(), 2);
+  EXPECT_EQ(surface_mesh->num_triangles(), 2);
 }
 
 // Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose
@@ -150,7 +152,7 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
 // differentiation.
 GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
   auto surface_mesh = GenerateTwoTriangleMesh<AutoDiffXd>();
-  EXPECT_EQ(surface_mesh->num_faces(), 2);
+  EXPECT_EQ(surface_mesh->num_triangles(), 2);
 }
 
 // Checks the area calculations.
@@ -216,7 +218,7 @@ void TestCalcBarycentric() {
   // account for the pose.
   const T kTolerance(1e-14);
   const int f0 = 0;
-  using Barycentric = typename SurfaceMesh<T>::template Barycentric<T>;
+  using Barycentric = typename TriangleSurfaceMesh<T>::template Barycentric<T>;
 
   // At v1.
   {
@@ -302,11 +304,12 @@ void TestCalcGradBarycentric() {
 
   // Create the mesh with vertex coordinates expressed in World frame to make
   // the test more realistic.
-  const SurfaceMesh<T> mesh_W({SurfaceFace(triangle)},
-                              {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
-                               Vector3<T>(X_WM * v2_M)});
+  const TriangleSurfaceMesh<T> mesh_W(
+      {SurfaceTriangle(triangle)},
+      {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
+       Vector3<T>(X_WM * v2_M)});
 
-  const SurfaceMeshTester<T> tester(mesh_W);
+  const TriangleSurfaceMeshTester<T> tester(mesh_W);
   const auto gradb0_W = tester.CalcGradBarycentric(0, 0);
   const auto gradb1_W = tester.CalcGradBarycentric(0, 1);
   const auto gradb2_W = tester.CalcGradBarycentric(0, 2);
@@ -342,8 +345,8 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
 }
 
 GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
-  std::unique_ptr<SurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
-  const SurfaceMeshTester<double> tester(*mesh);
+  std::unique_ptr<TriangleSurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
+  const TriangleSurfaceMeshTester<double> tester(*mesh);
   EXPECT_THROW(tester.CalcGradBarycentric(0, 0),
                std::runtime_error);
 }
@@ -375,8 +378,8 @@ void TestCalcGradientVectorOfLinearField() {
   const Vector3<T> v0_M(1., 0., 0.);
   const Vector3<T> v1_M(0., 1., 0.);
   const Vector3<T> v2_M(0., 0., 1.);
-  const SurfaceMesh<T> mesh_M(
-      {SurfaceFace(triangle)},
+  const TriangleSurfaceMesh<T> mesh_M(
+      {SurfaceTriangle(triangle)},
       {Vector3<T>(v0_M), Vector3<T>(v1_M), Vector3<T>(v2_M)});
   const std::array<T, 3> f{2., 3., 4.};
 
@@ -412,11 +415,11 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradientVectorOfLinearFieldAutoDiffXd) {
 
 GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   auto ref_mesh = TestSurfaceMesh<double>();
-  auto test_mesh = std::make_unique<SurfaceMesh<double>>(*ref_mesh);
+  auto test_mesh = std::make_unique<TriangleSurfaceMesh<double>>(*ref_mesh);
 
   // Simply confirms the two faces have the same indices in the same order.
-  auto faces_match = [](const SurfaceFace& ref_face,
-                            const SurfaceFace& test_face) {
+  auto faces_match = [](const SurfaceTriangle& ref_face,
+                        const SurfaceTriangle& test_face) {
     for (int i = 0; i < 3; ++i) {
       if (ref_face.vertex(i) != test_face.vertex(i)) return false;
     }
@@ -430,8 +433,8 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   test_mesh->ReverseFaceWinding();
 
   // Confirms that the two faces have the same indices but in reverse order.
-  auto winding_reversed = [](const SurfaceFace& ref_face,
-                             const SurfaceFace& test_face) {
+  auto winding_reversed = [](const SurfaceTriangle& ref_face,
+                             const SurfaceTriangle& test_face) {
     int test_first = test_face.vertex(0);
     int ref_first = -1;
     for (int i = 0; i < 3; ++i) {
@@ -466,7 +469,7 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
 
 GTEST_TEST(SurfaceMeshTest, TransformVertices) {
   auto ref_mesh = TestSurfaceMesh<double>();
-  auto test_mesh = std::make_unique<SurfaceMesh<double>>(*ref_mesh);
+  auto test_mesh = std::make_unique<TriangleSurfaceMesh<double>>(*ref_mesh);
 
   // Assume that the copy constructor works properly.
 
@@ -481,7 +484,7 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
     EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
   }
 
-  for (int f = 0; f < test_mesh->num_faces(); ++f) {
+  for (int f = 0; f < test_mesh->num_triangles(); ++f) {
     const Vector3d& nhat_F_test = test_mesh->face_normal(f);
     const Vector3d& nhat_M_ref = ref_mesh->face_normal(f);
     const Vector3d nhat_F_ref = X_FM.rotation() * nhat_M_ref;
@@ -498,7 +501,7 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
 GTEST_TEST(SurfaceMeshTest, TestEqual) {
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
-  SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
+  TriangleSurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
   EXPECT_TRUE(triangle_mesh->Equal(*triangle_mesh));
   EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
   EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
@@ -538,10 +541,10 @@ class ScalarMixingTest : public ::testing::Test {
     vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(1)));
     vertices.emplace_back(mesh_d_->vertex(2));
     vertices.emplace_back(mesh_d_->vertex(3));
-    std::vector<SurfaceFace> faces(mesh_d_->faces());
+    std::vector<SurfaceTriangle> faces(mesh_d_->triangles());
 
-    mesh_ad_ = std::make_unique<SurfaceMesh<AutoDiffXd>>(std::move(faces),
-                                                         std::move(vertices));
+    mesh_ad_ = std::make_unique<TriangleSurfaceMesh<AutoDiffXd>>(
+        std::move(faces), std::move(vertices));
 
     p_WQ_d_ = Vector3d::Zero();
     for (int v = 0; v < 3; ++v) {
@@ -554,8 +557,8 @@ class ScalarMixingTest : public ::testing::Test {
     b_expected_ad_ = math::InitializeAutoDiff(b_expected_d_);
   }
 
-  std::unique_ptr<SurfaceMesh<double>> mesh_d_;
-  std::unique_ptr<SurfaceMesh<AutoDiffXd>> mesh_ad_;
+  std::unique_ptr<TriangleSurfaceMesh<double>> mesh_d_;
+  std::unique_ptr<TriangleSurfaceMesh<AutoDiffXd>> mesh_ad_;
 
   int e0_{0};
   int e1_{1};

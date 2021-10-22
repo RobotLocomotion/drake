@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -432,9 +432,9 @@ GTEST_TEST(MakeCylinderSurfaceMesh, GenerateSurface) {
   const double length = 2.0;
   const double resolution_hint = 3.0;
   const Cylinder cylinder(radius, length);
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeCylinderSurfaceMesh<double>(cylinder, resolution_hint);
-  EXPECT_EQ(surface_mesh.num_faces(), 12);
+  EXPECT_EQ(surface_mesh.num_triangles(), 12);
   EXPECT_EQ(surface_mesh.num_vertices(), 8);
 }
 
