@@ -2,6 +2,34 @@
 title: Source installation (macOS, Ubuntu)
 ---
 
+## Supported Configurations
+
+The following table shows the configurations and platforms that Drake
+officially supports. Supported configurations are tested in continuous
+integration. Any other configurations are provided on a best-effort basis.
+
+| Operating System                 | Architecture | Python  | Bazel | CMake | C/C++ Compiler                     | Java                          |
+|----------------------------------|--------------|---------|-------|-------|------------------------------------|-------------------------------|
+| Ubuntu 18.04 LTS (Bionic Beaver) | x86_64 ⁽¹⁾   | 3.6 ⁽³⁾ | 4.2   | 3.10  | GCC 7.5 (default) or Clang 9 ⁽⁴⁾   | OpenJDK 11                    |
+| Ubuntu 20.04 LTS (Focal Fossa)   | x86_64 ⁽¹⁾   | 3.8 ⁽³⁾ | 4.2   | 3.16  | GCC 9.3 (default) or Clang 9 ⁽⁴⁾   | OpenJDK 11                    |
+| macOS Catalina (10.15)           | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 4.2   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) ⁽⁴⁾ | AdoptOpenJDK 15 (HotSpot JVM) |
+| macOS Big Sur (11)               | x86_64 ⁽²⁾   | 3.9 ⁽³⁾ | 4.2   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) ⁽⁴⁾ | AdoptOpenJDK 15 (HotSpot JVM) |
+
+⁽¹⁾ Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
+introduced with the Haswell architecture in 2013 with substantial performance
+improvements in the Broadwell architecture in 2014. Drake is compiled with
+`-march=broadwell` to exploit these instructions (that also works for Haswell
+machines). Drake can be used on older machines if necessary by building from
+source with that flag removed.
+
+⁽²⁾ Running Drake under Rosetta 2 emulation on arm64 is not supported. Plans
+for any future arm64 support on macOS and/or Ubuntu are discussed in
+[issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
+
+⁽³⁾ CPython is the only Python implementation supported.
+
+⁽⁴⁾ Drake requires a compiler running in C++17 mode.
+
 # Getting Drake
 
 We recommend that you [setup SSH access to GitHub.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
@@ -54,7 +82,51 @@ full details at:
 
 * [Bazel build system](/bazel.html)
 
-# Historical Note
+## Building the Python Bindings
 
-Older releases were built around substantial MATLAB support, and are
-described on [this release notes page](/release_notes/older_releases.html).
+To use the Python bindings from Drake externally, we recommend using CMake.
+As an example:
+
+```bash
+git clone https://github.com/RobotLocomotion/drake.git
+mkdir drake-build
+cd drake-build
+cmake ../drake
+make -j
+```
+
+Please note the additional CMake options which affect the Python bindings:
+
+* ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
+* ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
+* ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
+
+``{...}`` means a list of options, and the option surrounded by ``[...]`` is
+the default option. An example of building ``pydrake`` with both Gurobi and
+MOSEK, without building tests:
+
+```bash
+cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
+```
+
+You will also need to have your ``PYTHONPATH`` configured correctly.
+
+*Ubuntu 18.04 (Bionic):*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.6/site-packages:${PYTHONPATH}
+```
+
+*Ubuntu 20.04 (Focal):*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
+```
+*macOS:*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
+```
