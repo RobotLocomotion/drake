@@ -809,7 +809,7 @@ class MeshIntersectionFixture : public testing::Test {
   // grad_eS_S) of SampleVolumeFieldOnSurface().
   void VerifySampleVolumeFieldOnSurface(
       const unique_ptr<TriangleSurfaceMesh<double>>& surface_S,
-      const unique_ptr<SurfaceMeshFieldLinear<double, double>>& e_field,
+      const unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>>& e_field,
       const vector<Vector3<double>>& grad_eS_S) {
     // The two geometries intersect such that both tets get sliced into
     // identical right, isosceles triangles (with a leg length of 0.25m). The
@@ -940,7 +940,7 @@ class MeshIntersectionFixture : public testing::Test {
 TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   vector<Vector3<double>> grad_eS_S;
   unique_ptr<TriangleSurfaceMesh<double>> surface_S;
-  unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
+  unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_field;
 
   {
     SCOPED_TRACE("Triangulate each polygon around its centroid.");

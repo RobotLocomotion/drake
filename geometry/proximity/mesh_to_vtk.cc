@@ -84,7 +84,7 @@ void WriteMeshToVtk(const std::string& file_name,
 
 /*
  @tparam Field VolumeMeshFieldLinear<double, double> or
-               SurfaceMeshFieldLinear<double, double>
+               TriangleSurfaceMeshFieldLinear<double, double>
  */
 template <typename Field>
 void WriteVtkScalarField(
@@ -104,7 +104,7 @@ void WriteVtkScalarField(
 
 /*
  @tparam Field VolumeMeshFieldLinear<double, double> or
-               SurfaceMeshFieldLinear<double, double>
+               TriangleSurfaceMeshFieldLinear<double, double>
  */
 template <typename Field>
 void WriteMeshFieldLinearToVtk(const std::string& file_name,
@@ -141,9 +141,9 @@ void WriteVolumeMeshFieldLinearToVtk(
   WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }
 
-void WriteSurfaceMeshFieldLinearToVtk(
+void WriteTriangleSurfaceMeshFieldLinearToVtk(
     const std::string& file_name, const std::string& field_name,
-    const SurfaceMeshFieldLinear<double, double>& field,
+    const TriangleSurfaceMeshFieldLinear<double, double>& field,
     const std::string& title) {
   WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }

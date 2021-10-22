@@ -407,12 +407,12 @@ drake_cc_library(
 drake_cc_library(
     name = "mesh_field",
     srcs = [
-        "surface_mesh_field.cc",
+        "triangle_surface_mesh_field.cc",
         "volume_mesh_field.cc",
     ],
     hdrs = [
         "mesh_field_linear.h",
-        "surface_mesh_field.h",
+        "triangle_surface_mesh_field.h",
         "volume_mesh_field.h",
     ],
     deps = [

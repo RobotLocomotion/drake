@@ -8,8 +8,8 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/posed_half_space.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -90,7 +90,7 @@ class SurfaceVolumeIntersector {
       const math::RigidTransform<T>& X_MN,
       ContactPolygonRepresentation representation,
       std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+      std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
       std::vector<Vector3<T>>* grad_eM_Ms);
 
  private:

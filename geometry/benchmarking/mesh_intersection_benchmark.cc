@@ -234,7 +234,7 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
   const auto bvh_S = Bvh<Obb, VolumeMesh<double>>(mesh_S_);
   const auto bvh_R = Bvh<Obb, TriangleSurfaceMesh<double>>(mesh_R_);
   std::unique_ptr<TriangleSurfaceMesh<double>> surface_SR;
-  std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
+  std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_SR;
   std::vector<Vector3<double>> grad_eM_Ms;
   for (auto _ : state) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(

@@ -298,7 +298,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const math::RigidTransform<T>& X_MN,
     ContactPolygonRepresentation representation,
     std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+    std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
   DRAKE_DEMAND(surface_MN_M != nullptr);
   DRAKE_DEMAND(e_MN != nullptr);
@@ -391,7 +391,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   *surface_MN_M = std::make_unique<TriangleSurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
   const bool calculate_gradient = false;
-  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+  *e_MN = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
       std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
@@ -423,7 +423,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   // The mesh will be computed in Frame S and then transformed to the world
   // frame.
   std::unique_ptr<TriangleSurfaceMesh<T>> surface_SR;
-  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
+  std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>> e_SR;
   std::vector<Vector3<T>> grad_eS_S;
 
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(

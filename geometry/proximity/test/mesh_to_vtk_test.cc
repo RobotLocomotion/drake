@@ -86,10 +86,10 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
 GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {
   unique_ptr<ContactSurface<double>> contact = BoxContactSurface();
   auto contact_pressure =
-      dynamic_cast<const SurfaceMeshFieldLinear<double, double>*>(
+      dynamic_cast<const TriangleSurfaceMeshFieldLinear<double, double>*>(
           &contact->e_MN());
   ASSERT_NE(contact_pressure, nullptr);
-  WriteSurfaceMeshFieldLinearToVtk(
+  WriteTriangleSurfaceMeshFieldLinearToVtk(
       temp_directory() + "/" + "box_rigid_soft_contact_pressure.vtk",
       "Pressure[Pa]", *contact_pressure,
       "Pressure Distribution on Contact Surface");

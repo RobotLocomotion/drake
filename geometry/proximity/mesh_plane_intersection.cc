@@ -5,7 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -203,7 +203,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
 
   auto mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
                                                          std::move(vertices_W));
-  auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+  auto field_W = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
       std::move(surface_e), mesh_W.get(), false /* calculate_gradient */);
   // SliceTetWithPlane promises to make the surface normals point in the plane
   // normal direction (i.e., out of the plane and into the mesh).

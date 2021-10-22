@@ -456,7 +456,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     const T phi_V = hs_W.CalcSignedDistance(p_WV);
     vertex_pressures.push_back(-phi_V * pressure_scale);
   }
-  auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+  auto field_W = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
       std::move(vertex_pressures), mesh_W.get(), false /* calc_gradient */);
 
   // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface

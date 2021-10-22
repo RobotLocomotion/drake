@@ -492,10 +492,10 @@ Vector3<T> TriangleSurfaceMesh<T>::CalcGradBarycentric(int t, int i) const {
   const Vector3<T>& p_MB = vertices_[triangles_[t].vertex((i + 2) % 3)];
 
   // TODO(DamrongGuoy): Provide a mechanism for users to set the gradient
-  //  vector in SurfaceMeshFieldLinear since this calculation is not reliable
-  //  for zero- or almost-zero-area triangles. For example, the code that
-  //  creates ContactSurface by triangle-tetrahedron intersection can set the
-  //  pressure gradient along a contact polygon by projecting the soft
+  //  vector in TriangleSurfaceMeshFieldLinear since this calculation is not
+  //  reliable for zero- or almost-zero-area triangles. For example, the code
+  //  that creates ContactSurface by triangle-tetrahedron intersection can set
+  //  the pressure gradient along a contact polygon by projecting the soft
   //  tetrahedron's pressure gradient onto the plane of the rigid triangle.
 
   // Let bᵥ be the barycentric coordinate function corresponding to vertex V.

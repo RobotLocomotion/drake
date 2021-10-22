@@ -9,8 +9,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/math/rigid_transform.h"
 
 // TODO(DamrongGuoy): Move to geometry/query_results/test/.
@@ -25,7 +25,7 @@ class ContactSurfaceTester {
   explicit ContactSurfaceTester(const geometry::ContactSurface<T>& surface)
       : surface_(surface) {}
 
-  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
+  const TriangleSurfaceMeshFieldLinear<T, T>& e_MN() const {
     DRAKE_DEMAND(surface_.e_MN_ != nullptr);
     return *(surface_.e_MN_);
   }
@@ -112,8 +112,8 @@ ContactSurface<T> TestContactSurface() {
   const T e2{2.};
   const T e3{3.};
   vector<T> e_values = {e0, e1, e2, e3};
-  auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(move(e_values),
-                                                           surface_mesh.get());
+  auto e_field = make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
+      move(e_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, move(surface_mesh),
                                     move(e_field));
@@ -157,7 +157,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   unique_ptr<TriangleSurfaceMesh<double>> surface_mesh = GenerateMesh<double>();
   auto make_e_field = [](TriangleSurfaceMesh<double>* mesh) {
     vector<double> e_values{0, 1, 2, 3};
-    return make_unique<SurfaceMeshFieldLinear<double, double>>(
+    return make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
         move(e_values), mesh, false /* calc_gradient */);
   };
   vector<Vector3d> grad_e;
@@ -300,11 +300,11 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
   // Equal mesh, Different pressure field.
   // First, copy the mesh.
   auto mesh2 = make_unique<TriangleSurfaceMesh<double>>(surface.mesh_W());
-  const SurfaceMeshFieldLinear<double, double>& field = surface.e_MN();
+  const TriangleSurfaceMeshFieldLinear<double, double>& field = surface.e_MN();
   // Then, copy the field values and change it.
   vector<double> field2_values(field.values());
   field2_values.at(0) += 2.0;
-  auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
+  auto field2 = make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
       move(field2_values), mesh2.get());
   auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
                                          move(mesh2), move(field2));
@@ -330,8 +330,8 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   ASSERT_LT(id_N, id_M);
   ContactSurface<double> dut(
       id_M, id_N, move(mesh),
-      make_unique<SurfaceMeshFieldLinear<double, double>>(move(e_MN_values),
-                                                          mesh_pointer));
+      make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
+          move(e_MN_values), mesh_pointer));
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
   // These tests are just to confirm that those things changed where we

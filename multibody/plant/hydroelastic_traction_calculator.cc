@@ -15,7 +15,7 @@ namespace drake {
 using geometry::ContactSurface;
 using geometry::SurfaceTriangle;
 using geometry::TriangleSurfaceMesh;
-using geometry::SurfaceMeshFieldLinear;
+using geometry::TriangleSurfaceMeshFieldLinear;
 using math::RigidTransform;
 
 namespace multibody {

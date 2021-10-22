@@ -668,7 +668,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // to CalcTractionAtQHelper is found below.
   std::vector<AutoDiffXd> values{0, 0, 0};
   auto field = std::make_unique<
-      geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
+      geometry::TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
       std::move(values), mesh_W.get(), false);
   // N.B. get_new_id() makes no guarantee on the order.
   // Since the surface normal follows the convention that it points from B into

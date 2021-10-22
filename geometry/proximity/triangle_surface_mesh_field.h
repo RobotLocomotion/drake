@@ -13,7 +13,7 @@ namespace geometry {
  @tparam T  A valid Eigen scalar for mesh coordinates.
  */
 template <typename FieldValue, typename T>
-using SurfaceMeshFieldLinear =
+using TriangleSurfaceMeshFieldLinear =
     MeshFieldLinear<FieldValue, TriangleSurfaceMesh<T>>;
 
 // The homogeneous instances are sufficiently common in Drake, that we'll

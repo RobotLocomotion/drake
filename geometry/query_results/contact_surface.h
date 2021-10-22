@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -143,7 +143,7 @@ class ContactSurface {
 
     // We can't simply copy the mesh fields; the copies must contain pointers
     // to the new mesh. So, we use CloneAndSetMesh() instead.
-    e_MN_.reset(static_cast<SurfaceMeshFieldLinear<T, T>*>(
+    e_MN_.reset(static_cast<TriangleSurfaceMeshFieldLinear<T, T>*>(
         surface.e_MN_->CloneAndSetMesh(mesh_W_.get()).release()));
 
     if (surface.grad_eM_W_) {
@@ -175,7 +175,7 @@ class ContactSurface {
    */
   ContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W,
-                 std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN)
+                 std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>> e_MN)
       : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN), nullptr,
                        nullptr) {}
 
@@ -199,7 +199,7 @@ class ContactSurface {
    */
   ContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W,
-                 std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
+                 std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>> e_MN,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W)
       : id_M_(id_M),
@@ -287,7 +287,7 @@ class ContactSurface {
   }
 
   /** Returns a reference to the scalar field eₘₙ. */
-  const SurfaceMeshFieldLinear<T, T>& e_MN() const { return *e_MN_; }
+  const TriangleSurfaceMeshFieldLinear<T, T>& e_MN() const { return *e_MN_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given ContactSurface object is equal via deep
@@ -334,7 +334,7 @@ class ContactSurface {
   //  it as such for now. This can be promoted once there's a construction that
   //  uses a different derivation.
   // Represents the scalar field eₘₙ on the surface mesh.
-  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
+  std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>> e_MN_;
 
   // The gradients of the pressure fields eₘ and eₙ sampled on the contact
   // surface. There is one gradient value *per contact surface triangle*.
