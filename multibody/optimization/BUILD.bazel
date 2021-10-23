@@ -178,8 +178,12 @@ drake_cc_library(
     deps = [
         "//common/trajectories",
         "//multibody/plant",
+        "//solvers:choose_best_solver",
+        "//solvers:clp_solver",
         "//solvers:mathematical_program",
-        "//solvers:solve",
+        "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
+        "//solvers:solver_interface",
     ],
 )
 

@@ -417,6 +417,35 @@ GTEST_TEST(ToppraTest, TimeOptimalTest) {
   EXPECT_LT(trajectory.end_time(), 2 + tol);
 }
 
+GTEST_TEST(ToppraTest, ZeroVelocityTest) {
+  auto plant = std::make_unique<MultibodyPlant<double>>(0);
+  const double mass{1};
+  const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
+  const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
+  const SpatialInertia<double> M_AAo_A =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A, I_AAcm_A);
+  auto& body = plant->AddRigidBody("body", M_AAo_A);
+  plant->AddJoint<PrismaticJoint>("joint", plant->world_body(), std::nullopt,
+                                  body, std::nullopt, Eigen::Vector3d::UnitX());
+  plant->Finalize();
+
+  auto path = PiecewisePolynomial<double>::FirstOrderHold(
+      Eigen::Vector3d(0, 0.9, 2), Eigen::RowVector3d(0, 0, 1));
+
+  auto options = CalcGridPointsOptions();
+  options.max_err = 1e-5;
+  auto gridpts = Toppra::CalcGridPoints(path, options);
+  auto toppra = std::make_unique<Toppra>(path, *plant, gridpts);
+
+  auto velocity_constraint =
+      toppra->AddJointVelocityLimit(Vector1d(-1), Vector1d(1));
+  auto acceleration_constraint =
+      toppra->AddJointAccelerationLimit(Vector1d(-1), Vector1d(1));
+
+  auto result = toppra->SolvePathParameterization();
+  ASSERT_TRUE(result);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
