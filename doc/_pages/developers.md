@@ -57,34 +57,9 @@ of artifacts distributed with this website.
 * [Detailed Notes on Drake's Unit Tests](/unit_testing_instructions.html)
 * [Downstream Testing (Drake as a Dependency)](/downstream_testing.html)
 
-
 # Supported Configurations
 
-The following table shows the configurations and platforms that Drake
-officially supports. Supported configurations are tested in continuous
-integration. All other configurations are provided on a best-effort basis.
-
-Drake requires a compiler running in C++17 mode.
-
-| Operating System                 | Bazel | CMake | C/C++ Compiler                 | Java                          | Python |
-|----------------------------------|-------|-------|--------------------------------|-------------------------------|--------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | 4.2   | 3.10  | GCC 7.5 (default) or Clang 9   | OpenJDK 11                    | 3.6    |
-| Ubuntu 20.04 LTS (Focal Fossa)   | 4.2   | 3.16  | GCC 9.3 (default) or Clang 9   | OpenJDK 11                    | 3.8    |
-| macOS Catalina (10.15)           | 4.2   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
-| macOS Big Sur (11)               | 4.2   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
-
-CPython is the only Python implementation supported. On Ubuntu, amd64
-(i.e., x86_64) is the only supported architecture. On macOS, x86_64 is the only
-supported architecture and running Drake under Rosetta 2 emulation on arm64 is
-not supported. Plans for any future arm64 support on macOS and/or Ubuntu are
-discussed in [issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
-
-Drake Ubuntu builds assume support for Intel's AVX2 and FMA instructions,
-introduced with the Haswell architecture in 2013 with substantial performance
-improvements in the Broadwell architecture in 2014. Drake is compiled with
-`-march=broadwell` to exploit these instructions (that also works for Haswell
-machines). Drake can be used on older machines if necessary by building from
-source with that flag removed.
+Refer to [Source Installation](/from_source.html#supported-configurations).
 
 ## Configuration Management Non-Determinism
 
@@ -104,15 +79,6 @@ Homebrew; however, we generally try to stay on top of Bazel versions.
 If you have tried and are unable to configure your system by
 [following the instructions](/from_source.html) please do not hesitate
 to [ask for help](/getting_help.html).
-
-## Binary Packages
-
-The binary releases of Drake are built with GCC 7.5 on Ubuntu 18.04 (Bionic),
-GCC 9.3 on Ubuntu 20.04 (Focal), and Apple LLVM 12.0.0 on macOS Catalina
-(10.15).
-
-The links for these packages are listed in
-[Binary installation](/from_binary.html).
 
 # Issue Tracking
 

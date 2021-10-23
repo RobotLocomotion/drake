@@ -6,7 +6,7 @@ layout: page_with_toc
 {% include toc.md %}
 <article class="markdown-body" markdown="1">
 
-# Installation
+# Background
 
 A substantial subset of the Drake C++ functionality is available from Python.
 The Drake Python bindings are generated using [pybind11](https://github.com/pybind/pybind11),
@@ -16,135 +16,16 @@ source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
 <div class="warning" markdown="1">
-Drake is incompatible with the Python environment supplied by Anaconda. Please
+Drake does not support the Python environment supplied by Anaconda.
+To use our supported workflow, please
 uninstall Anaconda or remove the Anaconda bin directory from the `PATH` before
 building or using the Drake Python bindings.
 </div>
 
-Before attempting installation, please review the
-[supported configurations](/developers.html#supported-configurations) to know what
-versions of Python are supported for your platform.
+# Installation
 
-## Binary Installation for Python
-
-First, download and extract an [available binary package](/from_binary.html).
-
-As an example, here is how to download and extract one of the latest releases
-to ``/opt`` (where ``<platform>`` could be ``bionic``, ``focal``, or ``mac``):
-
-```bash
-curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
-rm -rf /opt/drake
-tar -xvzf drake.tar.gz -C /opt
-```
-
-Ensure that you have the system dependencies:
-
-```bash
-/opt/drake/share/drake/setup/install_prereqs
-```
-
-Next, ensure that your ``PYTHONPATH`` is properly configured.
-
-*Ubuntu 18.04 (Bionic):*
-
-```bash
-export PYTHONPATH=/opt/drake/lib/python3.6/site-packages:${PYTHONPATH}
-```
-
-*Ubuntu 20.04 (Focal):*
-
-```bash
- export PYTHONPATH=/opt/drake/lib/python3.8/site-packages:${PYTHONPATH}
-```
-
-*macOS:*
-
-```bash
- export PYTHONPATH=/opt/drake/lib/python3.9/site-packages:${PYTHONPATH}
-```
-
-See [below](#using-the-python-bindings) for usage instructions.
-
-## Inside ``virtualenv``
-
-At present, Drake is not installable via ``pip``. However, you can still
-incorporate its install tree into a ``virtualenv``
-[FHS](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)-like
-environment.
-
-An example, where you should replace ``<venv_path>`` and ``<platform>``:
-
-```bash
-# Setup drake, and run prerequisites.
-curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
-mkdir -p <venv_path>
-tar -xvzf drake.tar.gz -C <venv_path> --strip-components=1
-# - You may need `sudo` here.
-<venv_path>/share/drake/setup/install_prereqs
-
-# Setup a virtualenv over the drake install.
-python3 -m virtualenv -p python3 <venv_path> --system-site-packages
-```
-
-<div class="note" markdown="1">
-You can extract Drake into an existing `virtualenv` tree if you have already run `install_prereqs`; however, you should ensure that you have run `install_prereqs`. Before you do this, you should capture / freeze your current requirements to reproduce your environment if there are conflicts.
-</div>
-
-To check if this worked, follow the instructions as
-[shown below](#using-the-python-bindings), but either:
-
-* Use ``<venv_path>/bin/python`` instead of ``python3``, or
-* Source ``<venv_path>/bin/activate`` in your current shell session.
-
-## Building the Python Bindings
-
-To use the Python bindings from Drake externally, we recommend using CMake.
-As an example:
-
-```bash
-git clone https://github.com/RobotLocomotion/drake.git
-mkdir drake-build
-cd drake-build
-cmake ../drake
-make -j
-```
-
-Please note the additional CMake options which affect the Python bindings:
-
-* ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
-* ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
-* ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
-
-``{...}`` means a list of options, and the option surrounded by ``[...]`` is
-the default option. An example of building ``pydrake`` with both Gurobi and
-MOSEK, without building tests:
-
-```bash
-cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
-```
-
-You will also need to have your ``PYTHONPATH`` configured correctly.
-
-*Ubuntu 18.04 (Bionic):*
-
-```bash
-cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.6/site-packages:${PYTHONPATH}
-```
-
-*Ubuntu 20.04 (Focal):*
-
-```bash
-cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
-```
-*macOS:*
-
-```bash
-cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
-```
+Refer to [Installation](/installation.html) for how to install Drake's
+stable releases using pip.
 
 # Using the Python Bindings
 
@@ -158,7 +39,7 @@ python3 -c 'import pydrake.all; print(pydrake.__file__)'
 ```
 
 <div class="note" markdown="1">
-If you are using Gurobi, you must either have it installed in the suggested location under `/opt/...`> mentioned in Gurobi 9.0.2, or you must ensure that you define the `${GUROBI_HOME}` environment variable, or specify `${GUROBI_INCLUDE_DIR}` via CMake.
+If you are using Gurobi, you must either have it installed in the suggested location under `/opt/...` mentioned in Gurobi 9.0.2, or you must ensure that you define the `${GUROBI_HOME}` environment variable, or specify `${GUROBI_INCLUDE_DIR}` via CMake.
 </div>
 
 
@@ -167,7 +48,8 @@ If you are using Gurobi, you must either have it installed in the suggested loca
 You should first browse the [Python API](https://drake.mit.edu/pydrake/index.html) to see what
 modules are available. The most up-to-date high-level demonstrations of what
 can be done using ``pydrake`` are in Drake's [Tutorials](/index.html#tutorials) and
-the [Underactuated Robotics Textbook](http://underactuated.mit.edu/).
+the [Underactuated Robotics Textbook](http://underactuated.mit.edu/) and
+the [Robotic Manipulation Textbook](https://manipulation.mit.edu/).
 
 You can also see lower-level usages of the API in the ``pydrake`` unit tests
 themselves, which you can find inside of the
