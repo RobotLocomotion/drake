@@ -4,7 +4,10 @@
 #include <forward_list>
 #include <limits>
 
-#include "drake/solvers/solve.h"
+#include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/clp_solver.h"
+#include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -95,6 +98,11 @@ Toppra::Toppra(const Trajectory<double>& path,
           "degrees of freedom.");
     }
   }
+  // Add constraint on path velocity to ensure reachable set caluclated in
+  // backward pass is always bounded. Maximum path velocity selected such that
+  // trajectories with zero velocity segments do not cause the backward pass to
+  // fail.
+  backward_prog_->AddBoundingBoxConstraint(0, 1e16, backward_x_);
 }
 
 Binding<BoundingBoxConstraint> Toppra::AddJointVelocityLimit(
@@ -281,7 +289,12 @@ Binding<BoundingBoxConstraint> Toppra::AddFrameTranslationalSpeedLimit(
         constraint_frame.CalcSpatialVelocityInWorld(*plant_context_);
     const double speed_squared = velocity.translational().squaredNorm();
 
-    x_upper_bound(knot) = std::pow(upper_limit, 2) / speed_squared;
+    // Check to avoid performing division by zero.
+    if (speed_squared > 0) {
+      x_upper_bound(knot) = std::pow(upper_limit, 2) / speed_squared;
+    } else {
+      x_upper_bound(knot) = std::numeric_limits<double>::infinity();
+    }
   }
   auto x_bbox = backward_prog_->AddBoundingBoxConstraint(0, 1, backward_x_);
   auto bounds = ToppraBoundingBoxConstraint(x_lower_bound, x_upper_bound);
@@ -381,8 +394,8 @@ void Toppra::CalcInterpolationConstraint(Eigen::MatrixXd* A,
       << upper_bound->block(0, N - 1, n_con, 1);
 }
 
-std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
-                                                            double s_dot_N) {
+std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(
+    double s_dot_0, double s_dot_N, const SolverInterface& solver) {
   DRAKE_DEMAND(s_dot_0 >= 0);
   DRAKE_DEMAND(s_dot_N >= 0);
   const Eigen::Vector2d min_cost_A(1, 0);
@@ -411,7 +424,8 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
     // Solve minimum
     {
       backward_cost_.evaluator()->UpdateCoefficients(min_cost_A);
-      const auto result = solvers::Solve(*backward_prog_);
+      solvers::MathematicalProgramResult result;
+      solver.Solve(*backward_prog_, {}, {}, &result);
       if (!result.is_success()) {
         drake::log()->error(
             fmt::format("Toppra failed to find lower bound of controllable set "
@@ -425,7 +439,8 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
     // Solve maximum
     {
       backward_cost_.evaluator()->UpdateCoefficients(max_cost_A);
-      const auto result = solvers::Solve(*backward_prog_);
+      solvers::MathematicalProgramResult result;
+      solver.Solve(*backward_prog_, {}, {}, &result);
       if (!result.is_success()) {
         drake::log()->error(
             fmt::format("Toppra failed to find upper bound of controllable set "
@@ -466,7 +481,8 @@ std::optional<Eigen::Matrix2Xd> Toppra::ComputeBackwardPass(double s_dot_0,
 
 std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
 Toppra::ComputeForwardPass(double s_dot_0,
-                           const Eigen::Ref<const Eigen::Matrix2Xd>& K) {
+                           const Eigen::Ref<const Eigen::Matrix2Xd>& K,
+                           const SolverInterface& solver) {
   const int N = gridpoints_.size() - 1;
   DRAKE_DEMAND(s_dot_0 >= 0);
   DRAKE_DEMAND(K.cols() == N + 1);
@@ -488,7 +504,8 @@ Toppra::ComputeForwardPass(double s_dot_0,
           coefficients.ub.col(knot) -
               xstar(knot) * coefficients.coeffs.col(2 * knot));
     }
-    const auto result = solvers::Solve(*forward_prog_);
+    solvers::MathematicalProgramResult result;
+    solver.Solve(*forward_prog_, {}, {}, &result);
     if (!result.is_success()) {
       drake::log()->error(fmt::format(
           "Toppra failed to find the maximum path acceleration at knot {}/{}.",
@@ -508,12 +525,17 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
   const double s_dot_0 = 0;
   const double s_dot_N = 0;
 
+  // Clp appears to outperform Mosek for these optimizations.
+  // TODO(mpetersen94) Add Gurobi in the correct ordering
+  auto solver = solvers::MakeFirstAvailableSolver(
+      {solvers::ClpSolver::id(), solvers::MosekSolver::id()});
+
   const std::optional<Eigen::Matrix2Xd> K =
-      ComputeBackwardPass(s_dot_0, s_dot_N);
+      ComputeBackwardPass(s_dot_0, s_dot_N, *solver);
   if (!K) {  // Error ocurred in backpass, return nothing
     return std::nullopt;
   }
-  const auto forward_results = ComputeForwardPass(s_dot_0, K.value());
+  const auto forward_results = ComputeForwardPass(s_dot_0, K.value(), *solver);
   if (!forward_results) {  // Error ocurred in forward pass, return nothing
     return std::nullopt;
   }
