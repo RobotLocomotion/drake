@@ -11,6 +11,7 @@
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace multibody {
@@ -19,6 +20,7 @@ using solvers::Binding;
 using solvers::BoundingBoxConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
+using solvers::SolverInterface;
 using trajectories::PiecewisePolynomial;
 using trajectories::Trajectory;
 
@@ -203,9 +205,10 @@ class Toppra {
    * and upper bound of the path velocity at grid point i.
    * @param s_dot_0 The path velocity at the beginning of the path.
    * @param s_dot_N The path velocity at the end of the path.
+   * @param solver The solver to use for the optimizations at each gridpoint.
    */
-  std::optional<Eigen::Matrix2Xd> ComputeBackwardPass(double s_dot_0,
-                                                      double s_dot_N);
+  std::optional<Eigen::Matrix2Xd> ComputeBackwardPass(
+      double s_dot_0, double s_dot_N, const SolverInterface& solver);
 
   /*
    * Performs the forward pass step of TOPPRA, computing the greediest
@@ -214,9 +217,11 @@ class Toppra {
    * @param K The controllable set that the path velocity must stay within at
    *          each gridpoint. K(0, i) and K(1, i) contain respectively the lower
    *          and upper bound of the path velocity at grid point i.
+   * @param solver The solver to use for the optimizations at each gridpoint.
    */
   std::optional<std::pair<Eigen::VectorXd, Eigen::VectorXd>> ComputeForwardPass(
-      double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K);
+      double s_dot_0, const Eigen::Ref<const Eigen::Matrix2Xd>& K,
+      const SolverInterface& solver);
 
   /*
    * Calculates the interpolation constraint coefficients for the forward
