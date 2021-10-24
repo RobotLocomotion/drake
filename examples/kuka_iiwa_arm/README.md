@@ -14,9 +14,6 @@ Ensure that you have installed the drake visualizer with
 bazel build //tools:drake_visualizer
 ```
 
-Ensure that you have set your
-[PYTHONPATH](https://drake.mit.edu/python_bindings.html?highlight=python).
-
 All instructions assume that you are launching from the `drake`
 workspace directory.
 ```
