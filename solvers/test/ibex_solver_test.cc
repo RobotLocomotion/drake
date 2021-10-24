@@ -1,5 +1,7 @@
 #include "drake/solvers/ibex_solver.h"
 
+#include <math.h>
+
 #include <cmath>
 #include <memory>
 #include <stdexcept>
@@ -108,13 +110,13 @@ TEST_F(IbexSolverTest, GenericCost) {
   prog_.AddCost(Binding<Cost>(generic_cost, x_));
   EXPECT_FALSE(prog_.generic_costs().empty());
   if (solver_.available()) {
-    auto result = solver_.Solve(prog_, {});
+    auto result = solver_.Solve(prog_);
     ASSERT_TRUE(result.is_success());
     const auto x_val = result.GetSolution(prog_.decision_variables());
     const double v0{result.GetSolution(x0)};
     const double v1{result.GetSolution(x1)};
     const double v2{result.GetSolution(x2)};
-    EXPECT_NEAR(v0, 1.4142135623730951, 1e-8);
+    EXPECT_NEAR(v0, M_SQRT2, 1e-8);
     EXPECT_NEAR(v1, 1, 1e-8);
     EXPECT_NEAR(v2, 1, 1e-8);
   }
