@@ -59,6 +59,8 @@ from pydrake.multibody.plant import (
     ContactModel,
     ContactResults_,
     ContactResultsToLcmSystem,
+    ContactResultsToMeshcatParams,
+    ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
     MultibodyPlant_,
@@ -82,10 +84,11 @@ from pydrake.geometry import (
     Box,
     GeometryId,
     GeometrySet,
+    Meshcat,
+    Rgba,
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
-    SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
     Sphere,
@@ -2158,3 +2161,32 @@ class TestPlant(unittest.TestCase):
         contact_info.contact_surface().id_N()
         contact_info.contact_surface().mesh_W().centroid()
         contact_info.F_Ac_W().get_coeffs()
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_contact_results_to_meshcat(self, T):
+        meshcat = Meshcat()
+        params = ContactResultsToMeshcatParams()
+        params.publish_period = 0.123
+        params.default_color = Rgba(0.5, 0.5, 0.5)
+        params.prefix = "py_visualizer"
+        params.delete_on_initialization_event = False
+        params.force_threshold = 0.2
+        params.newtons_per_meter = 5
+        params.radius = 0.1
+        self.assertNotIn("object at 0x", repr(params))
+        params2 = ContactResultsToMeshcatParams(publish_period=0.4)
+        self.assertEqual(params2.publish_period, 0.4)
+        vis = ContactResultsToMeshcat_[T](meshcat=meshcat, params=params)
+        vis.Delete()
+        self.assertIsInstance(vis.contact_results_input_port(), InputPort_[T])
+
+        builder = DiagramBuilder_[T]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        ContactResultsToMeshcat_[T].AddToBuilder(
+            builder=builder, plant=plant, meshcat=meshcat, params=params)
+        ContactResultsToMeshcat_[T].AddToBuilder(
+            builder=builder,
+            contact_results_port=plant.get_contact_results_output_port(),
+            meshcat=meshcat,
+            params=params)

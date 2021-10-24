@@ -191,17 +191,37 @@ class Meshcat {
    default settings. */
   void ResetRenderMode();
 
-  /** Set the RigidTransform for a given path in the scene tree. An object's
-  pose is the concatenation of all of the transforms along its path, so setting
-  the transform of "/foo" will move the objects at "/foo/box1" and
-  "/foo/robots/HAL9000".
+  /** Set the RigidTransform for a given path in the scene tree relative to its
+  parent path. An object's pose is the concatenation of all of the transforms
+  along its path, so setting the transform of "/foo" will move the objects at
+  "/foo/box1" and "/foo/robots/HAL9000".
   @param path a "/"-delimited string indicating the path in the scene tree.
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param X_ParentPath the relative transform from the path to its immediate
   parent.
+
+  @pydrake_mkdoc_identifier{RigidTransform}
   */
   void SetTransform(std::string_view path,
                     const math::RigidTransformd& X_ParentPath);
+
+  /** Set the homogeneous transform for a given path in the scene tree relative
+  to its parent path. An object's pose is the concatenation of all of the
+  transforms along its path, so setting the transform of "/foo" will move the
+  objects at "/foo/box1" and "/foo/robots/HAL9000".
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param matrix the relative transform from the path to its immediate
+                parent.
+
+  Note: Prefer to use the overload which takes a RigidTransformd unless you need
+  the fully parameterized homogeneous transform (which additionally allows
+  scale and sheer).
+
+  @pydrake_mkdoc_identifier{matrix}
+  */
+  void SetTransform(std::string_view path,
+                    const Eigen::Ref<const Eigen::Matrix4d>& matrix);
 
   /** Deletes the object at the given `path` as well as all of its children.
   See @ref meshcat_path for the detailed semantics of deletion. */

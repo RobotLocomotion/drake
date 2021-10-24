@@ -630,13 +630,13 @@ class Meshcat::WebSocketPublisher {
   }
 
   void SetTransform(std::string_view path,
-                    const RigidTransformd& X_ParentPath) {
+                    const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
 
     internal::SetTransformData data;
     data.path = FullPath(path);
-    Eigen::Map<Eigen::Matrix4d>(data.matrix) = X_ParentPath.GetAsMatrix4();
+    Eigen::Map<Eigen::Matrix4d>(data.matrix) = matrix;
 
     loop_->defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1267,7 +1267,12 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 
 void Meshcat::SetTransform(std::string_view path,
                            const RigidTransformd& X_ParentPath) {
-  publisher_->SetTransform(path, X_ParentPath);
+  publisher_->SetTransform(path, X_ParentPath.GetAsMatrix4());
+}
+
+void Meshcat::SetTransform(std::string_view path,
+                           const Eigen::Ref<const Eigen::Matrix4d>& matrix) {
+  publisher_->SetTransform(path, matrix);
 }
 
 void Meshcat::Delete(std::string_view path) { publisher_->Delete(path); }

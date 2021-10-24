@@ -98,6 +98,7 @@ class TestGeometryVisualizers(unittest.TestCase):
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))
         meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        meshcat.SetTransform(path="/test/box", matrix=np.eye(4))
         cloud = PointCloud(4)
         cloud.mutable_xyzs()[:] = np.zeros((3, 4))
         meshcat.SetObject(path="/test/cloud", cloud=cloud,

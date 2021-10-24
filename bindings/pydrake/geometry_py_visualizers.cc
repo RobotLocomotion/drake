@@ -74,6 +74,34 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.DispatchLoadMessage.doc);
   }
 
+  // MeshcatPointCloudVisualizer
+  {
+    using Class = MeshcatPointCloudVisualizer<T>;
+    constexpr auto& cls_doc = doc.MeshcatPointCloudVisualizer;
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(m,
+        "MeshcatPointCloudVisualizerCpp", param,
+        (std::string(cls_doc.doc) + R"""(
+Note that we are temporarily re-mapping MeshcatPointCloudVisualizer =>
+MeshcatPointCloudVisualizerCpp to avoid collisions with the python
+MeshcatPointCloudVisualizer.  See #13038.)""")
+            .c_str());
+    cls  // BR
+        .def(py::init<std::shared_ptr<Meshcat>, std::string, double>(),
+            py::arg("meshcat"), py::arg("path"),
+            py::arg("publish_period") = 1 / 32.0,
+            // `meshcat` is a shared_ptr, so does not need a keep_alive.
+            cls_doc.ctor.doc)
+        .def("set_point_size", &Class::set_point_size,
+            cls_doc.set_point_size.doc)
+        .def("set_default_rgba", &Class::set_default_rgba,
+            cls_doc.set_default_rgba.doc)
+        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
+        .def("cloud_input_port", &Class::cloud_input_port,
+            py_rvp::reference_internal, cls_doc.cloud_input_port.doc)
+        .def("pose_input_port", &Class::pose_input_port,
+            py_rvp::reference_internal, cls_doc.pose_input_port.doc);
+  }
+
   // MeshcatVisualizer
   {
     using Class = MeshcatVisualizer<T>;
@@ -126,34 +154,6 @@ MeshcatVisualizer.  See #13038.)""")
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
   }
-
-  // MeshcatPointCloudVisualizer
-  {
-    using Class = MeshcatPointCloudVisualizer<T>;
-    constexpr auto& cls_doc = doc.MeshcatPointCloudVisualizer;
-    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(m,
-        "MeshcatPointCloudVisualizerCpp", param,
-        (std::string(cls_doc.doc) + R"""(
-Note that we are temporarily re-mapping MeshcatPointCloudVisualizer =>
-MeshcatPointCloudVisualizerCpp to avoid collisions with the python
-MeshcatPointCloudVisualizer.  See #13038.)""")
-            .c_str());
-    cls  // BR
-        .def(py::init<std::shared_ptr<Meshcat>, std::string, double>(),
-            py::arg("meshcat"), py::arg("path"),
-            py::arg("publish_period") = 1 / 32.0,
-            // `meshcat` is a shared_ptr, so does not need a keep_alive.
-            cls_doc.ctor.doc)
-        .def("set_point_size", &Class::set_point_size,
-            cls_doc.set_point_size.doc)
-        .def("set_default_rgba", &Class::set_default_rgba,
-            cls_doc.set_default_rgba.doc)
-        .def("Delete", &Class::Delete, cls_doc.Delete.doc)
-        .def("cloud_input_port", &Class::cloud_input_port,
-            py_rvp::reference_internal, cls_doc.cloud_input_port.doc)
-        .def("pose_input_port", &Class::pose_input_port,
-            py_rvp::reference_internal, cls_doc.pose_input_port.doc);
-  }
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -186,6 +186,78 @@ void DoScalarIndependentDefinitions(py::module m) {
               .format(self.publish_period, self.role, self.default_color,
                   self.show_hydroelastic);
         });
+  }
+
+  // Meshcat
+  {
+    using Class = Meshcat;
+    constexpr auto& cls_doc = doc.Meshcat;
+    py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
+    cls  // BR
+        .def(py::init<const std::optional<int>&>(),
+            py::arg("port") = std::nullopt, cls_doc.ctor.doc)
+        .def("web_url", &Class::web_url, cls_doc.web_url.doc)
+        .def("port", &Class::port, cls_doc.port.doc)
+        .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
+        .def("SetObject",
+            py::overload_cast<std::string_view, const Shape&, const Rgba&>(
+                &Class::SetObject),
+            py::arg("path"), py::arg("shape"),
+            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_shape)
+        .def("SetObject",
+            py::overload_cast<std::string_view, const perception::PointCloud&,
+                double, const Rgba&>(&Class::SetObject),
+            py::arg("path"), py::arg("cloud"), py::arg("point_size") = 0.001,
+            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_cloud)
+        // TODO(russt): Bind SetCamera.
+        .def("Set2dRenderMode", &Class::Set2dRenderMode,
+            py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
+            py::arg("xmin") = -1.0, py::arg("xmax") = 1.0,
+            py::arg("ymin") = -1.0, py::arg("ymax") = 1.0,
+            cls_doc.Set2dRenderMode.doc)
+        .def("ResetRenderMode", &Class::ResetRenderMode,
+            cls_doc.ResetRenderMode.doc)
+        .def("SetTransform",
+            py::overload_cast<std::string_view, const math::RigidTransformd&>(
+                &Class::SetTransform),
+            py::arg("path"), py::arg("X_ParentPath"),
+            cls_doc.SetTransform.doc_RigidTransform)
+        .def("SetTransform",
+            py::overload_cast<std::string_view,
+                const Eigen::Ref<const Eigen::Matrix4d>&>(&Class::SetTransform),
+            py::arg("path"), py::arg("matrix"), cls_doc.SetTransform.doc_matrix)
+        .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
+        .def("SetProperty",
+            py::overload_cast<std::string_view, std::string, bool>(
+                &Class::SetProperty),
+            py::arg("path"), py::arg("property"), py::arg("value"),
+            cls_doc.SetProperty.doc_bool)
+        .def("SetProperty",
+            py::overload_cast<std::string_view, std::string, double>(
+                &Class::SetProperty),
+            py::arg("path"), py::arg("property"), py::arg("value"),
+            cls_doc.SetProperty.doc_double)
+        .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
+            +cls_doc.SetAnimation.doc)
+        .def("AddButton", &Class::AddButton, py::arg("name"),
+            cls_doc.AddButton.doc)
+        .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
+            cls_doc.GetButtonClicks.doc)
+        .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
+            cls_doc.DeleteButton.doc)
+        .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
+            py::arg("max"), py::arg("step"), py::arg("value"),
+            cls_doc.AddSlider.doc)
+        .def("SetSliderValue", &Class::SetSliderValue, py::arg("name"),
+            py::arg("value"), cls_doc.SetSliderValue.doc)
+        .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),
+            cls_doc.GetSliderValue.doc)
+        .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
+            cls_doc.DeleteSlider.doc)
+        .def("DeleteAddedControls", &Class::DeleteAddedControls,
+            cls_doc.DeleteAddedControls.doc);
+    // Note: we intentionally do not bind the advanced methods (HasProperty and
+    // GetPacked*) which were intended primarily for testing in C++.
   }
 
   // MeshcatAnimation
@@ -244,71 +316,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             loop_doc.kLoopRepeat.doc)
         .value("kLoopPingPong", MeshcatAnimation::LoopMode::kLoopPingPong,
             loop_doc.kLoopPingPong.doc);
-  }
-
-  // Meshcat
-  {
-    using Class = Meshcat;
-    constexpr auto& cls_doc = doc.Meshcat;
-    py::class_<Class, std::shared_ptr<Class>> cls(m, "Meshcat", cls_doc.doc);
-    cls  // BR
-        .def(py::init<const std::optional<int>&>(),
-            py::arg("port") = std::nullopt, cls_doc.ctor.doc)
-        .def("web_url", &Class::web_url, cls_doc.web_url.doc)
-        .def("port", &Class::port, cls_doc.port.doc)
-        .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
-        .def("SetObject",
-            py::overload_cast<std::string_view, const Shape&, const Rgba&>(
-                &Class::SetObject),
-            py::arg("path"), py::arg("shape"),
-            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_shape)
-        .def("SetObject",
-            py::overload_cast<std::string_view, const perception::PointCloud&,
-                double, const Rgba&>(&Class::SetObject),
-            py::arg("path"), py::arg("cloud"), py::arg("point_size") = 0.001,
-            py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_cloud)
-        // TODO(russt): Bind SetCamera.
-        .def("Set2dRenderMode", &Class::Set2dRenderMode,
-            py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
-            py::arg("xmin") = -1.0, py::arg("xmax") = 1.0,
-            py::arg("ymin") = -1.0, py::arg("ymax") = 1.0,
-            cls_doc.Set2dRenderMode.doc)
-        .def("ResetRenderMode", &Class::ResetRenderMode,
-            cls_doc.ResetRenderMode.doc)
-        .def("SetTransform", &Class::SetTransform, py::arg("path"),
-            py::arg("X_ParentPath"), cls_doc.SetTransform.doc)
-        .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
-        .def("SetProperty",
-            py::overload_cast<std::string_view, std::string, bool>(
-                &Class::SetProperty),
-            py::arg("path"), py::arg("property"), py::arg("value"),
-            cls_doc.SetProperty.doc_bool)
-        .def("SetProperty",
-            py::overload_cast<std::string_view, std::string, double>(
-                &Class::SetProperty),
-            py::arg("path"), py::arg("property"), py::arg("value"),
-            cls_doc.SetProperty.doc_double)
-        .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
-            +cls_doc.SetAnimation.doc)
-        .def("AddButton", &Class::AddButton, py::arg("name"),
-            cls_doc.AddButton.doc)
-        .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
-            cls_doc.GetButtonClicks.doc)
-        .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
-            cls_doc.DeleteButton.doc)
-        .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),
-            py::arg("max"), py::arg("step"), py::arg("value"),
-            cls_doc.AddSlider.doc)
-        .def("SetSliderValue", &Class::SetSliderValue, py::arg("name"),
-            py::arg("value"), cls_doc.SetSliderValue.doc)
-        .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),
-            cls_doc.GetSliderValue.doc)
-        .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
-            cls_doc.DeleteSlider.doc)
-        .def("DeleteAddedControls", &Class::DeleteAddedControls,
-            cls_doc.DeleteAddedControls.doc);
-    // Note: we intentionally do not bind the advanced methods (HasProperty and
-    // GetPacked*) which were intended primarily for testing in C++.
   }
 
   // MeshcatVisualizerParams
