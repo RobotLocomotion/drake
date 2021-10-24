@@ -3,14 +3,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 namespace {
 
-using yaml::YamlReadArchive;
+using yaml::LoadYamlString;
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, BasicTest) {
   MultibodyPlantConfig config;
@@ -36,9 +36,7 @@ contact_model: hydroelastic
 )""";
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
-  MultibodyPlantConfig config;
-  YamlReadArchive(YAML::Load(kExampleConfig)).Accept(&config);
-
+  const auto config = LoadYamlString<MultibodyPlantConfig>(kExampleConfig);
   drake::systems::DiagramBuilder<double> builder;
   auto result = AddMultibodyPlant(config, &builder);
   EXPECT_EQ(result.plant.time_step(), 0.002);

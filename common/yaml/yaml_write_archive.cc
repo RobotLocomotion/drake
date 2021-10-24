@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
 #include <algorithm>
+#include <fstream>
 #include <utility>
 #include <vector>
 
@@ -178,6 +179,23 @@ void DoEraseMatchingMaps(internal::Node* x, const internal::Node* y) {
 
 void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
+}
+
+// N.B. This is unit tested via yaml_io_test, not yaml_write_archive_test.
+void YamlWriteArchive::WriteFile(
+    const std::string& filename, const std::string& data) {
+  std::ofstream out(filename, std::ios::binary);
+  if (out.fail()) {
+    throw std::runtime_error(fmt::format(
+        "YamlWriteArchive could not open '{}' for writing",
+        filename));
+  }
+  out << data;
+  if (out.fail()) {
+    throw std::runtime_error(fmt::format(
+        "YamlWriteArchive could not write to '{}'",
+        filename));
+  }
 }
 
 }  // namespace yaml
