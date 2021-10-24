@@ -129,6 +129,8 @@ the main body of the document:
     ``newest_commit`` whose changes are enumerated in the notes.  Some dates
     are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
     them all.
+   1. Update the github links within doc/_pages/from_binary.md to reflect the
+      upcoming v0.N.0 and YYYYMMDD.
 11. Merge the release notes PR
    1. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.

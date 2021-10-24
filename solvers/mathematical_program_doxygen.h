@@ -140,7 +140,7 @@
  * † This is a commercial solver which requires a license
  * (note that some have free licenses for academics).
  *
- * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's pre-compiled
+ * ‡ <a href="https://drake.mit.edu/installation.html">Drake's pre-compiled
  * binary releases</a> incorporate a private build of SNOPT that does not
  * require a license when invoked via Drake's SnoptSolver wrapper class.
  *
@@ -247,7 +247,7 @@
  * † This is a commercial solver which requires a license
  * (note that some have free licenses for academics).
  *
- * ‡ <a href="https://drake.mit.edu/from_binary.html">Drake's pre-compiled
+ * ‡ <a href="https://drake.mit.edu/installation.html">Drake's pre-compiled
  * binary releases</a> incorporate a private build of SNOPT that does not
  * require a license when invoked via Drake's SnoptSolver wrapper class.
  *

@@ -44,7 +44,7 @@ def setup_drake(*, version, build):
           https://drake.mit.edu/jenkins#building-binary-packages-on-demand for
           information on obtaining a binary from an experimental branch.
 
-    See https://drake.mit.edu/from_binary.html for more information.
+    See https://drake.mit.edu/installation.html for more information.
 
     Note: If you already have pydrake installed to the target location, this
         will confirm that the build/version are the same as the installed
