@@ -187,6 +187,7 @@ class TestGeometryOptimization(unittest.TestCase):
         options.require_sample_point_is_contained = True
         options.iteration_limit = 1
         options.termination_threshold = 0.1
+        self.assertNotIn("object at 0x", repr(options))
         region = mut.optimization.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
             domain=mut.optimization.HPolyhedron.MakeBox(

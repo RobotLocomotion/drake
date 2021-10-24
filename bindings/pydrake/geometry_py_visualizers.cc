@@ -288,7 +288,18 @@ void DoScalarIndependentDefinitions(py::module m) {
             "prefix", &MeshcatVisualizerParams::prefix, cls_doc.prefix.doc)
         .def_readwrite("delete_on_initialization_event",
             &MeshcatVisualizerParams::delete_on_initialization_event,
-            cls_doc.delete_on_initialization_event.doc);
+            cls_doc.delete_on_initialization_event.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str(
+              "MeshcatVisualizerParams("
+              "publish_period={}, "
+              "role={}, "
+              "default_color={}, "
+              "prefix={}, "
+              "delete_on_initialization_event={}")
+              .format(self.publish_period, self.role, self.default_color,
+                  self.prefix, self.delete_on_initialization_event);
+        });
   }
 }
 
