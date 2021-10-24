@@ -155,6 +155,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         params.default_color = mut.Rgba(0.5, 0.5, 0.5)
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False
+        self.assertNotIn("object at 0x", repr(params))
         vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])

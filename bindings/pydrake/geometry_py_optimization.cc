@@ -195,7 +195,22 @@ void DefineGeometryOptimization(py::module m) {
           doc.IrisOptions.iteration_limit.doc)
       .def_readwrite("termination_threshold",
           &IrisOptions::termination_threshold,
-          doc.IrisOptions.termination_threshold.doc);
+          doc.IrisOptions.termination_threshold.doc)
+      .def_readwrite("configuration_space_margin",
+          &IrisOptions::configuration_space_margin,
+          doc.IrisOptions.configuration_space_margin.doc)
+      .def("__repr__", [](const IrisOptions& self) {
+        return py::str(
+            "IrisOptions("
+            "require_sample_point_is_contained={}, "
+            "iteration_limit={}, "
+            "termination_threshold={}, "
+            "configuration_space_margin={}"
+            ")")
+            .format(self.require_sample_point_is_contained,
+                self.iteration_limit, self.termination_threshold,
+                self.configuration_space_margin);
+      });
 
   m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
       py::arg("domain"), py::arg("options") = IrisOptions(), doc.Iris.doc);
