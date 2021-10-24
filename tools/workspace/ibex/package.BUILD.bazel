@@ -352,7 +352,6 @@ cc_binary(
         ":src/symbolic/ibex_ExprOperators.cpp",
     ],
     copts = ["-w -std=c++11"],
-    # The linkopts= here are transcribed from the contents of the *.pc file.
     linkopts = [
         "-lbz2",
         "-lm",
@@ -362,7 +361,6 @@ cc_binary(
         ],
         "@//conditions:default": [],
     }),
-    # The deps= here are transcribed from the contents of the *.pc file.
     deps = [
         ":filib",
         ":ibex_headers",
@@ -379,7 +377,10 @@ cc_binary(
 cc_library(
     name = "ibex",
     srcs = ["libdrake_ibex.so"],
-    deps = [":ibex_headers"],
+    deps = [
+        ":ibex_headers",
+        "@clp",  # Need to pass on this dependency.
+    ],
     visibility = ["//visibility:public"],
 )
 

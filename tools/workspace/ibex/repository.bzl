@@ -15,4 +15,8 @@ def ibex_repository(
         sha256 = "172f2cf8ced69bd2e30be448170655878735af7d0bf6d2fef44b14215c8b1a49",  # noqa
         build_file = "@drake//tools/workspace/ibex:package.BUILD.bazel",
         mirrors = mirrors,
+        patches = [
+            # pkgconfig provides the clp/coin directory as an include, not clp/
+            "@drake//tools/workspace/ibex:clp_include_path.patch",
+        ],
     )
