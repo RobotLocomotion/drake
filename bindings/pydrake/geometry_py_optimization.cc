@@ -3,9 +3,11 @@
  pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry_py.h"
 #include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/iris.h"
@@ -217,6 +219,123 @@ void DefineGeometryOptimization(py::module m) {
 
   m.def("MakeIrisObstacles", &MakeIrisObstacles, py::arg("query_object"),
       py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
+
+  // GraphOfConvexSets
+  {
+    const auto& cls_doc = doc.GraphOfConvexSets;
+    auto graph_of_convex_sets =
+        py::class_<GraphOfConvexSets>(m, "GraphOfConvexSets", cls_doc.doc)
+            .def(py::init<>(), cls_doc.ctor.doc)
+            .def("AddVertex", &GraphOfConvexSets::AddVertex, py::arg("set"),
+                py::arg("name") = "", py_rvp::reference_internal,
+                cls_doc.AddVertex.doc)
+            .def("AddEdge",
+                py::overload_cast<const GraphOfConvexSets::VertexId&,
+                    const GraphOfConvexSets::VertexId&, std::string>(
+                    &GraphOfConvexSets::AddEdge),
+                py::arg("u_id"), py::arg("v_id"), py::arg("name") = "",
+                py_rvp::reference_internal, cls_doc.AddEdge.doc_by_id)
+            .def("AddEdge",
+                py::overload_cast<const GraphOfConvexSets::Vertex&,
+                    const GraphOfConvexSets::Vertex&, std::string>(
+                    &GraphOfConvexSets::AddEdge),
+                py::arg("u"), py::arg("v"), py::arg("name") = "",
+                py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
+            .def("VertexIds", &GraphOfConvexSets::VertexIds,
+                cls_doc.VertexIds.doc)
+            .def("Edges", &GraphOfConvexSets::Edges, py_rvp::reference_internal,
+                cls_doc.Edges.doc)
+            .def("SolveShortestPath",
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    const GraphOfConvexSets::VertexId&,
+                    const GraphOfConvexSets::VertexId&, bool>(
+                    &GraphOfConvexSets::SolveShortestPath),
+                py::arg("source_id"), py::arg("target_id"),
+                py::arg("convex_relaxation") = false,
+                cls_doc.SolveShortestPath.doc_by_id)
+            .def("SolveShortestPath",
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    const GraphOfConvexSets::Vertex&,
+                    const GraphOfConvexSets::Vertex&, bool>(
+                    &GraphOfConvexSets::SolveShortestPath),
+                py::arg("source"), py::arg("target"),
+                py::arg("convex_relaxation") = false,
+                cls_doc.SolveShortestPath.doc_by_reference);
+
+    BindIdentifier<GraphOfConvexSets::VertexId>(
+        graph_of_convex_sets, "VertexId", doc.GraphOfConvexSets.VertexId.doc);
+    BindIdentifier<GraphOfConvexSets::EdgeId>(
+        graph_of_convex_sets, "EdgeId", doc.GraphOfConvexSets.EdgeId.doc);
+
+    // Vertex
+    const auto& vertex_doc = doc.GraphOfConvexSets.Vertex;
+    py::class_<GraphOfConvexSets::Vertex>(
+        graph_of_convex_sets, "Vertex", vertex_doc.doc)
+        .def("id", &GraphOfConvexSets::Vertex::id, vertex_doc.id.doc)
+        .def("ambient_dimension", &GraphOfConvexSets::Vertex::ambient_dimension,
+            vertex_doc.ambient_dimension.doc)
+        .def("name", &GraphOfConvexSets::Vertex::name, vertex_doc.name.doc)
+        // As in trajectory_optimization_py.cc, we use a lambda to *copy*
+        // the decision variables; otherwise we get dtype=object arrays
+        // cannot be referenced.
+        .def(
+            "x",
+            [](const GraphOfConvexSets::Vertex& self)
+                -> const VectorX<symbolic::Variable> { return self.x(); },
+            vertex_doc.x.doc)
+        .def("set", &GraphOfConvexSets::Vertex::set, py_rvp::reference_internal,
+            vertex_doc.set.doc)
+        .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
+            py::arg("result"), vertex_doc.GetSolution.doc);
+
+    // Edge
+    const auto& edge_doc = doc.GraphOfConvexSets.Edge;
+    py::class_<GraphOfConvexSets::Edge>(
+        graph_of_convex_sets, "Edge", edge_doc.doc)
+        .def("id", &GraphOfConvexSets::Edge::id, edge_doc.id.doc)
+        .def("name", &GraphOfConvexSets::Edge::name, edge_doc.name.doc)
+        .def("u", &GraphOfConvexSets::Edge::u, py_rvp::reference_internal,
+            edge_doc.u.doc)
+        .def("v", &GraphOfConvexSets::Edge::v, py_rvp::reference_internal,
+            edge_doc.v.doc)
+        .def("phi", &GraphOfConvexSets::Edge::phi, py_rvp::reference_internal,
+            edge_doc.phi.doc)
+        .def(
+            "xu",
+            [](const GraphOfConvexSets::Edge& self)
+                -> const VectorX<symbolic::Variable> { return self.xu(); },
+            edge_doc.xu.doc)
+        .def(
+            "xv",
+            [](const GraphOfConvexSets::Edge& self)
+                -> const VectorX<symbolic::Variable> { return self.xv(); },
+            edge_doc.xv.doc)
+        .def("AddCost",
+            py::overload_cast<const symbolic::Expression&>(
+                &GraphOfConvexSets::Edge::AddCost),
+            py::arg("e"), edge_doc.AddCost.doc_expression)
+        .def("AddCost",
+            py::overload_cast<const solvers::Binding<solvers::Cost>&>(
+                &GraphOfConvexSets::Edge::AddCost),
+            py::arg("binding"), edge_doc.AddCost.doc_binding)
+        .def("AddConstraint",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const symbolic::Formula&>(
+                &GraphOfConvexSets::Edge::AddConstraint),
+            py::arg("f"), edge_doc.AddConstraint.doc_formula)
+        .def("AddConstraint",
+            overload_cast_explicit<solvers::Binding<solvers::Constraint>,
+                const solvers::Binding<solvers::Constraint>&>(
+                &GraphOfConvexSets::Edge::AddConstraint),
+            py::arg("binding"), edge_doc.AddCost.doc_binding)
+        .def("AddPhiConstraint", &GraphOfConvexSets::Edge::AddPhiConstraint,
+            py::arg("phi_value"), edge_doc.AddPhiConstraint.doc)
+        .def("ClearPhiConstraints",
+            &GraphOfConvexSets::Edge::ClearPhiConstraints,
+            edge_doc.ClearPhiConstraints.doc)
+        .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
+            py::arg("result"), edge_doc.GetSolutionCost.doc);
+  }
 }
 
 }  // namespace pydrake

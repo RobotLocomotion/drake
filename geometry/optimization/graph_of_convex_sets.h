@@ -125,7 +125,7 @@ class GraphOfConvexSets {
     const Vertex& u() const { return *u_; }
 
     /** Returns a const reference to the "right" Vertex that this edge connects
-     * to. */
+    to. */
     const Vertex& v() const { return *v_; }
 
     /** Returns the binary variable associated with this edge. It can be used
@@ -153,6 +153,7 @@ class GraphOfConvexSets {
     @endverbatim
     @returns the pair <ℓ, Binding<Cost>>.
     @throws std::exception if e.GetVariables() is not a subset of xu() ∪ xv().
+    @pydrake_mkdoc_identifier{expression}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const symbolic::Expression& e);
@@ -166,7 +167,9 @@ class GraphOfConvexSets {
     @endverbatim
     @returns the pair <ℓ, Binding<Cost>>.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
-    xv(). */
+    xv().
+    @pydrake_mkdoc_identifier{binding}
+    */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const solvers::Binding<solvers::Cost>& binding);
 
@@ -174,6 +177,7 @@ class GraphOfConvexSets {
     containing *only* elements of xu() and xv() as variables.
     @throws std::exception if f.GetFreeVariables() is not a subset of xu() ∪
     xv().
+    @pydrake_mkdoc_identifier{formula}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
         const symbolic::Formula& f);
@@ -181,7 +185,9 @@ class GraphOfConvexSets {
     /** Adds a constraint to this edge.  @p binding must contain *only*
     elements of xu() and xv() as variables.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
-    xv(). */
+    xv().
+    @pydrake_mkdoc_identifier{binding}
+    */
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
@@ -235,13 +241,17 @@ class GraphOfConvexSets {
 
   /** Adds an edge to the graph from VertexId @p u_id to VertexId @p v_id.  The
   ids must refer to valid vertices in this graph. If @p name is empty then a
-  default name will be provided. */
+  default name will be provided.
+  @pydrake_mkdoc_identifier{by_id}
+  */
   Edge* AddEdge(const VertexId& u_id, const VertexId& v_id,
                 std::string name = "");
 
   /** Adds an edge to the graph from Vertex @p u to Vertex @p v.  The
   vertex references must refer to valid vertices in this graph. If @p name is
-  empty then a default name will be provided. */
+  empty then a default name will be provided.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
   /** Returns the VertexIds of the vertices stored in the graph.  Note that the
@@ -275,13 +285,16 @@ class GraphOfConvexSets {
   @throws std::exception if any of the costs or constraints in the graph are
   incompatible with the shortest path formulation or otherwise unsupported.
   All costs must be non-negative (for all values of the continuous variables).
+  @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const VertexId& source_id, const VertexId& target_id,
       bool convex_relaxation = false) const;
 
   /** Convenience overload that takes const reference arguments for source and
-  target. */
+  target.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
       bool convex_relaxation = false) const;
