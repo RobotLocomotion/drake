@@ -67,6 +67,8 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/plant:contact_results_to_meshcat",  # unpackaged
+    "//multibody/plant:contact_results_to_meshcat_params",  # unpackaged
     "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
     "//multibody/triangle_quadrature",

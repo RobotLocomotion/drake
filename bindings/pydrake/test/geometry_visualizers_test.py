@@ -10,6 +10,7 @@ from pydrake.common.value import AbstractValue
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.perception import PointCloud
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import DiagramBuilder_, InputPort_
@@ -98,6 +99,7 @@ class TestGeometryVisualizers(unittest.TestCase):
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))
         meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        meshcat.SetTransform(path="/test/box", matrix=np.eye(4))
         cloud = PointCloud(4)
         cloud.mutable_xyzs()[:] = np.zeros((3, 4))
         meshcat.SetObject(path="/test/cloud", cloud=cloud,
