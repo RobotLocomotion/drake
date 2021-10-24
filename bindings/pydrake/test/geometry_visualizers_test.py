@@ -9,6 +9,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.perception import PointCloud
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import DiagramBuilder_, InputPort_
@@ -97,6 +98,7 @@ class TestGeometryVisualizers(unittest.TestCase):
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))
         meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        meshcat.SetTransform(path="/test/box", matrix=np.eye(4))
         cloud = PointCloud(4)
         cloud.mutable_xyzs()[:] = np.zeros((3, 4))
         meshcat.SetObject(path="/test/cloud", cloud=cloud,
@@ -168,6 +170,34 @@ class TestGeometryVisualizers(unittest.TestCase):
         mut.MeshcatVisualizerCpp_[T].AddToBuilder(
             builder=builder,
             query_object_port=scene_graph.get_query_output_port(),
+            meshcat=meshcat,
+            params=params)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_meshcat_contact_visualizer(self, T):
+        meshcat = mut.Meshcat()
+        params = mut.MeshcatContactVisualizerParams()
+        params.publish_period = 0.123
+        params.role = mut.Role.kIllustration
+        params.default_color = mut.Rgba(0.5, 0.5, 0.5)
+        params.prefix = "py_visualizer"
+        params.delete_on_initialization_event = False
+        params.force_threshold = 0.2
+        params.newtons_per_meter = 5
+        params.radius = 0.1
+        vis = mut.MeshcatContactVisualizerCpp_[T](
+          meshcat=meshcat, params=params)
+        vis.Delete()
+        self.assertIsInstance(vis.contact_results_input_port(), InputPort_[T])
+
+        builder = DiagramBuilder_[T]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        mut.MeshcatContactVisualizerCpp_[T].AddToBuilder(
+            builder=builder, plant=plant, meshcat=meshcat, params=params)
+        mut.MeshcatContactVisualizerCpp_[T].AddToBuilder(
+            builder=builder,
+            contact_results_port=plant.get_contact_results_output_port(),
             meshcat=meshcat,
             params=params)
 

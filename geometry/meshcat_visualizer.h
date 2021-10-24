@@ -94,7 +94,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
       const systems::OutputPort<T>& query_object_port,
       std::shared_ptr<Meshcat> meshcat,
       MeshcatVisualizerParams params = {});
-  //@}
 
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's

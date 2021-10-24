@@ -1,6 +1,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
+#include "drake/geometry/meshcat_contact_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/shape_specification.h"
@@ -35,18 +36,21 @@ int do_main() {
   meshcat->SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
   meshcat->SetTransform("box", RigidTransformd(Vector3d{0, 0, 0}));
 
+  meshcat->SetObject("cone", MeshcatCone(.5, .25, .5), Rgba(1, 0, 0, 1));
+  meshcat->SetTransform("box", RigidTransformd(Vector3d{1, 0, 0}));
+
   // The green color of this cube comes from the texture map.
   meshcat->SetObject(
       "obj", Mesh(FindResourceOrThrow(
                       "drake/systems/sensors/test/models/meshes/box.obj"),
                   .25));
-  meshcat->SetTransform("obj", RigidTransformd(Vector3d{1, 0, 0}));
+  meshcat->SetTransform("obj", RigidTransformd(Vector3d{2, 0, 0}));
 
   meshcat->SetObject(
       "mustard",
       Mesh(FindResourceOrThrow("drake/manipulation/models/ycb/meshes/"
                                "006_mustard_bottle_textured.obj"), 3.0));
-  meshcat->SetTransform("mustard", RigidTransformd(Vector3d{2, 0, 0}));
+  meshcat->SetTransform("mustard", RigidTransformd(Vector3d{3, 0, 0}));
 
   const int kPoints = 100000;
   perception::PointCloud cloud(
@@ -55,7 +59,7 @@ int do_main() {
   cloud.mutable_xyzs() = Eigen::DiagonalMatrix<float, 3>{.25, .25, .5} * m;
   cloud.mutable_rgbs() = (255.0 * (m.array() + 1.0) / 2.0).cast<uint8_t>();
   meshcat->SetObject("point_cloud", cloud, 0.01);
-  meshcat->SetTransform("point_cloud", RigidTransformd(Vector3d{3, 0, 0}));
+  meshcat->SetTransform("point_cloud", RigidTransformd(Vector3d{4, 0, 0}));
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -65,6 +69,7 @@ Open up your browser to the URL above.
   - a green cylinder (with the long axis in z)
   - a pink semi-transparent ellipsoid (long axis in z)
   - a blue box (long axis in z)
+  - a red cone (expanding in +z, twice as wide in y than in x)
   - a bright green cube (the green comes from a texture map)
   - a yellow mustard bottle w/ label
   - a dense rainbow point cloud in a box (long axis in z)
@@ -161,20 +166,32 @@ Open up your browser to the URL above.
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
   meshcat->SetProperty("/Lights/AmbientLight/<object>", "intensity", 0.6);
+
   systems::DiagramBuilder<double> builder;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
-  multibody::Parser(&plant).AddModelFromFile(
+  multibody::Parser parser(&plant);
+  parser.AddModelFromFile(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                          "iiwa14_no_collision.urdf"));
+                          "iiwa14_spheres_collision.urdf"));
   plant.WeldFrames(plant.world_frame(),
-                   plant.GetBodyByName("base").body_frame());
+                   plant.GetFrameByName("base"));
+  parser.AddModelFromFile(
+      FindResourceOrThrow("drake/examples/kuka_iiwa_arm/models/table/"
+                          "extra_heavy_duty_table_surface_only_collision.sdf"));
+  const double table_height = 0.7645;
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("link"),
+                   RigidTransformd(Vector3d{0, 0, -table_height-.01}));
   plant.Finalize();
 
   builder.ExportInput(plant.get_actuation_input_port(), "actuation_input");
   MeshcatVisualizerParams params;
   params.delete_on_initialization_event = false;
   MeshcatVisualizerd::AddToBuilder(&builder, scene_graph, meshcat, params);
+
+  MeshcatContactVisualizerParams cparams;
+  cparams.newtons_per_meter = 60.0;
+  MeshcatContactVisualizerd::AddToBuilder(&builder, plant, meshcat, cparams);
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
@@ -188,9 +205,12 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-  std::cout
-      << "Now we'll run the simulation (you should see the robot fall down)."
-      << std::endl;
+  std::cout << "Now we'll run the simulation...\n"
+            << "- You should see the robot fall down and hit the table\n"
+            << "- You should see the contact force vectors (when it hits)\n"
+            << "- You will also see large forces near the wrist until we "
+               "resolve #15965\n"
+            << std::endl;
 
   systems::Simulator<double> simulator(*diagram, std::move(context));
   simulator.set_target_realtime_rate(1.0);
