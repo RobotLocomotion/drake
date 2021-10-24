@@ -110,7 +110,7 @@ cc_library(
     }),
 )
 
-# Depend on a shared library used by dReal iff dReal is enabled.
+# Depend on the shared libraries used by dReal iff dReal is enabled.
 cc_library(
     name = "dreal_deps",
     deps = select({

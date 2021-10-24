@@ -276,24 +276,46 @@ IBEX_CONFIG = [
     ]
 ]
 
-IBEX_HEADERS = glob([
+_IBEX_HEADERS = glob([
     "src/**/*.h",
     "plugins/optim/src/**/*.h",
 ], exclude = [
     "src/bin/*",
 ]) + [
-    "src/ibex_Setting.h",
-    "src/symbolic/ibex_ExprOperators.h",
+    ":src/ibex_Setting.h",
+    ":src/symbolic/ibex_ExprOperators.h",
     "interval_lib_wrapper/filib/ibex_IntervalLibWrapper.h",
     "interval_lib_wrapper/filib/ibex_IntervalLibWrapper.inl",
     "lp_lib_wrapper/clp/ibex_LPLibWrapper.h",
 ]
 
+_IBEX_INCLUDES = glob(
+    ["src/*", "plugins/optim/src/*"],
+    exclude = ["src/wscript", "src/*.*"],
+    exclude_directories = 0,
+) + [
+    "interval_lib_wrapper/filib",
+    "lp_lib_wrapper/clp",
+    "src",
+]
+
 drake_generate_include_header(
     name = "gen_ibex_h",
     out = "src/ibex.h",
-    hdrs = IBEX_HEADERS,
+    hdrs = _IBEX_HEADERS,
     strip_prefix = ["src/"],
+)
+
+cc_library(
+    name = "ibex_headers",
+    hdrs = _IBEX_HEADERS + _FILIB_HEADER_FILES + [
+        ":src/ibex.h",
+        "src/parser/parser.tab.hh",
+    ],
+    includes = _IBEX_INCLUDES + [
+        "filibsrc-3.0.2.2",
+        "",  # For plugins
+    ],
 )
 
 # Note: We have committed the flex and yacc generated outputs to our fork of
@@ -308,8 +330,14 @@ drake_generate_include_header(
 # "@dreal//third_party/com_github_google_kythe/tools/build_rules:lexyacc.bzl"
 # is close to what we need to pull in flex and bison.
 
-cc_library(
-    name = "ibex",
+# We only build a shared-library flavor of libdrake_ibex.so, because it is
+# LGPL-licensed and thus should never be linked statically.  Building C++
+# shared libraries in Bazel is a bit arcane.  This rule creates the runtime
+# artifact -- a loadable shared library.  The `name = "ibex"` rule below
+# provides the compile-time artifact that combines the shared library with
+# its headers.
+cc_binary(
+    name = "libdrake_ibex.so",
     srcs = glob([
         "src/**/*.cpp",
         "src/parser/*.cc",
@@ -320,42 +348,49 @@ cc_library(
         # These files must be generated:
         "interval_lib_wrapper/filib/ibex_IntervalLibWrapper.cpp",
         "lp_lib_wrapper/clp/ibex_LPLibWrapper.cpp",
-        "src/symbolic/ibex_ExprOperators.cpp",
-    ],
-    hdrs = IBEX_HEADERS + [
-        "src/ibex.h",
-        "src/parser/parser.tab.hh",
-    ],
-    includes = glob(
-        ["src/*", "plugins/optim/src/*"],
-        exclude = ["src/wscript", "src/*.*"],
-        exclude_directories = 0,
-    ) + [
-        "src",
-        "interval_lib_wrapper/filib",
-        "lp_lib_wrapper/clp",
-        "",  # For plugins
+        ":src/symbolic/ibex_ExprOperators.cpp",
     ],
     copts = ["-w -std=c++11"],
     # The linkopts= here are transcribed from the contents of the *.pc file.
     linkopts = [
         "-lbz2",
         "-lm",
-    ],
+    ] + select({
+        "@drake//tools/cc_toolchain:linux": [
+            "-Wl,-soname,libdrake_ibex.so",
+        ],
+        "@//conditions:default": [],
+    }),
     # The deps= here are transcribed from the contents of the *.pc file.
     deps = [
         ":filib",
+        ":ibex_headers",
         "@blas",
         "@clp",
         "@lapack",
         "@zlib",
     ],
-    visibility = ["//visibility:public"],
     linkstatic = True,
+    linkshared = True,
+)
+
+# This is the compile-time target for libdrake_ibex.  See above for details.
+cc_library(
+    name = "ibex",
+    srcs = ["libdrake_ibex.so"],
+    deps = [":ibex_headers"],
+    visibility = ["//visibility:public"],
 )
 
 install(
     name = "install",
-    docs = ["LICENSE"],
+    targets = [":libdrake_ibex.so"],
+    hdrs = _IBEX_HEADERS + [":src/ibex.h"],
+    hdr_dest = "include/ibex",
+    hdr_strip_prefix = _IBEX_INCLUDES,
+    docs = [
+        "COPYING.LESSER",
+        "LICENSE",
+    ],
     visibility = ["//visibility:public"],
 )
