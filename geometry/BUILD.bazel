@@ -424,6 +424,7 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
+        "//examples/kuka_iiwa_arm:models",
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/ycb:models",
@@ -434,6 +435,7 @@ drake_cc_binary(
         ":meshcat_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
+        "//multibody/plant:contact_results_to_meshcat",
         "//systems/analysis:simulator",
     ],
 )

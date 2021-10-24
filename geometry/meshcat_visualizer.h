@@ -133,8 +133,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
-      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
-  //@}
+      std::shared_ptr<Meshcat> meshcat,
+      MeshcatVisualizerParams params = {});
 
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's
