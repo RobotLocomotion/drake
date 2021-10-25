@@ -28,6 +28,7 @@ from pydrake.systems.analysis import (
     )
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
+    ContextBase,
     Context, Context_,
     ContinuousState, ContinuousState_,
     Diagram, Diagram_,
@@ -340,6 +341,10 @@ class TestGeneral(unittest.TestCase):
         discrete_values[1] = 5.
         self.assertEqual(discrete_values[1], 5.)
         discrete_values.SetFrom(DiscreteValues(BasicVector(3)))
+
+    def test_context_base(self):
+        for T in [float, AutoDiffXd, Expression]:
+            self.assertTrue(issubclass(Context_[T], ContextBase), repr(T))
 
     def test_instantiations(self):
         # Quick check of instantiations for given types.

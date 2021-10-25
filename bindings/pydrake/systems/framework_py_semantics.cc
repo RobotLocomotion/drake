@@ -172,18 +172,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("KeepMoreSevere", &Class::KeepMoreSevere, py::arg("candidate"),
             cls_doc.KeepMoreSevere.doc);
   }
-}
 
-template <typename T>
-void DoScalarDependentDefinitions(py::module m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::systems;
-  constexpr auto& doc = pydrake_doc.drake.systems;
-
-  auto context_cls = DefineTemplateClassWithDefault<Context<T>>(
-      m, "Context", GetPyParam<T>(), doc.Context.doc);
-  context_cls
-      // Bindings for Context methods inherited from ContextBase.
+  py::class_<ContextBase>(m, "ContextBase", doc.ContextBase.doc)
       .def("num_input_ports", &ContextBase::num_input_ports,
           doc.ContextBase.num_input_ports.doc)
       .def("num_output_ports", &ContextBase::num_output_ports,
@@ -200,8 +190,19 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("UnfreezeCache", &ContextBase::UnfreezeCache,
           doc.ContextBase.UnfreezeCache.doc)
       .def("is_cache_frozen", &ContextBase::is_cache_frozen,
-          doc.ContextBase.is_cache_frozen.doc)
-      // TODO(russt): Add remaining methods from ContextBase here.
+          doc.ContextBase.is_cache_frozen.doc);
+  // TODO(russt, eric.cousineau): Add remaining methods from ContextBase here.
+}
+
+template <typename T>
+void DoScalarDependentDefinitions(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::systems;
+  constexpr auto& doc = pydrake_doc.drake.systems;
+
+  auto context_cls = DefineTemplateClassWithDefault<Context<T>, ContextBase>(
+      m, "Context", GetPyParam<T>(), doc.Context.doc);
+  context_cls
       // Bindings for the Context methods in the Doxygen group titled
       // "Accessors for locally-stored values", placed in the same order
       // as the header file.
