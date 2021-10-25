@@ -128,7 +128,8 @@ def main():
         # warnings settings, exploting a loophole where it checks "if warnings
         # is None" to check if the user passed a kwarg, but "if warning" to
         # actually apply the user's kwarg.
-        if "XML_OUTPUT_FILE" in os.environ:
+        # N.B. Do not use the runner when `--trace={user,sys}` is enabled.
+        if "XML_OUTPUT_FILE" in os.environ and args.trace == "none":
             with open(os.environ["XML_OUTPUT_FILE"], "wb") as output:
                 unittest.main(
                     module=test_name, argv=unittest_argv, warnings=False,
