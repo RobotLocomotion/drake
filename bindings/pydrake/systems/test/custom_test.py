@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
     BasicVector, BasicVector_,
+    CacheEntry,
     CacheIndex,
     Context,
     ContinuousStateIndex,
@@ -32,6 +33,7 @@ from pydrake.systems.framework import (
     System,
     TriggerType,
     UnrestrictedUpdateEvent,
+    ValueProducer,
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
@@ -221,6 +223,97 @@ class TestCustom(unittest.TestCase):
                 (dut.numeric_parameter_ticket, NumericParameterIndex(0)),
                 ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
+
+    def test_cache_with_scratch_entry_for_contained_system(self):
+        """
+        Shows an example of using a "scratch" cache entry, where the scratch
+        cache comes from using another system from within this one.
+
+        In more practical use cases, this could be a Diagram containing a
+        MultibodyPlant and/or a SceneGraph.
+        """
+        test = self
+
+        def check_cache_entry(system, cache_entry):
+            self.assertIsInstance(cache_entry, CacheEntry)
+            self.assertIsInstance(cache_entry.prerequisites(), set)
+            self.assertIsInstance(cache_entry.cache_index(), CacheIndex)
+            self.assertIsInstance(cache_entry.ticket(), DependencyTicket)
+            self.assertIs(
+                system.get_cache_entry(cache_entry.cache_index()), cache_entry)
+
+        class Scratch:
+            """Simple object to test abstract values for caching."""
+            def __init__(self, contained_context):
+                assert isinstance(contained_context, Context)
+                self.contained_context = contained_context
+
+        class ContainedSystem(LeafSystem):
+            """
+            Meant to reflect using a MultibodyPlant used within another
+            system, where its context is used as a cache entry.
+            """
+            def __init__(self):
+                LeafSystem.__init__(self)
+                self.DeclareDiscreteState(1)
+                self.DeclareVectorOutputPort(
+                    "double", BasicVector(1), self._calc_double)
+
+            def SetValue(self, context, value):
+                state_vector = context.get_mutable_discrete_state_vector()
+                state_vector.SetFromVector(value)
+
+            def _calc_double(self, context, output):
+                state_vector = context.get_discrete_state_vector()
+                output.SetFromVector(2 * state_vector.get_value())
+
+        class ExampleSystem(LeafSystem):
+            """
+            Uses a contained system, allocates its context to a "scratch pad",
+            and then uses the scratch allocated context to compute a value.
+            """
+            def __init__(self, contained_system):
+                LeafSystem.__init__(self)
+                self._contained_system = contained_system
+
+                def scratch_allocate():
+                    # Allocate with an arbitrary value (which will be tested
+                    # later).
+                    return AbstractValue.Make(
+                        Scratch(self._contained_system.CreateDefaultContext()))
+
+                self._scratch_entry = self.DeclareCacheEntry(
+                    description="scratch",
+                    value_producer=ValueProducer(
+                        allocate=scratch_allocate,
+                        calc=ValueProducer.NoopCalc),
+                    prerequisites_of_calc={self.nothing_ticket()})
+                self.DeclareVectorOutputPort(
+                    "output", BasicVector(1), self._calc_output,
+                    prerequisites_of_calc={self.nothing_ticket()})
+
+                # For testing.
+                check_cache_entry(self, self._scratch_entry)
+
+            def _calc_output(self, context, output):
+                scratch = (
+                    self._scratch_entry.get_mutable_cache_entry_value(context)
+                    .GetMutableValueOrThrow())
+                test.assertIsInstance(scratch, Scratch)
+                self._contained_system.SetValue(
+                    scratch.contained_context, [10.0])
+                value = self._contained_system.GetOutputPort("double").Eval(
+                    scratch.contained_context)
+                output.SetFromVector(value)
+
+        system = ExampleSystem(ContainedSystem())
+        context = system.CreateDefaultContext()
+        output = system.GetOutputPort("output").Eval(context)
+        np.testing.assert_equal(output, [20.0])
+        # Ensure that we can clone the full context.
+        context_copy = context.Clone()
+        output_copy = system.GetOutputPort("output").Eval(context_copy)
+        np.testing.assert_equal(output_copy, output)
 
     def test_leaf_system_issue13792(self):
         """
