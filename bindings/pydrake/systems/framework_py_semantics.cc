@@ -192,6 +192,46 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("is_cache_frozen", &ContextBase::is_cache_frozen,
           doc.ContextBase.is_cache_frozen.doc);
   // TODO(russt, eric.cousineau): Add remaining methods from ContextBase here.
+
+  {
+    using Class = ValueProducer;
+    constexpr auto& cls_doc = doc.ValueProducer;
+    py::class_<Class>(m, "ValueProducer", cls_doc.doc)
+        .def(py::init(WrapCallbacks([](ValueProducer::AllocateCallback allocate,
+                                        ValueProducer::CalcCallback calc) {
+          return Class(allocate, calc);
+        })),
+            py::arg("allocate"), py::arg("calc"), cls_doc.ctor.doc_overload_5d)
+        .def_static("NoopCalc", &Class::NoopCalc, cls_doc.NoopCalc.doc);
+  }
+
+  {
+    using Class = CacheEntryValue;
+    constexpr auto& cls_doc = doc.CacheEntryValue;
+    py::class_<Class>(m, "CacheEntryValue", cls_doc.doc)
+        .def(
+            "GetMutableValueOrThrow",
+            [](Class* self) {
+              py::object value = py::cast<AbstractValue*>(
+                  &self->GetMutableAbstractValueOrThrow());
+              return value.attr("get_mutable_value")();
+            },
+            py_rvp::reference_internal, cls_doc.GetMutableValueOrThrow.doc);
+  }
+
+  {
+    using Class = CacheEntry;
+    constexpr auto& cls_doc = doc.CacheEntry;
+    py::class_<Class>(m, "CacheEntry", cls_doc.doc)
+        .def("prerequisites", &Class::prerequisites, cls_doc.prerequisites.doc)
+        .def("get_mutable_cache_entry_value",
+            &Class::get_mutable_cache_entry_value, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), py_rvp::reference,
+            cls_doc.get_mutable_cache_entry_value.doc)
+        .def("cache_index", &Class::cache_index, cls_doc.cache_index.doc)
+        .def("ticket", &Class::ticket, cls_doc.ticket.doc);
+  }
 }
 
 template <typename T>
