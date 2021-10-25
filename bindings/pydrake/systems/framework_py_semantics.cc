@@ -172,6 +172,25 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("KeepMoreSevere", &Class::KeepMoreSevere, py::arg("candidate"),
             cls_doc.KeepMoreSevere.doc);
   }
+
+  py::class_<ContextBase>(m, "ContextBase", doc.ContextBase.doc)
+      .def("num_input_ports", &ContextBase::num_input_ports,
+          doc.ContextBase.num_input_ports.doc)
+      .def("num_output_ports", &ContextBase::num_output_ports,
+          doc.ContextBase.num_output_ports.doc)
+      .def("DisableCaching", &ContextBase::DisableCaching,
+          doc.ContextBase.DisableCaching.doc)
+      .def("EnableCaching", &ContextBase::EnableCaching,
+          doc.ContextBase.EnableCaching.doc)
+      .def("SetAllCacheEntriesOutOfDate",
+          &ContextBase::SetAllCacheEntriesOutOfDate,
+          doc.ContextBase.SetAllCacheEntriesOutOfDate.doc)
+      .def("FreezeCache", &ContextBase::FreezeCache,
+          doc.ContextBase.FreezeCache.doc)
+      .def("UnfreezeCache", &ContextBase::UnfreezeCache,
+          doc.ContextBase.UnfreezeCache.doc)
+      .def("is_cache_frozen", &ContextBase::is_cache_frozen,
+          doc.ContextBase.is_cache_frozen.doc);
 }
 
 template <typename T>
@@ -180,7 +199,7 @@ void DoScalarDependentDefinitions(py::module m) {
   using namespace drake::systems;
   constexpr auto& doc = pydrake_doc.drake.systems;
 
-  auto context_cls = DefineTemplateClassWithDefault<Context<T>>(
+  auto context_cls = DefineTemplateClassWithDefault<Context<T>, ContextBase>(
       m, "Context", GetPyParam<T>(), doc.Context.doc);
   context_cls
       // Bindings for Context methods inherited from ContextBase.
