@@ -62,7 +62,7 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
   std::shared_ptr<Meshcat> meshcat_;
   multibody::MultibodyPlant<double>* plant_{};
   SceneGraph<double>* scene_graph_{};
-  const MeshcatVisualizer<double>* visualizer_{};
+  MeshcatVisualizer<double>* visualizer_{};
   std::unique_ptr<systems::Diagram<double>> diagram_{};
   std::unique_ptr<systems::Context<double>> context_{};
 };
@@ -182,6 +182,62 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Delete) {
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer"));
   visualizer_->Delete();
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
+}
+
+// If the results of Publish have been recorded to `animation`, then a
+// SetTransform will have been set; we can check this by querying the
+// "position".
+bool has_iiwa_frame(const MeshcatAnimation& animation, int frame) {
+  return animation
+      .get_key_frame<std::vector<double>>(
+          0, "visualizer/iiwa14/iiwa_link_1", "position")
+      .has_value();
+}
+
+TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
+  MeshcatVisualizerParams params;
+  SetUpDiagram(params);
+  auto animation = visualizer_->get_mutable_recording();
+
+  // Publish once without recording and confirm that we don't have the iiwa
+  // frame.
+  diagram_->Publish(*context_);
+  EXPECT_FALSE(has_iiwa_frame(*animation, 0));
+
+  // Publish again *with* recording and confirm that we do now have the frame.
+  visualizer_->StartRecording();
+  diagram_->Publish(*context_);
+  EXPECT_TRUE(has_iiwa_frame(*animation, 0));
+
+  // Deleting the recording removes that frame.
+  visualizer_->DeleteRecording();
+  animation = visualizer_->get_mutable_recording();
+  EXPECT_FALSE(has_iiwa_frame(*animation, 0));
+
+  // We are still recording, so publish *will* add it.
+  diagram_->Publish(*context_);
+  EXPECT_TRUE(has_iiwa_frame(*animation, 0));
+
+  // But if we stop recording, then it's not added.
+  visualizer_->StopRecording();
+  visualizer_->DeleteRecording();
+  animation = visualizer_->get_mutable_recording();
+  EXPECT_FALSE(has_iiwa_frame(*animation, 0));
+  diagram_->Publish(*context_);
+  EXPECT_FALSE(has_iiwa_frame(*animation, 0));
+
+  // Now publish a time 0.0 and time = 1.0 and confirm we have the frames.
+  animation = visualizer_->StartRecording();
+  diagram_->Publish(*context_);
+  context_->SetTime(1.0);
+  diagram_->Publish(*context_);
+  EXPECT_TRUE(has_iiwa_frame(*animation, 0));
+  EXPECT_TRUE(
+      has_iiwa_frame(*animation, std::floor(1.0 / params.publish_period)));
+
+  // Confirm that PublishRecording runs.  Its correctness is established by
+  // meshcat_manual_test.
+  visualizer_->PublishRecording();
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {

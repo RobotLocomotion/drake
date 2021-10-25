@@ -160,6 +160,12 @@ class TestGeometryVisualizers(unittest.TestCase):
         vis = mut.MeshcatVisualizerCpp_[T](meshcat=meshcat, params=params)
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
+        animation = vis.StartRecording()
+        self.assertIsInstance(animation, mut.MeshcatAnimation)
+        self.assertEqual(animation, vis.get_mutable_recording())
+        vis.StopRecording()
+        vis.PublishRecording()
+        vis.DeleteRecording()
 
         builder = DiagramBuilder_[T]()
         scene_graph = builder.AddSystem(mut.SceneGraph_[T]())
