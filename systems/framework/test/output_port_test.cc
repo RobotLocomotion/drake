@@ -36,6 +36,7 @@ class DummySystem : public LeafSystem<double> {
  public:
   DummySystem() {}
   ~DummySystem() override {}
+  using SystemBase::DeclareCacheEntry;
   using SystemBase::assign_next_dependency_ticket;
   using SystemBase::get_system_id;
 };
