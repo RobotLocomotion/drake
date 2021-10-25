@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
     BasicVector, BasicVector_,
+    CacheEntry,
     CacheIndex,
     Context,
     ContinuousStateIndex,
@@ -32,6 +33,7 @@ from pydrake.systems.framework import (
     System,
     TriggerType,
     UnrestrictedUpdateEvent,
+    ValueProducer,
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
@@ -221,6 +223,60 @@ class TestCustom(unittest.TestCase):
                 (dut.numeric_parameter_ticket, NumericParameterIndex(0)),
                 ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
+
+    def test_cache(self):
+        """Shows an example of using a "scratch" cache entry."""
+
+        class Scratch:
+            """Simple object to test abstract values for caching."""
+            def __init__(self, value):
+                self.value = value
+
+        def test_cache_entry(system, cache_entry):
+            self.assertIsInstance(cache_entry, CacheEntry)
+            self.assertIsInstance(cache_entry.prerequisites(), set)
+            self.assertIsInstance(cache_entry.cache_index(), CacheIndex)
+            self.assertIsInstance(cache_entry.ticket(), DependencyTicket)
+            self.assertIs(
+                system.get_cache_entry(cache_entry.cache_index()), cache_entry)
+
+        class ExampleSystem(LeafSystem):
+            def __init__(self):
+                LeafSystem.__init__(self)
+
+                def scratch_allocate():
+                    # Allocate with an arbitrary value (which will be tested
+                    # later).
+                    return AbstractValue.Make(Scratch(value=10.0))
+
+                self._scratch = self.DeclareCacheEntry(
+                    description="scratch",
+                    value_producer=ValueProducer(
+                        allocate=scratch_allocate,
+                        calc=ValueProducer.NoopCalc),
+                    prerequisites_of_calc={self.nothing_ticket()})
+                self.DeclareVectorOutputPort(
+                    "output", BasicVector(1), self._calc_output,
+                    prerequisites_of_calc={self._scratch.ticket()})
+
+                # For testing.
+                test_cache_entry(self, self._scratch)
+
+            def _get_cache_value(self, cache_entry, context):
+                cache_entry_value = (
+                    cache_entry.get_mutable_cache_entry_value(context))
+                abstract_value = cache_entry_value.GetAbstractValueOrThrow()
+                return abstract_value.get_mutable_value()
+
+            def _calc_output(self, context, output):
+                scratch = self._get_cache_value(self._scratch, context)
+                test.assertIsInstance(scratch, Scratch)
+                output.SetFromVector(np.full(1, scratch.value))
+
+        system = ExampleSystem()
+        context = system.CreateDefaultContext()
+        output = system.GetOutputPort("output").Eval(context)
+        np.testing.assert_equal(output, [10.0])
 
     def test_leaf_system_issue13792(self):
         """
