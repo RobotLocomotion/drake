@@ -327,10 +327,10 @@ class TestMeshcat(unittest.TestCase):
         test the texture override pathway.  You should confirm that you see a
         green box in the visualizer."""
         object_file_path = FindResourceOrThrow(
-            "drake/systems/sensors/test/models/box_with_mesh.sdf")
+            "drake/geometry/render/test/box.sdf")
         # Find the texture path just to ensure it exists and
         # we're testing the code path we want to.
-        FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png")
+        FindResourceOrThrow("drake/geometry/render/test/meshes/box.png")
 
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)

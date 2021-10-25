@@ -236,7 +236,6 @@ drake_cc_googletest_ubuntu_only(
     name = "render_engine_gl_test",
     data = [
         "//geometry/render:test_models",
-        "//systems/sensors:test_models",
     ],
     tags = vtk_test_tags(),
     deps = [
@@ -264,7 +263,7 @@ drake_cc_googletest(
 drake_cc_googletest_ubuntu_only(
     name = "shape_meshes_test",
     data = [
-        "//systems/sensors:test_models",
+        "//geometry/render:test_models",
     ],
     deps = [
         ":shape_meshes",
