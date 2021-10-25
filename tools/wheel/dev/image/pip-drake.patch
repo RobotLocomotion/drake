@@ -1,0 +1,33 @@
+diff --git a/bindings/pydrake/systems/lcm_py.cc b/bindings/pydrake/systems/lcm_py.cc
+index d98b81c59..fb9bcd86c 100644
+--- a/bindings/pydrake/systems/lcm_py.cc
++++ b/bindings/pydrake/systems/lcm_py.cc
+@@ -216,7 +216,7 @@ PYBIND11_MODULE(lcm, m) {
+ #pragma GCC diagnostic pop
+
+   // Bind C++ serializers.
+-  BindCppSerializers();
++  //BindCppSerializers();
+
+   ExecuteExtraPythonCode(m);
+ }
+diff --git a/tools/py_toolchain/interpreter_paths.bzl b/tools/py_toolchain/interpreter_paths.bzl
+index 1608e49b1..d6b5d5e07 100644
+--- a/tools/py_toolchain/interpreter_paths.bzl
++++ b/tools/py_toolchain/interpreter_paths.bzl
+@@ -2,13 +2,13 @@
+
+ # Default value of interpreter_path used by the py_runtime in the default
+ # Python toolchain registered on the @platforms//os:linux platform.
+-LINUX_INTERPRETER_PATH = "/usr/bin/python3"
++LINUX_INTERPRETER_PATH = "/usr/local/bin/python"
+
+ # Default value of interpreter_path used by the py_runtime in the Python debug
+ # toolchain registered on the @platforms//os:linux platform when the
+ # --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain command line
+ # option is given.
+-LINUX_DBG_INTERPRETER_PATH = "/usr/bin/python3-dbg"
++LINUX_DBG_INTERPRETER_PATH = "/usr/local/bin/python"
+
+ # Default value of interpreter_path used by the py_runtime in the default
+ # Python toolchain registered on the @platforms//os:osx platform.
