@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
     BasicVector, BasicVector_,
+    CacheEntry,
     CacheIndex,
     Context,
     ContinuousStateIndex,
@@ -32,6 +33,7 @@ from pydrake.systems.framework import (
     System,
     TriggerType,
     UnrestrictedUpdateEvent,
+    ValueProducer,
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
@@ -235,6 +237,35 @@ class TestCustom(unittest.TestCase):
         with self.assertRaises(TypeError) as cm:
             Oops()
         self.assertIn("LeafSystem_[float].__init__", str(cm.exception))
+
+    def test_cache(self):
+
+        class Scratch:
+            """Simple object to test abstract values for caching."""
+            pass
+
+        dut = LeafSystem()
+        value_producer = ValueProducer(
+            allocate=lambda: AbstractValue.Make(Scratch()),
+            calc=ValueProducer.NoopCalc)
+        cache_entry = dut.DeclareCacheEntry(
+            description="scratch",
+            value_producer=value_producer,
+            prerequisites_of_calc={dut.nothing_ticket()})
+
+        # Check CacheEntry.
+        self.assertIsInstance(cache_entry, CacheEntry)
+        self.assertIsInstance(cache_entry.prerequisites(), set)
+        self.assertIsInstance(cache_entry.cache_index(), CacheIndex)
+        self.assertIsInstance(cache_entry.ticket(), DependencyTicket)
+        self.assertIs(
+            dut.get_cache_entry(cache_entry.cache_index()), cache_entry)
+
+        context = dut.CreateDefaultContext()
+        cache_entry_value = cache_entry.get_mutable_cache_entry_value(context)
+        abstract_value = cache_entry_value.GetAbstractValueOrThrow()
+        scratch = abstract_value.get_mutable_value()
+        self.assertIsInstance(scratch, Scratch)
 
     def test_all_leaf_system_overrides(self):
         test = self

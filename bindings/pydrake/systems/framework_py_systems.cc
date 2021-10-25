@@ -307,6 +307,20 @@ struct Impl {
             py_rvp::reference_internal, py::arg("name"), py::arg("type"),
             py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.System.DeclareInputPort.doc)
+        .def(
+            "DeclareCacheEntry",
+            [](System<T> * self, std::string description,
+                ValueProducer value_producer,
+                std::set<DependencyTicket> prerequisites_of_calc) -> auto& {
+              return self->DeclareCacheEntry(
+                  description, value_producer, prerequisites_of_calc);
+            },
+            py_rvp::reference_internal, py::arg("description"),
+            py::arg("value_producer"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.SystemBase.DeclareCacheEntry
+                .doc_3args_description_value_producer_prerequisites_of_calc)
         // Feedthrough.
         .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough,
             doc.System.HasAnyDirectFeedthrough.doc)
@@ -822,7 +836,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("input_port_ticket", &Class::input_port_ticket, py::arg("index"),
             cls_doc.input_port_ticket.doc)
         .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
-            py::arg("index"), cls_doc.numeric_parameter_ticket.doc);
+            py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
+        .def("get_cache_entry", &Class::get_cache_entry, py::arg("cache_index"),
+            py_rvp::reference_internal, cls_doc.get_cache_entry.doc);
   }
 
   {
