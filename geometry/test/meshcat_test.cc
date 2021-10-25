@@ -93,12 +93,12 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_TRUE(meshcat.GetPackedObject("capsule").empty());
   meshcat.SetObject(
       "mesh", Mesh(FindResourceOrThrow(
-                       "drake/systems/sensors/test/models/meshes/box.obj"),
+                       "drake/geometry/render/test/meshes/box.obj"),
                    .25));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
       "convex", Convex(FindResourceOrThrow(
-                           "drake/systems/sensors/test/models/meshes/box.obj"),
+                           "drake/geometry/render/test/meshes/box.obj"),
                        .25));
   EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
   // Bad filename (no extension).  Should only log a warning.

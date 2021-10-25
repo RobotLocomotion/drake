@@ -149,7 +149,13 @@ drake_cc_library(
 filegroup(
     name = "test_models",
     testonly = 1,
-    srcs = ["test/diag_gradient.png"],
+    srcs = [
+        "test/box.sdf",
+        "test/diag_gradient.png",
+        "test/meshes/box.obj",
+        "test/meshes/box.obj.mtl",
+        "test/meshes/box.png",
+    ],
 )
 
 drake_cc_googletest(
@@ -174,7 +180,6 @@ drake_cc_googletest(
     name = "render_engine_vtk_test",
     data = [
         ":test_models",
-        "//systems/sensors:test_models",
     ],
     tags = vtk_test_tags(),
     deps = [

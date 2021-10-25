@@ -423,9 +423,9 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
+        "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/ycb:models",
-        "//systems/sensors:test_models",
     ],
     visibility = ["//visibility:private"],
     deps = [
@@ -448,7 +448,7 @@ drake_cc_googletest(
     name = "meshcat_test",
     data = [
         ":meshcat_websocket_client",
-        "//systems/sensors:test_models",
+        "//geometry/render:test_models",
     ],
     # Disable valgrind because it currently fails on the system call to python.
     # TODO(russt): Make it possible to pass --trace-children=no to valgrind.sh.
