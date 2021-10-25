@@ -16,6 +16,8 @@ from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
     BasicVector, BasicVector_,
+    CacheEntry,
+    CacheEntryValue,
     CacheIndex,
     Context,
     ContinuousStateIndex,
@@ -32,6 +34,7 @@ from pydrake.systems.framework import (
     System,
     TriggerType,
     UnrestrictedUpdateEvent,
+    ValueProducer,
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
@@ -221,6 +224,34 @@ class TestCustom(unittest.TestCase):
                 (dut.numeric_parameter_ticket, NumericParameterIndex(0)),
                 ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
+
+    def test_cache_entry(self):
+        """Checks the existence of CacheEntry-related bindings."""
+
+        # Cover DeclareCacheEntry.
+        dummy = LeafSystem()
+        allocate_abstract_int = AbstractValue.Make(0).Clone
+        cache_entry = dummy.DeclareCacheEntry(
+            description="scratch",
+            value_producer=ValueProducer(
+                allocate=allocate_abstract_int,
+                calc=ValueProducer.NoopCalc),
+            prerequisites_of_calc={dummy.nothing_ticket()})
+        self.assertIsInstance(cache_entry, CacheEntry)
+
+        # Cover CacheEntry and get_cache_entry.
+        self.assertIsInstance(cache_entry.prerequisites(), set)
+        cache_index = cache_entry.cache_index()
+        self.assertIsInstance(cache_index, CacheIndex)
+        self.assertIsInstance(cache_entry.ticket(), DependencyTicket)
+        self.assertIs(dummy.get_cache_entry(cache_index), cache_entry)
+
+        # Cover CacheEntryValue.
+        context = dummy.CreateDefaultContext()
+        cache_entry_value = cache_entry.get_mutable_cache_entry_value(context)
+        self.assertIsInstance(cache_entry_value, CacheEntryValue)
+        data = cache_entry_value.GetMutableValueOrThrow()
+        self.assertIsInstance(data, int)
 
     def test_leaf_system_issue13792(self):
         """

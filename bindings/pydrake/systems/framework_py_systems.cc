@@ -40,9 +40,15 @@ using systems::DiscreteValues;
 using systems::LeafSystem;
 using systems::PublishEvent;
 using systems::System;
+using systems::SystemBase;
 using systems::SystemScalarConverter;
 using systems::VectorSystem;
 using systems::WitnessFunction;
+
+class SystemBasePublic : public SystemBase {
+ public:
+  using SystemBase::DeclareCacheEntry;
+};
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -822,7 +828,19 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("input_port_ticket", &Class::input_port_ticket, py::arg("index"),
             cls_doc.input_port_ticket.doc)
         .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
-            py::arg("index"), cls_doc.numeric_parameter_ticket.doc);
+            py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
+        .def("get_cache_entry", &Class::get_cache_entry, py::arg("index"),
+            py_rvp::reference_internal, cls_doc.get_cache_entry.doc)
+        .def("DeclareCacheEntry",
+            static_cast<CacheEntry& (SystemBase::*)(std::string, ValueProducer,
+                std::set<DependencyTicket>)>(
+                &SystemBasePublic::DeclareCacheEntry),
+            py_rvp::reference_internal, py::arg("description"),
+            py::arg("value_producer"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.SystemBase.DeclareCacheEntry
+                .doc_3args_description_value_producer_prerequisites_of_calc);
   }
 
   {
