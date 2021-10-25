@@ -16,7 +16,8 @@ namespace geometry {
 perception::PointCloud from its input port to Meshcat.
 
 @system
-name: MeshcatPointCloudVisualizer input_ports:
+name: MeshcatPointCloudVisualizer
+input_ports:
 - cloud
 - X_ParentCloud (optional)
 @endsystem
