@@ -1248,8 +1248,6 @@ class System : public SystemBase {
 
   // Promote these frequently-used methods so users (and tutorial examples)
   // don't need "this->" everywhere when in templated derived classes.
-  using SystemBase::DeclareCacheEntry;
-
   // All pre-defined ticket methods should be listed here. They are ordered as
   // they appear in SystemBase to make it easy to check that none are missing.
   using SystemBase::nothing_ticket;
@@ -1284,6 +1282,10 @@ class System : public SystemBase {
   // Don't promote output_port_ticket() since it is for internal use only.
 
  protected:
+  // Promote these frequently-used methods so users (and tutorial examples)
+  // don't need "this->" everywhere when in templated derived classes.
+  using SystemBase::DeclareCacheEntry;
+
   /** Derived classes will implement this method to evaluate a witness function
   at the given context. */
   virtual T DoCalcWitnessValue(
