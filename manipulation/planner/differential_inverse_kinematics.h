@@ -39,14 +39,17 @@ struct DifferentialInverseKinematicsResult {
 };
 
 /**
- * Computes the pose "difference" between @p X_C0 and @p X_C1 such that
- * the linear part equals p_C1 - p_C0, and the angular part equals
- * R_C1 * R_C0.inv(), where p and R stand for the position and rotation parts,
+ * Computes the pose "difference" between @p X_CB₀ and @p X_CB₁ such that
+ * the linear part equals p_CB₁ - p_CB₀, and the angular part equals
+ * R_CB₁ * R_B₀C, where p and R stand for the position and rotation parts,
  * and C is the common frame.
+ *
+ * Returns a value that "shares" a space with V_B₀B₁_C, the spatial velocity of
+ * frame B₁ w.r.t. B₀ expressed in frame C.
  */
 Vector6<double> ComputePoseDiffInCommonFrame(
-    const math::RigidTransform<double>& X_C0,
-    const math::RigidTransform<double>& X_C1);
+    const math::RigidTransform<double>& X_CB0,
+    const math::RigidTransform<double>& X_CB1);
 
 DRAKE_DEPRECATED("2022-02-01", "Use RigidTransform instead of Isometry3")
 inline Vector6<double> ComputePoseDiffInCommonFrame(

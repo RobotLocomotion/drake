@@ -84,19 +84,19 @@ void DifferentialInverseKinematicsParameters::ClearLinearVelocityConstraints() {
 }
 
 Vector6<double> ComputePoseDiffInCommonFrame(
-    const math::RigidTransform<double>& X_C0,
-    const math::RigidTransform<double>& X_C1) {
-  Vector6<double> diff = Vector6<double>::Zero();
+    const math::RigidTransform<double>& X_CB0,
+    const math::RigidTransform<double>& X_CB1) {
+  Vector6<double> dX_B0B1_C = Vector6<double>::Zero();
 
   // Linear.
-  diff.tail<3>() = (X_C1.translation() - X_C0.translation());
+  dX_B0B1_C.tail<3>() = (X_CB1.translation() - X_CB0.translation());
 
   // Angular.
-  AngleAxis<double> rot_err =
-      (X_C1.rotation() * X_C0.rotation().transpose()).ToAngleAxis();
-  diff.head<3>() = rot_err.axis() * rot_err.angle();
+  AngleAxis<double> axang_B0B1_C =
+      (X_CB1.rotation() * X_CB0.rotation().transpose()).ToAngleAxis();
+  dX_B0B1_C.head<3>() = axang_B0B1_C.axis() * axang_B0B1_C.angle();
 
-  return diff;
+  return dX_B0B1_C;
 }
 
 DifferentialInverseKinematicsParameters::

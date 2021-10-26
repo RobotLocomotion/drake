@@ -10,7 +10,7 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import AngleAxis, Isometry3
 
 
 class TestPlanner(unittest.TestCase):
@@ -107,3 +107,27 @@ class TestPlanner(unittest.TestCase):
 
         integrator.get_mutable_parameters().set_timestep(0.2)
         self.assertEqual(integrator.get_parameters().get_timestep(), 0.2)
+
+    def test_compute_pose_diff_in_common_frame(self):
+        X_CB0 = RigidTransform()
+        X_CB1 = RigidTransform(
+            p=[0.1, 0.2, 0.3],
+            theta_lambda=AngleAxis(
+                angle=np.deg2rad(10.0),
+                axis=[0.0, 0.0, 1.0],
+            ),
+        )
+        dx_B0B1_C = mut.ComputePoseDiffInCommonFrame(
+            X_CB0=X_CB0,
+            X_CB1=X_CB1,
+        )
+        dx_B0B1_C_expected = np.array([
+            0.0, 0.0, np.deg2rad(10.0),
+            0.1, 0.2, 0.3,
+        ])
+        np.testing.assert_allclose(
+            dx_B0B1_C,
+            dx_B0B1_C_expected,
+            atol=1e-8,
+            rtol=0.0,
+        )

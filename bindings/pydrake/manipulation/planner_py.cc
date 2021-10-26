@@ -11,10 +11,12 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(planner, m) {
-  using drake::manipulation::planner::DifferentialInverseKinematicsStatus;
-  using drake::systems::LeafSystem;
+using drake::manipulation::planner::ComputePoseDiffInCommonFrame;
+using drake::manipulation::planner::DifferentialInverseKinematicsStatus;
+using drake::math::RigidTransformd;
+using drake::systems::LeafSystem;
 
+PYBIND11_MODULE(planner, m) {
   m.doc() = "Tools for manipulation planning.";
   constexpr auto& doc = pydrake_doc.drake.manipulation.planner;
 
@@ -31,6 +33,11 @@ PYBIND11_MODULE(planner, m) {
           doc.DifferentialInverseKinematicsStatus.kNoSolutionFound.doc)
       .value("kStuck", DifferentialInverseKinematicsStatus::kStuck,
           doc.DifferentialInverseKinematicsStatus.kStuck.doc);
+
+  m.def("ComputePoseDiffInCommonFrame",
+      py::overload_cast<const RigidTransformd&, const RigidTransformd&>(
+          &ComputePoseDiffInCommonFrame),
+      py::arg("X_CB0"), py::arg("X_CB1"), doc.ComputePoseDiffInCommonFrame.doc);
 
   {
     using Class = manipulation::planner::DifferentialInverseKinematicsResult;
