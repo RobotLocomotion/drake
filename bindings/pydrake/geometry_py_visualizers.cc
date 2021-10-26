@@ -92,14 +92,14 @@ MeshcatVisualizer.  See #13038.)""")
             cls_doc.ctor.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("StartRecording", &Class::StartRecording,
-            cls_doc.StartRecording.doc)
+            py_rvp::reference_internal, cls_doc.StartRecording.doc)
         .def("StopRecording", &Class::StopRecording, cls_doc.StopRecording.doc)
         .def("PublishRecording", &Class::PublishRecording,
             cls_doc.PublishRecording.doc)
         .def("DeleteRecording", &Class::DeleteRecording,
             cls_doc.DeleteRecording.doc)
         .def("get_mutable_recording", &Class::get_mutable_recording,
-            cls_doc.get_mutable_recording.doc)
+            py_rvp::reference_internal, cls_doc.get_mutable_recording.doc)
         .def("query_object_input_port", &Class::query_object_input_port,
             py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
         .def_static("AddToBuilder",
