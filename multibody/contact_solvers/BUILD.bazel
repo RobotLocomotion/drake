@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":pgs_solver",
         ":point_contact_data",
         ":sparse_linear_operator",
+        ":supernodal_solver",
         ":system_dynamics_data",
     ],
 )
@@ -146,6 +147,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "supernodal_solver",
+    srcs = ["supernodal_solver.cc"],
+    hdrs = ["supernodal_solver.h"],
+    copts = [
+        "-O3",
+        "-ffast-math",
+        "-g",
+        "-fno-omit-frame-pointer",
+    ],
+    deps = [
+        "@conex//conex:supernodal_solver",
+    ],
+)
+
+drake_cc_library(
     name = "system_dynamics_data",
     srcs = ["system_dynamics_data.cc"],
     hdrs = ["system_dynamics_data.h"],
@@ -204,6 +220,15 @@ drake_cc_googletest(
     name = "sparse_linear_operator_test",
     deps = [
         ":sparse_linear_operator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "supernodal_solver_test",
+    srcs = ["test/supernodal_solver_test.cc"],
+    deps = [
+        ":supernodal_solver",
+        "@conex//conex:supernodal_solver",
     ],
 )
 
