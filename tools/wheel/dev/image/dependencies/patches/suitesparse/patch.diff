@@ -1,0 +1,44 @@
+diff --git a/SuiteSparse_config/SuiteSparse_config.mk.in b/SuiteSparse_config/SuiteSparse_config.mk.in
+index 3ab813cc..9cb77955 100644
+--- a/SuiteSparse_config/SuiteSparse_config.mk.in
++++ b/SuiteSparse_config/SuiteSparse_config.mk.in
+@@ -61,7 +61,7 @@
+ # If OpenMP is used, it is recommended to define CHOLMOD_OMP_NUM_THREADS
+ # as the number of cores per socket on the machine being used to maximize
+ # memory performance
+-  CFLAGS = 
++  CFLAGS = -fPIC
+ # CFLAGS = -g
+ # for the icc compiler and OpenMP:
+ # CFLAGS = -openmp
+@@ -95,8 +95,8 @@ F77LIB =
+ # LIB = -lm
+ 
+ # For "make install"
+-INSTALL_LIB = /usr/local/lib
+-INSTALL_INCLUDE = /usr/local/include
++INSTALL_LIB = @INSTALL_PREFIX@/lib
++INSTALL_INCLUDE = @INSTALL_PREFIX@/include
+ 
+ # Which version of MAKE you are using (default is "make")
+ # MAKE = make
+@@ -119,8 +119,8 @@ INSTALL_INCLUDE = /usr/local/include
+ # naming the BLAS and LAPACK library (*.a or *.so) files.
+ 
+ # This is probably slow ... it might connect to the Standard Reference BLAS:
+-# BLAS = -lblas -lgfortran
+-  LAPACK = -llapack
++BLAS = -L@INSTALL_PREFIX@/lib -lblas -lgfortran
++LAPACK = -L@INSTALL_PREFIX@/lib -llapack
+ 
+ # MKL 
+ # BLAS = -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_intel_thread.a -Wl,--end-group -lpthread -lm
+@@ -131,7 +131,7 @@ INSTALL_INCLUDE = /usr/local/include
+ # LAPACK =
+ 
+ # OpenBLAS
+-  BLAS = -lopenblas
++# BLAS = -lopenblas
+ # LAPACK = 
+ 
+ # NOTE: this next option for the "Goto BLAS" has nothing to do with a "goto"
