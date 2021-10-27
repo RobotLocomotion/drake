@@ -3,21 +3,12 @@ import numpy as np
 from pydrake.common.yaml import yaml_load, yaml_dump
 
 
-def load_scenario(*, filename=None, data=None, scenario_name=None):
-    """Given a scenario `filename` xor `data`, and optionally `scenario_name`,
-    loads and returns one acrobot scenario from the file.  The `scenario_name`
-    may only be omitted when the file contains a single scenario.
+def load_scenario(*, filename=None, data=None, scenario_name):
+    """Given a scenario `filename` xor `data` and `scenario_name`, loads and
+    returns one acrobot scenario from the file.
     """
     scenarios = yaml_load(filename=filename, data=data)
-    if scenario_name:
-        result = scenarios[scenario_name]
-    else:
-        if len(scenarios) != 1:
-            raise RuntimeError(
-                "A scenario_name is required because the scenario file "
-                "contains more than one scenario.")
-        (_, result), = scenarios.items()
-    return result
+    return scenarios[scenario_name]
 
 
 def save_scenario(*, scenario, scenario_name):
