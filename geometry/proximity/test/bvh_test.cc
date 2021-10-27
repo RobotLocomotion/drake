@@ -176,7 +176,7 @@ TYPED_TEST(BvhTest, TestComputeBoundingVolume) {
   using BvType = TypeParam;
   // A mesh of two triangles that are well separated by X-Y plane.
   const TriangleSurfaceMesh<double> mesh(
-      {SurfaceTriangle(0, 1, 2), SurfaceTriangle(3, 4, 5)},
+      {{0, 1, 2}, {3, 4, 5}},
       {Vector3d(0, 0, 1), Vector3d(1, 0, 1), Vector3d(0, 1, 1),
        Vector3d(0, 0, -1), Vector3d(1, 0, -1), Vector3d(0, 1, -1)});
 

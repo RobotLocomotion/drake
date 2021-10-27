@@ -343,7 +343,7 @@ class ObbMakerTestTriangle : public ::testing::Test {
  public:
   ObbMakerTestTriangle()
       : ::testing::Test(),
-        mesh_M_({SurfaceTriangle(0, 1, 2)},
+        mesh_M_({{0, 1, 2}},
                 {Vector3d::UnitX(), Vector3d::UnitY(), Vector3d::UnitZ()}),
         test_vertices_{0, 1, 2} {}
 
@@ -687,7 +687,7 @@ GTEST_TEST(ObbMakerTest, TestVolumeMesh) {
 GTEST_TEST(ObbMakerTestAPI, ObbMakerCompute) {
   const TriangleSurfaceMesh<double> mesh(
       // The triangles are not relevant to the test.
-      {SurfaceTriangle(0, 1, 2), SurfaceTriangle(0, 3, 1)},
+      {{0, 1, 2}, {0, 3, 1}},
       {Vector3d::Zero(), Vector3d::UnitX(), 2. * Vector3d::UnitY(),
        3. * Vector3d::UnitZ()});
 

@@ -194,7 +194,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
       }
     }
   }
-  vector<SurfaceTriangle> faces{{SurfaceTriangle{0, 1, 2}}};
+  vector<SurfaceTriangle> faces{{0, 1, 2}};
   TriangleSurfaceMesh<double> mesh{std::move(faces), std::move(vertices)};
 
   ASSERT_EQ(mesh.num_vertices(), 8);
