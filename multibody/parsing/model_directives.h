@@ -3,9 +3,8 @@
 /// Defines the YAML schema for the model directives language, which is used
 /// to assemble multiple SDF and URDF files in a single MultibodyPlant.
 ///
-/// For more information on how structures are converted to and from YAML via
-/// the Serialize/Archive mechanism, see `common/name_value.h` and
-/// drake::yaml::YamlReadArchive.
+/// For more information on how structures are converted to and from YAML,
+/// see `common/yaml/yaml_io.h`.
 ///
 /// See `multibody/parsing/README_model_directives.md` for more info.
 

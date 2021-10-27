@@ -9,7 +9,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/schema/transform.h"
-#include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
@@ -28,7 +28,7 @@ using drake::multibody::ModelInstanceIndex;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::PackageMap;
 using drake::multibody::Parser;
-using drake::yaml::YamlReadArchive;
+using drake::yaml::LoadYamlFile;
 
 namespace {
 
@@ -262,14 +262,9 @@ ModelDirectives LoadModelDirectives(const std::string& filename) {
         "No such file {} during LoadModelDirectives", filename));
   }
 
-  // TODO(ggould-tri) This should use the YamlLoadWithDefaults mechanism
-  // instead once that is ported to drake.
-  ModelDirectives directives;
-  YAML::Node root = YAML::LoadFile(filename);
-  drake::yaml::YamlReadArchive::Options options;
-  options.allow_cpp_with_no_yaml = true;
-  drake::yaml::YamlReadArchive(root, options).Accept(&directives);
-
+  const ModelDirectives defaults;
+  const ModelDirectives directives = LoadYamlFile<ModelDirectives>(
+      filename, {}, defaults);
   DRAKE_DEMAND(directives.IsValid());
   return directives;
 }
