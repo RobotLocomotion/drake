@@ -69,8 +69,8 @@ class BvhUpdaterTest : public ::testing::Test {
       /* The winding of the triangles don't matter. */
       vector<SurfaceTriangle> triangles;
       for (int i = 0; i < MeshTraits<MeshType>::kMaxElementPerBvhLeaf; ++i) {
-        triangles.push_back(SurfaceTriangle(0, 1, 2));
-        triangles.push_back(SurfaceTriangle(3, 4, 5));
+        triangles.emplace_back(0, 1, 2);
+        triangles.emplace_back(3, 4, 5);
       }
       return MeshType(std::move(triangles), std::move(vertices));
     } else {
