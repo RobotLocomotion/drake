@@ -44,7 +44,7 @@ drake_cc_library(
         "//geometry/proximity:make_ellipsoid_mesh",
         "//geometry/proximity:make_sphere_mesh",
         "//geometry/proximity:obj_to_surface_mesh",
-        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 
@@ -118,7 +118,7 @@ drake_cc_library(
         "//geometry/proximity:bvh",
         "//geometry/proximity:deformable_volume_mesh",
         "//geometry/proximity:posed_half_space",
-        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 
@@ -689,7 +689,7 @@ drake_cc_googletest(
         ":deformable_contact_data",
         ":mesh_utilities",
         "//common/test_utilities:eigen_matrix_compare",
-        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
         "//geometry/proximity:volume_mesh",
     ],
 )

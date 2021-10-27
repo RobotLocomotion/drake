@@ -5,7 +5,7 @@
 
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/boxes_overlap.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
@@ -374,14 +374,14 @@ Obb ObbMaker<MeshType>::Compute() const {
   return OptimizeObbVolume(box);
 }
 
-template class ObbMaker<SurfaceMesh<double>>;
+template class ObbMaker<TriangleSurfaceMesh<double>>;
 template class ObbMaker<VolumeMesh<double>>;
 
 // TODO(SeanCurtis-TRI): Remove support for building a Bvh on an AutoDiff-valued
 //  mesh after we've cleaned up the scalar types in hydroelastics. Specifically,
 //  this is here to support the unit tests in mesh_intersection_test.cc. Also
 //  the calls to convert_to_double should be removed.
-template class ObbMaker<SurfaceMesh<drake::AutoDiffXd>>;
+template class ObbMaker<TriangleSurfaceMesh<drake::AutoDiffXd>>;
 template class ObbMaker<VolumeMesh<drake::AutoDiffXd>>;
 
 }  // namespace internal

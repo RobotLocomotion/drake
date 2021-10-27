@@ -23,7 +23,7 @@ void WriteVtkHeader(std::ofstream& out, const std::string& title) {
 }
 
 /*
- @tparam Mesh  VolumeMesh<double> or SurfaceMesh<double>
+ @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
 template <typename Mesh>
 void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
@@ -67,7 +67,7 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
 }
 
 /*
- @tparam Mesh  VolumeMesh<double> or SurfaceMesh<double>
+ @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
 template<typename Mesh>
 void WriteMeshToVtk(const std::string& file_name,
@@ -84,7 +84,7 @@ void WriteMeshToVtk(const std::string& file_name,
 
 /*
  @tparam Field VolumeMeshFieldLinear<double, double> or
-               SurfaceMeshFieldLinear<double, double>
+               TriangleSurfaceMeshFieldLinear<double, double>
  */
 template <typename Field>
 void WriteVtkScalarField(
@@ -104,7 +104,7 @@ void WriteVtkScalarField(
 
 /*
  @tparam Field VolumeMeshFieldLinear<double, double> or
-               SurfaceMeshFieldLinear<double, double>
+               TriangleSurfaceMeshFieldLinear<double, double>
  */
 template <typename Field>
 void WriteMeshFieldLinearToVtk(const std::string& file_name,
@@ -129,7 +129,7 @@ void WriteVolumeMeshToVtk(const std::string& file_name,
 }
 
 void WriteSurfaceMeshToVtk(const std::string& file_name,
-                           const SurfaceMesh<double>& mesh,
+                           const TriangleSurfaceMesh<double>& mesh,
                            const std::string& title) {
   WriteMeshToVtk(file_name, mesh, title);
 }
@@ -141,9 +141,9 @@ void WriteVolumeMeshFieldLinearToVtk(
   WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }
 
-void WriteSurfaceMeshFieldLinearToVtk(
+void WriteTriangleSurfaceMeshFieldLinearToVtk(
     const std::string& file_name, const std::string& field_name,
-    const SurfaceMeshFieldLinear<double, double>& field,
+    const TriangleSurfaceMeshFieldLinear<double, double>& field,
     const std::string& title) {
   WriteMeshFieldLinearToVtk(file_name, field_name, field, title);
 }

@@ -303,9 +303,9 @@ GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
 GTEST_TEST(MakeSphereSurfaceMesh, GenerateSurface) {
   const Sphere sphere(1.5);
   const double edge_length = 3 * sphere.radius();
-  SurfaceMesh<double> surface_mesh =
+  TriangleSurfaceMesh<double> surface_mesh =
       MakeSphereSurfaceMesh<double>(sphere, edge_length);
-  EXPECT_EQ(surface_mesh.num_faces(), 8);
+  EXPECT_EQ(surface_mesh.num_triangles(), 8);
   EXPECT_EQ(surface_mesh.num_vertices(), 6);
 }
 
@@ -331,15 +331,15 @@ GTEST_TEST(SparseSphereTest, SurfaceMatchesDenseMesh) {
   for (int level = 1; level < 3; ++level) {
     const VolumeMesh<double> dense_mesh = MakeUnitSphereMesh<double>(
         level, TessellationStrategy::kDenseInteriorVertices);
-    const SurfaceMesh<double> dense_surface =
+    const TriangleSurfaceMesh<double> dense_surface =
         ConvertVolumeToSurfaceMesh<double>(dense_mesh);
     const VolumeMesh<double> sparse_mesh = MakeUnitSphereMesh<double>(
         level, TessellationStrategy::kSingleInteriorVertex);
-    SurfaceMesh<double> sparse_surface =
+    TriangleSurfaceMesh<double> sparse_surface =
         ConvertVolumeToSurfaceMesh<double>(sparse_mesh);
 
-    // We can't use SurfaceMesh::Equal because we're not guaranteed the vertex
-    // or triangle ordering is the same.
+    // We can't use TriangleSurfaceMesh::Equal because we're not guaranteed the
+    // vertex or triangle ordering is the same.
     ASSERT_EQ(dense_surface.num_elements(), sparse_surface.num_elements());
     ASSERT_EQ(dense_surface.num_vertices(), sparse_surface.num_vertices());
 

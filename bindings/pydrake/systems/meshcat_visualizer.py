@@ -482,13 +482,13 @@ class MeshcatVisualizer(LeafSystem):
                     surface_mesh = hydro_mesh
                     if isinstance(hydro_mesh, VolumeMesh):
                         surface_mesh = ConvertVolumeToSurfaceMesh(hydro_mesh)
-                    v_count = len(surface_mesh.faces()) * 3
+                    v_count = len(surface_mesh.triangles()) * 3
                     vertices = np.empty((v_count, 3), dtype=float)
                     normals = np.empty((v_count, 3), dtype=float)
 
                     mesh_verts = surface_mesh.vertices()
                     v = 0
-                    for face in surface_mesh.faces():
+                    for face in surface_mesh.triangles():
                         p_MA = mesh_verts[int(face.vertex(0))]
                         p_MB = mesh_verts[int(face.vertex(1))]
                         p_MC = mesh_verts[int(face.vertex(2))]

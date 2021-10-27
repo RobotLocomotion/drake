@@ -8,8 +8,8 @@
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/posed_half_space.h"
-#include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -85,12 +85,12 @@ class SurfaceVolumeIntersector {
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const Bvh<Obb, VolumeMesh<double>>& bvh_M,
-      const SurfaceMesh<double>& surface_N,
-      const Bvh<Obb, SurfaceMesh<double>>& bvh_N,
+      const TriangleSurfaceMesh<double>& surface_N,
+      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
       ContactPolygonRepresentation representation,
-      std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+      std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
+      std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
       std::vector<Vector3<T>>* grad_eM_Ms);
 
  private:
@@ -213,7 +213,7 @@ class SurfaceVolumeIntersector {
    */
   const std::vector<Vector3<T>>& ClipTriangleByTetrahedron(
       int element, const VolumeMesh<double>& volume_M, int face,
-      const SurfaceMesh<double>& surface_N,
+      const TriangleSurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN);
 
   /* Determines whether a triangle of a rigid surface N and a tetrahedron of a
@@ -296,7 +296,7 @@ class SurfaceVolumeIntersector {
    */
   static bool IsFaceNormalAlongPressureGradient(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const SurfaceMesh<double>& surface_N,
+      const TriangleSurfaceMesh<double>& surface_N,
       const math::RigidTransform<double>& X_MN, int tet_index, int tri_index);
 
   // To avoid heap allocation by std::vector in low-level functions, we use
@@ -370,8 +370,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    const GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation);
 

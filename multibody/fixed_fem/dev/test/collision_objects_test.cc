@@ -25,10 +25,10 @@ using geometry::GeometryId;
 using geometry::HalfSpace;
 using geometry::Mesh;
 using geometry::ProximityProperties;
-using geometry::ReadObjToSurfaceMesh;
+using geometry::ReadObjToTriangleSurfaceMesh;
 using geometry::Shape;
 using geometry::Sphere;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using geometry::internal::MakeBoxSurfaceMesh;
 using geometry::internal::MakeCapsuleSurfaceMesh;
 using geometry::internal::MakeCylinderSurfaceMesh;
@@ -43,7 +43,7 @@ const double dummy_property_value = 3.14;
 constexpr double kTestResolutionHint = 0.75;
 
 using DutBvh = geometry::internal::Bvh<geometry::internal::Obb,
-                                       geometry::SurfaceMesh<double>>;
+                                       geometry::TriangleSurfaceMesh<double>>;
 
 class CollisionObjectsTest : public ::testing::Test {
  protected:
@@ -76,7 +76,7 @@ TEST_F(CollisionObjectsTest, AddSphere) {
 
   VerifyProximityProperties(id);
 
-  const SurfaceMesh<double> expected_surface_mesh =
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
       MakeSphereSurfaceMesh<double>(sphere, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
@@ -92,7 +92,7 @@ TEST_F(CollisionObjectsTest, AddBox) {
   VerifyProximityProperties(id);
 
   // The box mesh is always as coarse as possible.
-  const SurfaceMesh<double> expected_surface_mesh =
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
       MakeBoxSurfaceMesh<double>(box, 1e10);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
@@ -107,7 +107,7 @@ TEST_F(CollisionObjectsTest, AddCylinder) {
 
   VerifyProximityProperties(id);
 
-  const SurfaceMesh<double> expected_surface_mesh =
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
       MakeCylinderSurfaceMesh<double>(cylinder, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
@@ -122,7 +122,7 @@ TEST_F(CollisionObjectsTest, AddCapsule) {
 
   VerifyProximityProperties(id);
 
-  const SurfaceMesh<double> expected_surface_mesh =
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
       MakeCapsuleSurfaceMesh<double>(capsule, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
@@ -136,7 +136,7 @@ TEST_F(CollisionObjectsTest, AddEllipsoid) {
   collision_objects_.AddCollisionObject(id, ellipsoid, proximity_properties_);
   VerifyProximityProperties(id);
 
-  const SurfaceMesh<double> expected_surface_mesh =
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
       MakeEllipsoidSurfaceMesh<double>(ellipsoid, kTestResolutionHint);
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
@@ -152,8 +152,8 @@ TEST_F(CollisionObjectsTest, AddConvex) {
 
   VerifyProximityProperties(id);
 
-  const SurfaceMesh<double> expected_surface_mesh =
-      ReadObjToSurfaceMesh(convex.filename(), convex.scale());
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
+      ReadObjToTriangleSurfaceMesh(convex.filename(), convex.scale());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
   const DutBvh expected_bvh(expected_surface_mesh);
@@ -168,8 +168,8 @@ TEST_F(CollisionObjectsTest, AddMesh) {
 
   VerifyProximityProperties(id);
 
-  const SurfaceMesh<double> expected_surface_mesh =
-      ReadObjToSurfaceMesh(mesh.filename(), mesh.scale());
+  const TriangleSurfaceMesh<double> expected_surface_mesh =
+      ReadObjToTriangleSurfaceMesh(mesh.filename(), mesh.scale());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects_.mesh(id)));
 
   const DutBvh expected_bvh(expected_surface_mesh);

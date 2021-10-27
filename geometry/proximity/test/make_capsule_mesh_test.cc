@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -304,9 +304,9 @@ GTEST_TEST(MakeCapsuleSurfaceMesh, GenerateSurface) {
   const double length = 2.0;
   const double resolution_hint = 2.0 * M_PI * radius / 3;
   const Capsule capsule(radius, length);
-  const SurfaceMesh<double> surface_mesh =
+  const TriangleSurfaceMesh<double> surface_mesh =
       MakeCapsuleSurfaceMesh<double>(capsule, resolution_hint);
-  EXPECT_EQ(surface_mesh.num_faces(), 12);
+  EXPECT_EQ(surface_mesh.num_triangles(), 12);
   EXPECT_EQ(surface_mesh.num_vertices(), 8);
 }
 
