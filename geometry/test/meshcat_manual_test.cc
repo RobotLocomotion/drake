@@ -38,7 +38,7 @@ int do_main() {
   // The green color of this cube comes from the texture map.
   meshcat->SetObject(
       "obj", Mesh(FindResourceOrThrow(
-                      "drake/systems/sensors/test/models/meshes/box.obj"),
+                      "drake/geometry/render/test/meshes/box.obj"),
                   .25));
   meshcat->SetTransform("obj", RigidTransformd(Vector3d{1, 0, 0}));
 
