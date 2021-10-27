@@ -660,7 +660,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
       p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
   };
 
-  std::vector<SurfaceTriangle> faces({SurfaceTriangle{0, 1, 2}});
+  std::vector<SurfaceTriangle> faces{{0, 1, 2}};
   auto mesh_W = std::make_unique<geometry::TriangleSurfaceMesh<AutoDiffXd>>(
       std::move(faces), std::move(vertices));
   // Note: these values are garbage. They merely allow us to instantiate the

@@ -25,9 +25,7 @@ namespace internal {
  moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
  Intelligent Robots and Systems (IROS), 2019.
 
- This class is only compatible with 'double' and 'AutoDiffXd' scalar types since
- it relies on TriangleSurfaceMesh functionality limited to the those same scalar
- types.
+ This class is only compatible with 'double' and 'AutoDiffXd' scalar types.
  */
 template <typename T>
 class HydroelasticTractionCalculator {
