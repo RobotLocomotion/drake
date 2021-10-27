@@ -1080,7 +1080,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
     vector<Vector3d> vertices{Vector3d{-5, -5, 0},
                               Vector3d{5, -5, 0},
                               Vector3d{0, 5, 0}};
-    vector<SurfaceTriangle> faces({SurfaceTriangle{0, 1, 2}});
+    vector<SurfaceTriangle> faces{{0, 1, 2}};
     tri_mesh_R_ =
         make_unique<TriangleSurfaceMesh<double>>(move(faces), move(vertices));
     bvh_R_ = make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*tri_mesh_R_);

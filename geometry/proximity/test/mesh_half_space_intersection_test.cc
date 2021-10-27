@@ -172,7 +172,7 @@ TriangleSurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
                                           const Vector3d& v2) {
   std::vector<Vector3d> vertices{{v0, v1, v2}};
 
-  std::vector<SurfaceTriangle> faces = {SurfaceTriangle(0, 1, 2)};
+  std::vector<SurfaceTriangle> faces{{0, 1, 2}};
 
   return TriangleSurfaceMesh<double>(move(faces), move(vertices));
 }
@@ -415,8 +415,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
     SCOPED_TRACE(fmt::format("represenation = {}", representation));
     std::vector<Vector3d> vertices = {Vector3d(4, 5, 2), Vector3d(3, 5, 2),
                                       Vector3d(3, 5, 1), Vector3d(2, 5, 2)};
-    std::vector<SurfaceTriangle> faces = {SurfaceTriangle(0, 1, 2),
-                                          SurfaceTriangle(2, 1, 3)};
+    std::vector<SurfaceTriangle> faces{{0, 1, 2}, {2, 1, 3}};
     const TriangleSurfaceMesh<double> mesh_F(move(faces), move(vertices));
 
     // Verify the intersection.
