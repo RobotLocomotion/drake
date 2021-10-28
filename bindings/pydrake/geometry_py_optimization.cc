@@ -102,6 +102,10 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
         .def("ChebyshevCenter", &HPolyhedron::ChebyshevCenter,
             cls_doc.ChebyshevCenter.doc)
+        .def("CartesianProduct", &HPolyhedron::CartesianProduct,
+            py::arg("other"), cls_doc.CartesianProduct.doc)
+        .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),
+            cls_doc.CartesianPower.doc)
         .def_static("MakeBox", &HPolyhedron::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &HPolyhedron::MakeUnitBox, py::arg("dim"),
