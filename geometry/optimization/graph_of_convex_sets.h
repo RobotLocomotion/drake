@@ -7,7 +7,6 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -226,7 +225,7 @@ class GraphOfConvexSets {
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
-    std::unordered_set<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
     std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
@@ -254,13 +253,14 @@ class GraphOfConvexSets {
   */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
-  /** Returns the VertexIds of the vertices stored in the graph.  Note that the
-  order of the elements is not guaranteed. */
-  std::unordered_set<VertexId> VertexIds() const;
+  DRAKE_DEPRECATED("2022-02-01", "Use Vertices() instead.")
+  std::vector<VertexId> VertexIds() const;
 
-  /** Returns pointers to the edges stored in the graph.  Note that the order of
-  the elements is not guaranteed. */
-  std::unordered_set<Edge*> Edges();
+  /** Returns pointers to the vertices stored in the graph. */
+  std::vector<Vertex*> Vertices() const;
+
+  /** Returns pointers to the edges stored in the graph. */
+  std::vector<Edge*> Edges();
 
   // TODO(russt): std::string GetGraphvizString(const
   // std::optional<solvers::MathematicalProgramResult>& = std::nullopt) const;
