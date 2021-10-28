@@ -71,8 +71,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>320</effort>
+          <velocity>1.39626</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -130,8 +130,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>320</effort>
+          <velocity>1.39626</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -200,8 +200,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>176</effort>
+          <velocity>1.74533</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -259,8 +259,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>176</effort>
+          <velocity>1.309</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -329,8 +329,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>110</effort>
+          <velocity>2.26893</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -388,8 +388,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>40</effort>
+          <velocity>2.35619</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
@@ -455,8 +455,8 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <limit>
           <lower>-3.05433</lower>
           <upper>3.05433</upper>
-          <effort>300</effort>
-          <velocity>10</velocity>
+          <effort>40</effort>
+          <velocity>2.35619</velocity>
         </limit>
         <dynamics>
           <damping>0</damping>
