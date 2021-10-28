@@ -43,6 +43,14 @@ cc_whole_archive_library(
 # contain any references to constituent shared libraries inside the build tree.
 cc_binary(
     name = "libdrake.so",
+    linkopts = select({
+        "//tools/cc_toolchain:linux": [
+            "-pthread",
+            "-Wl,-soname,libdrake.so",
+        ],
+        # This is a bazel-default rule, and does not need @drake//
+        "@//conditions:default": [],
+    }),
     linkshared = 1,
     linkstatic = 1,
     deps = [

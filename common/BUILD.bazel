@@ -315,6 +315,14 @@ drake_cc_binary(
         "drake_marker.cc",
         "drake_marker.h",
     ],
+    linkopts = select({
+        "//tools/cc_toolchain:linux": [
+            "-pthread",
+            "-Wl,-soname,libdrake_marker.so",
+        ],
+        # This is a bazel-default rule, and does not need @drake//
+        "@//conditions:default": [],
+    }),
     linkshared = 1,
     linkstatic = 1,
     visibility = ["//visibility:private"],
