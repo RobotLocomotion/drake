@@ -121,9 +121,10 @@ int do_main() {
     geometry::Box wall{0.2, 4, 0.4};
     const RigidTransformd X_WB(Vector3d{-0.5, 0, 0});
     geometry::ProximityProperties prox_prop;
-    geometry::AddContactMaterial(1e8, {}, CoulombFriction<double>(),
+    geometry::AddContactMaterial({} /* dissipation */, {} /* point stiffness */,
+                                 CoulombFriction<double>(),
                                  &prox_prop);
-    geometry::AddSoftHydroelasticProperties(0.1, &prox_prop);
+    geometry::AddSoftHydroelasticProperties(0.1, 1e8, &prox_prop);
     plant.RegisterCollisionGeometry(plant.world_body(), X_WB, wall,
                                     "wall_collision", std::move(prox_prop));
 

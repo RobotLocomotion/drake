@@ -154,10 +154,10 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticModulus) {
   const double kValue = 1.75;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:hydroelastic_modulus", kValue), !rigid, !soft);
-  EXPECT_TRUE(ExpectScalar(kMaterialGroup, kElastic, kValue, properties));
+  EXPECT_TRUE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
   // Hydroelastic modulus is the only property.
-  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Hydro and default groups.
 }
 
 // TODO(DamrongGuoy): Remove this test when we remove the support of the tag
@@ -170,9 +170,9 @@ GTEST_TEST(ParseProximityPropertiesTest, DeprecateElasticModulus) {
   const double kValue = 1.75;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:elastic_modulus", kValue), !rigid, !soft);
-  EXPECT_TRUE(ExpectScalar(kMaterialGroup, kElastic, kValue, properties));
-  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+  EXPECT_TRUE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
+  EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Hydro and default groups.
 }
 
 // Confirms successful parsing of dissipation.
