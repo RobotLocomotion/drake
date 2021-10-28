@@ -15,6 +15,7 @@ class TestGeometryHydro(unittest.TestCase):
         """
         props = mut.ProximityProperties()
         res_hint = 0.175
+        E = 1e8
         mut.AddRigidHydroelasticProperties(
             resolution_hint=res_hint, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
@@ -32,28 +33,31 @@ class TestGeometryHydro(unittest.TestCase):
         props = mut.ProximityProperties()
         res_hint = 0.275
         mut.AddSoftHydroelasticProperties(
-            resolution_hint=res_hint, properties=props)
+            resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
         self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
                          res_hint)
-
-        props = mut.ProximityProperties()
-        mut.AddSoftHydroelasticProperties(properties=props)
-        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
-        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertTrue(props.HasProperty("hydroelastic",
+                                          "hydroelastic_modulus"))
+        self.assertEqual(props.GetProperty("hydroelastic",
+                                           "hydroelastic_modulus"), E)
 
         props = mut.ProximityProperties()
         slab_thickness = 0.275
         mut.AddSoftHydroelasticPropertiesForHalfSpace(
-            slab_thickness=slab_thickness, properties=props)
+            slab_thickness=slab_thickness, hydroelastic_modulus=E,
+            properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
         self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
                          slab_thickness)
+        self.assertTrue(props.HasProperty("hydroelastic",
+                                          "hydroelastic_modulus"))
+        self.assertEqual(props.GetProperty("hydroelastic",
+                                           "hydroelastic_modulus"), E)
 
     def test_surface_mesh(self):
         # Create a mesh out of two triangles forming a quad.

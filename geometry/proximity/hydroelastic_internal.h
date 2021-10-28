@@ -435,36 +435,37 @@ std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
 
 /* Creates a soft sphere (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'hydroelastic_modulus') properties.  */
+ ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
 /* Creates a soft box (assuming the proximity properties have sufficient
- information). Requires the ('material', 'hydroelastic_modulus') properties.  */
+ information). Requires the ('hydroelastic', 'hydroelastic_modulus')
+ properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props);
 
 /* Creates a soft cylinder (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'hydroelastic_modulus') properties.  */
+ ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
 /* Creates a soft capsule (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'hydroelastic_modulus') properties.  */
+ ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Capsule& capsule, const ProximityProperties& props);
 
 /* Creates a soft ellipsoid (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'hydroelastic_modulus') properties.  */
+ ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 /* Creates a compliant half space (assuming the proximity properties have
  sufficient information). Requires the ('hydroelastic', 'slab_thickness') and
- ('material', 'hydroelastic_modulus') properties.  */
+ ('hydroelastic', 'hydroelastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 

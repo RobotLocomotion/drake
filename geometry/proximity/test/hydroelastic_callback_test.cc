@@ -46,9 +46,8 @@ ProximityProperties rigid_properties() {
 // for supported geometries.
 ProximityProperties soft_properties() {
   ProximityProperties props;
-  AddContactMaterial(1e8, {}, {}, &props);
   const double resolution_hint = 0.25;
-  AddSoftHydroelasticProperties(resolution_hint, &props);
+  AddSoftHydroelasticProperties(resolution_hint, 1e8, &props);
   // Redundantly add slab thickness so it can be used with compliant mesh or
   // compliant half space.
   props.AddProperty(kHydroGroup, kSlabThickness, 0.25);

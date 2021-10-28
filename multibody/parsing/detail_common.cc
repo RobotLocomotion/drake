@@ -13,25 +13,25 @@ void DataSource::DemandExactlyOne() const {
 geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_soft) {
+  using HT = geometry::internal::HydroelasticType;
+  using geometry::internal::kComplianceType;
+  using geometry::internal::kElastic;
+  using geometry::internal::kHydroGroup;
+  using geometry::internal::kRezHint;
+
   // Both being true is disallowed -- so assert is_rigid NAND is_soft.
   DRAKE_DEMAND(!(is_rigid && is_soft));
   geometry::ProximityProperties properties;
+
+  if (is_rigid) {
+    properties.AddProperty(kHydroGroup, kComplianceType, HT::kRigid);
+  } else if (is_soft) {
+    properties.AddProperty(kHydroGroup, kComplianceType, HT::kSoft);
+  }
+
   std::optional<double> rez_hint = read_double("drake:mesh_resolution_hint");
   if (rez_hint) {
-    if (is_rigid) {
-      geometry::AddRigidHydroelasticProperties(*rez_hint, &properties);
-    } else if (is_soft) {
-      geometry::AddSoftHydroelasticProperties(*rez_hint, &properties);
-    } else {
-      properties.AddProperty(geometry::internal::kHydroGroup,
-                             geometry::internal::kRezHint, *rez_hint);
-    }
-  } else {
-    if (is_rigid) {
-      geometry::AddRigidHydroelasticProperties(&properties);
-    } else if (is_soft) {
-      geometry::AddSoftHydroelasticProperties(&properties);
-    }
+    properties.AddProperty(kHydroGroup, kRezHint, *rez_hint);
   }
 
   std::optional<double> hydroelastic_modulus =
@@ -48,6 +48,9 @@ geometry::ProximityProperties ParseProximityProperties(
     if (!hydroelastic_modulus.has_value()) {
       hydroelastic_modulus = elastic_modulus;
     }
+  }
+  if (hydroelastic_modulus) {
+    properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
   }
 
   std::optional<double> dissipation =
@@ -69,8 +72,7 @@ geometry::ProximityProperties ParseProximityProperties(
     friction = CoulombFriction<double>(*mu_static, *mu_static);
   }
 
-  geometry::AddContactMaterial(hydroelastic_modulus, dissipation, stiffness,
-                               friction, &properties);
+  geometry::AddContactMaterial(dissipation, stiffness, friction, &properties);
 
   return properties;
 }

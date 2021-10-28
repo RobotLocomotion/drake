@@ -1066,6 +1066,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   auto assert_single_property = [](const ProximityProperties& properties,
                                    const char* group, const char* property,
                                    double value) {
+    SCOPED_TRACE(fmt::format("testing group {} property {} value {}",
+                             group, property, value));
     ASSERT_TRUE(properties.HasProperty(group, property));
     EXPECT_EQ(properties.GetProperty<double>(group, property), value);
   };
@@ -1087,7 +1089,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
-    assert_single_property(properties, geometry::internal::kMaterialGroup,
+    assert_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kElastic, 3.5);
     assert_single_property(properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 4.5);

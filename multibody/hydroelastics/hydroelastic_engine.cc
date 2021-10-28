@@ -32,9 +32,10 @@ MaterialProperties GetMaterials(GeometryId id,
   if (const ProximityProperties* properties =
           inspector.GetProximityProperties(id)) {
     material.hydroelastic_modulus = properties->GetPropertyOrDefault(
-        "material", "hydroelastic_modulus", kInf);
+        geometry::internal::kHydroGroup, geometry::internal::kElastic, kInf);
     material.dissipation = properties->GetPropertyOrDefault(
-        "material", "hunt_crossley_dissipation", 0.0);
+        geometry::internal::kMaterialGroup, geometry::internal::kHcDissipation,
+        0.0);
     DRAKE_DEMAND(material.hydroelastic_modulus > 0);
     DRAKE_DEMAND(material.dissipation >= 0);
   } else {

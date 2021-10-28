@@ -58,7 +58,6 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::AddContactMaterial;
 using geometry::AddRigidHydroelasticProperties;
 using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
@@ -182,9 +181,8 @@ class MovingSoftGeometry final : public LeafSystem<double> {
       }
     }
     ProximityProperties prox_props;
-    AddContactMaterial(1e8, {}, {}, &prox_props);
     // Resolution Hint affects the soft ball but not the soft box.
-    AddSoftHydroelasticProperties(FLAGS_resolution_hint, &prox_props);
+    AddSoftHydroelasticProperties(FLAGS_resolution_hint, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;

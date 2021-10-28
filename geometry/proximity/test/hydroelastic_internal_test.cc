@@ -343,8 +343,7 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
 
   GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  AddContactMaterial(1e8, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(1.0, &soft_properties);
+  AddSoftHydroelasticProperties(1.0, 1e8, &soft_properties);
 
   GeometryId bad_id = GeometryId::get_new_id();
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id),
@@ -379,8 +378,7 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   // Add a soft geometry.
   const GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
-  AddContactMaterial(1e8, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(1.0, &soft_properties);
+  AddSoftHydroelasticProperties(1.0, 1e8, &soft_properties);
   geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
   ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
 
@@ -803,8 +801,7 @@ class HydroelasticSoftGeometryTest : public ::testing::Test {
   /* Creates a simple set of properties for generating soft geometry. */
   ProximityProperties soft_properties(double edge_length = 0.1) const {
     ProximityProperties soft_properties;
-    AddContactMaterial(1e8, {}, {}, &soft_properties);
-    AddSoftHydroelasticProperties(edge_length, &soft_properties);
+    AddSoftHydroelasticProperties(edge_length, 1e8, &soft_properties);
     return soft_properties;
   }
 };
@@ -841,7 +838,7 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
   EXPECT_TRUE(half_space->is_half_space());
   EXPECT_EQ(
       half_space->pressure_scale(),
-      properties.GetProperty<double>(kMaterialGroup, kElastic) / thickness);
+      properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(), std::runtime_error,
@@ -897,7 +894,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 
   // Confirm pressure field is as specified in the properties.
   const double E =
-      properties1.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties1.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   // We assume that the sphere's pressure is defined as E * (1 - r/R).
   auto pressure = [E, kRadius](const Vector3d& r_MV) {
     return E * (1.0 - r_MV.norm() / kRadius);
@@ -979,7 +976,7 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1005,7 +1002,7 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   const int expected_num_vertices = 9;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1033,7 +1030,7 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   // TODO(joemasterjohn): Change all instances of `GetPropertyOrDefault` to
   // `GetProperty` variant.
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < capsule->mesh().num_vertices(); ++v) {
     const double pressure = capsule->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1062,7 +1059,7 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   const int expected_num_vertices = 7;
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1156,7 +1153,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
   soft_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
   soft_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, kMaterialGroup, kElastic, "soft",
+      shape_spec, kHydroGroup, kElastic, "soft",
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeSoftRepresentation(s, p);
       },

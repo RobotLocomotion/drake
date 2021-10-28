@@ -231,15 +231,10 @@ class TestGeometryCore(unittest.TestCase):
         """
         props = mut.ProximityProperties()
         reference_friction = CoulombFriction(0.25, 0.125)
-        mut.AddContactMaterial(hydroelastic_modulus=1.5,
-                               dissipation=2.7,
+        mut.AddContactMaterial(dissipation=2.7,
                                point_stiffness=3.9,
                                friction=reference_friction,
                                properties=props)
-        self.assertTrue(
-            props.HasProperty("material", "hydroelastic_modulus"))
-        self.assertEqual(
-            props.GetProperty("material", "hydroelastic_modulus"), 1.5)
         self.assertTrue(
             props.HasProperty("material", "hunt_crossley_dissipation"))
         self.assertEqual(
@@ -257,6 +252,7 @@ class TestGeometryCore(unittest.TestCase):
 
         props = mut.ProximityProperties()
         res_hint = 0.175
+        E = 1e8
         mut.AddRigidHydroelasticProperties(
             resolution_hint=res_hint, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
@@ -274,28 +270,31 @@ class TestGeometryCore(unittest.TestCase):
         props = mut.ProximityProperties()
         res_hint = 0.275
         mut.AddSoftHydroelasticProperties(
-            resolution_hint=res_hint, properties=props)
+            resolution_hint=res_hint, hydroelastic_modulus=E, properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "resolution_hint"))
         self.assertEqual(props.GetProperty("hydroelastic", "resolution_hint"),
                          res_hint)
-
-        props = mut.ProximityProperties()
-        mut.AddSoftHydroelasticProperties(properties=props)
-        self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
-        self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
-        self.assertFalse(props.HasProperty("hydroelastic", "resolution_hint"))
+        self.assertTrue(props.HasProperty("hydroelastic",
+                                          "hydroelastic_modulus"))
+        self.assertEqual(props.GetProperty("hydroelastic",
+                                           "hydroelastic_modulus"), E)
 
         props = mut.ProximityProperties()
         slab_thickness = 0.275
         mut.AddSoftHydroelasticPropertiesForHalfSpace(
-            slab_thickness=slab_thickness, properties=props)
+            slab_thickness=slab_thickness, hydroelastic_modulus=E,
+            properties=props)
         self.assertTrue(props.HasProperty("hydroelastic", "compliance_type"))
         self.assertTrue(mut_testing.PropertiesIndicateSoftHydro(props))
         self.assertTrue(props.HasProperty("hydroelastic", "slab_thickness"))
         self.assertEqual(props.GetProperty("hydroelastic", "slab_thickness"),
                          slab_thickness)
+        self.assertTrue(props.HasProperty("hydroelastic",
+                                          "hydroelastic_modulus"))
+        self.assertEqual(props.GetProperty("hydroelastic",
+                                           "hydroelastic_modulus"), E)
 
     def test_rgba_api(self):
         r, g, b, a = 0.75, 0.5, 0.25, 1.

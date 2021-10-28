@@ -121,8 +121,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   const double edge_length = 0.5;
   const double E = 1e8;  // Elastic modulus.
   ProximityProperties soft_properties;
-  AddContactMaterial(E, {}, {}, &soft_properties);
-  AddSoftHydroelasticProperties(edge_length, &soft_properties);
+  AddSoftHydroelasticProperties(edge_length, E, &soft_properties);
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(edge_length, &rigid_properties);
 
@@ -216,9 +215,7 @@ std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
   const double edge_length = 0.5;
   ProximityProperties properties;
   if (is_soft) {
-    // If soft, we need an elastic modulus.
-    AddContactMaterial(1e8, {}, {}, &properties);
-    AddSoftHydroelasticProperties(edge_length, &properties);
+    AddSoftHydroelasticProperties(edge_length, 1e8, &properties);
   } else {
     AddRigidHydroelasticProperties(edge_length, &properties);
   }
@@ -499,7 +496,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     // Pick a characteristic length sufficiently large that we create the
     // coarsest, cheapest mesh possible.
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
-    props.AddProperty(kMaterialGroup, kElastic,
+    props.AddProperty(kHydroGroup, kElastic,
                       std::numeric_limits<double>::infinity());
     AddRigidHydroelasticProperties(3 * radius, &props);
     DRAKE_EXPECT_NO_THROW(
@@ -533,7 +530,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
         std::logic_error, "Cannot create soft Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
-    bad_props_no_length.AddProperty(kMaterialGroup, kElastic, 5e8);
+    bad_props_no_length.AddProperty(kHydroGroup, kElastic, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_length),
@@ -1897,8 +1894,7 @@ class ProximityEngineHydro : public testing::Test {
     poses_ = MakeCollidingRing(r, 4);
 
     ProximityProperties soft_properties;
-    AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
-    AddSoftHydroelasticProperties(r, &soft_properties);
+    AddSoftHydroelasticProperties(r, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 
@@ -1968,8 +1964,7 @@ class ProximityEngineHydroWithFallback : public testing::Test {
     poses_ = MakeCollidingRing(r, N_);
 
     ProximityProperties soft_properties;
-    AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
-    AddSoftHydroelasticProperties(r / 2, &soft_properties);
+    AddSoftHydroelasticProperties(r / 2, 1e8, &soft_properties);
     ProximityProperties rigid_properties;
     AddRigidHydroelasticProperties(r, &rigid_properties);
 

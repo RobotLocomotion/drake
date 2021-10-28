@@ -31,8 +31,6 @@ namespace internal {
 //@{
 
 extern const char* const kMaterialGroup;   ///< The contact material group name.
-extern const char* const kElastic;         ///< Hydroelastic modulus property
-                                           ///< name.
 extern const char* const kFriction;        ///< Friction coefficients property
                                            ///< name.
 extern const char* const kHcDissipation;   ///< Hunt-Crossley dissipation
@@ -63,6 +61,8 @@ extern const char* const kPointStiffness;  ///< Point stiffness property
 //@{
 
 extern const char* const kHydroGroup;       ///< Hydroelastic group name.
+extern const char* const kElastic;          ///< Hydroelastic modulus property
+                                            ///< name.
 extern const char* const kRezHint;          ///< Resolution hint property name.
 extern const char* const kComplianceType;   ///< Compliance type property name.
 extern const char* const kSlabThickness;    ///< Slab thickness property name
@@ -90,50 +90,24 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 }  // namespace internal
 
 /**
- * @anchor contact_material_utility_functions
- * @name         Contact Material Utility Functions
- * AddContactMaterial() adds contact material properties to the given set of
- * proximity `properties`. Only the parameters that carry values will be added
- * to the given set of `properties`; no default values will be provided.
+ * AddContactMaterial() adds general contact material properties to the given
+ * set of proximity `properties`. These are the properties required by the
+ * default point contact model. However, other contact models can opt to use
+ * these properties as well. Only the parameters that carry values will be
+ * added to the given set of `properties`; no default values will be provided.
  * Downstream consumers of the contact materials can optionally provide
  * defaults for missing properties.
  *
- * For legacy and backwards compatibility purposes, two overloads for
- * AddContactMaterial() are provided. One supports all contact material
- * properties **except** `point_stiffness`, and the other includes it.
- * Users are encouraged to use the overload that contains the argument for
- * `point_stiffness`.
- *
- * These functions will throw an error if:
- * - `hydroelastic_modulus` is not positive
- * - `dissipation` is negative
- * - `point_stiffness` is not positive
- * - Any of the contact material properties have already been defined in
- *   `properties`.
- */
-///@{
-/**
- * @throws std::exception if any parameter doesn't satisfy the requirements
- *                        listed in @ref contact_material_utility_functions
- *                        "Contact Material Utility Functions".
+ * @throws std::exception if `dissipation` is negative, `point_stiffness` is
+ * not positive, of any of the contact material properties have already been
+ * defined in ``properties`.
+ * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(
-    const std::optional<double>& hydroelastic_modulus,
     const std::optional<double>& dissipation,
     const std::optional<double>& point_stiffness,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties);
-
-/**
- * @warning Please use the overload of AddContactMaterial() that includes the
- * argument for `point_stiffness` rather than this one.
- */
-void AddContactMaterial(
-    const std::optional<double>& hydroelastic_modulus,
-    const std::optional<double>& dissipation,
-    const std::optional<multibody::CoulombFriction<double>>& friction,
-    ProximityProperties* properties);
-///@}
 
 /** Adds properties to the given set of proximity properties sufficient to cause
  the associated geometry to generate a rigid hydroelastic representation.
@@ -171,31 +145,31 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties);
                               roughly corresponds to a typical edge length in
                               the resulting mesh. This will be ignored for
                               geometry types that don't require tessellation.
+ @param hydroelastic_modulus  A multiplier that maps penetration to pressure.
  @param[in,out] properties    The properties will be added to this property set.
  @throws std::exception       If `properties` already has properties with the
                               names that this function would need to add.
- @pre 0 < `resolution_hint` < ∞, `properties` is not nullptr, and `properties`
-      contains a valid elastic modulus value. */
+ @pre 0 < `resolution_hint` < ∞, 0 < `hydroelastic_modulus`, and `properties`
+      is not nullptr. */
 void AddSoftHydroelasticProperties(double resolution_hint,
+                                   double hydroelastic_modulus,
                                    ProximityProperties* properties);
-
-/** Overload, intended for shapes that don't get tessellated in their
- hydroelastic representation (e.g., HalfSpace).
- See @ref MODULE_NOT_WRITTEN_YET.  */
-void AddSoftHydroelasticProperties(ProximityProperties* properties);
 
 /** Soft half spaces are handled as a special case; they do not get tessellated.
  Instead, they are treated as infinite slabs with a finite thickness. This
  variant is required for hydroelastic half spaces.
 
- @param slab_thickness      The distance from the half space boundary to its
-                            rigid core (this helps define the extent field of
-                            the half space).
- @param[out] properties     The properties will be added to this property set.
+ @param slab_thickness       The distance from the half space boundary to its
+                             rigid core (this helps define the extent field of
+                             the half space).
+ @param hydroelastic_modulus A multiplier that maps penetration to pressure.
+ @param[out] properties      The properties will be added to this property set.
  @throws std::exception If `properties` already has properties with the names
                         that this function would need to add.
- @pre 0 < `slab_thickness` < ∞ . */
+ @pre 0 < `slab_thickness` < ∞, 0 < `hydroelastic_modulus`, and `properties`
+      is not nullptr. */
 void AddSoftHydroelasticPropertiesForHalfSpace(double slab_thickness,
+                                               double hydroelastic_modulus,
                                                ProximityProperties* properties);
 
 //@}

@@ -5,12 +5,12 @@ namespace geometry {
 namespace internal {
 
 const char* const kMaterialGroup = "material";
-const char* const kElastic = "hydroelastic_modulus";
 const char* const kFriction = "coulomb_friction";
 const char* const kHcDissipation = "hunt_crossley_dissipation";
 const char* const kPointStiffness = "point_contact_stiffness";
 
 const char* const kHydroGroup = "hydroelastic";
+const char* const kElastic = "hydroelastic_modulus";
 const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
 const char* const kSlabThickness = "slab_thickness";
@@ -35,29 +35,11 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
 }  // namespace internal
 
 void AddContactMaterial(
-    const std::optional<double>& hydroelastic_modulus,
-    const std::optional<double>& dissipation,
-    const std::optional<multibody::CoulombFriction<double>>& friction,
-    ProximityProperties* properties) {
-  AddContactMaterial(hydroelastic_modulus, dissipation, {}, friction,
-                     properties);
-}
-
-void AddContactMaterial(
-    const std::optional<double>& hydroelastic_modulus,
     const std::optional<double>& dissipation,
     const std::optional<double>& point_stiffness,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties) {
-  if (hydroelastic_modulus.has_value()) {
-    if (*hydroelastic_modulus <= 0) {
-      throw std::logic_error(
-          fmt::format("The hydroelastic modulus must be positive; given {}",
-                      *hydroelastic_modulus));
-    }
-    properties->AddProperty(internal::kMaterialGroup, internal::kElastic,
-                            *hydroelastic_modulus);
-  }
+  DRAKE_DEMAND(properties != nullptr);
   if (dissipation.has_value()) {
     if (*dissipation < 0) {
       throw std::logic_error(fmt::format(
@@ -103,29 +85,41 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties) {
                           internal::HydroelasticType::kRigid);
 }
 
-void AddSoftHydroelasticProperties(double resolution_hint,
+namespace {
+void AddSoftHydroelasticProperties(double hydroelastic_modulus,
                                    ProximityProperties* properties) {
-  DRAKE_DEMAND(properties != nullptr);
-  properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
-                          resolution_hint);
-  AddSoftHydroelasticProperties(properties);
-}
-
-void AddSoftHydroelasticProperties(ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   // The bare minimum of defining a soft geometry is to declare its compliance
   // type. Downstream consumers (ProximityEngine) will determine if this is
   // sufficient.
+  if (hydroelastic_modulus <= 0) {
+    throw std::logic_error(
+        fmt::format("The hydroelastic modulus must be positive; given {}",
+                    hydroelastic_modulus));
+  }
+  properties->AddProperty(internal::kHydroGroup, internal::kElastic,
+                          hydroelastic_modulus);
   properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
                           internal::HydroelasticType::kSoft);
 }
+}  // namespace
+
+void AddSoftHydroelasticProperties(double resolution_hint,
+                                   double hydroelastic_modulus,
+                                   ProximityProperties* properties) {
+  DRAKE_DEMAND(properties != nullptr);
+  properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
+                          resolution_hint);
+  AddSoftHydroelasticProperties(hydroelastic_modulus, properties);
+}
 
 void AddSoftHydroelasticPropertiesForHalfSpace(
-    double slab_thickness, ProximityProperties* properties) {
+    double slab_thickness, double hydroelastic_modulus,
+    ProximityProperties* properties) {
   DRAKE_DEMAND(properties != nullptr);
   properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
                           slab_thickness);
-  AddSoftHydroelasticProperties(properties);
+  AddSoftHydroelasticProperties(hydroelastic_modulus, properties);
 }
 
 }  // namespace geometry
