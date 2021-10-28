@@ -51,16 +51,12 @@ def simulate(*, initial_state, controller_params, t_final, tape_period):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--scenario", metavar="*.yaml",
+        "--scenario", metavar="*.yaml", required=True,
         help="Scenario file to load (required).")
     parser.add_argument(
-        "--output", metavar="*.yaml",
+        "--output", metavar="*.yaml", required=True,
         help="Output file to save (required).")
     args = parser.parse_args()
-    if not args.scenario:
-        parser.error("A --scenario file is required.")
-    if not args.output:
-        parser.error("An --output file is required.")
     scenario = load_scenario(filename=args.scenario)
     x_tape = simulate(**scenario)
     text = save_output(x_tape=x_tape)
