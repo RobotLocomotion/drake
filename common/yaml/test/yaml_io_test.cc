@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/test/example_structs.h"
@@ -24,6 +25,57 @@ std::string ReadTestFileAsString(const std::string& filename) {
   std::stringstream buffer;
   buffer << input.rdbuf();
   return buffer.str();
+}
+
+GTEST_TEST(YamlIoTest, LoadFile) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/common/yaml/test/yaml_io_test_input_1.yaml");
+  const auto result = LoadYamlFile<StringStruct>(filename);
+  EXPECT_EQ(result.value, "some_value_1");
+}
+
+GTEST_TEST(YamlIoTest, LoadFileChildName) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  const std::string child_name = "some_string_struct";
+  const auto result = LoadYamlFile<StringStruct>(filename, child_name);
+  EXPECT_EQ(result.value, "some_value_2");
+}
+
+GTEST_TEST(YamlIoTest, LoadFileChildNameBad) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  const std::string child_name = "wrong_child_name";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LoadYamlFile<StringStruct>(filename, child_name),
+      ".*yaml_io_test_input_2.yaml.* no such .*wrong_child_name.*");
+}
+
+GTEST_TEST(YamlIoTest, LoadString) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/common/yaml/test/yaml_io_test_input_1.yaml");
+  const std::string data = ReadTestFileAsString(filename);
+  const auto result = LoadYamlString<StringStruct>(data);
+  EXPECT_EQ(result.value, "some_value_1");
+}
+
+GTEST_TEST(YamlIoTest, LoadStringChildName) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  const std::string data = ReadTestFileAsString(filename);
+  const std::string child_name = "some_string_struct";
+  const auto result = LoadYamlString<StringStruct>(data, child_name);
+  EXPECT_EQ(result.value, "some_value_2");
+}
+
+GTEST_TEST(YamlIoTest, LoadStringChildNameBad) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  const std::string data = ReadTestFileAsString(filename);
+  const std::string child_name = "wrong_child_name";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LoadYamlString<StringStruct>(data, child_name),
+      ".* no such .*wrong_child_name.*");
 }
 
 GTEST_TEST(YamlIoTest, SaveString) {

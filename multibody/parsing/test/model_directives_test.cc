@@ -3,9 +3,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 
-using drake::yaml::YamlReadArchive;
+using drake::yaml::LoadYamlString;
 
 namespace drake {
 namespace multibody {
@@ -39,8 +39,7 @@ directives:
     file: child.yaml
     model_namespace: right
 )""";
-  ModelDirectives directives;
-  YamlReadArchive(YAML::Load(contents)).Accept(&directives);
+  const auto directives = LoadYamlString<ModelDirectives>(contents);
   EXPECT_TRUE(directives.IsValid());
 }
 

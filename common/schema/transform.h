@@ -24,7 +24,7 @@ The broader concepts are discussed at @ref schema_stochastic. Here, we cover
 details related to rotations and transforms in particular.
 
 We'll explain uses of schema::Rotation and schema::Transform using their
-matching YAML syntax as parsed by yaml::YamlReadArchive.
+matching YAML syntax as parsed by yaml::LoadYamlFile.
 
 # Rotations
 
@@ -147,7 +147,7 @@ For an explanation of `!Uniform`, `!UniformVector`, and other available options
 /// For an overview of configuring stochastic transforms, see
 /// @ref schema_transform and @ref schema_stochastic.
 ///
-/// See @ref serialize_tips for implementation details, especially the
+/// See @ref implementing_serialize for implementation details, especially the
 /// unusually public member fields.
 class Transform {
  public:

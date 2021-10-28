@@ -65,6 +65,7 @@ drake_cc_library(
     srcs = ["yaml_io.cc"],
     hdrs = ["yaml_io.h"],
     deps = [
+        ":yaml_read_archive",
         ":yaml_write_archive",
         "//common:unused",
     ],
@@ -84,9 +85,14 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "yaml_io_test",
+    data = [
+        "test/yaml_io_test_input_1.yaml",
+        "test/yaml_io_test_input_2.yaml",
+    ],
     deps = [
         ":example_structs",
         ":yaml_io",
+        "//common:find_resource",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -105,7 +111,6 @@ drake_cc_googletest(
     name = "yaml_performance_test",
     deps = [
         ":yaml_io",
-        ":yaml_read_archive",
         "//common:autodiff",
         "//common:name_value",
         "//common/test_utilities:limit_malloc",

@@ -115,7 +115,8 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
-  /** Passes this object to an Archive; see @ref serialize_tips for background.
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background.
   This method is only available when T = double. */
   template <typename Archive>
 #ifdef DRAKE_DOXYGEN_CXX

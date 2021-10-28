@@ -24,6 +24,8 @@ void SaveYamlCheckCompile() {
   unused(&SaveYamlCheckCompile);
 }
 
+// XXX Check LoadYaml...
+
 }  // namespace
 }  // namespace yaml
 }  // namespace drake
