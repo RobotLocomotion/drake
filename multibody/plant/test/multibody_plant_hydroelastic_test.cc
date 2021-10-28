@@ -124,9 +124,10 @@ class HydroelasticModelTests : public ::testing::Test {
 
     geometry::ProximityProperties props;
     // This should produce a level-2 refinement (two steps beyond octahedron).
-    geometry::AddSoftHydroelasticProperties(radius / 2, &props);
+    geometry::AddSoftHydroelasticProperties(
+        radius / 2, hydroelastic_modulus, &props);
     geometry::AddContactMaterial(
-        hydroelastic_modulus, dissipation,
+        dissipation, {},
         CoulombFriction<double>(friction_coefficient, friction_coefficient),
         &props);
     plant->RegisterCollisionGeometry(body, X_BG, shape, "BodyCollisionGeometry",
@@ -292,12 +293,12 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
   const Vector3<double> fz_BBo_W = F_BBo_W.translational();
 
   // The contact force should match the weight of the sphere.
-  const Vector3<double> fz_BBo_W_expeted =
+  const Vector3<double> fz_BBo_W_expected =
       -plant_->gravity_field().gravity_vector() * kMass;
 
   // We use a tolerance value based on previous runs of this test.
   const double tolerance = 2.0e-8;
-  EXPECT_TRUE(CompareMatrices(fz_BBo_W, fz_BBo_W_expeted, tolerance));
+  EXPECT_TRUE(CompareMatrices(fz_BBo_W, fz_BBo_W_expected, tolerance));
 }
 
 // This tests consistency across the ContactModel modes: point pair,
@@ -350,7 +351,7 @@ class ContactModelTest : public ::testing::Test {
 
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(
-        kElasticModulus, kDissipation,
+        kDissipation, {},
         CoulombFriction<double>(kFrictionCoefficient, kFrictionCoefficient),
         &props);
     AddGround(props, plant_);
@@ -391,7 +392,8 @@ class ContactModelTest : public ::testing::Test {
     const double kSize = 10;
     const RigidTransformd X_WG{Vector3d{0, 0, -kSize / 2}};
     geometry::Box ground = geometry::Box::MakeCube(kSize);
-    geometry::AddSoftHydroelasticProperties(kSize, &contact_material);
+    geometry::AddSoftHydroelasticProperties(
+        kSize, kElasticModulus, &contact_material);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG, ground,
                                      "GroundCollisionGeometry",
                                      std::move(contact_material));

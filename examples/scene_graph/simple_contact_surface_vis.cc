@@ -119,8 +119,8 @@ class MovingBall final : public LeafSystem<double> {
                                       make_unique<Sphere>(1.0), "ball"));
 
     ProximityProperties prox_props;
-    AddContactMaterial(1e8, {}, {}, &prox_props);
-    AddSoftHydroelasticProperties(FLAGS_length, &prox_props);
+    AddContactMaterial({}, {}, {}, &prox_props);
+    AddSoftHydroelasticProperties(FLAGS_length, 1e8, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
