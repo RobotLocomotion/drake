@@ -106,14 +106,12 @@ class BvNode {
 
   /* Compares this node with the given node in a strictly *topological* manner.
    For them to be considered "equal leaves", both nodes must be leaves and must
-   contain the same indicies.
+   contain the same indices.
 
    Because this test considers only the Bvh tree *topology* it can be used to
    compare nodes that have been constructed from meshes with different scalar
-   types (e.g., TriangleSurfaceMesh<double> and TriangleSurfaceMesh<AutoDiffXd))
-   or meshes with different bounding volume types (e.g., Aabb vs Obb). The only
-   true requirement is that the element index types contained in the leaf can be
-   compared (this excludes VolumeMesh vs TriangleSurfaceMesh).
+   types (e.g., TriangleSurfaceMesh<double> and TriangleSurfaceMesh<AutoDiffXd>)
+   or meshes with different bounding volume types (e.g., Aabb vs Obb).
 
    @pre both nodes are leaves.  */
   template <typename OtherBvNode>
