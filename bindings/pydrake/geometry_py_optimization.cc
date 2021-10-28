@@ -38,6 +38,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.Clone.doc)
         .def("ambient_dimension", &ConvexSet::ambient_dimension,
             cls_doc.ambient_dimension.doc)
+        .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
+            cls_doc.IntersectsWith.doc)
         .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
@@ -254,6 +256,8 @@ void DefineGeometryOptimization(py::module m) {
                 py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
             .def("VertexIds", &GraphOfConvexSets::VertexIds,
                 cls_doc.VertexIds.doc)
+            .def("Vertices", &GraphOfConvexSets::Vertices,
+                py_rvp::reference_internal, cls_doc.Vertices.doc)
             .def("Edges", &GraphOfConvexSets::Edges, py_rvp::reference_internal,
                 cls_doc.Edges.doc)
             .def("SolveShortestPath",

@@ -68,7 +68,11 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
 
   auto ids = g.VertexIds();
   EXPECT_EQ(ids.size(), 1);
-  EXPECT_EQ(*ids.begin(), v->id());
+  EXPECT_EQ(ids[0], v->id());
+
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices[0], v);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, GetVertexSolution) {
