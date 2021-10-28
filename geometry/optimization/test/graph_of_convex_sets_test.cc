@@ -66,9 +66,16 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   p.set_x(Vector3d(4., 5., 6));
   EXPECT_FALSE(v->set().PointInSet(p.x()));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   auto ids = g.VertexIds();
   EXPECT_EQ(ids.size(), 1);
-  EXPECT_EQ(*ids.begin(), v->id());
+  EXPECT_EQ(ids.at(0), v->id());
+#pragma GCC diagnostic pop
+
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices.at(0), v);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, GetVertexSolution) {
@@ -151,6 +158,12 @@ TEST_F(TwoPoints, Basic) {
 
   EXPECT_EQ(Variables(e_->xu()), Variables(u_->x()));
   EXPECT_EQ(Variables(e_->xv()), Variables(v_->x()));
+
+  auto vertices = g_.Vertices();
+  EXPECT_EQ(vertices.at(0), u_);
+  EXPECT_EQ(vertices.at(1), v_);
+
+  EXPECT_EQ(g_.Edges().at(0), e_);
 }
 
 // Confirms that I can add costs (both ways) and get the solution.
