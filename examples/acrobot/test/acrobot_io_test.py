@@ -22,20 +22,17 @@ class TestIo(unittest.TestCase):
 """
 
     def test_load_scenario(self):
-        a = load_scenario(filename=self.example)
-        b = load_scenario(filename=self.example, scenario_name="example")
+        scene = load_scenario(filename=self.example, scenario_name="example")
         expected = ", ".join([
             "{'controller_params': [5, 50, 5, '1e3']",
             "'initial_state': [1.2, 0, 0, 0]",
             "'t_final': 30.0",
             "'tape_period': 0.05}"])
-        self.assertEqual(str(a), expected)
-        self.assertEqual(str(b), expected)
-        self.assertEqual(a, b)
+        self.assertEqual(str(scene), expected)
 
     def test_save_scenario(self):
-        scenario = load_scenario(filename=self.example)
-        actual = save_scenario(scenario_name="example", scenario=scenario)
+        scene = load_scenario(filename=self.example, scenario_name="example")
+        actual = save_scenario(scenario_name="example", scenario=scene)
         self.assertEqual(actual, self.expected_save)
 
     def test_save_scenario_numpy(self):

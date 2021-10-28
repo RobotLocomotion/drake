@@ -35,16 +35,17 @@ def evaluate_metric_once(scenario, metric, seeds):
     with tempfile.TemporaryDirectory(prefix="optimizer_demo",
                                      dir=env_tmpdir) as temp_dir:
         scenario_filename = os.path.join(temp_dir, "scenario.yaml")
+        scenario_name = "evaluation_scenario"
         with open(scenario_filename, "w") as scenario_file:
             scenario_file.write(
-                save_scenario(scenario=scenario,
-                              scenario_name="evaluation_scenario"))
+                save_scenario(scenario=scenario, scenario_name=scenario_name))
         tapes = []
         for seed in seeds:
             output_filename = os.path.join(temp_dir, f"output_{seed}.yaml")
             subprocess.check_call(
                 [runner,
                  "--scenario", scenario_filename,
+                 "--scenario_name", scenario_name,
                  "--output", output_filename,
                  "--random_seed", str(seed)])
             tapes += [load_output(filename=output_filename)]
@@ -115,7 +116,9 @@ def main():
     with closing(args.output) as output:
         scenario_file = args.scenario_file or FindResourceOrThrow(
             "drake/examples/acrobot/test/example_stochastic_scenario.yaml")
-        input_scenario = load_scenario(filename=scenario_file)
+        input_scenario = load_scenario(
+            filename=scenario_file,
+            scenario_name="example")
         result = optimize_controller_params(
             scenario=input_scenario,
             metric=METRICS[args.metric],

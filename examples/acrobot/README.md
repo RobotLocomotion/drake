@@ -155,7 +155,7 @@ and the simulation output.
 `//examples/acrobot:`*spong_sim_main_cc* works this way:
 ```
 bazel build //examples/acrobot:spong_sim_main_cc
-./bazel-bin/examples/acrobot/spong_sim_main_cc --scenario examples/acrobot/test/example_stochastic_scenario.yaml --output out.yaml --random_seed 12
+./bazel-bin/examples/acrobot/spong_sim_main_cc --scenario examples/acrobot/test/example_stochastic_scenario.yaml --scenario_name=example --output out.yaml --random_seed 12
 cat out.yaml
 ```
 

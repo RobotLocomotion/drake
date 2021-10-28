@@ -34,7 +34,8 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
             "drake/examples/acrobot/test/example_scenario.yaml")
         output = os.path.join(os.environ["TEST_TMPDIR"], "output.yaml")
         subprocess.check_call([
-            self.dut, "--scenario", scenario, "--output", output])
+            self.dut, "--scenario", scenario, "--scenario_name", "example",
+            "--output", output])
         x_tape = load_output(filename=output)
         self.assertEqual(x_tape.shape, self.nominal_x_tape_shape)
 
@@ -48,15 +49,17 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
         dump_file = os.path.join(os.environ["TEST_TMPDIR"],
                                  "scenario_out.yaml")
         subprocess.check_call([
-            self.dut, "--scenario", scenario, "--output", output,
-            "--dump_scenario", dump_file])
+            self.dut, "--scenario", scenario, "--scenario_name", "example",
+            "--output", output, "--dump_scenario", dump_file])
+
         x_tape = load_output(filename=output)
         # 4 states x 30 seconds of samples at 20 Hz per sample_scenario.
         self.assertEqual(x_tape.shape, (4, 601))
 
         # Load the scenario dump; don't bother checking exact distribution
         # semantics; just check that we have the right data shape and type.
-        dump = load_scenario(filename=dump_file)
+        dump = load_scenario(filename=dump_file,
+                             scenario_name="sampled_scenario")
         self.assertEqual(len(dump["controller_params"]), 4)
         self.assertTrue(all(type(x) == float
                             for x in dump["controller_params"]))
