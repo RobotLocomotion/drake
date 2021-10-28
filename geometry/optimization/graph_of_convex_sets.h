@@ -7,7 +7,6 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -236,7 +235,7 @@ class GraphOfConvexSets {
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
-    std::unordered_set<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
     std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
@@ -264,13 +263,19 @@ class GraphOfConvexSets {
   */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
-  /** Returns the VertexIds of the vertices stored in the graph.  Note that the
-  order of the elements is not guaranteed. */
-  std::unordered_set<VertexId> VertexIds() const;
+  /** Returns mutable pointers to the vertices stored in the graph. */
+  std::vector<Vertex*> Vertices();
 
-  /** Returns pointers to the edges stored in the graph.  Note that the order of
-  the elements is not guaranteed. */
-  std::unordered_set<Edge*> Edges();
+  /** Returns pointers to the vertices stored in the graph.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+  std::vector<const Vertex*> Vertices() const;
+
+  /** Returns mutable pointers to the edges stored in the graph. */
+  std::vector<Edge*> Edges();
+
+  /** Returns pointers to the edges stored in the graph.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+  std::vector<const Edge*> Edges() const;
 
   /** Returns a Graphviz string describing the graph vertices and edges.  If
   `results` is supplied, then the graph will be annotated with the solution

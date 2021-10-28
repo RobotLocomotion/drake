@@ -71,9 +71,14 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   p.set_x(Vector3d(4., 5., 6));
   EXPECT_FALSE(v->set().PointInSet(p.x()));
 
-  auto ids = g.VertexIds();
-  EXPECT_EQ(ids.size(), 1);
-  EXPECT_EQ(*ids.begin(), v->id());
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices.at(0), v);
+
+  const GraphOfConvexSets* const_g = &g;
+  const auto const_vertices = const_g->Vertices();
+  EXPECT_EQ(const_vertices.size(), 1);
+  EXPECT_EQ(const_vertices.at(0), v);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, GetVertexSolution) {
@@ -107,7 +112,12 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
 
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
-  EXPECT_EQ(*(edges.begin()), e);
+  EXPECT_EQ(edges.at(0), e);
+
+  const GraphOfConvexSets* const_g = &g;
+  const auto const_edges = const_g->Edges();
+  EXPECT_EQ(const_edges.size(), 1);
+  EXPECT_EQ(const_edges.at(0), e);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddEdge2) {
@@ -156,6 +166,12 @@ TEST_F(TwoPoints, Basic) {
 
   EXPECT_EQ(Variables(e_->xu()), Variables(u_->x()));
   EXPECT_EQ(Variables(e_->xv()), Variables(v_->x()));
+
+  auto vertices = g_.Vertices();
+  EXPECT_EQ(vertices.at(0), u_);
+  EXPECT_EQ(vertices.at(1), v_);
+
+  EXPECT_EQ(g_.Edges().at(0), e_);
 }
 
 // Confirms that I can add costs (both ways) and get the solution.

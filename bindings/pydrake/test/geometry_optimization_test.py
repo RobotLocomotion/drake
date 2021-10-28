@@ -45,6 +45,7 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.A(), self.A)
         np.testing.assert_array_equal(hpoly.b(), self.b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
+        self.assertFalse(hpoly.IsBounded())
         hpoly.AddPointInSetConstraints(self.prog, self.x)
         with self.assertRaisesRegex(
                 RuntimeError, ".*not implemented yet for HPolyhedron.*"):
@@ -52,6 +53,7 @@ class TestGeometryOptimization(unittest.TestCase):
 
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
+        self.assertTrue(h_box.IntersectsWith(hpoly))
         h_unit_box = mut.HPolyhedron.MakeUnitBox(dim=3)
         np.testing.assert_array_equal(h_box.A(), h_unit_box.A())
         np.testing.assert_array_equal(h_box.b(), h_unit_box.b())
@@ -258,7 +260,7 @@ class TestGeometryOptimization(unittest.TestCase):
         target = spp.AddVertex(set=mut.Point([0.2]), name="target")
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
         edge1 = spp.AddEdge(u_id=source.id(), v_id=target.id(), name="edge1")
-        self.assertEqual(len(spp.VertexIds()), 2)
+        self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
             source_id=source.id(), target_id=target.id(),
