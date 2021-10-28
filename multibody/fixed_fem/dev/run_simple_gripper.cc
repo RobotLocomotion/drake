@@ -114,7 +114,7 @@ int DoMain() {
   /* Set up proximity properties for the deformable box. */
   const CoulombFriction<double> surface_friction(1.0, 1.0);
   geometry::ProximityProperties proximity_props;
-  geometry::AddContactMaterial({}, {}, {}, surface_friction, &proximity_props);
+  geometry::AddContactMaterial({}, {}, surface_friction, &proximity_props);
 
   /* Register the deformable box in the DeformableModel. */
   auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);

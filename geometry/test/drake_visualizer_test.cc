@@ -778,7 +778,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
 
   /* Populate with soft hydroelastic properties and add soft geometries. */
   props.AddProperty(internal::kHydroGroup, internal::kSlabThickness, 5.0);
-  props.AddProperty(internal::kMaterialGroup, internal::kElastic, 5.0);
+  props.AddProperty(internal::kHydroGroup, internal::kElastic, 5.0);
   props.UpdateProperty(internal::kHydroGroup, internal::kComplianceType,
                        HydroelasticType::kSoft);
   const RigidTransformd X_PSphere{RotationMatrixd::MakeZRotation(0.3),
