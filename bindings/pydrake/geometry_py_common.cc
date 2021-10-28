@@ -476,14 +476,13 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   m.def("AddContactMaterial",
       py::overload_cast<const std::optional<double>&,
-          const std::optional<double>&, const std::optional<double>&,
+          const std::optional<double>&,
           const std::optional<multibody::CoulombFriction<double>>&,
           ProximityProperties*>(&AddContactMaterial),
-      py::arg("hydroelastic_modulus") = std::nullopt,
       py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
       py::arg("friction") = std::nullopt, py::arg("properties"),
-      doc.AddContactMaterial.doc_5args);
+      doc.AddContactMaterial.doc);
 }
 
 // Test-only code.

@@ -55,7 +55,7 @@ ProximityProperties MakeProximityProperties(double stiffness,
                                             double dissipation,
                                             const CoulombFriction<double>& mu) {
   ProximityProperties proximity_properties;
-  geometry::AddContactMaterial({}, dissipation, stiffness, mu,
+  geometry::AddContactMaterial(dissipation, stiffness, mu,
                                &proximity_properties);
   return proximity_properties;
 }
