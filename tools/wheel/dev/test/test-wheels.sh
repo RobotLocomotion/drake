@@ -13,13 +13,20 @@ tr="$(readlink -f "$(dirname "${BASH_SOURCE}")")"
 test_wheel()
 {
     local wheel=drake-$wv-cp$1-cp$1m-manylinux_2_27_x86_64.whl
+    local container=pip-drake:test-py$1
     local base=$2
     local py_version=$3
 
-    docker run --rm -it \
+    docker build \
+      -t $container \
+      --build-arg PLATFORM=$base \
+      --build-arg PYTHON=$py_version \
+      "$tr"
+
+    docker run --rm -t \
         -v "$tr:/test" \
         -v "$wd:/wheel" \
-        $base /test/test-wheel.sh /wheel/$wheel $py_version
+        $container /test/test-wheel.sh /wheel/$wheel $py_version
 }
 
 ###############################################################################
