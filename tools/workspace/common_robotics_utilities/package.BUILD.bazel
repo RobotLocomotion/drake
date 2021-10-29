@@ -76,16 +76,6 @@ cc_test(
 )
 
 cc_test(
-    name = "task_planning_test_no_equals",
-    srcs = ["test/task_planning_test.cpp"],
-    defines = ["NO_OPERATOR_EQUALS"],
-    deps = [
-        ":common_robotics_utilities",
-        "@gtest//:without_main",
-    ],
-)
-
-cc_test(
     name = "utility_test",
     srcs = ["test/utility_test.cpp"],
     deps = [
