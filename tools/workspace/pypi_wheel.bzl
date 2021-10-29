@@ -7,6 +7,7 @@ def download_and_extract_pypi_wheel(
         repository_ctx,
         package = None,
         version = None,
+        version_pin = None,
         pypi_tag = None,
         blake2_256 = None,
         sha256 = None,
@@ -18,6 +19,10 @@ def download_and_extract_pypi_wheel(
 
         version: The version of the PyPI package to download
             [String; required].
+
+        version_pin: True iff the wheel should remain at the same version
+            indefinitely, eschewing automated upgrades to newer versions.
+            [Bool; optional].
 
         pypi_tag: The tag of the PyPI package to download, e.g.,
             "cp36-cp36m-manylinux1_x86_64".
@@ -92,6 +97,7 @@ def download_and_extract_pypi_wheel(
         repository_rule_type = "pypi_wheel",
         package = package,
         version = version,
+        version_pin = version_pin,
         pypi_tag = pypi_tag,
         blake2_256 = blake2_256,
         sha256 = sha256,
@@ -104,6 +110,7 @@ def setup_pypi_wheel(
         repository_ctx,
         package = None,
         version = None,
+        version_pin = None,
         pypi_tag = None,
         blake2_256 = None,
         sha256 = None,
@@ -118,6 +125,9 @@ def setup_pypi_wheel(
         package, version, pypi_tag, blake2_256, sha256, mirrors: Arguments to
             be passed to download_and_extract_pypi_wheel() [Required].
 
+        version_pin: Arguments to be passed to
+            download_and_extract_pypi_wheel() [Optional].
+
         deps, imports, data: Additional attrs for the target in the BUILD file
             [Optional].
     """
@@ -127,6 +137,7 @@ def setup_pypi_wheel(
         repository_ctx,
         package = package,
         version = version,
+        version_pin = version_pin,
         pypi_tag = pypi_tag,
         blake2_256 = blake2_256,
         sha256 = sha256,

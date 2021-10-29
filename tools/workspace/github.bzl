@@ -10,6 +10,7 @@ def github_archive(
         name,
         repository = None,
         commit = None,
+        commit_pin = None,
         sha256 = "0" * 64,
         build_file = None,
         extra_strip_prefix = "",
@@ -28,6 +29,9 @@ def github_archive(
             project is also a git submodule in CMake, this should be kept in
             sync with the git submodule commit used there.) This can also be a
             tag.
+        commit_pin: optional boolean, set to True iff the archive should remain
+            at the same version indefinitely, eschewing automated upgrades to
+            newer versions.
         sha256: required sha256 is the expected SHA-256 checksum of the
             downloaded archive. When unsure, you can omit this argument (or
             comment it out) and then the checksum-mismatch error message will
@@ -78,6 +82,7 @@ def github_archive(
         name = name,
         repository = repository,
         commit = commit,
+        commit_pin = commit_pin,
         sha256 = sha256,
         build_file = build_file,
         extra_strip_prefix = extra_strip_prefix,
@@ -104,6 +109,7 @@ _github_archive_real = repository_rule(
         "commit": attr.string(
             mandatory = True,
         ),
+        "commit_pin": attr.bool(),
         "sha256": attr.string(
             mandatory = False,
             default = "0" * 64,
@@ -150,6 +156,7 @@ def setup_github_repository(repository_ctx):
         repository_ctx,
         repository = repository_ctx.attr.repository,
         commit = repository_ctx.attr.commit,
+        commit_pin = getattr(repository_ctx.attr, "commit_pin", None),
         mirrors = repository_ctx.attr.mirrors,
         sha256 = repository_ctx.attr.sha256,
         extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
@@ -182,7 +189,8 @@ def github_download_and_extract(
         mirrors,
         output = "",
         sha256 = "0" * 64,
-        extra_strip_prefix = ""):
+        extra_strip_prefix = "",
+        commit_pin = None):
     """Download an archive of the provided GitHub repository and commit to the
     output path and extract it.
 
@@ -200,6 +208,9 @@ def github_download_and_extract(
             the correct SHA-256 hash.
         extra_strip_prefix: optional path to strip from the downloaded archive,
             e.g., "src" to root the repository at "./src/" instead of "./".
+        commit_pin: set to True iff the archive should remain at the same
+            version indefinitely, eschewing automated upgrades to newer
+            versions.
     """
     urls = _urls(repository, commit, mirrors)
 
@@ -217,6 +228,7 @@ def github_download_and_extract(
         repository_rule_type = "github",
         repository = repository,
         commit = commit,
+        version_pin = commit_pin,
         sha256 = sha256,
         urls = urls,
     )
