@@ -8,15 +8,15 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
 
 using drake::symbolic::Expression;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
+using drake::yaml::SaveYamlString;
 using drake::yaml::YamlReadArchive;
-using drake::yaml::YamlWriteArchive;
 
 namespace drake {
 namespace schema {
@@ -149,9 +149,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_PRED2(ExprEqual, symbolic_vec(4), 3.2);
 
   // Confirm that writeback works for every possible type.
-  YamlWriteArchive writer;
-  writer.Accept(variants);
-  EXPECT_EQ(writer.EmitString(), R"""(root:
+  EXPECT_EQ(SaveYamlString(variants, "root"), R"""(root:
   vec:
     - !Deterministic
       value: 5.0
@@ -335,9 +333,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
       Vector1d(1.5)));
 
   // Confirm that writeback works for every possible type.
-  YamlWriteArchive writer;
-  writer.Accept(variants);
-  EXPECT_EQ(writer.EmitString(), R"""(root:
+  EXPECT_EQ(SaveYamlString(variants, "root"), R"""(root:
   vector: [1.0, 2.0, 3.0]
   deterministic: !DeterministicVector
     value: [3.0, 4.0, 5.0]
