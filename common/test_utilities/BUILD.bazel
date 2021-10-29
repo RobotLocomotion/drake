@@ -43,6 +43,7 @@ drake_cc_library(
     testonly = 1,
     srcs = ["eigen_geometry_compare.cc"],
     hdrs = ["eigen_geometry_compare.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":eigen_matrix_compare",
         "//common:essential",
