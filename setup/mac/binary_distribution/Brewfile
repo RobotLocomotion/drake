@@ -8,7 +8,6 @@ cask 'adoptopenjdk' unless system '/usr/libexec/java_home --version 1.8+ --failf
 brew 'clp'
 brew 'cmake'
 brew 'double-conversion'
-brew 'robotlocomotion/director/ibex@2.7.4'  # N.B. Matches drake/tools/workspace/ibex/version.bzl.
 brew 'eigen'
 brew 'gcc'
 brew 'fmt'
