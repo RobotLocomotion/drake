@@ -12,7 +12,6 @@ import webbrowser
 import numpy as np
 
 from pydrake.common.deprecation import _warn_deprecated
-from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box, ConvertVolumeToSurfaceMesh, Convex, Cylinder, Mesh, Sphere,

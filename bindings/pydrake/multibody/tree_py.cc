@@ -50,8 +50,8 @@ using multibody::SpatialAcceleration;
 using multibody::SpatialVelocity;
 
 constexpr char doc_iso3_deprecation[] = R"""(
-This API using Isometry3 is / will be deprecated soon with the resolution of
-#9865. We only offer it for backwards compatibility. DO NOT USE!.
+Use of Isometry3 with the MultibodyPlant API is deprecated and will be removed
+from Drake on or after 2022-02-01.  Pass a pydrake.math.RigidTransform instead.
 )""";
 
 namespace {

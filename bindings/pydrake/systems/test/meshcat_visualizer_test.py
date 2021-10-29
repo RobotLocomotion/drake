@@ -42,7 +42,6 @@ from pydrake.systems.meshcat_visualizer import (
     MeshcatContactVisualizer,
     MeshcatPointCloudVisualizer
 )
-from pydrake.common.eigen_geometry import Isometry3
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import CoulombFriction, MultibodyPlant
 from pydrake.multibody.tree import SpatialInertia, UnitInertia
@@ -358,7 +357,7 @@ class TestMeshcat(unittest.TestCase):
         sim_time = _DEFAULT_PUBLISH_PERIOD * 3.
 
         def se3_from_xyz(xyz):
-            return Isometry3(np.eye(3), xyz)
+            return RigidTransform(p=xyz)
 
         def show_cloud(pc, pc2=None, use_native=False, **kwargs):
             # kwargs go to ctor.
