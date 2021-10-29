@@ -1,22 +1,11 @@
 #!/bin/bash -e
 
-# This shell script tests a Drake wheel. It is intended to be run inside a
-# "pristine" Ubuntu container. The wheel must be accessible to the container,
-# and the container's path to the wheel should be given as an argument to the
-# script. If no path is specified, "drake" from PyPI will be tested.
-
-PYTHON=python${2:-3}
-
-export DEBIAN_FRONTEND=noninteractive
-
-apt-get update
-
-apt-get -y install --no-install-recommends \
-    lib${PYTHON}-dev ${PYTHON}-venv \
-    python3-venv python3-tk \
-    libx11-6 libsm6 libxt6 libglib2.0-0
-
-${PYTHON} -m venv /opt/python
+# This shell script tests a Drake wheel. It must be run inside of a container
+# which has been properly provisioned, e.g. by the accompanying test-wheels.sh
+# script (in particular, /opt/python must contain a Python virtual environment
+# which will be used to run the tests). The wheel must be accessible to the
+# container, and the container's path to the wheel should be given as an
+# argument to the script.
 
 . /opt/python/bin/activate
 

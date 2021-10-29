@@ -4,27 +4,34 @@
 # of the wheel to be tested, and an optional path to the wheels. If the second
 # argument is not given, the wheels are assumed to be in the current directory.
 
-wv="$1"
-wd="$(readlink -f "${2:-$PWD}")"
-tr="$(readlink -f "$(dirname "${BASH_SOURCE}")")"
+wheel_version="$1"
+wheel_dir="$(readlink -f "${2:-$PWD}")"
+test_root="$(readlink -f "$(dirname "${BASH_SOURCE}")")"
 
 ###############################################################################
 
 test_wheel()
 {
-    local wheel=drake-$wv-cp$1-cp$1m-manylinux_2_27_x86_64.whl
+    local wheel=drake-$wheel_version-cp$1-cp$1m-manylinux_2_27_x86_64.whl
+    local container=pip-drake:test-py$1
     local base=$2
     local py_version=$3
 
-    docker run --rm -it \
-        -v "$tr:/test" \
-        -v "$wd:/wheel" \
-        $base /test/test-wheel.sh /wheel/$wheel $py_version
+    docker build \
+      -t $container \
+      --build-arg PLATFORM=$base \
+      --build-arg PYTHON=$py_version \
+      "$test_root"
+
+    docker run --rm -t \
+        -v "$test_root:/test" \
+        -v "$wheel_dir:/wheel" \
+        $container /test/test-wheel.sh /wheel/$wheel $py_version
 }
 
 ###############################################################################
 
-if [ -z "$wv" ]; then
+if [ -z "$wheel_version" ]; then
     echo "Usage: $0 <version> [<path to wheels>]" >&2
     exit 1
 fi
