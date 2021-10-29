@@ -30,7 +30,8 @@ namespace controllers {
  * accelerations.
  */
 template <typename Scalar>
-class CartesianSetpoint {
+class DRAKE_DEPRECATED("2022-02-01", "This (unused) class is being removed.")
+CartesianSetpoint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianSetpoint)
 
@@ -146,9 +147,12 @@ class CartesianSetpoint {
   Vector6<Scalar> Kd_;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename Scalar>
 std::ostream& operator<<(std::ostream& out,
                          const CartesianSetpoint<Scalar>& setpoint) {
+#pragma GCC diagnostic pop
   const math::RigidTransform<Scalar> X(setpoint.desired_pose());
   const math::RollPitchYaw<Scalar> rpy(X.rotation());
   out << "pose: (" << X.translation().transpose()
@@ -163,7 +167,8 @@ std::ostream& operator<<(std::ostream& out,
 }
 
 template <typename Scalar>
-class VectorSetpoint {
+class DRAKE_DEPRECATED("2022-02-01", "This (unused) class is being removed.")
+VectorSetpoint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VectorSetpoint)
 
@@ -275,9 +280,12 @@ class VectorSetpoint {
   VectorX<Scalar> Kd_;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename Scalar>
 std::ostream& operator<<(std::ostream& out,
                          const VectorSetpoint<Scalar>& setpoint) {
+#pragma GCC diagnostic pop
   out << "pos: " << setpoint.desired_position().transpose() << "\n";
   out << "vel: " << setpoint.desired_velocity().transpose() << "\n";
   out << "acc: " << setpoint.desired_acceleration().transpose() << "\n";
