@@ -606,6 +606,10 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertTrue((x + y).EqualTo(x + y))
         self.assertFalse((x + y).EqualTo(x - y))
 
+    def test_get_kind(self):
+        self.assertEqual((x + y).get_kind(), sym.ExpressionKind.Add)
+        self.assertEqual((x * y).get_kind(), sym.ExpressionKind.Mul)
+
     def test_get_variables(self):
         vars = e_x.GetVariables()
         self.assertEqual(len(vars), 1)
