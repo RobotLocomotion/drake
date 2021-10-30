@@ -24,6 +24,7 @@ drake_cc_library(
     name = "optitrack_pose_extractor",
     srcs = ["optitrack_pose_extractor.cc"],
     hdrs = ["optitrack_pose_extractor.h"],
+    copts = ["-Wno-deprecated-declarations"],
     visibility = ["//visibility:public"],
     deps = [
         "//math:geometric_transform",
@@ -46,6 +47,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":optitrack_pose_extractor",
         "//common/test_utilities:eigen_matrix_compare",
