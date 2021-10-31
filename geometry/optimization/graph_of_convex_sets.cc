@@ -118,6 +118,16 @@ double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
 }
 
+Eigen::VectorXd Edge::GetSolutionPhiXu(
+    const solvers::MathematicalProgramResult& result) const {
+  return result.GetSolution(y_);
+}
+
+Eigen::VectorXd Edge::GetSolutionPhiXv(
+    const solvers::MathematicalProgramResult& result) const {
+  return result.GetSolution(z_);
+}
+
 Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   if (name.empty()) {
     name = fmt::format("v{}", vertices_.size());
@@ -165,6 +175,48 @@ std::unordered_set<Edge*> GraphOfConvexSets::Edges() {
     edges.emplace(e.get());
   }
   return edges;
+}
+
+// TODO(russt): We could get fancy and dim the color of the nodes/edges
+// according to phi, using e.g. https://graphviz.org/docs/attr-types/color/ .
+std::string GraphOfConvexSets::GetGraphvizString(
+    const std::optional<solvers::MathematicalProgramResult>& result,
+    bool show_slacks, int precision, bool scientific) const {
+  // Note: We use stringstream instead of fmt in order to control the
+  // formatting of the Eigen output and double output in a consistent way.
+  std::stringstream graphviz;
+  graphviz.precision(precision);
+  if (!scientific) graphviz << std::fixed;
+  graphviz << "digraph GraphOfConvexSets {\n";
+  graphviz << "labelloc=t;\n";
+  for (const auto& [v_id, v] : vertices_) {
+    graphviz << "v" << v_id << " [label=\"" << v->name();
+    if (result) {
+      graphviz << "\n x = ["
+               << result->GetSolution(v->x()).transpose();
+    }
+    graphviz << "]\"]\n";
+  }
+  for (const auto& [e_id, e] : edges_) {
+    unused(e_id);
+    graphviz << "v" << e->u().id() << " -> v" << e->v().id();
+    graphviz << " [label=\"" << e->name();
+    if (result) {
+      graphviz << "\n";
+      graphviz << "cost = " << e->GetSolutionCost(*result);
+      if (show_slacks) {
+        graphviz << ",\n";
+        graphviz << "ϕ = " << result->GetSolution(e->phi())<< ",\n";
+        graphviz << "ϕ xᵤ = [" << e->GetSolutionPhiXu(*result).transpose()
+                 << "],\n";
+        graphviz << "ϕ xᵥ = [" << e->GetSolutionPhiXv(*result).transpose()
+                 << "]";
+      }
+    }
+    graphviz << "\"];\n";
+  }
+  graphviz << "}\n";
+  return graphviz.str();
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(

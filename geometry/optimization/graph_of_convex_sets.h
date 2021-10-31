@@ -201,8 +201,18 @@ class GraphOfConvexSets {
     void ClearPhiConstraints();
 
     /** Returns the sum of the costs associated with this edge in a
-    MathematicalProgramResult. */
+    solvers::MathematicalProgramResult. */
     double GetSolutionCost(
+        const solvers::MathematicalProgramResult& result) const;
+
+    /** Returns the vector value of the slack variables associated with ϕxᵤ in a
+    solvers::MathematicalProgramResult. */
+    Eigen::VectorXd GetSolutionPhiXu(
+        const solvers::MathematicalProgramResult& result) const;
+
+    /** Returns the vector value of the slack variables associated with ϕxᵥ in
+    a solvers::MathematicalProgramResult. */
+    Eigen::VectorXd GetSolutionPhiXv(
         const solvers::MathematicalProgramResult& result) const;
 
    private:
@@ -262,8 +272,21 @@ class GraphOfConvexSets {
   the elements is not guaranteed. */
   std::unordered_set<Edge*> Edges();
 
-  // TODO(russt): std::string GetGraphvizString(const
-  // std::optional<solvers::MathematicalProgramResult>& = std::nullopt) const;
+  /** Returns a Graphviz string describing the graph vertices and edges.  If
+  `results` is supplied, then the graph will be annotated with the solution
+  values.
+  @param show_slacks determines whether the values of the intermediate
+  (slack) variables are also displayed in the graph.
+  @param precision sets the floating point precision (how many digits are
+  generated) of the annotations.
+  @param scientific sets the floating point formatting to scientific (if true)
+  or fixed (if false).
+  */
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result =
+          std::nullopt,
+      bool show_slacks = true, int precision = 3,
+      bool scientific = false) const;
 
   // TODO(russt): Consider adding optional<Solver> argument.
   /** Formulates and solves the mixed-integer convex formulation of the

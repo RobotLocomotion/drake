@@ -256,6 +256,10 @@ void DefineGeometryOptimization(py::module m) {
                 cls_doc.VertexIds.doc)
             .def("Edges", &GraphOfConvexSets::Edges, py_rvp::reference_internal,
                 cls_doc.Edges.doc)
+            .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
+                py::arg("result"), py::arg("show_slacks") = true,
+                py::arg("precision") = 3, py::arg("scientific") = false,
+                cls_doc.GetGraphvizString.doc)
             .def("SolveShortestPath",
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     const GraphOfConvexSets::VertexId&,
@@ -345,7 +349,11 @@ void DefineGeometryOptimization(py::module m) {
             &GraphOfConvexSets::Edge::ClearPhiConstraints,
             edge_doc.ClearPhiConstraints.doc)
         .def("GetSolutionCost", &GraphOfConvexSets::Edge::GetSolutionCost,
-            py::arg("result"), edge_doc.GetSolutionCost.doc);
+            py::arg("result"), edge_doc.GetSolutionCost.doc)
+        .def("GetSolutionPhiXu", &GraphOfConvexSets::Edge::GetSolutionPhiXu,
+            py::arg("result"), edge_doc.GetSolutionPhiXu.doc)
+        .def("GetSolutionPhiXv", &GraphOfConvexSets::Edge::GetSolutionPhiXv,
+            py::arg("result"), edge_doc.GetSolutionPhiXv.doc);
   }
 }
 
