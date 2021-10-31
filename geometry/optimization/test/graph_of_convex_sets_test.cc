@@ -2,6 +2,7 @@
 
 #include <forward_list>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -40,6 +41,10 @@ using symbolic::Variables;
 using Edge = GraphOfConvexSets::Edge;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
+
+using ::testing::AllOf;
+using ::testing::HasSubstr;
+using ::testing::Not;
 
 namespace {
   bool MixedIntegerSolverAvailable() {
@@ -730,6 +735,33 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     }
     EXPECT_GT(new_result.get_optimal_cost(), result.get_optimal_cost());
   }
+}
+
+GTEST_TEST(ShortestPathTest, Graphviz) {
+  GraphOfConvexSets g;
+  auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
+  auto target = g.AddVertex(Point(Vector1d{1e-8}), "target");
+  g.AddEdge(*source, *target, "edge");
+
+  // Note: Testing the entire string against a const string is too fragile,
+  // since the VertexIds are Identifier<> and increment on a global counter.
+  EXPECT_THAT(
+      g.GetGraphvizString(),
+      AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
+  auto result = g.SolveShortestPath(*source, *target, true);
+  EXPECT_THAT(g.GetGraphvizString(result),
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    HasSubstr("xu ="), HasSubstr("xv =")));
+  // No slack variables.
+  EXPECT_THAT(
+      g.GetGraphvizString(result, false),
+      AllOf(HasSubstr("x ="), HasSubstr("cost ="), Not(HasSubstr("ϕ =")),
+            Not(HasSubstr("xu =")), Not(HasSubstr("xv ="))));
+  // Precision and scientific.
+  EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
+              AllOf(HasSubstr("x = 1.00 2.00"), HasSubstr("x = 0.00")));
+  EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
+              AllOf(HasSubstr("x = 1 2"), HasSubstr("x = 1e-08")));
 }
 
 }  // namespace optimization

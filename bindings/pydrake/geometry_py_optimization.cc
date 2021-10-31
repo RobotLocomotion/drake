@@ -256,6 +256,10 @@ void DefineGeometryOptimization(py::module m) {
                 cls_doc.VertexIds.doc)
             .def("Edges", &GraphOfConvexSets::Edges, py_rvp::reference_internal,
                 cls_doc.Edges.doc)
+            .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
+                py::arg("result"), py::arg("show_slacks") = true,
+                py::arg("precision") = 3, py::arg("scientific") = false,
+                cls_doc.GetGraphvizString.doc)
             .def("SolveShortestPath",
                 overload_cast_explicit<solvers::MathematicalProgramResult,
                     const GraphOfConvexSets::VertexId&,

@@ -267,6 +267,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, convex_relaxation=True),
             MathematicalProgramResult)
+        self.assertIn("source", spp.GetGraphvizString(
+            result=result, show_slacks=True, precision=2, scientific=False))
 
         # Vertex
         self.assertIsInstance(source.id(), mut.GraphOfConvexSets.VertexId)
