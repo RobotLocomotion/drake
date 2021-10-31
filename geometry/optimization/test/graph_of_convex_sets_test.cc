@@ -2,6 +2,7 @@
 
 #include <forward_list>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -40,6 +41,10 @@ using symbolic::Variables;
 using Edge = GraphOfConvexSets::Edge;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
+
+using ::testing::AllOf;
+using ::testing::HasSubstr;
+using ::testing::Not;
 
 namespace {
   bool MixedIntegerSolverAvailable() {
@@ -248,6 +253,15 @@ TEST_F(ThreePoints, LinearCost1) {
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXv(result), p_target_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result),
+                              0 * p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
 
   // Alternative signature.
   auto result2 = g_.SolveShortestPath(*source_, *target_, true);
@@ -730,6 +744,33 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     }
     EXPECT_GT(new_result.get_optimal_cost(), result.get_optimal_cost());
   }
+}
+
+GTEST_TEST(ShortestPathTest, Graphviz) {
+  GraphOfConvexSets g;
+  auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
+  auto target = g.AddVertex(Point(Vector1d{1e-8}), "target");
+  g.AddEdge(*source, *target, "edge");
+
+  // Note: Testing the entire string against a const string is too fragile,
+  // since the VertexIds are Identifier<> and increment on a global counter.
+  EXPECT_THAT(
+      g.GetGraphvizString(),
+      AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
+  auto result = g.SolveShortestPath(*source, *target, true);
+  EXPECT_THAT(g.GetGraphvizString(result),
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
+  // No slack variables.
+  EXPECT_THAT(
+      g.GetGraphvizString(result, false),
+      AllOf(HasSubstr("x ="), HasSubstr("cost ="), Not(HasSubstr("ϕ =")),
+            Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+  // Precision and scientific.
+  EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
+              AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
+  EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
+              AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-08]")));
 }
 
 }  // namespace optimization

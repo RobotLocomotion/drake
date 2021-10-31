@@ -254,8 +254,8 @@ class TestGeometryOptimization(unittest.TestCase):
 
     def test_graph_of_convex_sets(self):
         spp = mut.GraphOfConvexSets()
-        source = spp.AddVertex(set=mut.Point([0.0]), name="source")
-        target = spp.AddVertex(set=mut.Point([0.0]), name="target")
+        source = spp.AddVertex(set=mut.Point([0.1]), name="source")
+        target = spp.AddVertex(set=mut.Point([0.2]), name="target")
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
         edge1 = spp.AddEdge(u_id=source.id(), v_id=target.id(), name="edge1")
         self.assertEqual(len(spp.VertexIds()), 2)
@@ -267,6 +267,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, convex_relaxation=True),
             MathematicalProgramResult)
+        self.assertIn("source", spp.GetGraphvizString(
+            result=result, show_slacks=True, precision=2, scientific=False))
 
         # Vertex
         self.assertIsInstance(source.id(), mut.GraphOfConvexSets.VertexId)
@@ -275,10 +277,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(source.x()[0], Variable)
         self.assertIsInstance(source.set(), mut.Point)
         np.testing.assert_array_almost_equal(
-            source.GetSolution(result), [0.], 1e-6)
+            source.GetSolution(result), [0.1], 1e-6)
 
         # Edge
         self.assertAlmostEqual(edge0.GetSolutionCost(result=result), 0.0, 1e-6)
+        np.testing.assert_array_almost_equal(
+            edge0.GetSolutionPhiXu(result=result), [0.1], 1e-6)
+        np.testing.assert_array_almost_equal(
+            edge0.GetSolutionPhiXv(result=result), [0.2], 1e-6)
         self.assertIsInstance(edge0.id(), mut.GraphOfConvexSets.EdgeId)
         self.assertEqual(edge0.name(), "edge0")
         self.assertEqual(edge0.u(), source)
