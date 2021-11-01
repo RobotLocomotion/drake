@@ -164,7 +164,7 @@ PYBIND11_MODULE(symbolic, m) {
       },
       py::arg("f"), py::arg("a"), py::arg("order"), doc.TaylorExpand.doc);
 
-  // Bind the free functions for MakeVectorXXXVariable
+  // Bind the free functions for Make(Vector|Matrix)(...)Variable.
   m  // BR
       .def(
           "MakeMatrixVariable",
@@ -424,7 +424,9 @@ PYBIND11_MODULE(symbolic, m) {
   pydrake::internal::BindSymbolicMathOverloads<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
 
-  m.def("if_then_else", &symbolic::if_then_else);
+  m.def("if_then_else", &symbolic::if_then_else, doc.if_then_else.doc);
+  m.def("uninterpreted_function", &symbolic::uninterpreted_function,
+      py::arg("name"), py::arg("arguments"), doc.uninterpreted_function.doc);
 
   m.def(
       "Jacobian",
