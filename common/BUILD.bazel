@@ -146,7 +146,6 @@ drake_cc_library(
     hdrs = ["extract_double.h"],
     deps = [
         ":essential",
-        ":nice_type_name",
     ],
 )
 

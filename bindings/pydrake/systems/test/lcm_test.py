@@ -212,16 +212,6 @@ class TestSystemsLcm(unittest.TestCase):
         self.assertIsInstance(scope, mut.LcmScopeSystem)
         self.assertIsInstance(publisher, mut.LcmPublisherSystem)
 
-    def test_deprecated_connect_lcm_scope(self):
-        builder = DiagramBuilder()
-        source = builder.AddSystem(ConstantVectorSource(np.zeros(4)))
-        with catch_drake_warnings(expected_count=1):
-            mut.ConnectLcmScope(src=source.get_output_port(0),
-                                channel="TEST_CHANNEL",
-                                builder=builder,
-                                lcm=DrakeLcm(),
-                                publish_period=0.001)
-
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.
         self.assertIn(
