@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
 
 namespace drake {
 namespace schema {
@@ -12,8 +12,8 @@ namespace {
 
 using Eigen::Vector3d;
 using drake::math::RollPitchYawd;
+using drake::yaml::SaveYamlString;
 using drake::yaml::YamlReadArchive;
-using drake::yaml::YamlWriteArchive;
 
 GTEST_TEST(RotationTest, ConstructorDefault) {
   Rotation rotation;
@@ -91,18 +91,14 @@ GTEST_TEST(RotationTest, RpyUniform) {
 // Ensure that we can write out YAML for Identity.
 GTEST_TEST(RotationTest, IdentityToYaml) {
   Rotation rotation;
-  YamlWriteArchive archive;
-  archive.Accept(rotation);
-  EXPECT_EQ(archive.EmitString(), "root:\n  value: {}\n");
+  EXPECT_EQ(SaveYamlString(rotation, "root"), "root:\n  value: {}\n");
 }
 
 // Ensure that we can write out YAML for Rpy.
 GTEST_TEST(RotationTest, RpyToYaml) {
   Rotation rotation;
   rotation.set_rpy_deg(Vector3d(1.0, 2.0, 3.0));
-  YamlWriteArchive archive;
-  archive.Accept(rotation);
-  EXPECT_EQ(archive.EmitString(),
+  EXPECT_EQ(SaveYamlString(rotation, "root"),
             "root:\n  value: !Rpy\n    deg: [1.0, 2.0, 3.0]\n");
 }
 
