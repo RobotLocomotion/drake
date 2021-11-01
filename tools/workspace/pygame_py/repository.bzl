@@ -15,6 +15,7 @@ def _impl(repository_ctx):
             repository_ctx,
             package = "pygame",
             version = "1.9.6",
+            version_pin = True,  # It's not worth upgrading to 2.0.
             pypi_tag = "cp36-cp36m-manylinux1_x86_64",
             blake2_256 = "8e24ede6428359f913ed9cd1643dd5533aefeb5a2699cc95bea089de50ead586",  # noqa
             sha256 = "c895cf9c1b6d1cbba8cb8cc3f5427febcf8aa41a9333697741abeea1c537a350",  # noqa
