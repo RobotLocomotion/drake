@@ -15,6 +15,7 @@ drake_cc_package_library(
     name = "yaml",
     visibility = ["//visibility:public"],
     deps = [
+        ":yaml_io",
         ":yaml_node",
         ":yaml_read_archive",
         ":yaml_write_archive",
@@ -59,6 +60,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "yaml_io",
+    srcs = ["yaml_io.cc"],
+    hdrs = ["yaml_io.h"],
+    deps = [
+        ":yaml_write_archive",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -68,6 +78,16 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "//common:name_value",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_io_test",
+    deps = [
+        ":example_structs",
+        ":yaml_io",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -83,8 +103,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "yaml_performance_test",
     deps = [
+        ":yaml_io",
         ":yaml_read_archive",
-        ":yaml_write_archive",
         "//common:autodiff",
         "//common:name_value",
         "//common/test_utilities:limit_malloc",
