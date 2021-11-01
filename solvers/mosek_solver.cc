@@ -1891,17 +1891,8 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // log file.
-  bool print_to_console = merged_options.get_print_to_console();
-  std::string print_file_name = merged_options.get_print_file_name();
-  // TODO(hongkai.dai) remove stream_logging_ and log_file_ once
-  // set_stream_logging() is deprecated on 2021-11-01.
-  if (stream_logging_) {
-    if (log_file_.empty()) {
-      print_to_console = true;
-    } else {
-      print_file_name = log_file_;
-    }
-  }
+  const bool print_to_console = merged_options.get_print_to_console();
+  const std::string print_file_name = merged_options.get_print_file_name();
   // Refer to https://docs.mosek.com/9.2/capi/solver-io.html#stream-logging
   // for Mosek stream logging.
   // First we check if the user wants to print to both the console and the file.

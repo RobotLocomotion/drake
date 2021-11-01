@@ -24,14 +24,6 @@ PYBIND11_MODULE(mosek, m) {
       m, "MosekSolver", doc.MosekSolver.doc);
   cls.def(py::init<>(), doc.MosekSolver.ctor.doc)
       .def_static("id", &MosekSolver::id, doc.MosekSolver.id.doc);
-
-  {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("set_stream_logging", &MosekSolver::set_stream_logging,
-        py::arg("flag"), py::arg("log_file"));
-#pragma GCC diagnostic pop
-  }
   pysolvers::BindAcquireLicense(&cls, doc.MosekSolver);
 
   py::class_<MosekSolverDetails>(

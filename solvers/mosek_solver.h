@@ -76,22 +76,6 @@ class MosekSolver final : public SolverBase {
   ~MosekSolver() final;
 
   /**
-   * Control stream logging. Refer to
-   * https://docs.mosek.com/9.2/capi/solver-io.html for more details.
-   * @param flag Set to true if the user want to turn on stream logging.
-   * @param log_file If the user wants to output the logging to a file, then
-   * set @p log_file to the name of that file. If the user wants to output the
-   * logging to the console, then set log_file to empty string.
-   */
-  DRAKE_DEPRECATED("2021-11-01",
-                   "Please set CommonSolverOption::kPrintFileName or "
-                   "CommonSolverOption::kPrintToConsole in SolverOptions")
-  void set_stream_logging(bool flag, const std::string& log_file) {
-    stream_logging_ = flag;
-    log_file_ = log_file;
-  }
-
-  /**
    * This type contains a valid MOSEK license environment, and is only to be
    * used from AcquireLicense().
    */
@@ -134,14 +118,6 @@ class MosekSolver final : public SolverBase {
   // during the first call of Solve() (which avoids grabbing a Mosek license
   // before we know that we actually want one).
   mutable std::shared_ptr<License> license_;
-  // Set to true if the user wants the solver to produce output to the console
-  // or a log file. Default to false, such that the solver runs silently.
-  // Check out https://docs.mosek.com/9.2/capi/solver-io.html for more info.
-  bool stream_logging_{false};
-  // set @p log_file to the name of that file. If the user wants to output the
-  // logging to the console, then set log_file to empty string. Default to an
-  // empty string.
-  std::string log_file_{};
 };
 
 }  // namespace solvers
