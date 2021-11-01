@@ -3,7 +3,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -67,7 +66,7 @@ Edge::Edge(const EdgeId& id, const Vertex* u, const Vertex* v, std::string name)
       name_(std::move(name)),
       y_{symbolic::MakeVectorContinuousVariable(u_->ambient_dimension(), "y")},
       z_{symbolic::MakeVectorContinuousVariable(v_->ambient_dimension(), "z")},
-      x_to_yz_(u_->ambient_dimension() + v_->ambient_dimension()) {
+      x_to_yz_{static_cast<size_t>(y_.size() + z_.size())} {
   DRAKE_DEMAND(u_ != nullptr);
   DRAKE_DEMAND(v_ != nullptr);
   allowed_vars_.insert(Variables(v_->x()));
@@ -101,9 +100,8 @@ Binding<Constraint> Edge::AddConstraint(const symbolic::Formula& f) {
 
 Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
-  auto [iter, inserted] = constraints_.emplace(binding);
-  unused(inserted);
-  return *iter;
+  constraints_.emplace_back(binding);
+  return binding;
 }
 
 void Edge::AddPhiConstraint(bool phi_value) {
@@ -160,19 +158,38 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
   return AddEdge(u.id(), v.id(), std::move(name));
 }
 
-std::unordered_set<VertexId> GraphOfConvexSets::VertexIds() const {
-  std::unordered_set<VertexId> ids(vertices_.size());
+std::vector<Vertex*> GraphOfConvexSets::Vertices() {
+  std::vector<Vertex*> vertices;
+  vertices.reserve(vertices_.size());
   for (const auto& v : vertices_) {
-    ids.emplace(v.first);
+    vertices.push_back(v.second.get());
   }
-  return ids;
+  return vertices;
 }
 
-std::unordered_set<Edge*> GraphOfConvexSets::Edges() {
-  std::unordered_set<Edge*> edges(edges_.size());
-  for (auto& [edge_id, e] : edges_) {
-    unused(edge_id);
-    edges.emplace(e.get());
+std::vector<const Vertex*> GraphOfConvexSets::Vertices() const {
+  std::vector<const Vertex*> vertices;
+  vertices.reserve(vertices_.size());
+  for (const auto& v : vertices_) {
+    vertices.push_back(v.second.get());
+  }
+  return vertices;
+}
+
+std::vector<Edge*> GraphOfConvexSets::Edges() {
+  std::vector<Edge*> edges;
+  edges.reserve(edges_.size());
+  for (const auto& e : edges_) {
+    edges.push_back(e.second.get());
+  }
+  return edges;
+}
+
+std::vector<const Edge*> GraphOfConvexSets::Edges() const {
+  std::vector<const Edge*> edges;
+  edges.reserve(edges_.size());
+  for (const auto& e : edges_) {
+    edges.push_back(e.second.get());
   }
   return edges;
 }
@@ -227,17 +244,13 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   MathematicalProgram prog;
 
-  std::unordered_map<VertexId, std::vector<Edge*>> incoming_edges(
-      vertices_.size());
-  std::unordered_map<VertexId, std::vector<Edge*>> outgoing_edges(
-      vertices_.size());
+  std::map<VertexId, std::vector<Edge*>> incoming_edges;
+  std::map<VertexId, std::vector<Edge*>> outgoing_edges;
   const double inf = std::numeric_limits<double>::infinity();
 
-  std::unordered_map<const Edge*, Variable> relaxed_phi(
-      convex_relaxation ? edges_.size() : 0);
+  std::map<EdgeId, Variable> relaxed_phi;
 
   for (const auto& [edge_id, e] : edges_) {
-    unused(edge_id);
     outgoing_edges[e->u().id()].emplace_back(e.get());
     incoming_edges[e->v().id()].emplace_back(e.get());
 
@@ -245,7 +258,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     if (convex_relaxation) {
       phi = prog.NewContinuousVariables<1>("phi")[0];
       prog.AddBoundingBoxConstraint(0, 1, phi);
-      relaxed_phi.emplace(e.get(), phi);
+      relaxed_phi.emplace(edge_id, phi);
     } else {
       phi = e->phi_;
       prog.AddDecisionVariables(Vector1<Variable>(phi));
@@ -419,10 +432,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       // Conservation of flow: ∑ ϕ_out - ∑ ϕ_in = δ(is_source) - δ(is_target).
       int count = 0;
       for (const auto* e : incoming) {
-        vars[count++] = convex_relaxation ? relaxed_phi.at(e) : e->phi_;
+        vars[count++] = convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_;
       }
       for (const auto* e : outgoing) {
-        vars[count++] = convex_relaxation ? relaxed_phi.at(e) : e->phi_;
+        vars[count++] = convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_;
       }
       prog.AddLinearEqualityConstraint(
           a, (is_source ? 1.0 : 0.0) - (is_target ? 1.0 : 0.0), vars);
@@ -446,8 +459,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     if (outgoing.size() > 0) {
       VectorXDecisionVariable phi_out(outgoing.size());
       for (int i = 0; i < static_cast<int>(outgoing.size()); ++i) {
-        phi_out[i] =
-            convex_relaxation ? relaxed_phi.at(outgoing[i]) : outgoing[i]->phi_;
+        phi_out[i] = convex_relaxation ? relaxed_phi.at(outgoing[i]->id())
+                                       : outgoing[i]->phi_;
       }
       prog.AddLinearConstraint(RowVectorXd::Ones(outgoing.size()), 0.0,
                                is_target ? 0.0 : 1.0, phi_out);
@@ -489,9 +502,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   }
   if (convex_relaxation) {
     // Write the value of the relaxed phi into the phi placeholder.
-    for (const std::pair<const Edge* const, Variable>& phipair : relaxed_phi) {
-      decision_variable_index.emplace(phipair.first->phi_.get_id(), count);
-      x_val[count++] = result.GetSolution(phipair.second);
+    for (const auto& [edge_id, relaxed_phi_var] : relaxed_phi) {
+      decision_variable_index.emplace(edges_.at(edge_id)->phi_.get_id(),
+                                      count);
+      x_val[count++] = result.GetSolution(relaxed_phi_var);
     }
   }
   result.set_decision_variable_index(decision_variable_index);

@@ -3,6 +3,7 @@
  pydrake.geometry.optimization module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry_py.h"
@@ -38,6 +39,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.Clone.doc)
         .def("ambient_dimension", &ConvexSet::ambient_dimension,
             cls_doc.ambient_dimension.doc)
+        .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
+            cls_doc.IntersectsWith.doc)
         .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
@@ -252,9 +255,33 @@ void DefineGeometryOptimization(py::module m) {
                     &GraphOfConvexSets::AddEdge),
                 py::arg("u"), py::arg("v"), py::arg("name") = "",
                 py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
-            .def("VertexIds", &GraphOfConvexSets::VertexIds,
-                cls_doc.VertexIds.doc)
-            .def("Edges", &GraphOfConvexSets::Edges, py_rvp::reference_internal,
+            .def(
+                "Vertices",
+                [](GraphOfConvexSets* self) {
+                  py::list out;
+                  py::object self_py = py::cast(self, py_rvp::reference);
+                  for (auto* vertex : self->Vertices()) {
+                    py::object vertex_py = py::cast(vertex, py_rvp::reference);
+                    // Keep alive, ownership: `vertex` keeps `self` alive.
+                    py_keep_alive(vertex_py, self_py);
+                    out.append(vertex_py);
+                  }
+                  return out;
+                },
+                cls_doc.Vertices.doc)
+            .def(
+                "Edges",
+                [](GraphOfConvexSets* self) {
+                  py::list out;
+                  py::object self_py = py::cast(self, py_rvp::reference);
+                  for (auto* edge : self->Edges()) {
+                    py::object edge_py = py::cast(edge, py_rvp::reference);
+                    // Keep alive, ownership: `edge` keeps `self` alive.
+                    py_keep_alive(edge_py, self_py);
+                    out.append(edge_py);
+                  }
+                  return out;
+                },
                 cls_doc.Edges.doc)
             .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
                 py::arg("result"), py::arg("show_slacks") = true,
