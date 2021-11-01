@@ -10,7 +10,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 #include "drake/systems/framework/system_type_tag.h"
@@ -84,33 +83,6 @@ class SystemScalarConverter {
   SystemScalarConverter(SystemTypeTag<S>) {
     AddConstructors<true, S>();
   }
-
-  enum class DRAKE_DEPRECATED("2021-11-01",
-      "Use MakeWithoutSubtypeChecking instead of kDisabled.")
-  GuaranteedSubtypePreservation {
-    /// The argument to Convert must be of the exact type S that was used to
-    /// populate the SystemScalarConverter.
-    kEnabled,
-    /// The argument to Convert need not be the exact type S that was used to
-    /// populate the SystemScalarConverter -- it can be either exactly that S,
-    /// or a subtype of that S.  This permits subtype information to be lost
-    /// across conversion.
-    kDisabled,
-  };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  template <template <typename> class S>
-  DRAKE_DEPRECATED("2021-11-01",
-      "Use MakeWithoutSubtypeChecking instead of kDisabled.")
-  SystemScalarConverter(SystemTypeTag<S>, GuaranteedSubtypePreservation sub) {
-    if (sub == GuaranteedSubtypePreservation::kEnabled) {
-      AddConstructors<true, S>();
-    } else {
-      AddConstructors<false, S>();
-    }
-  }
-#pragma GCC diagnostic pop
 
   /// (Advanced) Creates a converter similar to the single-argument constructor,
   /// with the built-in checks for guaranteed subtype preservation of the System

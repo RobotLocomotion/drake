@@ -191,6 +191,7 @@ drake_cc_library(
         ":distance_to_point_callback",
         ":proximity_utilities",
         "//common:default_scalars",
+        "//common:nice_type_name",
         "//geometry/query_results:signed_distance_pair",
     ],
 )
@@ -530,6 +531,7 @@ drake_cc_library(
         ":collision_filter",
         ":distance_to_point_callback",
         "//common:default_scalars",
+        "//common:nice_type_name",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_to_point",
         "@fcl",

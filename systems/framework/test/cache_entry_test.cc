@@ -33,6 +33,7 @@ namespace systems {
 namespace {
 
 // Free functions suitable for defining cache entries.
+auto Alloc1 = []() { return AbstractValue::Make<int>(1); };
 auto Alloc3 = []() { return AbstractValue::Make<int>(3); };
 auto Calc99 = [](const ContextBase&, AbstractValue* result) {
   result->set_value(99);
@@ -70,7 +71,7 @@ class MyContextBase : public ContextBase {
 //   +-----------+    +------+-------+    +------+-------+
 //                           |                   |
 //                           |            +------v-------+
-//                           +------------> entry2,3,4,5 +
+//                           +------------>   entry2,3   +
 //                                        +--------------+
 //
 // Note that this diagram depicts DependencyTracker ("tracker") objects, not
@@ -82,59 +83,37 @@ class MyContextBase : public ContextBase {
 // Context construction; the others are set explicitly here.
 //
 // Value types:
-//   int: entry0,1,2
+//   int: entry0,1,2,3
 //   string: string_entry
 //   MyVector3: vector_entry
 class MySystemBase final : public SystemBase {
  public:
-  // Use at least one of each of the six DeclareCacheEntry() variants.
+  // Uses all of DeclareCacheEntry() variants at least once.
   MySystemBase() {
-    // 1. Use the most general method, taking free functions. Unspecified
-    //    prerequisites should default to all_sources_ticket().
+    // Use the most general overload, taking free functions.
+    // Unspecified prerequisites should default to all_sources_ticket().
     entry0_ = &DeclareCacheEntry("entry0", ValueProducer(Alloc3, Calc99));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // 2. Use the method that takes two member functions.
-    entry1_ = &DeclareCacheEntry("entry1", &MySystemBase::MakeInt1,
-                                 &MySystemBase::CalcInt98,
-                                 {entry0_->ticket()});
-#pragma GCC diagnostic pop
+    // Same overload, but now using prerequisites.
+    entry1_ = &DeclareCacheEntry("entry1", ValueProducer(Alloc1, Calc99),
+        {entry0_->ticket()});
 
-    // 3a. Use the method that takes a model value and member calculator.
+    // Use the overload that takes a model value and member calculator.
     entry2_ = &DeclareCacheEntry("entry2", 2, &MySystemBase::CalcInt98,
                                  {entry0_->ticket(), entry1_->ticket()});
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // 4. Use the method that takes a model value and member calculator that
-    // uses function return for its value.
-    entry3_ = &DeclareCacheEntry("entry3", 17, &MySystemBase::CalcReturnInt11,
-                                 {entry0_->ticket(), entry1_->ticket()});
-#pragma GCC diagnostic pop
-
-    // 5. Use the method that takes just a member calculator that uses
-    // an output argument. (Entry will be value-initialized.)
-    entry4_ = &DeclareCacheEntry("entry4",
+    // Use the overload that takes just a member calculator. The model value
+    // will be value-initialized (using an `int{}` for this one).
+    entry3_ = &DeclareCacheEntry("entry3",
                                  &MySystemBase::CalcInt98,
                                  {entry0_->ticket(), entry1_->ticket()});
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // 6. Use the method that takes just a member calculator that uses
-    // function return for its value. (Entry will be value-initialized.)
-    entry5_ = &DeclareCacheEntry("entry5",
-                                 &MySystemBase::CalcReturnInt11,
-                                 {entry0_->ticket(), entry1_->ticket()});
-#pragma GCC diagnostic pop
-
-    // 6b. Use the method that takes just a member calculator with output
-    // argument (value-initializes the cache entry).
+    // Ditto but using a string{} defaulted model value.
     string_entry_ = &DeclareCacheEntry("string thing",
                                        &MySystemBase::CalcString,
                                        {time_ticket()});
 
-    // 3b. Also a model value and member calculator.
+    // Ditto but using a MyVector3d{} defaulted model value.
     vector_entry_ =
         &DeclareCacheEntry("vector thing", MyVector3d(Vector3d(1., 2., 3.)),
                            &MySystemBase::CalcMyVector3,
@@ -142,22 +121,20 @@ class MySystemBase final : public SystemBase {
 
     set_name("cache_entry_test_system");
 
-    // We'll make entry4 disabled by default; everything else is enabled.
-    entry4_->disable_caching_by_default();
+    // We'll make entry3 disabled by default; everything else is enabled.
+    entry3_->disable_caching_by_default();
 
-    EXPECT_EQ(num_cache_entries(), 8);
+    EXPECT_EQ(num_cache_entries(), 6);
     EXPECT_EQ(GetSystemName(), "cache_entry_test_system");
 
-    EXPECT_FALSE(entry3_->is_disabled_by_default());
-    EXPECT_TRUE(entry4_->is_disabled_by_default());
+    EXPECT_FALSE(entry2_->is_disabled_by_default());
+    EXPECT_TRUE(entry3_->is_disabled_by_default());
   }
 
   const CacheEntry& entry0() const { return *entry0_; }
   const CacheEntry& entry1() const { return *entry1_; }
   const CacheEntry& entry2() const { return *entry2_; }
   const CacheEntry& entry3() const { return *entry3_; }
-  const CacheEntry& entry4() const { return *entry4_; }
-  const CacheEntry& entry5() const { return *entry5_; }
   const CacheEntry& string_entry() const { return *string_entry_; }
   const CacheEntry& vector_entry() const { return *vector_entry_; }
 
@@ -166,9 +143,6 @@ class MySystemBase final : public SystemBase {
   // For use as a cache entry calculator.
   void CalcInt98(const MyContextBase& my_context, int* out) const {
     *out = 98;
-  }
-  int CalcReturnInt11(const MyContextBase& my_context) const {
-    return 11;
   }
   void CalcString(const MyContextBase& my_context, string* out) const {
     *out = "calculated_result";
@@ -199,8 +173,6 @@ class MySystemBase final : public SystemBase {
   CacheEntry* entry1_{};
   CacheEntry* entry2_{};
   CacheEntry* entry3_{};
-  CacheEntry* entry4_{};
-  CacheEntry* entry5_{};
   CacheEntry* string_entry_{};
   CacheEntry* vector_entry_{};
 };
@@ -284,8 +256,6 @@ class CacheEntryTest : public ::testing::Test {
     index1_ = entry1().cache_index();
     index2_ = entry2().cache_index();
     index3_ = entry3().cache_index();
-    index4_ = entry4().cache_index();
-    index5_ = entry5().cache_index();
     string_index_ = string_entry().cache_index();
     vector_index_ = vector_entry().cache_index();
 
@@ -296,13 +266,11 @@ class CacheEntryTest : public ::testing::Test {
     EXPECT_EQ(entry0_tracker.prerequisites()[0],
               &context_.get_tracker(system_.all_sources_ticket()));
 
-    // Only entry4 should have been created disabled.
+    // Only entry3 should have been created disabled.
     EXPECT_FALSE(entry0().is_cache_entry_disabled(context_));
     EXPECT_FALSE(entry1().is_cache_entry_disabled(context_));
     EXPECT_FALSE(entry2().is_cache_entry_disabled(context_));
-    EXPECT_FALSE(entry3().is_cache_entry_disabled(context_));
-    EXPECT_TRUE(entry4().is_cache_entry_disabled(context_));
-    EXPECT_FALSE(entry5().is_cache_entry_disabled(context_));
+    EXPECT_TRUE(entry3().is_cache_entry_disabled(context_));
     EXPECT_FALSE(string_entry().is_cache_entry_disabled(context_));
     EXPECT_FALSE(vector_entry().is_cache_entry_disabled(context_));
 
@@ -310,8 +278,6 @@ class CacheEntryTest : public ::testing::Test {
     EXPECT_TRUE(entry1().is_out_of_date(context_));
     EXPECT_TRUE(entry2().is_out_of_date(context_));
     EXPECT_TRUE(entry3().is_out_of_date(context_));
-    EXPECT_TRUE(entry4().is_out_of_date(context_));
-    EXPECT_TRUE(entry5().is_out_of_date(context_));
     EXPECT_TRUE(string_entry().is_out_of_date(context_));
     EXPECT_TRUE(vector_entry().is_out_of_date(context_));
 
@@ -321,17 +287,12 @@ class CacheEntryTest : public ::testing::Test {
     cache_value(index1_).mark_up_to_date();
     cache_value(index2_).mark_up_to_date();
     cache_value(index3_).mark_up_to_date();
-    cache_value(index4_).mark_up_to_date();
-    cache_value(index5_).mark_up_to_date();
     cache_value(string_index_).mark_up_to_date();
 
     EXPECT_EQ(entry0().GetKnownUpToDate<int>(context_), 3);
     EXPECT_EQ(entry1().GetKnownUpToDate<int>(context_), 1);
     EXPECT_EQ(entry2().GetKnownUpToDate<int>(context_), 2);
-    EXPECT_EQ(entry3().GetKnownUpToDate<int>(context_), 17);
-    // Next three should be value-initialized.
-    EXPECT_EQ(entry4().GetKnownUpToDate<int>(context_), 0);
-    EXPECT_EQ(entry5().GetKnownUpToDate<int>(context_), 0);
+    EXPECT_EQ(entry3().GetKnownUpToDate<int>(context_), 0);
     EXPECT_EQ(string_entry().GetKnownUpToDate<string>(context_), "");
     // Let's change string's initial value. Can't when it's up to date.
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -358,8 +319,6 @@ class CacheEntryTest : public ::testing::Test {
     EXPECT_FALSE(entry1().is_out_of_date(context_));
     EXPECT_FALSE(entry2().is_out_of_date(context_));
     EXPECT_FALSE(entry3().is_out_of_date(context_));
-    EXPECT_FALSE(entry4().is_out_of_date(context_));
-    EXPECT_FALSE(entry5().is_out_of_date(context_));
     EXPECT_FALSE(string_entry().is_out_of_date(context_));
     EXPECT_FALSE(vector_entry().is_out_of_date(context_));
   }
@@ -368,8 +327,6 @@ class CacheEntryTest : public ::testing::Test {
   const CacheEntry& entry1() const { return system_.entry1(); }
   const CacheEntry& entry2() const { return system_.entry2(); }
   const CacheEntry& entry3() const { return system_.entry3(); }
-  const CacheEntry& entry4() const { return system_.entry4(); }
-  const CacheEntry& entry5() const { return system_.entry5(); }
   const CacheEntry& string_entry() const { return system_.string_entry(); }
   const CacheEntry& vector_entry() const { return system_.vector_entry(); }
 
@@ -408,8 +365,6 @@ TEST_F(CacheEntryTest, Descriptions) {
   EXPECT_EQ(entry1().description(), "entry1");
   EXPECT_EQ(entry2().description(), "entry2");
   EXPECT_EQ(entry3().description(), "entry3");
-  EXPECT_EQ(entry4().description(), "entry4");
-  EXPECT_EQ(entry5().description(), "entry5");
   EXPECT_EQ(string_entry().description(), "string thing");
   EXPECT_EQ(vector_entry().description(), "vector thing");
 }
@@ -501,8 +456,6 @@ TEST_F(CacheEntryTest, InvalidationWorks) {
   EXPECT_TRUE(entry1().is_out_of_date(context_));
   EXPECT_TRUE(entry2().is_out_of_date(context_));
   EXPECT_TRUE(entry3().is_out_of_date(context_));
-  EXPECT_TRUE(entry4().is_out_of_date(context_));
-  EXPECT_TRUE(entry5().is_out_of_date(context_));
   EXPECT_TRUE(string_entry().is_out_of_date(context_));
   EXPECT_TRUE(vector_entry().is_out_of_date(context_));
 }
@@ -515,8 +468,6 @@ TEST_F(CacheEntryTest, InvalidateAllWorks) {
   EXPECT_TRUE(entry1().is_out_of_date(context_));
   EXPECT_TRUE(entry2().is_out_of_date(context_));
   EXPECT_TRUE(entry3().is_out_of_date(context_));
-  EXPECT_TRUE(entry4().is_out_of_date(context_));
-  EXPECT_TRUE(entry5().is_out_of_date(context_));
   EXPECT_TRUE(string_entry().is_out_of_date(context_));
   EXPECT_TRUE(vector_entry().is_out_of_date(context_));
 }
@@ -737,8 +688,6 @@ TEST_F(CacheEntryTest, InvalidationIsRecursive) {
   EXPECT_TRUE(entry1().is_out_of_date(context_));
   EXPECT_TRUE(entry2().is_out_of_date(context_));
   EXPECT_TRUE(entry3().is_out_of_date(context_));
-  EXPECT_TRUE(entry4().is_out_of_date(context_));
-  EXPECT_TRUE(entry5().is_out_of_date(context_));
 
   // Shouldn't have leaked into independent entries.
   EXPECT_FALSE(string_entry().is_out_of_date(context_));
@@ -760,10 +709,6 @@ TEST_F(CacheEntryTest, Copy) {
             entry2().GetKnownUpToDate<int>(clone_context));
   EXPECT_EQ(entry3().GetKnownUpToDate<int>(context_),
             entry3().GetKnownUpToDate<int>(clone_context));
-  EXPECT_EQ(entry4().GetKnownUpToDate<int>(context_),
-            entry4().GetKnownUpToDate<int>(clone_context));
-  EXPECT_EQ(entry5().GetKnownUpToDate<int>(context_),
-            entry5().GetKnownUpToDate<int>(clone_context));
   EXPECT_EQ(string_entry().GetKnownUpToDate<string>(context_),
             string_entry().GetKnownUpToDate<string>(clone_context));
   EXPECT_EQ(
@@ -793,15 +738,10 @@ TEST_F(CacheEntryTest, Copy) {
   EXPECT_FALSE(entry2().is_out_of_date(clone_context));
   EXPECT_TRUE(entry3().is_out_of_date(context_));
   EXPECT_FALSE(entry3().is_out_of_date(clone_context));
-  EXPECT_TRUE(entry4().is_out_of_date(context_));
-  EXPECT_FALSE(entry4().is_out_of_date(clone_context));
-  EXPECT_TRUE(entry5().is_out_of_date(context_));
-  EXPECT_FALSE(entry5().is_out_of_date(clone_context));
 
   // Bring everything in source context up to date.
   entry0().EvalAbstract(context_); entry1().EvalAbstract(context_);
   entry2().EvalAbstract(context_); entry3().EvalAbstract(context_);
-  entry4().EvalAbstract(context_); entry5().EvalAbstract(context_);
   string_entry().EvalAbstract(context_); vector_entry().EvalAbstract(context_);
 
   // Pretend entry0 was modified in the copy. Should invalidate the copy's
@@ -816,10 +756,6 @@ TEST_F(CacheEntryTest, Copy) {
   EXPECT_FALSE(entry2().is_out_of_date(context_));
   EXPECT_TRUE(entry3().is_out_of_date(clone_context));
   EXPECT_FALSE(entry3().is_out_of_date(context_));
-  EXPECT_TRUE(entry4().is_out_of_date(clone_context));
-  EXPECT_FALSE(entry4().is_out_of_date(context_));
-  EXPECT_TRUE(entry5().is_out_of_date(clone_context));
-  EXPECT_FALSE(entry5().is_out_of_date(context_));
 
   // These aren't downstream of entry0().
   EXPECT_FALSE(string_entry().is_out_of_date(clone_context));
