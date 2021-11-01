@@ -11,6 +11,7 @@ import unittest
 import numpy as np
 
 from drake import lcmt_header, lcmt_quaternion
+import drake as drake_lcmtypes
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
@@ -89,6 +90,19 @@ class TestSystemsLcm(unittest.TestCase):
     def test_serializer_cpp_clone(self):
         serializer = mut._Serializer_[lcmt_quaternion]()
         serializer.Clone().CreateDefaultValue()
+
+    def test_all_serializers_exist(self):
+        """Check that all Python message types have a Python serializer."""
+        message_names = [
+            name for name in dir(drake_lcmtypes)
+            if any([name.startswith("lcmt_"),
+                    name.startswith("experimental_lcmt_")])
+        ]
+        for name in message_names:
+            message_type = getattr(drake_lcmtypes, name)
+            self.assertIsNotNone(message_type)
+            serializer = mut._Serializer_[message_type]
+            self.assertIsNotNone(serializer)
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
