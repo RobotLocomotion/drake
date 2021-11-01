@@ -93,6 +93,35 @@ TEST_F(DrakeLcmInterfaceTest, DefaultErrorHandlingTest) {
   received = {};
 }
 
+// Tests that the Subscribe free function can throw exceptions.
+TEST_F(DrakeLcmInterfaceTest, HandlerExceptionTest) {
+  Message received{};
+  Subscribe<Message>(&lcm_, channel_, [&](const Message& message) {
+    DRAKE_THROW_UNLESS(message.dim > 0);
+    received = message;
+  });
+
+  // Publish successfully.
+  Publish(&lcm_, channel_, sample_);
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
+  received = {};
+
+  // Publish a message that correctly decodes, but is rejected by the user's
+  // handler callback.
+  const Message empty{};
+  Publish(&lcm_, channel_, empty);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      lcm_.HandleSubscriptions(0),
+      ".*callback.*dim > 0.*failed.*");
+
+  // We can still publish successfully.
+  sample_.val.at(0) = 2.0;
+  Publish(&lcm_, channel_, sample_);
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
+}
+
 // Tests the Subscribe free function's customizable error handling.
 TEST_F(DrakeLcmInterfaceTest, CustomErrorHandlingTest) {
   // Subscribe using the helper free-function, using default error-handling.
