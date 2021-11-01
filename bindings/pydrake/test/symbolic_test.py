@@ -1447,3 +1447,71 @@ class TestDecomposeLumpedParameters(unittest.TestCase):
                                     [sym.Expression(0), x*x]])
         numpy_compare.assert_equal(alpha, [sym.Expression(a), a*a])
         numpy_compare.assert_equal(w0, [sym.Expression(x), sym.Expression(0)])
+
+
+class TestUnapply(unittest.TestCase):
+    def test_round_trip(self):
+        expressions = [
+            # Abs
+            sym.abs(e_x),
+            # Acos
+            sym.acos(e_x),
+            # Add
+            1.0 + (2.0 * x) + (3.0 * y * z),
+            # Asin
+            sym.asin(e_x),
+            # Atan
+            sym.atan(e_x),
+            # Atan2
+            sym.atan2(e_x, e_y),
+            # Ceil
+            sym.ceil(e_x),
+            # Constant
+            sym.Expression(1.0),
+            # Cos
+            sym.cos(e_x),
+            # Cosh
+            sym.cosh(e_x),
+            # Div
+            e_x / e_y,
+            # Exp
+            sym.exp(e_x),
+            # Floor
+            sym.floor(e_x),
+            # IfThenElse
+            sym.if_then_else(e_x < e_y, e_x, e_y),
+            # Log
+            sym.log(e_x),
+            # Max
+            sym.max(e_x, e_y),
+            # Min
+            sym.min(e_x, e_y),
+            # Mul
+            2.0 * x * sym.pow(y, z),
+            # NaN
+            sym.Expression(np.nan),
+            # Pow
+            sym.pow(e_x, e_y),
+            # Sin
+            sym.sin(e_x),
+            # Sinh
+            sym.sinh(e_x),
+            # Sqrt
+            sym.sqrt(e_x),
+            # Tan
+            sym.tan(e_x),
+            # Tanh
+            sym.tanh(e_x),
+            # UninterpretedFunction
+            sym.uninterpreted_function("name", [e_x, e_y]),
+            # Var
+            e_x,
+        ]
+        for e in expressions:
+            with self.subTest(e=e):
+                self._check_one_round_trip(e)
+
+    def _check_one_round_trip(self, e):
+        ctor, args = e.Unapply()
+        result = ctor(*args)
+        self.assertTrue(e.EqualTo(result), msg=repr(result))
