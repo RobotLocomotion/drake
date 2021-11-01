@@ -19,6 +19,18 @@ using Eigen::Isometry3d;
 using Eigen::Quaterniond;
 using Eigen::AngleAxisd;
 
+// Provide a warning-free wrapper over a deprecated function.  In case
+// we still need this function when eigen_geometry_compare.h is removed,
+// we can just copy its source code here directly.
+[[nodiscard]] ::testing::AssertionResult CompareTransforms(
+    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
+    double tolerance) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  return drake::CompareTransforms(X_expected, X_actual, tolerance);
+#pragma GCC diagnostic pop
+}
+
 struct CombinedState {
   CombinedState(
       const Isometry3d& default_pose = Isometry3d::Identity(),
