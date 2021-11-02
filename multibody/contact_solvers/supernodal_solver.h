@@ -61,6 +61,7 @@ class SuperNodalSolver {
   //
   // If M_{ij} is nonzero in the matrix H = M + J^T G J, then [J^T G J]_{ij} 
   // must also be nonzero for generic G.
+  //  If this condition fails, an exception is thrown. 
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
