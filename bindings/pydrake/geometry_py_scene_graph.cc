@@ -242,44 +242,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("collision_filter_manager",
             overload_cast_explicit<CollisionFilterManager>(
                 &Class::collision_filter_manager),
-            cls_doc.collision_filter_manager.doc_0args);
-
-// TODO(2021-11-01) Remove these bindings with deprecated code. We can also
-//  eliminate the breaking "cls //BR" below and put it all together in a stream
-//  of .defs.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("ExcludeCollisionsBetween",
-            WrapDeprecated(
-                cls_doc.ExcludeCollisionsBetween.doc_deprecated_2args,
-                py::overload_cast<const GeometrySet&, const GeometrySet&>(
-                    &Class::ExcludeCollisionsBetween)),
-            py_rvp::reference_internal, py::arg("setA"), py::arg("setB"),
-            cls_doc.ExcludeCollisionsBetween.doc_deprecated_2args)
-        .def("ExcludeCollisionsBetween",
-            WrapDeprecated(
-                cls_doc.ExcludeCollisionsBetween.doc_deprecated_3args,
-                overload_cast_explicit<void, Context<T>*, const GeometrySet&,
-                    const GeometrySet&>(&Class::ExcludeCollisionsBetween)),
-            py_rvp::reference_internal, py::arg("context"), py::arg("setA"),
-            py::arg("setB"),
-            cls_doc.ExcludeCollisionsBetween.doc_deprecated_3args)
-        .def("ExcludeCollisionsWithin",
-            WrapDeprecated(cls_doc.ExcludeCollisionsWithin.doc_deprecated_1args,
-                py::overload_cast<const GeometrySet&>(
-                    &Class::ExcludeCollisionsWithin)),
-            py_rvp::reference_internal, py::arg("set"),
-            cls_doc.ExcludeCollisionsWithin.doc_deprecated_1args)
-        .def("ExcludeCollisionsWithin",
-            WrapDeprecated(cls_doc.ExcludeCollisionsWithin.doc_deprecated_2args,
-                overload_cast_explicit<void, Context<T>*, const GeometrySet&>(
-                    &Class::ExcludeCollisionsWithin)),
-            py_rvp::reference_internal, py::arg("context"), py::arg("set"),
-            cls_doc.ExcludeCollisionsWithin.doc_deprecated_2args);
-#pragma GCC diagnostic pop
-
-    cls  // BR
+            cls_doc.collision_filter_manager.doc_0args)
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
