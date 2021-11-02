@@ -1,4 +1,6 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
 
 mkdir -p /dependencies/build
 cd /dependencies/build

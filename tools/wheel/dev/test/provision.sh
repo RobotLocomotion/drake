@@ -1,8 +1,10 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # This shell script provisions a bare docker image for testing a Drake wheel.
 # It is not intended to be run directly; use test-wheel.sh or test-wheels.sh,
 # or the accompanying Dockerfile, instead.
+
+set -e
 
 PYTHON=python${1:-3}
 
