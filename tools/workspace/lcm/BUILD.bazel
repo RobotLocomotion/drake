@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
 exports_files(
     [
@@ -9,6 +10,11 @@ exports_files(
         "test/lcm-gen_install_test.py",
     ],
     visibility = ["@lcm//:__pkg__"],
+)
+
+drake_py_unittest(
+    name = "no_lcm_warnings_test",
+    deps = ["@lcm//:lcm-python"],
 )
 
 add_lint_tests(python_lint_extra_srcs = ["test/lcm-gen_install_test.py"])
