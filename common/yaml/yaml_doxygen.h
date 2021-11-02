@@ -4,6 +4,49 @@
 TODO(jwnimmer-tri) This section is still a work in progress, and needs
 better overview text and organization.
 
+<h2>Reading YAML files</h2>
+
+Use LoadYamlFile() or LoadYamlString() to de-serialize YAML-formatted string
+data into C++ structure.
+
+Sample data:
+@code{yaml}
+doc:
+  foo: 1.0
+  bar: [2.0, 3.0]
+@endcode
+
+Sample code:
+@code{cpp}
+struct MyData {
+  double foo{NAN};
+  std::vector<double> bar;
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(foo));
+    a->Visit(DRAKE_NVP(bar));
+  }
+};
+
+MyData LoadData(const std::string& filename) {
+  MyData result;
+  const YAML::Node& root = YAML::LoadFile(filename);
+  common::YamlReadArchive(root).Accept(&result);
+  return result;
+}
+@endcode
+
+Structures can be arbitrarily nested, as long as each `struct` has a
+`Serialize` method.  Many common built-in types (int, double, std::string,
+std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
+also be used.
+
+YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
+
+For inspiration and background, see:
+https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
+
 <h2>Writing YAML files</h2>
 
 Use SaveYamlFile() or SaveYamlString() to output a YAML-formatted serialization
