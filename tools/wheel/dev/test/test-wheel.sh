@@ -9,11 +9,16 @@
 
 set -e
 
+if [ -z "$1" ]; then
+    echo "Usage: $0 <wheel>" >&2
+    exit 1
+fi
+
 . /opt/python/bin/activate
 
 pip install --upgrade pip
 
-pip install "${1:-drake}"
+pip install "$1"
 
 python << EOF
 import pydrake.all
