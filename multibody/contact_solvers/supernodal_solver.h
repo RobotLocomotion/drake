@@ -58,6 +58,9 @@ class SuperNodalSolver {
   // @param jacobian_blocks Blocks Bij provided as triplets (i, j, Bij).
   // @param mass_matrices Block diagonal matrix M provided as a vector of block
   // diagonal entries.
+  //
+  // If M_{ij} is nonzero in the matrix H = M + J^T G J, then [J^T G J]_{ij} 
+  // must also be nonzero for generic G.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
