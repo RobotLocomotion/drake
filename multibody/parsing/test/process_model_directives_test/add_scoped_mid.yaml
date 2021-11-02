@@ -12,11 +12,11 @@ directives:
       base_frame: world
       translation: [10, 0, 0]
 - add_directives:
-    file: package://drake/multibody/parsing/test/process_model_directives_test/add_scoped_sub.yaml
+    file: package://process_model_directives_test/add_scoped_sub.yaml
     model_namespace: nested
 
 # Include a test for model directives backreferences (which are possibly a bug;
 # see the included file for details)
 - add_directives:
-    file: package://drake/multibody/parsing/test/process_model_directives_test/add_backreference.yaml
+    file: package://process_model_directives_test/add_backreference.yaml
     model_namespace: nested

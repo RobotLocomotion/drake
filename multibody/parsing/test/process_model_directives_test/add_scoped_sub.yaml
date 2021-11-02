@@ -7,7 +7,7 @@ directives:
 - add_model:
     # This name will be prefixed by `model_namespace`.
     name: simple_model
-    file: package://drake/multibody/parsing/test/process_model_directives_test/simple_model.sdf
+    file: package://process_model_directives_test/simple_model.sdf
 
 - add_frame:
     # This will implicitly resolve to the `simple_model` instance.
@@ -25,7 +25,7 @@ directives:
 
 - add_model:
     name: extra_model
-    file: package://drake/multibody/parsing/test/process_model_directives_test/simple_model.sdf
+    file: package://process_model_directives_test/simple_model.sdf
 
 - add_weld:
     parent: simple_model::frame

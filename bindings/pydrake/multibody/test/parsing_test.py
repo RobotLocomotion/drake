@@ -103,11 +103,13 @@ class TestParsing(unittest.TestCase):
         self.assertIsInstance(result, ModelInstanceIndex)
 
     def test_model_directives(self):
+        model_dir = os.path.dirname(FindResourceOrThrow(
+            "drake/multibody/parsing/test/"
+            "process_model_directives_test/package.xml"))
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
-        directives_file = FindResourceOrThrow(
-            "drake/multibody/parsing/test/"
-            "process_model_directives_test/add_scoped_sub.yaml")
+        parser.package_map().PopulateFromFolder(model_dir)
+        directives_file = model_dir + "/add_scoped_top.yaml"
         directives = LoadModelDirectives(directives_file)
         added_models = ProcessModelDirectives(
             directives=directives, plant=plant, parser=parser)

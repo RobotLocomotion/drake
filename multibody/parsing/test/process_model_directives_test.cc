@@ -28,6 +28,16 @@ using drake::systems::DiagramBuilder;
 const char* const kTestDir =
     "drake/multibody/parsing/test/process_model_directives_test";
 
+// Our unit test's package is not normally loaded; construct a parser that
+// has it and can resolve package://process_model_directives_test urls.
+std::unique_ptr<Parser> make_parser(MultibodyPlant<double>* plant) {
+  auto parser = std::make_unique<Parser>(plant);
+  const drake::filesystem::path abspath_xml = FindResourceOrThrow(
+      std::string(kTestDir) + "/package.xml");
+  parser->package_map().AddPackageXml(abspath_xml.string());
+  return parser;
+}
+
 // Simple smoke test of the most basic model directives.
 GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   ModelDirectives station_directives = LoadModelDirectives(
@@ -36,7 +46,7 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
 
   MultibodyPlant<double> plant(0.0);
   ProcessModelDirectives(station_directives, &plant,
-                         nullptr, std::make_unique<Parser>(&plant).get());
+                         nullptr, make_parser(&plant).get());
   plant.Finalize();
 
   // Expect the two model instances added by the directives.
@@ -62,7 +72,7 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
   ProcessModelDirectives(directives, &plant,
-                         nullptr, std::make_unique<Parser>(&plant).get());
+                         nullptr, make_parser(&plant).get());
   plant.Finalize();
   auto diagram = builder.Build();
 
@@ -115,8 +125,8 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
     return out;
   };
 
-  ProcessModelDirectives(directives, &plant, nullptr,
-                         std::make_unique<Parser>(&plant).get(), error);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get(), error);
   plant.Finalize();
 
   // This should have created an error frame for the relevant weld.
