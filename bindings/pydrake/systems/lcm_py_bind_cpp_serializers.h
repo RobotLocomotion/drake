@@ -18,8 +18,6 @@ namespace pydrake {
 namespace pysystems {
 namespace pylcm {
 
-// C++ LCM types should be bound on an as-needed basis in this module (unless
-// it's a downstream project). See file-level description for more information.
 // TODO(eric.cousineau): Consider providing Starlark to codegen binding code.
 void BindCppSerializers();
 

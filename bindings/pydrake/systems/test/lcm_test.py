@@ -11,6 +11,7 @@ import unittest
 import numpy as np
 
 from drake import lcmt_header, lcmt_quaternion
+import drake as drake_lcmtypes
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
@@ -89,6 +90,26 @@ class TestSystemsLcm(unittest.TestCase):
     def test_serializer_cpp_clone(self):
         serializer = mut._Serializer_[lcmt_quaternion]()
         serializer.Clone().CreateDefaultValue()
+
+    def test_all_serializers_exist(self):
+        """Checks that all Python message types have a C++ serializer."""
+        message_names = [
+            name for name in dir(drake_lcmtypes)
+            if any([name.startswith("lcmt_"),
+                    name.startswith("experimental_lcmt_")])
+        ]
+        lcm = DrakeLcm()
+        for name in message_names:
+            message_class = getattr(drake_lcmtypes, name)
+            self.assertIsNotNone(message_class)
+            # Check that the Python message class is a valid template value.
+            serializer = mut._Serializer_[message_class]
+            self.assertIsNotNone(serializer)
+            # Confirm that we can actually instantiate a publisher on the C++
+            # message type.
+            mut.LcmPublisherSystem.Make(
+                channel="TEST_CHANNEL", lcm_type=message_class, lcm=lcm,
+                use_cpp_serializer=True)
 
     def _process_event(self, dut):
         # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
