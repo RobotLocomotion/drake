@@ -11,9 +11,9 @@
   <export>
     <deprecated>
       The 'package://process_model_directives_test' URI spelling is deprecated,
-      and will be removed from Drake on or around 2022-02-01. Please spell the
+      and will be removed from Drake on or around 2022-03-01. Please spell the
       URI as
-     'package://drake/multibody/parsing/test/process_model_directives_test'
+      'package://drake/multibody/parsing/test/process_model_directives_test'
       instead.
     </deprecated>
   </export>

@@ -14,7 +14,7 @@
   <export>
     <deprecated>
       The 'package://franka_description' URI spelling is deprecated, and will be
-      removed from Drake on or around 2022-02-01. Please spell the URI as
+      removed from Drake on or around 2022-03-01. Please spell the URI as
       'package://drake/manipulation/models/franka_description' instead.
     </deprecated>
   </export>
