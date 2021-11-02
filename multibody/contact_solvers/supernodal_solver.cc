@@ -362,11 +362,9 @@ void SuperNodalSolver::SetWeightMatrix(
       }
       e_last = e;
       c.SetWeightMatrixIndex(s, e);
-#ifndef NDEBUG
       if (num_rows_found != num_rows) {
         throw std::runtime_error("Weight matrix incompatible with Jacobian.");
       }
-#endif
     }
     weight_matrix_ready_ = true;
   }
