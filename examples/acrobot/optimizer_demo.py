@@ -36,9 +36,7 @@ def evaluate_metric_once(scenario, metric, seeds):
                                      dir=env_tmpdir) as temp_dir:
         scenario_filename = os.path.join(temp_dir, "scenario.yaml")
         with open(scenario_filename, "w") as scenario_file:
-            scenario_file.write(
-                save_scenario(scenario=scenario,
-                              scenario_name="evaluation_scenario"))
+            scenario_file.write(save_scenario(scenario=scenario))
         tapes = []
         for seed in seeds:
             output_filename = os.path.join(temp_dir, f"output_{seed}.yaml")
@@ -123,8 +121,7 @@ def main():
             num_evaluations=args.num_evaluations)
         output_scenario = input_scenario
         output_scenario["controller_params"] = result
-        output.write(save_scenario(scenario=output_scenario,
-                                   scenario_name="optimized_scenario"))
+        output.write(save_scenario(scenario=output_scenario))
 
 
 if __name__ == "__main__":
