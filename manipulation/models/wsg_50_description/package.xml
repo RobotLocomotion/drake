@@ -14,8 +14,8 @@
   <buildtool_depend>catkin</buildtool_depend>
   <export>
     <deprecated>
-      The wsg_50_description package is deprecated, and will be removed on or
-      around 2022-02-01. Please use
+      The 'package://wsg_50_description' URI spelling is deprecated, and will be
+      removed from Drake on or around 2022-02-01. Please spell the URI as
       'package://drake/manipulation/models/wsg_50_description' instead.
     </deprecated>
   </export>

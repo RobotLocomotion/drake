@@ -10,8 +10,8 @@
   <license>BSD</license>
   <export>
     <deprecated>
-      The manipulation_station package is deprecated, and will be removed on or
-      around 2022-02-01. Please use
+      The 'package://manipulation_station' URI spelling is deprecated, and will
+      be removed from Drake on or around 2022-02-01. Please spell the URI as
       'package://drake/examples/manipulation_station/models' instead.
     </deprecated>
   </export>
