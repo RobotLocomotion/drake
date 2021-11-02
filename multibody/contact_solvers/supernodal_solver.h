@@ -173,7 +173,6 @@ class SuperNodalSolver {
 
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
-  bool weight_matrix_ready_ = false;
   const std::vector<MatrixBlock> mass_matrices_;
   std::vector<Eigen::MatrixXd> weight_matrices_;
   std::vector<std::vector<int>> cliques_;
