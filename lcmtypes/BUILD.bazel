@@ -306,6 +306,7 @@ LCMTYPES_CC = [
     ":acrobot",
     ":allegro",
     ":call_python",
+    ":experimental_deformable_mesh",
     ":point",
     ":point_cloud",
     ":header",
