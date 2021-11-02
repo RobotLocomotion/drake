@@ -13,23 +13,15 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-struct SolverData {
-  std::vector<std::vector<int>> cliques;
-  int num_vars;
-  std::vector<int> order;
-  std::vector<std::vector<int>> supernodes;
-  std::vector<std::vector<int>> separators;
-};
 
 // MatrixBlock::first contains the data of a submatrix and MatrixBlock::second
 // contains the columns numbers. The rows are inferred.
-using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
-
-using MatrixBlockData = std::pair<Eigen::MatrixXd, int>;
-
-using MatrixBlocks = std::vector<MatrixBlock>;
-
-using JacobianRowData = std::vector<MatrixBlockData>;
+//
+//using MatrixBlockData = std::pair<Eigen::MatrixXd, int>;
+//
+//using MatrixBlocks = std::vector<MatrixBlock>;
+//
+//using JacobianRowData = std::vector<MatrixBlockData>;
 
 // A supernodal solver for the solving the symmetric positive definite system
 //   H⋅x = b where H = M + J^T G J.  The matrices M and J are set by the
@@ -58,15 +50,9 @@ using JacobianRowData = std::vector<MatrixBlockData>;
 //  solver.Solve(b1);
 using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 
-struct SparsityData {
-  SolverData data;
-  std::vector<std::vector<int>> cliques_assembler;
-};
 
 class SuperNodalSolver {
  public:
-  SuperNodalSolver(const MatrixBlocks& block_diagonal_M,
-                   const std::vector<MatrixBlocks>& rows_of_J);
 
   // @param num_jacobian_row_blocks Number of row blocks in the matrix J.
   // @param jacobian_blocks Blocks Bij provided as triplets (i, j, Bij).
@@ -78,7 +64,7 @@ class SuperNodalSolver {
 
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_W);
 
-  // Returns the matrix H.
+  // Returns the M + J^T G J as a dense matrix (for debugging).
   Eigen::MatrixXd FullMatrix() {
     if (!matrix_ready_) {
       throw std::runtime_error(
@@ -147,12 +133,31 @@ class SuperNodalSolver {
   };
 
  private:
+
+  using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
+  struct SolverData {
+    std::vector<std::vector<int>> cliques;
+    int num_vars;
+    std::vector<int> order;
+    std::vector<std::vector<int>> supernodes;
+    std::vector<std::vector<int>> separators;
+  };
+
+  struct SparsityData {
+    SolverData data;
+    std::vector<std::vector<int>> cliques_assembler;
+  };
+
   void Initialize(const std::vector<std::vector<int>>& cliques,
                   const std::vector<std::vector<Eigen::MatrixXd>>& row_data);
+  SparsityData GetEliminationOrdering(int num_jacobian_row_blocks, 
+                            const std::vector<BlockMatrixTriplet>& jacobian_blocks);
+
+
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
   bool weight_matrix_ready_ = false;
-  const MatrixBlocks mass_matrices_;
+  const std::vector<MatrixBlock> mass_matrices_;
   std::vector<Eigen::MatrixXd> weight_matrices_;
   std::vector<std::vector<int>> cliques_;
   SparsityData clique_data_;

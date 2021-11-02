@@ -9,6 +9,10 @@
 
 using Eigen::MatrixXd;
 using std::vector;
+using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
+using MatrixBlocks = std::vector<MatrixBlock>;
+using MatrixBlockData = std::pair<Eigen::MatrixXd, int>;
+using JacobianRowData = std::vector<MatrixBlockData>;
 
 namespace drake {
 namespace multibody {
@@ -59,39 +63,6 @@ void SumOverWeightedMatrixBlocks(const vector<MatrixXd>& row_data,
   }
 }
 
-/* TODO(FrankPermenter): Remove this function */
-std::pair<MatrixXd, std::vector<int>> SumOverMatrixBlocks(
-    const MatrixBlocks& row_data) {
-  MatrixXd y(NumberOfVars(row_data), NumberOfVars(row_data));
-  int r_offset = 0;
-  y.setZero();
-  std::vector<int> variables;
-  for (size_t i = 0; i < row_data.size(); i++) {
-    int c_offset = 0;
-    auto r = row_data.at(i);
-    variables = ::conex::UnionOfSorted(variables, r.second);
-    for (size_t j = 0; j < row_data.size(); j++) {
-      auto c = row_data.at(j);
-      y.block(r_offset, c_offset, r.second.size(), c.second.size()) +=
-          r.first.transpose() * c.first;
-      c_offset += c.second.size();
-    }
-    r_offset += r.second.size();
-  }
-  return std::pair<MatrixXd, std::vector<int>>(y, variables);
-}
-
-/* TODO(FrankPermenter): Remove this function */
-std::vector<std::pair<MatrixXd, std::vector<int>>> DecomposeCost(
-    const vector<MatrixBlocks>& row_data) {
-  size_t n = row_data.size();
-  std::vector<std::pair<MatrixXd, std::vector<int>>> Jcliques(n);
-  for (size_t i = 0; i < n; i++) {
-    Jcliques.at(i) = SumOverMatrixBlocks(row_data.at(i));
-  }
-  return Jcliques;
-}
-
 class Container {
  public:
   template <typename T>
@@ -100,28 +71,6 @@ class Container {
   ::conex::KKT_SystemAssembler kkt;
 };
 
-/* TODO(FrankPermenter): Simplify this function */
-std::vector<std::vector<int>> GetCliques(const vector<MatrixBlocks>& row_data) {
-  ::conex::ConstraintManager<Container> prog;
-  auto Jcliques = DecomposeCost(row_data);
-  vector<std::vector<int>> cliques;
-  for (size_t i = 0; i < Jcliques.size(); i++) {
-    cliques.push_back(Jcliques.at(i).second);
-  }
-  return cliques;
-}
-
-std::vector<std::vector<int>> GetAllCliques(
-    const std::vector<MatrixBlocks>& row_data) {
-  auto c = GetCliques(row_data);
-
-  return c;
-}
-
-std::vector<std::vector<int>> GetEmptySet(int n) {
-  std::vector<std::vector<int>> y(n);
-  return y;
-}
 
 // TODO(FrankPermenter): Remove this.
 inline std::vector<std::vector<MatrixXd>> GetRowData(
@@ -178,6 +127,8 @@ inline std::vector<std::vector<MatrixXd>> GetRowData(
   }
   return y;
 }
+
+
 
 inline MatrixBlocks GetMassMatrix(
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
@@ -272,7 +223,7 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
   }
 }
 
-SparsityData GetEliminationOrdering(
+SuperNodalSolver::SparsityData SuperNodalSolver::GetEliminationOrdering(
     int num_jacobian_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
   using std::vector;
@@ -375,17 +326,6 @@ std::vector<JacobianRowData> ConvertRow(
     i++;
   }
   return y;
-}
-
-SuperNodalSolver::SuperNodalSolver(const MatrixBlocks& mass_matrix,
-                                   const std::vector<MatrixBlocks>& row_data)
-    : mass_matrices_(mass_matrix),
-      cliques_(GetAllCliques(row_data)),
-      solver_(
-          cliques_,
-          GetEmptySet(cliques_.size()) /*No negative semidefinite sub-block*/),
-      jacobian_assemblers_(row_data.size()) {
-  Initialize(cliques_, GetRowData(row_data));
 }
 
 SuperNodalSolver::SuperNodalSolver(
