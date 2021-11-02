@@ -308,10 +308,7 @@ SparsityData GetEliminationOrdering(
     }
   }
 
-  GetCliqueEliminationOrder(cliques, largest_clique /*root*/, &order,
-                            &supernodes, &separators, &tree);
-
-  FillIn(tree, num_column_blocks, order, &supernodes, &separators);
+  conex::PickCliqueOrder(cliques, largest_clique, &order, &supernodes, &separators);
 
   auto offsets = CumulativeSum(column_block_sizes, num_column_blocks);
   vector<vector<int>> supernodes_full(order.size());

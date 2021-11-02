@@ -121,9 +121,17 @@ class SuperNodalSolver {
     void SetMatrixBlocks(const std::vector<Eigen::MatrixXd>& r) {
       row_data_ = r;
       temporaries_.resize(r.size());
+      int num_vars = 0;
       for (size_t j = 0; j < row_data_.size(); j++) {
+        num_vars += r.at(j).cols();
         temporaries_.at(j).resize(r.at(j).rows(), r.at(j).cols());
       }
+
+      LinearKKTAssemblerBase::SetNumberOfVariables(num_vars);
+      const int size = SizeOf(LinearKKTAssemblerBase::schur_complement_data);
+      workspace_memory_.resize(size);
+      LinearKKTAssemblerBase::schur_complement_data.InitializeWorkspace(
+          workspace_memory_.data());
     }
 
    private:
@@ -132,6 +140,7 @@ class SuperNodalSolver {
     std::vector<int> mass_matrix_position_;
     std::vector<Eigen::MatrixXd> mass_matrix_;
     std::vector<Eigen::MatrixXd> temporaries_;
+    Eigen::VectorXd workspace_memory_;
     const std::vector<Eigen::MatrixXd>* weight_matrix_;
     int weight_start_ = 0;
     int weight_end_ = 0;

@@ -6,7 +6,7 @@ def conex_repository(
         mirrors = None):
       git_repository(
           name = name,
-          commit = "bc34a103c21f12b3bbfbb2db02b81772398cf6a3",
-          shallow_since = "1618867192 -0400",
+          commit = "782e4d2ab1adfcebad234ddd48f5e32b0e41edde",
+          shallow_since = "1625176963 -0400",
           remote = "git@github.com:frankpermenter/conex.git",
       )
