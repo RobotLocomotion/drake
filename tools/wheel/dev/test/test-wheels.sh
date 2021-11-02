@@ -1,8 +1,10 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # This shell script tests the Drake wheels. It takes two arguments; the version
 # of the wheel to be tested, and an optional path to the wheels. If the second
 # argument is not given, the wheels are assumed to be in the current directory.
+
+set -e
 
 wheel_version="$1"
 wheel_dir="$(readlink -f "${2:-$PWD}")"
