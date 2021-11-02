@@ -540,6 +540,14 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
   EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+
+  // Make the block sizes of W incompatible with J. Verify
+  // exception is thrown.
+  blocks_of_W.at(0) = W.block(0, 0, 4, 4);
+  solver.SetWeightMatrix(blocks_of_W);
+
+
+
 }
 
 }  // namespace internal

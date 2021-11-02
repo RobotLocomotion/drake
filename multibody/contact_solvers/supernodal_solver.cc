@@ -349,24 +349,24 @@ void SuperNodalSolver::SetWeightMatrix(
     c.SetWeightMatrixPointer(&weight_matrix);
   }
 
-  if (!weight_matrix_ready_) {
-    int e_last = -1;
-    for (auto& c : jacobian_assemblers_) {
-      int num_rows = c.NumRows();
-      int s = e_last + 1;
-      int e = s;
-      int num_rows_found = weight_matrix.at(e).rows();
-      while (num_rows_found < num_rows) {
-        e++;
-        num_rows_found += weight_matrix.at(e).rows();
-      }
-      e_last = e;
-      c.SetWeightMatrixIndex(s, e);
-      if (num_rows_found != num_rows) {
-        throw std::runtime_error("Weight matrix incompatible with Jacobian.");
-      }
+  int e_last = -1;
+  for (auto& c : jacobian_assemblers_) {
+    int num_rows = c.NumRows();
+    int s = e_last + 1;
+    int e = s;
+    int num_rows_found = weight_matrix.at(e).rows();
+    while (num_rows_found < num_rows) {
+      e++;
+      num_rows_found += weight_matrix.at(e).rows();
     }
-    weight_matrix_ready_ = true;
+    if (num_rows_found != num_rows) {
+      for (auto& ja : jacobian_assemblers_) {
+        ja.SetWeightMatrixPointer(NULL);
+      }
+      throw std::runtime_error("Weight matrix incompatible with Jacobian.");
+    }
+    e_last = e;
+    c.SetWeightMatrixIndex(s, e);
   }
 
   solver_.AssembleFromCliques(clique_assemblers_);
