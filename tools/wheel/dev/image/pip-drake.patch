@@ -1,9 +1,9 @@
 diff --git a/bindings/pydrake/systems/lcm_py.cc b/bindings/pydrake/systems/lcm_py.cc
-index d98b81c59..fb9bcd86c 100644
+index 6e728a157..4d5bdd5ff 100644
 --- a/bindings/pydrake/systems/lcm_py.cc
 +++ b/bindings/pydrake/systems/lcm_py.cc
-@@ -216,7 +216,7 @@ PYBIND11_MODULE(lcm, m) {
- #pragma GCC diagnostic pop
+@@ -204,7 +204,7 @@ PYBIND11_MODULE(lcm, m) {
+   }
 
    // Bind C++ serializers.
 -  BindCppSerializers();
