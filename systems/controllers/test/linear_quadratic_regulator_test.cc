@@ -93,9 +93,9 @@ void TestLQRAffineSystemAgainstKnownSolution(
 
   sys.get_input_port().FixValue(context.get(), u0);
   if (sys.time_period() == 0.0) {
-    context->get_mutable_continuous_state().SetFromVector(x0);
+    context->SetContinuousState(x0);
   } else {
-    context->get_mutable_discrete_state(0).SetFromVector(x0);
+    context->SetDiscreteState(0, x0);
   }
   std::unique_ptr<AffineSystem<double>> lqr =
       LinearQuadraticRegulator(sys, *context, Q, R, N);

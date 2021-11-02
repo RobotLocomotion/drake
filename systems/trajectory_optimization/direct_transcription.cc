@@ -111,7 +111,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
           evaluation_time_ + fixed_timestep_));
       *y = next_state - context->get_continuous_state_vector().CopyToVector();
     } else {
-      context->get_mutable_discrete_state(0).SetFromVector(state);
+      context->SetDiscreteState(0, state);
       integrator_->get_system().CalcDiscreteVariableUpdates(
           *context, discrete_state_.get());
       *y = next_state - discrete_state_->get_vector(0).get_value();

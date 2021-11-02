@@ -287,8 +287,7 @@ TEST_F(ExternalSystemConstraintTest, NonSymbolic) {
   // and checking the result, for double.
   auto context_double = system_.CreateDefaultContext();
   system_.get_input_port().FixValue(context_double.get(), VectorXd::Zero(1));
-  context_double->get_mutable_continuous_state().SetFromVector(
-      (VectorXd(2) << 0.0, 22.0).finished());
+  context_double->SetContinuousState((VectorXd(2) << 0.0, 22.0).finished());
   VectorXd value_double;
   dut.get_calc<double>()(system_, *context_double, &value_double);
   EXPECT_TRUE(CompareMatrices(value_double, Vector2d(22.0, 0.0)));
@@ -300,7 +299,7 @@ TEST_F(ExternalSystemConstraintTest, NonSymbolic) {
   auto context_autodiff = system_autodiff->CreateDefaultContext();
   system_autodiff->get_input_port().FixValue(context_autodiff.get(),
                                              VectorX<T>::Zero(1));
-  context_autodiff->get_mutable_continuous_state().SetFromVector(
+  context_autodiff->SetContinuousState(
       (VectorX<T>(2) << T{0.0}, T{22.0}).finished());
   VectorX<T> value_autodiff;
   dut.get_calc<T>()(

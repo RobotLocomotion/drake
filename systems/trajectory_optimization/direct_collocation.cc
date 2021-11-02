@@ -76,7 +76,7 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
   if (input_port_) {
     input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
   }
-  context_->get_mutable_continuous_state().SetFromVector(state);
+  context_->SetContinuousState(state);
   system_->CalcTimeDerivatives(*context_, derivatives_.get());
   *xdot = derivatives_->CopyToVector();
 }
@@ -236,7 +236,7 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
       input_port_value_->GetMutableVectorData<double>()->SetFromVector(
           result.GetSolution(input(i)));
     }
-    context_->get_mutable_continuous_state().SetFromVector(states[i]);
+    context_->SetContinuousState(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
   }

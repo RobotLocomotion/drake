@@ -421,7 +421,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       [&t0, &x0, &context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
     context.SetTime(t0);
-    context.get_mutable_continuous_state().SetFromVector(x0);
+    context.SetContinuousState(x0);
     while (context.get_time() < t_des)
       integrator_->IntegrateNoFurtherThanTime(inf, inf, t_des);
   };

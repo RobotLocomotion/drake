@@ -135,9 +135,9 @@ class DiscreteValues {
     get_mutable_vector(0).set_value(value);
   }
 
-  /// Returns the entire vector as a const Eigen::VectorBlock for the _only_
-  /// group.
-  Eigen::VectorBlock<const VectorX<T>> get_value() const {
+  /// Returns the entire vector as a const Eigen VectorX reference for
+  /// the _only_ group.
+  const VectorX<T>& get_value() const {
     ThrowUnlessExactlyOneGroup();
     return get_vector(0).get_value();
   }
@@ -166,9 +166,9 @@ class DiscreteValues {
     return *data_[index];
   }
 
-  /// Returns the entire vector as a const Eigen::VectorBlock for the indicated
-  /// group.
-  Eigen::VectorBlock<const VectorX<T>> get_value(int index) const {
+  /// Returns the entire vector as a const Eigen VectorX reference for the
+  /// indicated group.
+  const VectorX<T>& get_value(int index) const {
     DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
     return data_[index]->get_value();
   }

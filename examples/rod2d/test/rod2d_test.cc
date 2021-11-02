@@ -1141,7 +1141,7 @@ GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
   x_pdae[0] = 0;
   x_pdae[1] = pdae.get_rod_half_length();
   x_pdae[2] = M_PI_2;
-  context_pdae->get_mutable_continuous_state().SetFromVector(x_pdae);
+  context_pdae->SetContinuousState(x_pdae);
   pdae.CalcOutput(*context_pdae, output_pdae.get());
 }
 

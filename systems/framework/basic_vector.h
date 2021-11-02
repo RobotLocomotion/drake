@@ -73,9 +73,9 @@ class BasicVector : public VectorBase<T> {
     values_ = value;
   }
 
-  /// Returns the entire vector as a const Eigen::VectorBlock.
-  Eigen::VectorBlock<const VectorX<T>> get_value() const {
-    return values_.head(values_.rows());
+  /// Returns a const reference to the the contained Eigen VectorX.
+  const VectorX<T>& get_value() const {
+    return values_;
   }
 
   /// Returns the entire vector as a mutable Eigen::VectorBlock, which allows

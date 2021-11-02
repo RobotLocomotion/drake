@@ -851,7 +851,7 @@ void DoScalarDependentDefinitions(py::module m) {
           py::arg("index"), py::arg("value"),
           doc.DiscreteValues.set_value.doc_2args)
       .def("get_value",
-          overload_cast_explicit<Eigen::VectorBlock<const VectorX<T>>, int>(
+          overload_cast_explicit<const VectorX<T>&, int>(
               &DiscreteValues<T>::get_value),
           py_rvp::reference_internal, py::arg("index") = 0,
           doc.DiscreteValues.get_value.doc_1args)
