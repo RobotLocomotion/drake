@@ -54,14 +54,6 @@ class TestGeometryCore(unittest.TestCase):
         self.assertTrue(dut.IsActive(filter_id=id))
         self.assertTrue(dut.RemoveDeclaration(filter_id=id))
 
-        # TODO(2021-11-01) Remove these with deprecation resolution.
-        # Legacy API
-        with catch_drake_warnings(expected_count=4):
-            sg.ExcludeCollisionsBetween(geometries, geometries)
-            sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
-            sg.ExcludeCollisionsWithin(geometries)
-            sg.ExcludeCollisionsWithin(sg_context, geometries)
-
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
         self.assertIsInstance(frame.id(), mut.FrameId)
