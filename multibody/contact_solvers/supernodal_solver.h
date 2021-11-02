@@ -62,7 +62,20 @@ class SuperNodalSolver {
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
 
-  void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_W);
+  // Sets the block-diagonal matrix G. The block sizes of G must refine
+  // the partition of the matrix H that was specified by the input
+  // to the constructor. For instance, if H is partitioned like
+  //
+  //  H1 
+  //  H2 H3
+  //
+  //  Then we require existence of n and m such that
+  //
+  //  num_rows(H1) = \sum^n_{i=1} num_rows (G_i),  
+  //  num_rows(H2) = \sum^{m}_{i=n+1} num_rows (G_i)
+  //
+  //  If this condition fails, an exception is thrown unless NDEBUG is defined. 
+  void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
   Eigen::MatrixXd FullMatrix() {
