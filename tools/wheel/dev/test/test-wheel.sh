@@ -4,10 +4,14 @@
 # a "pristine" Ubuntu container, or one which has been provisioned by the
 # accompanying test-wheels.sh script. The wheel must be accessible to the
 # container, and the container's path to the wheel should be given as an
-# argument to the script. If no path is specified, "drake" from PyPI will be
-# tested.
+# argument to the script.
 
 set -e
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <wheel>" >&2
+    exit 1
+fi
 
 if [ ! -d /opt/python ]; then
     test_root="$(readlink -f "$(dirname "${BASH_SOURCE}")")"
@@ -18,7 +22,7 @@ fi
 
 pip install --upgrade pip
 
-pip install "${1:-drake}"
+pip install "$1"
 
 python << EOF
 import pydrake.all
