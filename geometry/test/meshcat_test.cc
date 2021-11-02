@@ -93,12 +93,12 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   EXPECT_TRUE(meshcat.GetPackedObject("capsule").empty());
   meshcat.SetObject(
       "mesh", Mesh(FindResourceOrThrow(
-                       "drake/systems/sensors/test/models/meshes/box.obj"),
+                       "drake/geometry/render/test/meshes/box.obj"),
                    .25));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
       "convex", Convex(FindResourceOrThrow(
-                           "drake/systems/sensors/test/models/meshes/box.obj"),
+                           "drake/geometry/render/test/meshes/box.obj"),
                        .25));
   EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
   // Bad filename (no extension).  Should only log a warning.
@@ -155,6 +155,29 @@ GTEST_TEST(MeshcatTest, SetTransform) {
   EXPECT_EQ(data.path, "/drake/frame");
   Eigen::Map<Eigen::Matrix4d> matrix(data.matrix);
   EXPECT_TRUE(CompareMatrices(matrix, X_ParentPath.GetAsMatrix4()));
+}
+
+GTEST_TEST(MeshcatTest, SetTransformWithMatrix) {
+  Meshcat meshcat;
+  EXPECT_FALSE(meshcat.HasPath("frame"));
+  EXPECT_TRUE(meshcat.GetPackedTransform("frame").empty());
+  Eigen::Matrix4d matrix;
+  // clang-format off
+  matrix <<  1,  2,  3,  4,
+             5,  6,  7,  8,
+            -1, -2, -3, -4,
+            -5, -6, -7, -8;
+  // clang-format on
+  meshcat.SetTransform("frame", matrix);
+
+  std::string transform = meshcat.GetPackedTransform("frame");
+  msgpack::object_handle oh =
+      msgpack::unpack(transform.data(), transform.size());
+  auto data = oh.get().as<internal::SetTransformData>();
+  EXPECT_EQ(data.type, "set_transform");
+  EXPECT_EQ(data.path, "/drake/frame");
+  Eigen::Map<Eigen::Matrix4d> actual(data.matrix);
+  EXPECT_TRUE(CompareMatrices(matrix, actual));
 }
 
 GTEST_TEST(MeshcatTest, Delete) {

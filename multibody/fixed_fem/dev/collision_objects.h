@@ -9,7 +9,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -48,7 +48,8 @@ class CollisionObjects : public geometry::ShapeReifier {
   /* Returns the surface mesh of the geometry with GeometryId `id`.
    @pre The geometry with `id` has been registered in `this` CollisionObject
    with AddCollisionObject(). */
-  const geometry::SurfaceMesh<double>& mesh(geometry::GeometryId id) const {
+  const geometry::TriangleSurfaceMesh<double>& mesh(
+      geometry::GeometryId id) const {
     const auto it = rigid_representations_.find(id);
     DRAKE_DEMAND(it != rigid_representations_.end());
     return *(it->second.surface_mesh);
@@ -59,7 +60,7 @@ class CollisionObjects : public geometry::ShapeReifier {
    @pre The geometry with `id` has been registered in `this` %CollisionObjects
    with AddCollisionObject(). */
   const geometry::internal::Bvh<geometry::internal::Obb,
-                                geometry::SurfaceMesh<double>>&
+                                geometry::TriangleSurfaceMesh<double>>&
   bvh(geometry::GeometryId id) const {
     const auto it = rigid_representations_.find(id);
     DRAKE_DEMAND(it != rigid_representations_.end());
@@ -125,22 +126,26 @@ class CollisionObjects : public geometry::ShapeReifier {
     RigidRepresentation() = default;
     /* Constructs a rigid representation with the given mesh and proximity
      properties and identity pose in world. */
-    RigidRepresentation(std::unique_ptr<geometry::SurfaceMesh<double>> mesh,
-                        const geometry::ProximityProperties& props)
+    RigidRepresentation(
+        std::unique_ptr<geometry::TriangleSurfaceMesh<double>> mesh,
+        const geometry::ProximityProperties& props)
         : surface_mesh(std::move(mesh)),
-          bvh(std::make_unique<geometry::internal::Bvh<
-                  geometry::internal::Obb, geometry::SurfaceMesh<double>>>(
+          bvh(std::make_unique<
+              geometry::internal::Bvh<geometry::internal::Obb,
+                                      geometry::TriangleSurfaceMesh<double>>>(
               *surface_mesh)),
           properties(props) {}
     /* We use copyable_unique_ptr here so that the data can be default
      constructed and copy assigned. */
-    copyable_unique_ptr<geometry::SurfaceMesh<double>> surface_mesh;
-    copyable_unique_ptr<geometry::internal::Bvh<geometry::internal::Obb,
-                                                geometry::SurfaceMesh<double>>>
+    copyable_unique_ptr<geometry::TriangleSurfaceMesh<double>> surface_mesh;
+    copyable_unique_ptr<geometry::internal::Bvh<
+        geometry::internal::Obb, geometry::TriangleSurfaceMesh<double>>>
         bvh;
     geometry::ProximityProperties properties;
     math::RigidTransform<T> pose_in_world;
   };
+
+  using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const geometry::Sphere& sphere,
                          void* user_data) override;

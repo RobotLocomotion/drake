@@ -43,7 +43,7 @@ struct SnoptSolverDetails {
  * SolverInterface::available() will return false. You must opt-in to build
  * SNOPT per the documentation at https://drake.mit.edu/bazel.html#snopt.
  *
- * <a href="https://drake.mit.edu/from_binary.html">Drake's
+ * <a href="https://drake.mit.edu/installation.html">Drake's
  * pre-compiled binary releases</a> do incorporate SNOPT, so therefore
  * SolverInterface::available() will return true.
  * Thanks to Philip E. Gill and Elizabeth Wong for their kind support.

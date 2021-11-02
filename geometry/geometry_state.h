@@ -230,7 +230,7 @@ class GeometryState {
 
   /** Implementation of
    SceneGraphInspector::maybe_get_hydroelastic_mesh().  */
-  std::variant<std::monostate, const SurfaceMesh<double>*,
+  std::variant<std::monostate, const TriangleSurfaceMesh<double>*,
                const VolumeMesh<double>*>
   maybe_get_hydroelastic_mesh(GeometryId geometry_id) const;
 

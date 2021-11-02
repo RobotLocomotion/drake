@@ -15,26 +15,6 @@ namespace geometry {
 namespace internal {
 namespace {
 
-// Calculates unit normal vector to a triangular face of a surface mesh. The
-// direction of the vector depends on the winding of the face.
-template <typename T>
-Vector3<T> CalcFaceNormal(const SurfaceMesh<T>& surface, int face_index) {
-// TODO(DamrongGuoy): Consider moving this function into SurfaceMesh by
-//  adding a member variable `normal_M_` similar to `area_`. Consequently we
-//  will update `normal_M_` when TransformVertices() and ReverseFaceWinding()
-//  of SurfaceMesh are called.
-  const SurfaceFace& face = surface.element(face_index);
-  const Vector3<T>& r_MA = surface.vertex(face.vertex(0));
-  const Vector3<T>& r_MB = surface.vertex(face.vertex(1));
-  const Vector3<T>& r_MC = surface.vertex(face.vertex(2));
-  const auto r_AB_M = r_MB - r_MA;
-  const auto r_AC_M = r_MC - r_MA;
-  const auto rhat_AB_M = r_AB_M.normalized();
-  const auto rhat_AC_M = r_AC_M.normalized();
-  const auto cross_M = rhat_AB_M.cross(rhat_AC_M);
-  return cross_M.normalized();
-}
-
 GTEST_TEST(VolumeToSurfaceMeshTest, IdentifyBoundaryFaces) {
   // Two tetrahedra with their five vertices like this:
   //
@@ -132,12 +112,11 @@ void TestVolumeToSurfaceMesh() {
   EXPECT_EQ(surface_vertex_coords.size(), surface.num_vertices());
 
   // Check that the face normal vectors are in the outward direction.
-  for (int f = 0; f < surface.num_faces(); ++f) {
-    const Vector3<T> normal_M = internal::CalcFaceNormal(surface, f);
+  for (int f = 0; f < surface.num_triangles(); ++f) {
     // Position vector of the first vertex V of the face.
     const Vector3<T> r_MV =
         surface.vertex(surface.element(f).vertex(0));
-    EXPECT_GT(normal_M.dot(r_MV), T(0.0));
+    EXPECT_GT(surface.face_normal(f).dot(r_MV), T(0.0));
   }
 }
 

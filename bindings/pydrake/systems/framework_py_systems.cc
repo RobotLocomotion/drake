@@ -40,9 +40,15 @@ using systems::DiscreteValues;
 using systems::LeafSystem;
 using systems::PublishEvent;
 using systems::System;
+using systems::SystemBase;
 using systems::SystemScalarConverter;
 using systems::VectorSystem;
 using systems::WitnessFunction;
+
+class SystemBasePublic : public SystemBase {
+ public:
+  using SystemBase::DeclareCacheEntry;
+};
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -822,7 +828,22 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("input_port_ticket", &Class::input_port_ticket, py::arg("index"),
             cls_doc.input_port_ticket.doc)
         .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
-            py::arg("index"), cls_doc.numeric_parameter_ticket.doc);
+            py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
+        .def("get_cache_entry", &Class::get_cache_entry, py::arg("index"),
+            py_rvp::reference_internal, cls_doc.get_cache_entry.doc)
+        // N.B. Since this method has template overloads, we must specify the
+        // types `overload_cast_explicit`; we must also specify Class.
+        // We do not use `static_cast<>` to avoid accidental type mixing.
+        .def("DeclareCacheEntry",
+            overload_cast_explicit<CacheEntry&, std::string, ValueProducer,
+                std::set<DependencyTicket>>.operator()<Class>(
+                &SystemBasePublic::DeclareCacheEntry),
+            py_rvp::reference_internal, py::arg("description"),
+            py::arg("value_producer"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{Class::all_sources_ticket()},
+            doc.SystemBase.DeclareCacheEntry
+                .doc_3args_description_value_producer_prerequisites_of_calc);
   }
 
   {

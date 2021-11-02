@@ -5,7 +5,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff.h"
@@ -22,8 +22,8 @@ using geometry::ContactSurface;
 using geometry::GeometryId;
 using geometry::MeshFieldLinear;
 using geometry::SceneGraph;
-using geometry::SurfaceFace;
-using geometry::SurfaceMesh;
+using geometry::SurfaceTriangle;
+using geometry::TriangleSurfaceMesh;
 using math::RigidTransform;
 using math::RigidTransformd;
 using systems::Context;
@@ -38,8 +38,8 @@ namespace internal {
 // halfspace were a fluid. The entire wetted surface *would* yield
 // an open box with five faces but, for simplicity, we'll only
 // use the bottom face (two triangles).
-std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
-  std::vector<SurfaceFace> faces;
+std::unique_ptr<TriangleSurfaceMesh<double>> CreateSurfaceMesh() {
+  std::vector<SurfaceTriangle> faces;
 
   // Create the vertices, all of which are offset vectors defined in the
   // halfspace body frame.
@@ -68,10 +68,10 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   faces.emplace_back(0, 2, 1);
   faces.emplace_back(2, 0, 3);
 
-  auto mesh = std::make_unique<SurfaceMesh<double>>(
+  auto mesh = std::make_unique<TriangleSurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 
-  for (int f = 0; f < mesh->num_faces(); ++f) {
+  for (int f = 0; f < mesh->num_triangles(); ++f) {
     // Can't use an ASSERT_TRUE here because it interferes with the return
     // value.
     if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),
@@ -109,10 +109,10 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   // Now transform the mesh to the world frame, as ContactSurface specifies.
   mesh->TransformVertices(X_WH);
 
-  SurfaceMesh<double>* mesh_pointer = mesh.get();
+  TriangleSurfaceMesh<double>* mesh_pointer = mesh.get();
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+      std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
           std::move(e_MN), mesh_pointer));
 }
 
@@ -170,7 +170,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     HydroelasticQuadraturePointData<double> output =
         traction_calculator().CalcTractionAtPoint(
             calculator_data(), 0 /* tri_index */,
-            SurfaceMesh<double>::Barycentric<double>(1.0, 0.0, 0.0),
+            TriangleSurfaceMesh<double>::Barycentric<double>(1.0, 0.0, 0.0),
             dissipation, mu_coulomb);
 
     // Compute the expected point of contact in the world frame. The class
@@ -660,15 +660,15 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
       p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
   };
 
-  std::vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
-  auto mesh_W = std::make_unique<geometry::SurfaceMesh<AutoDiffXd>>(
+  std::vector<SurfaceTriangle> faces{{0, 1, 2}};
+  auto mesh_W = std::make_unique<geometry::TriangleSurfaceMesh<AutoDiffXd>>(
       std::move(faces), std::move(vertices));
   // Note: these values are garbage. They merely allow us to instantiate the
   // field so the Data can be instantiated. The *actual* field value passed
   // to CalcTractionAtQHelper is found below.
   std::vector<AutoDiffXd> values{0, 0, 0};
   auto field = std::make_unique<
-      geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
+      geometry::TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
       std::move(values), mesh_W.get(), false);
   // N.B. get_new_id() makes no guarantee on the order.
   // Since the surface normal follows the convention that it points from B into
@@ -792,10 +792,10 @@ class HydroelasticReportingTests
     for (int i = 0; i < mesh->num_vertices(); ++i)
       e_MN[i] = pressure(mesh->vertex(i));
 
-    SurfaceMesh<double>* mesh_pointer = mesh.get();
+    TriangleSurfaceMesh<double>* mesh_pointer = mesh.get();
     contact_surface_ = std::make_unique<ContactSurface<double>>(
         null_id, null_id, std::move(mesh),
-        std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+        std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
             std::move(e_MN), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body

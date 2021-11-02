@@ -291,6 +291,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "identifier_pybind",
+    hdrs = ["identifier_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake:documentation_pybind",
+    ],
+)
+
 generate_pybind11_version_py_file(
     name = "pybind11_version.py",
 )

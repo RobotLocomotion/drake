@@ -2,6 +2,7 @@
 
 #include <forward_list>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -41,6 +42,10 @@ using Edge = GraphOfConvexSets::Edge;
 using Vertex = GraphOfConvexSets::Vertex;
 using VertexId = GraphOfConvexSets::VertexId;
 
+using ::testing::AllOf;
+using ::testing::HasSubstr;
+using ::testing::Not;
+
 namespace {
   bool MixedIntegerSolverAvailable() {
     return (solvers::MosekSolver::is_available() &&
@@ -66,9 +71,14 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   p.set_x(Vector3d(4., 5., 6));
   EXPECT_FALSE(v->set().PointInSet(p.x()));
 
-  auto ids = g.VertexIds();
-  EXPECT_EQ(ids.size(), 1);
-  EXPECT_EQ(*ids.begin(), v->id());
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices.at(0), v);
+
+  const GraphOfConvexSets* const_g = &g;
+  const auto const_vertices = const_g->Vertices();
+  EXPECT_EQ(const_vertices.size(), 1);
+  EXPECT_EQ(const_vertices.at(0), v);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, GetVertexSolution) {
@@ -102,7 +112,12 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
 
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
-  EXPECT_EQ(*(edges.begin()), e);
+  EXPECT_EQ(edges.at(0), e);
+
+  const GraphOfConvexSets* const_g = &g;
+  const auto const_edges = const_g->Edges();
+  EXPECT_EQ(const_edges.size(), 1);
+  EXPECT_EQ(const_edges.at(0), e);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, AddEdge2) {
@@ -151,6 +166,12 @@ TEST_F(TwoPoints, Basic) {
 
   EXPECT_EQ(Variables(e_->xu()), Variables(u_->x()));
   EXPECT_EQ(Variables(e_->xv()), Variables(v_->x()));
+
+  auto vertices = g_.Vertices();
+  EXPECT_EQ(vertices.at(0), u_);
+  EXPECT_EQ(vertices.at(1), v_);
+
+  EXPECT_EQ(g_.Edges().at(0), e_);
 }
 
 // Confirms that I can add costs (both ways) and get the solution.
@@ -248,6 +269,15 @@ TEST_F(ThreePoints, LinearCost1) {
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXv(result), p_target_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result),
+                              0 * p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
 
   // Alternative signature.
   auto result2 = g_.SolveShortestPath(*source_, *target_, true);
@@ -730,6 +760,33 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     }
     EXPECT_GT(new_result.get_optimal_cost(), result.get_optimal_cost());
   }
+}
+
+GTEST_TEST(ShortestPathTest, Graphviz) {
+  GraphOfConvexSets g;
+  auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
+  auto target = g.AddVertex(Point(Vector1d{1e-8}), "target");
+  g.AddEdge(*source, *target, "edge");
+
+  // Note: Testing the entire string against a const string is too fragile,
+  // since the VertexIds are Identifier<> and increment on a global counter.
+  EXPECT_THAT(
+      g.GetGraphvizString(),
+      AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
+  auto result = g.SolveShortestPath(*source, *target, true);
+  EXPECT_THAT(g.GetGraphvizString(result),
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
+                    HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
+  // No slack variables.
+  EXPECT_THAT(
+      g.GetGraphvizString(result, false),
+      AllOf(HasSubstr("x ="), HasSubstr("cost ="), Not(HasSubstr("ϕ =")),
+            Not(HasSubstr("ϕ xᵤ =")), Not(HasSubstr("ϕ xᵥ ="))));
+  // Precision and scientific.
+  EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
+              AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
+  EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
+              AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-08]")));
 }
 
 }  // namespace optimization

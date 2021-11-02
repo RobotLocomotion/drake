@@ -228,7 +228,7 @@ T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
 template <typename T>
 void AddPolygonToMeshData(const std::vector<int>& polygon,
                           const Vector3<T>& n_F,
-                          std::vector<SurfaceFace>* faces,
+                          std::vector<SurfaceTriangle>* faces,
                           std::vector<Vector3<T>>* vertices_F) {
   DRAKE_DEMAND(faces != nullptr);
   DRAKE_DEMAND(vertices_F != nullptr);
@@ -258,7 +258,7 @@ void AddPolygonToMeshData(const std::vector<int>& polygon,
 template <typename T>
 void AddPolygonToMeshDataAsOneTriangle(const std::vector<Vector3<T>>& polygon_F,
                                        const Vector3<T>& nhat_F,
-                                       std::vector<SurfaceFace>* faces,
+                                       std::vector<SurfaceTriangle>* faces,
                                        std::vector<Vector3<T>>* vertices_F) {
   DRAKE_DEMAND(faces != nullptr);
   DRAKE_DEMAND(vertices_F != nullptr);
@@ -322,7 +322,7 @@ void AddPolygonToMeshDataAsOneTriangle(const std::vector<Vector3<T>>& polygon_F,
 
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
-                                   const SurfaceMesh<T>& surface_M,
+                                   const TriangleSurfaceMesh<T>& surface_M,
                                    int tri_index,
                                    const math::RotationMatrix<T>& R_FM) {
   const Vector3<T>& face_normal_F = R_FM * surface_M.face_normal(tri_index);

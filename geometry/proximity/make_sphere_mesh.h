@@ -9,8 +9,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -613,8 +613,8 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
             positions.
  */
 template <typename T>
-SurfaceMesh<T> MakeSphereSurfaceMesh(const Sphere& sphere,
-                                     double resolution_hint) {
+TriangleSurfaceMesh<T> MakeSphereSurfaceMesh(const Sphere& sphere,
+                                             double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(MakeSphereVolumeMesh<T>(
       sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));

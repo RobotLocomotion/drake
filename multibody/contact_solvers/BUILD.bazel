@@ -106,6 +106,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 

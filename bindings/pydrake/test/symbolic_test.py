@@ -172,6 +172,9 @@ class TestSymbolicVariable(unittest.TestCase):
         numpy_compare.assert_equal(sym.floor(x), "floor(x)")
         numpy_compare.assert_equal(
             sym.if_then_else(x > y, x, y), "(if (x > y) then x else y)")
+        numpy_compare.assert_equal(
+            sym.uninterpreted_function(name="func_name", arguments=[e_x, e_y]),
+            "func_name(x, y)")
 
     def test_array_str(self):
         # Addresses #8729.
@@ -605,6 +608,10 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_equalto(self):
         self.assertTrue((x + y).EqualTo(x + y))
         self.assertFalse((x + y).EqualTo(x - y))
+
+    def test_get_kind(self):
+        self.assertEqual((x + y).get_kind(), sym.ExpressionKind.Add)
+        self.assertEqual((x * y).get_kind(), sym.ExpressionKind.Mul)
 
     def test_get_variables(self):
         vars = e_x.GetVariables()

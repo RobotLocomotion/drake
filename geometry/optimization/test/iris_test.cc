@@ -371,7 +371,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
 
   EXPECT_EQ(region.ambient_dimension(), 1);
 
-  const double kTol = 1e-5;
+  const double kTol = 1e-3;  // due to ibex's rel_eps_f.
   const double qmin = -1.0 + options.configuration_space_margin,
                qmax = 1.0 - options.configuration_space_margin;
   EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
@@ -420,7 +420,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, SpheresPrismatic) {
 
   EXPECT_EQ(region.ambient_dimension(), 1);
 
-  const double kTol = 1e-5;
+  const double kTol = 1e-3;  // due to ibex's rel_eps_f.
   const double qmin = -1.0 + options.configuration_space_margin,
                qmax = 1.0 - options.configuration_space_margin;
   EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
@@ -475,7 +475,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, SinglePendulum) {
 
   EXPECT_EQ(region.ambient_dimension(), 1);
 
-  const double kTol = 1e-5;
+  const double kTol = 1e-3;  // due to ibex's rel_eps_f.
   const double qmin =
                    std::asin((-w + r) / l) + options.configuration_space_margin,
                qmax =
@@ -618,6 +618,79 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
+}
+
+// A (somewhat contrived) example of a concave configuration-space obstacle
+// (resulting in a convex configuration-space, which we approximate with
+// polytopes):  A simple pendulum of length `l` with a sphere at the tip of
+// radius `r` on a vertical track, plus a ground plane at z=0.  The
+// configuration space is given by the joint limits and z + l*cos(theta) >= r.
+// The region is visualized at https://www.desmos.com/calculator/flshvay78b.
+// In addition to testing the convex space, this is a test for which Ibex finds
+// counter-examples that Snopt misses.
+GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
+  const double l = 1.5;
+  const double r = 0.1;
+  const std::string convex_urdf = fmt::format(
+      R"(
+<robot name="pendulum_on_vertical_track">
+  <link name="fixed">
+    <collision name="ground">
+      <origin rpy="0 0 0" xyz="0 0 -1"/>
+      <geometry><box size="10 10 2"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="cart">
+  </link>
+  <joint name="track" type="prismatic">
+    <axis xyz="0 0 1"/>
+    <limit lower="-{l}" upper="0"/>
+    <parent link="world"/>
+    <child link="cart"/>
+  </joint>
+  <link name="pendulum">
+    <collision name="ball">
+      <origin rpy="0 0 0" xyz="0 0 {l}"/>
+      <geometry><sphere radius="{r}"/></geometry>
+    </collision>
+  </link>
+  <joint name="pendulum" type="revolute">
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57"/>
+    <parent link="cart"/>
+    <child link="pendulum"/>
+  </joint>
+</robot>
+)",
+      fmt::arg("l", l), fmt::arg("r", r));
+
+  const Vector2d sample{1.0, 0.0};
+  IrisOptions options;
+  options.enable_ibex = true;
+  HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
+
+  // Note: You may use this to plot the solution in the desmos graphing
+  // calculator link above.  Just copy each equation in the printed formula into
+  // a desmos cell.  The intersection is the computed region.
+  // const Vector2<symbolic::Expression> xy{symbolic::Variable("x"),
+  //                                        symbolic::Variable("y")};
+  // std::cout << (region.A()*xy <= region.b()) << std::endl;
+
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  // Confirm that we've found a substantial region.
+  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
+
+  // Without Ibex, we find that SNOPT misses this point. It should be outside of
+  // the configuration space (in collision).  The particular value was found by
+  // visual inspection using the desmos plot.
+  const double z_test = 0, theta_test = -1.55;
+  EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
+  // Confirm that the pendulum is colliding with the wall with true kinematics:
+  EXPECT_LE(z_test + l*std::cos(theta_test), r);
 }
 
 }  // namespace

@@ -1,0 +1,30 @@
+diff --git dreal/contractor/contractor_ibex_polytope.cc dreal/contractor/contractor_ibex_polytope.cc
+index e2b12fb..de4352a 100644
+--- dreal/contractor/contractor_ibex_polytope.cc
++++ dreal/contractor/contractor_ibex_polytope.cc
+@@ -67,9 +67,9 @@ ContractorIbexPolytope::ContractorIbexPolytope(vector<Formula> formulas,
+   }
+ 
+   // Build Polytope contractor from system.
+-  linear_relax_combo_ = make_unique<ibex::LinearizerCombo>(
+-      *system_, ibex::LinearizerCombo::XNEWTON);
+-  ctc_ = make_unique<ibex::CtcPolytopeHull>(*linear_relax_combo_);
++  linearizer_xtaylor_ = make_unique<ibex::LinearizerXTaylor>(
++      *system_);
++  ctc_ = make_unique<ibex::CtcPolytopeHull>(*linearizer_xtaylor_);
+ 
+   // Build input.
+   DynamicBitset& input{mutable_input()};
+diff --git dreal/contractor/contractor_ibex_polytope.h dreal/contractor/contractor_ibex_polytope.h
+index da7215a..52c83ad 100644
+--- dreal/contractor/contractor_ibex_polytope.h
++++ dreal/contractor/contractor_ibex_polytope.h
+@@ -75,7 +75,7 @@ class ContractorIbexPolytope : public ContractorCell {
+   IbexConverter ibex_converter_;
+   std::unique_ptr<ibex::SystemFactory> system_factory_;
+   std::unique_ptr<ibex::System> system_;
+-  std::unique_ptr<ibex::LinearizerCombo> linear_relax_combo_;
++  std::unique_ptr<ibex::LinearizerXTaylor> linearizer_xtaylor_;
+   std::unique_ptr<ibex::CtcPolytopeHull> ctc_;
+   std::vector<std::unique_ptr<const ibex::ExprCtr, ExprCtrDeleter>> expr_ctrs_;
+ };

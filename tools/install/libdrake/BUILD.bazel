@@ -43,6 +43,10 @@ cc_whole_archive_library(
 # contain any references to constituent shared libraries inside the build tree.
 cc_binary(
     name = "libdrake.so",
+    linkopts = select({
+        "//tools/cc_toolchain:linux": ["-Wl,-soname,libdrake.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     linkstatic = 1,
     deps = [
@@ -110,7 +114,7 @@ cc_library(
     }),
 )
 
-# Depend on a shared library used by dReal iff dReal is enabled.
+# Depend on the shared libraries used by dReal iff dReal is enabled.
 cc_library(
     name = "dreal_deps",
     deps = select({

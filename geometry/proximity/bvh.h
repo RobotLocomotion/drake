@@ -13,7 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/aabb.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
@@ -29,7 +29,7 @@ template <class MeshType>
 struct MeshTraits;
 
 template <typename T>
-struct MeshTraits<SurfaceMesh<T>> {
+struct MeshTraits<TriangleSurfaceMesh<T>> {
   static constexpr int kMaxElementPerBvhLeaf = 3;
 };
 
@@ -106,14 +106,12 @@ class BvNode {
 
   /* Compares this node with the given node in a strictly *topological* manner.
    For them to be considered "equal leaves", both nodes must be leaves and must
-   contain the same indicies.
+   contain the same indices.
 
    Because this test considers only the Bvh tree *topology* it can be used to
    compare nodes that have been constructed from meshes with different scalar
-   types (e.g., SurfaceMesh<double> and SurfaceMesh<AutoDiffXd)) or meshes with
-   different bounding volume types (e.g., Aabb vs Obb). The only true
-   requirement is that the element index types contained in the leaf can be
-   compared (this excludes VolumeMesh vs SurfaceMesh).
+   types (e.g., TriangleSurfaceMesh<double> and TriangleSurfaceMesh<AutoDiffXd>)
+   or meshes with different bounding volume types (e.g., Aabb vs Obb).
 
    @pre both nodes are leaves.  */
   template <typename OtherBvNode>
@@ -198,7 +196,7 @@ using BvttCallback = std::function<BvttCallbackResult(int, int)>;
  @pre    The mesh is not mutable. Modifications to the mesh after
          constructing the BVH will make the BVH invalid.
  @tparam BvType           The bounding volume type (e.g., Aabb, Obb).
- @tparam SourceMeshType   SurfaceMesh<T> or VolumeMesh<T>, T = double or
+ @tparam SourceMeshType   TriangleSurfaceMesh<T> or VolumeMesh<T>, T = double or
                           AutoDiffXd.  */
 template <class BvType, class SourceMeshType>
 class Bvh {
@@ -361,8 +359,8 @@ class Bvh {
       const typename std::vector<CentroidPair>::iterator& start,
       const typename std::vector<CentroidPair>::iterator& end);
 
-  // TODO(tehbelinda): Move this function into SurfaceMesh/VolumeMesh directly
-  // and rename to CalcElementCentroid(int element_index).
+  // TODO(tehbelinda): Move this function into TriangleSurfaceMesh/VolumeMesh
+  // directly and rename to CalcElementCentroid(int element_index).
   // Computes the centroid of the ith element of the given mesh.
   static Vector3<double> ComputeCentroid(const MeshType& mesh, int i);
 

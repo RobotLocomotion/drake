@@ -11,10 +11,6 @@ package(
 
 py_library(
     name = "uritemplate_py",
-    srcs = glob([
-        "uritemplate/**",
-    ]) or fail("No match"),
-    imports = [
-        ".",
-    ],
+    srcs = glob(["uritemplate/**/*.py"], allow_empty = False),
+    imports = ["."],
 )

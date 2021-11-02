@@ -9,6 +9,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
+from pydrake.common.eigen_geometry import Isometry3
 from pydrake.lcm import DrakeLcm
 from pydrake.math import RigidTransform
 from pydrake.multibody.tree import (
@@ -59,6 +60,8 @@ from pydrake.multibody.plant import (
     ContactModel,
     ContactResults_,
     ContactResultsToLcmSystem,
+    ContactResultsToMeshcatParams,
+    ContactResultsToMeshcat_,
     CoulombFriction_,
     ExternallyAppliedSpatialForce_,
     MultibodyPlant_,
@@ -82,10 +85,11 @@ from pydrake.geometry import (
     Box,
     GeometryId,
     GeometrySet,
+    Meshcat,
+    Rgba,
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
-    SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
     Sphere,
@@ -222,6 +226,15 @@ class TestPlant(unittest.TestCase):
         context = diagram.CreateDefaultContext()
         with self.assertRaises(RuntimeError):
             plant.EvalBodyPoseInWorld(context, body)
+
+    def test_deprecated_register_visual_geometry(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        body = plant.AddRigidBody(name="B", M_BBo_B=SpatialInertia_[float]())
+        with catch_drake_warnings(expected_count=1):
+            plant.RegisterVisualGeometry(
+                body=body, X_BG=Isometry3(), shape=Box(1.0, 1.0, 1.0),
+                name="G", diffuse_color=[1., 0., 0., 0.])
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
@@ -929,6 +942,17 @@ class TestPlant(unittest.TestCase):
         base.SetCenterOfMassInBodyFrame(context=context, com=[0.0, 0.0, 0.0])
         M = SpatialInertia_[T](1, [0, 0, 0], UnitInertia_[T](1, 1, 1))
         base.SetSpatialInertiaInBodyFrame(context=context, M_Bo_B=M)
+
+    def test_deprecated_set_free_body_pose(self):
+        plant = MultibodyPlant_[float](0.0)
+        Parser(plant).AddModelFromFile(FindResourceOrThrow(
+            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf"))
+        plant.Finalize()
+        with catch_drake_warnings(expected_count=1):
+            plant.SetFreeBodyPose(
+                context=plant.CreateDefaultContext(),
+                body=plant.GetBodyByName("base"),
+                X_WB=Isometry3())
 
     @numpy_compare.check_all_types
     def test_multibody_state_access(self, T):
@@ -1732,6 +1756,33 @@ class TestPlant(unittest.TestCase):
                 loop_body(make_joint, 0.001)
 
     @numpy_compare.check_all_types
+    def test_deprecated_weld_joint(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        child = plant.AddRigidBody("Child", SpatialInertia_[float]())
+        with catch_drake_warnings(expected_count=1):
+            joint = WeldJoint_[T](
+                name="weld",
+                parent_frame_P=plant.world_frame(),
+                child_frame_C=child.body_frame(),
+                X_PC=Isometry3())
+        self.assertIsInstance(joint, Joint_[T])
+
+    def test_deprecated_weld_frames(self):
+        plant = MultibodyPlant_[float](0.0)
+        parser = Parser(plant)
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name="robot")
+        with catch_drake_warnings(expected_count=1):
+            weld = plant.WeldFrames(
+                A=plant.world_frame(),
+                B=plant.GetFrameByName("iiwa_link_0", iiwa_model),
+                X_AB=Isometry3())
+        self.assertIsInstance(weld, Joint_[float])
+
+    @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         FixedOffsetFrame = FixedOffsetFrame_[T]
@@ -1756,6 +1807,15 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
             numpy_compare.to_float(X_PF.GetAsMatrix34()))
+
+    @numpy_compare.check_all_types
+    def test_deprecated_fixed_offset_frame(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        with catch_drake_warnings(expected_count=1):
+            frame = plant.AddFrame(frame=FixedOffsetFrame_[T](
+                name="frame", P=plant.world_frame(),
+                X_PF=Isometry3(), model_instance=None))
+        self.assertIsInstance(frame, Frame_[T])
 
     @numpy_compare.check_all_types
     def test_frame_context_methods(self, T):
@@ -2158,3 +2218,32 @@ class TestPlant(unittest.TestCase):
         contact_info.contact_surface().id_N()
         contact_info.contact_surface().mesh_W().centroid()
         contact_info.F_Ac_W().get_coeffs()
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_contact_results_to_meshcat(self, T):
+        meshcat = Meshcat()
+        params = ContactResultsToMeshcatParams()
+        params.publish_period = 0.123
+        params.default_color = Rgba(0.5, 0.5, 0.5)
+        params.prefix = "py_visualizer"
+        params.delete_on_initialization_event = False
+        params.force_threshold = 0.2
+        params.newtons_per_meter = 5
+        params.radius = 0.1
+        self.assertNotIn("object at 0x", repr(params))
+        params2 = ContactResultsToMeshcatParams(publish_period=0.4)
+        self.assertEqual(params2.publish_period, 0.4)
+        vis = ContactResultsToMeshcat_[T](meshcat=meshcat, params=params)
+        vis.Delete()
+        self.assertIsInstance(vis.contact_results_input_port(), InputPort_[T])
+
+        builder = DiagramBuilder_[T]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.01)
+        plant.Finalize()
+        ContactResultsToMeshcat_[T].AddToBuilder(
+            builder=builder, plant=plant, meshcat=meshcat, params=params)
+        ContactResultsToMeshcat_[T].AddToBuilder(
+            builder=builder,
+            contact_results_port=plant.get_contact_results_output_port(),
+            meshcat=meshcat,
+            params=params)

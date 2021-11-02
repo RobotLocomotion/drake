@@ -67,6 +67,7 @@ drake_cc_library(
         ":convex_set",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//solvers:ibex_solver",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
     ],
@@ -130,6 +131,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "iris_test",
+    shard_count = 4,
     deps = [
         ":iris",
         "//common/test_utilities:eigen_matrix_compare",

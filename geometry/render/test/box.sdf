@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+  This SDF describes a single box with geometry specified by
+  meshes/box.obj. This mesh is a 2x2x2 box centered at the
+  origin.
+-->
+<sdf version="1.7">
+  <model name="box">
+    <pose>0 0 0.5 0 0 0</pose>
+    <link name="box">
+      <inertial>
+        <mass>1.</mass>
+        <inertia>
+          <ixx>8.41666666</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>8.41666666</iyy>
+          <iyz>0</iyz>
+          <izz>16.6666666</izz>
+        </inertia>
+      </inertial>
+      <visual name="box">
+        <geometry>
+          <mesh>
+            <uri>meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <static>1</static>
+  </model>
+</sdf>

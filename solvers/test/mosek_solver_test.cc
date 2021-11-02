@@ -203,32 +203,6 @@ GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
   }
 }
 
-GTEST_TEST(MosekTest, TestLogFile) {
-  // Test if we can print the logging info to a log file.
-  MathematicalProgram prog;
-  const auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearConstraint(x(0) + x(1) == 1);
-
-  const std::string log_file = temp_directory() + "/mosek.log";
-  EXPECT_FALSE(filesystem::exists({log_file}));
-  MosekSolver solver;
-  MathematicalProgramResult result;
-  solver.Solve(prog, {}, {}, &result);
-  // By default, no logging file.
-  EXPECT_FALSE(filesystem::exists({log_file}));
-  // Output the logging to the console
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  solver.set_stream_logging(true, "");
-  solver.Solve(prog, {}, {}, &result);
-  EXPECT_FALSE(filesystem::exists({log_file}));
-  // Output the logging to the file.
-  solver.set_stream_logging(true, log_file);
-#pragma GCC diagnostic pop
-  solver.Solve(prog, {}, {}, &result);
-  EXPECT_TRUE(filesystem::exists({log_file}));
-}
-
 GTEST_TEST(MosekTest, TestLogging) {
   // Test if we can print the logging info to a log file.
   MathematicalProgram prog;

@@ -108,10 +108,6 @@ PYBIND11_MODULE(parsing, m) {
         .def_readonly("X_PF", &Class::X_PF, cls_doc.X_PF.doc);
   }
 
-  constexpr char kWeldErrorDisclaimer[] = R"""(
-    Note:
-        pydrake does not currently support `ModelWeldErrorFunction`.
-    )""";
   m.def(
       "ProcessModelDirectives",
       [](const parsing::ModelDirectives& directives,
@@ -122,9 +118,7 @@ PYBIND11_MODULE(parsing, m) {
         return added_models;
       },
       py::arg("directives"), py::arg("plant"), py::arg("parser"),
-      (std::string(doc.parsing.ProcessModelDirectives.doc) +
-          kWeldErrorDisclaimer)
-          .c_str());
+      doc.parsing.ProcessModelDirectives.doc);
 
   m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
       py::arg("plant"), py::arg("full_name"),

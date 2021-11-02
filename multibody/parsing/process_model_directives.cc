@@ -57,7 +57,7 @@ namespace {
 void AddWeldWithOptionalError(
     const Frame<double>& parent_frame,
     const Frame<double>& child_frame,
-    ModelWeldErrorFunction error_func,
+    ModelWeldErrorFunctionToBeDeprecated error_func,
     MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models) {
   // TODO(#14084): This hack really shouldn't belong in model
@@ -105,7 +105,7 @@ void ProcessModelDirectivesImpl(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models, Parser* parser,
     const std::string& model_namespace,
-    ModelWeldErrorFunction error_func) {
+    ModelWeldErrorFunctionToBeDeprecated error_func) {
   drake::log()->debug("ProcessModelDirectives(MultibodyPlant)");
   DRAKE_DEMAND(plant != nullptr);
   DRAKE_DEMAND(added_models != nullptr);
@@ -230,9 +230,22 @@ std::string ResolveModelDirectiveUri(const std::string& uri,
 }
 
 void ProcessModelDirectives(
+    const ModelDirectives& directives,
+    drake::multibody::MultibodyPlant<double>* plant,
+    std::vector<ModelInstanceInfo>* added_models,
+    drake::multibody::Parser* parser) {
+  // Once 2022-02-01 comes around, we can fold these two overloads back down
+  // to just one function.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  ProcessModelDirectives(directives, plant, added_models, parser, {});
+#pragma GCC diagnostic pop
+}
+
+void ProcessModelDirectives(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models, Parser* parser,
-    ModelWeldErrorFunction error_func) {
+    ModelWeldErrorFunctionToBeDeprecated error_func) {
   auto tmp_parser = ConstructIfNullAndReassign<Parser>(&parser, plant);
   auto tmp_added_model =
       ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);

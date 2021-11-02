@@ -336,34 +336,6 @@ CollisionFilterManager SceneGraph<T>::collision_filter_manager(
 }
 
 template <typename T>
-void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
-  collision_filter_manager().Apply(
-      CollisionFilterDeclaration().ExcludeWithin(geometry_set));
-}
-
-template <typename T>
-void SceneGraph<T>::ExcludeCollisionsWithin(
-    Context<T>* context, const GeometrySet& geometry_set) const {
-  collision_filter_manager(context).Apply(
-      CollisionFilterDeclaration().ExcludeWithin(geometry_set));
-}
-
-template <typename T>
-void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
-                                             const GeometrySet& setB) {
-  collision_filter_manager().Apply(
-      CollisionFilterDeclaration().ExcludeBetween(setA, setB));
-}
-
-template <typename T>
-void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
-                                             const GeometrySet& setA,
-                                             const GeometrySet& setB) const {
-  collision_filter_manager(context).Apply(
-      CollisionFilterDeclaration().ExcludeBetween(setA, setB));
-}
-
-template <typename T>
 void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);

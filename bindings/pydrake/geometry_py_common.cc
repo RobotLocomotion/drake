@@ -7,6 +7,7 @@
 #include "pybind11/operators.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/collision_filter_declaration.h"
@@ -23,25 +24,6 @@
 namespace drake {
 namespace pydrake {
 namespace {
-
-template <typename Class>
-void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
-  constexpr auto& cls_doc = pydrake_doc.drake.Identifier;
-
-  py::class_<Class>(m, name.c_str(), id_doc)
-      .def("get_value", &Class::get_value, cls_doc.get_value.doc)
-      .def("is_valid", &Class::is_valid, cls_doc.is_valid.doc)
-      .def(py::self == py::self)
-      .def(py::self != py::self)
-      .def(py::self < py::self)
-      // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
-      // pending merge of: https://github.com/pybind/pybind11/pull/2217
-      .def(py::detail::hash(py::self))
-      .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc)
-      .def("__repr__", [name](const Class& self) {
-        return py::str("<{} value={}>").format(name, self.get_value());
-      });
-}
 
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -471,6 +453,21 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("radius", &Sphere::radius, doc.Sphere.radius.doc)
         .def(py::pickle([](const Sphere& self) { return self.radius(); },
             [](const double radius) { return Sphere(radius); }));
+
+    py::class_<MeshcatCone, Shape>(m, "MeshcatCone", doc.MeshcatCone.doc)
+        .def(py::init<double, double, double>(), py::arg("height"),
+            py::arg("a") = 1.0, py::arg("b") = 1.0, doc.MeshcatCone.ctor.doc)
+        .def("height", &MeshcatCone::height, doc.MeshcatCone.height.doc)
+        .def("a", &MeshcatCone::a, doc.MeshcatCone.a.doc)
+        .def("b", &MeshcatCone::b, doc.MeshcatCone.b.doc)
+        .def(py::pickle(
+            [](const MeshcatCone& self) {
+              return std::make_tuple(self.height(), self.a(), self.b());
+            },
+            [](std::tuple<double, double, double> params) {
+              return MeshcatCone(std::get<0>(params), std::get<1>(params),
+                  std::get<2>(params));
+            }));
   }
 
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,

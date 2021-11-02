@@ -114,11 +114,11 @@ int GetVertexAddIfNeeded(
 
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, int tri_index,
+    const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
-    std::vector<SurfaceFace>* new_faces,
+    std::vector<SurfaceTriangle>* new_faces,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
     std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices) {
   // TODO(SeanCurtis-TRI): This needs to support the "backface" culling that is
@@ -130,7 +130,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   DRAKE_DEMAND(edges_to_newly_created_vertices != nullptr);
 
   const std::vector<Vector3<double>>& vertices_F = mesh_F.vertices();
-  const SurfaceFace& triangle = mesh_F.element(tri_index);
+  const SurfaceTriangle& triangle = mesh_F.element(tri_index);
 
   // TODO(SeanCurtis-TRI): This code _might_ look cleaner if it used the same
   //  pattern as plane-mesh intersection. I.e., use a bit-encoding of the sign
@@ -360,15 +360,15 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 }
 
 template <typename T>
-std::unique_ptr<SurfaceMesh<T>>
+std::unique_ptr<TriangleSurfaceMesh<T>>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-    const SurfaceMesh<double>& input_mesh_F,
+    const TriangleSurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F,
     const std::vector<int>& tri_indices,
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation) {
   std::vector<Vector3<T>> new_vertices_W;
-  std::vector<SurfaceFace> new_faces;
+  std::vector<SurfaceTriangle> new_faces;
   std::unordered_map<int, int> vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices;
 
@@ -381,21 +381,21 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
 
   if (new_faces.size() == 0) return nullptr;
 
-  // TODO(SeanCurtis-TRI): This forces SurfaceMesh to recompute the normals for
-  //  every triangle in the set of faces. But we know that they should be the
-  //  normals drawn from the input mesh. We should accumulate the normals
-  //  during accumulation and explicitly provide them here (with a reasonable
-  //  check that the winding and the normals are consistent).
-  return std::make_unique<SurfaceMesh<T>>(std::move(new_faces),
-                                          std::move(new_vertices_W));
+  // TODO(SeanCurtis-TRI): This forces TriangleSurfaceMesh to recompute the
+  //  normals for every triangle in the set of faces. But we know that they
+  //  should be the normals drawn from the input mesh. We should accumulate the
+  //  normals during accumulation and explicitly provide them here (with a
+  //  reasonable check that the winding and the normals are consistent).
+  return std::make_unique<TriangleSurfaceMesh<T>>(std::move(new_faces),
+                                                  std::move(new_vertices_W));
 }
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
-    GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
+    GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
+    const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation) {
   std::vector<int> tri_indices;
@@ -436,7 +436,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   //  should take a functor for evaluating the pressure or some such thing.
   //  This is a recurrent them in _all_ of the contact surface generating
   //  methods.
-  std::unique_ptr<SurfaceMesh<T>> mesh_W =
+  std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W =
       ConstructSurfaceMeshFromMeshHalfspaceIntersection(mesh_R, hs_R,
                                                         tri_indices, X_WR,
                                                         representation);
@@ -456,7 +456,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     const T phi_V = hs_W.CalcSignedDistance(p_WV);
     vertex_pressures.push_back(-phi_V * pressure_scale);
   }
-  auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+  auto field_W = std::make_unique<TriangleSurfaceMeshFieldLinear<T, T>>(
       std::move(vertex_pressures), mesh_W.get(), false /* calc_gradient */);
 
   // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface

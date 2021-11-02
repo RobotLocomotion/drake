@@ -9,7 +9,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/obb.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -194,15 +194,15 @@ GTEST_TEST(AabbMakerTest, Compute) {
       }
     }
   }
-  vector<SurfaceFace> faces{{SurfaceFace{0, 1, 2}}};
-  SurfaceMesh<double> mesh{std::move(faces), std::move(vertices)};
+  vector<SurfaceTriangle> faces{{0, 1, 2}};
+  TriangleSurfaceMesh<double> mesh{std::move(faces), std::move(vertices)};
 
   ASSERT_EQ(mesh.num_vertices(), 8);
 
   {
     /* Case: single vertex. */
     const set<int> fit_vertices = {0};
-    const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
+    const Aabb::Maker<TriangleSurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(), mesh.vertex(0)));
     EXPECT_TRUE(CompareMatrices(aabb.half_width(), Vector3d::Zero()));
@@ -211,7 +211,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
   {
     /* Case: Two vertices forming an axis-aligned edge. */
     const set<int> fit_vertices = {3, 7};
-    const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
+    const Aabb::Maker<TriangleSurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(),
                                 Vector3d{0, 1, 1}.cwiseProduct(half_size)));
@@ -222,7 +222,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
   {
     /* Case: Two vertices lying completely on a plane. */
     const set<int> fit_vertices = {4, 7};
-    const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
+    const Aabb::Maker<TriangleSurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(),
                                 Vector3d{1, 0, 0}.cwiseProduct(half_size)));
@@ -233,7 +233,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
   {
     /* Case: Two vertices lying diagonally across the box. */
     const set<int> fit_vertices = {3, 4};
-    const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
+    const Aabb::Maker<TriangleSurfaceMesh<double>> maker(mesh, fit_vertices);
     const Aabb aabb = maker.Compute();
     EXPECT_TRUE(CompareMatrices(aabb.center(), Vector3d::Zero()));
     EXPECT_TRUE(CompareMatrices(aabb.half_width(), half_size));
@@ -246,7 +246,7 @@ GTEST_TEST(AabbMakerTest, Compute) {
     for (int v : {0, 1, 2, 5, 6, 7}) {
       set<int> fit_vertices(base_set);
       fit_vertices.emplace(v);
-      const Aabb::Maker<SurfaceMesh<double>> maker(mesh, fit_vertices);
+      const Aabb::Maker<TriangleSurfaceMesh<double>> maker(mesh, fit_vertices);
       const Aabb aabb = maker.Compute();
       EXPECT_TRUE(CompareMatrices(aabb.center(), Vector3d::Zero()));
       EXPECT_TRUE(CompareMatrices(aabb.half_width(), half_size));

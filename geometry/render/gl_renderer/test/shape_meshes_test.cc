@@ -91,7 +91,7 @@ f 1//1 2//1 3//1
 // is parsed via the stream interface.
 GTEST_TEST(LoadMeshFromObjTest, ReadingFile) {
   const std::string filename =
-      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
 
   MeshData mesh_data = LoadMeshFromObj(filename);
   EXPECT_EQ(mesh_data.positions.rows(), 24);

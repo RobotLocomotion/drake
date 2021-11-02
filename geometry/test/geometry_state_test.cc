@@ -3759,8 +3759,10 @@ GTEST_TEST(GeometryStateHydroTest, GetHydroMesh) {
     geometry_state.AssignRole(source_id, id, rigid_hydro);
 
     const auto maybe_mesh = geometry_state.maybe_get_hydroelastic_mesh(id);
-    EXPECT_TRUE(std::holds_alternative<const SurfaceMesh<double>*>(maybe_mesh));
-    EXPECT_NE(std::get<const SurfaceMesh<double>*>(maybe_mesh), nullptr);
+    EXPECT_TRUE(
+        std::holds_alternative<const TriangleSurfaceMesh<double>*>(maybe_mesh));
+    EXPECT_NE(std::get<const TriangleSurfaceMesh<double>*>(maybe_mesh),
+              nullptr);
   }
 
   // Case: id has volume mesh.

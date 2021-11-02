@@ -61,7 +61,7 @@ using geometry::Role;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
-using geometry::SurfaceMesh;
+using geometry::TriangleSurfaceMesh;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using std::make_unique;
@@ -262,8 +262,8 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_msg.collision_count2 = inspector.NumGeometriesForFrameWithRole(
           inspector.GetFrameId(id2), Role::kProximity);
 
-      const SurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
-      surface_msg.num_triangles = mesh_W.num_faces();
+      const TriangleSurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
+      surface_msg.num_triangles = mesh_W.num_triangles();
       surface_msg.triangles.resize(surface_msg.num_triangles);
       write_double3(mesh_W.centroid(), surface_msg.centroid_W);
       surface_msg.num_quadrature_points = surface_msg.num_triangles;

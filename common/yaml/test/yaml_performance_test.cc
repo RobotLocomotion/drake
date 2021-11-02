@@ -6,11 +6,11 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/name_value.h"
 #include "drake/common/test_utilities/limit_malloc.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
 
+using drake::yaml::SaveYamlString;
 using drake::yaml::YamlReadArchive;
-using drake::yaml::YamlWriteArchive;
 
 namespace drake {
 namespace yaml {
@@ -46,13 +46,6 @@ struct Map {
 // A test fixture with common helpers.
 class YamlPerformanceTest : public ::testing::Test {
  public:
-  template <typename Serializable>
-  static std::string Save(const Serializable& data) {
-    YamlWriteArchive archive;
-    archive.Accept(data);
-    return archive.EmitString("doc");
-  }
-
   static YAML::Node Load(const std::string& contents) {
     const YAML::Node loaded = YAML::Load(contents);
     if (loaded.Type() != YAML::NodeType::Map) {
@@ -83,7 +76,7 @@ TEST_F(YamlPerformanceTest, VectorNesting) {
   }
 
   // Convert to YAML.
-  const YAML::Node root = Load(Save(data));
+  const YAML::Node root = Load(SaveYamlString(data, "doc"));
 
   // Parse the data back into a C++ structure while checking that resource
   // usage is sane.
@@ -172,7 +165,7 @@ TEST_F(YamlPerformanceTest, EigenMatrix) {
   }
 
   // Convert to YAML.
-  const YAML::Node root = Load(Save(data));
+  const YAML::Node root = Load(SaveYamlString(data, "doc"));
 
   // Parse the data back into a C++ structure while checking that resource
   // usage is sane.

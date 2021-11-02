@@ -59,16 +59,16 @@ class TestGeometryHydro(unittest.TestCase):
         # Create a mesh out of two triangles forming a quad.
         #
         #     0______1
-        #      |b  /|      Two faces: a and b.
+        #      |b  /|      Two triangles: a and b.
         #      |  / |      Four vertices: 0, 1, 2, and 3.
         #      | /a |
         #      |/___|
         #     2      3
 
-        f_a = mut.SurfaceFace(v0=3, v1=1, v2=2)
-        f_b = mut.SurfaceFace(v0=2, v1=1, v2=0)
-        self.assertEqual(f_a.vertex(0), 3)
-        self.assertEqual(f_b.vertex(1), 1)
+        t_a = mut.SurfaceTriangle(v0=3, v1=1, v2=2)
+        t_b = mut.SurfaceTriangle(v0=2, v1=1, v2=0)
+        self.assertEqual(t_a.vertex(0), 3)
+        self.assertEqual(t_b.vertex(1), 1)
 
         v0 = (-1,  1, 0)
         v1 = (1,  1, 0)
@@ -77,8 +77,9 @@ class TestGeometryHydro(unittest.TestCase):
 
         self.assertListEqual(list(v0), [-1, 1, 0])
 
-        mesh = mut.SurfaceMesh(faces=(f_a, f_b), vertices=(v0, v1, v2, v3))
-        self.assertEqual(len(mesh.faces()), 2)
+        mesh = mut.TriangleSurfaceMesh(triangles=(t_a, t_b),
+                                       vertices=(v0, v1, v2, v3))
+        self.assertEqual(len(mesh.triangles()), 2)
         self.assertEqual(len(mesh.vertices()), 4)
         self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
 
@@ -140,11 +141,11 @@ class TestGeometryHydro(unittest.TestCase):
 
         surface_mesh = mut.ConvertVolumeToSurfaceMesh(volume_mesh)
 
-        self.assertIsInstance(surface_mesh, mut.SurfaceMesh)
+        self.assertIsInstance(surface_mesh, mut.TriangleSurfaceMesh)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
-        mesh = mut.ReadObjToSurfaceMesh(mesh_path)
+        mesh = mut.ReadObjToTriangleSurfaceMesh(mesh_path)
         vertices = mesh.vertices()
 
         # This test relies on the specific content of the file quad_cube.obj.

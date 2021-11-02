@@ -6,6 +6,7 @@
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
@@ -70,6 +71,47 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    to determine whether this should be called on initialization. */
   void Delete() const;
 
+  /** Sets a flag indicating that subsequent publish events should also be
+  "recorded" into a MeshcatAnimation.  The data in these events will be
+  combined with any frames previously added to the animation; if the same
+  transform/property is set at the same time, then it will overwrite the
+  existing frame in the animation.  Frames are added at the index
+  MeshcatAnimation::frame(context.get_time()).
+
+  @returns a mutable pointer to the current recording.  See
+  get_mutable_recording().
+  */
+  MeshcatAnimation* StartRecording() {
+    recording_ = true;
+    return get_mutable_recording();
+  }
+
+  /** Sets a flag to pause/stop recording.  When stopped, publish events will
+  not add frames to the animation. */
+  void StopRecording() { recording_ = false; }
+
+  /** Sends the recording to Meshcat as an animation. The published animation
+  only includes transforms and properties; the objects that they modify must be
+  sent to the visualizer separately (e.g. by calling Publish()). */
+  void PublishRecording() const;
+
+  /** Deletes the current animation holding the recorded frames.  Animation
+  options (autoplay, repetitions, etc) will also be reset, and any pointers
+  obtained from get_mutable_recording() will be rendered invalid. This does
+  *not* currently remove the animation from Meshcat. */
+  void DeleteRecording();
+
+  /** Returns a mutable pointer to this MeshcatVisualizer's unique
+  MeshcatAnimation object in which the frames will be recorded. This pointer
+  can be used to set animation properties (like autoplay, the loop mode, number
+  of repetitions, etc), and can be passed to supporting visualizers (e.g.
+  MeshcatPointCloudVisualizer and MeshcatContactVisualizer) so that they record
+  into the same animation.
+
+  The MeshcatAnimation object will only remain valid for the lifetime of `this`
+  or until DeleteRecording() is called. */
+  MeshcatAnimation* get_mutable_recording() { return animation_.get(); }
+
   /** Returns the QueryObject-valued input port. It should be connected to
    SceneGraph's QueryObject-valued output port. Failure to do so will cause a
    runtime error when attempting to broadcast messages. */
@@ -77,24 +119,22 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
     return this->get_input_port(query_object_input_port_);
   }
 
-  /** Adds a MescatVisualizer and connects it to the given SceneGraph's
+  /** Adds a MeshcatVisualizer and connects it to the given SceneGraph's
    QueryObject-valued output port. See
    MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
    MeshcatVisualizerParams) for details. */
-  static const MeshcatVisualizer<T>& AddToBuilder(
+  static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
-      std::shared_ptr<Meshcat> meshcat,
-      MeshcatVisualizerParams params = {});
+      std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
   /** Adds a MescatVisualizer and connects it to the given QueryObject-valued
    output port. See MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
    MeshcatVisualizerParams) for details. */
-  static const MeshcatVisualizer<T>& AddToBuilder(
+  static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
       std::shared_ptr<Meshcat> meshcat,
       MeshcatVisualizerParams params = {});
-  //@}
 
  private:
   /* MeshcatVisualizer of different scalar types can all access each other's
@@ -111,7 +151,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   /* Makes calls to Meshcat::SetTransform to update the poses from SceneGraph.
    */
-  void SetTransforms(const QueryObject<T>& query_object) const;
+  void SetTransforms(const systems::Context<T>& context,
+                     const QueryObject<T>& query_object) const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
@@ -146,6 +187,24 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   /* The parameters for the visualizer.  */
   MeshcatVisualizerParams params_;
+
+  /* TODO(russt): Consider moving the MeshcatAnimation into the Context.
+  Full-fledged support for multi-threaded recording requires some additional
+  design thinking and may require either moving the prefix into the Context as
+  well (e.g. multiple copies of the MeshcatVisualizer publish to the same
+  Meshcat, but on different prefixes) or support for SetObject in
+  MeshcatAnimation (each animation keeps track of the objects, instead of the
+  shared Meshcat instance keeping track).  We may also want to allow users to
+  disable the default publishing behavior (to record without visualizing
+  immediately). */
+
+  /* MeshcatAnimation object for recording. It must be mutable so that frames
+   * can be added to it during Publish events. */
+  mutable std::unique_ptr<MeshcatAnimation> animation_;
+
+  /* Recording status.  True means that each new Publish event will record a
+  frame in the animation. */
+  bool recording_{false};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

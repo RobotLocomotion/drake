@@ -164,7 +164,7 @@ PYBIND11_MODULE(symbolic, m) {
       },
       py::arg("f"), py::arg("a"), py::arg("order"), doc.TaylorExpand.doc);
 
-  // Bind the free functions for MakeVectorXXXVariable
+  // Bind the free functions for Make(Vector|Matrix)(...)Variable.
   m  // BR
       .def(
           "MakeMatrixVariable",
@@ -291,6 +291,39 @@ PYBIND11_MODULE(symbolic, m) {
     return intersect(vars1, vars2);
   });
 
+  {
+    constexpr auto& cls_doc = doc.ExpressionKind;
+    py::enum_<ExpressionKind>(m, "ExpressionKind", doc.ExpressionKind.doc)
+        .value("Constant", ExpressionKind::Constant, cls_doc.Constant.doc)
+        .value("Var", ExpressionKind::Var, cls_doc.Var.doc)
+        .value("Add", ExpressionKind::Add, cls_doc.Add.doc)
+        .value("Mul", ExpressionKind::Mul, cls_doc.Mul.doc)
+        .value("Div", ExpressionKind::Div, cls_doc.Div.doc)
+        .value("Log", ExpressionKind::Log, cls_doc.Log.doc)
+        .value("Abs", ExpressionKind::Abs, cls_doc.Abs.doc)
+        .value("Exp", ExpressionKind::Exp, cls_doc.Exp.doc)
+        .value("Sqrt", ExpressionKind::Sqrt, cls_doc.Sqrt.doc)
+        .value("Pow", ExpressionKind::Pow, cls_doc.Pow.doc)
+        .value("Sin", ExpressionKind::Sin, cls_doc.Sin.doc)
+        .value("Cos", ExpressionKind::Cos, cls_doc.Cos.doc)
+        .value("Tan", ExpressionKind::Tan, cls_doc.Tan.doc)
+        .value("Asin", ExpressionKind::Asin, cls_doc.Asin.doc)
+        .value("Acos", ExpressionKind::Acos, cls_doc.Acos.doc)
+        .value("Atan", ExpressionKind::Atan, cls_doc.Atan.doc)
+        .value("Atan2", ExpressionKind::Atan2, cls_doc.Atan2.doc)
+        .value("Sinh", ExpressionKind::Sinh, cls_doc.Sinh.doc)
+        .value("Cosh", ExpressionKind::Cosh, cls_doc.Cosh.doc)
+        .value("Tanh", ExpressionKind::Tanh, cls_doc.Tanh.doc)
+        .value("Min", ExpressionKind::Min, cls_doc.Min.doc)
+        .value("Max", ExpressionKind::Max, cls_doc.Max.doc)
+        .value("Ceil", ExpressionKind::Ceil, cls_doc.Ceil.doc)
+        .value("Floor", ExpressionKind::Floor, cls_doc.Floor.doc)
+        .value("IfThenElse", ExpressionKind::IfThenElse, cls_doc.IfThenElse.doc)
+        .value("NaN", ExpressionKind::NaN, cls_doc.NaN.doc)
+        .value("UninterpretedFunction", ExpressionKind::UninterpretedFunction,
+            cls_doc.UninterpretedFunction.doc);
+  }
+
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Expression> expr_cls(m, "Expression", doc.Expression.doc);
   expr_cls.def(py::init<>(), doc.Expression.ctor.doc_0args)
@@ -303,6 +336,7 @@ PYBIND11_MODULE(symbolic, m) {
           })
       .def(
           "__copy__", [](const Expression& self) -> Expression { return self; })
+      .def("get_kind", &Expression::get_kind, doc.Expression.get_kind.doc)
       .def("to_string", &Expression::to_string, doc.Expression.to_string.doc)
       .def("Expand", &Expression::Expand, doc.Expression.Expand.doc)
       .def(
@@ -424,7 +458,9 @@ PYBIND11_MODULE(symbolic, m) {
   pydrake::internal::BindSymbolicMathOverloads<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
 
-  m.def("if_then_else", &symbolic::if_then_else);
+  m.def("if_then_else", &symbolic::if_then_else, doc.if_then_else.doc);
+  m.def("uninterpreted_function", &symbolic::uninterpreted_function,
+      py::arg("name"), py::arg("arguments"), doc.uninterpreted_function.doc);
 
   m.def(
       "Jacobian",

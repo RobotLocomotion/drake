@@ -16,7 +16,9 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                                         MeshcatVisualizerParams params)
     : systems::LeafSystem<T>(systems::SystemTypeTag<MeshcatVisualizer>{}),
       meshcat_(std::move(meshcat)),
-      params_(std::move(params)) {
+      params_(std::move(params)),
+      animation_(
+          std::make_unique<MeshcatAnimation>(1.0 / params_.publish_period)) {
   DRAKE_DEMAND(meshcat_ != nullptr);
   DRAKE_DEMAND(params_.publish_period >= 0.0);
   if (params_.role == Role::kUnassigned) {
@@ -52,7 +54,17 @@ void MeshcatVisualizer<T>::Delete() const {
 }
 
 template <typename T>
-const MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
+void MeshcatVisualizer<T>::PublishRecording() const {
+  meshcat_->SetAnimation(*animation_);
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::DeleteRecording() {
+  animation_ = std::make_unique<MeshcatAnimation>(1.0 / params_.publish_period);
+}
+
+template <typename T>
+MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
     std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {
   return AddToBuilder(builder, scene_graph.get_query_output_port(),
@@ -60,7 +72,7 @@ const MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
 }
 
 template <typename T>
-const MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
+MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& query_object_port,
     std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {
@@ -82,7 +94,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     SetObjects(query_object.inspector());
     version_ = current_version;
   }
-  SetTransforms(query_object);
+  SetTransforms(context, query_object);
 
   return systems::EventStatus::Succeeded();
 }
@@ -149,10 +161,17 @@ void MeshcatVisualizer<T>::SetObjects(
 
 template <typename T>
 void MeshcatVisualizer<T>::SetTransforms(
+    const systems::Context<T>& context,
     const QueryObject<T>& query_object) const {
   for (const auto& [frame_id, path] : dynamic_frames_) {
-    meshcat_->SetTransform(path, internal::convert_to_double(
-                                     query_object.GetPoseInWorld(frame_id)));
+    const math::RigidTransformd X_WF =
+        internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
+    meshcat_->SetTransform(path, X_WF);
+    if (recording_) {
+      animation_->SetTransform(
+          animation_->frame(ExtractDoubleOrThrow(context.get_time())), path,
+          X_WF);
+    }
   }
 }
 

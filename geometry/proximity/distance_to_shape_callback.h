@@ -6,6 +6,7 @@
 #include <fcl/fcl.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/proximity_utilities.h"

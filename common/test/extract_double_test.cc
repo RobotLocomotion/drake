@@ -7,9 +7,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
-// A non-numeric ScalarType for testing.
-namespace { struct NonNumericScalar { }; }
-
 namespace drake {
 namespace {
 
@@ -21,13 +18,6 @@ GTEST_TEST(ExtractDoubleTest, BasicTest) {
   // A const double works.
   const double y = 2.0;
   EXPECT_EQ(ExtractDoubleOrThrow(y), 2.0);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // A non-numeric throws.
-  NonNumericScalar non_numeric;
-  EXPECT_THROW(ExtractDoubleOrThrow(non_numeric), std::exception);
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(ExtractDoubleTest, MatrixTest) {

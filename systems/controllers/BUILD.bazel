@@ -209,7 +209,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
-        "//examples/simple_four_bar:models",
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
@@ -275,6 +274,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "setpoint_test",
     srcs = ["test/setpoint_test.cc"],
+    copts = ["-Wno-deprecated-declarations"],
     # TODO(ggould-tri) This test hit kcov#339; untag when we have kcov>=40.
     tags = ["no_kcov"],
     deps = [

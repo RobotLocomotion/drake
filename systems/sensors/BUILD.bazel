@@ -290,22 +290,6 @@ drake_cc_googletest(
     ],
 )
 
-filegroup(
-    name = "test_models",
-    testonly = 1,
-    srcs = [
-        "test/models/background.jpg",
-        "test/models/box.sdf",
-        "test/models/box_with_mesh.sdf",
-        "test/models/meshes/box.obj",
-        "test/models/meshes/box.obj.mtl",
-        "test/models/meshes/box.png",
-        "test/models/meshes/box2.obj",
-        "test/models/nothing.sdf",
-        "test/models/sphere.sdf",
-    ],
-)
-
 drake_cc_googletest(
     name = "image_writer_test",
     tags = vtk_test_tags(),

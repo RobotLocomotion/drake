@@ -7,7 +7,6 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -125,7 +124,7 @@ class GraphOfConvexSets {
     const Vertex& u() const { return *u_; }
 
     /** Returns a const reference to the "right" Vertex that this edge connects
-     * to. */
+    to. */
     const Vertex& v() const { return *v_; }
 
     /** Returns the binary variable associated with this edge. It can be used
@@ -153,6 +152,7 @@ class GraphOfConvexSets {
     @endverbatim
     @returns the pair <ℓ, Binding<Cost>>.
     @throws std::exception if e.GetVariables() is not a subset of xu() ∪ xv().
+    @pydrake_mkdoc_identifier{expression}
     */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const symbolic::Expression& e);
@@ -166,7 +166,9 @@ class GraphOfConvexSets {
     @endverbatim
     @returns the pair <ℓ, Binding<Cost>>.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
-    xv(). */
+    xv().
+    @pydrake_mkdoc_identifier{binding}
+    */
     std::pair<symbolic::Variable, solvers::Binding<solvers::Cost>> AddCost(
         const solvers::Binding<solvers::Cost>& binding);
 
@@ -174,6 +176,7 @@ class GraphOfConvexSets {
     containing *only* elements of xu() and xv() as variables.
     @throws std::exception if f.GetFreeVariables() is not a subset of xu() ∪
     xv().
+    @pydrake_mkdoc_identifier{formula}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
         const symbolic::Formula& f);
@@ -181,7 +184,9 @@ class GraphOfConvexSets {
     /** Adds a constraint to this edge.  @p binding must contain *only*
     elements of xu() and xv() as variables.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
-    xv(). */
+    xv().
+    @pydrake_mkdoc_identifier{binding}
+    */
     solvers::Binding<solvers::Constraint> AddConstraint(
         const solvers::Binding<solvers::Constraint>& binding);
 
@@ -195,8 +200,18 @@ class GraphOfConvexSets {
     void ClearPhiConstraints();
 
     /** Returns the sum of the costs associated with this edge in a
-    MathematicalProgramResult. */
+    solvers::MathematicalProgramResult. */
     double GetSolutionCost(
+        const solvers::MathematicalProgramResult& result) const;
+
+    /** Returns the vector value of the slack variables associated with ϕxᵤ in a
+    solvers::MathematicalProgramResult. */
+    Eigen::VectorXd GetSolutionPhiXu(
+        const solvers::MathematicalProgramResult& result) const;
+
+    /** Returns the vector value of the slack variables associated with ϕxᵥ in
+    a solvers::MathematicalProgramResult. */
+    Eigen::VectorXd GetSolutionPhiXv(
         const solvers::MathematicalProgramResult& result) const;
 
    private:
@@ -220,7 +235,7 @@ class GraphOfConvexSets {
     // Note: ell_[i] is associated with costs_[i].
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
-    std::unordered_set<solvers::Binding<solvers::Constraint>> constraints_{};
+    std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
     std::optional<bool> phi_value_{};
 
     friend class GraphOfConvexSets;
@@ -235,25 +250,48 @@ class GraphOfConvexSets {
 
   /** Adds an edge to the graph from VertexId @p u_id to VertexId @p v_id.  The
   ids must refer to valid vertices in this graph. If @p name is empty then a
-  default name will be provided. */
+  default name will be provided.
+  @pydrake_mkdoc_identifier{by_id}
+  */
   Edge* AddEdge(const VertexId& u_id, const VertexId& v_id,
                 std::string name = "");
 
   /** Adds an edge to the graph from Vertex @p u to Vertex @p v.  The
   vertex references must refer to valid vertices in this graph. If @p name is
-  empty then a default name will be provided. */
+  empty then a default name will be provided.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
   Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
 
-  /** Returns the VertexIds of the vertices stored in the graph.  Note that the
-  order of the elements is not guaranteed. */
-  std::unordered_set<VertexId> VertexIds() const;
+  /** Returns mutable pointers to the vertices stored in the graph. */
+  std::vector<Vertex*> Vertices();
 
-  /** Returns pointers to the edges stored in the graph.  Note that the order of
-  the elements is not guaranteed. */
-  std::unordered_set<Edge*> Edges();
+  /** Returns pointers to the vertices stored in the graph.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+  std::vector<const Vertex*> Vertices() const;
 
-  // TODO(russt): std::string GetGraphvizString(const
-  // std::optional<solvers::MathematicalProgramResult>& = std::nullopt) const;
+  /** Returns mutable pointers to the edges stored in the graph. */
+  std::vector<Edge*> Edges();
+
+  /** Returns pointers to the edges stored in the graph.
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
+  std::vector<const Edge*> Edges() const;
+
+  /** Returns a Graphviz string describing the graph vertices and edges.  If
+  `results` is supplied, then the graph will be annotated with the solution
+  values.
+  @param show_slacks determines whether the values of the intermediate
+  (slack) variables are also displayed in the graph.
+  @param precision sets the floating point precision (how many digits are
+  generated) of the annotations.
+  @param scientific sets the floating point formatting to scientific (if true)
+  or fixed (if false).
+  */
+  std::string GetGraphvizString(
+      const std::optional<solvers::MathematicalProgramResult>& result =
+          std::nullopt,
+      bool show_slacks = true, int precision = 3,
+      bool scientific = false) const;
 
   // TODO(russt): Consider adding optional<Solver> argument.
   /** Formulates and solves the mixed-integer convex formulation of the
@@ -275,13 +313,16 @@ class GraphOfConvexSets {
   @throws std::exception if any of the costs or constraints in the graph are
   incompatible with the shortest path formulation or otherwise unsupported.
   All costs must be non-negative (for all values of the continuous variables).
+  @pydrake_mkdoc_identifier{by_id}
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const VertexId& source_id, const VertexId& target_id,
       bool convex_relaxation = false) const;
 
   /** Convenience overload that takes const reference arguments for source and
-  target. */
+  target.
+  @pydrake_mkdoc_identifier{by_reference}
+  */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
       bool convex_relaxation = false) const;

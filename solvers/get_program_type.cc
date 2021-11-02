@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <vector>
 
+#include "drake/common/never_destroyed.h"
 #include "drake/solvers/program_attribute.h"
 
 namespace drake {

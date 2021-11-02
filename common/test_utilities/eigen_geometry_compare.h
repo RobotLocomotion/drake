@@ -3,6 +3,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_deprecated.h"
+
 namespace drake {
 
 /**
@@ -14,6 +16,7 @@ namespace drake {
  * @param tolerance  The tolerance for determining equivalence for
  * the orthonormal and right-hand rule cases.
  */
+DRAKE_DEPRECATED("2022-02-01", "This function is being removed.")
 [[nodiscard]] ::testing::AssertionResult ExpectRotMat(
     const Eigen::Matrix3d& R, double tolerance);
 
@@ -25,6 +28,7 @@ namespace drake {
  * rotation matrix cases (using ExpectRotMat) and comparing both transforms
  * as matrices.
  */
+DRAKE_DEPRECATED("2022-02-01", "This function is being removed.")
 [[nodiscard]]::testing::AssertionResult CompareTransforms(
     const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
     double tolerance);

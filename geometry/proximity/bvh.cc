@@ -135,18 +135,18 @@ Vector3d Bvh<BvType, SourceMeshType>::ComputeCentroid(
   return centroid;
 }
 
-template class Bvh<Obb, SurfaceMesh<double>>;
+template class Bvh<Obb, TriangleSurfaceMesh<double>>;
 template class Bvh<Obb, VolumeMesh<double>>;
-template class Bvh<Aabb, SurfaceMesh<double>>;
+template class Bvh<Aabb, TriangleSurfaceMesh<double>>;
 template class Bvh<Aabb, VolumeMesh<double>>;
 
 // TODO(SeanCurtis-tri) These are here to allow creating a BVH for an
 //  AutoDiffXd-valued mesh. Currently, the code doesn't strictly disallow this
 //  although projected uses are only double-valued. If we choose to definitively
 //  close the door on autodiff-valued meshes, we can remove these.
-template class Bvh<Obb, SurfaceMesh<AutoDiffXd>>;
+template class Bvh<Obb, TriangleSurfaceMesh<AutoDiffXd>>;
 template class Bvh<Obb, VolumeMesh<AutoDiffXd>>;
-template class Bvh<Aabb, SurfaceMesh<AutoDiffXd>>;
+template class Bvh<Aabb, TriangleSurfaceMesh<AutoDiffXd>>;
 template class Bvh<Aabb, VolumeMesh<AutoDiffXd>>;
 
 }  // namespace internal

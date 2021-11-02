@@ -118,6 +118,16 @@ Convex::Convex(const std::string& absolute_filename, double scale)
   }
 }
 
+MeshcatCone::MeshcatCone(double height, double a, double b)
+    : Shape(ShapeTag<MeshcatCone>()), height_(height), a_(a), b_(b) {
+  if (height <= 0 || a <= 0 || b <= 0) {
+    throw std::logic_error(fmt::format(
+        "MeshcatCone parameters height, a, and b should all be > 0 (they were "
+        "{}, {}, and {}, respectively).",
+        height, a, b));
+  }
+}
+
 void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
   ThrowUnsupportedGeometry("Sphere");
 }
@@ -147,6 +157,10 @@ void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
 
 void ShapeReifier::ImplementGeometry(const Convex&, void*) {
   ThrowUnsupportedGeometry("Convex");
+}
+
+void ShapeReifier::ImplementGeometry(const MeshcatCone&, void*) {
+  ThrowUnsupportedGeometry("MeshcatCone");
 }
 
 void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {

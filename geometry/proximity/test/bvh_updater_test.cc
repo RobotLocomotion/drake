@@ -65,12 +65,12 @@ class BvhUpdaterTest : public ::testing::Test {
          offset,
          -offset}};
     // clang-format on
-    if constexpr (std::is_same_v<MeshType, SurfaceMesh<T>>) {
+    if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
       /* The winding of the triangles don't matter. */
-      vector<SurfaceFace> triangles;
+      vector<SurfaceTriangle> triangles;
       for (int i = 0; i < MeshTraits<MeshType>::kMaxElementPerBvhLeaf; ++i) {
-        triangles.push_back(SurfaceFace(0, 1, 2));
-        triangles.push_back(SurfaceFace(3, 4, 5));
+        triangles.emplace_back(0, 1, 2);
+        triangles.emplace_back(3, 4, 5);
       }
       return MeshType(std::move(triangles), std::move(vertices));
     } else {
@@ -86,7 +86,8 @@ class BvhUpdaterTest : public ::testing::Test {
   }
 };
 
-using MeshTypes = ::testing::Types<SurfaceMesh<double>, SurfaceMesh<AutoDiffXd>,
+using MeshTypes = ::testing::Types<TriangleSurfaceMesh<double>,
+                                   TriangleSurfaceMesh<AutoDiffXd>,
                                    VolumeMesh<double>, VolumeMesh<AutoDiffXd>>;
 
 TYPED_TEST_SUITE(BvhUpdaterTest, MeshTypes);

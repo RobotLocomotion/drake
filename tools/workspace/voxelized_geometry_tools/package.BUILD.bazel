@@ -20,11 +20,13 @@ cc_library(
     srcs = [
         "src/voxelized_geometry_tools/collision_map.cpp",
         "src/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.cpp",  # noqa
+        "src/voxelized_geometry_tools/mesh_rasterizer.cpp",
         "src/voxelized_geometry_tools/tagged_object_collision_map.cpp",
     ],
     hdrs = [
         "include/voxelized_geometry_tools/collision_map.hpp",
         "include/voxelized_geometry_tools/dynamic_spatial_hashed_collision_map.hpp",  # noqa
+        "include/voxelized_geometry_tools/mesh_rasterizer.hpp",
         "include/voxelized_geometry_tools/signed_distance_field.hpp",
         "include/voxelized_geometry_tools/signed_distance_field_generation.hpp",  # noqa
         "include/voxelized_geometry_tools/tagged_object_collision_map.hpp",
@@ -110,6 +112,16 @@ cc_test(
         ":cuda_voxelization_helpers",
         ":opencl_voxelization_helpers",
         ":pointcloud_voxelization",
+        "@common_robotics_utilities",
+        "@gtest//:without_main",
+    ],
+)
+
+cc_test(
+    name = "mesh_rasterization_test",
+    srcs = ["test/mesh_rasterization_test.cpp"],
+    deps = [
+        ":voxelized_geometry_tools",
         "@common_robotics_utilities",
         "@gtest//:without_main",
     ],

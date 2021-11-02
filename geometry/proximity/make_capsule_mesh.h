@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -115,8 +115,8 @@ VolumeMesh<T> MakeCapsuleVolumeMesh(const Capsule& capsule,
 // @tparam T
 //    The Eigen-compatible scalar for representing the mesh vertex positions.
 template <typename T>
-SurfaceMesh<T> MakeCapsuleSurfaceMesh(const Capsule& capsule,
-                                      double resolution_hint) {
+TriangleSurfaceMesh<T> MakeCapsuleSurfaceMesh(const Capsule& capsule,
+                                              double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(
       MakeCapsuleVolumeMesh<T>(capsule, resolution_hint));

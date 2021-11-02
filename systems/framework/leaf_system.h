@@ -14,7 +14,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
@@ -1500,33 +1499,6 @@ class LeafSystem : public System<T> {
     return DeclareAbstractOutputPort(NextOutputPortName(std::move(name)),
                                      OutputType{}, calc,
                                      std::move(prerequisites_of_calc));
-  }
-
-  // Declares an output port by specifying an allocator function pointer that
-  // returns by-value, and a calc function pointer.
-  template <class MySystem, typename OutputType>
-  DRAKE_DEPRECATED("2021-11-01",
-      "This overload for DeclareAbstractOutputPort is rarely the best choice;"
-      " it is unusual for a boutique allocation to return an abstract type by"
-      " value rather than provide a model_value. If the default constructor"
-      " or a model value cannot be used, use the overload that accepts an"
-      " AllocCallback alloc_function instead.")
-  LeafOutputPort<T>& DeclareAbstractOutputPort(
-      std::variant<std::string, UseDefaultName> name,
-      OutputType (MySystem::*make)() const,
-      void (MySystem::*calc)(const Context<T>&, OutputType*) const,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()}) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-    ValueProducer::AllocateCallback allocate = [this_ptr, make]() {
-      return AbstractValue::Make<OutputType>((this_ptr->*make)());
-    };
-    auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)),
-        ValueProducer(this_ptr, std::move(allocate), calc),
-        std::move(prerequisites_of_calc));
-    return port;
   }
 
   /** (Advanced) Declares an abstract-valued output port using the given

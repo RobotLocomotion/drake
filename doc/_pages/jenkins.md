@@ -84,7 +84,7 @@ Installation prerequisites are packages that are not pulled in Bazel, but
 instead installed on the OS itself using a package manager like ``apt``,
 Homebrew, or ``pip`` (only on Mac). They are installed via the scripts under
 ``setup/``, and are split between ``binary_distribution`` (dependencies that
-are necessary for [binary installation](/from_binary.html)) and
+are necessary for [binary installation](/installation.html)) and
 ``source_distribution`` (dependencies, in addition to those in
 ``binary_distribution``, necessary for
 [source installation](/from_source.html)). Since
