@@ -9,6 +9,7 @@
 #include "optitrack/optitrack_data_descriptions_t.hpp"
 #include "optitrack/optitrack_frame_t.hpp"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -20,6 +21,7 @@ namespace perception {
  * Gets the pose of an Optitrack rigid body.
  * @returns X_OB, the pose of the body `B` in the optitrack frame `O`.
  */
+DRAKE_DEPRECATED("2022-02-01", "Possibly use OptitrackReceiver instead.")
 Isometry3<double> ExtractOptitrackPose(
     const optitrack::optitrack_rigid_body_t& message);
 
@@ -27,6 +29,7 @@ Isometry3<double> ExtractOptitrackPose(
  * Extracts poses of all objects from an Optitrack message.
  * @returns Mapping from object ID to pose.
  */
+DRAKE_DEPRECATED("2022-02-01", "This function is being removed.")
 std::map<int, Isometry3<double>> ExtractOptitrackPoses(
     const optitrack::optitrack_frame_t& frame);
 
@@ -36,6 +39,7 @@ std::map<int, Isometry3<double>> ExtractOptitrackPoses(
  * @param object_id ID to be searched for in the frame message.
  * @returns Rigid body object, or `nullopt` if not found.
  */
+DRAKE_DEPRECATED("2022-02-01", "This function is being removed.")
 std::optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
       const optitrack::optitrack_frame_t& message, int object_id);
 
@@ -44,6 +48,7 @@ std::optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
  * @param message Description message.
  * @returns Object ID if found, or `nullopt` if not found.
  */
+DRAKE_DEPRECATED("2022-02-01", "This function is being removed.")
 std::optional<int> FindOptitrackObjectId(
     const optitrack::optitrack_data_descriptions_t& message,
     const std::string& object_name);
@@ -55,7 +60,8 @@ std::optional<int> FindOptitrackObjectId(
  *
  * @ingroup manipulation_systems
  */
-class OptitrackPoseExtractor : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED("2022-02-01", "Use OptitrackReceiver instead.")
+OptitrackPoseExtractor : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackPoseExtractor)
   /**
