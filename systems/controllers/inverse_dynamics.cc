@@ -96,7 +96,7 @@ void InverseDynamics<T>::CalcMultibodyForces(
 
 template <typename T>
 void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
-                                          BasicVector<T>* output) const {
+                                         BasicVector<T>* output) const {
   auto& plant = *multibody_plant_;
 
   const auto& multibody_plant_context =

@@ -58,7 +58,7 @@ class DifferentialIK(LeafSystem):
                                     position_state_index)
 
     def SetPositions(self, context, q):
-        context.get_mutable_discrete_state(0).SetFromVector(q)
+        context.SetDiscreteState(0, q)
 
     def ForwardKinematics(self, q):
         x = self.robot.GetMutablePositionsAndVelocities(
