@@ -12,43 +12,55 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// A supernodal solver for the solving the symmetric positive definite system
-//   H⋅x = b where H = M + J^T G J.  The matrices M and J are set by the
-//   constructor and the weight matrix G is set by SetWeightMatrix(), which can
-//   be called multiple times on a constructed object.
+// A supernodal solver for solving the symmetric positive definite system
+//   H⋅x = b
+// where H = M + Jᵀ G J. The matrices M and J are set at construction and the
+// weight matrix G is set with SetWeightMatrix(), which can be called multiple
+// times on a constructed object.
 //
-// Mass matrix M layout: M is a block diagonal matrix where the t-th diagonal
-//   entry Mₜ has size nₜ×nₜ. M has size nᵥ×nᵥ, with nᵥ = ∑nₜ.
+// Matrix M layout:
+//   M is symmetric positive definite with a block diagonal structure. The t-th
+//   diagonal entry Mₜ has size nₜ×nₜ. M has size nᵥ×nᵥ, with nᵥ = ∑nₜ.
 //
-// Weight matrix G layout: G is a block diagonal matrix where the k-th block has
-//   size nₖ×nₖ. The size of the matrix is r×r, with r = ∑nₖ.
+// Matrix J layout:
+//   J will in general have a block sparse structure. Block Jₚₜ of the J has
+//   size nₚ×nₜ. The number of columns in the Jacobian is nᵥ. The number of rows
+//   is r = ∑nₚ.
 //
-// Jacobian J layout: Block Jₚₜ of the Jacobian has size nₚ×nₜ. The number of
-//   columns in the Jacobian is nᵥ. The number of rows is r = ∑nₚ.
+// Weight matrix G layout:
+//   G is a block diagonal matrix where the k-th block has size nₖ×nₖ. The size
+//   of the matrix is r×r, with r = ∑nₖ.
+//   Note: The block structure of G is a refinement of the block structure of J.
 //
 // Example use case:
 //
-//  SolverNodalSolver solver( ... ); solver.SetWeightMatrix( ... );
+//  SolverNodalSolver solver( ... );
+//  solver.SetWeightMatrix( ... );
 //  solver.Factor();
 //
-//  // Solve Tx = b1. x1 = solver.Solve(b1); // Resolve Tx = b2. x2 =
-//  solver.Solve(b2);
+//  // Solve H⋅x1 = b1.
+//  x1 = solver.Solve(b1);
+//  // Reuse factorization to solve H⋅x2 = b2.
+//  x2 = solver.Solve(b2);
 //
-//  // Update weight matrix and refactor solver.SetWeightMatrix( ... );
-//  solver.Factor(); // Solve Tx = b1 with different weight matrix G. x1 =
-//  solver.Solve(b1);
+//  // Update weight matrix and refactor.
+//  solver.SetWeightMatrix( ... );
+//  solver.Factor();
+//  // Solve H⋅x = b using updated factorization.
+//  x = solver.Solve(b);
 using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 
 class SuperNodalSolver {
  public:
-  // @param num_jacobian_row_blocks Number of row blocks in the matrix J.
-  // @param jacobian_blocks Blocks Bij provided as triplets (i, j, Bij).
-  // @param mass_matrices Block diagonal matrix M provided as a vector of block
-  // diagonal entries.
+  // @param num_jacobian_row_blocks
+  //   Number of row blocks in the matrix J.
+  // @param jacobian_blocks
+  //   Blocks Jₚₜ provided as triplets (p, t, Jₚₜ).
+  //   Per each block row p, there can only be at most two blocks.
+  // @param mass_matrices
+  //   Block diagonal matrix M provided as a vector of block diagonal entries.
   //
-  // If M_{ij} is nonzero in the matrix H = M + J^T G J, then [J^T G J]_{ij}
-  // must also be nonzero for generic G.
-  //  If this condition fails, an exception is thrown.
+  // @throws if more than one block is specified per block row.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
@@ -57,13 +69,13 @@ class SuperNodalSolver {
   // the partition of the matrix J that was specified by the input
   // to the constructor. For instance, if J is partitioned like
   //
-  //  J1
-  //  J2 J3
+  //   J = |J1  0|
+  //       |J2 J3|
   //
   //  Then we require existence of n and m such that
   //
-  //  num_rows(J1) = \sum^n_{i=1} num_rows (G_i),
-  //  num_rows(J2) = \sum^{m}_{i=n+1} num_rows (G_i)
+  //    num_rows(J1) = \sum^n_{i=1} num_rows (G_i),
+  //    num_rows(J2) = \sum^{m}_{i=n+1} num_rows (G_i)
   //
   //  If this condition fails, an exception is thrown unless NDEBUG is defined.
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
@@ -78,7 +90,7 @@ class SuperNodalSolver {
     return solver_.KKTMatrix();
   }
 
-  // Computes the supernodal LLT factorization.
+  // Computes the supernodal LLT factorization of matrix H.
   void Factor();
 
   // Solves the system H⋅x = b and returns x.
