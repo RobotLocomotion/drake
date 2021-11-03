@@ -103,19 +103,19 @@ class VectorSystem : public LeafSystem<T> {
   /// Causes the vector-valued input port to become up-to-date, and returns
   /// the port's value as an %Eigen vector.  If the system has zero inputs,
   /// then returns an empty vector.
-  Eigen::VectorBlock<const VectorX<T>> EvalVectorInput(
+  const VectorX<T>& EvalVectorInput(
       const Context<T>& context) const {
-    // Obtain the block form of u (or the empty vector).
+    // Obtain a reference to u (or the empty vector).
     if (this->num_input_ports() > 0) {
       return this->get_input_port().Eval(context);
     }
     static const never_destroyed<VectorX<T>> empty_vector(0);
-    return empty_vector.access().segment(0, 0);
+    return empty_vector.access();
   }
 
   /// Returns a reference to an %Eigen vector version of the state from within
   /// the %Context.
-  Eigen::VectorBlock<const VectorX<T>> GetVectorState(
+  const VectorX<T>& GetVectorState(
       const Context<T>& context) const {
     // Obtain the block form of xc or xd.
     DRAKE_ASSERT(context.num_abstract_states() == 0);
@@ -128,7 +128,7 @@ class VectorSystem : public LeafSystem<T> {
       state_vector = &context.get_discrete_state(0);
     }
     DRAKE_DEMAND(state_vector != nullptr);
-    return state_vector->get_value();
+    return state_vector->value();
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -140,19 +140,21 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    const Eigen::VectorBlock<const VectorX<T>> input_block =
-        EvalVectorInput(context);
+    const VectorX<T>& input_vector = EvalVectorInput(context);
+    const auto input_block = input_vector.head(input_vector.rows());
 
     // Obtain the block form of xc.
     DRAKE_ASSERT(context.has_only_continuous_state());
-    const VectorBase<T>& state_vector = context.get_continuous_state_vector();
+    const VectorBase<T>& state_base = context.get_continuous_state_vector();
+    const VectorX<T>& state_vector =
+        dynamic_cast<const BasicVector<T>&>(state_base).value();
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        dynamic_cast<const BasicVector<T>&>(state_vector).get_value();
+        state_vector.head(state_vector.rows());
 
     // Obtain the block form of xcdot.
-    VectorBase<T>& derivatives_vector = derivatives->get_mutable_vector();
+    VectorBase<T>& derivatives_base = derivatives->get_mutable_vector();
     Eigen::VectorBlock<VectorX<T>> derivatives_block =
-        dynamic_cast<BasicVector<T>&>(derivatives_vector).get_mutable_value();
+        dynamic_cast<BasicVector<T>&>(derivatives_base).get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorTimeDerivatives(context, input_block, state_block,
@@ -170,14 +172,14 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    const Eigen::VectorBlock<const VectorX<T>> input_block =
-        EvalVectorInput(context);
+    const VectorX<T>& input_vector = EvalVectorInput(context);
+    const auto input_block = input_vector.head(input_vector.rows());
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
-    const BasicVector<T>& state_vector = context.get_discrete_state(0);
+    const VectorX<T>& state_vector = context.get_discrete_state(0).value();
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        state_vector.get_value();
+        state_vector.head(state_vector.rows());
 
     // Obtain the block form of xd after the update (i.e., the next state).
     DRAKE_ASSERT(discrete_state != nullptr);
@@ -238,13 +240,16 @@ class VectorSystem : public LeafSystem<T> {
     // Only provide input when direct feedthrough occurs; otherwise, we might
     // create a computational loop.
     static const never_destroyed<VectorX<T>> empty_vector(0);
-    Eigen::VectorBlock<const VectorX<T>> input_block =
+    const VectorX<T>& input_vector =
         should_eval_input ? EvalVectorInput(context) :
-        empty_vector.access().segment(0, 0);
+        empty_vector.access();
+    const Eigen::VectorBlock<const VectorX<T>> input_block =
+        input_vector.head(input_vector.rows());
 
     // Obtain the block form of xc or xd.
+    const VectorX<T>& state_vector = GetVectorState(context);
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        GetVectorState(context);
+        state_vector.head(state_vector.rows());
 
     // Obtain the block form of y.
     Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();

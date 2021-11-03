@@ -69,8 +69,7 @@ template <typename T>
 void InverseDynamics<T>::SetMultibodyContext(
     const Context<T>& context,
     Context<T>* multibody_plant_context) const {
-  const Eigen::VectorBlock<const VectorX<T>> x =
-      get_input_port_estimated_state().Eval(context);
+  const VectorX<T>& x = get_input_port_estimated_state().Eval(context);
 
   if (this->is_pure_gravity_compensation()) {
     // Velocities remain zero, as set in the constructor, for pure gravity
@@ -112,7 +111,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
             .template Eval<MultibodyForces<T>>(context);
 
     // Compute inverse dynamics.
-    Eigen::VectorBlock<const VectorX<T>> desired_vd =
+    const VectorX<T>& desired_vd =
         get_input_port_desired_acceleration().Eval(context);
     output->get_mutable_value() = plant.CalcInverseDynamics(
         multibody_plant_context, desired_vd, external_forces);

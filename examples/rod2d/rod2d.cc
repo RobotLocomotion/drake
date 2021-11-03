@@ -64,8 +64,7 @@ Vector3<T> Rod2D<T>::ComputeExternalForces(
     const systems::Context<T>& context) const {
   // Compute the external forces (expressed in the world frame).
   const int port_index = 0;
-  const Eigen::VectorBlock<const VectorX<T>> input =
-      this->get_input_port(port_index).Eval(context);
+  const VectorX<T>& input = this->get_input_port(port_index).Eval(context);
   const Vector3<T> fgrav(0, mass_ * get_gravitational_acceleration(), 0);
   const Vector3<T> fapplied = input.segment(0, 3);
   return fgrav + fapplied;

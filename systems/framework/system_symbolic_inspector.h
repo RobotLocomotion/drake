@@ -115,17 +115,17 @@ class SystemSymbolicInspector {
   /// Returns a reference to the symbolic representation of the discrete-time
   /// dynamics.
   /// @param i The discrete state group number.
-  Eigen::VectorBlock<const VectorX<symbolic::Expression>> discrete_update(
+  const VectorX<symbolic::Expression>& discrete_update(
       int i) const {
     DRAKE_DEMAND(i >= 0 && i < context_->num_discrete_state_groups());
-    return discrete_updates_->get_vector(i).get_value();
+    return discrete_updates_->value(i);
   }
 
   /// Returns a reference to the symbolic representation of the output.
   /// @param i The output port number.
-  Eigen::VectorBlock<const VectorX<symbolic::Expression>> output(int i) const {
+  const VectorX<symbolic::Expression>& output(int i) const {
     DRAKE_DEMAND(output_port_types_[i] == kVectorValued);
-    return output_->get_vector_data(i)->get_value();
+    return output_->get_vector_data(i)->value();
   }
 
   /// Returns a reference to the symbolic representation of the constraints.
