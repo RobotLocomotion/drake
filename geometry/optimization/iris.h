@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -32,8 +33,14 @@ struct IrisOptions {
   int iteration_limit{100};
 
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
-  between iterations is less that this threshold. */
+  between iterations is less that this threshold. This termination condition can
+  be disabled by setting to a negative value. */
   double termination_threshold{2e-2};  // from rdeits/iris-distro.
+
+  /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
+  between iterations is less that this percent of the previouse best volume.
+  This termination condition can be disabled by setting to a negative value. */
+  double relative_termination_threshold{1e-3};  // from rdeits/iris-distro.
 
   // TODO(russt): Improve the implementation so that we can clearly document the
   // units for this margin.
@@ -111,15 +118,27 @@ documented in a forth-coming publication.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
-@param context is a context of the @p plant.
-@param sample is a vector of size plant.num_positions() representing the initial
-IRIS seed configuration.
+@param context is a context of the @p plant. The context must have the positions
+of the plant set to the initialIRIS seed configuration.
 @param options provides additional configuration options.  In particular,
 `options.enabled_ibex` may have a significant impact on the runtime of the
 algorithm.
 
 @ingroup geometry_optimization
 */
+HPolyhedron IrisInConfigurationSpace(
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const IrisOptions& options = IrisOptions());
+
+/** A deprecated variation of the IrisInConfigurationSpace method where the
+initial Iris seed configuration is provided explicitly instead of via the
+context.
+
+@ingroup geometry_optimization
+*/
+DRAKE_DEPRECATED("2022-03-01",
+                 "Use IrisInConfigurationSpace() with sample set in context.")
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
