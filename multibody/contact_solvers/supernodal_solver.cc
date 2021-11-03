@@ -21,14 +21,6 @@ namespace internal {
 
 namespace {
 
-inline int NumberOfVars(const MatrixBlocks& row_data) {
-  int y = 0;
-  for (auto& r : row_data) {
-    y += r.second.size();
-  }
-  return y;
-}
-
 void MultiplyByBlockDiagonal(const std::vector<MatrixXd>& w, int s, int e,
                              const MatrixXd& x, MatrixXd* y) {
   int start = 0;
@@ -70,21 +62,6 @@ class Container {
   std::any obj;
   ::conex::KKT_SystemAssembler kkt;
 };
-
-
-// TODO(FrankPermenter): Remove this.
-inline std::vector<std::vector<MatrixXd>> GetRowData(
-    const std::vector<MatrixBlocks>& jacobian_blocks) {
-  vector<std::vector<MatrixXd>> y(jacobian_blocks.size());
-  int cnt = 0;
-  for (auto& j : jacobian_blocks) {
-    for (auto& ji : j) {
-      y.at(cnt).emplace_back(ji.first);
-    }
-    cnt++;
-  }
-  return y;
-}
 
 inline std::vector<int> ColumnToClique(int start, int clique_size) {
   int start_position = start;
@@ -139,31 +116,6 @@ inline MatrixBlocks GetMassMatrix(
     y.emplace_back(mass_matrices.at(i),
                    ColumnToClique(clique_start, clique_size));
     clique_start += clique_size;
-  }
-  return y;
-}
-
-inline Eigen::MatrixXd BlockDiag(int s, int e,
-                                 std::vector<Eigen::MatrixXd> Gi) {
-  Eigen::MatrixXd G(100, 100);
-  G.setZero();
-  int row_start = 0;
-  for (int i = s; i < e; i++) {
-    G.block(row_start, row_start, Gi.at(i).rows(), Gi.at(i).cols()) = Gi.at(i);
-    row_start += s - e;
-  }
-  return G.topLeftCorner(row_start, row_start);
-}
-
-inline std::vector<Eigen::MatrixXd> GetWeightMatrix(
-    const std::vector<int>& patch_size, const std::vector<Eigen::MatrixXd>& G) {
-  std::vector<Eigen::MatrixXd> y(patch_size.size());
-  int s = 0;
-  int e = 0;
-  for (size_t i = 0; i < patch_size.size(); i++) {
-    e = s + patch_size.at(i);
-    y.at(i) = BlockDiag(s, e, G);
-    s = e + 1;
   }
   return y;
 }
