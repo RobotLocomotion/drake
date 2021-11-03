@@ -9,14 +9,13 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/yaml/yaml_io.h"
-#include "drake/common/yaml/yaml_read_archive.h"
 
 using drake::symbolic::Expression;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
+using drake::yaml::LoadYamlString;
 using drake::yaml::SaveYamlString;
-using drake::yaml::YamlReadArchive;
 
 namespace drake {
 namespace schema {
@@ -68,8 +67,7 @@ void CheckUniformDiscreteSymbolic(
 }
 
 GTEST_TEST(StochasticTest, ScalarTest) {
-  DistributionStruct variants;
-  YamlReadArchive(YAML::Load(all_variants)).Accept(&variants);
+  const auto variants = LoadYamlString<DistributionStruct>(all_variants);
 
   RandomGenerator generator;
 
@@ -165,8 +163,8 @@ GTEST_TEST(StochasticTest, ScalarTest) {
 )""");
 
   // Try loading a value which looks like an ordinary vector.
-  YamlReadArchive(YAML::Load(floats)).Accept(&variants);
-  vec = Sample(variants.vec, &generator);
+  const auto parsed_floats = LoadYamlString<DistributionStruct>(floats);
+  vec = Sample(parsed_floats.vec, &generator);
   ASSERT_EQ(vec.size(), 3);
   EXPECT_TRUE(CompareMatrices(vec, Eigen::Vector3d(5.0, 6.1, 7.2)));
 }
@@ -206,8 +204,8 @@ uniform_scalar: !Uniform { min: 1, max: 2 }
 )""";
 
 GTEST_TEST(StochasticTest, VectorTest) {
-  DistributionVectorStruct variants;
-  YamlReadArchive(YAML::Load(vector_variants)).Accept(&variants);
+  const auto variants =
+      LoadYamlString<DistributionVectorStruct>(vector_variants);
 
   RandomGenerator generator;
 
@@ -400,9 +398,8 @@ GTEST_TEST(StochasticTest, IncorrectVectorTest) {
   const char* const input = R"""(
 value: !Deterministic { value: 2.0 }
 )""";
-  FixedSize2 parsed;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      YamlReadArchive(YAML::Load(input)).Accept(&parsed),
+      LoadYamlString<FixedSize2>(input),
       ".*unsupported type tag !Deterministic while selecting a variant<> entry"
       " for std::variant<.*> value.*");
 }

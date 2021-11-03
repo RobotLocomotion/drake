@@ -4,10 +4,10 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
-#include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/math/rigid_transform.h"
 
-using drake::yaml::YamlReadArchive;
+using drake::yaml::LoadYamlString;
 
 namespace drake {
 namespace schema {
@@ -20,8 +20,7 @@ rotation: !Rpy { deg: [10, 20, 30] }
 )""";
 
 GTEST_TEST(DeterministicTest, TransformTest) {
-  Transform transform;
-  YamlReadArchive(YAML::Load(deterministic)).Accept(&transform);
+  const auto transform = LoadYamlString<Transform>(deterministic);
 
   EXPECT_EQ(*transform.base_frame, "foo");
 
@@ -44,8 +43,7 @@ rotation: !Uniform {}
 )""";
 
 GTEST_TEST(StochasticTest, TransformTest) {
-  Transform transform;
-  YamlReadArchive(YAML::Load(random)).Accept(&transform);
+  const auto transform = LoadYamlString<Transform>(random);
 
   EXPECT_EQ(*transform.base_frame, "bar");
   EXPECT_FALSE(IsDeterministic(transform.translation));
@@ -66,8 +64,7 @@ rotation: !Rpy
 )""";
 
 GTEST_TEST(StochasticSampleTest, TransformTest) {
-  Transform transform;
-  YamlReadArchive(YAML::Load(random_bounded)).Accept(&transform);
+  const auto transform = LoadYamlString<Transform>(random_bounded);
   drake::RandomGenerator generator(0);
   drake::math::RigidTransformd sampled_transform = transform.Sample(&generator);
 
