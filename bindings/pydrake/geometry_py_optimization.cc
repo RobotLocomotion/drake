@@ -205,6 +205,9 @@ void DefineGeometryOptimization(py::module m) {
       .def_readwrite("termination_threshold",
           &IrisOptions::termination_threshold,
           doc.IrisOptions.termination_threshold.doc)
+      .def_readwrite("relative_termination_threshold",
+          &IrisOptions::relative_termination_threshold,
+          doc.IrisOptions.relative_termination_threshold.doc)
       .def_readwrite("configuration_space_margin",
           &IrisOptions::configuration_space_margin,
           doc.IrisOptions.configuration_space_margin.doc)
@@ -216,11 +219,13 @@ void DefineGeometryOptimization(py::module m) {
             "require_sample_point_is_contained={}, "
             "iteration_limit={}, "
             "termination_threshold={}, "
+            "relative_termination_threshold={}, "
             "configuration_space_margin={}, "
             "enable_ibex={}"
             ")")
             .format(self.require_sample_point_is_contained,
                 self.iteration_limit, self.termination_threshold,
+                self.relative_termination_threshold,
                 self.configuration_space_margin, self.enable_ibex);
       });
 
@@ -230,9 +235,27 @@ void DefineGeometryOptimization(py::module m) {
   m.def("MakeIrisObstacles", &MakeIrisObstacles, py::arg("query_object"),
       py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
 
-  m.def("IrisInConfigurationSpace", &IrisInConfigurationSpace, py::arg("plant"),
-      py::arg("context"), py::arg("sample"), py::arg("options") = IrisOptions(),
+  m.def("IrisInConfigurationSpace",
+      py::overload_cast<const multibody::MultibodyPlant<double>&,
+          const systems::Context<double>&, const IrisOptions&>(
+          &IrisInConfigurationSpace),
+      py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("IrisInConfigurationSpace",
+      WrapDeprecated(doc.IrisInConfigurationSpace.doc_deprecated,
+          [](const multibody::MultibodyPlant<double>& plant,
+              const systems::Context<double>& context,
+              const Eigen::Ref<const Eigen::VectorXd>& sample,
+              const IrisOptions& options) {
+            return IrisInConfigurationSpace(plant, context, sample, options);
+          }),
+      py::arg("plant"), py::arg("context"), py::arg("sample"),
+      py::arg("options") = IrisOptions(),
+      doc.IrisInConfigurationSpace.doc_deprecated);
+#pragma GCC diagnostic pop
 
   // GraphOfConvexSets
   {
