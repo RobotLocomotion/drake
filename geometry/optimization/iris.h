@@ -35,6 +35,10 @@ struct IrisOptions {
   between iterations is less that this threshold. */
   double termination_threshold{2e-2};  // from rdeits/iris-distro.
 
+  /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
+  between iterations is less that this percent of the previouse best volume. */
+  double relative_termination_threshold{1e-3};  // from rdeits/iris-distro.
+
   // TODO(russt): Improve the implementation so that we can clearly document the
   // units for this margin.
   /** For IRIS in configuration space, we retreat by this margin from each
@@ -122,7 +126,7 @@ algorithm.
 */
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
-    const systems::Context<double>& context,
+    systems::Context<double>& context,
     const Eigen::Ref<const Eigen::VectorXd>& sample,
     const IrisOptions& options = IrisOptions());
 

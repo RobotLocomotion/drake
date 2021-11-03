@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <optional>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -31,9 +32,8 @@ using multibody::Body;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
-using systems::Context;
 using symbolic::Expression;
-
+using systems::Context;
 
 HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
                  const HPolyhedron& domain, const IrisOptions& options) {
@@ -107,6 +107,10 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     E = P.MaximumVolumeInscribedEllipsoid();
     const double volume = E.Volume();
     if (volume - best_volume <= options.termination_threshold) {
+      break;
+    }
+    if ((volume - best_volume) / best_volume <=
+        options.relative_termination_threshold) {
       break;
     }
     best_volume = volume;
@@ -208,7 +212,7 @@ class SamePointConstraint : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint)
 
   SamePointConstraint(const MultibodyPlant<double>* plant,
-                  const Context<double>& context)
+                      const Context<double>& context)
       : solvers::Constraint(3, plant ? plant->num_positions() + 6 : 0,
                             Vector3d::Zero(), Vector3d::Zero()),
         plant_(plant),
@@ -219,13 +223,9 @@ class SamePointConstraint : public solvers::Constraint {
 
   ~SamePointConstraint() override {}
 
-  void set_frameA(const multibody::Frame<double>* frame) {
-    frameA_ = frame;
-  }
+  void set_frameA(const multibody::Frame<double>* frame) { frameA_ = frame; }
 
-  void set_frameB(const multibody::Frame<double>* frame) {
-    frameB_ = frame;
-  }
+  void set_frameB(const multibody::Frame<double>* frame) { frameB_ = frame; }
 
   void EnableSymbolic() {
     if (symbolic_plant_ != nullptr) {
@@ -326,8 +326,8 @@ class SamePointConstraint : public solvers::Constraint {
 bool FindClosestCollision(
     std::shared_ptr<SamePointConstraint> same_point_constraint,
     const multibody::Frame<double>& frameA,
-    const multibody::Frame<double>& frameB,
-    const ConvexSet& setA, const ConvexSet& setB, const Hyperellipsoid& E,
+    const multibody::Frame<double>& frameB, const ConvexSet& setA,
+    const ConvexSet& setB, const Hyperellipsoid& E,
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const solvers::SolverInterface& solver,
@@ -391,8 +391,7 @@ bool FindClosestCollision(
 // Add the tangent to the (scaled) ellipsoid at @p point as a
 // constraint.
 void AddTangentToPolytope(
-    const Hyperellipsoid& E,
-    const Eigen::Ref<const Eigen::VectorXd>& point,
+    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
     const IrisOptions& options,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints) {
@@ -403,7 +402,7 @@ void AddTangentToPolytope(
   }
 
   A->row(*num_constraints) =
-        (E.A().transpose() * E.A() *(point - E.center())).normalized();
+      (E.A().transpose() * E.A() * (point - E.center())).normalized();
   (*b)[*num_constraints] =
       A->row(*num_constraints) * point - options.configuration_space_margin;
   *num_constraints += 1;
@@ -412,8 +411,7 @@ void AddTangentToPolytope(
 }  // namespace
 
 HPolyhedron IrisInConfigurationSpace(
-    const MultibodyPlant<double>& plant,
-    const Context<double>& context,
+    const MultibodyPlant<double>& plant, Context<double>& context,
     const Eigen::Ref<const Eigen::VectorXd>& sample,
     const IrisOptions& options) {
   // Check the inputs.
@@ -425,7 +423,6 @@ HPolyhedron IrisInConfigurationSpace(
   DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
   DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
 
-
   // Make the polytope and ellipsoid.
   HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
                                        plant.GetPositionUpperLimits());
@@ -434,6 +431,7 @@ HPolyhedron IrisInConfigurationSpace(
   Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample);
 
   // Make all of the convex sets and supporting quantities.
+  plant.SetPositions(&context, sample);
   auto query_object =
       plant.get_geometry_query_input_port().Eval<QueryObject<double>>(context);
   const SceneGraphInspector<double>& inspector = query_object.inspector();
@@ -462,6 +460,17 @@ HPolyhedron IrisInConfigurationSpace(
   const int N = static_cast<int>(pairs.size());
   auto same_point_constraint =
       std::make_shared<SamePointConstraint>(&plant, context);
+  std::vector<std::tuple<GeometryId, GeometryId, double>> sorted_pairs;
+  for (const auto [geomA, geomB] : pairs) {
+    sorted_pairs.emplace_back(
+        geomA, geomB,
+        query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
+            .distance);
+  }
+  std::sort(sorted_pairs.begin(), sorted_pairs.end(),
+            [&](const auto& a, const auto& b) {
+              return std::get<2>(a) < std::get<2>(b);
+            });
 
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices with a generous maximum
@@ -487,16 +496,26 @@ HPolyhedron IrisInConfigurationSpace(
 
   while (true) {
     int num_constraints = 2 * nq;  // Start with just the joint limits.
+    bool sample_point_contained = true;
     // Find separating hyperplanes
 
     // First use a fast nonlinear optimizer to add as many constraint as it
     // can find.
-    for (const auto& [geomA, geomB] : pairs) {
-      while (FindClosestCollision(
-          same_point_constraint, *frames.at(geomA), *frames.at(geomB),
-          *sets.at(geomA), *sets.at(geomB), E, A.topRows(num_constraints),
-          b.head(num_constraints), *solver, sample, &closest)) {
+    for (const auto [geomA, geomB, distance] : sorted_pairs) {
+      unused(distance);
+      while (sample_point_contained &&
+             FindClosestCollision(
+                 same_point_constraint, *frames.at(geomA), *frames.at(geomB),
+                 *sets.at(geomA), *sets.at(geomB), E,
+                 A.topRows(num_constraints), b.head(num_constraints), *solver,
+                 sample, &closest)) {
         AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
+        if (options.require_sample_point_is_contained) {
+          sample_point_contained =
+              ((A.topRows(num_constraints) * sample).array() <=
+               b.head(num_constraints).array())
+                  .all();
+        }
       }
     }
 
@@ -504,20 +523,26 @@ HPolyhedron IrisInConfigurationSpace(
       // Now loop back through and use Ibex for rigorous certification.
       // TODO(russt): Consider (re-)implementing a "feasibility only" version of
       // the IRIS check + nonlinear optimization to improve.
-      for (const auto& [geomA, geomB] : pairs) {
-        while (FindClosestCollision(
-            same_point_constraint, *frames.at(geomA), *frames.at(geomB),
-            *sets.at(geomA), *sets.at(geomB), E, A.topRows(num_constraints),
-            b.head(num_constraints), *ibex, sample, &closest)) {
+      for (const auto [geomA, geomB, distance] : sorted_pairs) {
+        unused(distance);
+        while (sample_point_contained &&
+               FindClosestCollision(
+                   same_point_constraint, *frames.at(geomA), *frames.at(geomB),
+                   *sets.at(geomA), *sets.at(geomB), E,
+                   A.topRows(num_constraints), b.head(num_constraints), *ibex,
+                   sample, &closest)) {
           AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
+          if (options.require_sample_point_is_contained) {
+            sample_point_contained =
+                ((A.topRows(num_constraints) * sample).array() <=
+                 b.head(num_constraints).array())
+                    .all();
+          }
         }
       }
     }
 
-    if (options.require_sample_point_is_contained &&
-        ((A.topRows(num_constraints) * sample).array() >=
-         b.head(num_constraints).array())
-            .any()) {
+    if (!sample_point_contained) {
       break;
     }
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
@@ -532,8 +557,12 @@ HPolyhedron IrisInConfigurationSpace(
     if (volume - best_volume <= options.termination_threshold) {
       break;
     }
-    best_volume = volume;
+    if ((volume - best_volume) / best_volume <=
+        options.relative_termination_threshold) {
+      break;
     }
+    best_volume = volume;
+  }
   return P;
 }
 

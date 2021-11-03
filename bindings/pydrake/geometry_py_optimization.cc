@@ -205,6 +205,9 @@ void DefineGeometryOptimization(py::module m) {
       .def_readwrite("termination_threshold",
           &IrisOptions::termination_threshold,
           doc.IrisOptions.termination_threshold.doc)
+      .def_readwrite("relative_termination_threshold",
+          &IrisOptions::relative_termination_threshold,
+          doc.IrisOptions.relative_termination_threshold.doc)
       .def_readwrite("configuration_space_margin",
           &IrisOptions::configuration_space_margin,
           doc.IrisOptions.configuration_space_margin.doc)
@@ -216,11 +219,13 @@ void DefineGeometryOptimization(py::module m) {
             "require_sample_point_is_contained={}, "
             "iteration_limit={}, "
             "termination_threshold={}, "
+            "relative_termination_threshold={}, "
             "configuration_space_margin={}, "
             "enable_ibex={}"
             ")")
             .format(self.require_sample_point_is_contained,
                 self.iteration_limit, self.termination_threshold,
+                self.relative_termination_threshold,
                 self.configuration_space_margin, self.enable_ibex);
       });
 
