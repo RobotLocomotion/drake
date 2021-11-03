@@ -72,8 +72,7 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
 template <typename T>
 void LinearModelPredictiveController<T>::CalcControl(
     const Context<T>& context, BasicVector<T>* control) const {
-  const Eigen::VectorBlock<const VectorX<T>> current_state =
-      get_state_port().Eval(context);
+  const VectorX<T>& current_state = get_state_port().Eval(context);
 
   const Eigen::VectorXd current_input =
       SetupAndSolveQp(*base_context_, current_state);

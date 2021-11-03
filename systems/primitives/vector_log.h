@@ -46,6 +46,8 @@ class VectorLog {
   /** Returns the number of samples taken since construction or last Clear(). */
   int num_samples() const { return num_samples_; }
 
+  // The return type here must be a VectorBlock because only the leading
+  // part of the sample_times_ vector contains meaningful data.
   /** Accesses the logged time stamps. */
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {
     return const_cast<const VectorX<T>&>(sample_times_).head(num_samples_);
