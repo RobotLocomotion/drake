@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -73,8 +72,8 @@ class SuperNodalSolver {
   Eigen::MatrixXd FullMatrix() {
     if (!matrix_ready_) {
       throw std::runtime_error(
-          std::string("Call to FullMatrix() failed: weight matrix not set or "
-                      "matrix already factored."));
+          "Call to FullMatrix() failed: weight matrix not set or "
+          "matrix already factored.");
     }
     return solver_.KKTMatrix();
   }
