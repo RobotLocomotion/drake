@@ -105,8 +105,6 @@ inline std::vector<std::vector<MatrixXd>> GetRowData(
   return y;
 }
 
-
-
 inline MatrixBlocks GetMassMatrix(
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
   MatrixBlocks y;
@@ -211,7 +209,8 @@ SuperNodalSolver::SparsityData SuperNodalSolver::GetEliminationOrdering(
     }
   }
 
-  conex::PickCliqueOrder(cliques, largest_clique, &order, &supernodes, &separators);
+  conex::PickCliqueOrder(cliques, largest_clique, &order, &supernodes,
+                         &separators);
 
   auto offsets = CumulativeSum(column_block_sizes, num_column_blocks);
   vector<vector<int>> supernodes_full(order.size());

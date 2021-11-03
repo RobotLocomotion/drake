@@ -13,16 +13,6 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-
-// MatrixBlock::first contains the data of a submatrix and MatrixBlock::second
-// contains the columns numbers. The rows are inferred.
-//
-//using MatrixBlockData = std::pair<Eigen::MatrixXd, int>;
-//
-//using MatrixBlocks = std::vector<MatrixBlock>;
-//
-//using JacobianRowData = std::vector<MatrixBlockData>;
-
 // A supernodal solver for the solving the symmetric positive definite system
 //   H⋅x = b where H = M + J^T G J.  The matrices M and J are set by the
 //   constructor and the weight matrix G is set by SetWeightMatrix(), which can
@@ -50,18 +40,16 @@ namespace internal {
 //  solver.Solve(b1);
 using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 
-
 class SuperNodalSolver {
  public:
-
   // @param num_jacobian_row_blocks Number of row blocks in the matrix J.
   // @param jacobian_blocks Blocks Bij provided as triplets (i, j, Bij).
   // @param mass_matrices Block diagonal matrix M provided as a vector of block
   // diagonal entries.
   //
-  // If M_{ij} is nonzero in the matrix H = M + J^T G J, then [J^T G J]_{ij} 
+  // If M_{ij} is nonzero in the matrix H = M + J^T G J, then [J^T G J]_{ij}
   // must also be nonzero for generic G.
-  //  If this condition fails, an exception is thrown. 
+  //  If this condition fails, an exception is thrown.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
@@ -70,15 +58,15 @@ class SuperNodalSolver {
   // the partition of the matrix J that was specified by the input
   // to the constructor. For instance, if J is partitioned like
   //
-  //  J1 
+  //  J1
   //  J2 J3
   //
   //  Then we require existence of n and m such that
   //
-  //  num_rows(J1) = \sum^n_{i=1} num_rows (G_i),  
+  //  num_rows(J1) = \sum^n_{i=1} num_rows (G_i),
   //  num_rows(J2) = \sum^{m}_{i=n+1} num_rows (G_i)
   //
-  //  If this condition fails, an exception is thrown unless NDEBUG is defined. 
+  //  If this condition fails, an exception is thrown unless NDEBUG is defined.
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
@@ -150,7 +138,6 @@ class SuperNodalSolver {
   };
 
  private:
-
   using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
   struct SolverData {
     std::vector<std::vector<int>> cliques;
@@ -167,9 +154,9 @@ class SuperNodalSolver {
 
   void Initialize(const std::vector<std::vector<int>>& cliques,
                   const std::vector<std::vector<Eigen::MatrixXd>>& row_data);
-  SparsityData GetEliminationOrdering(int num_jacobian_row_blocks, 
-                            const std::vector<BlockMatrixTriplet>& jacobian_blocks);
-
+  SparsityData GetEliminationOrdering(
+      int num_jacobian_row_blocks,
+      const std::vector<BlockMatrixTriplet>& jacobian_blocks);
 
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
