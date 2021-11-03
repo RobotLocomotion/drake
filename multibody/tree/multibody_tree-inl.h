@@ -606,7 +606,7 @@ MultibodyTree<T>::get_discrete_state_vector(
       context.get_discrete_state(discrete_state_index_);
   DRAKE_ASSERT(discrete_state_vector.size() ==
                num_positions() + num_velocities());
-  return discrete_state_vector.get_value();
+  return discrete_state_vector.value().head(discrete_state_vector.size());
 }
 
 template <typename T>
@@ -660,8 +660,8 @@ MultibodyTree<T>::extract_qv_from_continuous(
   const systems::BasicVector<T>& continuous_qvz =
       static_cast<const systems::BasicVector<T>&>(continuous_qvz_base);
   DRAKE_ASSERT(continuous_qvz.size() >= num_qv);
-  Eigen::VectorBlock<const VectorX<T>> qvz = continuous_qvz.get_value();
-  return make_block_segment(qvz, 0, num_qv);
+  const VectorX<T>& qvz = continuous_qvz.value();
+  return qvz.segment(0, num_qv);
 }
 
 template <typename T>

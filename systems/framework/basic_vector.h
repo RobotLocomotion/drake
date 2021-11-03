@@ -73,7 +73,14 @@ class BasicVector : public VectorBase<T> {
     values_ = value;
   }
 
-  /// Returns the entire vector as a const Eigen::VectorBlock.
+  /// Returns a const reference to the contained `VectorX<T>`. This is the
+  /// preferred method for examining a BasicVector's value.
+  const VectorX<T>& value() const { return values_; }
+
+  // TODO(sherm1) Deprecate this.
+  /// (To be deprecated) Returns the entire vector as a const
+  /// Eigen::VectorBlock. Prefer `value()` which returns direct access to the
+  /// underlying VectorX rather than wrapping it in a VectorBlock.
   Eigen::VectorBlock<const VectorX<T>> get_value() const {
     return values_.head(values_.rows());
   }
@@ -164,7 +171,8 @@ class BasicVector : public VectorBase<T> {
   /// Provides const access to the element storage.
   const VectorX<T>& values() const { return values_; }
 
-  /// Provides mutable access to the element storage.
+  /// (Advanced) Provides mutable access to the element storage. Be careful
+  /// not to resize the storage unless you really know what you're doing.
   VectorX<T>& values() { return values_; }
 
  private:

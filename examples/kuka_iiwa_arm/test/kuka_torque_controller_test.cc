@@ -95,7 +95,7 @@ GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
+  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(),
                               1e-10, MatrixCompareType::absolute));
 }
 
@@ -160,7 +160,7 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
+  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(),
                               1e-10, MatrixCompareType::absolute));
 }
 
@@ -234,7 +234,7 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
+  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(),
                               1e-10, MatrixCompareType::absolute));
 }
 

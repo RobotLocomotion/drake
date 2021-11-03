@@ -69,8 +69,8 @@ int DoMain() {
   simulator.AdvanceTo(10);
 
   // Adds a numerical test to make sure we're stabilizing the fixed point.
-  DRAKE_DEMAND(is_approx_equal_abstol(state.get_value(),
-                                      desired_state.get_value(), 1e-3));
+  DRAKE_DEMAND(is_approx_equal_abstol(state.value(),
+                                      desired_state.value(), 1e-3));
 
   return 0;
 }
