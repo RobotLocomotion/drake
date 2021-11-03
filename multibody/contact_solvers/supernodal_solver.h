@@ -90,8 +90,9 @@ class SuperNodalSolver {
     return solver_.KKTMatrix();
   }
 
-  // Computes the supernodal LLT factorization of matrix H.
-  void Factor();
+  // Computes the supernodal LLT factorization. Returns true
+  // if factorization succeeds, otherwise returns false.
+  bool Factor();
 
   // Solves the system H⋅x = b and returns x.
   Eigen::MatrixXd Solve(const Eigen::VectorXd& b);

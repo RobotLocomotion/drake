@@ -308,13 +308,14 @@ void SuperNodalSolver::SetWeightMatrix(
   matrix_ready_ = true;
 }
 
-void SuperNodalSolver::Factor() {
+bool SuperNodalSolver::Factor() {
   if (!matrix_ready_) {
     throw std::runtime_error("Call to Factor() failed: weight matrix not set.");
   }
-  solver_.Factor();
-  factorization_ready_ = true;
+  bool success = solver_.Factor();
+  factorization_ready_ = success;
   matrix_ready_ = false;
+  return success;
 }
 
 Eigen::MatrixXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
