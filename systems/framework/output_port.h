@@ -79,7 +79,7 @@ class OutputPort : public OutputPortBase {
   _very_ fast if the value is already up to date.
 
   @tparam ValueType The type of the const-reference returned by this method.
-  When omitted, the return type is an `Eigen::VectorBlock` (this is only valid
+  When omitted, the return type is `const VectorX<T>&` (this is only valid
   when this is a vector-valued port).  For abstract ports, the `ValueType`
   either can be the declared type of the port (e.g., `lcmt_iiwa_status`), or
   else in advanced use cases can be `AbstractValue` to get the type-erased
@@ -87,7 +87,7 @@ class OutputPort : public OutputPortBase {
 
   @return reference to the up-to-date value; if a ValueType is provided, the
   return type is `const ValueType&`; if a ValueType is omitted, the return type
-  is `Eigen::VectorBlock<const VectorX<T>>`.
+  is `const VectorX<T>&`.
 
   @throw std::exception if the port is not connected.
 
@@ -95,12 +95,12 @@ class OutputPort : public OutputPortBase {
   @pre The output port is of type ValueType (when ValueType is provided).
   */
 #ifdef DRAKE_DOXYGEN_CXX
-  template <typename ValueType = Eigen::VectorBlock<const VectorX<T>>>
+  template <typename ValueType = VectorX<T>>
   const ValueType& Eval(const Context<T>& context) const;
 #else
   // Without a template -- return Eigen.
-  Eigen::VectorBlock<const VectorX<T>> Eval(const Context<T>& context) const {
-    return Eval<BasicVector<T>>(context).get_value();
+  const VectorX<T>& Eval(const Context<T>& context) const {
+    return Eval<BasicVector<T>>(context).value();
   }
   // With ValueType == AbstractValue, we don't need to downcast.
   template <typename ValueType, typename = std::enable_if_t<

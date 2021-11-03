@@ -1810,9 +1810,8 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   const int kTime = 1;
   simulator.AdvanceTo(static_cast<double>(kTime));
 
-  // Should log exactly once every kPeriod, up to and including
-  // kTime.
-  Eigen::VectorBlock<const VectorX<double>> t_periodic =
+  // Should log exactly once every kPeriod, up to and including kTime.
+  const VectorX<double>& t_periodic =
       periodic_logger.FindLog(simulator.get_context()).sample_times();
   EXPECT_EQ(t_periodic.size(), kTime * kFrequency + 1);
 }

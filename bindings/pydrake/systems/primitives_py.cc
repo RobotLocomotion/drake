@@ -338,14 +338,8 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<int>(), py::arg("input_size"), doc.VectorLog.ctor.doc)
         .def("num_samples", &VectorLog<T>::num_samples,
             doc.VectorLog.num_samples.doc)
-        .def(
-            "sample_times",
-            [](const VectorLog<T>* self) {
-              // Reference
-              return CopyIfNotPodType(self->sample_times());
-            },
-            return_value_policy_for_scalar_type<T>(),
-            doc.VectorLog.sample_times.doc)
+        .def("sample_times", &VectorLog<T>::sample_times,
+            py_rvp::reference_internal, doc.VectorLog.sample_times.doc)
         .def(
             "data",
             [](const VectorLog<T>* self) {

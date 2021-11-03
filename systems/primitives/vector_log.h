@@ -47,8 +47,8 @@ class VectorLog {
   int num_samples() const { return num_samples_; }
 
   /** Accesses the logged time stamps. */
-  Eigen::VectorBlock<const VectorX<T>> sample_times() const {
-    return const_cast<const VectorX<T>&>(sample_times_).head(num_samples_);
+  const VectorX<T>& sample_times() const {
+    return const_cast<const VectorX<T>&>(sample_times_);
   }
 
   /** Accesses the logged data.
