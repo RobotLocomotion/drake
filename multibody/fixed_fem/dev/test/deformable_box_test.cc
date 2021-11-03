@@ -77,7 +77,7 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
             box, kSideLength / kNumBlocks, X_WB);
     geometry::ProximityProperties proximity_props;
     /* Use default stiffness and dissipation. */
-    geometry::AddContactMaterial({}, {}, {}, kFriction, &proximity_props);
+    geometry::AddContactMaterial({}, {}, kFriction, &proximity_props);
     /* Use the Corotated constitutive model. */
     auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
     const auto* deformable_model_ptr = deformable_model.get();

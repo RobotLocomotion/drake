@@ -66,7 +66,7 @@ class DeformableModelTest : public ::testing::Test {
   /* Creates a dummy proximity property. */
   static geometry::ProximityProperties MakeProximityProps() {
     geometry::ProximityProperties dummy_proximity_props;
-    geometry::AddContactMaterial({}, {}, {},
+    geometry::AddContactMaterial({}, {},
                                  multibody::CoulombFriction<double>(0, 0),
                                  &dummy_proximity_props);
     return dummy_proximity_props;

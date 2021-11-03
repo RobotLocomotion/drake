@@ -571,7 +571,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
     const ProximityProperties& properties = *instance.proximity_properties();
     verify_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
+    verify_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kElastic, 3.5);
     verify_single_property(properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 3.5);
