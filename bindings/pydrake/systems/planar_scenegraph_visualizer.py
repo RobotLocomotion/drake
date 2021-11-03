@@ -124,17 +124,6 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._scene_graph = scene_graph
         self._T_VW = T_VW
 
-        # (2021-11-01) Remove at end of deprecation period.
-        # Pose bundle (from SceneGraph).
-        # Note: we're suppressing the deprecation warning we'd get in
-        # instantiating a PoseBundle.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            self._pose_bundle_port = self.DeclareAbstractInputPort(
-                "lcm_visualization", AbstractValue.Make(PoseBundle(0)))
-        self._warned_pose_bundle_input_port_connected = False
-        # End of deprecation block.
-
         self._geometry_query_input_port = self.DeclareAbstractInputPort(
             "geometry_query", AbstractValue.Make(QueryObject()))
 
@@ -183,10 +172,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
     @staticmethod
     def frame_name(frame_id, inspector):
         """Produces a visualizer name for a frame."""
-        # (2021-11-01) During the deprecation period it is *critical* that the
-        # name here matches the name produced by DrakeVisualizer. After this
-        # system ceases to use the PoseBundle to define frame poses, the name
-        # can change to whatever this visualizer would like.
+        # The frame names have been selected to match the names produced by
+        # DrakeVisualizer. That is *not* a requirement, and this visualizer can
+        # choose a different naming scheme.
         if frame_id == inspector.world_frame_id():
             return "world"
         return "{}::{}".format(
@@ -395,12 +383,6 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
 
     def draw(self, context):
         """Overrides base with the implementation."""
-        if self._pose_bundle_port.HasValue(context):
-            self._draw_deprecated(context)
-        else:
-            self._draw(context)
-
-    def _draw(self, context):
         query_object = self._geometry_query_input_port.Eval(context)
         inspector = query_object.inspector()
 
@@ -417,37 +399,6 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # view frame V (keeps homogeneous portion, removing it later).
                 patch_V = self._project_patch(patch_W)
                 body_fill = self._body_fill_dict[frame_name][i]
-                # Use the latest vertices to update the body_fill.
-                self._update_body_fill_verts(body_fill, patch_V)
-                body_fill.zorder = X_WB.translation() @ view_dir
-        self.ax.set_title('t = {:.1f}'.format(context.get_time()))
-
-    # (2021-11-01) Deprecated.
-    def _draw_deprecated(self, context):
-        """Drawing via the deprecated PoseBundle mechanism"""
-        if not self._warned_pose_bundle_input_port_connected:
-            _warn_deprecated(
-                "The pose_bundle input port is deprecated.  Use e.g.\n"
-                "builder.Connect("
-                "scene_graph.get_query_output_port(), "
-                "visualizer.get_geometry_query_input_port())\n"
-                "instead.", date="2021-11-01")
-            self._warned_pose_bundle_input_port_connected = True
-
-        pose_bundle = self._pose_bundle_port.Eval(context)
-        view_dir = np.cross(self._T_VW[0, :3], self._T_VW[1, :3])
-        for frame_i in range(pose_bundle.get_num_poses()):
-            # SceneGraph currently sets the name in PoseBundle as
-            #    "get_source_name::frame_name".
-            full_name = pose_bundle.get_name(frame_i)
-
-            X_WB = pose_bundle.get_transform(frame_i)
-            patch_Wlist, _ = self._get_view_patches(full_name, X_WB)
-            for i, patch_W in enumerate(patch_Wlist):
-                # Project the object vertices from 3d in world frame W to 2d in
-                # view frame V (keeps homogeneous portion, removing it later).
-                patch_V = self._project_patch(patch_W)
-                body_fill = self._body_fill_dict[full_name][i]
                 # Use the latest vertices to update the body_fill.
                 self._update_body_fill_verts(body_fill, patch_V)
                 body_fill.zorder = X_WB.translation() @ view_dir
@@ -482,13 +433,6 @@ def ConnectPlanarSceneGraphVisualizer(builder,
     """
     visualizer = builder.AddSystem(
         PlanarSceneGraphVisualizer(scene_graph, **kwargs))
-
-    if output_port and isinstance(output_port.Allocate().get_value(),
-                                  PoseBundle):
-        # (2021-11-01): Remove this code path on deprecation of the pose_bundle
-        # api.
-        builder.Connect(output_port, visualizer.get_input_port(0))
-        return visualizer
 
     if output_port is None:
         output_port = scene_graph.get_query_output_port()
