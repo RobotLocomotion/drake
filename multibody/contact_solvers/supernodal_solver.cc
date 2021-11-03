@@ -1,7 +1,6 @@
 #include "drake/multibody/contact_solvers/supernodal_solver.h"
 
 #include <algorithm>
-#include <string>
 #include <utility>
 
 #include "conex/clique_ordering.h"
@@ -11,14 +10,11 @@ using Eigen::MatrixXd;
 using std::vector;
 using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
 using MatrixBlocks = std::vector<MatrixBlock>;
-using MatrixBlockData = std::pair<Eigen::MatrixXd, int>;
-using JacobianRowData = std::vector<MatrixBlockData>;
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
-
 namespace {
 
 void MultiplyByBlockDiagonal(const std::vector<MatrixXd>& w, int s, int e,
@@ -54,14 +50,6 @@ void SumOverWeightedMatrixBlocks(const vector<MatrixXd>& row_data,
     r_offset += r.cols();
   }
 }
-
-class Container {
- public:
-  template <typename T>
-  explicit Container(const T& x) : obj(x), kkt(std::any_cast<T>(&obj)) {}
-  std::any obj;
-  ::conex::KKT_SystemAssembler kkt;
-};
 
 inline std::vector<int> ColumnToClique(int start, int clique_size) {
   int start_position = start;
@@ -266,19 +254,6 @@ void SuperNodalSolver::Initialize(
   solver_.Bind(clique_assemblers_);
 }
 
-std::vector<JacobianRowData> ConvertRow(
-    const std::vector<MatrixBlocks>& row_data) {
-  std::vector<JacobianRowData> y(row_data.size());
-  int i = 0;
-  for (auto& ri : row_data) {
-    for (auto& rii : ri) {
-      y.at(i).emplace_back(rii.first, rii.second.at(0));
-    }
-    i++;
-  }
-  return y;
-}
-
 SuperNodalSolver::SuperNodalSolver(
     int num_jacobian_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks,
@@ -335,8 +310,7 @@ void SuperNodalSolver::SetWeightMatrix(
 
 void SuperNodalSolver::Factor() {
   if (!matrix_ready_) {
-    throw std::runtime_error(
-        std::string("Call to Factor() failed: weight matrix not set."));
+    throw std::runtime_error("Call to Factor() failed: weight matrix not set.");
   }
   solver_.Factor();
   factorization_ready_ = true;
@@ -346,7 +320,7 @@ void SuperNodalSolver::Factor() {
 Eigen::MatrixXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
   if (!factorization_ready_) {
     throw std::runtime_error(
-        std::string("Call to Solve() failed: factorization not ready."));
+        "Call to Solve() failed: factorization not ready.");
   }
   MatrixXd y = b;
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(y.data(), b.rows(), 1);
@@ -357,7 +331,7 @@ Eigen::MatrixXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
 void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
   if (!factorization_ready_) {
     throw std::runtime_error(
-        std::string("Call to Solve() failed: factorization not ready."));
+        "Call to Solve() failed: factorization not ready.");
   }
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(b->data(), b->rows(), 1);
   solver_.SolveInPlace(&ymap);
