@@ -219,7 +219,7 @@ const T& System<T>::EvalNonConservativePower(const Context<T>& context) const {
 }
 
 template <typename T>
-Eigen::VectorBlock<const VectorX<T>> System<T>::EvalEigenVectorInput(
+const VectorX<T>& System<T>::EvalEigenVectorInput(
     const Context<T>& context, int port_index) const {
   ValidateContext(context);
   if (port_index < 0)
@@ -840,8 +840,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
       case kVectorValued: {
         // For vector-valued input ports, we placewise initialize a fixed
         // input vector using the explicit conversion from double to T.
-        const Eigen::VectorBlock<const VectorX<double>> other_vec =
-            other_port.Eval(other_context);
+        const VectorX<double>& other_vec = other_port.Eval(other_context);
         auto our_vec = this->AllocateInputVector(input_port);
         for (int j = 0; j < our_vec->size(); ++j) {
           (*our_vec)[j] = T(other_vec[j]);

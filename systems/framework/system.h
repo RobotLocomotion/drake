@@ -402,7 +402,7 @@ class System : public SystemBase {
   @pre the port must be evaluable (connected or fixed).
 
   @see EvalVectorInput() */
-  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
+  const VectorX<T>& EvalEigenVectorInput(
       const Context<T>& context, int port_index) const;
   //@}
 

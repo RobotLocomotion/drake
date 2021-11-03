@@ -139,7 +139,7 @@ void CompassGaitGeometry::OutputGeometryPose(
   DRAKE_DEMAND(left_leg_frame_id_.is_valid());
   DRAKE_DEMAND(right_leg_frame_id_.is_valid());
 
-  Eigen::VectorBlock<const VectorXd> input = get_input_port(0).Eval(context);
+  const VectorXd& input = get_input_port(0).Eval(context);
   const math::RigidTransformd left_pose(
       math::RollPitchYawd(input.segment<3>(3)), input.head<3>());
   const double hip_angle = input[6];
