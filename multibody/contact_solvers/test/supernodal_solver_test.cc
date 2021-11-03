@@ -1,7 +1,9 @@
 #include "drake/multibody/contact_solvers/supernodal_solver.h"
 
 #include "conex/clique_ordering.h"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -85,6 +87,13 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
   EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+
+  // Make the block sizes of W incompatible with J and verify an exception is
+  // thrown.
+  blocks_of_W.at(0) = MatrixXd::Ones(4, 4);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.SetWeightMatrix(blocks_of_W),
+                              std::runtime_error,
+                              "Weight matrix incompatible with Jacobian.");
 }
 
 // Test the condition when J blocks might have different number of rows. Of
@@ -540,14 +549,6 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
   EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
-
-  // Make the block sizes of W incompatible with J. Verify
-  // exception is thrown.
-  blocks_of_W.at(0) = W.block(0, 0, 4, 4);
-  solver.SetWeightMatrix(blocks_of_W);
-
-
-
 }
 
 }  // namespace internal
