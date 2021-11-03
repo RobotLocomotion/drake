@@ -54,7 +54,7 @@ void DifferentialInverseKinematicsIntegrator::SetPositions(
     Context<double>* context,
     const Eigen::Ref<const Eigen::VectorXd>& positions) const {
   DRAKE_DEMAND(positions.size() == robot_.num_positions());
-  context->get_mutable_discrete_state(0).SetFromVector(positions);
+  context->SetDiscreteState(0, positions);
 }
 
 math::RigidTransformd

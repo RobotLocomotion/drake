@@ -233,8 +233,7 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
-  context->get_mutable_discrete_state(0).SetFromVector(
-      Eigen::Vector2d::Ones());
+  context->SetDiscreteState(0, Eigen::Vector2d::Ones());
   const auto& output = output_port.Eval(*context);
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
@@ -296,8 +295,7 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   dut.DeclareDiscreteState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
   dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
-  context->get_mutable_discrete_state(0).SetFromVector(
-      Eigen::Vector2d::Ones());
+  context->SetDiscreteState(0, Eigen::Vector2d::Ones());
   discrete_updates = dut.AllocateDiscreteVariables();
   dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
@@ -386,7 +384,7 @@ TEST_F(VectorSystemTest, ImplicitlyNoFeedthroughTest) {
 TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   NoInputContinuousTimeSystem dut;
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_continuous_state().SetFromVector(Vector1d::Ones());
+  context->SetContinuousState(Vector1d::Ones());
 
   // Ensure that time derivatives get calculated correctly.
   std::unique_ptr<ContinuousState<double>> derivatives =

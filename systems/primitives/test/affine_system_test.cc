@@ -229,7 +229,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   Eigen::Vector3d x0(26, 27, 28);
 
-  context->get_mutable_discrete_state(0).SetFromVector(x0);
+  context->SetDiscreteState(0, x0);
   double u0 = 29;
   system.get_input_port().FixValue(context.get(), u0);
 
