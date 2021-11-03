@@ -1335,13 +1335,6 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(prog.linear_complementarity_constraints()), 0)
 
     def test_binding_instantiations(self):
-        # Explicit spelling
-        with catch_drake_warnings(expected_count=1) as w:
-            self.assertIs(mp.Binding_Cost, mp.Binding[mp.Cost])
-            self.assertIn(
-                "Binding_Cost is deprecated; please use Binding[Cost] instead",
-                str(w[0].message))
-
         # Patterned spelling.
         cls_list = [
             mp.EvaluatorBase,
@@ -1355,18 +1348,14 @@ class TestMathematicalProgram(unittest.TestCase):
             mp.LinearMatrixInequalityConstraint,
             mp.LinearComplementarityConstraint,
             mp.ExponentialConeConstraint,
-            # mp.Cost,  # Checked above.
+            mp.Cost,
             mp.LinearCost,
             mp.QuadraticCost,
             mp.L2NormCost,
             mp.VisualizationCallback,
         ]
         for cls in cls_list:
-            binding_cls = mp.Binding[cls]
-            old_spelling = f"Binding_{cls.__name__}"
-            with catch_drake_warnings(expected_count=1):
-                binding_cls_old_spelling = getattr(mp, old_spelling)
-            self.assertIs(binding_cls, binding_cls_old_spelling)
+            mp.Binding[cls]
 
     def test_get_program_type(self):
         prog = mp.MathematicalProgram()
