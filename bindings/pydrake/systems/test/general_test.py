@@ -343,6 +343,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_values.get_mutable_vector(index=0).size(), 3)
         x = np.array([1., 3., 4.])
         discrete_values.set_value(x)
+        np.testing.assert_array_equal(discrete_values.value(index=0), x)
         np.testing.assert_array_equal(discrete_values.get_value(), x)
         np.testing.assert_array_equal(discrete_values.get_mutable_value(), x)
         discrete_values[1] = 5.
