@@ -18,6 +18,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -392,16 +393,17 @@ class System : public SystemBase {
     return value;
   }
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /** Returns the value of the vector-valued input port with the given
-  `port_index` as an %Eigen vector. Causes the value to become up to date
+  /** (Deprecated) Returns the value of the vector-valued input port with the
+  given `port_index` as an %Eigen vector. Causes the value to become up to date
   first if necessary. See EvalAbstractInput() for more information.
 
   @pre `port_index` selects an existing input port of this System.
   @pre the port must have been declared to be vector-valued.
   @pre the port must be evaluable (connected or fixed).
 
-  @see EvalVectorInput() */
+  @see InputPort::Eval() */
+  DRAKE_DEPRECATED("2021-03-01",
+      "Use get_input_port(index).Eval(context) instead.")
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const;
   //@}
