@@ -151,8 +151,7 @@ drake_cc_library(
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
     copts = [
-        "-O3",
-        "-ffast-math",
+        "-O2",
     ],
     deps = [
         "@conex//conex:supernodal_solver",
