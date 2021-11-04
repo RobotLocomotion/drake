@@ -56,7 +56,7 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
   // Get the input value characterizing each of the 4 rotor's aerodynamics.
-  const Vector4<T> u = this->EvalVectorInput(context, 0)->get_value();
+  const Vector4<T> u = this->EvalVectorInput(context, 0)->value();
 
   // For each rotor, calculate the Bz measure of its aerodynamic force on B.
   // Note: B is the quadrotor body and Bz is parallel to each rotor's spin axis.

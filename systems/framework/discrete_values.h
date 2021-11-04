@@ -94,7 +94,6 @@ class DiscreteValues {
 
   const std::vector<BasicVector<T>*>& get_data() const { return data_; }
 
-  //----------------------------------------------------------------------------
   /// @name Convenience accessors for %DiscreteValues with just one group.
   /// These will throw if there is not exactly one group in this %DiscreteValues
   /// object.
@@ -115,70 +114,69 @@ class DiscreteValues {
     return get_vector()[idx];
   }
 
-  /// Returns a const reference to the BasicVector containing the values for
-  /// the _only_ group.
-  const BasicVector<T>& get_vector() const {
-    ThrowUnlessExactlyOneGroup();
-    return get_vector(0);
-  }
-
-  /// Returns a mutable reference to the BasicVector containing the values for
-  /// the _only_ group.
-  BasicVector<T>& get_mutable_vector() {
-    ThrowUnlessExactlyOneGroup();
-    return get_mutable_vector(0);
+  /// Returns a const reference to the underlying VectorX containing the values
+  /// for the _only_ group. This is the preferred method for examining the
+  /// value of the only group.
+  const VectorX<T>& value() const {
+    return get_vector().value();
   }
 
   /// Sets the vector to the given value for the _only_ group.
   void set_value(const Eigen::Ref<const VectorX<T>>& value) {
-    ThrowUnlessExactlyOneGroup();
-    get_mutable_vector(0).set_value(value);
-  }
-
-  /// Returns the entire vector as a const Eigen::VectorBlock for the _only_
-  /// group.
-  Eigen::VectorBlock<const VectorX<T>> get_value() const {
-    ThrowUnlessExactlyOneGroup();
-    return get_vector(0).get_value();
+    get_mutable_vector().set_value(value);
   }
 
   /// Returns the entire vector for the _only_ group as a mutable
   /// Eigen::VectorBlock, which allows mutation of the values, but does not
   /// allow resize() to be called on the vector.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
-    ThrowUnlessExactlyOneGroup();
-    return get_mutable_vector(0).get_mutable_value();
+    return get_mutable_vector().get_mutable_value();
   }
 
+  /// (Advanced) Returns a const reference to the BasicVector containing the
+  /// values for the _only_ group. Prefer `value()` to get the underlying
+  /// VectorX directly unless you really need the BasicVector wrapping it.
+  const BasicVector<T>& get_vector() const {
+    ThrowUnlessExactlyOneGroup();
+    return get_vector(0);
+  }
+
+  /// (Advanced) Returns a mutable reference to the BasicVector containing the
+  /// values for the _only_ group. Prefer `get_mutable_value()` to get the
+  /// underlying Eigen object.
+  BasicVector<T>& get_mutable_vector() {
+    ThrowUnlessExactlyOneGroup();
+    return get_mutable_vector(0);
+  }
+
+  // TODO(sherm1) Consider deprecating this.
+  /// (Don't use this in new code) Returns the entire vector as a const
+  /// Eigen::VectorBlock for the _only_ group. Prefer `value()` which returns
+  /// direct access to the underlying VectorX rather than wrapping it in a
+  /// VectorBlock.
+  Eigen::VectorBlock<const VectorX<T>> get_value() const {
+    ThrowUnlessExactlyOneGroup();
+    return get_vector(0).get_value();
+  }
   //@}
 
-  /// Returns a const reference to the vector holding data for the indicated
-  /// group.
-  const BasicVector<T>& get_vector(int index) const {
-    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
-    return *data_[index];
-  }
+  /// @name Accessors for %DiscreteValues with multiple groups.
+  /// If you know there is only one group consider
+  /// using the alternative signatures that don't take a group index.
+  //@{
 
-  /// Returns a mutable reference to the vector holding data for the indicated
-  /// group.
-  BasicVector<T>& get_mutable_vector(int index) {
-    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
-    return *data_[index];
-  }
-
-  /// Returns the entire vector as a const Eigen::VectorBlock for the indicated
-  /// group.
-  Eigen::VectorBlock<const VectorX<T>> get_value(int index) const {
-    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
-    return data_[index]->get_value();
+  /// Returns a const reference to the underlying VectorX containing the values
+  /// for the indicated group. This is the preferred method for examining the
+  /// value of a group.
+  const VectorX<T>& value(int index) const {
+    return get_vector(index).value();
   }
 
   /// Returns the entire vector for the indicated group as a mutable
   /// Eigen::VectorBlock, which allows mutation of the values, but does not
   /// allow resize() to be called on the vector.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value(int index) {
-    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
-    return data_[index]->get_mutable_value();
+    return get_mutable_vector(index).get_mutable_value();
   }
 
   /// Sets the vector to the given value for the indicated group.
@@ -186,6 +184,32 @@ class DiscreteValues {
       int index, const Eigen::Ref<const VectorX<T>>& value) {
     get_mutable_vector(index).set_value(value);
   }
+
+  /// (Advanced) Returns a const reference to the BasicVector holding data for
+  /// the indicated group. Prefer `value(index)` to get the underlying
+  ///  VectorX directly unless you really need the BasicVector wrapping it.
+  const BasicVector<T>& get_vector(int index) const {
+    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
+    return *data_[index];
+  }
+
+  /// (Advanced) Returns a mutable reference to the BasicVector holding data for
+  /// the indicated group. Prefer `get_mutable_value()` to get the underlying
+  /// Eigen object unless you really need the BasicVector wrapping it.
+  BasicVector<T>& get_mutable_vector(int index) {
+    DRAKE_THROW_UNLESS(0 <= index && index < num_groups());
+    return *data_[index];
+  }
+
+  // TODO(sherm1) Consider deprecating this.
+  /// (Don't use this in new code) Returns the entire vector as a const
+  /// Eigen::VectorBlock for the indicated group. Prefer `value()` which returns
+  /// direct access to the underlying VectorX rather than wrapping it in a
+  /// VectorBlock.
+  Eigen::VectorBlock<const VectorX<T>> get_value(int index) const {
+    return get_vector(index).get_value();
+  }
+  //@}
 
   /// Resets the values in this DiscreteValues from the values in @p other,
   /// possibly writing through to unowned data. Throws if the dimensions don't

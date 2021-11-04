@@ -495,8 +495,8 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Get the necessary state variables.
   const systems::BasicVector<T>& state = context.get_discrete_state(0);
-  const auto& q = state.get_value().template segment<3>(0);
-  Vector3<T> v = state.get_value().template segment<3>(3);
+  const auto& q = state.value().template segment<3>(0);
+  Vector3<T> v = state.value().template segment<3>(3);
   const T& x = q(0);
   const T& y = q(1);
   const T& theta = q(2);
