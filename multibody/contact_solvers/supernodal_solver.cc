@@ -240,14 +240,14 @@ void SuperNodalSolver::Initialize(
   int i = 0;
   clique_assemblers_ptrs_.resize(row_data.size());
   for (auto& c : row_data) {
-    jacobian_assemblers_.at(i).Initialize(c);
-    clique_assemblers_ptrs_.at(i) = &jacobian_assemblers_.at(i);
+    clique_assemblers_.at(i).Initialize(c);
+    clique_assemblers_ptrs_.at(i) = &clique_assemblers_.at(i);
     i++;
   }
 
   for (auto& c : mass_matrices_) {
     auto position = FindPositionInClique(c.second.at(0), cliques);
-    jacobian_assemblers_.at(position.first)
+    clique_assemblers_.at(position.first)
         .AssignMassMatrix(position.second, c.first);
   }
 
@@ -264,19 +264,19 @@ SuperNodalSolver::SuperNodalSolver(
       solver_(clique_data_.cliques_assembler, clique_data_.data.num_vars,
               clique_data_.data.order, clique_data_.data.supernodes,
               clique_data_.data.separators),
-      jacobian_assemblers_(num_jacobian_row_blocks) {
+      clique_assemblers_(num_jacobian_row_blocks) {
   Initialize(clique_data_.cliques_assembler,
              GetRowData(num_jacobian_row_blocks, jacobian_blocks));
 }
 
 void SuperNodalSolver::SetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
-  for (auto& c : jacobian_assemblers_) {
+  for (auto& c : clique_assemblers_) {
     c.SetWeightMatrixPointer(&weight_matrix);
   }
 
   int e_last = -1;
-  for (auto& c : jacobian_assemblers_) {
+  for (auto& c : clique_assemblers_) {
     int num_rows = c.NumRows();
     int s = e_last + 1;
     int e = s;
@@ -286,7 +286,7 @@ void SuperNodalSolver::SetWeightMatrix(
       num_rows_found += weight_matrix.at(e).rows();
     }
     if (num_rows_found != num_rows) {
-      for (auto& ja : jacobian_assemblers_) {
+      for (auto& ja : clique_assemblers_) {
         ja.SetWeightMatrixPointer(NULL);
       }
       throw std::runtime_error("Weight matrix incompatible with Jacobian.");
@@ -299,7 +299,7 @@ void SuperNodalSolver::SetWeightMatrix(
 
 #ifndef NDEBUG
   // Destroy references to argument weight_matrix.
-  for (auto& c : jacobian_assemblers_) {
+  for (auto& c : clique_assemblers_) {
     c.SetWeightMatrixPointer(NULL);
   }
 #endif

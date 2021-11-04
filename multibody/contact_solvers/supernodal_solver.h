@@ -189,7 +189,7 @@ class SuperNodalSolver {
   SparsityData clique_data_;
   ::conex::Solver solver_;
   std::vector<CliqueAssembler*> clique_assemblers_ptrs_;
-  std::vector<CliqueAssembler> jacobian_assemblers_;
+  std::vector<CliqueAssembler> clique_assemblers_;
 };
 
 }  // namespace internal
