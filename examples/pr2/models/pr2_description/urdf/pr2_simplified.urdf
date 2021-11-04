@@ -152,14 +152,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/base.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/base.obj"/>
       </geometry>
       <material name="White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/base_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/base_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -260,14 +260,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster.obj"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -295,7 +295,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -338,7 +338,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -386,14 +386,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster.obj"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -421,7 +421,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -464,7 +464,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -512,14 +512,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster.obj"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -547,7 +547,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -590,7 +590,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -638,14 +638,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster.obj"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/caster_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/caster_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -673,7 +673,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -716,7 +716,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base_v0/wheel.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/base_v0/wheel.obj"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -794,14 +794,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/torso_v0/torso_lift.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/torso_v0/torso_lift.obj"/>
       </geometry>
       <material name="Grey2"/>
     </visual>
     <collision name="torso_lift_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/torso_v0/torso_lift_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/torso_v0/torso_lift_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -884,14 +884,14 @@
     <visual>
       <origin rpy="0 0 0 " xyz="0 0 0.0"/>
       <geometry>
-        <mesh filename="../meshes/head_v0/head_pan.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/head_v0/head_pan.obj"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0 " xyz="0 0 0.0"/>
       <geometry>
-        <mesh filename="../meshes/head_v0/head_pan_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/head_v0/head_pan_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -924,14 +924,14 @@
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/head_v0/head_tilt.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/head_v0/head_tilt.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/head_v0/head_tilt_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/head_v0/head_tilt_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1459,14 +1459,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/tilting_laser_v0/tilting_hokuyo.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/tilting_laser_v0/tilting_hokuyo.obj"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/tilting_laser_v0/tilting_hokuyo_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/tilting_laser_v0/tilting_hokuyo_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1551,14 +1551,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_pan.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_pan.obj"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_pan.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_pan.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1584,14 +1584,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_lift.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_lift.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_lift.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_lift.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1618,14 +1618,14 @@
       <!-- TODO: This component doesn't actually have a mesh -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/upper_arm_roll.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/upper_arm_roll.obj"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/upper_arm_roll_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/upper_arm_roll_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1703,14 +1703,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/upper_arm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/upper_arm.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/upper_arm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/upper_arm.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1751,7 +1751,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/forearm_roll.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/forearm_roll.obj"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
@@ -1759,7 +1759,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/forearm_roll_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/forearm_roll_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1797,14 +1797,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/elbow_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/elbow_flex.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/elbow_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/elbow_flex.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1849,14 +1849,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/forearm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/forearm.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/forearm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/forearm.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1881,14 +1881,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_flex.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_flex.obj"/>
       </geometry>
     </collision>
   </link>
@@ -1915,14 +1915,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_roll.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_roll.obj"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_roll_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_roll_L.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2007,14 +2007,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/gripper_palm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/gripper_palm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2073,14 +2073,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2103,14 +2103,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2197,14 +2197,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2227,14 +2227,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2484,14 +2484,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_pan.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_pan.obj"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_pan.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_pan.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2517,14 +2517,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_lift.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_lift.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/shoulder_lift.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/shoulder_lift.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2551,14 +2551,14 @@
       <!-- TODO: This component doesn't actually have a mesh -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/upper_arm_roll.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/upper_arm_roll.obj"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/shoulder_v0/upper_arm_roll_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/shoulder_v0/upper_arm_roll_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2636,14 +2636,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/upper_arm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/upper_arm.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/upper_arm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/upper_arm.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2684,7 +2684,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/forearm_roll.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/forearm_roll.obj"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
@@ -2692,7 +2692,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/forearm_roll_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/forearm_roll_L.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2730,14 +2730,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/elbow_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/elbow_flex.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/upper_arm_v0/elbow_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/upper_arm_v0/elbow_flex.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2782,14 +2782,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/forearm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/forearm.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/forearm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/forearm.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2814,14 +2814,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_flex.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_flex.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_flex.obj"/>
       </geometry>
     </collision>
   </link>
@@ -2848,14 +2848,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_roll.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_roll.obj"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/forearm_v0/wrist_roll_L.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/forearm_v0/wrist_roll_L.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2941,14 +2941,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/gripper_palm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/gripper_palm.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -3007,14 +3007,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -3037,14 +3037,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -3131,14 +3131,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -3161,14 +3161,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/gripper_v0/l_finger_tip.obj"/>
+        <mesh filename="package://drake/examples/pr2/models/pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>

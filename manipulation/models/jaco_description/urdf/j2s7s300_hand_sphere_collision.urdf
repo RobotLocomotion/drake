@@ -8,7 +8,7 @@
   <link name="hand_base">
     <visual>
       <geometry>
-        <mesh filename="../meshes/hand_3finger.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/hand_3finger.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -16,7 +16,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/ring_small.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -95,7 +95,7 @@
   <link name="j2s7s300_link_finger_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_proximal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_proximal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -151,7 +151,7 @@
   <link name="j2s7s300_link_finger_tip_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_distal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_distal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -203,7 +203,7 @@
   <link name="j2s7s300_link_finger_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_proximal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_proximal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -259,7 +259,7 @@
   <link name="j2s7s300_link_finger_tip_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_distal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_distal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -311,7 +311,7 @@
   <link name="j2s7s300_link_finger_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_proximal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_proximal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -367,7 +367,7 @@
   <link name="j2s7s300_link_finger_tip_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/finger_distal.obj"/>
+        <mesh filename="package://drake/manipulation/models/jaco_description/meshes/finger_distal.obj"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>

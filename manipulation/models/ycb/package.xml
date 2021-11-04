@@ -13,4 +13,11 @@
   <author email="drake-users@mit.edu">Drake Users</author>
   <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
   <license>BSD</license>
+  <export>
+    <deprecated>
+      The 'package://ycb' URI spelling is deprecated, and will be removed from
+      Drake on or around 2022-02-01. Please spell the URI as
+      'package://drake/manipulation/models/ycb' instead.
+    </deprecated>
+  </export>
 </package>

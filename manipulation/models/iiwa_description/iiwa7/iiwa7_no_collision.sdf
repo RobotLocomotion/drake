@@ -18,7 +18,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_0.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_0.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -47,7 +47,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_1.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_1.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -95,7 +95,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_2.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_2.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -143,7 +143,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_3.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_3.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -191,7 +191,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_4.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_4.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -239,7 +239,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_5.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_5.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -288,7 +288,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_6.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_6.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -336,7 +336,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>link_7.obj</uri>
+            <uri>package://drake/manipulation/models/iiwa_description/iiwa7/link_7.obj</uri>
           </mesh>
         </geometry>
         <material>

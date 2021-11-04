@@ -30,7 +30,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/pelvis.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/pelvis.obj" />
       </geometry>
       <material name="">
         <color
@@ -58,7 +58,7 @@ The original URDF is here:
         xyz="0 0 -0.07"
         rpy="0 -1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_yaw.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_yaw.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -85,7 +85,7 @@ The original URDF is here:
         xyz="0 0 -0.07"
         rpy="0 -1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_yaw.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_yaw.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -112,7 +112,7 @@ The original URDF is here:
         xyz="0 0 -0.09"
         rpy="-1.570796 1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_hip.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_hip.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -139,7 +139,7 @@ The original URDF is here:
         xyz="0 0 -0.09"
         rpy="-1.570796 1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_hip.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_hip.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -166,7 +166,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_thigh.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_thigh.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -193,7 +193,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_thigh.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_thigh.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -220,7 +220,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-output.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-output.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -247,7 +247,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-output-r.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-output-r.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -274,7 +274,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_shin.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_shin.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -301,7 +301,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_shin.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_shin.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -328,7 +328,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -355,7 +355,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -382,7 +382,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/tarsus.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/tarsus.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -409,7 +409,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/tarsus-r.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/tarsus-r.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -436,7 +436,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/heel-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/heel-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -463,7 +463,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/heel-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/heel-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -524,8 +524,8 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_foot.obj" />
-        <!-- <mesh filename="meshes/toe.obj" /> -->
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_foot.obj" />
+        <!-- <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/toe.obj" /> -->
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -577,8 +577,8 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_foot.obj" />
-        <!-- <mesh filename="meshes/toe-r.obj" /> -->
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_foot.obj" />
+        <!-- <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/toe-r.obj" /> -->
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -940,7 +940,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/pelvis.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/pelvis.obj" />
       </geometry>
       <material name="">
         <color
@@ -968,7 +968,7 @@ The original URDF is here:
         xyz="0 0 -0.07"
         rpy="0 -1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_yaw.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_yaw.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -995,7 +995,7 @@ The original URDF is here:
         xyz="0 0 -0.07"
         rpy="0 -1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_yaw.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_yaw.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1022,7 +1022,7 @@ The original URDF is here:
         xyz="0 0 -0.09"
         rpy="-1.570796 1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_hip.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_hip.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1049,7 +1049,7 @@ The original URDF is here:
         xyz="0 0 -0.09"
         rpy="-1.570796 1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_hip.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_hip.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1076,7 +1076,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_thigh.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_thigh.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1103,7 +1103,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_thigh.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_thigh.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1130,7 +1130,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-output.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-output.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1157,7 +1157,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-output-r.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-output-r.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1184,7 +1184,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_shin.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_shin.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1211,7 +1211,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_shin.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_shin.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1238,7 +1238,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -1265,7 +1265,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -1292,7 +1292,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/tarsus.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/tarsus.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1319,7 +1319,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/tarsus-r.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/tarsus-r.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -1346,7 +1346,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/heel-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/heel-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -1373,7 +1373,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/heel-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/heel-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -1434,8 +1434,8 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_foot.obj" />
-        <!-- <mesh filename="meshes/toe.obj" /> -->
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_foot.obj" />
+        <!-- <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/toe.obj" /> -->
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1487,8 +1487,8 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_foot.obj" />
-        <!-- <mesh filename="meshes/toe-r.obj" /> -->
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_foot.obj" />
+        <!-- <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/toe-r.obj" /> -->
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1850,7 +1850,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/pelvis.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/pelvis.obj" />
       </geometry>
       <material name="">
         <color
@@ -1878,7 +1878,7 @@ The original URDF is here:
         xyz="0 0 -0.07"
         rpy="0 -1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_yaw.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_yaw.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1905,7 +1905,7 @@ The original URDF is here:
         xyz="0 0 -0.07"
         rpy="0 -1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_yaw.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_yaw.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1932,7 +1932,7 @@ The original URDF is here:
         xyz="0 0 -0.09"
         rpy="-1.570796 1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_hip.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_hip.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1959,7 +1959,7 @@ The original URDF is here:
         xyz="0 0 -0.09"
         rpy="-1.570796 1.570796 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_hip.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_hip.obj" />
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -1986,7 +1986,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_thigh.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_thigh.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2013,7 +2013,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_thigh.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_thigh.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2040,7 +2040,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-output.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-output.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2067,7 +2067,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-output-r.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-output-r.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2094,7 +2094,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_shin.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_shin.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2121,7 +2121,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_shin.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_shin.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2148,7 +2148,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -2175,7 +2175,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/knee-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/knee-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -2202,7 +2202,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/tarsus.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/tarsus.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2229,7 +2229,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/tarsus-r.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/tarsus-r.obj" />
       </geometry>
       <material name="">
         <color rgba="0.024 0.24 0.5 1.0" />
@@ -2256,7 +2256,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/heel-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/heel-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -2283,7 +2283,7 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/heel-spring.obj" />
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/heel-spring.obj" />
       </geometry>
       <material name="">
         <color rgba="0.1 0.1 0.1 1" />
@@ -2344,8 +2344,8 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/left_foot.obj" />
-        <!-- <mesh filename="meshes/toe.obj" /> -->
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/left_foot.obj" />
+        <!-- <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/toe.obj" /> -->
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />
@@ -2397,8 +2397,8 @@ The original URDF is here:
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/agility/right_foot.obj" />
-        <!-- <mesh filename="meshes/toe-r.obj" /> -->
+        <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/agility/right_foot.obj" />
+        <!-- <mesh filename="package://drake/examples/multibody/cassie_benchmark/meshes/toe-r.obj" /> -->
       </geometry>
       <material name="">
         <color rgba="0.4 0.4 0.4 1" />

@@ -22,4 +22,11 @@
   <run_depend>urdf</run_depend>
   <run_depend>xacro</run_depend>
 
+  <export>
+    <deprecated>
+      The 'package://jaco_description' URI spelling is deprecated, and will be
+      removed from Drake on or around 2022-03-01. Please spell the URI as
+      'package://drake/manipulation/models/jaco_description' instead.
+    </deprecated>
+  </export>
 </package>
