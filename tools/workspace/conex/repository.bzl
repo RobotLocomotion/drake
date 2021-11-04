@@ -1,12 +1,13 @@
 # -*- python -*-
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def conex_repository(
         name,
         mirrors = None):
-      git_repository(
+      github_archive(
           name = name,
+          repository = "ToyotaResearchInstitute/conex",
           commit = "782e4d2ab1adfcebad234ddd48f5e32b0e41edde",
-          shallow_since = "1625176963 -0400",
-          remote = "git@github.com:frankpermenter/conex.git",
+          sha256 = "af6223d96ce6ebd3de64cd8b2547cc889f346b6cadf1742c21cf698a510f5136",
+          mirrors = mirrors,
       )
