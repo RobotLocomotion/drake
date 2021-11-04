@@ -1472,7 +1472,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The elastic modulus and dissipation can be specified in one of two ways:
   ///
   /// - define them in an instance of geometry::ProximityProperties using
-  ///   the function geometry::AddContactMaterial(), or
+  ///   the function geometry::AddSoftHydroelasticProperties(),
+  ///   geometry::AddSoftHydroelasticPropertiesForHalfSpace(), or
   /// - define them in an input URDF/SDF as detailed @ref sdf_contact_material
   ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
   ///
