@@ -95,20 +95,23 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   //----------------------------------------------------------------------------
-  /** @name                  Input port evaluation
-  These methods provide scalar type-independent evaluation of a System input
-  port in a particular Context. If necessary, they first cause the port's value
+  /** @name            Input port evaluation (deprecated)
+  These _deprecated_ methods provide scalar type-independent evaluation of a
+  System input port in a particular Context. Instead of these, prefer to use
+  InputPort::Eval(), acquiring the port with `get_input_port(port_index)`.
+
+  If necessary, the methods here first cause the port's value
   to become up to date, then they return a reference to the now-up-to-date value
   in the given Context.
 
   Specified preconditions for these methods operate as follows: The
   preconditions will be checked in Debug builds but some or all might not be
   checked in Release builds for performance reasons. If we do check, and a
-  precondition is violated, an std::logic_error will be thrown with a helpful
+  precondition is violated, an std::exception will be thrown with a helpful
   message.
 
-  @see System::EvalVectorInput(), System::EvalEigenVectorInput() for
-  scalar type-specific input port access. */
+  @see System::get_input_port(), InputPort::Eval() for scalar type-specific
+  input port access. */
   //@{
 
   // TODO(jwnimmer-tri) Deprecate me.
@@ -121,8 +124,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @pre `port_index` selects an existing input port of this System.
 
-  @see EvalInputValue(), System::EvalVectorInput(),
-       System::EvalEigenVectorInput() */
+  @see InputPort::Eval() (preferred) */
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
     ValidateContext(context);
@@ -145,6 +147,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @pre the port's value must be retrievable from the stored abstract value
        using `AbstractValue::get_value<V>`.
 
+  @see InputPort::Eval() (preferred)
   @tparam V The type of data expected. */
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
