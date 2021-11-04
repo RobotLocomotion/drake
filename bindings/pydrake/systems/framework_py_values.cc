@@ -89,6 +89,12 @@ void DoScalarDependentDefinitions(py::module m) {
           },
           doc.BasicVector.set_value.doc)
       .def(
+          "value",
+          [](const BasicVector<T>* self) -> const VectorX<T>& {
+            return self->value();
+          },
+          py_rvp::reference_internal, doc.BasicVector.value.doc)
+      .def(
           "get_value",
           [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
             return self->get_value();

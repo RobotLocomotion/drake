@@ -333,7 +333,7 @@ void SolarSystem<T>::DoCalcTimeDerivatives(
   BasicVector<T>& derivative_vector = get_mutable_state(derivatives);
   derivative_vector.SetZero();
   derivative_vector.get_mutable_value().head(kBodyCount) =
-      state.get_value().tail(kBodyCount);
+      state.value().tail(kBodyCount);
 }
 
 template class SolarSystem<double>;

@@ -46,6 +46,10 @@ class DiscreteValuesTest : public ::testing::Test {
 
 TEST_F(DiscreteValuesTest, OwnedState) {
   DiscreteValues<double> xd(std::move(data_));
+  EXPECT_EQ(xd.get_vector(0).value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).value(), v01_);
+
+  // To be deprecated: get_value() wraps a VectorBlock around the value.
   EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
   EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
 }
@@ -53,6 +57,10 @@ TEST_F(DiscreteValuesTest, OwnedState) {
 TEST_F(DiscreteValuesTest, UnownedState) {
   DiscreteValues<double> xd(
       std::vector<BasicVector<double>*>{data_[0].get(), data_[1].get()});
+  EXPECT_EQ(xd.get_vector(0).value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).value(), v01_);
+
+  // To be deprecated: get_value() wraps a VectorBlock around the value.
   EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
   EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
 }
@@ -60,18 +68,18 @@ TEST_F(DiscreteValuesTest, UnownedState) {
 TEST_F(DiscreteValuesTest, AppendGroup) {
   DiscreteValues<double> xd(std::move(data_));
   ASSERT_EQ(xd.num_groups(), 2);
-  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
-  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+  EXPECT_EQ(xd.get_vector(0).value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).value(), v01_);
   const int group_num = xd.AppendGroup(std::make_unique<MyVector3d>(v11_));
   EXPECT_EQ(group_num, 2);
   ASSERT_EQ(xd.num_groups(), 3);
 
   // Check that we didn't break previous values.
-  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
-  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+  EXPECT_EQ(xd.get_vector(0).value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).value(), v01_);
 
   // Check that new value and type are preserved.
-  EXPECT_EQ(xd.get_vector(2).get_value(), v11_);
+  EXPECT_EQ(xd.get_vector(2).value(), v11_);
   EXPECT_TRUE(is_dynamic_castable<MyVector3d>(&xd.get_vector(2)));
 }
 
@@ -95,8 +103,8 @@ TEST_F(DiscreteValuesTest, Clone) {
 
   // First check that the clone has the original values.
   EXPECT_EQ(clone->get_system_id(), xd.get_system_id());
-  EXPECT_EQ(clone->get_vector(0).get_value(), v00_);
-  EXPECT_EQ(clone->get_vector(1).get_value(), v01_);
+  EXPECT_EQ(clone->get_vector(0).value(), v00_);
+  EXPECT_EQ(clone->get_vector(1).value(), v01_);
 
   // Set the clone's new values.
   Eigen::Vector2d new0(9., 10.), new1(1.25, 2.5);
@@ -104,12 +112,12 @@ TEST_F(DiscreteValuesTest, Clone) {
   clone->get_mutable_vector(1).set_value(new1);
 
   // Check that the clone changed correctly.
-  EXPECT_EQ(clone->get_vector(0).get_value(), new0);
-  EXPECT_EQ(clone->get_vector(1).get_value(), new1);
+  EXPECT_EQ(clone->get_vector(0).value(), new0);
+  EXPECT_EQ(clone->get_vector(1).value(), new1);
 
   // Check that the original remains unchanged.
-  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
-  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+  EXPECT_EQ(xd.get_vector(0).value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).value(), v01_);
 }
 
 TEST_F(DiscreteValuesTest, SetFrom) {
@@ -167,9 +175,9 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
 
   Eigen::Vector2d vec{44., 45.}, vec2{46., 47.};
   xd.set_value(vec);
-  EXPECT_TRUE(CompareMatrices(xd.get_value(), vec));
+  EXPECT_TRUE(CompareMatrices(xd.value(), vec));
   xd.get_mutable_value() = vec2;
-  EXPECT_TRUE(CompareMatrices(xd.get_value(), vec2));
+  EXPECT_TRUE(CompareMatrices(xd.value(), vec2));
 
   DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(Vector3d::Ones()), ".*size.*");
 }
@@ -186,7 +194,7 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugarEmpty) {
   DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
                               expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(VectorXd()), expected_pattern);
-  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_value(), expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.value(), expected_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_value(), expected_pattern);
 }
 
@@ -204,9 +212,9 @@ TEST_F(DiscreteValuesTest, ConvenienceSugarMultiple) {
 
   Eigen::Vector2d vec{44., 45.}, vec2{46., 47.};
   xd.set_value(1, vec);
-  EXPECT_TRUE(CompareMatrices(xd.get_value(1), vec));
+  EXPECT_TRUE(CompareMatrices(xd.value(1), vec));
   xd.get_mutable_value(1) = vec2;
-  EXPECT_TRUE(CompareMatrices(xd.get_value(1), vec2));
+  EXPECT_TRUE(CompareMatrices(xd.value(1), vec2));
 
   DRAKE_EXPECT_THROWS_MESSAGE(xd.set_value(1, Vector3d::Ones()), ".*size.*");
 }
@@ -269,7 +277,7 @@ TEST_F(DiscreteValuesTest, DiagramDiscreteValues) {
   // But different owned BasicVectors, with the same values.
   for (int i = 0; i < root.num_groups(); ++i) {
     EXPECT_NE(&root.get_vector(i), &root2.get_vector(i));
-    EXPECT_EQ(root2.get_vector(i).get_value(), root.get_vector(i).get_value());
+    EXPECT_EQ(root2.get_vector(i).value(), root.get_vector(i).value());
   }
 
   // Check that the underlying vector types were preserved by Clone().
@@ -281,14 +289,14 @@ TEST_F(DiscreteValuesTest, DiagramDiscreteValues) {
 
   // To make sure we didn't go too far with ownership, check that writing
   // through root2 changes what is seen by its subdiscretes.
-  EXPECT_EQ(root2.get_vector(6).get_value()[1], -2.5);
+  EXPECT_EQ(root2.get_vector(6).value()[1], -2.5);
   const DiscreteValues<double>& root2_ddv1 =
       root2.get_subdiscrete(SubsystemIndex(1));
-  EXPECT_EQ(root2_ddv1.get_vector(3).get_value()[1], -2.5);
+  EXPECT_EQ(root2_ddv1.get_vector(3).value()[1], -2.5);
   root2.get_mutable_vector(6).get_mutable_value()[1] = 19.;
-  EXPECT_EQ(root2.get_vector(6).get_value()[1], 19.);
-  EXPECT_EQ(root2_ddv1.get_vector(3).get_value()[1], 19.);
-  EXPECT_EQ(ddv1.get_vector(3).get_value()[1], -2.5);  // sanity check
+  EXPECT_EQ(root2.get_vector(6).value()[1], 19.);
+  EXPECT_EQ(root2_ddv1.get_vector(3).value()[1], 19.);
+  EXPECT_EQ(ddv1.get_vector(3).value()[1], -2.5);  // sanity check
 }
 
 }  // namespace
