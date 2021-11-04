@@ -238,10 +238,10 @@ void SuperNodalSolver::Initialize(
     const vector<vector<int>>& cliques,
     const vector<vector<Eigen::MatrixXd>>& row_data) {
   int i = 0;
-  clique_assemblers_.resize(row_data.size());
+  clique_assemblers_ptrs_.resize(row_data.size());
   for (auto& c : row_data) {
     jacobian_assemblers_.at(i).Initialize(c);
-    clique_assemblers_.at(i) = &jacobian_assemblers_.at(i);
+    clique_assemblers_ptrs_.at(i) = &jacobian_assemblers_.at(i);
     i++;
   }
 
@@ -251,7 +251,7 @@ void SuperNodalSolver::Initialize(
         .AssignMassMatrix(position.second, c.first);
   }
 
-  solver_.Bind(clique_assemblers_);
+  solver_.Bind(clique_assemblers_ptrs_);
 }
 
 SuperNodalSolver::SuperNodalSolver(
@@ -295,7 +295,7 @@ void SuperNodalSolver::SetWeightMatrix(
     c.SetWeightMatrixIndex(s, e);
   }
 
-  solver_.AssembleFromCliques(clique_assemblers_);
+  solver_.AssembleFromCliques(clique_assemblers_ptrs_);
 
 #ifndef NDEBUG
   // Destroy references to argument weight_matrix.
