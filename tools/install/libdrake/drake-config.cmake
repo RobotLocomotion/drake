@@ -64,6 +64,7 @@ set_target_properties(drake::drake PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "drake::drake-lcmtypes-cpp;drake::drake-marker;Eigen3::Eigen;fmt::fmt-header-only;lcm::lcm;optitrack::optitrack-lcmtypes-cpp;spdlog::spdlog;tinyxml2::tinyxml2;${yaml-cpp_LIBRARIES}"
   INTERFACE_COMPILE_FEATURES "cxx_std_17"
+  INTERFACE_COMPILE_DEFINITIONS "HAVE_SPDLOG"
 )
 
 add_library(drake::drake-lcmtypes-cpp INTERFACE IMPORTED)
