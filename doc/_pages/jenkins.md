@@ -53,7 +53,7 @@ where ``<job-name>`` is the name of an
 
 For example:
 
-* ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-big-sur-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
 
 ## Scheduling Builds via the Jenkins User Interface
@@ -106,7 +106,7 @@ unprovisioned experimental builds, e.g.:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-release please``
-* ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot mac-big-sur-unprovisioned-clang-bazel-experimental-release please``
 
 After this has passed, go through normal review. Once normal review is done,
 add `@BetsyMcPhail` for review and request that the provisioned instances be
@@ -119,7 +119,7 @@ comment on an open pull request as follows:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
-* ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot mac-big-sur-unprovisioned-clang-bazel-experimental-snopt-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the following jobs from the Jenkins user
@@ -127,7 +127,7 @@ interface:
 
 * linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging
 * linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
-* mac-catalina-unprovisioned-clang-bazel-experimental-snopt-packaging
+* mac-big-sur-unprovisioned-clang-bazel-experimental-snopt-packaging
 
 The URL from which to download the built package will be indicated in the
 Jenkins console log for the completed build, for example:
