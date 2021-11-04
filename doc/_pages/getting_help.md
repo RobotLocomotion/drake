@@ -37,7 +37,7 @@ If you wish to contribute a patch, please see how to [submit a pull request](/de
 When reporting an issue, please consider providing the following information
 (*examples in italics*, ``helper command in monospace``):
 
-* Operating system (*Ubuntu 18.04, macOS Catalina*)
+* Operating system (*Ubuntu 18.04, macOS Monterey*)
 * Language (C++, [Python](/python_bindings.html))
     * C++ compiler (*GCC 7.5.0, GCC 9.3.0, Clang 6.0.0*)
     * Python version (*Python 3.6.7*)
