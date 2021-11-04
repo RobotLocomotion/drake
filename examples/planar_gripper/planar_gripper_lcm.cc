@@ -81,7 +81,7 @@ systems::EventStatus GripperCommandDecoder::UpdateDiscreteState(
 void GripperCommandDecoder::OutputStateCommand(
     const Context<double>& context, BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
-  output_vec = context.get_discrete_state(0).get_value().head(num_joints_ * 2);
+  output_vec = context.get_discrete_state(0).value().head(num_joints_ * 2);
 }
 
 void GripperCommandDecoder::OutputTorqueCommand(
@@ -181,13 +181,13 @@ systems::EventStatus GripperStatusDecoder::UpdateDiscreteState(
 void GripperStatusDecoder::OutputStateStatus(
     const Context<double>& context, BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
-  output_vec = context.get_discrete_state(0).get_value().head(num_joints_ * 2);
+  output_vec = context.get_discrete_state(0).value().head(num_joints_ * 2);
 }
 
 void GripperStatusDecoder::OutputForceStatus(
     const Context<double>& context, BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
-  output_vec = context.get_discrete_state(0).get_value().tail(num_fingers_ * 2);
+  output_vec = context.get_discrete_state(0).value().tail(num_fingers_ * 2);
 }
 
 GripperStatusEncoder::GripperStatusEncoder(int num_fingers)
@@ -207,10 +207,10 @@ void GripperStatusEncoder::OutputStatus(
   status->utime = static_cast<int64_t>(context.get_time() * 1e6);
   const systems::BasicVector<double>* state_input =
       this->EvalVectorInput(context, 0);
-  auto state_value = state_input->get_value();
+  const VectorX<double>& state_value = state_input->value();
   const systems::BasicVector<double>* force_input =
       this->EvalVectorInput(context, 1);
-  auto force_value = force_input->get_value();
+  const VectorX<double>& force_value = force_input->value();
 
   status->num_fingers = num_fingers_;
   status->finger_status.resize(num_fingers_);

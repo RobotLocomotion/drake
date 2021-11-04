@@ -51,7 +51,7 @@ TEST_F(BeadOnAWireTest, Output) {
                                                 get_continuous_state();
   dut_abs_->CalcOutput(*context_abs_, output_abs_.get());
   for (int i = 0; i < v.size(); ++i)
-    EXPECT_EQ(v[i], output_abs_->get_vector_data(0)->get_value()(i));
+    EXPECT_EQ(v[i], output_abs_->get_vector_data(0)->value()(i));
 }
 
 // Tests parameter getting and setting.

@@ -79,8 +79,8 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
     Eigen::VectorBlock<VectorX<T>>* output) const {
   unused(state);
 
-  const Eigen::VectorBlock<const VectorX<T>>& calibration_offsets =
-      context.get_numeric_parameter(0).get_value();
+  const VectorX<T>& calibration_offsets =
+      context.get_numeric_parameter(0).value();
   DRAKE_ASSERT(calibration_offsets.size() == num_encoders_);
 
   // Loop through the outputs.

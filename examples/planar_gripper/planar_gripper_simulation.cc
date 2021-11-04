@@ -177,8 +177,10 @@ class GeneralizedForceToActuationOrdering : public systems::LeafSystem<double> {
 
   void remap_output(const systems::Context<double>& context,
                     systems::BasicVector<double>* output_vector) const {
-    auto output_value = output_vector->get_mutable_value();
-    auto input_value = this->EvalVectorInput(context, 0)->get_value();
+    Eigen::VectorBlock<VectorX<double>> output_value =
+        output_vector->get_mutable_value();
+    const VectorX<double>& input_value =
+        this->EvalVectorInput(context, 0)->value();
 
     output_value.setZero();
     output_value = Binv_ * input_value;

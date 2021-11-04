@@ -46,6 +46,8 @@ class TestValue(unittest.TestCase):
                 value[:] += 1
                 self.assertTrue(np.allclose(value, expected_add))
                 self.assertTrue(
+                    np.allclose(value_data.value(), expected_add))
+                self.assertTrue(
                     np.allclose(value_data.get_value(), expected_add))
                 self.assertTrue(
                     np.allclose(value_data.get_mutable_value(), expected_add))

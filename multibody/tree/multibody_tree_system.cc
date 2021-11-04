@@ -255,11 +255,8 @@ void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
   // entries at all and the system framework will never call this.
   if (internal_tree().num_states() == 0) return;
 
-  // N.B. get_value() here is inexplicably returning a VectorBlock
-  // rather than a reference to the stored VectorX.
-  const auto x =
-      dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state_vector()).get_value();
+  const VectorX<T>& x = dynamic_cast<const systems::BasicVector<T>&>(
+      context.get_continuous_state_vector()).value();
   const auto v = x.bottomRows(internal_tree().num_velocities());
 
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
@@ -337,9 +334,9 @@ void MultibodyTreeSystem<T>::DoCalcImplicitTimeDerivativesResidual(
 
   // TODO(sherm1) This dynamic_cast is likely too expensive -- replace with
   //              static_cast in Release builds.
-  Eigen::VectorBlock<const VectorX<T>> qvdot_proposed =
+  const VectorX<T>& qvdot_proposed =
       dynamic_cast<const systems::BasicVector<T>&>(
-          proposed_derivatives.get_vector()).get_value();
+          proposed_derivatives.get_vector()).value();
   DRAKE_ASSERT(qvdot_proposed.size() == nq+nv);
 
   auto qdot_residual = residual->head(nq);
