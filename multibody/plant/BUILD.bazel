@@ -39,6 +39,22 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "compliant_contact_manager",
+    srcs = ["compliant_contact_manager.cc"],
+    hdrs = ["compliant_contact_manager.h"],
+    tags = [
+        # Until CompliantContactManager becomes a default option,
+        # use of MBP doesn't imply use of this manager.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":plant",
+        "//multibody/contact_solvers:contact_solver",
+        "//multibody/triangle_quadrature",
+    ],
+)
+
+drake_cc_library(
     name = "discrete_contact_pair",
     srcs = [],
     hdrs = ["discrete_contact_pair.h"],
@@ -330,6 +346,16 @@ drake_cc_library(
         ":multibody_plant_config",
         ":multibody_plant_core",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_manager_test",
+    deps = [
+        ":compliant_contact_manager",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:pgs_solver",
     ],
 )
 
