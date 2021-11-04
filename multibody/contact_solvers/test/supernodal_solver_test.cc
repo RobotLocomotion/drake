@@ -86,7 +86,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   solver.SetWeightMatrix(blocks_of_W);
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
-  EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 
   // Make the block sizes of W incompatible with J and verify an exception is
   // thrown.
@@ -188,7 +188,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   solver.SetWeightMatrix(blocks_of_W);
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
-  EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
 GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
@@ -268,7 +268,7 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   solver.SetWeightMatrix(blocks_of_W);
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
-  EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
 // In this example there are three contact patches of one contact point each.
@@ -356,7 +356,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   solver.SetWeightMatrix(blocks_of_W);
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
-  EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
 // Unit test for the sparsity pattern occuring on a problem with four stacks of
@@ -439,7 +439,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_W);
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
-  EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
   Eigen::VectorXd x_ref = Eigen::VectorXd::Random(M.rows());
   solver.Factor();
   EXPECT_NEAR((solver.Solve(full_matrix_ref * x_ref) - x_ref).norm(), 0, 1e-8);
@@ -548,7 +548,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   solver.SetWeightMatrix(blocks_of_W);
 
   MatrixXd full_matrix_ref = M + J.transpose() * W * J;
-  EXPECT_NEAR((solver.FullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
 }  // namespace internal

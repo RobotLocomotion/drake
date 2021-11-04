@@ -153,8 +153,6 @@ drake_cc_library(
     copts = [
         "-O3",
         "-ffast-math",
-        "-g",
-        "-fno-omit-frame-pointer",
     ],
     deps = [
         "@conex//conex:supernodal_solver",

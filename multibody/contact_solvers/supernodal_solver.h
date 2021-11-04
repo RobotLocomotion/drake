@@ -12,6 +12,8 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
+
 // A supernodal solver for solving the symmetric positive definite system
 //   H⋅x = b
 // where H = M + Jᵀ G J. The matrices M and J are set at construction and the
@@ -30,7 +32,10 @@ namespace internal {
 // Weight matrix G layout:
 //   G is a block diagonal matrix where the k-th block has size nₖ×nₖ. The size
 //   of the matrix is r×r, with r = ∑nₖ.
-//   Note: The block structure of G is a refinement of the block structure of J.
+//   Note: the block structure of J and G both partition the set \{1, 2, ..,
+//   num_rows(J) \}.  We require that the partition induced by G  refines the
+//   partition induced by J. See https://en.wikipedia.org/wiki/Partition_of_a_set
+//   for definition of refinement.
 //
 // Example use case:
 //
@@ -48,19 +53,16 @@ namespace internal {
 //  solver.Factor();
 //  // Solve H⋅x = b using updated factorization.
 //  x = solver.Solve(b);
-using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
-
 class SuperNodalSolver {
  public:
   // @param num_jacobian_row_blocks
   //   Number of row blocks in the matrix J.
   // @param jacobian_blocks
   //   Blocks Jₚₜ provided as triplets (p, t, Jₚₜ).
-  //   Per each block row p, there can only be at most two blocks.
+  //   Per each block row p, there can only be at most two blocks,
+  //   otherwise an exception is thrown.
   // @param mass_matrices
   //   Block diagonal matrix M provided as a vector of block diagonal entries.
-  //
-  // @throws if more than one block is specified per block row.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
@@ -81,61 +83,64 @@ class SuperNodalSolver {
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
-  Eigen::MatrixXd FullMatrix() {
+  Eigen::MatrixXd MakeFullMatrix() {
     if (!matrix_ready_) {
       throw std::runtime_error(
           "Call to FullMatrix() failed: weight matrix not set or "
-          "matrix already factored.");
+          "matrix has been factored in place.");
     }
     return solver_.KKTMatrix();
   }
 
   // Computes the supernodal LLT factorization. Returns true
   // if factorization succeeds, otherwise returns false.
+  // Failure is triggered by an internal failure of Eigen::LLT.
+  // This can fail if, for instance, the input matrix is not
+  // positive definite. If failure is encountered, the user
+  // should verify that the specified matrix M + J^T G H 
+  // is positive definite and not poorly conditioned.
+  // Throws if SetWeightMatrix() has not been called.
   bool Factor();
 
   // Solves the system H⋅x = b and returns x.
+  // Throws if Factor() has not been called.
   Eigen::MatrixXd Solve(const Eigen::VectorXd& b);
 
   // Solves the system H⋅x = b and writes the result in b.
+  // Throws if Factor() has not been called.
   void SolveInPlace(Eigen::VectorXd* b);
 
  private:
+
+  // This class is responsible for filling a dense matrix of the form
+  // sub_matrix(M) + J^T_i G_i J_i where J_i is a block row of the Jacobian and
+  // sub_matrix(M) is specified by AssignMassMatrix.
   class CliqueAssembler final : public ::conex::LinearKKTAssemblerBase {
    public:
+    // Fills the matrix sub_matrix(M) + J^T_i G_i J_i.
     void SetDenseData() override;
 
+    // Helper functions for specifying G_i
     void SetWeightMatrixIndex(int start, int end) {
       weight_start_ = start;
       weight_end_ = end;
     }
-
     void SetWeightMatrixPointer(
         const std::vector<Eigen::MatrixXd>* weight_matrix) {
       weight_matrix_ = weight_matrix;
     }
 
+    // Updates a vector of mass matrices m_i satisfying
+    // sub_matrix(M) = blkdiag(m_1, m_2, ..., m_n).
     void AssignMassMatrix(int i, const Eigen::MatrixXd& A) {
       mass_matrix_position_.push_back(i);
       mass_matrix_.push_back(A);
     }
+
     int NumRows() { return row_data_.at(0).rows(); }
 
-    void SetMatrixBlocks(const std::vector<Eigen::MatrixXd>& r) {
-      row_data_ = r;
-      temporaries_.resize(r.size());
-      int num_vars = 0;
-      for (size_t j = 0; j < row_data_.size(); j++) {
-        num_vars += r.at(j).cols();
-        temporaries_.at(j).resize(r.at(j).rows(), r.at(j).cols());
-      }
-
-      LinearKKTAssemblerBase::SetNumberOfVariables(num_vars);
-      const int size = SizeOf(LinearKKTAssemblerBase::schur_complement_data);
-      workspace_memory_.resize(size);
-      LinearKKTAssemblerBase::schur_complement_data.InitializeWorkspace(
-          workspace_memory_.data());
-    }
+    // Copies in J_i and allocates memory for temporaries.
+    void Initialize(const std::vector<Eigen::MatrixXd>& jacobian_row);
 
    private:
     void BuildSubmatrixFromWeightedRow(const Eigen::MatrixXd& A);
@@ -149,8 +154,11 @@ class SuperNodalSolver {
     int weight_end_ = 0;
   };
 
- private:
-  using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
+  // Helper struct for assembling input into the
+  // conex supernodal solver. Stores the cliques,
+  // the partition of the cliques into supernodes 
+  // and seperators, and the order used for
+  // elimination.
   struct SolverData {
     std::vector<std::vector<int>> cliques;
     int num_vars;
@@ -163,6 +171,9 @@ class SuperNodalSolver {
     SolverData data;
     std::vector<std::vector<int>> cliques_assembler;
   };
+
+ private:
+  using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
 
   void Initialize(const std::vector<std::vector<int>>& cliques,
                   const std::vector<std::vector<Eigen::MatrixXd>>& row_data);

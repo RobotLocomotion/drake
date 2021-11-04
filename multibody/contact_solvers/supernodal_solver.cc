@@ -240,7 +240,7 @@ void SuperNodalSolver::Initialize(
   int i = 0;
   clique_assemblers_.resize(row_data.size());
   for (auto& c : row_data) {
-    jacobian_assemblers_.at(i).SetMatrixBlocks(c);
+    jacobian_assemblers_.at(i).Initialize(c);
     clique_assemblers_.at(i) = &jacobian_assemblers_.at(i);
     i++;
   }
@@ -338,6 +338,21 @@ void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
   solver_.SolveInPlace(&ymap);
 }
 
+void SuperNodalSolver::CliqueAssembler::Initialize(const std::vector<Eigen::MatrixXd>& r) {
+  row_data_ = r;
+  temporaries_.resize(r.size());
+  int num_vars = 0;
+  for (size_t j = 0; j < row_data_.size(); j++) {
+    num_vars += r.at(j).cols();
+    temporaries_.at(j).resize(r.at(j).rows(), r.at(j).cols());
+  }
+
+  LinearKKTAssemblerBase::SetNumberOfVariables(num_vars);
+  const int size = SizeOf(LinearKKTAssemblerBase::schur_complement_data);
+  workspace_memory_.resize(size);
+  LinearKKTAssemblerBase::schur_complement_data.InitializeWorkspace(
+      workspace_memory_.data());
+}
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
