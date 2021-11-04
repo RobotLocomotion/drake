@@ -4,7 +4,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
-#include "drake/common/yaml/yaml_read_archive.h"
 
 namespace drake {
 namespace schema {
@@ -12,8 +11,8 @@ namespace {
 
 using Eigen::Vector3d;
 using drake::math::RollPitchYawd;
+using drake::yaml::LoadYamlString;
 using drake::yaml::SaveYamlString;
-using drake::yaml::YamlReadArchive;
 
 GTEST_TEST(RotationTest, ConstructorDefault) {
   Rotation rotation;
@@ -44,8 +43,7 @@ GTEST_TEST(RotationTest, Rpy) {
   constexpr const char* const yaml_data = R"""(
   value: !Rpy { deg: [10., 20., 30.] }
   )""";
-  Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
+  const auto rotation = LoadYamlString<Rotation>(yaml_data);
   ASSERT_TRUE(rotation.IsDeterministic());
   const RollPitchYawd rpy(rotation.GetDeterministicValue());
   const Vector3d actual = rpy.vector() * 180 / M_PI;
@@ -57,8 +55,7 @@ GTEST_TEST(RotationTest, AngleAxis) {
   constexpr const char* const yaml_data = R"""(
   value: !AngleAxis { angle_deg: 10.0, axis: [0, 1, 0] }
   )""";
-  Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
+  const auto rotation = LoadYamlString<Rotation>(yaml_data);
   ASSERT_TRUE(rotation.IsDeterministic());
   const Eigen::AngleAxis<double> actual =
       rotation.GetDeterministicValue().ToAngleAxis();
@@ -71,8 +68,7 @@ GTEST_TEST(RotationTest, Uniform) {
   constexpr const char* const yaml_data = R"""(
   value: !Uniform {}
   )""";
-  Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
+  const auto rotation = LoadYamlString<Rotation>(yaml_data);
   EXPECT_FALSE(rotation.IsDeterministic());
   EXPECT_NO_THROW(rotation.ToSymbolic());
 }
@@ -81,8 +77,7 @@ GTEST_TEST(RotationTest, RpyUniform) {
   constexpr const char* const yaml_data = R"""(
   value: !Rpy { deg: !UniformVector { min: [0, 10, 20], max: [30, 40, 50] } }
   )""";
-  Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
+  const auto rotation = LoadYamlString<Rotation>(yaml_data);
   EXPECT_FALSE(rotation.IsDeterministic());
   // We trust stochastic_test.cc to check that stochastic.h parsed the ranges
   // correctly, and so do not verify them further here.
