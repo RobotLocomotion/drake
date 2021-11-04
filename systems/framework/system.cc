@@ -218,6 +218,7 @@ const T& System<T>::EvalNonConservativePower(const Context<T>& context) const {
   return entry.Eval<T>(context);
 }
 
+// Deprecated
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> System<T>::EvalEigenVectorInput(
     const Context<T>& context, int port_index) const {

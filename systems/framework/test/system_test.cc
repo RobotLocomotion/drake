@@ -716,9 +716,6 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, -3), std::out_of_range,
       ".*EvalInputValue.*negative.*-3.*illegal.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, -4), std::out_of_range,
-      ".*EvalEigenVectorInput.*negative.*-4.*illegal.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.get_input_port(9), std::out_of_range,
@@ -732,20 +729,19 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, 11), std::out_of_range,
       ".*EvalInputValue.*no input port.*11.*only.*4.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalEigenVectorInput(*context_, 12), std::out_of_range,
-      ".*EvalEigenVectorInput.*no input port.*12.*only.*4.*");
 
-  // No ports have values yet. EvalEigenVectorInput() requires a value, but
-  // the others should return nullptr.
+  // No ports have values yet.
   EXPECT_EQ(system_.EvalVectorInput(*context_, 1), nullptr);
   EXPECT_EQ(system_.EvalAbstractInput(*context_, 1), nullptr);
   EXPECT_EQ(system_.EvalInputValue<int>(*context_, 1), nullptr);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
       ".*EvalEigenVectorInput.*input port 'u1' .*index 1.* is neither "
       "connected nor fixed.*");
+#pragma GCC diagnostic pop
 
   // Assign values to all ports. All but port 0 are BasicVector ports.
   system_.AllocateFixedInputs(context_.get());
@@ -773,15 +769,24 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
           "was declared abstract.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalInputValue<double>(*context_, 0),
+      std::logic_error,
+      ".*EvalInputValue.*expected.*double.*input port.*0.*actual.*string.*");
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalEigenVectorInput(*context_, -4), std::out_of_range,
+      ".*EvalEigenVectorInput.*negative.*-4.*illegal.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalEigenVectorInput(*context_, 12), std::out_of_range,
+      ".*EvalEigenVectorInput.*no input port.*12.*only.*4.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 0),
       std::logic_error,
       ".*EvalEigenVectorInput.*vector port required.*input port.*0.*"
           "was declared abstract.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.EvalInputValue<double>(*context_, 0),
-      std::logic_error,
-      ".*EvalInputValue.*expected.*double.*input port.*0.*actual.*string.*");
+#pragma GCC diagnostic pop
 }
 
 // Provides values for some of the inputs and sets up for outputs.
@@ -813,14 +818,18 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
             std::string("inputoutput"));
   EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Connected inputs ports can be evaluated.  (Port #1 was set to [2]).
   const auto& block = test_sys_.EvalEigenVectorInput(*context_, 1);
   ASSERT_EQ(block.size(), 1);
   ASSERT_EQ(block[0], 2.0);
-
-  // Disconnected inputs are nullptr, or generate an exception (not assert).
-  EXPECT_EQ(test_sys_.EvalVectorInput(*context_, 2), nullptr);
   EXPECT_THROW(test_sys_.EvalEigenVectorInput(*context_, 2), std::exception);
+#pragma GCC diagnostic pop
+
+  // Disconnected inputs are nullptr.
+  EXPECT_EQ(test_sys_.EvalVectorInput(*context_, 2), nullptr);
 
   // Test AllocateInput*
   // Second input is not (yet) a TestTypedVector, since I haven't called the
