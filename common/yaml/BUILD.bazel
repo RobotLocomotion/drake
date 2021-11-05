@@ -110,7 +110,6 @@ drake_cc_googletest(
     name = "yaml_performance_test",
     deps = [
         ":yaml_io",
-        ":yaml_read_archive",
         "//common:autodiff",
         "//common:name_value",
         "//common/test_utilities:limit_malloc",
