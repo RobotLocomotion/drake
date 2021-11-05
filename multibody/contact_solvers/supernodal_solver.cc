@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "conex/clique_ordering.h"
+#include "conex/kkt_solver.h"
 #include "conex/supernodal_solver.h"
 
 using Eigen::MatrixXd;
@@ -108,6 +109,45 @@ inline MatrixBlocks GetMassMatrix(
 
 }  // namespace
 
+class SuperNodalSolver::CliqueAssembler final
+    : public ::conex::LinearKKTAssemblerBase {
+ public:
+  // Fills the matrix sub_matrix(M) + J^T_i G_i J_i.
+  void SetDenseData() override;
+
+  // Helper functions for specifying G_i
+  void SetWeightMatrixIndex(int start, int end) {
+    weight_start_ = start;
+    weight_end_ = end;
+  }
+  void SetWeightMatrixPointer(
+      const std::vector<Eigen::MatrixXd>* weight_matrix) {
+    weight_matrix_ = weight_matrix;
+  }
+
+  // Updates a vector of mass matrices m_i satisfying
+  // sub_matrix(M) = blkdiag(m_1, m_2, ..., m_n).
+  void AssignMassMatrix(int i, const Eigen::MatrixXd& A) {
+    mass_matrix_position_.push_back(i);
+    mass_matrix_.push_back(A);
+  }
+
+  int NumRows() { return row_data_.at(0).rows(); }
+
+  // Copies in J_i and allocates memory for temporaries.
+  void Initialize(const std::vector<Eigen::MatrixXd>& jacobian_row);
+
+ private:
+  std::vector<Eigen::MatrixXd> row_data_;
+  std::vector<int> mass_matrix_position_;
+  std::vector<Eigen::MatrixXd> mass_matrix_;
+  std::vector<Eigen::MatrixXd> temporaries_;
+  Eigen::VectorXd workspace_memory_;
+  const std::vector<Eigen::MatrixXd>* weight_matrix_;
+  int weight_start_ = 0;
+  int weight_end_ = 0;
+};
+
 void SuperNodalSolver::CliqueAssembler::SetDenseData() {
 #ifndef NDEBUG
   if (!weight_matrix_) {
@@ -160,6 +200,11 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
     std::sort(path->at(i).begin(), path->at(i).end());
   }
 }
+
+// The constructor is defined in the source so we can use an incomplete
+// defintion when storing unique pointers of CliqueAssembler within a
+// std::vector.
+SuperNodalSolver::~SuperNodalSolver() {}
 
 SuperNodalSolver::SparsityData SuperNodalSolver::GetEliminationOrdering(
     int num_jacobian_row_blocks,
@@ -240,18 +285,19 @@ void SuperNodalSolver::Initialize(
   int i = 0;
   clique_assemblers_ptrs_.resize(row_data.size());
   for (auto& c : row_data) {
-    clique_assemblers_.at(i).Initialize(c);
-    clique_assemblers_ptrs_.at(i) = &clique_assemblers_.at(i);
+    owned_clique_assemblers_.at(i) = std::make_unique<CliqueAssembler>();
+    owned_clique_assemblers_.at(i)->Initialize(c);
+    clique_assemblers_ptrs_.at(i) = owned_clique_assemblers_.at(i).get();
     i++;
   }
 
   for (auto& c : mass_matrices_) {
     auto position = FindPositionInClique(c.second.at(0), cliques);
-    clique_assemblers_.at(position.first)
-        .AssignMassMatrix(position.second, c.first);
+    owned_clique_assemblers_.at(position.first)
+        ->AssignMassMatrix(position.second, c.first);
   }
 
-  solver_.Bind(clique_assemblers_ptrs_);
+  solver_->Bind(clique_assemblers_ptrs_);
 }
 
 SuperNodalSolver::SuperNodalSolver(
@@ -261,10 +307,11 @@ SuperNodalSolver::SuperNodalSolver(
     : mass_matrices_(GetMassMatrix(mass_matrices)),
       clique_data_(
           GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks)),
-      solver_(clique_data_.cliques_assembler, clique_data_.data.num_vars,
-              clique_data_.data.order, clique_data_.data.supernodes,
-              clique_data_.data.separators),
-      clique_assemblers_(num_jacobian_row_blocks) {
+      solver_(std::make_unique<::conex::Solver>(
+          clique_data_.cliques_assembler, clique_data_.data.num_vars,
+          clique_data_.data.order, clique_data_.data.supernodes,
+          clique_data_.data.separators)),
+      owned_clique_assemblers_(num_jacobian_row_blocks) {
   Initialize(clique_data_.cliques_assembler,
              GetRowData(num_jacobian_row_blocks, jacobian_blocks));
 }
@@ -272,16 +319,16 @@ SuperNodalSolver::SuperNodalSolver(
 void SuperNodalSolver::SetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
   // We copy these pointers so that SetDenseData (a virtual function override)
-  // can access the weight matrices when solver_.AssembleFromCliques is called
+  // can access the weight matrices when solver_->AssembleFromCliques is called
   // below.  For safety, we replace these pointers with NULL when
-  // solver_.AssembleFromCliques returns.
-  for (auto& c : clique_assemblers_) {
-    c.SetWeightMatrixPointer(&weight_matrix);
+  // solver_->AssembleFromCliques returns.
+  for (auto& c : owned_clique_assemblers_) {
+    c->SetWeightMatrixPointer(&weight_matrix);
   }
 
   int e_last = -1;
-  for (auto& c : clique_assemblers_) {
-    int num_rows = c.NumRows();
+  for (auto& c : owned_clique_assemblers_) {
+    int num_rows = c->NumRows();
     int s = e_last + 1;
     int e = s;
     int num_rows_found = weight_matrix.at(e).rows();
@@ -290,20 +337,20 @@ void SuperNodalSolver::SetWeightMatrix(
       num_rows_found += weight_matrix.at(e).rows();
     }
     if (num_rows_found != num_rows) {
-      for (auto& ja : clique_assemblers_) {
-        ja.SetWeightMatrixPointer(NULL);
+      for (auto& ja : owned_clique_assemblers_) {
+        ja->SetWeightMatrixPointer(NULL);
       }
       throw std::runtime_error("Weight matrix incompatible with Jacobian.");
     }
     e_last = e;
-    c.SetWeightMatrixIndex(s, e);
+    c->SetWeightMatrixIndex(s, e);
   }
 
-  solver_.AssembleFromCliques(clique_assemblers_ptrs_);
+  solver_->AssembleFromCliques(clique_assemblers_ptrs_);
 
   // Destroy references to argument weight_matrix.
-  for (auto& c : clique_assemblers_) {
-    c.SetWeightMatrixPointer(NULL);
+  for (auto& c : owned_clique_assemblers_) {
+    c->SetWeightMatrixPointer(NULL);
   }
 
   factorization_ready_ = false;
@@ -314,7 +361,7 @@ bool SuperNodalSolver::Factor() {
   if (!matrix_ready_) {
     throw std::runtime_error("Call to Factor() failed: weight matrix not set.");
   }
-  bool success = solver_.Factor();
+  bool success = solver_->Factor();
   factorization_ready_ = success;
   matrix_ready_ = false;
   return success;
@@ -327,7 +374,7 @@ Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
   }
   Eigen::VectorXd y = b;
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(y.data(), b.rows(), 1);
-  solver_.SolveInPlace(&ymap);
+  solver_->SolveInPlace(&ymap);
   return y;
 }
 
@@ -337,7 +384,7 @@ void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
         "Call to Solve() failed: factorization not ready.");
   }
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(b->data(), b->rows(), 1);
-  solver_.SolveInPlace(&ymap);
+  solver_->SolveInPlace(&ymap);
 }
 
 Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() {
@@ -345,7 +392,7 @@ Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() {
     throw std::runtime_error(
         "Call to MakeFullMatrix() failed: weight matrix not set or matrix has been factored in place.");
   }
-  return solver_.KKTMatrix();
+  return solver_->KKTMatrix();
 }
 
 

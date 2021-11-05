@@ -1,12 +1,18 @@
 #pragma once
 
+#include <memory>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "conex/kkt_solver.h"
 #include <Eigen/Dense>
+
+// Forward declaration to avoid the inclusion of conex's headers within a Drake
+// header.
+namespace conex {
+class Solver;
+}
 
 namespace drake {
 namespace multibody {
@@ -69,6 +75,8 @@ class SuperNodalSolver {
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
 
+  ~SuperNodalSolver();
+
   // Sets the block-diagonal matrix G. The block sizes of G must refine
   // the partition of the matrix J that was specified by the input
   // to the constructor. For instance, if J is partitioned like
@@ -111,43 +119,7 @@ class SuperNodalSolver {
   // This class is responsible for filling a dense matrix of the form
   // sub_matrix(M) + J^T_i G_i J_i where J_i is a block row of the Jacobian and
   // sub_matrix(M) is specified by AssignMassMatrix.
-  class CliqueAssembler final : public ::conex::LinearKKTAssemblerBase {
-   public:
-    // Fills the matrix sub_matrix(M) + J^T_i G_i J_i.
-    void SetDenseData() override;
-
-    // Helper functions for specifying G_i
-    void SetWeightMatrixIndex(int start, int end) {
-      weight_start_ = start;
-      weight_end_ = end;
-    }
-    void SetWeightMatrixPointer(
-        const std::vector<Eigen::MatrixXd>* weight_matrix) {
-      weight_matrix_ = weight_matrix;
-    }
-
-    // Updates a vector of mass matrices m_i satisfying
-    // sub_matrix(M) = blkdiag(m_1, m_2, ..., m_n).
-    void AssignMassMatrix(int i, const Eigen::MatrixXd& A) {
-      mass_matrix_position_.push_back(i);
-      mass_matrix_.push_back(A);
-    }
-
-    int NumRows() { return row_data_.at(0).rows(); }
-
-    // Copies in J_i and allocates memory for temporaries.
-    void Initialize(const std::vector<Eigen::MatrixXd>& jacobian_row);
-
-   private:
-    std::vector<Eigen::MatrixXd> row_data_;
-    std::vector<int> mass_matrix_position_;
-    std::vector<Eigen::MatrixXd> mass_matrix_;
-    std::vector<Eigen::MatrixXd> temporaries_;
-    Eigen::VectorXd workspace_memory_;
-    const std::vector<Eigen::MatrixXd>* weight_matrix_;
-    int weight_start_ = 0;
-    int weight_end_ = 0;
-  };
+  class CliqueAssembler;
 
   // Helper struct for assembling input into the
   // conex supernodal solver. Stores the cliques,
@@ -182,9 +154,11 @@ class SuperNodalSolver {
   std::vector<Eigen::MatrixXd> weight_matrices_;
   std::vector<std::vector<int>> cliques_;
   SparsityData clique_data_;
-  ::conex::Solver solver_;
+  std::unique_ptr<::conex::Solver> solver_;
+  // N.B. This array stores pointers to clique assemblers owned by
+  // owned_clique_assemblers_.
   std::vector<CliqueAssembler*> clique_assemblers_ptrs_;
-  std::vector<CliqueAssembler> clique_assemblers_;
+  std::vector<std::unique_ptr<CliqueAssembler>> owned_clique_assemblers_;
 };
 
 }  // namespace internal
