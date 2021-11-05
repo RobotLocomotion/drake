@@ -87,6 +87,7 @@ class TestPerception(unittest.TestCase):
         dut = mut.DepthImageToPointCloud(camera_info=camera_info)
         self.assertIsInstance(dut.depth_image_input_port(), InputPort)
         self.assertIsInstance(dut.color_image_input_port(), InputPort)
+        self.assertIsInstance(dut.camera_pose_input_port(), InputPort)
         self.assertIsInstance(dut.point_cloud_output_port(), OutputPort)
         dut = mut.DepthImageToPointCloud(
             camera_info=camera_info,
