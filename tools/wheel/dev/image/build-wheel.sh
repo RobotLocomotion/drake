@@ -14,9 +14,13 @@ chrpath()
 }
 
 # TODO most of this should move to bazel
+mkdir -p /wheel/drake
 mkdir -p /wheel/pydrake/lib
 mkdir -p /wheel/pydrake/share/drake
 cd /wheel
+
+cp -r -t /wheel/drake \
+    /opt/drake/lib/python*/site-packages/drake/*
 
 cp -r -t /wheel/pydrake \
     /opt/drake/share/doc \

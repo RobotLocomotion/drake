@@ -1,16 +1,3 @@
-diff --git a/bindings/pydrake/systems/lcm_py.cc b/bindings/pydrake/systems/lcm_py.cc
-index 6e728a157..4d5bdd5ff 100644
---- a/bindings/pydrake/systems/lcm_py.cc
-+++ b/bindings/pydrake/systems/lcm_py.cc
-@@ -204,7 +204,7 @@ PYBIND11_MODULE(lcm, m) {
-   }
-
-   // Bind C++ serializers.
--  BindCppSerializers();
-+  //BindCppSerializers();
-
-   ExecuteExtraPythonCode(m);
- }
 diff --git a/tools/py_toolchain/interpreter_paths.bzl b/tools/py_toolchain/interpreter_paths.bzl
 index 1608e49b1..d6b5d5e07 100644
 --- a/tools/py_toolchain/interpreter_paths.bzl
