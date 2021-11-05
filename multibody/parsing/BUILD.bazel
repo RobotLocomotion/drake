@@ -223,7 +223,7 @@ drake_cc_library(
         ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
-        "//common/yaml:yaml_read_archive",
+        "//common/yaml",
         "//multibody/plant",
     ],
 )
@@ -319,7 +319,7 @@ drake_cc_googletest(
     name = "model_directives_test",
     deps = [
         ":model_directives",
-        "//common/yaml:yaml_read_archive",
+        "//common/yaml",
     ],
 )
 

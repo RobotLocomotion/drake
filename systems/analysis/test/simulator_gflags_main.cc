@@ -1,7 +1,7 @@
 #include <gflags/gflags.h>
 #include <yaml-cpp/yaml.h>
 
-#include "drake/common/yaml/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -14,9 +14,7 @@ void ResetIntegratorFromGflagsTest() {
   auto simulator = MakeSimulatorFromGflags(source);
   ResetIntegratorFromGflags(simulator.get());
   const auto simulator_config = ExtractSimulatorConfig(*simulator);
-  drake::yaml::YamlWriteArchive writer;
-  writer.Accept(simulator_config);
-  drake::log()->info(writer.EmitString());
+  drake::log()->info(drake::yaml::SaveYamlString(simulator_config));
 }
 }  // namespace systems
 }  // namespace drake
