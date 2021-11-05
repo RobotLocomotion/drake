@@ -11,13 +11,13 @@ void WriteFile(
   std::ofstream out(filename, std::ios::binary);
   if (out.fail()) {
     throw std::runtime_error(fmt::format(
-        "YamlWriteArchive could not open '{}' for writing",
+        "SaveYamlFile() could not open '{}' for writing",
         filename));
   }
   out << data;
   if (out.fail()) {
     throw std::runtime_error(fmt::format(
-        "YamlWriteArchive could not write to '{}'",
+        "SaveYamlFile() could not write to '{}'",
         filename));
   }
 }
