@@ -390,14 +390,14 @@ void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
 Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() {
   if (!matrix_ready_) {
     throw std::runtime_error(
-        "Call to MakeFullMatrix() failed: weight matrix not set or matrix has been factored in place.");
+        "Call to MakeFullMatrix() failed: weight matrix not set or matrix has "
+        "been factored in place.");
   }
   return solver_->KKTMatrix();
 }
 
-
-
-void SuperNodalSolver::CliqueAssembler::Initialize(const std::vector<Eigen::MatrixXd>& r) {
+void SuperNodalSolver::CliqueAssembler::Initialize(
+    const std::vector<Eigen::MatrixXd>& r) {
   row_data_ = r;
   temporaries_.resize(r.size());
   int num_vars = 0;

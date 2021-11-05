@@ -5,8 +5,9 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_copyable.h"
 #include <Eigen/Dense>
+
+#include "drake/common/drake_copyable.h"
 
 // Forward declaration to avoid the inclusion of conex's headers within a Drake
 // header.
@@ -21,7 +22,8 @@ namespace internal {
 
 using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 
-// A supernodal Cholesky solver for solving the symmetric positive definite system
+// A supernodal Cholesky solver for solving the symmetric positive definite
+// system
 //   H⋅x = b
 // where H = M + Jᵀ G J. The matrices M and J are set at construction and the
 // weight matrix G is set with SetWeightMatrix(), which can be called multiple
@@ -41,8 +43,9 @@ using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 //   of the matrix is r×r, with r = ∑nₖ.
 //   Note: the block structure of J and G both partition the set {1, 2, ...,
 //   num_rows(J) }.  We require that the partition induced by G refines the
-//   partition induced by J. See https://en.wikipedia.org/wiki/Partition_of_a_set
-//   for definition of refinement.
+//   partition induced by J. See
+//   https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
+//   refinement.
 //
 // Example use case:
 //
@@ -52,7 +55,7 @@ using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 //
 //  // Solve H⋅x1 = b1.
 //  x1 = solver.Solve(b1);
-//  // Solve H⋅x2 = b2. This reuses the factorization (important for speed!). 
+//  // Solve H⋅x2 = b2. This reuses the factorization (important for speed!).
 //  x2 = solver.Solve(b2);
 //
 //  // Update weight matrix and refactor.
@@ -102,7 +105,7 @@ class SuperNodalSolver {
   // Failure is triggered by an internal failure of Eigen::LLT.
   // This can fail if, for instance, the input matrix is not
   // positive definite. If failure is encountered, the user
-  // should verify that the specified matrix M + J^T G H 
+  // should verify that the specified matrix M + J^T G H
   // is positive definite and not poorly conditioned.
   // Throws if SetWeightMatrix() has not been called.
   bool Factor();
@@ -114,8 +117,8 @@ class SuperNodalSolver {
   // Solves the system H⋅x = b and writes the result in b.
   // Throws if Factor() has not been called.
   void SolveInPlace(Eigen::VectorXd* b);
- private:
 
+ private:
   // This class is responsible for filling a dense matrix of the form
   // sub_matrix(M) + J^T_i G_i J_i where J_i is a block row of the Jacobian and
   // sub_matrix(M) is specified by AssignMassMatrix.
@@ -123,7 +126,7 @@ class SuperNodalSolver {
 
   // Helper struct for assembling input into the
   // conex supernodal solver. Stores the cliques,
-  // the partition of the cliques into supernodes 
+  // the partition of the cliques into supernodes
   // and seperators, and the order used for
   // elimination.
   struct SolverData {
