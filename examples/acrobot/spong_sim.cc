@@ -2,12 +2,10 @@
 #include <iostream>
 
 #include <gflags/gflags.h>
-#include <yaml-cpp/yaml.h>
 
 #include "drake/common/name_value.h"
 #include "drake/common/schema/stochastic.h"
-#include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/examples/acrobot/spong_controller.h"
 #include "drake/systems/analysis/simulator.h"
@@ -19,6 +17,8 @@ using drake::examples::acrobot::AcrobotPlant;
 using drake::examples::acrobot::AcrobotSpongController;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
+using drake::yaml::SaveYamlFile;
+using drake::yaml::LoadYamlFile;
 
 namespace drake {
 namespace examples {
@@ -81,11 +81,7 @@ Output Simulate(const Scenario& stochastic_scenario) {
   // Resolve scenario randomness and write out the resolved scenario.
   const Scenario scenario = SampleScenario(stochastic_scenario);
   if (!FLAGS_dump_scenario.empty()) {
-    std::ofstream out(FLAGS_dump_scenario);
-    DRAKE_THROW_UNLESS(out.good());
-    drake::yaml::YamlWriteArchive writer;
-    writer.Accept(scenario);
-    out << writer.EmitString("");
+    SaveYamlFile(FLAGS_dump_scenario, scenario);
   }
 
   DiagramBuilder<double> builder;
@@ -132,23 +128,9 @@ int Main() {
     std::cerr << "An --output file is required.\n";
     return 1;
   }
-  std::ifstream in(FLAGS_scenario);
-  if (!in.good()) {
-    std::cerr << "Could not read from '" << FLAGS_scenario << "'.\n";
-    return 1;
-  }
-  YAML::Node scenario_node = YAML::Load(in);
-  std::ofstream out(FLAGS_output);
-  if (!out.good()) {
-    std::cerr << "Could not write to '" << FLAGS_output << "'.\n";
-    return 1;
-  }
-  Scenario stochastic_scenario;
-  drake::yaml::YamlReadArchive(scenario_node).Accept(&stochastic_scenario);
+  const Scenario stochastic_scenario = LoadYamlFile<Scenario>(FLAGS_scenario);
   const Output output = Simulate(stochastic_scenario);
-  drake::yaml::YamlWriteArchive writer;
-  writer.Accept(output);
-  out << writer.EmitString("");
+  SaveYamlFile(FLAGS_output, output);
   return 0;
 }
 
