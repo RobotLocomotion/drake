@@ -154,6 +154,7 @@ drake_cc_library(
         "-O2",
     ],
     deps = [
+        "//common:essential",
         "@conex//conex:supernodal_solver",
     ],
 )
@@ -222,7 +223,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "supernodal_solver_test",
-    srcs = ["test/supernodal_solver_test.cc"],
     deps = [
         ":supernodal_solver",
         "//common/test_utilities:expect_throws_message",

@@ -271,6 +271,10 @@ SuperNodalSolver::SuperNodalSolver(
 
 void SuperNodalSolver::SetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
+  // We copy these pointers so that SetDenseData (a virtual function override)
+  // can access the weight matrices when solver_.AssembleFromCliques is called
+  // below.  For safety, we replace these pointers with NULL when
+  // solver_.AssembleFromCliques returns.
   for (auto& c : clique_assemblers_) {
     c.SetWeightMatrixPointer(&weight_matrix);
   }
@@ -297,12 +301,10 @@ void SuperNodalSolver::SetWeightMatrix(
 
   solver_.AssembleFromCliques(clique_assemblers_ptrs_);
 
-#ifndef NDEBUG
   // Destroy references to argument weight_matrix.
   for (auto& c : clique_assemblers_) {
     c.SetWeightMatrixPointer(NULL);
   }
-#endif
 
   factorization_ready_ = false;
   matrix_ready_ = true;
@@ -318,12 +320,12 @@ bool SuperNodalSolver::Factor() {
   return success;
 }
 
-Eigen::MatrixXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
+Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
   if (!factorization_ready_) {
     throw std::runtime_error(
         "Call to Solve() failed: factorization not ready.");
   }
-  MatrixXd y = b;
+  Eigen::VectorXd y = b;
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(y.data(), b.rows(), 1);
   solver_.SolveInPlace(&ymap);
   return y;
@@ -337,6 +339,16 @@ void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(b->data(), b->rows(), 1);
   solver_.SolveInPlace(&ymap);
 }
+
+Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() {
+  if (!matrix_ready_) {
+    throw std::runtime_error(
+        "Call to MakeFullMatrix() failed: weight matrix not set or matrix has been factored in place.");
+  }
+  return solver_.KKTMatrix();
+}
+
+
 
 void SuperNodalSolver::CliqueAssembler::Initialize(const std::vector<Eigen::MatrixXd>& r) {
   row_data_ = r;
