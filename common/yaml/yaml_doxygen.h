@@ -102,4 +102,7 @@ std::unordered_map.
 
 For inspiration and background, see:
 https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
+
+TODO(jwnimmer-tri) Describe the special case for top-level collections without
+a Serialize function, i.e., std::map<std::string, Serializable>.
 */
