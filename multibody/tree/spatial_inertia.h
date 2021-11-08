@@ -514,21 +514,11 @@ class SpatialInertia {
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 };
 
-/// Insertion operator to write SpatialInertia objects into a `std::ostream`.
-/// Especially useful for debugging.
+/// Stream insertion operator to write an instance of SpatialInertia into a
+/// `std::ostream`. Especially useful for debugging.
 /// @relates SpatialInertia
 template <typename T>
-std::ostream& operator<<(std::ostream& o,
-                         const SpatialInertia<T>& M) {
-  return o << std::endl
-      << " mass = " << M.get_mass() << std::endl
-      << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
-      << " I =" << std::endl
-      // Like M.CalcRotationalInertia(), but without the IsPhysicallyValid
-      // checks, so that we can use operator<< in error messages.
-      << (M.get_mass() * M.get_unit_inertia().CopyToFullMatrix3())
-      << std::endl;
-}
+std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M);
 
 }  // namespace multibody
 }  // namespace drake
