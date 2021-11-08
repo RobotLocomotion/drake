@@ -126,12 +126,11 @@ class SuperNodalSolver {
   using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
 
   void Initialize(const std::vector<std::vector<int>>& cliques,
-                  const std::vector<std::vector<Eigen::MatrixXd>>& row_data);
+                  const std::vector<std::vector<Eigen::MatrixXd>>& jacobian_row_data,
+                  const std::vector<Eigen::MatrixXd>& mass_matrices);
 
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
-  const std::vector<MatrixBlock> mass_matrices_;
-  std::vector<std::vector<int>> cliques_;
   std::unique_ptr<::conex::Solver> solver_;
   // N.B. This array stores pointers to clique assemblers owned by
   // owned_clique_assemblers_.
