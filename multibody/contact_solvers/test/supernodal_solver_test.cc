@@ -471,6 +471,9 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   EXPECT_NEAR((b - x_ref).norm(), 0, 1e-8);
 }
 
+// Provide input with varying column sizes.  Verifies there
+// are no implicit assumptions about a constant Jacobian
+// block-size.
 GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   int num_row_blocks_of_J = 4;
   Eigen::MatrixXd J(13, 6);
