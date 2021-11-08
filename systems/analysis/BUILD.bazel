@@ -489,7 +489,7 @@ drake_cc_binary(
     deps = [
         ":simulator_config_functions",
         ":simulator_gflags",
-        "//common/yaml:yaml_write_archive",
+        "//common/yaml",
         "//systems/primitives:constant_vector_source",
     ],
 )

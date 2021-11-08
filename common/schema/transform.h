@@ -24,7 +24,7 @@ The broader concepts are discussed at @ref schema_stochastic. Here, we cover
 details related to rotations and transforms in particular.
 
 We'll explain uses of schema::Rotation and schema::Transform using their
-matching YAML syntax as parsed by yaml::YamlReadArchive.
+matching YAML syntax as parsed by yaml::LoadYamlFile.
 
 # Rotations
 

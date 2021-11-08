@@ -27,7 +27,7 @@ systems::System.
 # Stochastic variables
 
 We'll explain uses of schema::Distribution and related types using the matching
-YAML syntax as parsed by yaml::YamlReadArchive.
+YAML syntax as parsed by yaml::LoadYamlFile.
 
 Given this C++ data structure:
 
@@ -107,7 +107,7 @@ For convenience, we also provide the option to specify a vector of independent
 stochastic variables with the same type.
 
 We'll explain uses of schema::DistributionVector and related types using the
-matching YAML syntax as parsed by yaml::YamlReadArchive.
+matching YAML syntax as parsed by yaml::LoadYamlFile.
 
 Given this C++ data structure:
 
