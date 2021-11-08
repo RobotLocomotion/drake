@@ -355,6 +355,47 @@ doc:
       " has invalid merge key type \\(Null\\).");
 }
 
+TEST_P(YamlReadArchiveTest, StdMapDirectly) {
+  const std::string doc = R"""(
+doc:
+  key_1:
+    value: 1.0
+  key_2:
+    value: 2.0
+)""";
+  const auto& x = AcceptNoThrow<std::map<std::string, DoubleStruct>>(Load(doc));
+  EXPECT_EQ(x.size(), 2);
+  EXPECT_EQ(x.at("key_1").value, 1.0);
+  EXPECT_EQ(x.at("key_2").value, 2.0);
+}
+
+TEST_P(YamlReadArchiveTest, StdMapDirectlyWithDefaults) {
+  const std::string doc = R"""(
+doc:
+  key_1:
+    value: 1.0
+  key_with_defaulted_value: {}
+)""";
+  const auto node = Load(doc);
+  if (GetParam().allow_cpp_with_no_yaml) {
+    std::map<std::string, DoubleStruct> result;
+    result.emplace("pre_existing_default", DoubleStruct{.value = 0.0});
+    YamlReadArchive(node, GetParam()).Accept(&result);
+    if (GetParam().retain_map_defaults) {
+      EXPECT_EQ(result.size(), 3);
+      EXPECT_EQ(result.at("pre_existing_default").value, 0.0);
+    } else {
+      EXPECT_EQ(result.size(), 2);
+    }
+    EXPECT_EQ(result.at("key_1").value, 1.0);
+    EXPECT_EQ(result.at("key_with_defaulted_value").value, kNominalDouble);
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        (AcceptIntoDummy<std::map<std::string, DoubleStruct>>(node)),
+        ".*missing entry for double value.*");
+  }
+}
+
 TEST_P(YamlReadArchiveTest, Optional) {
   const auto test_with_default = [](const std::string& doc,
                                     const std::optional<double>& expected) {

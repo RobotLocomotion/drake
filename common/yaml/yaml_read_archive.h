@@ -82,7 +82,8 @@ class YamlReadArchive final {
   /// associated this archive.
   template <typename Serializable>
   void Accept(Serializable* serializable) {
-    DoAccept(this, serializable, static_cast<int32_t>(0));
+    DRAKE_THROW_UNLESS(serializable != nullptr);
+    this->DoAccept(serializable, static_cast<int32_t>(0));
     CheckAllAccepted();
   }
 
@@ -151,16 +152,30 @@ class YamlReadArchive final {
   // @name Overloads for the Accept() implementation
 
   // This version applies when Serialize is member method.
-  template <typename Archive, typename Serializable>
-  auto DoAccept(Archive* a, Serializable* serializable, int32_t) ->
-      decltype(serializable->Serialize(a)) {
-    serializable->Serialize(a);
+  template <typename Serializable>
+  auto DoAccept(Serializable* serializable, int32_t) ->
+      decltype(serializable->Serialize(this)) {
+    serializable->Serialize(this);
+  }
+
+  // This version applies when `value` is a std::map from std::string to
+  // Serializable.  The map's values must be serializable, but there is no
+  // Serialize function required for the map itself.
+  template <typename Serializable>
+  void DoAccept(std::map<std::string, Serializable>* value, int32_t) {
+    DRAKE_THROW_UNLESS(root_ != nullptr);
+    DRAKE_THROW_UNLESS(root_->IsMapping());
+    VisitMapDirectly<Serializable>(*root_, value);
+    for (const auto& [name, ignored] : *value) {
+      unused(ignored);
+      visited_names_.insert(name);
+    }
   }
 
   // This version applies when Serialize is an ADL free function.
-  template <typename Archive, typename Serializable>
-  void DoAccept(Archive* a, Serializable* serializable, int64_t) {
-    Serialize(a, serializable);
+  template <typename Serializable>
+  void DoAccept(Serializable* serializable, int64_t) {
+    Serialize(this, serializable);
   }
 
   // --------------------------------------------------------------------------
@@ -466,19 +481,24 @@ class YamlReadArchive final {
     const internal::Node* sub_node = GetSubNodeMapping(nvp.name());
     if (sub_node == nullptr) { return; }
     auto& result = *nvp.value();
+    this->VisitMapDirectly<Value>(*sub_node, &result);
+  }
+
+  template <typename Value, typename Map>
+  void VisitMapDirectly(const internal::Node& node, Map* result) {
     if (!options_.retain_map_defaults) {
-      result.clear();
+      result->clear();
     }
-    for (const auto& [key, value] : sub_node->GetMapping()) {
+    for (const auto& [key, value] : node.GetMapping()) {
       unused(value);
-      auto newiter_inserted = result.emplace(key, Value{});
+      auto newiter_inserted = result->emplace(key, Value{});
       auto& newiter = newiter_inserted.first;
       const bool inserted = newiter_inserted.second;
       if (!options_.retain_map_defaults) {
         DRAKE_DEMAND(inserted == true);
       }
       Value& newvalue = newiter->second;
-      YamlReadArchive item_archive(sub_node, this);
+      YamlReadArchive item_archive(&node, this);
       item_archive.Visit(drake::MakeNameValue(key.c_str(), &newvalue));
     }
   }
