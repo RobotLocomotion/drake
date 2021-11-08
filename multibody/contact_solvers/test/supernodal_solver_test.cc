@@ -48,9 +48,9 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd W(9, 9);
+  Eigen::MatrixXd G(9, 9);
   // clang-format off
-  W << 1, 2, 2, 0, 0, 0, 0, 0, 0,
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
        2, 3, 4, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 4, 1, 1, 0, 0, 0,
@@ -61,10 +61,10 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_W(3);
-  blocks_of_W.at(0) = W.block<3, 3>(0, 0);
-  blocks_of_W.at(1) = W.block<3, 3>(3, 3);
-  blocks_of_W.at(2) = W.block<3, 3>(6, 6);
+  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
+  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
+  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -83,15 +83,15 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_W);
+  solver.SetWeightMatrix(blocks_of_G);
 
-  MatrixXd full_matrix_ref = M + J.transpose() * W * J;
+  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 
-  // Make the block sizes of W incompatible with J and verify an exception is
+  // Make the block sizes of G incompatible with J and verify an exception is
   // thrown.
-  blocks_of_W.at(0) = MatrixXd::Ones(4, 4);
-  DRAKE_EXPECT_THROWS_MESSAGE(solver.SetWeightMatrix(blocks_of_W),
+  blocks_of_G.at(0) = MatrixXd::Ones(4, 4);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.SetWeightMatrix(blocks_of_G),
                               std::runtime_error,
                               "Weight matrix incompatible with Jacobian.");
 }
@@ -146,9 +146,9 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
-  Eigen::MatrixXd W(12, 12);
+  Eigen::MatrixXd G(12, 12);
   // clang-format off
-  W << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0,
@@ -162,11 +162,11 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_W(4);
-  blocks_of_W.at(0) = W.block<3, 3>(0, 0);
-  blocks_of_W.at(1) = W.block<3, 3>(3, 3);
-  blocks_of_W.at(2) = W.block<3, 3>(6, 6);
-  blocks_of_W.at(3) = W.block<3, 3>(9, 9);
+  std::vector<Eigen::MatrixXd> blocks_of_G(4);
+  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
+  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
+  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
+  blocks_of_G.at(3) = G.block<3, 3>(9, 9);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -185,9 +185,9 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_W);
+  solver.SetWeightMatrix(blocks_of_G);
 
-  MatrixXd full_matrix_ref = M + J.transpose() * W * J;
+  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
@@ -226,9 +226,9 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
-  Eigen::MatrixXd W(12, 12);
+  Eigen::MatrixXd G(12, 12);
   // clang-format off
-  W << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0,
@@ -242,11 +242,11 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_W(4);
-  blocks_of_W.at(0) = W.block<3, 3>(0, 0);
-  blocks_of_W.at(1) = W.block<3, 3>(3, 3);
-  blocks_of_W.at(2) = W.block<3, 3>(6, 6);
-  blocks_of_W.at(3) = W.block<3, 3>(9, 9);
+  std::vector<Eigen::MatrixXd> blocks_of_G(4);
+  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
+  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
+  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
+  blocks_of_G.at(3) = G.block<3, 3>(9, 9);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -265,9 +265,9 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_W);
+  solver.SetWeightMatrix(blocks_of_G);
 
-  MatrixXd full_matrix_ref = M + J.transpose() * W * J;
+  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
@@ -317,9 +317,9 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd W(9, 9);
+  Eigen::MatrixXd G(9, 9);
   // clang-format off
-  W << 1, 2, 2, 0, 0, 0, 0, 0, 0,
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
        2, 3, 4, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 4, 1, 1, 0, 0, 0,
@@ -330,10 +330,10 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_W(3);
-  blocks_of_W.at(0) = W.block(0, 0, 3, 3);
-  blocks_of_W.at(1) = W.block(3, 3, 3, 3);
-  blocks_of_W.at(2) = W.block(6, 6, 3, 3);
+  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  blocks_of_G.at(0) = G.block(0, 0, 3, 3);
+  blocks_of_G.at(1) = G.block(3, 3, 3, 3);
+  blocks_of_G.at(2) = G.block(6, 6, 3, 3);
 
   Eigen::MatrixXd M(7, 7);
 
@@ -353,9 +353,9 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   blocks_of_M.at(2) = M.block(4, 4, 3, 3);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_W);
+  solver.SetWeightMatrix(blocks_of_G);
 
-  MatrixXd full_matrix_ref = M + J.transpose() * W * J;
+  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
@@ -417,17 +417,17 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   // Patch 7:
   Jtriplets.push_back({7, 2, J3x6});
   Jtriplets.push_back({7, 3, J3x6});
-  MatrixXd Wb(3, 3);
+  MatrixXd Gb(3, 3);
   // clang-format off
-  Wb << 1, 2, 2,
+  Gb << 1, 2, 2,
         2, 5, 3,
         2, 3, 4;
   // clang-format on
-  Eigen::MatrixXd W(3*num_patches, 3*num_patches);
-  std::vector<Eigen::MatrixXd> blocks_of_W(num_patches);
+  Eigen::MatrixXd G(3*num_patches, 3*num_patches);
+  std::vector<Eigen::MatrixXd> blocks_of_G(num_patches);
   for (int i = 0; i < num_patches; ++i) {
-    W.block(3 * i, 3 * i, 3, 3) = Wb;
-    blocks_of_W.at(i) = Wb;
+    G.block(3 * i, 3 * i, 3, 3) = Gb;
+    blocks_of_G.at(i) = Gb;
   }
   const MatrixXd Mt = VectorXd::LinSpaced(6, 1.0, 6.0).asDiagonal();
   Eigen::MatrixXd M = MatrixXd::Zero(6 * num_trees, 6 * num_trees);
@@ -437,8 +437,8 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
     blocks_of_M.at(i) = Mt;
   }
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_W);
-  MatrixXd full_matrix_ref = M + J.transpose() * W * J;
+  solver.SetWeightMatrix(blocks_of_G);
+  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
   Eigen::VectorXd x_ref = Eigen::VectorXd::Random(M.rows());
   solver.Factor();
@@ -503,9 +503,9 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   get<1>(Jtriplets.at(6)) = 2;
   get<2>(Jtriplets.at(6)) = J.block<1, 2>(12, 0) * 0;
 
-  Eigen::MatrixXd W(13, 13);
+  Eigen::MatrixXd G(13, 13);
   // clang-format off
-  W << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0, 0,
@@ -520,12 +520,12 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_W(5);
-  blocks_of_W.at(0) = W.block(0, 0, 3, 3);
-  blocks_of_W.at(1) = W.block(3, 3, 3, 3);
-  blocks_of_W.at(2) = W.block(6, 6, 3, 3);
-  blocks_of_W.at(3) = W.block(9, 9, 3, 3);
-  blocks_of_W.at(4) = W.block(12, 12, 1, 1);
+  std::vector<Eigen::MatrixXd> blocks_of_G(5);
+  blocks_of_G.at(0) = G.block(0, 0, 3, 3);
+  blocks_of_G.at(1) = G.block(3, 3, 3, 3);
+  blocks_of_G.at(2) = G.block(6, 6, 3, 3);
+  blocks_of_G.at(3) = G.block(9, 9, 3, 3);
+  blocks_of_G.at(4) = G.block(12, 12, 1, 1);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -545,9 +545,9 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   blocks_of_M.at(3) = M.block<1, 1>(5, 5);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_W);
+  solver.SetWeightMatrix(blocks_of_G);
 
-  MatrixXd full_matrix_ref = M + J.transpose() * W * J;
+  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
