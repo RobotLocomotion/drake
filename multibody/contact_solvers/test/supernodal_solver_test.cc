@@ -85,8 +85,8 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
 
-  MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 
   // Make the block sizes of G incompatible with J and verify an exception is
   // thrown.
