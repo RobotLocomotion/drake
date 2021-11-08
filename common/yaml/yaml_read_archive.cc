@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <fmt/ostream.h>
+#include <yaml-cpp/yaml.h>
 
 #include "drake/common/nice_type_name.h"
 
@@ -145,12 +146,17 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(
 
 }  // namespace
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 YamlReadArchive::YamlReadArchive(const YAML::Node& root)
     : YamlReadArchive(root, Options{}) {}
 
 YamlReadArchive::YamlReadArchive(const YAML::Node& root, const Options& options)
     : YamlReadArchive(ConvertJbederYamlNodeToDrakeYamlNode({}, root), options) {
 }
+
+#pragma GCC diagnostic push
 
 YamlReadArchive::YamlReadArchive(internal::Node root, const Options& options)
     : owned_root_(std::move(root)),
@@ -220,6 +226,10 @@ void YamlReadArchive::ParseScalar(
     const std::string& value, std::string* result) {
   DRAKE_DEMAND(result != nullptr);
   *result = value;
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value, size_t* result) {
+  ParseScalar<size_t>(value, result);
 }
 
 const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {

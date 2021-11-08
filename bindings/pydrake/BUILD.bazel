@@ -57,6 +57,12 @@ drake_py_library(
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
+    exclude_hdr_patterns = [
+        # TODO(jwnimmer-tri) On 2022-03-01 when the yaml deprecations retire,
+        # we can remove these exclusions.
+        "drake/common/yaml/yaml_io.h",
+        "drake/common/yaml/yaml_read_archive.h",
+    ],
     ignore_dirs_for_coverage = [
         "drake/common/proto",
         "drake/common/yaml",
