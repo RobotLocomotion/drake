@@ -16,7 +16,7 @@ namespace contact_solvers {
 namespace internal {
 
 GTEST_TEST(SupernodalSolver, InterfaceTest) {
-  int num_row_blocks_of_J = 3;
+  const int num_row_blocks_of_J = 3;
   Eigen::MatrixXd J(9, 6);
 
   // clang-format off
@@ -34,19 +34,19 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   std::vector<BlockMatrixTriplet> Jtriplets(4);
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block(0, 0, 3, 2);
+  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
 
   get<0>(Jtriplets.at(1)) = 0;
   get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block(0, 4, 3, 2);
+  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 4);
 
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block(3, 4, 3, 2);
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(3, 4);
 
   get<0>(Jtriplets.at(3)) = 2;
   get<1>(Jtriplets.at(3)) = 1;
-  get<2>(Jtriplets.at(3)) = J.block(6, 2, 3, 2);
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
   Eigen::MatrixXd W(9, 9);
   // clang-format off
@@ -62,9 +62,9 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_W(3);
-  blocks_of_W.at(0) = W.block(0, 0, 3, 3);
-  blocks_of_W.at(1) = W.block(3, 3, 3, 3);
-  blocks_of_W.at(2) = W.block(6, 6, 3, 3);
+  blocks_of_W.at(0) = W.block<3, 3>(0, 0);
+  blocks_of_W.at(1) = W.block<3, 3>(3, 3);
+  blocks_of_W.at(2) = W.block<3, 3>(6, 6);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -78,9 +78,9 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block(0, 0, 2, 2);
-  blocks_of_M.at(1) = M.block(2, 2, 2, 2);
-  blocks_of_M.at(2) = M.block(4, 4, 2, 2);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_W);
@@ -128,23 +128,23 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   std::vector<BlockMatrixTriplet> Jtriplets(5);
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block(0, 0, 6, 2);
+  get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
 
   get<0>(Jtriplets.at(1)) = 0;
   get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block(0, 4, 6, 2);
+  get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 4);
 
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 0;
-  get<2>(Jtriplets.at(2)) = J.block(6, 0, 3, 2);
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 0);
 
   get<0>(Jtriplets.at(3)) = 1;
   get<1>(Jtriplets.at(3)) = 2;
-  get<2>(Jtriplets.at(3)) = J.block(6, 4, 3, 2);
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 4);
 
   get<0>(Jtriplets.at(4)) = 2;
   get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block(9, 2, 3, 2);
+  get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
   Eigen::MatrixXd W(12, 12);
   // clang-format off
@@ -163,10 +163,10 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_W(4);
-  blocks_of_W.at(0) = W.block(0, 0, 3, 3);
-  blocks_of_W.at(1) = W.block(3, 3, 3, 3);
-  blocks_of_W.at(2) = W.block(6, 6, 3, 3);
-  blocks_of_W.at(3) = W.block(9, 9, 3, 3);
+  blocks_of_W.at(0) = W.block<3, 3>(0, 0);
+  blocks_of_W.at(1) = W.block<3, 3>(3, 3);
+  blocks_of_W.at(2) = W.block<3, 3>(6, 6);
+  blocks_of_W.at(3) = W.block<3, 3>(9, 9);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -180,9 +180,9 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block(0, 0, 2, 2);
-  blocks_of_M.at(1) = M.block(2, 2, 2, 2);
-  blocks_of_M.at(2) = M.block(4, 4, 2, 2);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_W);
@@ -208,23 +208,23 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   std::vector<BlockMatrixTriplet> Jtriplets(5);
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block(0, 0, 6, 2);
+  get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
 
   get<0>(Jtriplets.at(1)) = 0;
   get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block(0, 4, 6, 2);
+  get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 4);
 
   get<0>(Jtriplets.at(3)) = 1;
   get<1>(Jtriplets.at(3)) = 0;
-  get<2>(Jtriplets.at(3)) = J.block(6, 0, 3, 2);
+  get<2>(Jtriplets.at(3)) = J.block<3 ,2>(6, 0);
 
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block(6, 4, 3, 2);
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 4);
 
   get<0>(Jtriplets.at(4)) = 2;
   get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block(9, 2, 3, 2);
+  get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
   Eigen::MatrixXd W(12, 12);
   // clang-format off
@@ -243,10 +243,10 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_W(4);
-  blocks_of_W.at(0) = W.block(0, 0, 3, 3);
-  blocks_of_W.at(1) = W.block(3, 3, 3, 3);
-  blocks_of_W.at(2) = W.block(6, 6, 3, 3);
-  blocks_of_W.at(3) = W.block(9, 9, 3, 3);
+  blocks_of_W.at(0) = W.block<3, 3>(0, 0);
+  blocks_of_W.at(1) = W.block<3, 3>(3, 3);
+  blocks_of_W.at(2) = W.block<3, 3>(6, 6);
+  blocks_of_W.at(3) = W.block<3, 3>(9, 9);
 
   Eigen::MatrixXd M(6, 6);
 
@@ -260,9 +260,9 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block(0, 0, 2, 2);
-  blocks_of_M.at(1) = M.block(2, 2, 2, 2);
-  blocks_of_M.at(2) = M.block(4, 4, 2, 2);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_W);
@@ -303,19 +303,19 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   std::vector<BlockMatrixTriplet> Jtriplets(4);
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block(0, 0, 3, 2);
+  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
 
   get<0>(Jtriplets.at(1)) = 0;
   get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block(0, 4, 3, 3);
+  get<2>(Jtriplets.at(1)) = J.block<3, 3>(0, 4);
 
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block(3, 4, 3, 3);
+  get<2>(Jtriplets.at(2)) = J.block<3, 3>(3, 4);
 
   get<0>(Jtriplets.at(3)) = 2;
   get<1>(Jtriplets.at(3)) = 1;
-  get<2>(Jtriplets.at(3)) = J.block(6, 2, 3, 2);
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
   Eigen::MatrixXd W(9, 9);
   // clang-format off
@@ -477,31 +477,31 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   std::vector<BlockMatrixTriplet> Jtriplets(7);
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block(0, 0, 6, 2);
+  get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
 
   get<0>(Jtriplets.at(1)) = 0;
   get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block(0, 3, 6, 2);
+  get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 3);
 
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 0;
-  get<2>(Jtriplets.at(2)) = J.block(6, 0, 3, 2);
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 0);
 
   get<0>(Jtriplets.at(3)) = 1;
   get<1>(Jtriplets.at(3)) = 2;
-  get<2>(Jtriplets.at(3)) = J.block(6, 3, 3, 2);
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 3);
 
   get<0>(Jtriplets.at(4)) = 2;
   get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block(9, 2, 3, 1);
+  get<2>(Jtriplets.at(4)) = J.block<3, 1>(9, 2);
 
   get<0>(Jtriplets.at(5)) = 3;
   get<1>(Jtriplets.at(5)) = 3;
-  get<2>(Jtriplets.at(5)) = J.block(12, 5, 1, 1);
+  get<2>(Jtriplets.at(5)) = J.block<1, 1>(12, 5);
 
   get<0>(Jtriplets.at(6)) = 3;
   get<1>(Jtriplets.at(6)) = 2;
-  get<2>(Jtriplets.at(6)) = J.block(12, 0, 1, 2) * 0;
+  get<2>(Jtriplets.at(6)) = J.block<1, 2>(12, 0) * 0;
 
   Eigen::MatrixXd W(13, 13);
   // clang-format off
@@ -539,10 +539,10 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   // clang-format on
 
   std::vector<Eigen::MatrixXd> blocks_of_M(4);
-  blocks_of_M.at(0) = M.block(0, 0, 2, 2);
-  blocks_of_M.at(1) = M.block(2, 2, 1, 1);
-  blocks_of_M.at(2) = M.block(3, 3, 2, 2);
-  blocks_of_M.at(3) = M.block(5, 5, 1, 1);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<1, 1>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(3, 3);
+  blocks_of_M.at(3) = M.block<1, 1>(5, 5);
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_W);
