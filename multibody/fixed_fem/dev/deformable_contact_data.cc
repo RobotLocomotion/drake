@@ -19,6 +19,12 @@ DeformableContactData<T>::DeformableContactData(
       permuted_to_original_indexes_(deformable_geometry.mesh().num_vertices()) {
   num_contact_points_ = 0;
   if (!contact_pairs_.empty()) {
+    /* All contact pairs should involve the same deformable body. */
+    deformable_body_index_ = contact_pairs_[0].deformable_id;
+    for (const auto& contact_pair : contact_pairs_) {
+      DRAKE_DEMAND(deformable_body_index_ == contact_pair.deformable_id);
+    }
+
     CalcParticipatingVertices(deformable_geometry.mesh());
     for (const auto& contact_pair : contact_pairs_) {
       num_contact_points_ += contact_pair.num_contact_points();
@@ -59,8 +65,7 @@ void DeformableContactData<T>::CalcParticipatingVertices(
     const DeformableContactSurface<T>& contact_surface =
         contact_pairs_[i].contact_surface;
     for (int j = 0; j < contact_surface.num_polygons(); ++j) {
-      const geometry::VolumeElementIndex tet_in_contact =
-          contact_surface.polygon_data(j).tet_index;
+      const int tet_in_contact = contact_surface.polygon_data(j).tet_index;
       for (int k = 0; k < kNumVerticesInTetrahedron; ++k) {
         const int v = deformable_mesh.element(tet_in_contact).vertex(k);
         if (permuted_vertex_indexes_[v] == -1) {

@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_deprecated.h"
@@ -405,6 +406,37 @@ class SceneGraphInspector {
       GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetPoseInFrame(geometry_id);
+  }
+
+  /** Returns the *mesh* used to represent this geometry in hydroelastic contact
+   calculations, if it exists. Most primitives (sphere, cylinder, etc.) are
+   actually represented by discrete approximations (i.e., the mesh). If there is
+   no mesh, the returned variant will hold neither the SurfaceMesh<double> nor
+   the VolumeMesh<double> alternatives. If either alternative is present, the
+   pointer is guaranteed to be non-null.
+
+   Just because hydroelastic properties have been assigned to a geometry does
+   *not* mean there is necessarily a mesh associated with it. Some shape types
+   (e.g., half space) have non-mesh representations.
+
+   The result can be tested as follows:
+
+   @code
+     auto maybe_mesh = inspector.maybe_get_hydroelastic_mesh(id);
+
+     // These two methods are equivalent, although testing index is more
+     // brittle.
+     const bool no_mesh1 = maybe_mesh.index() == 0;
+     const bool no_mesh2 = std::holds_alternative<std::monostate>(maybe_mesh);
+   @endcode
+
+   @param geometry_id  The id of the geometry to query.
+   @returns The associated mesh, if it exists. */
+  std::variant<std::monostate, const SurfaceMesh<double>*,
+               const VolumeMesh<double>*>
+  maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->maybe_get_hydroelastic_mesh(geometry_id);
   }
 
   /** Return a pointer to the const properties indicated by `role` of the

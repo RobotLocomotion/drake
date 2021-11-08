@@ -315,10 +315,10 @@ void CheckDensityGradient(RandomDistribution distribution,
   // First compute the gradient of the density p w.r.t b.
   // since p = pr(A⁻¹(w_out - b)) / |det(A)|
   // ∂p/∂b = 1/|det(A)| * ∂pr/∂w_in * (-A⁻¹)
-  auto b = math::initializeAutoDiff(Eigen::Vector2d(2, 4));
+  auto b = math::InitializeAutoDiff(Eigen::Vector2d(2, 4));
   Matrix2<AutoDiffXd> A =
       Eigen::Vector2d(2, -3).cast<AutoDiffXd>().asDiagonal();
-  Eigen::Matrix2d A_val = math::autoDiffToValueMatrix(A);
+  Eigen::Matrix2d A_val = math::ExtractValue(A);
   dut.FixConstantA(context.get(), A);
   dut.FixConstantB(context.get(), b);
   Vector2<AutoDiffXd> w_in = w_in_val.cast<AutoDiffXd>();
@@ -347,7 +347,7 @@ void CheckDensityGradient(RandomDistribution distribution,
   A(0, 1).derivatives() = Eigen::Vector4d(0, 0, 1, 0);
   A(1, 1).derivatives() = Eigen::Vector4d(0, 0, 0, 1);
   dut.FixConstantA(context.get(), A);
-  A_val = math::autoDiffToValueMatrix(A);
+  A_val = math::ExtractValue(A);
   b = Eigen::Vector2d(2, 4).cast<AutoDiffXd>();
   dut.FixConstantB(context.get(), b);
   density = dut.CalcDensity(*context);
@@ -366,9 +366,9 @@ void CheckDensityGradient(RandomDistribution distribution,
       dA_dAij[i][j](i, j) = 1.;
     }
   }
-  Eigen::Vector2d w_out_val =
-      math::autoDiffToValueMatrix(dut.get_output_port_w_out().Eval(*context));
-  Eigen::Vector2d b_val = math::autoDiffToValueMatrix(b);
+  Eigen::Vector2d w_out_val = math::ExtractValue(
+      dut.get_output_port_w_out().Eval(*context));
+  Eigen::Vector2d b_val = math::ExtractValue(b);
   const double A_det_abs = std::abs(A_val.determinant());
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < 2; ++j) {

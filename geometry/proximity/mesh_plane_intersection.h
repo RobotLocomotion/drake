@@ -76,21 +76,21 @@ namespace internal {
  @param[in,out] surface_e   The per-vertex field values. Upon returning,
                             surface_e.size() == vertices_W.size() is true.
  @param[in,out] cut_edges   The cache of volume mesh edges that have already
-                            been cut and the surface mesh vertex associated
-                            with it.
+                            been cut and the index of the surface mesh vertex
+                            (indexing into vertices_W) that represents the cut
+                            point.
  @pre `tet_index` lies in the range `[0, field_M.mesh().num_elements())`.
  */
 template <typename T>
-void SliceTetWithPlane(VolumeElementIndex tet_index,
+void SliceTetWithPlane(int tet_index,
                        const VolumeMeshFieldLinear<double, double>& field_M,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
                        ContactPolygonRepresentation representation,
                        std::vector<SurfaceFace>* faces,
-                       std::vector<SurfaceVertex<T>>* vertices_W,
+                       std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
-                       std::unordered_map<SortedPair<VolumeVertexIndex>,
-                                          SurfaceVertexIndex>* cut_edges);
+                       std::unordered_map<SortedPair<int>, int>* cut_edges);
 
 /* Computes a ContactSurface by intersecting a plane with a set of tetrahedra
  drawn from the given volume mesh (and its pressure field). The indicated
@@ -125,7 +125,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     GeometryId mesh_id,
     const VolumeMeshFieldLinear<double, double>& mesh_field_M,
     GeometryId plane_id, const Plane<T>& plane_M,
-    const std::vector<VolumeElementIndex>& tet_indices,
+    const std::vector<int>& tet_indices,
     const math::RigidTransform<T>& X_WM,
     ContactPolygonRepresentation representation);
 

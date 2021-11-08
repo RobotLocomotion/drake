@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/value.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
@@ -29,6 +30,113 @@ using systems::EventStatus;
 using systems::SystemTypeTag;
 
 namespace {
+
+/* Create an lcm message for a hydroelastic mesh representation of the geometry
+ indicated by `geometry_id`.
+
+ The geometry data message is marked as a MESH, but rather than having a
+ path to a parseable file stored in it, the actual mesh data is stored.
+
+ This function shares implementation details with the ShapeToLcm reifier (in
+ terms of handling pose and color). Ultimately, when the Mesh shape
+ specification supports in-memory mesh definitions, this can be rolled into
+ ShapeToLcm and it will more fully share that class's code for handling pose
+ and color.
+
+ @param geometry_id   The id of the geometry to draw.
+ @param inspector     The SceneGraphInspector from which the mesh will be drawn.
+ @param X_PG          The pose of the geometry in the parent frame.
+ @param in_color      The color to apply to the mesh.
+ @pre The geometry actually has a hydroelastic mesh. */
+template <typename T>
+lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
+                                        const SceneGraphInspector<T>& inspector,
+                                        const RigidTransformd& X_PG,
+                                        const Rgba& in_color) {
+  auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(geometry_id);
+  DRAKE_DEMAND(!std::holds_alternative<std::monostate>(hydro_mesh));
+  // SceneGraphInspector guarantees whichever pointer is "held" in the variant
+  // is non-null.
+  const SurfaceMesh<double>& surface_mesh =
+      std::holds_alternative<const SurfaceMesh<double>*>(hydro_mesh)
+          ? *std::get<const SurfaceMesh<double>*>(hydro_mesh)
+          : ConvertVolumeToSurfaceMesh(
+                *std::get<const VolumeMesh<double>*>(hydro_mesh));
+
+  lcmt_viewer_geometry_data geometry_data;
+
+  // Saves the location and orientation of the visualization geometry in the
+  // `lcmt_viewer_geometry_data` object. The location and orientation are
+  // specified in the body's frame.
+  Eigen::Map<Eigen::Vector3f> position(geometry_data.position);
+  position = X_PG.translation().template cast<float>();
+  // LCM quaternion must be w, x, y, z.
+  Quaterniond q(X_PG.rotation().ToQuaternion());
+  geometry_data.quaternion[0] = q.w();
+  geometry_data.quaternion[1] = q.x();
+  geometry_data.quaternion[2] = q.y();
+  geometry_data.quaternion[3] = q.z();
+
+  Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
+  Eigen::Vector4d color_vec(in_color.r(), in_color.g(), in_color.b(),
+                            in_color.a());
+  color = color_vec.cast<float>();
+
+  // There are *two* ways to use the MESH geometry type. One is to set the
+  // string value with a path to a parseable mesh file (see
+  // ImplementGeometry(Mesh) below). The other is to leave the string empty and
+  // define the mesh in the float data as:
+  // V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
+  // where
+  //   V: The number of vertices.
+  //   T: The number of triangles.
+  //   N: 3V, the number of floating point values for the V vertices.
+  //   M: 3T, the number of vertex indices for the T triangles.
+  geometry_data.type = geometry_data.MESH;
+
+  // We want a *faceted* mesh. We can achieve this by duplicating the vertices
+  // so DrakeVisualizer can't smooth over vertices. So, that means for T
+  // triangles we have 3T vertices. Experimentation suggests this redundancy
+  // is the simplest way to get a faceted mesh.
+  const int num_tris = surface_mesh.num_faces();
+  const int num_verts = 3 * num_tris;
+  const int header_floats = 2;
+  geometry_data.num_float_data = header_floats + 3 * num_tris + 3 * num_verts;
+  geometry_data.float_data.resize(geometry_data.num_float_data);
+  auto& float_data = geometry_data.float_data;
+
+  float_data[0] = num_verts;
+  float_data[1] = num_tris;
+
+  // We simply want to pre-increment before using this index; so we'll decrement
+  // it to be just before where we want to write.
+  int v_index = header_floats - 1;
+  int t_index = v_index + 3 * num_verts;
+
+  // The index of the most recently added vertex (whose position measures are
+  // written at v_index, v_index + 1, and v_index + 2 in float_data).
+  int newest_vertex_index = -1;
+  for (int f = 0; f < surface_mesh.num_faces(); ++f) {
+    const auto& face = surface_mesh.element(f);
+    for (int fv = 0; fv < 3; ++fv) {
+      const int v_i = face.vertex(fv);
+      const Vector3<float> p_MV =
+          surface_mesh.vertex(v_i).template cast<float>();
+      float_data[++v_index] = p_MV.x();
+      float_data[++v_index] = p_MV.y();
+      float_data[++v_index] = p_MV.z();
+      float_data[++t_index] = ++newest_vertex_index;
+    }
+  }
+
+  // v_index and t_index end with the index of the last element added, so one
+  // less than the expected number, hence the "+ 1". So, the vertex index should
+  // have walked up to the starting index for triangles and the triangle index
+  // should have walked up to the total number of floats.
+  DRAKE_DEMAND(header_floats + 3 * num_verts == (v_index + 1));
+  DRAKE_DEMAND(geometry_data.num_float_data == (t_index + 1));
+  return geometry_data;
+}
 
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
@@ -306,6 +414,15 @@ void DrakeVisualizer<T>::SendLoadMessage(
     }
     const Rgba& color =
         props->GetPropertyOrDefault("phong", "diffuse", default_color);
+    if (params.role == Role::kProximity && params.show_hydroelastic) {
+      auto hydro_mesh = inspector.maybe_get_hydroelastic_mesh(g_id);
+      if (!std::holds_alternative<std::monostate>(hydro_mesh)) {
+        // This Shape *definitely* has a mesh associated with it. Replace the
+        // primitive with the mesh hydroelastic mesh.
+        return MakeHydroMesh(g_id, inspector, inspector.GetPoseInFrame(g_id),
+                             color);
+      }
+    }
     return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), color);
   };
 

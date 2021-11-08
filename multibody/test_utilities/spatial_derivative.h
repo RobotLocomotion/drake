@@ -39,10 +39,8 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
   const VectorX<double> v = plant.GetVelocities(context);
   VectorX<double> qdot(plant.num_positions());
   plant.MapVelocityToQDot(context, v, &qdot);
-  auto q_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(q, Eigen::MatrixXd(qdot));
-  auto v_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(v, Eigen::MatrixXd(vdot));
+  auto q_autodiff = math::InitializeAutoDiff(q, Eigen::MatrixXd(qdot));
+  auto v_autodiff = math::InitializeAutoDiff(v, Eigen::MatrixXd(vdot));
 
   // Convert the double plant to an AutoDiffXd plant.
   // Then, create a default context for the AutoDiffXd plant.
@@ -82,7 +80,7 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
 
   // Form spatial acceleration via AutoDiffXd results.
   const SpatialAcceleration<double> A_ABq_A(
-      math::autoDiffToGradientMatrix(V_ABq_A_autodiff.get_coeffs()));
+      math::ExtractGradient(V_ABq_A_autodiff.get_coeffs()));
 
   // Shortcut return if frame_A == frame_E.
   if (frame_E.index() == frame_A.index()) return A_ABq_A;

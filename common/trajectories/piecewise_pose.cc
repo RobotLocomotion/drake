@@ -8,14 +8,33 @@ namespace drake {
 namespace trajectories {
 
 template <typename T>
-PiecewisePose<T>::PiecewisePose(const PiecewisePolynomial<T>& pos_traj,
-                                const PiecewiseQuaternionSlerp<T>& rot_traj) {
-  DRAKE_DEMAND(pos_traj.rows() == 3);
-  DRAKE_DEMAND(pos_traj.cols() == 1);
-  position_ = pos_traj;
+PiecewisePose<T>::PiecewisePose(
+    const PiecewisePolynomial<T>& position_trajectory,
+    const PiecewiseQuaternionSlerp<T>& orientation_trajectory)
+    : PiecewiseTrajectory<T>(position_trajectory.get_segment_times()) {
+  DRAKE_DEMAND(position_trajectory.rows() == 3);
+  DRAKE_DEMAND(position_trajectory.cols() == 1);
+  DRAKE_DEMAND(this->SegmentTimesEqual(orientation_trajectory, 0));
+  position_ = position_trajectory;
   velocity_ = position_.derivative();
   acceleration_ = velocity_.derivative();
-  orientation_ = rot_traj;
+  orientation_ = orientation_trajectory;
+}
+
+template <typename T>
+PiecewisePose<T> PiecewisePose<T>::MakeLinear(
+    const std::vector<T>& times,
+    const std::vector<math::RigidTransform<T>>& poses) {
+  std::vector<MatrixX<T>> pos_knots(poses.size());
+  std::vector<math::RotationMatrix<T>> rot_knots(poses.size());
+  for (size_t i = 0; i < poses.size(); ++i) {
+    pos_knots[i] = poses[i].translation();
+    rot_knots[i] = poses[i].rotation();
+  }
+
+  return PiecewisePose<T>(
+      PiecewisePolynomial<T>::FirstOrderHold(times, pos_knots),
+      PiecewiseQuaternionSlerp<T>(times, rot_knots));
 }
 
 template <typename T>
@@ -42,13 +61,13 @@ std::unique_ptr<Trajectory<T>> PiecewisePose<T>::Clone() const {
 }
 
 template <typename T>
-math::RigidTransform<T> PiecewisePose<T>::get_pose(const T& time) const {
+math::RigidTransform<T> PiecewisePose<T>::GetPose(const T& time) const {
   return math::RigidTransform<T>(orientation_.orientation(time),
                                  position_.value(time));
 }
 
 template <typename T>
-Vector6<T> PiecewisePose<T>::get_velocity(const T& time) const {
+Vector6<T> PiecewisePose<T>::GetVelocity(const T& time) const {
   Vector6<T> velocity;
   if (orientation_.is_time_in_range(time)) {
     velocity.template head<3>() = orientation_.angular_velocity(time);
@@ -64,7 +83,7 @@ Vector6<T> PiecewisePose<T>::get_velocity(const T& time) const {
 }
 
 template <typename T>
-Vector6<T> PiecewisePose<T>::get_acceleration(const T& time) const {
+Vector6<T> PiecewisePose<T>::GetAcceleration(const T& time) const {
   Vector6<T> acceleration;
   if (orientation_.is_time_in_range(time)) {
     acceleration.template head<3>() = orientation_.angular_acceleration(time);
@@ -80,7 +99,7 @@ Vector6<T> PiecewisePose<T>::get_acceleration(const T& time) const {
 }
 
 template <typename T>
-bool PiecewisePose<T>::is_approx(const PiecewisePose<T>& other,
+bool PiecewisePose<T>::IsApprox(const PiecewisePose<T>& other,
                                  double tol) const {
   bool ret = position_.isApprox(other.position_, tol);
   ret &= orientation_.is_approx(other.orientation_, tol);

@@ -20,7 +20,7 @@ template <typename T>
 class SurfaceMeshTester {
  public:
   explicit SurfaceMeshTester(const SurfaceMesh<T>& mesh) : mesh_(mesh) {}
-  Vector3<T> CalcGradBarycentric(SurfaceFaceIndex f, int i) const {
+  Vector3<T> CalcGradBarycentric(int f, int i) const {
     return mesh_.CalcGradBarycentric(f, i);
   }
  private:
@@ -45,7 +45,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   // straightforward to check.
 
   // Create the vertices.
-  std::vector<SurfaceVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5));
   vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5));
   vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
@@ -54,10 +54,8 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   // Create the two triangles. Note that SurfaceMesh does not specify (or use) a
   // particular winding.
   std::vector<SurfaceFace> faces;
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
 
   return std::make_unique<SurfaceMesh<T>>(
       std::move(faces), std::move(vertices));
@@ -65,7 +63,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
 
 // Generates an empty mesh.
 std::unique_ptr<SurfaceMesh<double>> GenerateEmptyMesh() {
-  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   std::vector<SurfaceFace> faces;
   return std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
@@ -76,16 +74,14 @@ std::unique_ptr<SurfaceMesh<double>> GenerateZeroAreaMesh() {
   // The surface mesh will consist of four vertices and two faces.
 
   // Create the vertices.
-  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   for (int i = 0; i < 4; ++i)
     vertices.emplace_back(Vector3<double>::Zero());
 
   // Create the two triangles.
   std::vector<SurfaceFace> faces;
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+  faces.emplace_back(0, 1, 2);
+  faces.emplace_back(2, 3, 0);
 
   return std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
@@ -122,7 +118,7 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data_M[4] = {
       {0., 0., 0.}, {15., 0., 0.}, {15., 15., 0.}, {0., 15., 0.}};
-  std::vector<SurfaceVertex<T>> vertices_W;
+  std::vector<Vector3<T>> vertices_W;
   for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
   auto surface_mesh_W =
       std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices_W));
@@ -130,12 +126,10 @@ std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
   EXPECT_EQ(2, surface_mesh_W->num_faces());
   EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
-    EXPECT_EQ(X_WM * vertex_data_M[v],
-              surface_mesh_W->vertex(SurfaceVertexIndex(v)).r_MV());
+    EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W->vertex(v));
   for (int f = 0; f < 2; ++f)
     for (int v = 0; v < 3; ++v)
-      EXPECT_EQ(face_data[f][v],
-                surface_mesh_W->element(SurfaceFaceIndex(f)).vertex(v));
+      EXPECT_EQ(face_data[f][v], surface_mesh_W->element(f).vertex(v));
   return surface_mesh_W;
 }
 
@@ -163,8 +157,8 @@ GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
 GTEST_TEST(SurfaceMeshTest, TestArea) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(0)), 0.5, tol);
-  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 1.0, tol);
+  EXPECT_NEAR(surface_mesh->area(0), 0.5, tol);
+  EXPECT_NEAR(surface_mesh->area(1), 1.0, tol);
   EXPECT_NEAR(surface_mesh->total_area(), 1.5, tol);
 
   // Verify that the zero area mesh gives zero area.
@@ -182,16 +176,16 @@ GTEST_TEST(SurfaceMeshTest, TestFaceNormal) {
   const auto surface_mesh = TestSurfaceMesh<double>(X_WM);
   const Vector3<double> expect_normal =
       X_WM.rotation() * Vector3<double>::UnitZ();
-  EXPECT_TRUE(CompareMatrices(
-      expect_normal, surface_mesh->face_normal(SurfaceFaceIndex(0)), tol));
-  EXPECT_TRUE(CompareMatrices(
-      expect_normal, surface_mesh->face_normal(SurfaceFaceIndex(1)), tol));
+  EXPECT_TRUE(
+      CompareMatrices(expect_normal, surface_mesh->face_normal(0), tol));
+  EXPECT_TRUE(
+      CompareMatrices(expect_normal, surface_mesh->face_normal(1), tol));
 
   // Verify that the zero-area mesh has zero-vector face normal.
   const auto zero_mesh = GenerateZeroAreaMesh();
   const Vector3<double> zero_normal = Vector3<double>::Zero();
-  EXPECT_EQ(zero_normal, zero_mesh->face_normal(SurfaceFaceIndex(0)));
-  EXPECT_EQ(zero_normal, zero_mesh->face_normal(SurfaceFaceIndex(1)));
+  EXPECT_EQ(zero_normal, zero_mesh->face_normal(0));
+  EXPECT_EQ(zero_normal, zero_mesh->face_normal(1));
 }
 
 // Checks the centroid calculations.
@@ -221,7 +215,7 @@ void TestCalcBarycentric() {
   // Empirically the std::numeric_limits<double>::epsilon() is too small to
   // account for the pose.
   const T kTolerance(1e-14);
-  const SurfaceFaceIndex f0(0);
+  const int f0 = 0;
   using Barycentric = typename SurfaceMesh<T>::template Barycentric<T>;
 
   // At v1.
@@ -308,15 +302,14 @@ void TestCalcGradBarycentric() {
 
   // Create the mesh with vertex coordinates expressed in World frame to make
   // the test more realistic.
-  const SurfaceMesh<T> mesh_W(
-      {SurfaceFace(triangle)},
-      {SurfaceVertex<T>(X_WM * v0_M), SurfaceVertex<T>(X_WM * v1_M),
-       SurfaceVertex<T>(X_WM * v2_M)});
+  const SurfaceMesh<T> mesh_W({SurfaceFace(triangle)},
+                              {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
+                               Vector3<T>(X_WM * v2_M)});
 
   const SurfaceMeshTester<T> tester(mesh_W);
-  const auto gradb0_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 0);
-  const auto gradb1_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 1);
-  const auto gradb2_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 2);
+  const auto gradb0_W = tester.CalcGradBarycentric(0, 0);
+  const auto gradb1_W = tester.CalcGradBarycentric(0, 1);
+  const auto gradb2_W = tester.CalcGradBarycentric(0, 2);
 
   // In this example, we have these equations, expressed in M's frame:
   //      b₀(x,y,z) = -x - y/2 + 1,
@@ -351,7 +344,7 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
 GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
   std::unique_ptr<SurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
   const SurfaceMeshTester<double> tester(*mesh);
-  EXPECT_THROW(tester.CalcGradBarycentric(SurfaceFaceIndex(0), 0),
+  EXPECT_THROW(tester.CalcGradBarycentric(0, 0),
                std::runtime_error);
 }
 
@@ -384,11 +377,11 @@ void TestCalcGradientVectorOfLinearField() {
   const Vector3<T> v2_M(0., 0., 1.);
   const SurfaceMesh<T> mesh_M(
       {SurfaceFace(triangle)},
-      {SurfaceVertex<T>(v0_M), SurfaceVertex<T>(v1_M), SurfaceVertex<T>(v2_M)});
+      {Vector3<T>(v0_M), Vector3<T>(v1_M), Vector3<T>(v2_M)});
   const std::array<T, 3> f{2., 3., 4.};
 
   const Vector3<T> gradf_M =
-      mesh_M.CalcGradientVectorOfLinearField(f, SurfaceFaceIndex(0));
+      mesh_M.CalcGradientVectorOfLinearField(f, 0);
 
   // This function
   //       f(x,y,z) = -x + z + 3
@@ -430,8 +423,7 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
     return true;
   };
 
-  for (int value : {0, 1}) {
-    SurfaceFaceIndex i(value);
+  for (int i : {0, 1}) {
     EXPECT_TRUE(faces_match(ref_mesh->element(i), test_mesh->element(i)));
   }
 
@@ -463,13 +455,11 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
     return winding_is_valid;
   };
 
-  for (int value : {0, 1}) {
-    SurfaceFaceIndex i(value);
+  for (int i : {0, 1}) {
     EXPECT_TRUE(winding_reversed(ref_mesh->element(i), test_mesh->element(i)));
   }
 
-  for (int value : {0, 1}) {
-    SurfaceFaceIndex i(value);
+  for (int i : {0, 1}) {
     EXPECT_EQ(ref_mesh->face_normal(i), - test_mesh->face_normal(i));
   }
 }
@@ -484,14 +474,14 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
                        Vector3d{1, 2, 3}};
   test_mesh->TransformVertices(X_FM);
 
-  for (SurfaceVertexIndex v(0); v < test_mesh->num_vertices(); ++v) {
-    const Vector3d& p_FV_test = test_mesh->vertex(v).r_MV();
-    const Vector3d& p_MV_ref = ref_mesh->vertex(v).r_MV();
+  for (int v = 0; v < test_mesh->num_vertices(); ++v) {
+    const Vector3d& p_FV_test = test_mesh->vertex(v);
+    const Vector3d& p_MV_ref = ref_mesh->vertex(v);
     const Vector3d p_FV_ref = X_FM * p_MV_ref;
     EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
   }
 
-  for (SurfaceFaceIndex f(0); f < test_mesh->num_faces(); ++f) {
+  for (int f = 0; f < test_mesh->num_faces(); ++f) {
     const Vector3d& nhat_F_test = test_mesh->face_normal(f);
     const Vector3d& nhat_M_ref = ref_mesh->face_normal(f);
     const Vector3d nhat_F_ref = X_FM.rotation() * nhat_M_ref;
@@ -543,33 +533,32 @@ class ScalarMixingTest : public ::testing::Test {
     // We construct an AutoDiffXd-valued mesh from the double-valued mesh. We
     // only set the derivatives for vertex 1. That means, operations on
     // triangle 0 *must* have derivatives, but triangle 1 may not have them.
-    std::vector<SurfaceVertex<AutoDiffXd>> vertices;
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)).r_MV());
-    vertices.emplace_back(math::initializeAutoDiff(
-        mesh_d_->vertex(SurfaceVertexIndex(1)).r_MV()));
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(2)).r_MV());
-    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(3)).r_MV());
+    std::vector<Vector3<AutoDiffXd>> vertices;
+    vertices.emplace_back(mesh_d_->vertex(0));
+    vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(1)));
+    vertices.emplace_back(mesh_d_->vertex(2));
+    vertices.emplace_back(mesh_d_->vertex(3));
     std::vector<SurfaceFace> faces(mesh_d_->faces());
 
     mesh_ad_ = std::make_unique<SurfaceMesh<AutoDiffXd>>(std::move(faces),
                                                          std::move(vertices));
 
     p_WQ_d_ = Vector3d::Zero();
-    for (SurfaceVertexIndex v(0); v < 3; ++v) {
-      p_WQ_d_ += mesh_d_->vertex(v).r_MV();
+    for (int v = 0; v < 3; ++v) {
+      p_WQ_d_ += mesh_d_->vertex(v);
     }
     p_WQ_d_ /= 3;
-    p_WQ_ad_ = math::initializeAutoDiff(p_WQ_d_);
+    p_WQ_ad_ = math::InitializeAutoDiff(p_WQ_d_);
 
     b_expected_d_ = Vector3d(1, 1, 1) / 3.0;
-    b_expected_ad_ = math::initializeAutoDiff(b_expected_d_);
+    b_expected_ad_ = math::InitializeAutoDiff(b_expected_d_);
   }
 
   std::unique_ptr<SurfaceMesh<double>> mesh_d_;
   std::unique_ptr<SurfaceMesh<AutoDiffXd>> mesh_ad_;
 
-  SurfaceFaceIndex e0_{0};
-  SurfaceFaceIndex e1_{1};
+  int e0_{0};
+  int e1_{1};
   // The centroid of triangle 0.
   Vector3<double> p_WQ_d_;
   Vector3<AutoDiffXd> p_WQ_ad_;
@@ -594,8 +583,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected_d_, kEps));
   }
 
   {
@@ -605,8 +593,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b1(0).derivatives().size(), 3);
     EXPECT_EQ(b1(1).derivatives().size(), 3);
     EXPECT_EQ(b1(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b1), b_expected_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b1), b_expected_d_, kEps));
 
     // AutoDiffXd-valued mesh with double-valued point on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
@@ -624,8 +611,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected_d_, kEps));
   }
 }
 
@@ -647,8 +633,7 @@ TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
     EXPECT_EQ(p_WC(0).derivatives().size(), 3);
     EXPECT_EQ(p_WC(1).derivatives().size(), 3);
     EXPECT_EQ(p_WC(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(p_WC), p_WQ_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WC), p_WQ_d_, kEps));
   }
 
   {
@@ -659,8 +644,7 @@ TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
     EXPECT_EQ(p_WC1(0).derivatives().size(), 3);
     EXPECT_EQ(p_WC1(1).derivatives().size(), 3);
     EXPECT_EQ(p_WC1(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(p_WC1), p_WQ_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WC1), p_WQ_d_, kEps));
 
     // AutoDiffXd-valued mesh with double-valued point on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
@@ -680,8 +664,7 @@ TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
     EXPECT_EQ(p_WC(0).derivatives().size(), 3);
     EXPECT_EQ(p_WC(1).derivatives().size(), 3);
     EXPECT_EQ(p_WC(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(p_WC), p_WQ_d_, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(p_WC), p_WQ_d_, kEps));
   }
 }
 

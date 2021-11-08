@@ -12,12 +12,8 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertexIndex;
-using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
-using geometry::VolumeVertexIndex;
 using geometry::internal::Aabb;
 using geometry::internal::Bvh;
 using geometry::internal::BvttCallbackResult;
@@ -393,8 +389,8 @@ class Intersector {
           tetrahedron (non-zero area restriction still applies).
    */
   const std::vector<IntersectionVertex<T>>& ClipTriangleByTetrahedron(
-      VolumeElementIndex tet_index, const VolumeMesh<T>& tet_mesh_D,
-      SurfaceFaceIndex face, const SurfaceMesh<double>& surface_R,
+      int tet_index, const VolumeMesh<T>& tet_mesh_D, int face,
+      const SurfaceMesh<double>& surface_R,
       const math::RigidTransform<T>& X_DR) {
     // Although polygon_D starts out pointing to polygon_[0], that is not an
     // invariant in this function.
@@ -403,15 +399,15 @@ class Intersector {
     // surface_R.
     polygon_D->clear();
     for (int i = 0; i < 3; ++i) {
-      const SurfaceVertexIndex v = surface_R.element(face).vertex(i);
-      const Vector3<T> p_DV = X_DR * surface_R.vertex(v).r_MV().cast<T>();
+      const int v = surface_R.element(face).vertex(i);
+      const Vector3<T> p_DV = X_DR * surface_R.vertex(v).cast<T>();
       polygon_D->push_back({p_DV, tet_mesh_D.CalcBarycentric(p_DV, tet_index)});
     }
     // Get the positions, in Frame D, of the four vertices of the tet.
     Vector3<T> p_DVs[4];
     for (int i = 0; i < 4; ++i) {
-      const VolumeVertexIndex v = tet_mesh_D.element(tet_index).vertex(i);
-      p_DVs[i] = tet_mesh_D.vertex(v).r_MV();
+      const int v = tet_mesh_D.element(tet_index).vertex(i);
+      p_DVs[i] = tet_mesh_D.vertex(v);
     }
 
     /* Sets up the four half spaces associated with the four triangular faces of

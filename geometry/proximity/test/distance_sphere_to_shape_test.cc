@@ -224,10 +224,8 @@ class DistancePairGeometryTest : public ::testing::Test {
 
     // Derivatives of nhat_BA_W; point distance grad_W member is the same
     // quantity with a different name.
-    const auto dgrad_dAo_shape =
-        math::autoDiffToGradientMatrix(shape_result.nhat_BA_W);
-    const auto dgrad_dAo_point =
-        math::autoDiffToGradientMatrix(point_result.grad_W);
+    const auto dgrad_dAo_shape = math::ExtractGradient(shape_result.nhat_BA_W);
+    const auto dgrad_dAo_point = math::ExtractGradient(point_result.grad_W);
     result = CompareMatrices(dgrad_dAo_shape, dgrad_dAo_point);
     if (!result) {
       return ::testing::AssertionFailure() << "Normal derivatives don't match; "
@@ -237,8 +235,8 @@ class DistancePairGeometryTest : public ::testing::Test {
     }
 
     // Derivatives of p_BCb.
-    auto dCb_dAo = math::autoDiffToGradientMatrix(shape_result.p_BCb);
-    const auto dN_dAo = math::autoDiffToGradientMatrix(point_result.p_GN);
+    auto dCb_dAo = math::ExtractGradient(shape_result.p_BCb);
+    const auto dN_dAo = math::ExtractGradient(point_result.p_GN);
     result = CompareMatrices(dCb_dAo, dN_dAo);
     if (!result) {
       return ::testing::AssertionFailure() << "p_BCb derivatives don't match; "
@@ -294,7 +292,7 @@ class DistancePairGeometryTest : public ::testing::Test {
         shape_result.distance.value() * dgrad_dAo_shape;
     Matrix3<double> dCa_dAo_expected =
         R_AW * dp_WCa_dAo - Matrix3<double>::Identity();
-    const auto dCa_dAo = math::autoDiffToGradientMatrix(shape_result.p_ACa);
+    const auto dCa_dAo = math::ExtractGradient(shape_result.p_ACa);
     result = CompareMatrices(dCa_dAo, dCa_dAo_expected, 4 * kEps);
     if (!result) {
       return ::testing::AssertionFailure() << "p_ACa derivatives don't match; "
@@ -317,7 +315,7 @@ const double DistancePairGeometryTest::kRadius = 0.75;
 
 template <>
 Vector3<AutoDiffXd> DistancePairGeometryTest::p_WSphere<AutoDiffXd>() {
-  return math::initializeAutoDiff(p_WSphere_);
+  return math::InitializeAutoDiff(p_WSphere_);
 }
 
 TEST_F(DistancePairGeometryTest, SphereSphereDouble) {

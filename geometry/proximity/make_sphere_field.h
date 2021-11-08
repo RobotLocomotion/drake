@@ -54,17 +54,14 @@ VolumeMeshFieldLinear<T, T> MakeSpherePressureField(const Sphere& sphere,
   // vertices do not lie exactly on the surface of the sphere due to rounding
   // errors. We will treat their near-zero extent as exactly zero extent.
   const T kExtentEpsilon = 1e-14;
-  for (const VolumeVertex<T>& vertex : mesh_S->vertices()) {
-    // V is a vertex of the mesh of the sphere with frame S.
-    const Vector3<T>& r_SV = vertex.r_MV();
+  for (const Vector3<T>& r_SV : mesh_S->vertices()) {
     T extent = T(1.0) - r_SV.norm() / radius;
     if (extent < kExtentEpsilon) {
       extent = T(0.0);
     }
     pressure_values.push_back(elastic_modulus * extent);
   }
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_S);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_S);
 }
 
 }  // namespace internal

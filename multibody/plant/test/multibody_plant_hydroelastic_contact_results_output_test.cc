@@ -13,9 +13,6 @@ namespace drake {
 
 using geometry::ContactSurface;
 using geometry::SurfaceFace;
-using geometry::SurfaceFaceIndex;
-using geometry::SurfaceVertex;
-using geometry::SurfaceVertexIndex;
 using geometry::SurfaceMesh;
 
 namespace multibody {
@@ -257,7 +254,7 @@ TEST_F(HydroelasticContactResultsOutputTester, AutoDiffXdSupport) {
   // We'll leave a zero velocity.
   const double z0 = 0.95;
   const Vector3d p_WBo{0, 0, z0};
-  const math::RigidTransform<AutoDiffXd> X_WB(math::initializeAutoDiff(p_WBo));
+  const math::RigidTransform<AutoDiffXd> X_WB(math::InitializeAutoDiff(p_WBo));
   plant_ad.SetFreeBodyPose(&plant_context_ad, plant_ad.GetBodyByName("Ball"),
                            X_WB);
 

@@ -75,16 +75,26 @@ improve the text later as part of document assembly, please be kind to the
 human editor and do your best to provide a correct and helpful commit message
 up front.
 
+The pull request will be not be allowed to merge until it has at least one
+release notes label added:
+
+**release notes: none**
+
 Commits that do not meaningfully affect the release will be manually culled from
 the release notes during editing.  To aid the human editor in making that
 determination, you may add the tag ``release notes: none`` to the PR and the
 commit will be omitted.  For example, you should apply that tag to any PRs that
 only fix code style problems, or only affect tests or documentation.
 
+**release notes: breaking change**
+
 Commits that contain breaking changes receive special attention in the release
 notes.  To aid the human editor in making that determination, you must add the
 tag ``release notes: breaking change`` to any PR that makes a breaking change
 without a deprecation period.
+
+**release notes: newly deprecated** <br/>
+**release notes: removal of deprecated**
 
 Commits that change deprecations receive special attention in the release notes.
 To aid the human editor in making that determination, you must add the tag
@@ -92,6 +102,11 @@ To aid the human editor in making that determination, you must add the tag
 ``release notes: removal of deprecated`` to any PR that removes deprecated
 code whose date has passed.  Removing deprecated code is not considered to be a
 breaking change, so do not add ``release notes: breaking change``.
+
+**release notes: yes**
+
+For commits that do not meet any of the above criteria, you must add the tag
+``release notes: yes`` to indicate that you've considered the question.
 
 # Joint Feature and Platform review
 

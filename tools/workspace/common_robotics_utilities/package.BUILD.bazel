@@ -1,6 +1,8 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("@drake//tools/install:install.bzl", "install")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -45,6 +47,7 @@ cc_library(
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
+    linkstatic = True,
     deps = [
         "@eigen",
         "@zlib",
@@ -100,4 +103,10 @@ cc_test(
         "@eigen",
         "@gtest//:without_main",
     ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
 )

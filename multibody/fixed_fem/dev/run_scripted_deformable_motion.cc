@@ -62,12 +62,12 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
   void RegisterBody(const geometry::VolumeMesh<double>& mesh, std::string name,
                     double amplitude, double velocity,
                     const Vector3<double>& p_WM) {
-    const std::vector<geometry::VolumeVertex<double>>& verts = mesh.vertices();
+    const std::vector<Vector3<double>>& verts = mesh.vertices();
     std::vector<geometry::VolumeElement> elements = mesh.tetrahedra();
-    std::vector<geometry::VolumeVertex<double>> verts_W;
+    std::vector<Vector3<double>> verts_W;
     /* Shift the vertices to world frame. */
     for (const auto& v : verts) {
-      verts_W.emplace_back(v.r_MV() + p_WM);
+      verts_W.emplace_back(v + p_WM);
     }
     meshes_.emplace_back(std::move(elements), std::move(verts_W));
     names_.emplace_back(std::move(name));
@@ -98,14 +98,13 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
     output->resize(num_geometries());
     const double t = context.get_time();
     for (int i = 0; i < num_geometries(); ++i) {
-      const std::vector<geometry::VolumeVertex<double>> vertices =
-          meshes_[i].vertices();
+      const std::vector<Vector3<double>> vertices = meshes_[i].vertices();
       const int num_vertices = meshes_[i].num_vertices();
       VectorX<double> q(num_vertices * 3);
       const double v = velocities_[i];
       const double h = amplitudes_[i];
       for (int j = 0; j < num_vertices; ++j) {
-        Vector3<double> r_MV = vertices[j].r_MV();
+        Vector3<double> r_MV = vertices[j];
         r_MV(2) += h * std::sin(frequency_ * (r_MV(0) + v * t));
         q.template segment<3>(3 * j) = r_MV;
       }
@@ -138,7 +137,7 @@ int DoMain() {
                                        {0, 0.6, 0});
 
   auto& visualizer = *builder.AddSystem<DeformableVisualizer>(
-      1.0 / 30.0, dummy_softsim_system->get_names(),
+      1.0 / 32.0, dummy_softsim_system->get_names(),
       dummy_softsim_system->get_meshes());
   builder.Connect(*dummy_softsim_system, visualizer);
   auto diagram = builder.Build();

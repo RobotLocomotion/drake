@@ -5,9 +5,8 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
+    "install_files",
 )
 
 licenses(["notice"])  # MIT
@@ -95,15 +94,17 @@ cc_library(
 
 CMAKE_PACKAGE = "spdlog"
 
-cmake_config(
-    package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/spdlog:package-create-cps.py",
-    version_file = "include/spdlog/version.h",
-    deps = ["@fmt//:cps"],
+install_files(
+    name = "install_cmake_config",
+    dest = "lib/cmake/{}".format(CMAKE_PACKAGE),
+    files = [
+        "@drake//tools/workspace/spdlog:{}-config.cmake".format(CMAKE_PACKAGE),  # noqa
+        "@drake//tools/workspace/spdlog:{}-config-version.cmake".format(CMAKE_PACKAGE),  # noqa
+    ],
+    strip_prefix = ["**/"],
+    allowed_externals = ["@drake//:.bazelproject"],
+    visibility = ["//visibility:private"],
 )
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",

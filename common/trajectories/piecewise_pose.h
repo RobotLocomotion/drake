@@ -34,11 +34,23 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
    * @param pos_traj Position trajectory.
    * @param rot_traj Orientation trajectory.
    */
-  PiecewisePose(const PiecewisePolynomial<T>& pos_traj,
-                const PiecewiseQuaternionSlerp<T>& rot_traj);
+  PiecewisePose(const PiecewisePolynomial<T>& position_trajectory,
+                const PiecewiseQuaternionSlerp<T>& orientation_trajectory);
 
   /**
-   * Constructs a PiecewisePose from given @p time and @p poses.
+   * Constructs a PiecewisePose from given @p times and @p poses. The positions
+   * trajectory is constructed as a first-order hold. The orientation is
+   * constructed using the quaternion slerp.  There must be at least two
+   * elements in @p times and @p poses.
+   * @param times     Breaks used to build the splines.
+   * @param poses     Knots used to build the splines.
+   */
+  static PiecewisePose<T> MakeLinear(
+      const std::vector<T>& times,
+      const std::vector<math::RigidTransform<T>>& poses);
+
+  /**
+   * Constructs a PiecewisePose from given @p times and @p poses.
    * A cubic polynomial with given end velocities is used to construct the
    * position part. The rotational part is represented by a piecewise quaterion
    * trajectory.  There must be at least two elements in @p times and @p poses.
@@ -59,32 +71,55 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
 
   Eigen::Index cols() const override { return 4; }
 
+  DRAKE_DEPRECATED("2022-01-01", "get_pose() has been renamed to GetPose().")
+  math::RigidTransform<T> get_pose(const T& time) const {
+    return GetPose(time);
+  }
+
   /**
    * Returns the interpolated pose at @p time.
    */
-  math::RigidTransform<T> get_pose(const T& time) const;
+  math::RigidTransform<T> GetPose(const T& time) const;
 
   MatrixX<T> value(const T& t) const override {
-    return get_pose(t).GetAsMatrix4();
+    return GetPose(t).GetAsMatrix4();
+  }
+
+  DRAKE_DEPRECATED("2022-01-01",
+                   "get_velocity() has been renamed to GetVelocity().")
+  Vector6<T> get_velocity(const T& time) const {
+    return GetVelocity(time);
   }
 
   /**
    * Returns the interpolated velocity at @p time or zero if @p time is before
    * this trajectory's start time or after its end time.
    */
-  Vector6<T> get_velocity(const T& time) const;
+  Vector6<T> GetVelocity(const T& time) const;
+
+  DRAKE_DEPRECATED("2022-01-01",
+                   "get_acceleration() has been renamed to GetAcceleration().")
+  Vector6<T> get_acceleration(const T& time) const {
+    return GetAcceleration(time);
+  }
 
   /**
    * Returns the interpolated acceleration at @p time or zero if @p time is
    * before this trajectory's start time or after its end time.
    */
-  Vector6<T> get_acceleration(const T& time) const;
+  Vector6<T> GetAcceleration(const T& time) const;
+
+  DRAKE_DEPRECATED("2022-01-01",
+                   "is_approx() has been renamed to IsApprox().")
+  bool is_approx(const PiecewisePose<T>& other, double tol) const {
+    return IsApprox(other, tol);
+  }
 
   /**
    * Returns true if the position and orientation trajectories are both
    * within @p tol from the other's.
    */
-  bool is_approx(const PiecewisePose<T>& other, double tol) const;
+  bool IsApprox(const PiecewisePose<T>& other, double tol) const;
 
   /**
    * Returns the position trajectory.

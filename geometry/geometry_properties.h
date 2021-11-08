@@ -485,14 +485,14 @@ class GeometryProperties {
 
   // TODO(eric.cousineau): Enable this.
   // DRAKE_DEPRECATED(
-  //     "2020-10-01", "Use Rgba instead of Vector4d to define diffuse color.")
+  //     "2022-01-01", "Use Rgba instead of Vector4d to define diffuse color.")
   static Eigen::Vector4d ToVector4d(const Rgba& color) {
     return Eigen::Vector4d(color.r(), color.g(), color.b(), color.a());
   }
 
   // TODO(eric.cousineau): Enable this.
   // DRAKE_DEPRECATED(
-  //     "2020-10-01", "Use Rgba instead of Vector4d to define diffuse color.")
+  //     "2022-01-01", "Use Rgba instead of Vector4d to define diffuse color.")
   static Rgba ToRgba(const Eigen::Vector4d& value) {
     return Rgba(value(0), value(1), value(2), value(3));
   }

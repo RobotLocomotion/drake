@@ -63,7 +63,7 @@ class DeformableVolumeMeshTest : public ::testing::Test {
     const auto& vertices = mesh.vertices();
     VectorX<T> q(num_vertices * 3);
     for (int v = 0, i = 0; v < num_vertices; ++v, i += 3) {
-      q.segment(i, 3) << vertices[v].r_MV();
+      q.segment(i, 3) << vertices[v];
     }
     return q;
   }

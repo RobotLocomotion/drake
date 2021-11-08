@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -23,15 +24,28 @@ namespace multibody {
 namespace internal {
 
 /* Stores the "full" name of a body *in contact*: its model instance name, body
- name, and geometry name. This assumes that `model_name` is guaranteed to be
+ name, and geometry name. This assumes that `model` name is guaranteed to be
  unique within MBP. So, for two bodies which may be identically named (body
  name), they *must* differ by model name. For a body that has multiple collision
  geometries, we rely on the fact that every collision geometry for a single
- frame must be uniquely named. */
+ frame must be uniquely named.
+
+ This includes further information to allow visualizers to make streamlining
+ decisions. It reports if the body name is unique across the entire plant
+ (body_name_is_unique) and the number of collision geometries associated
+ with the body.
+
+ If the body name is unique, the visualizer can display only the body
+ name without fear of introducing ambiguity. Furthermore, with the number
+ collision geometries per body, the visualizer can draw conclusions about
+ the possible number of contact patches between bodies and streamline
+ accordingly. */
 struct FullBodyName {
   std::string model;
   std::string body;
   std::string geometry;
+  bool body_name_is_unique;
+  int geometry_count;
 };
 
 /* Facilitate unit testing. See ContactResultsToLcmSystem::Equals(). */
@@ -113,7 +127,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
       systems::DiagramBuilder<double>*, const MultibodyPlant<double>&,
       const systems::OutputPort<double>&,
       const std::function<std::string(geometry::GeometryId)>&,
-      lcm::DrakeLcmInterface*);
+      lcm::DrakeLcmInterface*, std::optional<double>);
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -179,14 +193,13 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
    the Diagram and connects the draw message output to the publisher input,
  - connects a ContactResults<double>-valued output port to the
    ContactResultsToLcmSystem system, and
- - sets the publishing rate to 1/60 of a second (simulated time).
+ - sets the publishing rate based on publish_period.
 
  The four variants differ in the following ways:
 
   - Two overloads take a SceneGraph and two don't. Those that do will ensure
     that the geometry names communicated in the lcm messages match the names
-    used in SceneGraph. Those that don't default to the naming convention
-    documented in ContactResultsToLcmSystem.
+    used in SceneGraph. Those that don't are deprecated.
   - Two overloads take an OutputPort and two don't. This determines what is
     connected to the ContactResultsToLcmSystem input port. The overloads that
     specify an OutputPort will attempt to connect that port. Those that don't
@@ -200,6 +213,9 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                                whose contact results are to be visualized.
  @param scene_graph            The SceneGraph that will determine how the
                                geometry names will appear in the lcm message.
+ @param publish_period         An optional period to pass along to the
+                               LcmPublisherSystem constructor; when null, a
+                               reasonable default period will be used.
  @param lcm                    An optional lcm interface through which lcm
                                messages will be dispatched. Will be allocated
                                internally if none is supplied. If one is given,
@@ -219,10 +235,12 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
 /** MultibodyPlant-connecting, default-named geometry overload.
  @ingroup visualization */
+DRAKE_DEPRECATED("2022-01-01", "Provide a SceneGraph as the third argument.")
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 /** MultibodyPlant-connecting, SceneGraph-named geometry overload.
  @ingroup visualization */
@@ -230,15 +248,18 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 /** OutputPort-connecting, default-named geometry overload.
  @ingroup visualization */
+DRAKE_DEPRECATED("2022-01-01", "Provide a SceneGraph as the third argument.")
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 /** OutputPort-connecting, SceneGraph-named geometry overload.
  @ingroup visualization */
@@ -247,7 +268,8 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& plant,
     const geometry::SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr,
+    std::optional<double> publish_period = std::nullopt);
 
 //@}
 

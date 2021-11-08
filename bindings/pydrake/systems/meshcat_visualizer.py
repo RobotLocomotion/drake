@@ -15,8 +15,8 @@ from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
-    Box, Convex, Cylinder, Mesh, Sphere,
-    FrameId, QueryObject, Role, SceneGraph
+    Box, ConvertVolumeToSurfaceMesh, Convex, Cylinder, Mesh, Sphere,
+    FrameId, QueryObject, Role, SceneGraph, VolumeMesh
 )
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
@@ -44,7 +44,9 @@ import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 from meshcat.animation import Animation
 
-_DEFAULT_PUBLISH_PERIOD = 1 / 30.
+# To help avoid small simulation timesteps, we use a default period that has an
+# exact representation in binary floating point; see drake#15021 for details.
+_DEFAULT_PUBLISH_PERIOD = 1 / 32.
 
 
 def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
@@ -80,6 +82,90 @@ def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
             np.pi/2, rotation_axes[i])
         X[0:3, 3] = delta_xyz[i]
         vis[prefix][name][axes_name[i]].set_transform(X)
+
+
+class StringToRoleAction(argparse.Action):
+    """
+    Action that converts the string 'proximity' or 'illustration' to the
+    corresponding Role enumeration value.
+    """
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        assert isinstance(values, str)
+
+        if values == 'proximity':
+            mapped_value = Role.kProximity
+        elif values == 'illustration':
+            mapped_value = Role.kIllustration
+        else:
+            raise ValueError(f"Role parameter got invalid value {s}")
+
+        setattr(namespace, self.dest, mapped_value)
+
+
+class HydroTriSurface(g.Geometry):
+    """
+    Unique representation of the triangle surface mesh associated with
+    hydroelastic mesh representations. In this case, it's important that we
+    support per-face normals (we want as honest a representation of the
+    object as possible).
+
+    A mesh consisting of an arbitrary collection of triangular faces. To
+    construct one, you need to pass in a collection of vertices as an 3Nx3
+    array and a collection of normals as a 3Nx3 array as well. The triangles
+    are implied by every triple of vertex/normals. This does *not* allow
+    re-use of vertices because it encodes a classic OpenGl vertex buffer
+    format.
+
+    For example, to create a square made out of two adjacent triangles, we
+    could do:
+    vertices = np.array([
+        [0, 0, 0],  # the first vertex is at [0, 0, 0]
+        [1, 0, 0],
+        [1, 0, 1],
+        [0, 0, 1],
+        [0, 0, 0],
+        [1, 0, 1]
+    ])
+    normals = np.array([
+        [0, 1, 0],  # The square is planar, all normals point in the same dir.
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 1, 0],
+    ])
+    mesh = HydroTriSurface(vertices, normals)
+    """
+    __slots__ = ["vertices", "normals"]
+
+    def __init__(self, vertices, normals):
+        super(HydroTriSurface, self).__init__()
+
+        vertices = np.asarray(vertices, dtype=np.float32)
+        normals = np.asarray(normals, dtype=np.float32)
+        assert (vertices.shape[0] % 3) == 0, "vertices must have 3N values"
+        assert vertices.shape[1] == 3, "`vertices` must be an 3Nx3 array"
+        assert normals.shape[1] == 3, "`normals` must be an 3Nx3 array"
+        assert vertices.shape[0] == normals.shape[0], \
+               "'vertices' and 'normals' must be the same size"
+        self.vertices = vertices
+        self.normals = normals
+
+    def lower(self, object_data):
+        attrs = {u"position": g.pack_numpy_array(self.vertices.T),
+                 u"normal": g.pack_numpy_array(self.normals.T)}
+        return {
+            u"uuid": self.uuid,
+            u"type": u"BufferGeometry",
+            u"data": {
+                u"attributes": attrs
+            }
+        }
 
 
 class MeshcatVisualizer(LeafSystem):
@@ -127,6 +213,17 @@ class MeshcatVisualizer(LeafSystem):
             "--open_browser", action='store_true', default=False,
             help="Open a browser when creating a new meshcat-server.")
 
+        parser.add_argument(
+            "--meshcat_role", action=StringToRoleAction,
+            default=Role.kIllustration, choices=['illustration', 'proximity'],
+            help="Defines the role of the geometry to visualize")
+
+        parser.add_argument(
+            "--meshcat_hydroelastic", action="store_true", default=False,
+            help="If --role=proximity, then any geometry with a hydroelastic "
+                 "mesh representation will be rendered as that discrete mesh "
+                 "instead of the declared primitive.")
+
     def __init__(self,
                  scene_graph=None,
                  draw_period=_DEFAULT_PUBLISH_PERIOD,
@@ -139,6 +236,7 @@ class MeshcatVisualizer(LeafSystem):
                  axis_radius=0.006,
                  delete_prefix_on_load=True,
                  role=Role.kIllustration,
+                 prefer_hydro=False,
                  **kwargs):
         """
         Args:
@@ -180,6 +278,14 @@ class MeshcatVisualizer(LeafSystem):
             role: Renders geometry of the specified pydrake.geometry.Role
                 type -- defaults to Role.kIllustration to draw visual geometry,
                 and also supports Role.kProximity to draw collision geometry.
+            prefer_hydro: If True (and role == Role.kProximity) any geometry
+                that has a mesh hydroelastic representation will be visualized
+                by that discrete mesh and not the declared primitive. In the
+                case of *compliant* hydroelastic geometries, only the surface
+                of the volume mesh will be drawn. This is *not* the *contact*
+                surface used to characterize contact between two geometries
+                with hydroelastic representations -- it is the mesh
+                representations of those geometries.
 
         Additional kwargs will be passed to the meshcat.Visualizer constructor.
         Note:
@@ -195,6 +301,7 @@ class MeshcatVisualizer(LeafSystem):
         if role not in [Role.kIllustration, Role.kProximity]:
             raise ValueError("Unsupported role type specified: ", role)
         self._role = role
+        self._prefer_hydro = prefer_hydro
 
         # Recording.
         self._is_recording = False
@@ -347,6 +454,7 @@ class MeshcatVisualizer(LeafSystem):
             for g_id in inspector.GetGeometries(frame_id, self._role):
                 color = 0xe5e5e5  # default color
                 alpha = 1.0
+                hydro_mesh = None
                 if self._role == Role.kIllustration:
                     props = inspector.GetIllustrationProperties(g_id)
                     if props and props.HasProperty("phong", "diffuse"):
@@ -360,13 +468,46 @@ class MeshcatVisualizer(LeafSystem):
                     # Pick a random color to make collision geometry
                     # visually distinguishable.
                     color = color_generator.randint(2**(24))
+                    if self._prefer_hydro:
+                        hydro_mesh = inspector. \
+                            maybe_get_hydroelastic_mesh(g_id)
 
                 material = g.MeshLambertMaterial(
                     color=color, transparent=alpha != 1., opacity=alpha)
 
                 shape = inspector.GetShape(g_id)
                 X_FG = inspector.GetPoseInFrame(g_id).GetAsMatrix4()
-                if isinstance(shape, Box):
+                if hydro_mesh is not None:
+                    # We've got a hydroelastic mesh to load.
+                    surface_mesh = hydro_mesh
+                    if isinstance(hydro_mesh, VolumeMesh):
+                        surface_mesh = ConvertVolumeToSurfaceMesh(hydro_mesh)
+                    v_count = len(surface_mesh.faces()) * 3
+                    vertices = np.empty((v_count, 3), dtype=float)
+                    normals = np.empty((v_count, 3), dtype=float)
+
+                    mesh_verts = surface_mesh.vertices()
+                    v = 0
+                    for face in surface_mesh.faces():
+                        p_MA = mesh_verts[int(face.vertex(0))]
+                        p_MB = mesh_verts[int(face.vertex(1))]
+                        p_MC = mesh_verts[int(face.vertex(2))]
+                        vertices[v, :] = tuple(p_MA)
+                        vertices[v + 1, :] = tuple(p_MB)
+                        vertices[v + 2, :] = tuple(p_MC)
+
+                        p_AB_M = p_MB - p_MA
+                        p_AC_M = p_MC - p_MA
+                        n_M = np.cross(p_AB_M, p_AC_M)
+                        nhat_M = n_M / np.sqrt(n_M.dot(n_M))
+
+                        normals[v, :] = nhat_M
+                        normals[v + 1, :] = nhat_M
+                        normals[v + 2, :] = nhat_M
+
+                        v += 3
+                    geom = HydroTriSurface(vertices, normals)
+                elif isinstance(shape, Box):
                     geom = g.Box([shape.width(), shape.depth(),
                                   shape.height()])
                 elif isinstance(shape, Sphere):

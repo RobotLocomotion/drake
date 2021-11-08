@@ -64,9 +64,9 @@ VolumeMesh<double> MakeUnitCubeTetMesh(
   DRAKE_DEMAND(mesh.num_vertices() == kNumVertices);
 
   std::vector<geometry::VolumeElement> elements = mesh.tetrahedra();
-  std::vector<geometry::VolumeVertex<double>> vertices;
+  std::vector<Vector3d> vertices;
   for (const auto& v : mesh.vertices()) {
-    vertices.emplace_back(pose * v.r_MV());
+    vertices.emplace_back(pose * v);
   }
   return {std::move(elements), std::move(vertices)};
 }
@@ -82,8 +82,7 @@ internal::ReferenceDeformableGeometry<double> MakeUnitCubeDeformableGeometry(
   std::vector<double> dummy_signed_distances(kNumVertices,
                                              kDummySignedDistance);
   auto mesh_field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
-      "Dummy signed distances", std::move(dummy_signed_distances), mesh.get(),
-      false);
+      std::move(dummy_signed_distances), mesh.get(), false);
   return {std::move(mesh), std::move(mesh_field)};
 }
 
@@ -245,7 +244,7 @@ TEST_F(DeformableRigidManagerTest, RegisterCollisionGeometry) {
   get_collision_geometry(&id);
   /* Verify the surface mesh is as expected. */
   const SurfaceMesh<double> expected_surface_mesh =
-      geometry::internal::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
+      geometry::ConvertVolumeToSurfaceMesh(MakeUnitCubeTetMesh());
   EXPECT_TRUE(expected_surface_mesh.Equal(collision_objects.mesh(id)));
   /* Verify proximity property is as expected. */
   const CoulombFriction<double> mu = collision_objects.proximity_properties(id)
@@ -278,8 +277,7 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
                reference_configuration_geometries[0].mesh().num_elements());
   /* Verify that the elements of the deformed mesh is the same as the elements
    of the initial mesh. */
-  for (geometry::VolumeElementIndex i(0);
-       i < deformed_meshes[0].mesh().num_elements(); ++i) {
+  for (int i = 0; i < deformed_meshes[0].mesh().num_elements(); ++i) {
     EXPECT_EQ(deformed_meshes[0].mesh().element(i),
               reference_configuration_geometries[0].mesh().element(i));
   }
@@ -291,11 +289,10 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
   EXPECT_EQ(current_positions.size(), 1);
   EXPECT_EQ(current_positions[0].size(),
             deformed_meshes[0].mesh().num_vertices() * 3);
-  for (geometry::VolumeVertexIndex i(0);
-       i < deformed_meshes[0].mesh().num_vertices(); ++i) {
+  for (int i = 0; i < deformed_meshes[0].mesh().num_vertices(); ++i) {
     const Vector3<double> p_WV = current_positions[0].segment<3>(3 * i);
     EXPECT_TRUE(
-        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i).r_MV()));
+        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
   }
 }
 
@@ -407,13 +404,32 @@ class DeformableRigidContactDataTest : public ::testing::Test {
   /* Set up a scene with three rigid boxes and one deforamble cube.
    In particular, unit cube A is deformable and boxes B, C, and D are rigid and
    have size (2, 0.5, 2). */
-  void SetUp() override {
+  void SetUp() override { Initialize(false); }
+
+  void Initialize(bool add_dirichlet_bc) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     auto deformable_model = std::make_unique<DeformableModel<double>>(plant_);
     A_ = deformable_model->RegisterDeformableBody(
         MakeUnitCubeDeformableGeometry(), "box_A", MakeDeformableBodyConfig(),
         MakeProximityProperties(kStiffnessA, kDampingA, kFrictionA));
+    if (add_dirichlet_bc) {
+      /* Set up the boundary condition so that one and only one vertex (at
+       position (-0.5, -0.5, -0.5)) is under dirichlet boundary conditions. */
+      deformable_model->SetWallBoundaryCondition(A_, Vector3d(-0.5, -0.5, -0.5),
+                                                 Vector3d(1, 1, 1));
+      /* Verify our clear box knowledge that the vertex at position (-0.5,
+       -0.5, -0.5) has vertex index 0 and thus dof index 0, 1, 2. */
+      const FemModelBase<double>& fem_model = deformable_model->fem_model(A_);
+      const DirichletBoundaryCondition<double>* dirichlet_bc =
+          fem_model.dirichlet_boundary_condition();
+      ASSERT_NE(dirichlet_bc, nullptr);
+      const std::map<DofIndex, VectorXd>& bc_map = dirichlet_bc->get_bcs();
+      ASSERT_EQ(bc_map.size(), 3);
+      for (DofIndex dof_index(0); dof_index < 3; ++dof_index) {
+        ASSERT_NE(bc_map.find(dof_index), bc_map.end());
+      }
+    }
     plant_->AddPhysicalModel(std::move(deformable_model));
     /* Add the rigid bodies. */
     const UnitInertia<double> G_Rcm =
@@ -464,9 +480,9 @@ class DeformableRigidContactDataTest : public ::testing::Test {
 
   /* Forwards the call to DeformableRigidManager::CalcContactPointData() and
    returns the result as a return value. */
-  DeformableRigidManager<double>::ContactPointData CalcContactPointData(
+  internal::ContactPointData<double> CalcContactPointData(
       const Context<double>& context) const {
-    DeformableRigidManager<double>::ContactPointData data;
+    internal::ContactPointData<double> data;
     deformable_rigid_manager_->CalcContactPointData(context, &data);
     return data;
   }
@@ -703,6 +719,49 @@ TEST_F(DeformableRigidContactDataTest, ContactJacobian) {
   }
 }
 
+/* Verify that the contact jacobian with Dirichlet boundary condition present is
+ the same as that when there is no boundary condition except with appropriate
+ columns zeroed out. */
+TEST_F(DeformableRigidContactDataTest, ContactJacobianWithBoundaryCondition) {
+  /* Calculate the contact jacobian *without* boundary condition. */
+  Initialize(false);
+  Context<double>& plant_without_bc_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  /* Set poses of the rigid bodies. */
+  const Vector3d p_WB(0, -0.5, 0);
+  const Vector3d p_WC(0, 0.5, 0);
+  const Vector3d p_WD(0, 0, -1);
+  const math::RigidTransformd X_WB(p_WB);
+  const math::RigidTransformd X_WC(p_WC);
+  const math::RigidTransformd X_WD(p_WD);
+  plant_->SetFreeBodyPose(&plant_without_bc_context, plant_->get_body(B_),
+                          X_WB);
+  plant_->SetFreeBodyPose(&plant_without_bc_context, plant_->get_body(C_),
+                          X_WC);
+  plant_->SetFreeBodyPose(&plant_without_bc_context, plant_->get_body(D_),
+                          X_WD);
+  MatrixXd Jc_without_bc = CalcContactJacobian(plant_without_bc_context);
+
+  /* Calculate the contact jacobian *with* boundary condition. */
+  Initialize(true);
+  Context<double>& plant_with_bc_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  plant_->SetFreeBodyPose(&plant_with_bc_context, plant_->get_body(B_), X_WB);
+  plant_->SetFreeBodyPose(&plant_with_bc_context, plant_->get_body(C_), X_WC);
+  plant_->SetFreeBodyPose(&plant_with_bc_context, plant_->get_body(D_), X_WD);
+  const MatrixXd Jc_with_bc = CalcContactJacobian(plant_with_bc_context);
+
+  /* Jc_without_bc should be the same as Jc_with_bc except that the columns
+   corresponding to the deformable dofs under bc (the 0th, 1st, and 2nd
+   deformable dofs) are zeroed out. */
+  EXPECT_FALSE(CompareMatrices(Jc_with_bc, Jc_without_bc));
+  const int nv_rigid = plant_->num_velocities();
+  for (int deformable_dof = 0; deformable_dof < 3; ++deformable_dof) {
+    Jc_without_bc.col(nv_rigid + deformable_dof).setZero();
+  }
+  EXPECT_TRUE(CompareMatrices(Jc_with_bc, Jc_without_bc));
+}
+
 /* Uses the same set up as the ContactJacobian test and verifies that
  CalcContactPointData correctly assembles the data from both rigid-rigid
  contacts and deformable-rigid contacts. Note that in this test, we exploit our
@@ -737,7 +796,8 @@ TEST_F(DeformableRigidContactDataTest, ContactData) {
   ASSERT_GT(nc_rigid_deformable, 0);
 
   /* Verifies that the contact point data is as expected. */
-  const auto contact_point_data = CalcContactPointData(plant_context);
+  const internal::ContactPointData<double> contact_point_data =
+      CalcContactPointData(plant_context);
   const VectorXd& mu = contact_point_data.mu;
   const VectorXd& phi0 = contact_point_data.phi0;
   const VectorXd& stiffness = contact_point_data.stiffness;
@@ -874,7 +934,8 @@ TEST_F(DeformableRigidContactDataTest, NoContact) {
   EXPECT_EQ(Jc.cols(), 0);
 
   /* Verify that the contact point data is empty. */
-  const auto contact_point_data = CalcContactPointData(plant_context);
+  const internal::ContactPointData<double> contact_point_data =
+      CalcContactPointData(plant_context);
   EXPECT_EQ(contact_point_data.mu.size(), 0);
   EXPECT_EQ(contact_point_data.phi0.size(), 0);
   EXPECT_EQ(contact_point_data.stiffness.size(), 0);

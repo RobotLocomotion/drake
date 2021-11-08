@@ -23,7 +23,7 @@ namespace drake {
 /// See autodiff_overloads.h to use this with Eigen's AutoDiffScalar.
 /// See symbolic_expression.h to use this with symbolic::Expression.
 template <typename T>
-DRAKE_DEPRECATED("2020-08-01",
+DRAKE_DEPRECATED("2021-11-01",
                  "Provide a specific overload of ExtractDoubleOrThrow for any "
                  "type that really is sensible at compile time and should "
                  "defer failure to runtime; this version was too generic.")

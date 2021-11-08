@@ -251,7 +251,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the

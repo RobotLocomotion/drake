@@ -15,6 +15,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
 
@@ -22,6 +23,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::HydroelasticType;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
@@ -122,7 +124,7 @@ GeometryState<T>::GeometryState()
   // As an arbitrary design choice, we'll say the world frame is its own parent.
   frames_[world] = InternalFrame(self_source_, world, "world",
                                  InternalFrame::world_frame_group(),
-                                 FrameIndex(0), world);
+                                 0, world);
   frame_index_to_id_map_.push_back(world);
   X_WF_.push_back(RigidTransform<T>::Identity());
   X_PF_.push_back(RigidTransform<T>::Identity());
@@ -389,6 +391,32 @@ const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
 }
 
 template <typename T>
+std::variant<std::monostate, const SurfaceMesh<double>*,
+             const VolumeMesh<double>*>
+GeometryState<T>::maybe_get_hydroelastic_mesh(GeometryId geometry_id) const {
+  const auto& hydro_geometries = geometry_engine_->hydroelastic_geometries();
+  switch (hydro_geometries.hydroelastic_type(geometry_id)) {
+    case HydroelasticType::kUndefined:
+      break;
+    case HydroelasticType::kRigid: {
+      const auto& rigid = hydro_geometries.rigid_geometry(geometry_id);
+      if (!rigid.is_half_space()) {
+        return &rigid.mesh();
+      }
+      break;
+    }
+    case HydroelasticType::kSoft: {
+      const auto& soft = hydro_geometries.soft_geometry(geometry_id);
+      if (!soft.is_half_space()) {
+        return &soft.mesh();
+      }
+      break;
+    }
+  }
+  return {};
+}
+
+template <typename T>
 const ProximityProperties* GeometryState<T>::GetProximityProperties(
     GeometryId id) const {
   const InternalGeometry* geometry = GetGeometry(id);
@@ -528,7 +556,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   }
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
-  FrameIndex index(X_PF_.size());
+  int index(static_cast<int>(X_PF_.size()));
   X_PF_.emplace_back(RigidTransform<T>::Identity());
   X_WF_.emplace_back(RigidTransform<T>::Identity());
   frame_index_to_id_map_.push_back(frame_id);

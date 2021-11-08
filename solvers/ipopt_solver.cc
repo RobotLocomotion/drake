@@ -219,7 +219,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // Run the version which calculates gradients.
 
   AutoDiffVecXd ty(c.num_constraints());
-  c.Eval(math::initializeAutoDiff(this_x), &ty);
+  c.Eval(math::InitializeAutoDiff(this_x), &ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
   // constraint, we don't need to apply any bounding information here.
@@ -636,7 +636,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
             xvec(problem_->FindDecisionVariableIndex(binding.variables()(i)));
       }
 
-      binding.evaluator()->Eval(math::initializeAutoDiff(this_x), &ty);
+      binding.evaluator()->Eval(math::InitializeAutoDiff(this_x), &ty);
 
       cost_cache_->result[0] += ty(0).value();
 

@@ -138,15 +138,14 @@ class ElasticityModel : public FemModel<Element> {
     constexpr int kNumNodes = Element::Traits::kNumNodes;
     DRAKE_THROW_UNLESS(kNumNodes == 4);
 
-    using geometry::VolumeVertexIndex;
     /* Record the reference positions of the input mesh. */
     const int num_new_vertices = mesh.num_vertices();
     reference_positions_.conservativeResize(reference_positions_.size() +
                                             kDim * num_new_vertices);
     const NodeIndex node_index_offset = NodeIndex(this->num_nodes());
-    for (VolumeVertexIndex i(0); i < num_new_vertices; ++i) {
+    for (int i = 0; i < num_new_vertices; ++i) {
       reference_positions_.template segment<kDim>(
-          kDim * (i + node_index_offset)) = mesh.vertex(i).r_MV();
+          kDim * (i + node_index_offset)) = mesh.vertex(i);
     }
     /* Record the number of vertices *before* the input mesh is parsed. */
     const int num_vertices = this->num_nodes();

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import collections
 import copy
+import itertools
 import unittest
-import copy
 
 import numpy as np
 
@@ -1983,27 +1984,25 @@ class TestPlant(unittest.TestCase):
         # geometries. We'll do a reality check after instantiating.
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
-        # Test for owning and non-owning lcm.
-        for lcm in (None, DrakeLcm()):
-            # There are two versions of the function; one takes a SceneGraph,
-            # one does not. Test both.
-            for use_custom_names in (True, False):
-                builder = DiagramBuilder_[float]()
-                plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-                Parser(plant).AddModelFromFile(file_name)
-                plant.Finalize()
-                self.assertGreater(
-                    len(plant.GetCollisionGeometriesForBody(
-                        plant.GetBodyByName("base"))),
-                    0)
-
-                if use_custom_names:
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+        self.assertGreater(
+            len(plant.GetCollisionGeometriesForBody(
+                plant.GetBodyByName("base"))),
+            0)
+        # Check all valid combinations of the optional arguments.
+        for optional_args in itertools.product(
+                [{}, {"scene_graph": scene_graph}],
+                [{}, {"lcm": None}, {"lcm": DrakeLcm()}],
+                [{}, {"publish_period": None}, {"publish_period": 1.0/32}]):
+            kwargs = collections.ChainMap(*optional_args)
+            with self.subTest(num_optional_args=len(kwargs), **kwargs):
+                is_deprecated = 0 if "scene_graph" in kwargs else 1
+                with catch_drake_warnings(expected_count=is_deprecated) as w:
                     publisher = ConnectContactResultsToDrakeVisualizer(
-                        builder=builder, plant=plant, scene_graph=scene_graph,
-                        lcm=lcm)
-                else:
-                    publisher = ConnectContactResultsToDrakeVisualizer(
-                        builder=builder, plant=plant, lcm=lcm)
+                        builder=builder, plant=plant, **kwargs)
                 self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_collision_filter(self):

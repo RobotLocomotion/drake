@@ -41,10 +41,10 @@
       <geometry>
         <box size="10 10 1"/>
       </geometry>
-      <drake_compliance>
-        <static_friction>1</static_friction>
-        <dynamic_friction>0.6</dynamic_friction>
-      </drake_compliance>
+      <drake:proximity_properties>
+        <drake:mu_static value="1"/>
+        <drake:mu_dynamic value="0.6"/>
+      </drake:proximity_properties>
     </collision>
   </link>
   <joint name="floor_weld" type="fixed">

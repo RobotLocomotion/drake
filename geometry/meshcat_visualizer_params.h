@@ -11,8 +11,10 @@ namespace geometry {
 /** The set of parameters for configuring MeshcatVisualizer. */
 struct MeshcatVisualizerParams {
   /** The duration (in simulation seconds) between attempts to update poses in
-   the visualizer. */
-  double publish_period{1 / 60.0};
+   the visualizer. (To help avoid small simulation timesteps, we use a default
+   period that has an exact representation in binary floating point; see
+   drake#15021 for details.) */
+  double publish_period{1 / 64.0};
 
   /** The role of the geometries to be sent to the visualizer. */
   Role role{Role::kIllustration};
@@ -31,7 +33,7 @@ struct MeshcatVisualizerParams {
    initialization event to remove any visualizations e.g. from a previous
    simulation. See @ref declare_initialization_events "Declare initialization
    events" for more information. */
-  bool delete_on_intialization_event{true};
+  bool delete_on_initialization_event{true};
 };
 
 }  // namespace geometry

@@ -22,7 +22,7 @@ def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_ubuntu:
+    if os_result.is_ubuntu or os_result.is_manylinux:
         error = setup_pkg_config_repository(repo_ctx).error
         if error != None:
             fail(error)
@@ -36,6 +36,9 @@ liblapack_repository = repository_rule(
     attrs = {
         "modname": attr.string(default = "lapack"),
         "licenses": attr.string_list(default = ["notice"]),  # BSD-3-Clause
+        # Explicitly specify transitive dependencies; these are needed when
+        # using static LAPACK as in the PyPI wheel builds.
+        "extra_linkopts": attr.string_list(default = ["-lblas", "-lgfortran"]),
     },
     local = True,
     configure = True,

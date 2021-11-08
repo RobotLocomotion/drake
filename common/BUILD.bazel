@@ -274,6 +274,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "identifier",
+    srcs = ["identifier.cc"],
     hdrs = ["identifier.h"],
     deps = [
         ":essential",
@@ -776,6 +777,13 @@ sh_test(
 alias(
     name = "print_host_settings",
     actual = "//tools/cc_toolchain:print_host_settings",
+)
+
+drake_cc_googletest(
+    name = "drake_copyable_test",
+    deps = [
+        ":essential",
+    ],
 )
 
 drake_cc_googletest(

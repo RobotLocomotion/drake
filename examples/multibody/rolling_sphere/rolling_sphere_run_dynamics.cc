@@ -53,6 +53,9 @@ DEFINE_double(
 DEFINE_bool(visualize, true,
             "If true, the simulation will publish messages for Drake "
             "visualizer. Useful to turn off during profiling sessions.");
+DEFINE_bool(vis_hydro, false,
+            "If true, visualize collision geometries as their hydroelastic "
+            "meshes, where possible.");
 
 // Sphere's spatial velocity.
 DEFINE_double(vx, 1.5,
@@ -161,8 +164,14 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   if (FLAGS_visualize) {
-    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
-    ConnectContactResultsToDrakeVisualizer(&builder, plant);
+    geometry::DrakeVisualizerParams params;
+    if (FLAGS_vis_hydro) {
+      params.role = geometry::Role::kProximity;
+      params.show_hydroelastic = true;
+    }
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
+                                             params);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
   }
   auto diagram = builder.Build();
 

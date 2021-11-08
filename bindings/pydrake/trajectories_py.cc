@@ -9,6 +9,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_pose.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/trajectory.h"
 
@@ -348,6 +349,36 @@ PYBIND11_MODULE(trajectories, m) {
       .def("angular_acceleration",
           &PiecewiseQuaternionSlerp<T>::angular_acceleration, py::arg("time"),
           doc.PiecewiseQuaternionSlerp.angular_acceleration.doc);
+
+  py::class_<PiecewisePose<T>, PiecewiseTrajectory<T>>(
+      m, "PiecewisePose", doc.PiecewisePose.doc)
+      .def(py::init<>(), doc.PiecewisePose.ctor.doc_0args)
+      .def(py::init<const PiecewisePolynomial<T>&,
+               const PiecewiseQuaternionSlerp<T>&>(),
+          py::arg("position_trajectory"), py::arg("orientation_trajectory"),
+          doc.PiecewisePose.ctor.doc_2args)
+      .def_static("MakeLinear", &PiecewisePose<T>::MakeLinear, py::arg("times"),
+          py::arg("poses"), doc.PiecewisePose.MakeLinear.doc)
+      .def_static("MakeCubicLinearWithEndLinearVelocity",
+          &PiecewisePose<T>::MakeCubicLinearWithEndLinearVelocity,
+          py::arg("times"), py::arg("poses"),
+          py::arg("start_vel") = Vector3<T>::Zero(),
+          py::arg("end_vel") = Vector3<T>::Zero(),
+          doc.PiecewisePose.MakeCubicLinearWithEndLinearVelocity.doc)
+      .def("GetPose", &PiecewisePose<T>::GetPose, py::arg("time"),
+          doc.PiecewisePose.GetPose.doc)
+      .def("GetVelocity", &PiecewisePose<T>::GetVelocity, py::arg("time"),
+          doc.PiecewisePose.GetVelocity.doc)
+      .def("GetAcceleration", &PiecewisePose<T>::GetAcceleration,
+          py::arg("time"), doc.PiecewisePose.GetAcceleration.doc)
+      .def("IsApprox", &PiecewisePose<T>::IsApprox, py::arg("other"),
+          py::arg("tol"), doc.PiecewisePose.IsApprox.doc)
+      .def("get_position_trajectory",
+          &PiecewisePose<T>::get_position_trajectory,
+          doc.PiecewisePose.get_position_trajectory.doc)
+      .def("get_orientation_trajectory",
+          &PiecewisePose<T>::get_orientation_trajectory,
+          doc.PiecewisePose.get_orientation_trajectory.doc);
 }
 
 }  // namespace pydrake

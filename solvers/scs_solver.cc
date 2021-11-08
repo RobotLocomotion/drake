@@ -4,13 +4,10 @@
 #include <fmt/format.h>
 
 // clang-format off
-// scs.h should be included before linsys/amatrix.h, since amatrix.h uses types
-// scs_float, scs_int, etc, defined in scs.h
 #include <scs.h>
 #include <cones.h>
 #include <linalg.h>
 #include <util.h>
-#include "linsys/amatrix.h"
 // clang-format on
 
 #include "drake/common/scope_exit.h"
@@ -245,7 +242,7 @@ void ParseLinearEqualityConstraint(
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
   }
-  cone->f += num_linear_equality_constraints_rows;
+  cone->z += num_linear_equality_constraints_rows;
 }
 
 void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
@@ -549,34 +546,31 @@ void SetScsProblemData(int A_row_count, int num_vars,
   for (int i = 0; i < num_vars; ++i) {
     scs_problem_data->c[i] = c[i];
   }
-
-  // Set the parameters to default values.
-  // This scs_calloc doesn't need to accompany a ScopeExit since
-  // scs_problem_data->stgs will be cleaned up recursively by freeing up
-  // scs_problem_data in scs_free_data()
-  scs_problem_data->stgs =
-      static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
-  scs_set_default_settings(scs_problem_data);
 }
 }  // namespace
 
 bool ScsSolver::is_available() { return true; }
 
 namespace {
-// This should be invoked only once on each unique instance of SCS_SETTINGS.
+// This should be invoked only once on each unique instance of ScsSettings.
 // Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, int>* solver_options_int,
     const bool print_to_console,
-    SCS_SETTINGS* scs_settings) {
-  auto it = solver_options_int->find("max_iters");
-  if (it != solver_options_int->end()) {
-    scs_settings->max_iters = it->second;
-    solver_options_int->erase(it);
-  }
-  it = solver_options_int->find("normalize");
+    ScsSettings* scs_settings) {
+  auto it = solver_options_int->find("normalize");
   if (it != solver_options_int->end()) {
     scs_settings->normalize = it->second;
+    solver_options_int->erase(it);
+  }
+  it = solver_options_int->find("adaptive_scale;");
+  if (it != solver_options_int->end()) {
+    scs_settings->adaptive_scale = it->second;
+    solver_options_int->erase(it);
+  }
+  it = solver_options_int->find("max_iters");
+  if (it != solver_options_int->end()) {
+    scs_settings->max_iters = it->second;
     solver_options_int->erase(it);
   }
   it = solver_options_int->find("verbose");
@@ -598,16 +592,21 @@ void SetScsSettings(
     scs_settings->acceleration_lookback = it->second;
     solver_options_int->erase(it);
   }
+  it = solver_options_int->find("acceleration_interval");
+  if (it != solver_options_int->end()) {
+    scs_settings->acceleration_interval = it->second;
+    solver_options_int->erase(it);
+  }
   if (!solver_options_int->empty()) {
     throw std::invalid_argument("Unsupported SCS solver options.");
   }
 }
 
-// This should be invoked only once on each unique instance of SCS_SETTINGS.
+// This should be invoked only once on each unique instance of ScsSettings.
 // Namely, only call this function for once in DoSolve.
 void SetScsSettings(
     std::unordered_map<std::string, double>* solver_options_double,
-    SCS_SETTINGS* scs_settings) {
+    ScsSettings* scs_settings) {
   auto it = solver_options_double->find("scale");
   if (it != solver_options_double->end()) {
     scs_settings->scale = it->second;
@@ -618,9 +617,31 @@ void SetScsSettings(
     scs_settings->rho_x = it->second;
     solver_options_double->erase(it);
   }
-  it = solver_options_double->find("eps");
+  it = solver_options_double->find("eps_abs");
   if (it != solver_options_double->end()) {
-    scs_settings->eps = it->second;
+    scs_settings->eps_abs = it->second;
+    solver_options_double->erase(it);
+  } else {
+    // SCS 3.0 uses 1E-4 as the default value, see
+    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
+    // tolerance is too loose. We set the default tolerance to 1E-5 for better
+    // accuracy.
+    scs_settings->eps_abs = 1E-5;
+  }
+  it = solver_options_double->find("eps_rel");
+  if (it != solver_options_double->end()) {
+    scs_settings->eps_rel = it->second;
+    solver_options_double->erase(it);
+  } else {
+    // SCS 3.0 uses 1E-4 as the default value, see
+    // https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
+    // tolerance is too loose. We set the default tolerance to 1E-5 for better
+    // accuracy.
+    scs_settings->eps_rel = 1E-5;
+  }
+  it = solver_options_double->find("eps_infeas");
+  if (it != solver_options_double->end()) {
+    scs_settings->eps_infeas = it->second;
     solver_options_double->erase(it);
   }
   it = solver_options_double->find("alpha");
@@ -628,9 +649,9 @@ void SetScsSettings(
     scs_settings->alpha = it->second;
     solver_options_double->erase(it);
   }
-  it = solver_options_double->find("cg_rate");
+  it = solver_options_double->find("time_limit_secs");
   if (it != solver_options_double->end()) {
-    scs_settings->cg_rate = it->second;
+    scs_settings->time_limit_secs = it->second;
     solver_options_double->erase(it);
   }
   if (!solver_options_double->empty()) {
@@ -700,10 +721,16 @@ void ScsSolver::DoSolve(
   ScsCone* cone = static_cast<ScsCone*>(scs_calloc(1, sizeof(ScsCone)));
   ScsData* scs_problem_data =
       static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
-  // It will free scs_problem_data, cone, together with their instantiated
-  // members.
-  ScopeExit problem_data_guard(
-      [&scs_problem_data, &cone]() { scs_free_data(scs_problem_data, cone); });
+  ScsSettings* scs_stgs =
+      static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
+  // This guard will free cone, scs_problem_data, and scs_stgs (together with
+  // their instantiated members) upon return from the DoSolve function.
+  ScopeExit scs_free_guard([&cone, &scs_problem_data, &scs_stgs]() {
+    scs_free_data(scs_problem_data, cone, scs_stgs);
+  });
+
+  // Set the parameters to default values.
+  scs_set_default_settings(scs_stgs);
 
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
@@ -763,9 +790,8 @@ void ScsSolver::DoSolve(
   std::unordered_map<std::string, double> input_solver_options_double =
       merged_options.GetOptionsDouble(id());
   SetScsSettings(&input_solver_options_int,
-                 merged_options.get_print_to_console(),
-                 scs_problem_data->stgs);
-  SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
+                 merged_options.get_print_to_console(), scs_stgs);
+  SetScsSettings(&input_solver_options_double, scs_stgs);
 
   ScsInfo scs_info{0};
 
@@ -775,15 +801,17 @@ void ScsSolver::DoSolve(
 
   ScsSolverDetails& solver_details =
       result->SetSolverDetailsType<ScsSolverDetails>();
-  solver_details.scs_status = scs(scs_problem_data, cone, scs_sol, &scs_info);
+  solver_details.scs_status = scs(
+      scs_problem_data, cone, scs_stgs, scs_sol, &scs_info);
 
   solver_details.iter = scs_info.iter;
   solver_details.primal_objective = scs_info.pobj;
   solver_details.dual_objective = scs_info.dobj;
   solver_details.primal_residue = scs_info.res_pri;
   solver_details.residue_infeasibility = scs_info.res_infeas;
-  solver_details.residue_unbounded = scs_info.res_unbdd;
-  solver_details.relative_duality_gap = scs_info.rel_gap;
+  solver_details.residue_unbounded_a = scs_info.res_unbdd_a;
+  solver_details.residue_unbounded_p = scs_info.res_unbdd_p;
+  solver_details.duality_gap = scs_info.gap;
   solver_details.scs_setup_time = scs_info.setup_time;
   solver_details.scs_solve_time = scs_info.solve_time;
 

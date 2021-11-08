@@ -2,9 +2,11 @@
 <sdf version="1.6" xmlns:drake="drake.mit.edu">
   <model name="Robot_Finger_Planar_Mechanism">
     <!-- *******************************************************
-         Base is regarded as a tall vertical cylinder that is welded to world.
-         Base's origin is coincident with world origin and base is oriented with
-         x horizontally-forward, y horizontally-right, z-vertically upward (opposite gravity).
+         The robot's base is modeled as a thin horizontal cylinder N that is
+         welded to the world (Earth).  The base's origin No is coincident with
+         the world origin.  Right-handed orthogonal unit vectors Nx, Ny, Nz are
+         fixed in the cylinder N with Ny along the cylinder axis, Nz vertically
+         upward (opposite gravity), and Nx horizonally-right.
          Inertia properties for the base (world body) are irrelevant.
          ******************************************************* -->
     <link name="base">
@@ -21,11 +23,11 @@
         </inertia>
       </inertial>
       <visual name="base_visual">
-        <pose>0 0 -0.1  0 0 0</pose>
+        <pose>0 0 -0.1  0 1.570796326794897 0</pose>
         <geometry>
           <capsule>
             <radius>0.005</radius>
-            <length>0.300</length>
+            <length>0.300</length>  <!-- Along the z-axis -->
           </capsule>
         </geometry>
         <material>

@@ -1,25 +1,42 @@
 package drake;
 
-// Commands the desired state of a Franka Panda arm.  All angular
-// positions/velocities are expressed in radians and radians/second.
+// Commands the desired state of a Franka Panda arm.
 //
 // The Franka Control Interface provides a number of possible modes to control
 // the arm, as described in
-// https://frankaemika.github.io/docs/libfranka.html#realtime-commands
 //
-// In the case of this message, the interpretation of the provided values
-// depends on the operating mode of the FCI driver (e.g. if the driver is
-// operating entirely in velocity control mode, positions and torques in this
-// message may be ignored entirely).
+//   https://frankaemika.github.io/docs/libfranka.html#realtime-commands
+//
+// The expected control mode is given by the control_mode_expected, below.
+//
+// The num_joint_{position,velocity,torque} size must not have multiple
+// different non-zero values.  Each one must be set to either the actual
+// number of joints (e.g., 7) or else zero.
 struct lcmt_panda_command
 {
   // The timestamp in microseconds.
   int64_t utime;
 
-  int32_t num_joints;
-  double joint_position[num_joints];
-  double joint_velocity[num_joints];
-  double joint_torque[num_joints];
+  // The commanded joint positions in radians.
+  //
+  // These values must be provided if the CONTROL_MODE_POSITION bit is set
+  // within control_mode_expected.
+  int32_t num_joint_position;
+  double joint_position[num_joint_position];
+
+  // The commanded joint velocities in radians per second.
+  //
+  // These values must be provided if the CONTROL_MODE_VELOCITY bit is set
+  // within control_mode_expected.
+  int32_t num_joint_velocity;
+  double joint_velocity[num_joint_velocity];
+
+  // The commanded joint torques.
+  //
+  // These values must be provided if the CONTROL_MODE_TORQUE bit is set
+  // within control_mode_expected.
+  int32_t num_joint_torque;
+  double joint_torque[num_joint_torque];
 
   // Describes how the controller expects the driver to be configured.  See
   // the values for control_mode in lcmt_panda_status.

@@ -45,25 +45,36 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data[4] = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
-  std::vector<SurfaceVertex<T>> vertices;
+  std::vector<Vector3<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh =
       std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices));
   return surface_mesh;
 }
 
-// Tests Evaluate(VertexIndex).
 GTEST_TEST(MeshFieldLinearTest, EvaluateAtVertex) {
   auto mesh = GenerateMesh<double>();
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e", std::move(e_values), mesh.get());
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(0)), 0);
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(1)), 1);
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(2)), 2);
-  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(3)), 3);
+          std::move(e_values), mesh.get());
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(0), 0);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(1), 1);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(2), 2);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(3), 3);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(MeshFieldLinearTest, DeprecatedEvaluateAtVertex) {
+  auto mesh = GenerateMesh<double>();
+  std::vector<double> e_values = {0., 1., 2., 3.};
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "my_name", std::move(e_values), mesh.get());
+  EXPECT_EQ(mesh_field->name(), "my_name");
+}
+#pragma GCC diagnostic pop
 
 // Tests CloneAndSetMesh(). We use `double` and SurfaceMesh<double> as
 // representative arguments for type parameters.
@@ -74,7 +85,7 @@ GTEST_TEST(MeshFieldLinearTest, TestDoCloneWithMesh) {
 
   auto mesh1 = GenerateMesh<double>();
   std::vector<FieldValue> e_values = {0., 1., 2., 3.};
-  MeshFieldLineard original("e", std::move(e_values), mesh1.get());
+  MeshFieldLineard original(std::move(e_values), mesh1.get());
 
   MeshType mesh2 = *mesh1;
   std::unique_ptr<MeshFieldLineard> clone = original.CloneAndSetMesh(&mesh2);
@@ -85,7 +96,6 @@ GTEST_TEST(MeshFieldLinearTest, TestDoCloneWithMesh) {
   EXPECT_NE(&original.mesh(), &clone->mesh());
 
   // Check equivalence.
-  EXPECT_EQ(original.name(), clone->name());
   EXPECT_EQ(original.values(), clone->values());
   // TODO(SeanCurtis-TRI) We haven't tested gradients_ or values_at_Mo_.
 }
@@ -96,7 +106,7 @@ GTEST_TEST(MeshFieldLinearTest, TestEqual) {
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e", std::move(e_values), mesh.get());
+          std::move(e_values), mesh.get());
 
   // Same field.
   auto field0 = mesh_field->CloneAndSetMesh(mesh.get());
@@ -111,7 +121,7 @@ GTEST_TEST(MeshFieldLinearTest, TestEqual) {
   // Different e values.
   std::vector<double> alt_e_values = {3., 2., 1., 0.};
   auto field2 = MeshFieldLinear<double, SurfaceMesh<double>>(
-      "e", std::move(alt_e_values), mesh.get());
+      std::move(alt_e_values), mesh.get());
   EXPECT_FALSE(mesh_field->Equal(field2));
 }
 
@@ -123,9 +133,9 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradient) {
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e", std::move(e_values), mesh.get());
+          std::move(e_values), mesh.get());
 
-  Vector3d gradient = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient = mesh_field->EvaluateGradient(0);
 
   Vector3d expect_gradient(1., 1., 0.);
   EXPECT_TRUE(CompareMatrices(expect_gradient, gradient, 1e-14));
@@ -139,9 +149,9 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradientThrow) {
   const bool calculate_gradient = false;
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e", std::move(e_values), mesh.get(), calculate_gradient);
+          std::move(e_values), mesh.get(), calculate_gradient);
 
-  EXPECT_THROW(mesh_field->EvaluateGradient(SurfaceFaceIndex(0)),
+  EXPECT_THROW(mesh_field->EvaluateGradient(0),
                std::runtime_error);
 }
 
@@ -152,11 +162,11 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e", std::move(e_values), mesh.get());
+          std::move(e_values), mesh.get());
 
   // We will not check all gradient vectors. Instead we will use the gradient
   // vector of the first triangle as a representative.
-  Vector3d gradient_M = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient_M = mesh_field->EvaluateGradient(0);
 
   // Confirm the gradient vector before rigid transform.
   Vector3d expect_gradient_M(1., 1., 0.);
@@ -167,7 +177,7 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   mesh->TransformVertices(X_MN);
   mesh_field->TransformGradients(X_MN);
 
-  Vector3d gradient_N = mesh_field->EvaluateGradient(SurfaceFaceIndex(0));
+  Vector3d gradient_N = mesh_field->EvaluateGradient(0);
   Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
 
   EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
@@ -187,12 +197,12 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   // "positive tetrahedron" and the latter "negative tetrahedron".
   // No tetrahedron crosses the x=0 plane in frame M. Obviously we assume
   // the tetrahedra fill the volume of the box.
-  std::set<VolumeElementIndex> positive_set;  // set of positive tetrahedra.
-  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+  std::set<int> positive_set;  // set of positive tetrahedra.
+  for (int e = 0; e < mesh_M.num_elements(); ++e) {
     int num_positive_or_zero = 0;
     int num_negative_or_zero = 0;
     for (int i = 0; i < 4; ++i) {
-      const Vector3d p_MV = mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV();
+      const Vector3d p_MV = mesh_M.vertex(mesh_M.element(e).vertex(i));
       if (p_MV.x() >= 0) ++num_positive_or_zero;
       if (p_MV.x() <= 0) ++num_negative_or_zero;
     }
@@ -231,19 +241,18 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   };
 
   std::vector<double> values;
-  for (const VolumeVertex<double>& v : mesh_M.vertices()) {
-    values.push_back(f(v.r_MV()));
+  for (const Vector3d& p_MV : mesh_M.vertices()) {
+    values.push_back(f(p_MV));
   }
   std::vector<double> values_copy = values;
 
   const MeshFieldLinear<double, VolumeMesh<double>> field_without_gradient(
-      "3.5|x| - 2.7y + 0.7z + 1.23", std::move(values_copy), &mesh_M, false);
+      std::move(values_copy), &mesh_M, false);
   const MeshFieldLinear<double, VolumeMesh<double>> field_with_gradient(
-      "3.5|x| - 2.7y + 0.7z + 1.23", std::move(values), &mesh_M, true);
+      std::move(values), &mesh_M, true);
 
-  ASSERT_THROW(field_without_gradient.EvaluateGradient(VolumeElementIndex(0)),
-               std::runtime_error);
-  ASSERT_NO_THROW(field_with_gradient.EvaluateGradient(VolumeElementIndex(0)));
+  ASSERT_THROW(field_without_gradient.EvaluateGradient(0), std::runtime_error);
+  ASSERT_NO_THROW(field_with_gradient.EvaluateGradient(0));
 
   {
     // Evaluating the field for points within tetrahedra.  The tolerance
@@ -255,10 +264,10 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
           Barycentric{0.49999, 0.49999, 1e-5, 1e-5} /* near edge */}) {
       // TODO(SeanCurtis-TRI): it's ridiculous that we don't have a mesh method
       //  that turns (element index, barycentric) --> cartesian.
-      for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+      for (int e = 0; e < mesh_M.num_elements(); ++e) {
         Vector3d p_MQ{0, 0, 0};
         for (int i = 0; i < 4; ++i) {
-          p_MQ += mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV() * b_Q(i);
+          p_MQ += mesh_M.vertex(mesh_M.element(e).vertex(i)) * b_Q(i);
         }
         const double expect = f(p_MQ);
         constexpr double tolerance = 2e-15;
@@ -275,7 +284,7 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   for (const Vector3d& p_MQ :
        {Vector3d{1e-15, 1e-15, 1e-15}, Vector3d{0.1, 0.2, 0.3},
         Vector3d{-10.23, 27, 77}, Vector3d{321.3, -843.2, 202.02}}) {
-    for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    for (int e = 0; e < mesh_M.num_elements(); ++e) {
       if (positive_set.count(e) == 1) {
         // f⁺(x,y,z) =  3.5x - 2.7y + 0.7z + 1.23
         const double expect = f_p(p_MQ);
@@ -322,23 +331,23 @@ class ScalarMixingTest : public ::testing::Test {
     e_ad[1].derivatives() << 1, 2, 3;  // Arbitrary values.
 
     field_d_ = std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-        "e_d", std::move(e_d), mesh_d_.get());
+        std::move(e_d), mesh_d_.get());
     field_ad_ =
         std::make_unique<MeshFieldLinear<AutoDiffXd, SurfaceMesh<double>>>(
-            "e_ad", std::move(e_ad), mesh_d_.get());
+            std::move(e_ad), mesh_d_.get());
 
     p_WQ_d_ = Vector3d::Zero();
-    for (SurfaceVertexIndex v(0); v < 3; ++v) {
-      p_WQ_d_ += mesh_d_->vertex(v).r_MV();
+    for (int v = 0; v < 3; ++v) {
+      p_WQ_d_ += mesh_d_->vertex(v);
     }
     p_WQ_d_ /= 3;
-    p_WQ_ad_ = math::initializeAutoDiff(p_WQ_d_);
+    p_WQ_ad_ = math::InitializeAutoDiff(p_WQ_d_);
 
     b_d_ = Vector3d(1, 1, 1) / 3.0;
-    b_ad_ = math::initializeAutoDiff(b_d_);
+    b_ad_ = math::InitializeAutoDiff(b_d_);
 
     centroid_value_ = 0;
-    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+    for (int v = 0; v < 3; ++v) {
       centroid_value_ += field_d_->EvaluateAtVertex(v);
     }
     centroid_value_ /= 3;
@@ -348,8 +357,8 @@ class ScalarMixingTest : public ::testing::Test {
   std::unique_ptr<MeshFieldLinear<double, SurfaceMesh<double>>> field_d_;
   std::unique_ptr<MeshFieldLinear<AutoDiffXd, SurfaceMesh<double>>> field_ad_;
 
-  SurfaceFaceIndex e0_{0};
-  SurfaceFaceIndex e1_{1};
+  int e0_{0};
+  int e1_{1};
   // The centroid of triangle 0.
   Vector3<double> p_WQ_d_;
   Vector3<AutoDiffXd> p_WQ_ad_;

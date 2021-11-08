@@ -12,7 +12,11 @@ grasped exerts a contact force with measure Fx on the robot's end-effector E
 (E is at the end of finger C).
 
 <p align="center">
+<<<<<<< Updated upstream
   <img src="RobotFingerPlanarMechanismSchematic.jpg" width="480" alt="Robotic finger">
+=======
+  <img src="RobotFingerPlanarMechanismSchematic.jpg" width="350" alt="Robotic finger">
+>>>>>>> Stashed changes
 </p>
 
 1. One way to close the kinematic loop is to use a flexible bushing to
@@ -37,7 +41,11 @@ bazel-bin/tools/drake_visualizer &
 bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint
 ```
 
+<<<<<<< Updated upstream
 Alternatively, to simulate for 8 seconds, pass command line arguments to the
+=======
+Alternatively, to simulate for 5 seconds, pass command line arguments to the
+>>>>>>> Stashed changes
 executable by typing:
 ```
 bazel-bin/examples/multibody/bushing_as_revolute_joint/bushing_as_revolute_joint -simulation_time=8 -simulator_max_time_step=2E-3

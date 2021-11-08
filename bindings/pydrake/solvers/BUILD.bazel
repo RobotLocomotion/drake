@@ -182,6 +182,18 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "ibex_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["ibex_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+    ],
+)
+
+drake_pybind_library(
     name = "ipopt_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -284,6 +296,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":csdp_py",
     ":dreal_py",
     ":gurobi_py",
+    ":ibex_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mixed_integer_optimization_util_py",
@@ -361,6 +374,18 @@ drake_py_unittest(
     name = "gurobi_solver_test",
     tags = gurobi_test_tags(),
     deps = [":gurobi_py"],
+)
+
+drake_py_unittest(
+    name = "ibex_solver_test",
+    args = select({
+        "//tools:no_dreal": ["TestIbexSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":ibex_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(

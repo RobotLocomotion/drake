@@ -72,11 +72,10 @@ void EvalConstraintGradient(
   plant.CalcJacobianCenterOfMassTranslationalVelocity(
       context, JacobianWrtVariable::kQDot, expressed_frame, expressed_frame,
       &Jq_V_EC);
-  const Eigen::Vector3d y_val = p_EC - math::autoDiffToValueMatrix(x.tail<3>());
+  const Eigen::Vector3d y_val = p_EC - math::ExtractValue(x.tail<3>());
   Eigen::Matrix3Xd dy_dx(3, plant.num_positions() + 3);
   dy_dx << Jq_V_EC, -Eigen::Matrix3d::Identity();
-  *y = math::initializeAutoDiffGivenGradientMatrix(
-      y_val, dy_dx * math::autoDiffToGradientMatrix(x));
+  *y = math::InitializeAutoDiff(y_val, dy_dx * math::ExtractGradient(x));
 }
 
 // (T, S) can be (double, double), (double, AutoDiffXd) or (AutoDiffXd,
@@ -117,7 +116,7 @@ void ComPositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
   if (use_autodiff()) {
     AutoDiffVecXd y_t;
     Eval(x.cast<AutoDiffXd>(), &y_t);
-    *y = math::autoDiffToValueMatrix(y_t);
+    *y = math::ExtractValue(y_t);
   } else {
     DoEvalGeneric(*plant_double_, context_double_, model_instances_,
                   expressed_frame_index_, x, y);

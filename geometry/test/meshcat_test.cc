@@ -9,6 +9,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_types.h"
 
 namespace drake {
@@ -57,6 +58,20 @@ GTEST_TEST(MeshcatTest, ConstructMultiple) {
   EXPECT_NE(meshcat.web_url(), meshcat2.web_url());
 }
 
+GTEST_TEST(MeshcatTest, Ports) {
+  Meshcat meshcat(7050);
+  EXPECT_EQ(meshcat.port(), 7050);
+
+  // Can't open the same port twice.
+  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat m2(7050),
+                              "Meshcat failed to open a websocket port.");
+
+  // The default constructor gets a default port.
+  Meshcat m3;
+  EXPECT_GE(m3.port(), 7000);
+  EXPECT_LE(m3.port(), 7099);
+}
+
 // The correctness of this is established with meshcat_manual_test.  Here we
 // simply aim to provide code coverage for CI (e.g., no segfaults).
 GTEST_TEST(MeshcatTest, SetObjectWithShape) {
@@ -92,6 +107,36 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   // Bad filename (file doesn't exist).  Should only log a warning.
   meshcat.SetObject("bad", Mesh("test.obj"));
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetObjectWithPointCloud) {
+  Meshcat meshcat;
+
+  perception::PointCloud cloud(5);
+  // clang-format off
+  cloud.mutable_xyzs().transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  // clang-format on
+  meshcat.SetObject("cloud", cloud);
+  EXPECT_FALSE(meshcat.GetPackedObject("cloud").empty());
+
+  perception::PointCloud rgb_cloud(
+      5, perception::pc_flags::kXYZs | perception::pc_flags::kRGBs);
+  rgb_cloud.mutable_xyzs() = cloud.xyzs();
+  // clang-format off
+  rgb_cloud.mutable_rgbs() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 255,
+    4, 5, 6,
+    40, 50, 60;
+  // clang-format on
+  meshcat.SetObject("rgb_cloud", rgb_cloud);
+  EXPECT_FALSE(meshcat.GetPackedObject("rgb_cloud").empty());
 }
 
 GTEST_TEST(MeshcatTest, SetTransform) {
@@ -226,6 +271,67 @@ GTEST_TEST(MeshcatTest, SetPropertyDouble) {
   EXPECT_EQ(data.value, 2.0);
 }
 
+GTEST_TEST(MeshcatTest, Buttons) {
+  Meshcat meshcat;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button"),
+      "Meshcat does not have any button named button.");
+
+  meshcat.AddButton("button");
+  EXPECT_EQ(meshcat.GetButtonClicks("button"), 0);
+  meshcat.DeleteButton("button");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button"),
+      "Meshcat does not have any button named button.");
+
+  meshcat.AddButton("button1");
+  meshcat.AddButton("button2");
+  meshcat.DeleteAddedControls();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button1"),
+      "Meshcat does not have any button named button1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetButtonClicks("button2"),
+      "Meshcat does not have any button named button2.");
+}
+
+GTEST_TEST(MeshcatTest, Sliders) {
+  Meshcat meshcat;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider"),
+      "Meshcat does not have any slider named slider.");
+
+  meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.5, 1e-14);
+  meshcat.SetSliderValue("slider", 0.7);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.7, 1e-14);
+  meshcat.SetSliderValue("slider", -2.0);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), .2, 1e-14);
+  meshcat.SetSliderValue("slider", 2.0);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.5, 1e-14);
+  meshcat.SetSliderValue("slider", 1.245);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.2, 1e-14);
+
+  meshcat.DeleteSlider("slider");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider"),
+      "Meshcat does not have any slider named slider.");
+
+  meshcat.AddSlider("slider1", 2, 3, 0.01, 2.35);
+  meshcat.AddSlider("slider2", 4, 5, 0.01, 4.56);
+  meshcat.DeleteAddedControls();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider1"),
+      "Meshcat does not have any slider named slider1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      meshcat.GetSliderValue("slider2"),
+      "Meshcat does not have any slider named slider2.");
+}
+
 void CheckWebsocketCommand(const drake::geometry::Meshcat& meshcat,
                            int message_num,
                            const std::string& desired_command_json) {
@@ -262,6 +368,192 @@ GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
     })""");
 }
 
+GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {
+  Meshcat meshcat;
+  Meshcat::PerspectiveCamera perspective;
+  perspective.fov = 82;
+  perspective.aspect = 1.5;
+  meshcat.SetCamera(perspective, "/my/camera");
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_object",
+      "path": "/my/camera",
+      "object": {
+        "object": {
+          "type": "PerspectiveCamera",
+          "fov": 82.0,
+          "aspect": 1.5,
+          "near": 0.01,
+          "far": 100
+        }
+      }
+    })""");
+}
+
+GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
+  Meshcat meshcat;
+  Meshcat::OrthographicCamera ortho;
+  ortho.left = -1.23;
+  ortho.bottom = .84;
+  meshcat.SetCamera(ortho, "/my/camera");
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_object",
+      "path": "/my/camera",
+      "object": {
+        "object": {
+          "type": "OrthographicCamera",
+          "left": -1.23,
+          "right": 1.0,
+          "top": -1.0,
+          "bottom": 0.84,
+          "near": -1000.0,
+          "far": 1000.0,
+          "zoom": 1.0
+        }
+      }
+    })""");
+}
+
+GTEST_TEST(MeshcatTest, SetAnimation) {
+  Meshcat meshcat;
+  MeshcatAnimation animation;
+
+  animation.SetTransform(0, "sphere", RigidTransformd(Vector3d{0, 0, 0}));
+  animation.SetTransform(20, "sphere", RigidTransformd(Vector3d{0, 0, 1}));
+  animation.SetTransform(40, "sphere", RigidTransformd(Vector3d{0, 0, 0}));
+
+  animation.SetProperty(0, "cylinder", "visible", true);
+  animation.SetProperty(20, "cylinder", "visible", false);
+  animation.SetProperty(40, "cylinder", "visible", true);
+
+  animation.SetProperty(0, "ellipsoid/<object>", "material.opacity", 0.0);
+  animation.SetProperty(20, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.SetProperty(40, "ellipsoid/<object>", "material.opacity", 0.0);
+
+  animation.set_loop_mode(MeshcatAnimation::kLoopRepeat);
+  animation.set_repetitions(4);
+  animation.set_autoplay(true);
+  animation.set_clamp_when_finished(true);
+
+  meshcat.SetAnimation(animation);
+
+  // The animations will be in lexographical order by path since we're using a
+  // std::map with the path strings as the (sorted) keys.
+  CheckWebsocketCommand(meshcat, 1, R"""({
+      "type": "set_animation",
+      "animations": [{
+          "path": "/drake/cylinder",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".visible",
+                  "type": "boolean",
+                  "keys": [{
+                      "time": 0,
+                      "value": true
+                    },{
+                      "time": 20,
+                      "value": false
+                    },{
+                      "time": 40,
+                      "value": true
+                  }]
+              }]
+          }
+      }, {
+          "path": "/drake/ellipsoid/<object>",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".material.opacity",
+                  "type": "number",
+                  "keys": [{
+                      "time": 0,
+                      "value": 0.0
+                    },{
+                      "time": 20,
+                      "value": 1.0
+                  },{
+                      "time": 40,
+                      "value": 0.0
+                  }]
+              }]
+          }
+      }, {
+          "path": "/drake/sphere",
+          "clip": {
+              "fps": 32.0,
+              "name": "default",
+              "tracks": [{
+                  "name": ".position",
+                  "type": "vector3",
+                  "keys": [{
+                      "time": 0,
+                      "value": [0.0, 0.0, 0.0]
+                    },{
+                      "time": 20,
+                      "value": [0.0, 0.0, 1.0]
+                    },{
+                      "time": 40,
+                      "value": [0.0, 0.0, 0.0]
+                  }]
+              }, {
+                  "name": ".quaternion",
+                  "type": "quaternion",
+                  "keys": [{
+                      "time": 0,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                    },{
+                      "time": 20,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                    },{
+                      "time": 40,
+                      "value": [0.0, 0.0, 0.0, 1.0]
+                  }]
+              }]
+          }
+      }],
+      "options": {
+          "play": true,
+          "loopMode": 2201,
+          "repetitions": 4,
+          "clampWhenFinished": true
+      }
+  })""");
+}
+
+GTEST_TEST(MeshcatTest, Set2dRenderMode) {
+  Meshcat meshcat;
+  meshcat.Set2dRenderMode();
+  // We simply confirm that all of the objects have been set, and use
+  // meshcat_manual_test to check that the visualizer updates as we expect.
+  EXPECT_FALSE(
+      meshcat.GetPackedObject("/Cameras/default/rotated").empty());
+  EXPECT_FALSE(meshcat.GetPackedTransform("/Cameras/default").empty());
+  EXPECT_FALSE(
+      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "position")
+          .empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
+}
+
+GTEST_TEST(MeshcatTest, ResetRenderMode) {
+  Meshcat meshcat;
+  meshcat.ResetRenderMode();
+  // We simply confirm that all of the objects have been set, and use
+  // meshcat_manual_test to check that the visualizer updates as we expect.
+  EXPECT_FALSE(
+      meshcat.GetPackedObject("/Cameras/default/rotated").empty());
+  EXPECT_FALSE(meshcat.GetPackedTransform("/Cameras/default").empty());
+  EXPECT_FALSE(
+      meshcat.GetPackedProperty("/Cameras/default/rotated/<object>", "position")
+          .empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Background", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
+  EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
+}
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

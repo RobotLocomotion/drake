@@ -24,10 +24,8 @@ namespace {
 using Eigen::Vector3d;
 using geometry::SurfaceMesh;
 using geometry::VolumeElement;
-using geometry::VolumeElementIndex;
 using geometry::VolumeMesh;
 using geometry::VolumeMeshFieldLinear;
-using geometry::VolumeVertex;
 using geometry::internal::Bvh;
 using geometry::internal::DeformableVolumeMesh;
 using geometry::internal::Obb;
@@ -67,7 +65,7 @@ SurfaceMesh<T> MakePyramidSurface() {
     faces.emplace_back(face);
   }
   // clang-format off
-  const Vector3<T> vertex_data[6] = {
+  vector<Vector3<T>> vertices = {
       { 0,  0, 0},
       { 1,  0, 0},
       { 0,  1, 0},
@@ -76,10 +74,6 @@ SurfaceMesh<T> MakePyramidSurface() {
       { 0,  0, 1}
   };
   // clang-format on
-  vector<geometry::SurfaceVertex<T>> vertices;
-  for (auto& vertex : vertex_data) {
-    vertices.emplace_back(vertex);
-  }
   return SurfaceMesh<T>(std::move(faces), std::move(vertices));
 }
 
@@ -185,13 +179,13 @@ void TestComputeTetMeshTriMeshContact() {
   calculated_centroids_D.clear();
   for (int i = 0; i < kNumPolys; ++i) {
     const Vector4<T> b_centroid = contact_data[i].b_centroid;
-    const VolumeElementIndex tet_index = contact_data[i].tet_index;
+    const int tet_index = contact_data[i].tet_index;
     const VolumeElement& tet = volume_D.element(tet_index);
     Vector3<T> centroid_D(0, 0, 0);
     /* Calculate the centroid in cartesian coordinate by interpolating the
      positions of the tet vertices with the barycentric weights. */
     for (int j = 0; j < 4; ++j) {
-      centroid_D += b_centroid(j) * volume_D.vertex(tet.vertex(j)).r_MV();
+      centroid_D += b_centroid(j) * volume_D.vertex(tet.vertex(j));
     }
     calculated_centroids_D.push_back(centroid_D);
   }
@@ -215,12 +209,7 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   int face[3] = {0, 1, 2};
   vector<geometry::SurfaceFace> faces;
   faces.emplace_back(face);
-  const Vector3<double> tri_vertex_data[3] = {
-      {10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
-  vector<geometry::SurfaceVertex<double>> tri_vertices;
-  for (auto& vertex : tri_vertex_data) {
-    tri_vertices.emplace_back(vertex);
-  }
+  vector<Vector3<double>> tri_vertices = {{10, 0, 0}, {-5, 5, 0}, {-5, -5, 0}};
   const SurfaceMesh<double> surface_R(std::move(faces),
                                       std::move(tri_vertices));
   const Bvh<Obb, SurfaceMesh<double>> bvh_R(surface_R);
@@ -236,7 +225,7 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   tets.emplace_back(tet);
   const Vector3<double> tet_vertex_data[4] = {
       {1, 0, -1}, {-1, 0, -1}, {0, -1, 1}, {0, 1, 1}};
-  vector<VolumeVertex<double>> tet_vertices;
+  vector<Vector3d> tet_vertices;
   for (const auto& vertex : tet_vertex_data) {
     tet_vertices.emplace_back(vertex);
   }
@@ -255,18 +244,19 @@ GTEST_TEST(DeformableContactTest, NonTriangleContactPolygon) {
   EXPECT_TRUE(CompareMatrices(data.centroid, Vector3d(0, 0, 0), kTol));
 }
 
+
+const DeformableBodyIndex kDeformableBodyIndex(2);
 /* Makes a DeformableContactData with a single contact pair using the given
  `contact_surface`. Unused parameters are set to arbitrary values. */
 internal::DeformableContactData<double> MakeDeformableContactData(
     DeformableContactSurface<double> contact_surface,
     internal::ReferenceDeformableGeometry<double> deformable_geometry) {
   const geometry::GeometryId dummy_rigid_id;
-  const DeformableBodyIndex dummy_deformable_id;
   const double dummy_stiffness = 0;
   const double dummy_dissipation = 0;
   const double dummy_friction = 0;
   const internal::DeformableRigidContactPair<double> contact_pair(
-      std::move(contact_surface), dummy_rigid_id, dummy_deformable_id,
+      std::move(contact_surface), dummy_rigid_id, kDeformableBodyIndex,
       dummy_stiffness, dummy_dissipation, dummy_friction);
   return internal::DeformableContactData<double>({contact_pair},
                                                  deformable_geometry);
@@ -313,6 +303,7 @@ GTEST_TEST(DeformableContactTest, DeformableContactData) {
     EXPECT_EQ(i, permuted_vertex_indexes[permuted_to_original_indexes[i]]);
     EXPECT_EQ(i, permuted_to_original_indexes[permuted_vertex_indexes[i]]);
   }
+  EXPECT_EQ(contact_data.deformable_body_index(), kDeformableBodyIndex);
 }
 
 GTEST_TEST(DeformableContactTest, EmptyDeformableContactData) {

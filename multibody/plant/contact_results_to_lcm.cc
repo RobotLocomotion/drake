@@ -17,7 +17,9 @@ namespace internal {
 
 bool operator==(const FullBodyName& n1, const FullBodyName& n2) {
   return n1.model == n2.model && n1.body == n2.body &&
-         n1.geometry == n2.geometry;
+         n1.geometry == n2.geometry &&
+         n1.body_name_is_unique == n2.body_name_is_unique &&
+         n1.geometry_count == n2.geometry_count;
 }
 
 }  // namespace internal
@@ -38,9 +40,10 @@ const std::vector<GeometryId>& GetCollisionGeometriesForBody(
         "MultibodyPlant has at least one body '{}/{}' with multiple contact "
         "geometries. Contacts with this body may be unclear in the visualizer "
         "if contact is made with multiple geometries simultaneously. To "
-        "clarify the visualization, pass in a geometry naming functor to the "
-        "constructor. See the documentation for ContactResultsToLcmSystem for "
-        "details.",
+        "clarify the visualization, use ConnectContactResultsToDrakeVisualizer "
+        "instead of the ContactResultsToLcm constructor, and pass a SceneGraph "
+        "to that function. See the documentation for ContactResultsToLcmSystem "
+        "for details.",
         plant.GetModelInstanceName(body.model_instance()), body.name());
     unused(log_once);
   }
@@ -100,8 +103,23 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
          GetCollisionGeometriesForBody(plant, body, use_default_namer)) {
       const std::string& model_name =
           plant.GetModelInstanceName(body.model_instance());
-      geometry_id_to_body_name_map_[geometry_id] = {model_name, body.name(),
-                                                    namer(geometry_id)};
+      const bool body_name_is_unique =
+          plant.NumBodiesWithName(body.name()) == 1;
+      // TODO(SeanCurtis-TRI): collision geometries can be added to SceneGraph
+      //  after the plant has been finalized. Those geometries will not be found
+      //  in this map. What *should* happen is that this should *also* be
+      //  connected to SceneGraph's query object output port and it should ask
+      //  scene graph about things like this when evaluating the output port.
+      //  However, this is not an immediate problem for *this* system, because
+      //  MultibodyPlant is authored such that if someone were to add such a
+      //  geometry and it participated in collision, MultibodyPlant would have
+      //  already thrown an exception in computing the contact. Until MbP gets
+      //  out of the way, there's no reason to update here.
+      const int collision_count =
+          static_cast<int>(plant.GetCollisionGeometriesForBody(body).size());
+      geometry_id_to_body_name_map_[geometry_id] = {
+          model_name, body.name(), namer(geometry_id),
+          body_name_is_unique, collision_count};
     }
   }
 }
@@ -181,11 +199,16 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     surface_msg.body1_name = name1.body;
     surface_msg.model1_name = name1.model;
     surface_msg.geometry1_name = name1.geometry;
+    surface_msg.body1_unique = name1.body_name_is_unique;
+    surface_msg.collision_count1 = name1.geometry_count;
+
     const FullBodyName& name2 = geometry_id_to_body_name_map_.at(
         hydroelastic_contact_info.contact_surface().id_N());
     surface_msg.body2_name = name2.body;
     surface_msg.model2_name = name2.model;
     surface_msg.geometry2_name = name2.geometry;
+    surface_msg.body2_unique = name2.body_name_is_unique;
+    surface_msg.collision_count2 = name2.geometry_count;
 
     const geometry::ContactSurface<T>& contact_surface =
         hydroelastic_contact_info.contact_surface();
@@ -220,19 +243,19 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     // Loop through each contact triangle on the contact surface.
     const auto& field = contact_surface.e_MN();
-    for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
+    for (int j = 0; j < surface_msg.num_triangles; ++j) {
       lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
           surface_msg.triangles[j];
 
       // Get the three vertices.
       const auto& face = mesh_W.element(j);
-      const geometry::SurfaceVertex<T>& vA = mesh_W.vertex(face.vertex(0));
-      const geometry::SurfaceVertex<T>& vB = mesh_W.vertex(face.vertex(1));
-      const geometry::SurfaceVertex<T>& vC = mesh_W.vertex(face.vertex(2));
+      const Vector3<T>& vA = mesh_W.vertex(face.vertex(0));
+      const Vector3<T>& vB = mesh_W.vertex(face.vertex(1));
+      const Vector3<T>& vC = mesh_W.vertex(face.vertex(2));
 
-      write_double3(vA.r_MV(), tri_msg.p_WA);
-      write_double3(vB.r_MV(), tri_msg.p_WB);
-      write_double3(vC.r_MV(), tri_msg.p_WC);
+      write_double3(vA, tri_msg.p_WA);
+      write_double3(vB, tri_msg.p_WB);
+      write_double3(vC, tri_msg.p_WC);
 
       // Record the pressures.
       tri_msg.pressure_A =
@@ -250,7 +273,8 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
     const std::function<std::string(GeometryId)>& name_lookup,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
   DRAKE_DEMAND(builder != nullptr);
 
   // Note: Can't use AddSystem<System> or make_unique<System> because neither
@@ -260,9 +284,13 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
           new ContactResultsToLcmSystem<double>(multibody_plant, name_lookup)));
   contact_to_lcm->set_name("contact_to_lcm");
 
+  // To help avoid small timesteps, use a default period that has an exact
+  // representation in binary floating point (see drake#15021).
+  const double default_publish_period = 1.0 / 64;
   auto contact_results_publisher = builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", lcm, 1.0 / 60 /* publish period */));
+          "CONTACT_RESULTS", lcm, publish_period.value_or(
+              default_publish_period)));
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port,
@@ -275,30 +303,35 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
-    lcm::DrakeLcmInterface* lcm) {
-  return ConnectWithNameLookup(
-      builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(), nullptr, lcm);
-}
-
-systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
-    systems::DiagramBuilder<double>* builder,
-    const MultibodyPlant<double>& multibody_plant,
-    const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
   return ConnectWithNameLookup(
       builder, multibody_plant,
       multibody_plant.get_contact_results_output_port(),
-      make_geometry_name_lookup(scene_graph), lcm);
+      nullptr, lcm, publish_period);
+}
+
+systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const MultibodyPlant<double>& multibody_plant,
+    const geometry::SceneGraph<double>& scene_graph,
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
+  return ConnectWithNameLookup(
+      builder, multibody_plant,
+      multibody_plant.get_contact_results_output_port(),
+      make_geometry_name_lookup(scene_graph), lcm, publish_period);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    std::optional<double> publish_period) {
   return ConnectWithNameLookup(
-      builder, multibody_plant, contact_results_port, nullptr, lcm);
+      builder, multibody_plant, contact_results_port,
+      nullptr, lcm, publish_period);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
@@ -306,11 +339,12 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& multibody_plant,
     const geometry::SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm) {
+    lcm::DrakeLcmInterface* lcm,
+    const std::optional<double> publish_period) {
   return ConnectWithNameLookup(
       builder, multibody_plant,
       contact_results_port,
-      make_geometry_name_lookup(scene_graph), lcm);
+      make_geometry_name_lookup(scene_graph), lcm, publish_period);
 }
 
 }  // namespace multibody

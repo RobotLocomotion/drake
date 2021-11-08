@@ -49,6 +49,12 @@ def _impl(repository_ctx):
         archive = "dv-0.1.0-406-g4c3e570a-python-3.8.2-qt-5.12.8-vtk-8.2.0-focal-x86_64-1.tar.gz"  # noqa
         sha256 = "282438d7fabd72dddc8a9f5b3b7481b6b6ea53e4355f79f5bda1dae6e258d6be"  # noqa
         python_version = "3.8"
+    elif os_result.is_manylinux:
+        repository_ctx.symlink(
+            Label("@drake//tools/workspace/drake_visualizer:package-stub.BUILD.bazel"),  # noqa
+            "BUILD.bazel",
+        )
+        return
     else:
         fail("Operating system is NOT supported {}".format(os_result))
 
@@ -69,6 +75,7 @@ def _impl(repository_ctx):
         repository_ctx,
         patches = [
             Label("@drake//tools/workspace/drake_visualizer:use_drake_lcmtypes.patch"),  # noqa
+            Label("@drake//tools/workspace/drake_visualizer:draw_lcm_mesh.patch"),  # noqa
         ],
         patch_args = [
             "--directory=lib/python{}/site-packages/director".format(

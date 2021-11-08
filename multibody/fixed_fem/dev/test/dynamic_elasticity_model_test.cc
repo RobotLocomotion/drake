@@ -85,9 +85,9 @@ class DynamicElasticityModelTest : public ::testing::Test {
     FemState<ElementType> deformed_state = model_.MakeFemState();
     /* Perturb qddot and set up derivatives. */
     const Vector<double, kNumDofs> perturbed_qddot =
-        math::autoDiffToValueMatrix(deformed_state.qddot()) + perturbation();
+        math::ExtractValue(deformed_state.qddot()) + perturbation();
     Vector<T, kNumDofs> perturbed_qddot_autodiff;
-    math::initializeAutoDiff(perturbed_qddot, perturbed_qddot_autodiff);
+    math::InitializeAutoDiff(perturbed_qddot, &perturbed_qddot_autodiff);
     /* It's important to set up the `deformed_state` with AdvanceOneTimeStep()
      so that the derivatives such as dq/dqddot are set up. */
     model_.AdvanceOneTimeStep(reference_state, perturbed_qddot_autodiff,

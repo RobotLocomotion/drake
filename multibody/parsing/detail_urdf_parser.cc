@@ -116,24 +116,40 @@ void ParseBody(const multibody::PackageMap& package_map,
         "ERROR: link tag is missing name attribute.");
   }
 
+  const RigidBody<double>* body_pointer{};
   if (body_name == kWorldName) {
-    return;
-  }
-
-  SpatialInertia<double> M_BBo_B;
-  XMLElement* inertial_node = node->FirstChildElement("inertial");
-  if (!inertial_node) {
-    M_BBo_B = SpatialInertia<double>(
-        0, Vector3d::Zero(), UnitInertia<double>(0, 0, 0));
+    // TODO(SeanCurtis-TRI): We have no documentation about what our parsers
+    //  support and not. The fact that we allow this behavior should be
+    //  discoverable *somewhere*. But this function is in an anonymous
+    //  namespace; where would the documentation go that supports this
+    //  implementation?
+    body_pointer = &plant->world_body();
+    if (node->FirstChildElement("inertial") != nullptr) {
+      // TODO(SeanCurtis-TRI): It would be good to report file name and line
+      //  number in this error.
+      static const logging::Warn log_once(
+          "A URDF file declared the \"world\" link and then attempted to "
+          "assign mass properties (via the <inertial> tag). Only geometries, "
+          "<collision> and <visual>, can be assigned to the world link. The "
+          "<inertial> tag is being ignored.");
+    }
   } else {
-    M_BBo_B = ExtractSpatialInertiaAboutBoExpressedInB(inertial_node);
-  }
+    SpatialInertia<double> M_BBo_B;
+    XMLElement* inertial_node = node->FirstChildElement("inertial");
+    if (!inertial_node) {
+      M_BBo_B = SpatialInertia<double>(0, Vector3d::Zero(),
+                                       UnitInertia<double>(0, 0, 0));
+    } else {
+      M_BBo_B = ExtractSpatialInertiaAboutBoExpressedInB(inertial_node);
+    }
 
-  // Add a rigid body to model each link.
-  const RigidBody<double>& body =
-      plant->AddRigidBody(body_name, model_instance, M_BBo_B);
+    // Add a rigid body to model each link.
+    body_pointer = &plant->AddRigidBody(body_name, model_instance, M_BBo_B);
+  }
 
   if (plant->geometry_source_is_registered()) {
+    const RigidBody<double>& body = *body_pointer;
+
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
@@ -277,8 +293,7 @@ void ParseJointLimits(XMLElement* node, double* lower, double* upper,
   }
 }
 
-void ParseJointDynamics(const std::string& joint_name,
-                        XMLElement* node, double* damping) {
+void ParseJointDynamics(XMLElement* node, double* damping) {
   *damping = 0.0;
   double coulomb_friction = 0.0;
   double coulomb_window = std::numeric_limits<double>::epsilon();
@@ -288,14 +303,18 @@ void ParseJointDynamics(const std::string& joint_name,
     ParseScalarAttribute(dynamics_node, "damping", damping);
     if (ParseScalarAttribute(dynamics_node, "friction", &coulomb_friction) &&
         coulomb_friction != 0.0) {
-      drake::log()->warn("Joint {} specifies non-zero friction, which is "
-                         "not supported by MultibodyPlant", joint_name);
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified a non-zero value for "
+          "the 'friction' attribute of a joint/dynamics tag. MultibodyPlant "
+          "does not currently support non-zero joint friction.");
     }
     if (ParseScalarAttribute(dynamics_node, "coulomb_window",
                              &coulomb_window) &&
         coulomb_window != std::numeric_limits<double>::epsilon()) {
-      drake::log()->warn("Joint {} specifies non-zero coulomb_window, which is "
-                         "not supported by MultibodyPlant", joint_name);
+      static const logging::Warn log_once(
+          "At least one of your URDF files has specified a value for  the "
+          "'coulomb_window' attribute of a <joint> tag. Drake no longer makes "
+          "use of that attribute and all instances will be ignored.");
     }
   }
 }
@@ -389,7 +408,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
-    ParseJointDynamics(name, node, &damping);
+    ParseJointDynamics(node, &damping);
     const JointIndex index = plant->AddJoint<RevoluteJoint>(
         name, parent_body, X_PJ,
         child_body, std::nullopt, axis, lower, upper, damping).index();
@@ -405,7 +424,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
   } else if (type.compare("prismatic") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
-    ParseJointDynamics(name, node, &damping);
+    ParseJointDynamics(node, &damping);
     const JointIndex index = plant->AddJoint<PrismaticJoint>(
         name, parent_body, X_PJ,
         child_body, std::nullopt, axis, lower, upper, damping).index();
@@ -420,7 +439,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
                        "free body.", name, child_name);
   } else if (type.compare("ball") == 0) {
     throw_on_custom_joint(true);
-    ParseJointDynamics(name, node, &damping);
+    ParseJointDynamics(node, &damping);
     plant->AddJoint<BallRpyJoint>(name, parent_body, X_PJ,
                                   child_body, std::nullopt, damping);
   } else if (type.compare("planar") == 0) {
@@ -434,7 +453,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
                                  child_body, std::nullopt, damping_vec);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
-    ParseJointDynamics(name, node, &damping);
+    ParseJointDynamics(node, &damping);
     plant->AddJoint<UniversalJoint>(name, parent_body, X_PJ,
                                     child_body, std::nullopt, damping);
   } else {
@@ -468,9 +487,10 @@ void ParseTransmission(
   // print a warning and then abort this method call since only simple
   // transmissions are supported at this time.
   if (type.find("SimpleTransmission") == std::string::npos) {
-    drake::log()->warn(
-        "Only SimpleTransmissions are supported right now.  This element "
-        "will be skipped.");
+    static const logging::Warn log_once(
+        "At least one of your URDF files has <transmission> type that isn't "
+        "'SimpleTransmission'. Drake only supports 'SimpleTransmission'; all "
+        "other transmission types will be ignored.");
     return;
   }
 

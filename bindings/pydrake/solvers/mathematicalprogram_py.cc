@@ -458,6 +458,7 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kEqualityConstrainedQP", SolverType::kEqualityConstrainedQP,
           doc.SolverType.kEqualityConstrainedQP.doc)
       .value("kGurobi", SolverType::kGurobi, doc.SolverType.kGurobi.doc)
+      .value("kIbex", SolverType::kIbex, doc.SolverType.kIbex.doc)
       .value("kIpopt", SolverType::kIpopt, doc.SolverType.kIpopt.doc)
       .value("kLinearSystem", SolverType::kLinearSystem,
           doc.SolverType.kLinearSystem.doc)

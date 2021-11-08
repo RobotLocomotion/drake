@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/is_less_than_comparable.h"
 
@@ -23,18 +22,26 @@ namespace drake {
 /// class is able to be used to generate keys (e.g., for std::map, etc.) from
 /// pairs of objects.
 ///
-/// @tparam T A template type that provides `operator<` and supports default
-///           construction.
+/// The availability of construction and assignment operations (i.e., default
+/// constructor, copy constructor, copy assignment, move constructor, move
+/// assignment) is the same as whatever T provides .  All comparison operations
+/// (including equality, etc.) are always available.
+///
+/// @tparam T A template type that provides `operator<`.
 template <class T>
 struct SortedPair {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SortedPair)
   static_assert(is_less_than_comparable<T>::value, "SortedPair can only be used"
-      "with types that can be compared using the less-than operator "
-      "(operator<).");
+      " with types that can be compared using the less-than operator"
+      " (operator<).");
 
-  /// The default constructor creates `first()` and `second()` using their
-  /// respective default constructors.
-  SortedPair() = default;
+  /// The default constructor creates `first()` and `second()` using T's default
+  /// constructor, iff T has a default constructor.  Otherwise, this constructor
+  /// is not available.
+#ifndef DRAKE_DOXYGEN_CXX
+  template <typename T1 = T,
+      typename std::enable_if_t<std::is_constructible_v<T1>, bool> = true>
+#endif
+  SortedPair() {}
 
   /// Rvalue reference constructor, permits constructing with std::unique_ptr
   /// types, for example.
@@ -58,6 +65,11 @@ struct SortedPair {
   template <class U>
   SortedPair(SortedPair<U>&& u) : first_{std::forward<T>(u.first())},
       second_{std::forward<T>(u.second())} {}
+
+  // N.B. We leave all of the copy/move/assign operations implicitly declared,
+  // so that iff T provides that operation, then we will also provide it.  Do
+  // not declare any of those operations nor a destructor here, or else the
+  // implicitly declared functions might not longer be implicitly declared.
 
   /// Resets the stored objects.
   template <class U>

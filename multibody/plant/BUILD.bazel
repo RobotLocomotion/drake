@@ -27,6 +27,8 @@ drake_cc_package_library(
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
+        ":multibody_plant_config",
+        ":multibody_plant_config_functions",
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
@@ -87,6 +89,7 @@ drake_cc_library(
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
+        ":multibody_plant_config",
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
@@ -279,6 +282,26 @@ drake_cc_library(
     hdrs = ["contact_permutation.h"],
     deps = [
         "//multibody/tree:multibody_tree_topology",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_config",
+    srcs = ["multibody_plant_config.cc"],
+    hdrs = ["multibody_plant_config.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_config_functions",
+    srcs = ["multibody_plant_config_functions.cc"],
+    hdrs = ["multibody_plant_config_functions.h"],
+    deps = [
+        ":multibody_plant_config",
+        ":multibody_plant_core",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -730,6 +753,15 @@ drake_cc_googletest(
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_config_functions_test",
+    deps = [
+        ":multibody_plant_config_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
     ],
 )
 

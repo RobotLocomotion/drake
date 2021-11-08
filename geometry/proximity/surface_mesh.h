@@ -16,49 +16,13 @@
 
 namespace drake {
 namespace geometry {
+/** Index used to identify a vertex in a surface mesh. Use `int` instead; this
+ will disappear imminently. */
+using SurfaceVertexIndex = int;
 
-/**
- Index used to identify a vertex in a surface mesh.
- */
-using SurfaceVertexIndex = TypeSafeIndex<class SurfaceVertexTag>;
-
-/**
- Index for identifying a triangular face in a surface mesh.
- */
-using SurfaceFaceIndex = TypeSafeIndex<class SurfaceFaceTag>;
-
-/** %SurfaceVertex represents a vertex in SurfaceMesh.
- @tparam T The underlying scalar type for coordinates, e.g., double
-           or AutoDiffXd. Must be a valid Eigen scalar.
-*/
-template <class T>
-class SurfaceVertex {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceVertex)
-
-  /** Constructs SurfaceVertex.
-   @param r_MV  displacement vector from the origin of M's frame to this
-   vertex, expressed in M's frame.
-   */
-  explicit SurfaceVertex(const Vector3<T>& r_MV)
-      : r_MV_(r_MV) {}
-
-  /** Returns the displacement vector from the origin of M's frame to this
-   vertex, expressed in M's frame.
-   */
-  const Vector3<T>& r_MV() const { return r_MV_; }
-
-  /** Transforms this vertex position from its initial frame M to a new frame N.
-   */
-  void TransformInPlace(const math::RigidTransform<T>& X_NM) {
-    r_MV_ = X_NM * r_MV_;
-  }
-
- private:
-  // Displacement vector from the origin of M's frame to this vertex,
-  // expressed in M's frame.
-  Vector3<T> r_MV_;
-};
+/** Index used to identify a triangular face in a surface mesh. Use `int`
+ instead; this will disappear imminently. */
+using SurfaceFaceIndex = int;
 
 /** %SurfaceFace represents a triangular face in a SurfaceMesh.
  */
@@ -70,28 +34,22 @@ class SurfaceFace {
    @param v0 Index of the first vertex in SurfaceMesh.
    @param v1 Index of the second vertex in SurfaceMesh.
    @param v2 Index of the last vertex in SurfaceMesh.
-   */
-  SurfaceFace(SurfaceVertexIndex v0,
-              SurfaceVertexIndex v1,
-              SurfaceVertexIndex v2)
-      : vertex_({v0, v1, v2}) {}
+   @pre index values are non-negative. */
+  SurfaceFace(int v0, int v1, int v2) : vertex_({v0, v1, v2}) {
+    DRAKE_DEMAND(v0 >= 0 && v1 >= 0 && v2 >= 0);
+  }
 
   /** Constructs SurfaceFace.
    @param v  array of three integer indices of the vertices of the face in
              SurfaceMesh.
-   */
-  explicit SurfaceFace(const int v[3])
-      : vertex_({SurfaceVertexIndex(v[0]),
-                 SurfaceVertexIndex(v[1]),
-                 SurfaceVertexIndex(v[2])}) {}
+   @pre index values are non-negative. */
+  explicit SurfaceFace(const int v[3]) : SurfaceFace(v[0], v[1], v[2]) {}
 
   /** Returns the vertex index in SurfaceMesh of the i-th vertex of this face.
    @param i  The local index of the vertex in this face.
    @pre 0 <= i < 3
    */
-  SurfaceVertexIndex vertex(int i) const {
-    return vertex_.at(i);
-  }
+  int vertex(int i) const { return vertex_.at(i); }
 
   /** Reverses the order of the vertex indices -- this essentially flips the
    face normal based on the right-handed normal rule.
@@ -102,7 +60,7 @@ class SurfaceFace {
 
  private:
   // The vertices of this face.
-  std::array<SurfaceVertexIndex, 3> vertex_;
+  std::array<int, 3> vertex_;
 };
 
 namespace internal {
@@ -144,18 +102,12 @@ class SurfaceMesh {
   /**
    Index for identifying a vertex.
    */
-  using VertexIndex = SurfaceVertexIndex;
-  /* Note: the vertex type itself is templated (as opposed to just being an
-   alias for SurfaceVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
-   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
-   */
-  template <typename U = T>
-  using VertexType = SurfaceVertex<U>;
+  using VertexIndex = int;
 
   /**
    Index for identifying a triangular element.
    */
-  using ElementIndex = SurfaceFaceIndex;
+  using ElementIndex = int;
 
   // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
   //  templated class doesn't depend on the class template parameter, but
@@ -185,7 +137,7 @@ class SurfaceMesh {
     @param e   The index of the triangular element.
     @pre e ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const SurfaceFace& element(ElementIndex e) const {
+  const SurfaceFace& element(int e) const {
     DRAKE_DEMAND(0 <= e && e < num_faces());
     return faces_[e];
   }
@@ -194,14 +146,14 @@ class SurfaceMesh {
   const std::vector<SurfaceFace>& faces() const { return faces_; }
 
   /** Returns the vertices. */
-  const std::vector<SurfaceVertex<T>>& vertices() const { return vertices_; }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_; }
 
   /**
    Returns the vertex identified by a given index.
    @param v  The index of the vertex.
    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
-  const SurfaceVertex<T>& vertex(VertexIndex v) const {
+  const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
   }
@@ -224,7 +176,7 @@ class SurfaceMesh {
    @param vertices  The vertices.
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
-              std::vector<SurfaceVertex<T>>&& vertices)
+              std::vector<Vector3<T>>&& vertices)
       : faces_(std::move(faces)),
         vertices_(std::move(vertices)),
         area_(faces_.size()),  // Pre-allocate here, not yet calculated.
@@ -240,7 +192,7 @@ class SurfaceMesh {
    */
   void TransformVertices(const math::RigidTransform<T>& X_NM) {
     for (auto& v : vertices_) {
-      v.TransformInPlace(X_NM);
+      v = X_NM * v;
     }
     for (auto& n : face_normals_) {
       n = X_NM.rotation() * n;
@@ -265,8 +217,12 @@ class SurfaceMesh {
   int num_faces() const { return faces_.size(); }
 
   /** Returns area of a triangular element.
+   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const T& area(SurfaceFaceIndex f) const { return area_[f]; }
+  const T& area(int f) const {
+    DRAKE_DEMAND(0 <= f && f < num_faces());
+    return area_[f];
+  }
 
   /** Returns the total area of all the faces of this surface mesh.
    */
@@ -277,7 +233,7 @@ class SurfaceMesh {
    normal vector. A zero-area triangle will get a zero vector.
    @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
-  const Vector3<T>& face_normal(SurfaceFaceIndex f) const {
+  const Vector3<T>& face_normal(int f) const {
     DRAKE_DEMAND(0 <= f && f < num_faces());
     return face_normals_[f];
   }
@@ -301,20 +257,21 @@ class SurfaceMesh {
    The return type depends on both the mesh's vertex position scalar type `T`
    and the Barycentric coordinate type `B` of the query point.  See
    @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+   @pre `element_index` ∈ {0, 1, 2,..., num_faces()-1}.
    */
   template <typename B>
   Vector3<promoted_numerical_t<T, B>> CalcCartesianFromBarycentric(
-      ElementIndex element_index, const Barycentric<B>& b_Q) const {
-    const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
-    const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
-    const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
+      int element_index, const Barycentric<B>& b_Q) const {
+    const Vector3<T> va = vertex(element(element_index).vertex(0));
+    const Vector3<T> vb = vertex(element(element_index).vertex(1));
+    const Vector3<T> vc = vertex(element(element_index).vertex(2));
 
     // This is just a linear transformation between the two coordinates,
     // Cartesian (C) and Barycentric (B). Form the transformation matrix:
     Matrix3<promoted_numerical_t<T, B>> T_CB;
-    T_CB.col(0) = va.r_MV();
-    T_CB.col(1) = vb.r_MV();
-    T_CB.col(2) = vc.r_MV();
+    T_CB.col(0) = va;
+    T_CB.col(1) = vb;
+    T_CB.col(2) = vc;
 
     return T_CB * b_Q;
   }
@@ -336,13 +293,14 @@ class SurfaceMesh {
    @note  If Q' is outside the triangle, the barycentric coordinates
           (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
           negative.
+   @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
   template <typename C>
-  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(
-      const Vector3<C>& p_MQ, SurfaceFaceIndex f) const {
-    const Vector3<T>& v0 = vertex(element(f).vertex(0)).r_MV();
-    const Vector3<T>& v1 = vertex(element(f).vertex(1)).r_MV();
-    const Vector3<T>& v2 = vertex(element(f).vertex(2)).r_MV();
+  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(const Vector3<C>& p_MQ,
+                                                      int f) const {
+    const Vector3<T>& v0 = vertex(element(f).vertex(0));
+    const Vector3<T>& v1 = vertex(element(f).vertex(1));
+    const Vector3<T>& v2 = vertex(element(f).vertex(2));
     // Translate the triangle to the origin to simplify calculations;
     // barycentric coordinates stay the same.
     //     u⃗i = v⃗i - v0
@@ -408,8 +366,8 @@ class SurfaceMesh {
         Vector3<T>::Constant(std::numeric_limits<double>::max());
     Vector3<T> max_extent =
         Vector3<T>::Constant(std::numeric_limits<double>::lowest());
-    for (SurfaceVertexIndex i(0); i < num_vertices(); ++i) {
-      Vector3<T> vertex = this->vertex(i).r_MV();
+    for (int i = 0; i < num_vertices(); ++i) {
+      Vector3<T> vertex = this->vertex(i);
       min_extent = min_extent.cwiseMin(vertex);
       max_extent = max_extent.cwiseMax(vertex);
     }
@@ -431,7 +389,7 @@ class SurfaceMesh {
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
     // Check face indices.
-    for (SurfaceFaceIndex i(0); i < this->num_faces(); ++i) {
+    for (int i = 0; i < this->num_faces(); ++i) {
       const SurfaceFace& face1 = this->element(i);
       const SurfaceFace& face2 = mesh.element(i);
       for (int j = 0; j < 3; ++j)
@@ -439,8 +397,8 @@ class SurfaceMesh {
     }
 
     // Check vertices.
-    for (SurfaceVertexIndex i(0); i < this->num_vertices(); ++i) {
-      if (this->vertex(i).r_MV() != mesh.vertex(i).r_MV()) return false;
+    for (int i = 0; i < this->num_vertices(); ++i) {
+      if (this->vertex(i) != mesh.vertex(i)) return false;
     }
 
     // All checks passed.
@@ -454,7 +412,7 @@ class SurfaceMesh {
    */
   template <typename FieldValue>
   Vector3<FieldValue> CalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 3>& field_value, SurfaceFaceIndex f) const {
+      const std::array<FieldValue, 3>& field_value, int f) const {
     Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(f, 0);
     gradu_M += field_value[1] * CalcGradBarycentric(f, 1);
     gradu_M += field_value[2] * CalcGradBarycentric(f, 2);
@@ -473,12 +431,12 @@ class SurfaceMesh {
   // function bᵢ of the i-th vertex of the triangle `f`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 3.
-  Vector3<T> CalcGradBarycentric(SurfaceFaceIndex f, int i) const;
+  Vector3<T> CalcGradBarycentric(int f, int i) const;
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
   // The vertices that are shared among the triangles.
-  std::vector<SurfaceVertex<T>> vertices_;
+  std::vector<Vector3<T>> vertices_;
 
   // Computed in initialization.
 
@@ -501,11 +459,11 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   total_area_ = 0;
   p_MSc_.setZero();
 
-  for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
+  for (int f = 0; f < num_faces(); ++f) {
     const SurfaceFace& face = faces_[f];
-    const Vector3<T>& r_MA = vertices_[face.vertex(0)].r_MV();
-    const Vector3<T>& r_MB = vertices_[face.vertex(1)].r_MV();
-    const Vector3<T>& r_MC = vertices_[face.vertex(2)].r_MV();
+    const Vector3<T>& r_MA = vertices_[face.vertex(0)];
+    const Vector3<T>& r_MB = vertices_[face.vertex(1)];
+    const Vector3<T>& r_MC = vertices_[face.vertex(2)];
     const auto r_UV_M = r_MB - r_MA;
     const auto r_UW_M = r_MC - r_MA;
 
@@ -533,15 +491,15 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
 }
 
 template <typename T>
-Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(SurfaceFaceIndex f,
-                                               int i) const {
+Vector3<T> SurfaceMesh<T>::CalcGradBarycentric(int f, int i) const {
   DRAKE_DEMAND(0 <= i && i < 3);
+  DRAKE_DEMAND(0 <= f && f < num_faces());
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the triangle
   // indexed by `f`. A and B are the other two vertices of the triangle.
   // Positions of the vertices are expressed in frame M of the mesh.
-  const Vector3<T>& p_MV = vertices_[faces_[f].vertex(i)].r_MV();
-  const Vector3<T>& p_MA = vertices_[faces_[f].vertex((i + 1) % 3)].r_MV();
-  const Vector3<T>& p_MB = vertices_[faces_[f].vertex((i + 2) % 3)].r_MV();
+  const Vector3<T>& p_MV = vertices_[faces_[f].vertex(i)];
+  const Vector3<T>& p_MA = vertices_[faces_[f].vertex((i + 1) % 3)];
+  const Vector3<T>& p_MB = vertices_[faces_[f].vertex((i + 2) % 3)];
 
   // TODO(DamrongGuoy): Provide a mechanism for users to set the gradient
   //  vector in SurfaceMeshFieldLinear since this calculation is not reliable

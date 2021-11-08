@@ -29,12 +29,16 @@ namespace {
 
 // The source and destination are both of type Map.  Copy the key-value pairs
 // from source into destination, but don't overwrite any existing keys.
-void CopyMergeKeys(const YAML::Node& source, YAML::Node* destination) {
+void CopyWithMergeKeySemantics(
+    const YAML::Node& source, YAML::Node* destination) {
   for (const auto& key_value : source) {
     const YAML::Node& key = key_value.first;
     const YAML::Node& value = key_value.second;
     YAML::Node entry = (*destination)[key.Scalar()];
     if (!entry) {
+      // N.B. This assignment indirectly mutates the `destination`!  With the
+      // yaml-cpp API, a YAML::Node returned from a mapping lookup (operator[])
+      // is a back-pointer into the mapping -- something akin to an iterator.
       entry = value;
     }
   }
@@ -53,7 +57,7 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
   switch (merge_key.Type()) {
     case YAML::NodeType::Map: {
       // Merge `merge_key` Map into `node` Map.
-      CopyMergeKeys(merge_key, node);
+      CopyWithMergeKeySemantics(merge_key, node);
       return;
     }
     case YAML::NodeType::Sequence: {
@@ -61,9 +65,9 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
       for (const YAML::Node& merge_key_item : merge_key) {
         if (merge_key_item.Type() != YAML::NodeType::Map) {
           ReportError(
-              "has invalid merge key type (Sequence-of-non-Map) within");
+              "has invalid merge key type (Sequence-of-non-Mapping) within");
         }
-        CopyMergeKeys(merge_key_item, node);
+        CopyWithMergeKeySemantics(merge_key_item, node);
       }
       return;
     }
@@ -127,6 +131,9 @@ YAML::Node YamlReadArchive::GetSubNode(
 }
 
 void YamlReadArchive::CheckAllAccepted() const {
+  // This function is only ever called on Serializeable nodes (i.e., where we
+  // have a real Mapping node).  Calling it with a map-ish key (i.e., while
+  // parsing a sequence) would mean that YamlReadArchive went off the rails.
   DRAKE_DEMAND(mapish_item_key_ == nullptr);
   DRAKE_DEMAND(root_->Type() == YAML::NodeType::Map);
   if (options_.allow_yaml_with_no_cpp) {
@@ -218,7 +225,7 @@ const char* YamlReadArchive::to_string(YAML::NodeType::value x) {
     case YAML::NodeType::Null: return "Null";
     case YAML::NodeType::Scalar: return "Scalar";
     case YAML::NodeType::Sequence: return "Sequence";
-    case YAML::NodeType::Map: return "Map";
+    case YAML::NodeType::Map: return "Mapping";
   }
   return "UNKNOWN";
 }

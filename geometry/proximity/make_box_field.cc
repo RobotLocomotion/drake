@@ -35,9 +35,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
 
   std::vector<T> pressure_values;
   pressure_values.reserve(mesh_B->num_vertices());
-  for (const VolumeVertex<T>& vertex : mesh_B->vertices()) {
-    // V is a vertex of the mesh of the box with frame B.
-    const Vector3<T>& r_BV = vertex.r_MV();
+  for (const Vector3<T>& r_BV : mesh_B->vertices()) {
     // N is for the nearest point of V on the boundary of the box,
     // and grad_B is the gradient vector of the signed distance function
     // of the box at V, expressed in frame B.
@@ -52,8 +50,7 @@ VolumeMeshFieldLinear<T, T> MakeBoxPressureField(
     pressure_values.push_back(elastic_modulus * extent);
   }
 
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_B);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_B);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((

@@ -18,7 +18,6 @@ namespace multibody {
 namespace parsing {
 
 using std::make_unique;
-using Eigen::Isometry3d;
 
 namespace fs = drake::filesystem;
 using drake::FindResourceOrThrow;

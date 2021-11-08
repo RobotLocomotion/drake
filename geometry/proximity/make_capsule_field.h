@@ -52,9 +52,9 @@ VolumeMeshFieldLinear<T, T> MakeCapsulePressureField(
   // We only partially check the precondition of the mesh (see @pre). The first
   // two vertices should always be the endpoints of the capsule's medial axis.
   // The first with positive z and the second with negative z.
-  DRAKE_DEMAND(mesh_C->vertex(VolumeVertexIndex(0)).r_MV() ==
+  DRAKE_DEMAND(mesh_C->vertex(0) ==
                Eigen::Vector3d(0, 0, capsule.length() / 2));
-  DRAKE_DEMAND(mesh_C->vertex(VolumeVertexIndex(1)).r_MV() ==
+  DRAKE_DEMAND(mesh_C->vertex(1) ==
                Eigen::Vector3d(0, 0, -capsule.length() / 2));
 
   std::vector<T> pressure_values(mesh_C->num_vertices(), 0.0);
@@ -63,8 +63,7 @@ VolumeMeshFieldLinear<T, T> MakeCapsulePressureField(
   // non-zero pressure values.
   pressure_values[0] = pressure_values[1] = elastic_modulus;
 
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_C);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C);
 }
 
 }  // namespace internal

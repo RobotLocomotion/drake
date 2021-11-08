@@ -151,7 +151,7 @@ class TestScene {
     if constexpr (std::is_same_v<T, double>) {
       return RotationMatrix<T>(RollPitchYaw<T>(rpy));
     } else {
-      const Vector3<T> rpy_ad = math::initializeAutoDiff(rpy);
+      const Vector3<T> rpy_ad = math::InitializeAutoDiff(rpy);
       return RotationMatrix<T>(RollPitchYaw<T>(rpy_ad));
     }
   }
@@ -271,26 +271,24 @@ class TestScene {
 // soft mesh.
 ::testing::AssertionResult ValidateDerivatives(
     const ContactSurface<AutoDiffXd>& surface) {
-  const SurfaceVertexIndex v0(0);
-  const SurfaceFaceIndex f0(0);
   const auto& mesh_W = surface.mesh_W();
-  if (mesh_W.vertex(v0).r_MV().x().derivatives().size() != 3) {
+  if (mesh_W.vertex(0).x().derivatives().size() != 3) {
     return ::testing::AssertionFailure() << "Vertex 0 is missing derivatives";
   }
 
-  if (surface.e_MN().EvaluateAtVertex(v0).derivatives().size() != 3) {
+  if (surface.e_MN().EvaluateAtVertex(0).derivatives().size() != 3) {
     return ::testing::AssertionFailure()
            << "Pressure field at vertex 0 is missing derivatives";
   }
 
   if (surface.HasGradE_M()) {
-    if (surface.EvaluateGradE_M_W(f0).x().derivatives().size() != 3) {
+    if (surface.EvaluateGradE_M_W(0).x().derivatives().size() != 3) {
       return ::testing::AssertionFailure()
              << "Face 0's grad eM is missing derivatives";
     }
   }
   if (surface.HasGradE_N()) {
-    if (surface.EvaluateGradE_N_W(f0).x().derivatives().size() != 3) {
+    if (surface.EvaluateGradE_N_W(0).x().derivatives().size() != 3) {
       return ::testing::AssertionFailure()
              << "Face 0's grad eN is missing derivatives";
     }

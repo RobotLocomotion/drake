@@ -78,17 +78,17 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
     auto J = ComputeNumericalGradient(
         ToyFunctionDouble, x,
         NumericalGradientOption{NumericalGradientMethod::kForward});
-    auto x_autodiff = math::initializeAutoDiff<3>(x);
+    auto x_autodiff = math::InitializeAutoDiff<3>(x);
     Vector2<AutoDiffd<3>> y_autodiff;
     ToyFunction(x_autodiff, &y_autodiff);
     const double tol = 1E-7;
-    EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
+    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
 
     // backward difference
     J = ComputeNumericalGradient(
         ToyFunctionDouble, x,
         NumericalGradientOption{NumericalGradientMethod::kBackward});
-    EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
+    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
 
     // central difference
     // We could use the function object ToyFunction<double> instead of the
@@ -98,7 +98,7 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
                                  Eigen::Vector3d>(
         ToyFunction<double>, x,
         NumericalGradientOption{NumericalGradientMethod::kCentral});
-    EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
+    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
   };
 
   check_gradient(Eigen::Vector3d::Zero());
@@ -136,11 +136,11 @@ GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
     typedef Vector2<AD2d> Vector2AD2d;
     typedef Vector1<AD2d> Vector1AD2d;
 
-    Vector2AD2d x_autodiff = math::initializeAutoDiff<2>(x);
+    Vector2AD2d x_autodiff = math::InitializeAutoDiff<2>(x);
     Vector1AD2d y_autodiff;
     Paraboloid(x_autodiff, &y_autodiff);
     const double tol = 2.0e-7;
-    EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
+    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
 
     // Compute the Hessian using the autodiff version of
     // ComputeNumericalGradient().
@@ -151,7 +151,7 @@ GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
     auto JAD3d = ComputeNumericalGradient(
         ParaboloidAD3d, x_autodiff,
         NumericalGradientOption{NumericalGradientMethod::kForward});
-    Matrix2<double> H = autoDiffToGradientMatrix(JAD3d);
+    Matrix2<double> H = ExtractGradient(JAD3d);
     Matrix2<double> H_exact = kHessian * Matrix2<double>::Identity();
     EXPECT_TRUE(CompareMatrices(H, H_exact, tol));
 
@@ -159,7 +159,7 @@ GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
     JAD3d = ComputeNumericalGradient(
         ParaboloidAD3d, x_autodiff,
         NumericalGradientOption{NumericalGradientMethod::kBackward});
-    H = autoDiffToGradientMatrix(JAD3d);
+    H = ExtractGradient(JAD3d);
     H_exact = kHessian * Matrix2<double>::Identity();
     EXPECT_TRUE(CompareMatrices(H, H_exact, tol));
 
@@ -167,7 +167,7 @@ GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
     JAD3d = ComputeNumericalGradient(
         ParaboloidAD3d, x_autodiff,
         NumericalGradientOption{NumericalGradientMethod::kCentral});
-    H = autoDiffToGradientMatrix(JAD3d);
+    H = ExtractGradient(JAD3d);
     H_exact = kHessian * Matrix2<double>::Identity();
     // We can tighten the tolerance significantly when using central
     // differences.
@@ -237,10 +237,9 @@ GTEST_TEST(ComputeNumericalGradientTest, TestEvaluator) {
   Eigen::Vector3d x(0, 1, 2);
   const auto J = ComputeNumericalGradient(evaluator_eval, x);
   AutoDiffVecXd y_autodiff;
-  evaluator.Eval(math::initializeAutoDiff(x), &y_autodiff);
+  evaluator.Eval(math::InitializeAutoDiff(x), &y_autodiff);
   const double tol = 1E-7;
-  EXPECT_TRUE(
-      CompareMatrices(J, math::autoDiffToGradientMatrix(y_autodiff), tol));
+  EXPECT_TRUE(CompareMatrices(J, math::ExtractGradient(y_autodiff), tol));
 }
 
 }  // namespace

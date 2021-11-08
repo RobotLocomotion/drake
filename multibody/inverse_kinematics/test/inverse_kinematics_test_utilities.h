@@ -47,10 +47,10 @@ typename std::enable_if_t<
     std::is_same_v<typename DerivedA::Scalar, AutoDiffXd>>
 CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
                        const Eigen::MatrixBase<DerivedB>& b, double tol) {
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(a),
-                              math::autoDiffToValueMatrix(b), tol));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(a),
-                              math::autoDiffToGradientMatrix(b), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(a),
+                              math::ExtractValue(b), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(a),
+                              math::ExtractGradient(b), tol));
 }
 
 /**
@@ -214,22 +214,21 @@ void TestKinematicConstraintEval(
 
   // condition 2
   const auto x_autodiff =
-      math::initializeAutoDiffGivenGradientMatrix(x_double, dx);
+      math::InitializeAutoDiff(x_double, dx);
   AutoDiffVecXd y2_left, y2_right;
   constraint_from_double.Eval(x_autodiff, &y2_left);
   constraint_from_autodiff.Eval(x_autodiff, &y2_right);
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y2_left),
-                              math::autoDiffToValueMatrix(y2_right), tol));
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y2_left),
-                              math::autoDiffToGradientMatrix(y2_right), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y2_left),
+                              math::ExtractValue(y2_right), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y2_left),
+                              math::ExtractGradient(y2_right), tol));
 
   // condition 3
   Eigen::VectorXd y3_left;
   AutoDiffVecXd y3_right;
   constraint_from_double.Eval(x_double, &y3_left);
   constraint_from_double.Eval(x_autodiff, &y3_right);
-  EXPECT_TRUE(
-      CompareMatrices(y3_left, math::autoDiffToValueMatrix(y3_right), tol));
+  EXPECT_TRUE(CompareMatrices(y3_left, math::ExtractValue(y3_right), tol));
 
   // condition 4
   std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
@@ -239,8 +238,8 @@ void TestKinematicConstraintEval(
                      Eigen::VectorXd* y) { constraint_from_double.Eval(x, y); };
   const auto dy_dx_numeric = math::ComputeNumericalGradient(eval_fun, x_double);
   const Eigen::MatrixXd y_grad_numeric = dy_dx_numeric * dx;
-  EXPECT_TRUE(CompareMatrices(
-      y_grad_numeric, math::autoDiffToGradientMatrix(y2_right), gradient_tol));
+  EXPECT_TRUE(CompareMatrices(y_grad_numeric, math::ExtractGradient(y2_right),
+                              gradient_tol));
 }
 
 }  // namespace multibody

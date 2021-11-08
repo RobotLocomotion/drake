@@ -142,15 +142,14 @@ class HydroelasticTractionCalculator {
   friend class HydroelasticReportingTests_LinearSlipVelocity_Test;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtPoint(
-      const Data& data, geometry::SurfaceFaceIndex face_index,
+      const Data& data, int face_index,
       const typename geometry::SurfaceMesh<T>::template Barycentric<T>&
           Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
-      const Data& data, geometry::SurfaceFaceIndex face_index, const T& e,
-      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
-      const Vector3<T>& p_WQ) const;
+      const Data& data, int face_index, const T& e, const Vector3<T>& nhat_W,
+      double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const;
 
   multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
       const Data& data, const Vector3<T>& p_WQ,

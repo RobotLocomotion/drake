@@ -115,6 +115,15 @@ class ModelInstance :
   VectorX<T> GetPositionsFromArray(
       const Eigen::Ref<const VectorX<T>>& q) const;
 
+  // (Advanced) Takes an output vector q_out and populates it with the
+  // generalized positions for `this` model instance from a vector `q` of
+  // generalized positions for the entire MultibodyTree model.
+  // @throws std::exception if `q` is not of size
+  //         MultibodyTree::num_positions().
+  void GetPositionsFromArray(
+      const Eigen::Ref<const VectorX<T>>& q,
+      EigenPtr<VectorX<T>> q_out) const;
+
   // Sets the vector of generalized positions for `this` model instance in
   // the relevant locations of an array that corresponds to the positions for
   // the entire MultibodyTree model. Elements of the array that do not
@@ -135,6 +144,15 @@ class ModelInstance :
   //         MultibodyTree::num_velocities().
   VectorX<T> GetVelocitiesFromArray(
       const Eigen::Ref<const VectorX<T>>& v) const;
+
+  // (Advanced) Takes an output vector v_out and populates with the generalized
+  // velocities for `this` model instance from a vector `v` of
+  // generalized velocities for the entire MultibodyTree model.
+  // @throws std::exception if `v` is not of size
+  //         MultibodyTree::num_velocities().
+  void GetVelocitiesFromArray(
+      const Eigen::Ref<const VectorX<T>>& v,
+      EigenPtr<VectorX<T>> v_out) const;
 
   // Sets the vector of generalized velocities for `this` model instance in
   // the relevant locations of an array corresponding to the velocities for the

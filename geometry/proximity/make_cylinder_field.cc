@@ -46,9 +46,9 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
   const GeometryId unused_id;
   const auto identity = math::RigidTransform<T>::Identity();
   const fcl::Cylinderd fcl_cylinder(radius, length);
-  for (const VolumeVertex<T>& vertex : mesh_C->vertices()) {
+  for (const Vector3<T>& vertex : mesh_C->vertices()) {
     // V is a vertex of the cylinder mesh with frame C.
-    const Vector3<T>& r_CV = vertex.r_MV();
+    const Vector3<T>& r_CV = vertex;
     point_distance::DistanceToPoint<T> signed_distance_functor(
         unused_id, identity, r_CV);
     const T signed_distance = signed_distance_functor(fcl_cylinder).distance;
@@ -63,14 +63,13 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
   // Make sure the boundary vertices have zero pressure. Numerical rounding
   // can cause the boundary vertices to be slightly off the boundary surface
   // of the cylinder.
-  std::vector<VolumeVertexIndex> boundary_vertices =
+  std::vector<int> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh_C->tetrahedra()));
-  for (VolumeVertexIndex bv : boundary_vertices) {
+  for (int bv : boundary_vertices) {
     pressure_values[bv] = T(0.);
   }
 
-  return VolumeMeshFieldLinear<T, T>("pressure(Pa)",
-                                     std::move(pressure_values), mesh_C);
+  return VolumeMeshFieldLinear<T, T>(std::move(pressure_values), mesh_C);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((

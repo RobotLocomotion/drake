@@ -17,8 +17,10 @@ cc_library(
     srcs = glob([
         "src/*.c",
     ]) + [
-        "linsys/amatrix.h",
-        "linsys/amatrix.c",
+        "linsys/csparse.h",
+        "linsys/csparse.c",
+        "linsys/scs_matrix.h",
+        "linsys/scs_matrix.c",
         "linsys/cpu/direct/private.c",
         "linsys/cpu/direct/private.h",
     ],

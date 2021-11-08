@@ -53,11 +53,11 @@ bool Aabb::HasOverlap(const Aabb& aabb_G, const Obb& obb_H,
 template <typename MeshType>
 Aabb AabbMaker<MeshType>::Compute() const {
   auto itr = vertices_.begin();
-  Vector3d max_bounds = convert_to_double(mesh_M_.vertex(*itr).r_MV());
+  Vector3d max_bounds = convert_to_double(mesh_M_.vertex(*itr));
   Vector3d min_bounds = max_bounds;
   ++itr;
   for (; itr != vertices_.end(); ++itr) {
-    const Vector3d& vertex = convert_to_double(mesh_M_.vertex(*itr).r_MV());
+    const Vector3d& vertex = convert_to_double(mesh_M_.vertex(*itr));
     // Compare its extent along each of the 3 axes.
     min_bounds = min_bounds.cwiseMin(vertex);
     max_bounds = max_bounds.cwiseMax(vertex);

@@ -1023,15 +1023,6 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
 </model>)");
 }
 
-void FailWithUnsupportedRelativeTo(const std::string& inner) {
-  SCOPED_TRACE(inner);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(inner),
-      std::runtime_error,
-      R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
-      R"(in <inertial/> or top-level <model/> tags in model files.)");
-}
-
 void FailWithRelativeToNotDefined(const std::string& inner) {
   SCOPED_TRACE(inner);
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1086,11 +1077,15 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 )", bad_name));
   }
 
-  FailWithUnsupportedRelativeTo(R"(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
 <model name='bad'>
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
-</model>)");
+</model>)"),
+      R"([\s\S]*Error: Attribute //pose\[@relative_to\] of top level model )"
+      R"(must be left empty[\s\S]*)");
+
   FailWithRelativeToNotDefined(R"(
 <model name='bad'>
   <frame name='my_frame'/>
@@ -1121,7 +1116,7 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
   <link name='b'/>
 </model>
 )"""),
-    ".*has 2 models and 0 worlds.*");
+    R"([\s\S]*Root object can only contain one model.*)");
 
   std::stringstream buffer;
   sdf::Console::ConsoleStream old_stream =
@@ -1155,11 +1150,11 @@ GTEST_TEST(SdfParser, TestSdformatParserPolicies) {
       <initial_position>0</initial_position>
     </axis>
   </joint>
-</model>)""", "1.8");
+</model>)""", "1.9");
 
   EXPECT_THAT(buffer.str(), testing::MatchesRegex(
-      ".*Warning.*SDF Element\\[initial_position\\] is "
-      "deprecated.*"));
+      ".*Warning.*XML Element\\[initial_position\\], child of element"
+      "\\[axis\\], not defined in SDF.*"));
 }
 
 // Reports if the frame with the given id has a geometry with the given role
@@ -2165,6 +2160,89 @@ GTEST_TEST(SdfParser, CollisionFilterGroupParsingErrorsTest) {
       "required string value.*");
 }
 
+GTEST_TEST(SdfParser, PoseWithRotationInDegreesOrQuaternions) {
+  const std::string model_string = R"""(
+  <model name='test_model'>
+    <link name='E1'>
+      <pose degrees='true'>1 2 3   15 30 45</pose>
+    </link>
+    <link name='E2'>
+      <pose rotation_format="euler_rpy" degrees='true'>1 2 3   15 30 45</pose>
+    </link>
+    <link name='Q'>
+      <pose rotation_format='quat_xyzw'>
+        1 2 3
+        0.3826834323650898 0 0 0.9238795325112867
+      </pose>
+    </link>
+  </model>)""";
+  auto [plant, scene_graph] = ParseTestString(model_string, "1.9");
+  plant->Finalize();
+  auto context = plant->CreateDefaultContext();
+
+  constexpr double kDegToRad = M_PI / 180.0;
+
+  const RigidTransformd X_WE_expected(
+      RollPitchYawd(kDegToRad * 15, kDegToRad * 30, kDegToRad * 45),
+      Vector3d(1, 2, 3));
+
+  const RigidTransformd X_WE1 =
+      plant->GetFrameByName("E1").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WE_expected.GetAsMatrix4(),
+                              X_WE1.GetAsMatrix4(), kEps));
+
+  const RigidTransformd X_WE2 =
+      plant->GetFrameByName("E2").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WE_expected.GetAsMatrix4(),
+                              X_WE2.GetAsMatrix4(), kEps));
+
+  const RigidTransformd X_WQ_expected(RollPitchYawd(M_PI_4, 0, 0),
+                                      Vector3d(1, 2, 3));
+
+  const RigidTransformd X_WQ =
+      plant->GetFrameByName("Q").CalcPoseInWorld(*context);
+  EXPECT_TRUE(
+      CompareMatrices(X_WQ_expected.GetAsMatrix4(), X_WQ.GetAsMatrix4(), kEps));
+}
+
+GTEST_TEST(SdfParser, MergeInclude) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "merge_include_models.sdf");
+
+  MultibodyPlant<double> plant(0.0);
+
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant.num_model_instances(), 2);
+  ASSERT_EQ(plant.num_bodies(), 1);
+  ASSERT_EQ(plant.num_joints(), 0);
+
+  PackageMap package_map;
+  package_map.PopulateFromFolder(filesystem::path(full_name).parent_path());
+  AddModelsFromSdfFile(full_name, package_map, &plant);
+  plant.Finalize();
+
+  // We should have loaded *only* 1 more model.
+  EXPECT_EQ(plant.num_model_instances(), 3);
+  EXPECT_EQ(plant.num_bodies(), 4);
+  EXPECT_EQ(plant.num_joints(), 2);
+
+  ASSERT_TRUE(plant.HasModelInstanceNamed("robot1_with_tool"));
+  ModelInstanceIndex robot1_model =
+      plant.GetModelInstanceByName("robot1_with_tool");
+
+  // The bodies and joints from "simple_robot1" should be merged into
+  // "robot1_with_tool" making them direct children of the "robot1_with_tool"
+  // model instance.
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot1_model));
+  EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
+
+  // The bodies and joints directly specified in "robot1_with_tool" should be at
+  // the same level of hierarchy as those merged from "simple_robot1"
+  EXPECT_TRUE(plant.HasBodyNamed("tool", robot1_model));
+  EXPECT_TRUE(plant.HasJointNamed("tool_joint", robot1_model));
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

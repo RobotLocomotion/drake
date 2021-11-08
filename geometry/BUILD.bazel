@@ -37,7 +37,7 @@ drake_cc_package_library(
         ":internal_frame",
         ":internal_geometry",
         ":meshcat",
-        ":meshcat_types",
+        ":meshcat_animation",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
         ":proximity_engine",
@@ -61,7 +61,6 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_ids",
-        ":geometry_index",
         ":geometry_roles",
         ":internal_geometry",
         ":shape_specification",
@@ -144,7 +143,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "geometry_frame",
-    srcs = [],
+    srcs = ["geometry_frame.cc"],
     hdrs = ["geometry_frame.h"],
     deps = [
         ":geometry_ids",
@@ -286,7 +285,6 @@ drake_cc_library(
     hdrs = ["internal_frame.h"],
     deps = [
         ":geometry_ids",
-        ":geometry_index",
         "//common:essential",
     ],
 )
@@ -297,7 +295,6 @@ drake_cc_library(
     hdrs = ["internal_geometry.h"],
     deps = [
         ":geometry_ids",
-        ":geometry_index",
         ":geometry_roles",
         ":internal_frame",
         ":shape_specification",
@@ -346,13 +343,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "meshcat_types",
-    hdrs = ["meshcat_types.h"],
-    install_hdrs_exclude = ["meshcat_types.h"],
-    deps = ["@msgpack"],
-)
-
 genrule(
     name = "meshcat_ico_genrule",
     srcs = ["//doc:favicon.ico"],
@@ -386,18 +376,42 @@ install_files(
 )
 
 drake_cc_library(
+    name = "meshcat_animation",
+    srcs = ["meshcat_animation.cc"],
+    hdrs = ["meshcat_animation.h"],
+    deps = [
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_animation_test",
+    deps = [
+        ":meshcat_animation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
     name = "meshcat",
     srcs = ["meshcat.cc"],
-    hdrs = ["meshcat.h"],
+    hdrs = [
+        "meshcat.h",
+        "meshcat_types.h",
+    ],
     data = [":meshcat_resources"],
+    install_hdrs_exclude = ["meshcat_types.h"],
     deps = [
-        ":meshcat_types",
+        ":meshcat_animation",
         ":rgba",
         ":shape_specification",
         "//common:essential",
         "//common:find_resource",
         "//common:unused",
         "//math:geometric_transform",
+        "//perception:point_cloud",
+        "@common_robotics_utilities",
         "@msgpack",
         "@stduuid",
         "@uwebsockets",
@@ -410,6 +424,7 @@ drake_cc_binary(
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/ycb:models",
         "//systems/sensors:test_models",
     ],
     visibility = ["//visibility:private"],
@@ -441,6 +456,7 @@ drake_cc_googletest(
     deps = [
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -521,6 +537,7 @@ drake_cc_googletest(
     name = "drake_visualizer_test",
     deps = [
         ":drake_visualizer",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//lcm:mock",
         "//systems/analysis:simulator",

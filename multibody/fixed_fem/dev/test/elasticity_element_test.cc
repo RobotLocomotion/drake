@@ -115,7 +115,7 @@ class ElasticityElementTest : public ::testing::Test {
                                              reference_positions().size()) +
         perturbation;
     Vector<T, kNumDofs> x_autodiff;
-    math::initializeAutoDiff(x, x_autodiff);
+    math::InitializeAutoDiff(x, &x_autodiff);
     FemState<ElementType> state(x_autodiff);
     state.MakeElementData(elements_);
     return state;
@@ -127,7 +127,7 @@ class ElasticityElementTest : public ::testing::Test {
     Vector<double, kNumDofs> x(Eigen::Map<Vector<double, kNumDofs>>(
         math::DiscardGradient(X).data(), reference_positions().size()));
     Vector<T, kNumDofs> x_autodiff;
-    math::initializeAutoDiff(x, x_autodiff);
+    math::InitializeAutoDiff(x, &x_autodiff);
     FemState<ElementType> state(x_autodiff);
     state.MakeElementData(elements_);
     return state;

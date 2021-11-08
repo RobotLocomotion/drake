@@ -93,12 +93,12 @@ GTEST_TEST(FileParserTest, MultiModelErrorsTest) {
     MultibodyPlant<double> plant(0.0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         Parser(&plant).AddAllModelsFromFile(sdf_name),
-        ".*has 2 models and 0 worlds.*");
+        R"([\s\S]*Root object can only contain one model.*)");
   }
 
   // The singular method cannot load a two-model file.
   const char* const expected_error =
-      "(.*must have a single <model> element.*)";
+        R"([\s\S]*Root object can only contain one model.*)";
 
   // Check the singular method without model_name.
   {

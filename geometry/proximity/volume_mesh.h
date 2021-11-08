@@ -17,49 +17,13 @@
 
 namespace drake {
 namespace geometry {
+/** Index used to identify a vertex in a volume mesh. Use `int` instead; this
+ will disappear imminently. */
+using VolumeVertexIndex = int;
 
-/**
- Index used to identify a vertex in a volume mesh.
- */
-using VolumeVertexIndex = TypeSafeIndex<class VolumeVertexTag>;
-
-/**
- Index for identifying a tetrahedral element in a volume mesh.
- */
-using VolumeElementIndex = TypeSafeIndex<class VolumeElementTag>;
-
-/** %VolumeVertex represents a vertex in VolumeMesh.
- @tparam T The underlying scalar type for coordinates, e.g., double or
-           AutoDiffXd. Must be a valid Eigen scalar.
- */
-template <class T>
-class VolumeVertex {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeVertex)
-
-  /** Constructs VolumeVertex.
-   @param r_MV displacement vector from the origin of M's frame to this
-               vertex, expressed in M's frame.
-   */
-  explicit VolumeVertex(const Vector3<T>& r_MV)
-      : r_MV_(r_MV) {}
-
-  /** Constructs VolumeVertex from the xyz components of a point V in a frame
-   M.
-   */
-  VolumeVertex(const T& Vx_M, const T& Vy_M, const T& Vz_M)
-      : r_MV_(Vx_M, Vy_M, Vz_M) {}
-
-  /** Returns the displacement vector from the origin of M's frame to this
-    vertex, expressed in M's frame.
-   */
-  const Vector3<T>& r_MV() const { return r_MV_; }
-
- private:
-  // Displacement vector from the origin of M's frame to this vertex,
-  // expressed in M's frame.
-  Vector3<T> r_MV_;
-};
+/** Index used to identify a tetrahedral element in a volume mesh. Use `int`
+ instead; this will disappear imminently. */
+using VolumeElementIndex = int;
 
 /** %VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
  topological entity in the sense that it only knows the indices of its vertices
@@ -79,33 +43,32 @@ class VolumeElement {
    @param v1 Index of the second vertex in VolumeMesh.
    @param v2 Index of the third vertex in VolumeMesh.
    @param v3 Index of the last vertex in VolumeMesh.
+   @pre All indices are non-negative.
    */
-  VolumeElement(VolumeVertexIndex v0, VolumeVertexIndex v1,
-                VolumeVertexIndex v2, VolumeVertexIndex v3)
-      : vertex_({v0, v1, v2, v3}) {}
+  VolumeElement(int v0, int v1, int v2, int v3) : vertex_({v0, v1, v2, v3}) {
+    DRAKE_DEMAND(v0 >= 0 && v1 >= 0 && v2 >= 0 && v3 >= 0);
+  }
 
   /** Constructs VolumeElement.
    @param v  Array of four integer indices of the vertices of the element in
              VolumeMesh.
+   @pre All indices are non-negative.
    */
   explicit VolumeElement(const int v[4])
-      : vertex_({VolumeVertexIndex(v[0]), VolumeVertexIndex(v[1]),
-                 VolumeVertexIndex(v[2]), VolumeVertexIndex(v[3])}) {}
+      : VolumeElement(v[0], v[1], v[2], v[3]) {}
 
   /** Returns the vertex index in VolumeMesh of the i-th vertex of this
    element.
    @param i  The local index of the vertex in this element.
    @pre 0 <= i < 4
    */
-  VolumeVertexIndex vertex(int i) const {
-    return vertex_.at(i);
-  }
+  int vertex(int i) const { return vertex_.at(i); }
 
-  /** Checks to see whether the given VolumeElement use the same four
-   VolumeVertexIndex's in the same order. We check for equality to the last
-   bit consistently with VolumeMesh::Equal(). Two permutations of
-   the four vertex indices of a tetrahedron are considered different
-   tetrahedra even though they span the same space.
+  /** Checks to see whether the given VolumeElement use the same four indices in
+   the same order. We check for equality to the last bit consistently with
+   VolumeMesh::Equal(). Two permutations of the four vertex indices of a
+   tetrahedron are considered different tetrahedra even though they span the
+   same space.
    */
   bool Equal(const VolumeElement& e) const {
     return this->vertex_ == e.vertex_;
@@ -113,7 +76,7 @@ class VolumeElement {
 
  private:
   // The vertices of this element.
-  std::array<VolumeVertexIndex, 4> vertex_;
+  std::array<int, 4> vertex_;
 };
 
 inline bool operator==(const VolumeElement& e1, const VolumeElement& e2) {
@@ -161,17 +124,11 @@ class VolumeMesh {
 
   /** Index for identifying a vertex.
    */
-  using VertexIndex = VolumeVertexIndex;
-  /* Note: the vertex type itself is templated (as opposed to just being an
-   alias for VolumeVertex<T>), so that given a Mesh<AutoDiffXd> we can get a
-   double valued version of its vertex as: Mesh<AutoDiffXd>::VertexType<double>.
-   */
-  template <typename U = T>
-  using VertexType = VolumeVertex<U>;
+  using VertexIndex = int;
 
   /** Index for identifying a tetrahedral element.
    */
-  using ElementIndex = VolumeElementIndex;
+  using ElementIndex = int;
 
   // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
   //  templated class doesn't depend on the class template parameter, but
@@ -200,7 +157,7 @@ class VolumeMesh {
    convention documented in the VolumeElement class. This class however does not
    enforce this convention and it is thus the responsibility of the user.  */
   VolumeMesh(std::vector<VolumeElement>&& elements,
-             std::vector<VolumeVertex<T>>&& vertices)
+             std::vector<Vector3<T>>&& vertices)
       : elements_(std::move(elements)), vertices_(std::move(vertices)) {
     if (elements_.empty()) {
       throw std::logic_error("A mesh must contain at least one tetrahedron");
@@ -216,12 +173,12 @@ class VolumeMesh {
    @param v  The index of the vertex.
    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
-  const VolumeVertex<T>& vertex(VertexIndex v) const {
+  const Vector3<T>& vertex(int v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
   }
 
-  const std::vector<VolumeVertex<T>>& vertices() const { return vertices_; }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_; }
 
   const std::vector<VolumeElement>& tetrahedra() const { return elements_; }
 
@@ -234,15 +191,16 @@ class VolumeMesh {
   int num_vertices() const { return vertices_.size(); }
 
   /** Calculates volume of a tetrahedral element.
+   @pre `f ∈ [0, num_elements())`.
    */
-  T CalcTetrahedronVolume(VolumeElementIndex e) const {
+  T CalcTetrahedronVolume(int e) const {
     // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
-    //  it. CalcTetrahedronVolume(VolumeElementIndex) will call
+    //  it. CalcTetrahedronVolume(index) will call
     //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
-    const Vector3<T>& a = vertices_[elements_[e].vertex(0)].r_MV();
-    const Vector3<T>& b = vertices_[elements_[e].vertex(1)].r_MV();
-    const Vector3<T>& c = vertices_[elements_[e].vertex(2)].r_MV();
-    const Vector3<T>& d = vertices_[elements_[e].vertex(3)].r_MV();
+    const Vector3<T>& a = vertices_[elements_[e].vertex(0)];
+    const Vector3<T>& b = vertices_[elements_[e].vertex(1)];
+    const Vector3<T>& c = vertices_[elements_[e].vertex(2)];
+    const Vector3<T>& d = vertices_[elements_[e].vertex(3)];
     // Assume the first three vertices a, b, c define a triangle with its
     // right-handed normal pointing towards the inside of the tetrahedra. The
     // fourth vertex, d, is on the positive side of the plane defined by a,
@@ -259,7 +217,7 @@ class VolumeMesh {
   T CalcVolume() const {
     T volume(0.0);
     for (int e = 0; e < num_elements(); ++e) {
-      volume += CalcTetrahedronVolume(VolumeElementIndex(e));
+      volume += CalcTetrahedronVolume(e);
     }
     return volume;
   }
@@ -296,7 +254,7 @@ class VolumeMesh {
     using ReturnType = promoted_numerical_t<T, C>;
     Matrix4<ReturnType> A;
     for (int i = 0; i < 4; ++i) {
-      A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i)).r_MV();
+      A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i));
     }
     Vector4<ReturnType> b;
     b << ReturnType(1.0), p_MQ;
@@ -323,13 +281,12 @@ class VolumeMesh {
     if (this->num_vertices() != mesh.num_vertices()) return false;
 
     // Check tetrahedral elements.
-    for (VolumeElementIndex i(0); i < this->num_elements(); ++i) {
+    for (int i = 0; i < this->num_elements(); ++i) {
       if (!this->element(i).Equal(mesh.element(i))) return false;
     }
     // Check vertices.
-    for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {
-      if ((this->vertex(i).r_MV() - mesh.vertex(i).r_MV()).norm() >
-          vertex_tolerance) {
+    for (int i = 0; i < this->num_vertices(); ++i) {
+      if ((this->vertex(i) - mesh.vertex(i)).norm() > vertex_tolerance) {
         return false;
       }
     }
@@ -349,8 +306,7 @@ class VolumeMesh {
    */
   template <typename FieldValue>
   Vector3<promoted_numerical_t<T, FieldValue>> CalcGradientVectorOfLinearField(
-      const std::array<FieldValue, 4>& field_value,
-      VolumeElementIndex e) const {
+      const std::array<FieldValue, 4>& field_value, int e) const {
     using ReturnType = promoted_numerical_t<T, FieldValue>;
     Vector3<ReturnType> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
     for (int i = 1; i < 4; ++i) {
@@ -367,27 +323,26 @@ class VolumeMesh {
   // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
   // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
   // @pre  0 ≤ i < 4.
-  Vector3<T> CalcGradBarycentric(VolumeElementIndex e, int i) const;
+  Vector3<T> CalcGradBarycentric(int e, int i) const;
 
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
   // The vertices that are shared between the tetrahedral elements.
-  std::vector<VolumeVertex<T>> vertices_;
+  std::vector<Vector3<T>> vertices_;
 
   friend class VolumeMeshTester<T>;
 };
 
 template <typename T>
-Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
-                                              int i) const {
+Vector3<T> VolumeMesh<T>::CalcGradBarycentric(int e, int i) const {
   DRAKE_DEMAND(0 <= i && i < 4);
   // Vertex V corresponds to bᵢ in the barycentric coordinate in the
   // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
   // the tetrahedron. Their positions are expressed in frame M of the mesh.
-  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)].r_MV();
-  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)].r_MV();
-  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
-  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
+  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)];
+  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)];
+  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)];
+  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)];
 
   const Vector3<T> p_AV_M = p_MV - p_MA;
   const Vector3<T> p_AB_M = p_MB - p_MA;

@@ -49,6 +49,7 @@ _VERSION_SUPPORT_MATRIX = {
     "ubuntu:18.04": ["3.6"],
     "ubuntu:20.04": ["3.8"],
     "macos": ["3.9"],
+    "manylinux": ["3.6"],
 }
 
 def repository_python_info(repository_ctx):
@@ -64,8 +65,10 @@ def repository_python_info(repository_ctx):
         fail(os_result.error)
     if os_result.is_macos:
         os_key = os_result.distribution
-    else:
+    elif os_result.is_ubuntu:
         os_key = os_result.distribution + ":" + os_result.ubuntu_release
+    else:
+        os_key = "manylinux"
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
     if os_result.is_macos:

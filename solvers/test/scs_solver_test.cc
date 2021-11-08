@@ -18,8 +18,8 @@ namespace test {
 
 namespace {
 
-// SCS uses `eps = 1e-5` by default.  For testing, we'll allow for some
-// small cumulative error beyond that.
+// Our ScsSolver binding uses `eps = 1e-5` by default.  For testing, we'll
+// allow for some small cumulative error beyond that.
 constexpr double kTol = 1e-4;
 
 }  // namespace
@@ -215,7 +215,9 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 4E-6);
+    // Practically I observe SCS requires looser tolerance for this test. I
+    // don't know why.
+    prob.CheckSolution(result, 3 * kTol);
   }
 }
 
@@ -224,14 +226,13 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    // On Mac the accuracy is about 2.1E-6. On Linux it is about 2E-6.
-    prob.CheckSolution(result, 2.1E-6);
+    prob.CheckSolution(result, kTol);
   }
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   ScsSolver solver;
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 4E-6);
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, kTol);
 }
 
 TEST_P(QuadraticProgramTest, TestQP) {
@@ -353,7 +354,7 @@ GTEST_TEST(TestScs, UnivariateQuarticSos) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, kTol);
   }
 }
 
@@ -362,7 +363,7 @@ GTEST_TEST(TestScs, BivariateQuarticSos) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, kTol);
   }
 }
 
@@ -371,7 +372,7 @@ GTEST_TEST(TestScs, SimpleSos1) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, kTol);
   }
 }
 
@@ -380,7 +381,7 @@ GTEST_TEST(TestScs, MotzkinPolynomial) {
   ScsSolver solver;
   if (solver.is_available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, kTol);
   }
 }
 
@@ -389,7 +390,7 @@ GTEST_TEST(TestScs, UnivariateNonnegative1) {
   ScsSolver solver;
   if (solver.is_available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-6);
+    dut.CheckResult(result, kTol);
   }
 }
 

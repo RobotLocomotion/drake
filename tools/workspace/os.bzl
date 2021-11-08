@@ -3,6 +3,16 @@
 
 """A collection of OS-related utilities intended for use in repository rules,
 i.e., rules used by WORKSPACE files, not BUILD files.
+
+To opt-in to the "manylinux" build variant, set the environment variable
+`DRAKE_OS=manylinux` before running the build.  The most precise way to do
+this is to add a `user.bazelrc` file to the root of the Drake source tree
+with the following content:
+
+  common --repo_env=DRAKE_OS=manylinux
+
+Alternatively, you may pass `--repo_env=DRAKE_OS=manylinux` on the bazel
+command line.
 """
 
 load("@drake//tools/workspace:execute.bzl", "which")
@@ -43,12 +53,15 @@ def exec_using_which(repository_ctx, command):
 def _make_result(
         error = None,
         ubuntu_release = None,
-        macos_release = None):
+        macos_release = None,
+        is_manylinux = False):
     """Return a fully-populated struct result for determine_os, below."""
     if ubuntu_release != None:
         distribution = "ubuntu"
     elif macos_release != None:
         distribution = "macos"
+    elif is_manylinux:
+        distribution = "manylinux"
     else:
         distribution = None
     return struct(
@@ -56,6 +69,7 @@ def _make_result(
         distribution = distribution,
         is_macos = (macos_release != None),
         is_ubuntu = (ubuntu_release != None),
+        is_manylinux = is_manylinux,
         ubuntu_release = ubuntu_release,
         macos_release = macos_release,
     )
@@ -65,6 +79,17 @@ def _determine_linux(repository_ctx):
 
     # Shared error message text across different failure cases.
     error_prologue = "could not determine Linux distribution: "
+
+    # Allow the user to override the OS selection.
+    drake_os = repository_ctx.os.environ.get("DRAKE_OS", "")
+    if len(drake_os) > 0:
+        if drake_os == "manylinux":
+            return _make_result(is_manylinux = True)
+        return _make_result(error = "{}{} DRAKE_OS={}".format(
+            error_prologue,
+            "unknown value for environment variable",
+            drake_os,
+        ))
 
     # Run sed to determine Linux NAME and VERSION_ID.
     sed = exec_using_which(repository_ctx, [
@@ -125,18 +150,27 @@ def determine_os(repository_ctx):
     A repository_rule helper function that determines which of the supported OS
     versions we are targeting.
 
+    Note that even if the operating system hosting the build is Ubuntu, the
+    target OS might be "manylinux", which means that we only use the most basic
+    host packages from Ubuntu (libc, libstdc++, etc.).  In that case, the
+    value of is_ubuntu will be False.
+
     Argument:
         repository_ctx: The context passed to the repository_rule calling this.
 
     Result:
         a struct, with attributes:
         - error: str iff any error occurred, else None
-        - distribution: str either "ubuntu" or "macos" if no error
+        - distribution: str either "ubuntu" or "macos" or "manylinux" iff no
+                        error occurred, else None
         - is_macos: True iff on a supported macOS release, else False
         - macos_release: str like "10.15" or "11" iff on a supported macOS,
                          else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
+        - is_manylinux: True iff this build will be packaged into a Python
+                        wheel that confirms to a "manylinux" standard such as
+                        manylinux_2_27; see https://github.com/pypa/manylinux.
     """
 
     os_name = repository_ctx.os.name
@@ -180,6 +214,10 @@ def os_specific_alias(repository_ctx, mapping):
             "macOS " + os_result.macos_release,
             "macOS default",
             "default",
+        ]
+    elif os_result.is_manylinux:
+        keys = [
+            "manylinux",
         ]
     found_items = None
     for key in keys:

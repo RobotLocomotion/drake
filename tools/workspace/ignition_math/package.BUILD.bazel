@@ -18,9 +18,8 @@ load(
 )
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
+    "install_files",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
@@ -133,6 +132,7 @@ public_headers_no_gen = [
     "include/ignition/math/detail/Cylinder.hh",
     "include/ignition/math/detail/Ellipsoid.hh",
     "include/ignition/math/detail/Sphere.hh",
+    "include/ignition/math/detail/WellOrderedVector.hh",
     "include/ignition/math/graph/Edge.hh",
     "include/ignition/math/graph/Graph.hh",
     "include/ignition/math/graph/GraphAlgorithms.hh",
@@ -251,15 +251,18 @@ cc_library(
 CMAKE_PACKAGE = "ignition-math%d" % (PROJECT_MAJOR)
 
 # TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
-# we should also remove this target. Be sure to remove the *-cps.py file, also.
-cmake_config(
-    package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/ignition_math:package-create-cps.py",
-    version_file = ":config",
+# we should also remove this rule.
+install_files(
+    name = "install_cmake_config",
+    dest = "lib/cmake/{}".format(CMAKE_PACKAGE),
+    files = [
+        "@drake//tools/workspace/ignition_math:{}-config.cmake".format(CMAKE_PACKAGE),  # noqa
+        "@drake//tools/workspace/ignition_math:{}-config-version.cmake".format(CMAKE_PACKAGE),  # noqa
+    ],
+    strip_prefix = ["**/"],
+    allowed_externals = ["@drake//:.bazelproject"],
+    visibility = ["//visibility:private"],
 )
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = CMAKE_PACKAGE)
 
 # TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is removed,
 # this target should remove all of its attributes other than "name" and "docs".
@@ -274,5 +277,7 @@ install(
         "COPYING",
         "LICENSE",
     ],
+    # TODO(jwnimmer-tri) On 2021-12-01 when the ":ignition_math" target is
+    # removed, we should also remove install_cmake_config from deps.
     deps = [":install_cmake_config"],
 )

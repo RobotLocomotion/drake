@@ -97,11 +97,12 @@ def parse_filename_and_parser(args_parser, args):
         if args.package_path:
             # Verify that package.xml is found in the designated path.
             package_path = os.path.abspath(args.package_path)
-            if not os.path.isfile(os.path.join(package_path, "package.xml")):
+            package_xml = os.path.join(package_path, "package.xml")
+            if not os.path.isfile(package_xml):
                 args_parser.error(f"package.xml not found at: {package_path}")
 
             # Get the package map and populate it using the package path.
-            parser.package_map().PopulateFromFolder(package_path)
+            parser.package_map().AddPackageXml(package_xml)
         return parser
 
     if args.find_resource:
@@ -162,7 +163,9 @@ def parse_visualizers(args_parser, args):
         # Connect to Meshcat.
         if args.meshcat is not None:
             meshcat_viz = ConnectMeshcatVisualizer(
-                builder, scene_graph, zmq_url=args.meshcat)
+                builder, scene_graph, zmq_url=args.meshcat,
+                role=args.meshcat_role,
+                prefer_hydro=args.meshcat_hydroelastic)
 
         # Connect to PyPlot.
         if args.pyplot:

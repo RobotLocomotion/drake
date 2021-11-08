@@ -38,7 +38,7 @@ ExtractMatrixValue(const Derived& v) {
   if constexpr (std::is_same_v<typename Derived::Scalar, double>) {
     return v;
   } else if constexpr (std::is_same_v<typename Derived::Scalar, AutoDiffXd>) {
-    return math::autoDiffToValueMatrix(v);
+    return math::ExtractValue(v);
   } else {
     static_assert("Unsupported type T");
   }
@@ -129,7 +129,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     const double center_distance = kRadius * 2 - target_depth;
     Vector3<T> p_WBo;
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
-      p_WBo = math::initializeAutoDiff(
+      p_WBo = math::InitializeAutoDiff(
           (Vector3d{1, -2, 3}.normalized() * center_distance));
     } else {
       p_WBo = (Vector3d{1, -2, 3}.normalized() * center_distance);
@@ -235,9 +235,8 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
       const RigidTransform<double> X_WA_double =
           RigidTransform<double>::Identity();
       const RigidTransform<double> X_WB_double(
-          RotationMatrix<double>(
-              math::autoDiffToValueMatrix(X_WB.rotation().matrix())),
-          math::autoDiffToValueMatrix(X_WB.translation()));
+          RotationMatrix<double>(math::ExtractValue(X_WB.rotation().matrix())),
+          math::ExtractValue(X_WB.translation()));
       const std::unordered_map<GeometryId, RigidTransform<double>> X_WGs_double{
           {{id_A_, X_WA_double}, {shape_id, X_WB_double}}};
 
@@ -248,15 +247,12 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
       ASSERT_EQ(point_pairs_double.size(), 1u);
       EXPECT_EQ(ExtractDoubleOrThrow(first_result.depth),
                 point_pairs_double[0].depth);
-      EXPECT_TRUE(
-          CompareMatrices(math::autoDiffToValueMatrix(first_result.p_WCa),
-                          point_pairs_double[0].p_WCa));
-      EXPECT_TRUE(
-          CompareMatrices(math::autoDiffToValueMatrix(first_result.p_WCb),
-                          point_pairs_double[0].p_WCb, kEps));
-      EXPECT_TRUE(
-          CompareMatrices(math::autoDiffToValueMatrix(first_result.nhat_BA_W),
-                          point_pairs_double[0].nhat_BA_W));
+      EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCa),
+                                  point_pairs_double[0].p_WCa));
+      EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCb),
+                                  point_pairs_double[0].p_WCb, kEps));
+      EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.nhat_BA_W),
+                                  point_pairs_double[0].nhat_BA_W));
     }
   }
 
@@ -268,7 +264,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.2);
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
       p_WBo =
-          R_WB * math::initializeAutoDiff(Vector3d::UnitX() * center_distance);
+          R_WB * math::InitializeAutoDiff(Vector3d::UnitX() * center_distance);
     } else {
       p_WBo = R_WB * Vector3d::UnitX() * center_distance;
     }
@@ -285,7 +281,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.2);
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
       p_WBo =
-          R_WB * math::initializeAutoDiff(Vector3d::UnitX() * center_distance);
+          R_WB * math::InitializeAutoDiff(Vector3d::UnitX() * center_distance);
     } else {
       p_WBo = R_WB * Vector3d::UnitX() * center_distance;
     }
@@ -299,7 +295,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
                                    RotationMatrix<T>::MakeXRotation(0.5);
     Vector3<T> p_WBo;
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
-      p_WBo = math::initializeAutoDiff(Eigen::Vector3d(0.5, -0.2, 0.9));
+      p_WBo = math::InitializeAutoDiff(Eigen::Vector3d(0.5, -0.2, 0.9));
     } else {
       p_WBo = Eigen::Vector3d(0.5, -0.2, 0.9);
     }
@@ -320,7 +316,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.2);
     if constexpr (std::is_same_v<T, AutoDiffXd>) {
       p_WBo =
-          R_WB * math::initializeAutoDiff(Vector3d::UnitX() * center_distance);
+          R_WB * math::InitializeAutoDiff(Vector3d::UnitX() * center_distance);
     } else {
       p_WBo = R_WB * Vector3d::UnitX() * center_distance;
     }
@@ -393,7 +389,7 @@ TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
   const double center_distance = kRadius * 2 - target_depth;
   const Eigen::Vector3d p_WBo_val =
       Vector3d{1, -2, 3}.normalized() * center_distance;
-  const Vector3<AutoDiffXd> p_WBo = math::initializeAutoDiff(p_WBo_val);
+  const Vector3<AutoDiffXd> p_WBo = math::InitializeAutoDiff(p_WBo_val);
   std::unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs;
   const RigidTransform<AutoDiffXd> X_WB = RigidTransform<AutoDiffXd>{
       RotationMatrix<AutoDiffXd>::MakeYRotation(M_PI / 3) *
@@ -418,17 +414,20 @@ TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
       std::pow(p_WBo_val.norm(), 3);
   // nhat_BA_W = -p_WBo / |p_WBo|, hence ∂nhat_BA_W /∂p_WBo = -∂(p_WBo/|p_WBo|)
   // / ∂p_WBo
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(result.nhat_BA_W),
-                              -dp_WBo_normalized_dp_WBo, kEps));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractGradient(result.nhat_BA_W),
+                      -dp_WBo_normalized_dp_WBo, kEps));
   // p_WCa = radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCa_dp_WBo = dp_WBo_normalized_dp_WBo * kRadius;
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(result.p_WCa),
-                              dp_WCa_dp_WBo, kEps));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractGradient(result.p_WCa),
+                      dp_WCa_dp_WBo, kEps));
   // p_WCb = p_WBo - radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCb_dp_WBo =
       Eigen::Matrix3d::Identity() - dp_WBo_normalized_dp_WBo * kRadius;
-  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(result.p_WCb),
-                              dp_WCb_dp_WBo, kEps));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractGradient(result.p_WCb),
+                      dp_WCb_dp_WBo, kEps));
 }
 
 TEST_F(PenetrationAsPointPairCallbackTest, SphereBoxDouble) {

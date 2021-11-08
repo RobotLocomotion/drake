@@ -69,8 +69,6 @@ using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
 using geometry::SurfaceMesh;
-using geometry::SurfaceFaceIndex;
-using geometry::SurfaceVertex;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using std::make_unique;
@@ -285,19 +283,19 @@ class ContactResultMaker final : public LeafSystem<double> {
 
       // Loop through each contact triangle on the contact surface.
       const auto& field = contacts[i].e_MN();
-      for (SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
+      for (int j = 0; j < surface_msg.num_triangles; ++j) {
         lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
             surface_msg.triangles[j];
 
         // Get the three vertices.
         const auto& face = mesh_W.element(j);
-        const SurfaceVertex<double>& vA = mesh_W.vertex(face.vertex(0));
-        const SurfaceVertex<double>& vB = mesh_W.vertex(face.vertex(1));
-        const SurfaceVertex<double>& vC = mesh_W.vertex(face.vertex(2));
+        const Vector3d& vA = mesh_W.vertex(face.vertex(0));
+        const Vector3d& vB = mesh_W.vertex(face.vertex(1));
+        const Vector3d& vC = mesh_W.vertex(face.vertex(2));
 
-        write_double3(vA.r_MV(), tri_msg.p_WA);
-        write_double3(vB.r_MV(), tri_msg.p_WB);
-        write_double3(vC.r_MV(), tri_msg.p_WC);
+        write_double3(vA, tri_msg.p_WA);
+        write_double3(vB, tri_msg.p_WB);
+        write_double3(vC, tri_msg.p_WC);
 
         tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
         tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));

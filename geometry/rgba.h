@@ -50,6 +50,16 @@ class Rgba {
     a_ = a;
   }
 
+  /* Reports if two %Rgba values are equal within a given absolute `tolerance`.
+   They are "equal" so long as the difference in no single channel is larger
+   than the specified `tolerance`. */
+  bool AlmostEqual(const Rgba& other, double tolerance = 0.0) const {
+    return std::abs(r_ - other.r_) <= tolerance &&
+           std::abs(g_ - other.g_) <= tolerance &&
+           std::abs(b_ - other.b_) <= tolerance &&
+           std::abs(a_ - other.a_) <= tolerance;
+  }
+
   bool operator==(const Rgba& other) const {
     return
         r_ == other.r_ && g_ == other.g_ && b_ == other.b_ && a_ == other.a_;

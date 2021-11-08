@@ -2,9 +2,10 @@
 # rationale.
 
 import numpy as np
+from pydrake.common.deprecation import deprecated_callable
 
 
-def initializeAutoDiffTuple(*args):
+def InitializeAutoDiffTuple(*args):
     """Given a series of array_like input arguments, create a tuple of
     corresponding AutoDiff matrices with values equal to the input matrices
     and properly initialized derivative vectors.
@@ -19,7 +20,7 @@ def initializeAutoDiffTuple(*args):
     elements of the first input argument (traversed first by row, then by
     column), and so on for subsequent arguments.
 
-    This is a pythonic implementation of drake::math::initializeAutoDiffTuple
+    This is a pythonic implementation of drake::math::InitializeAutoDiffTuple
     in C++.
     """
 
@@ -30,12 +31,17 @@ def initializeAutoDiffTuple(*args):
     autodiff_tuple = []
     deriv_num_start = 0
     for arg in args:
-        autodiff_tuple.append(initializeAutoDiff(arg,
+        autodiff_tuple.append(InitializeAutoDiff(arg,
                                                  num_derivatives,
                                                  deriv_num_start))
         deriv_num_start += np.asarray(arg).size
 
     return tuple(autodiff_tuple)
+
+
+initializeAutoDiffTuple = deprecated_callable(
+    "Use InitializeAutoDiffTuple()", date="2022-02-01"
+)(InitializeAutoDiffTuple)
 
 
 @np.vectorize

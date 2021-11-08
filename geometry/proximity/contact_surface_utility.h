@@ -23,7 +23,8 @@ namespace internal {
  In debug builds, this method will do _expensive_ validation of its parameters.
 
  @param polygon
-     The planar N-sided convex polygon.
+     The planar N-sided convex polygon defined by three or more ordered indices
+     into `vertices_F`.
  @param[in] n_F
      A vector that is perpendicular to the `polygon`'s plane, expressed in
      Frame F.
@@ -39,10 +40,9 @@ namespace internal {
  @tparam_nonsymbolic_scalar
  */
 template <typename T>
-Vector3<T> CalcPolygonCentroid(
-    const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<T>& n_F,
-    const std::vector<SurfaceVertex<T>>& vertices_F);
+Vector3<T> CalcPolygonCentroid(const std::vector<int>& polygon,
+                               const Vector3<T>& n_F,
+                               const std::vector<Vector3<T>>& vertices_F);
 
 // TODO(14579) This overload of CalcPolygonCentroid() is expected to simply go
 //  away when we implement the final support for discrete hydroelastics. If it
@@ -109,11 +109,10 @@ T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs,
  @pre `n_F` has non-trivial length.
  @tparam_nonsymbolic_scalar */
 template <typename T>
-void AddPolygonToMeshData(
-    const std::vector<SurfaceVertexIndex>& polygon,
-    const Vector3<T>& n_F,
-    std::vector<SurfaceFace>* faces,
-    std::vector<SurfaceVertex<T>>* vertices_F);
+void AddPolygonToMeshData(const std::vector<int>& polygon,
+                          const Vector3<T>& n_F,
+                          std::vector<SurfaceFace>* faces,
+                          std::vector<Vector3<T>>* vertices_F);
 
 // Any polygon with area less than this threshold is considered having
 // near-zero area in AddPolygonToMeshDataAsOneTriangle() below.
@@ -165,7 +164,7 @@ constexpr double kMinimumPolygonArea = 1e-13;
 template <typename T>
 void AddPolygonToMeshDataAsOneTriangle(
     const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& nhat_F,
-    std::vector<SurfaceFace>* faces, std::vector<SurfaceVertex<T>>* vertices_F);
+    std::vector<SurfaceFace>* faces, std::vector<Vector3<T>>* vertices_F);
 
 enum class ContactPolygonRepresentation {
   // Each contact polygon is subdivided into triangles sharing the centroid
@@ -196,7 +195,7 @@ enum class ContactPolygonRepresentation {
 template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
                                    const SurfaceMesh<T>& surface_M,
-                                   SurfaceFaceIndex tri_index,
+                                   int tri_index,
                                    const math::RotationMatrix<T>& R_FM);
 
 }  // namespace internal

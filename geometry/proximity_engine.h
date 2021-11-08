@@ -258,6 +258,10 @@ class ProximityEngine {
 
   //@}
 
+  /* The representation of every geometry that was successfully requested for
+   use for hydroelastic contact surface computation. */
+  const hydroelastic::Geometries& hydroelastic_geometries() const;
+
  private:
   // Testing utilities:
   // These functions facilitate *limited* introspection into the engine state.
@@ -270,10 +274,6 @@ class ProximityEngine {
   // Reports the pose (X_WG) of the geometry with the given id.
   const math::RigidTransform<double> GetX_WG(GeometryId id,
                                              bool is_dynamic) const;
-
-  // The representation of every geometry that was successfully requested for
-  // use for hydroelastic contact surface computation.
-  const hydroelastic::Geometries& hydroelastic_geometries() const;
 
   ////////////////////////////////////////////////////////////////////////////
 

@@ -386,14 +386,12 @@ GTEST_TEST(UnitInertia, CastToAutoDiff) {
   const Matrix3<AutoDiffXd> I_cast_matrix = I_cast.CopyToFullMatrix3();
 
   // Check that the values were preserved.
-  EXPECT_TRUE(CompareMatrices(
-      drake::math::autoDiffToValueMatrix(I_cast_matrix),
-      I_double.CopyToFullMatrix3()));
+  EXPECT_TRUE(CompareMatrices(drake::math::ExtractValue(I_cast_matrix),
+                              I_double.CopyToFullMatrix3()));
 
   // Check that the gradients are all empty.
-  EXPECT_TRUE(CompareMatrices(
-      drake::math::autoDiffToGradientMatrix(I_cast_matrix),
-      Eigen::MatrixXd(9, 0)));
+  EXPECT_TRUE(CompareMatrices(drake::math::ExtractGradient(I_cast_matrix),
+                              Eigen::MatrixXd(9, 0)));
 }
 
 // Tests that we can instantiate a unit inertia with AutoDiffScalar and

@@ -22,7 +22,7 @@ template<typename T>
 class VolumeMeshTester {
  public:
   explicit VolumeMeshTester(const VolumeMesh<T>& mesh) : mesh_(mesh) {}
-  Vector3<T> CalcGradBarycentric(VolumeElementIndex e, int i) const {
+  Vector3<T> CalcGradBarycentric(int e, int i) const {
     return mesh_.CalcGradBarycentric(e, i);
   }
  private:
@@ -65,19 +65,17 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh(
   const Vector3<T> vertex_data[5] = {Vector3<T>::Zero(), Vector3<T>::UnitX(),
                                      Vector3<T>::UnitY(), Vector3<T>::UnitZ(),
                                      -Vector3<T>::UnitZ()};
-  std::vector<VolumeVertex<T>> vertices_W;
+  std::vector<Vector3<T>> vertices_W;
   for (int v = 0; v < 5; ++v) vertices_W.emplace_back(X_WM * vertex_data[v]);
   auto volume_mesh_W = std::make_unique<VolumeMesh<T>>(std::move(elements),
                                                        std::move(vertices_W));
   EXPECT_EQ(2, volume_mesh_W->num_elements());
   EXPECT_EQ(5, volume_mesh_W->num_vertices());
   for (int v = 0; v < 5; ++v)
-    EXPECT_EQ(X_WM * vertex_data[v],
-              volume_mesh_W->vertex(VolumeVertexIndex(v)).r_MV());
+    EXPECT_EQ(X_WM * vertex_data[v], volume_mesh_W->vertex(v));
   for (int e = 0; e < 2; ++e)
     for (int v = 0; v < 4; ++v)
-      EXPECT_EQ(element_data[e][v],
-                volume_mesh_W->element(VolumeElementIndex(e)).vertex(v));
+      EXPECT_EQ(element_data[e][v], volume_mesh_W->element(e).vertex(v));
   return volume_mesh_W;
 }
 
@@ -116,7 +114,7 @@ void TestVolumeMeshEqual() {
 
   // Different tetrahedral connectivity.
   {
-    std::vector<VolumeVertex<T>> vertices_copy = mesh->vertices();
+    std::vector<Vector3<T>> vertices_copy = mesh->vertices();
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
     // Re-order vertices of the first tetrahedron.
     tetrahedra[0] = VolumeElement(tetrahedra[0].vertex(1),
@@ -130,7 +128,7 @@ void TestVolumeMeshEqual() {
 
   // Different number of vertices.
   {
-    std::vector<VolumeVertex<T>> vertices = mesh->vertices();
+    std::vector<Vector3<T>> vertices = mesh->vertices();
     vertices.emplace_back(1.2, 3.7, 0.15);
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
     VolumeMesh<T> another_mesh(std::move(tetrahedra), std::move(vertices));
@@ -139,7 +137,7 @@ void TestVolumeMeshEqual() {
 
   // Different number of tetrahedra.
   {
-    std::vector<VolumeVertex<T>> vertices = mesh->vertices();
+    std::vector<Vector3<T>> vertices = mesh->vertices();
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
     tetrahedra.pop_back();
     VolumeMesh<T> another_mesh(std::move(tetrahedra), std::move(vertices));
@@ -168,8 +166,8 @@ void TestCalcTetrahedronVolume() {
 
   const double expect_tetrahedron_volume(1. / 6.);
   for (int e = 0; e < 2; ++e) {
-    const double tetrahedron_volume = ExtractDoubleOrThrow(
-        volume_mesh->CalcTetrahedronVolume(VolumeElementIndex(e)));
+    const double tetrahedron_volume =
+        ExtractDoubleOrThrow(volume_mesh->CalcTetrahedronVolume(e));
     EXPECT_NEAR(expect_tetrahedron_volume, tetrahedron_volume, kTolerance);
   }
 }
@@ -211,7 +209,7 @@ void TestCalcBarycentric() {
   // Empirically the std::numeric_limits<double>::epsilon() 2.2e-16 is too
   // small to account for the pose.
   const T kTolerance(1e-14);
-  const VolumeElementIndex element(0);
+  const int element{0};
 
   using Barycentric = typename VolumeMesh<T>::template Barycentric<T>;
   // At the centroid of the tetrahedral element v0v1v2v3.
@@ -293,14 +291,14 @@ void TestCalcGradBarycentric() {
   // the test more realistic.
   const VolumeMesh<T> mesh_W(
       {VolumeElement(tetrahedron)},
-      {VolumeVertex<T>(X_WM * v0_M), VolumeVertex<T>(X_WM * v1_M),
-       VolumeVertex<T>(X_WM * v2_M), VolumeVertex<T>(X_WM * v3_M)});
+      {Vector3<T>(X_WM * v0_M), Vector3<T>(X_WM * v1_M),
+       Vector3<T>(X_WM * v2_M), Vector3<T>(X_WM * v3_M)});
 
   const VolumeMeshTester<T> tester(mesh_W);
-  const auto gradb0_W = tester.CalcGradBarycentric(VolumeElementIndex(0), 0);
-  const auto gradb1_W = tester.CalcGradBarycentric(VolumeElementIndex(0), 1);
-  const auto gradb2_W = tester.CalcGradBarycentric(VolumeElementIndex(0), 2);
-  const auto gradb3_W = tester.CalcGradBarycentric(VolumeElementIndex(0), 3);
+  const auto gradb0_W = tester.CalcGradBarycentric(0, 0);
+  const auto gradb1_W = tester.CalcGradBarycentric(0, 1);
+  const auto gradb2_W = tester.CalcGradBarycentric(0, 2);
+  const auto gradb3_W = tester.CalcGradBarycentric(0, 3);
 
   // In this example, we have these equations, expressed in M's frame:
   //      b₀(x,y,z) = -x - y/2 - z/3 + 1,
@@ -361,8 +359,7 @@ void TestCalcGradientVectorOfLinearField() {
   auto mesh_M = TestVolumeMesh<T>();
   const std::array<T, 4> f{2., 3., 4., 5.};
 
-  const Vector3<T> gradf_M =
-      mesh_M->CalcGradientVectorOfLinearField(f, VolumeElementIndex(0));
+  const Vector3<T> gradf_M = mesh_M->CalcGradientVectorOfLinearField(f, 0);
 
   // The field f on the tetrahedral element e0 satisfies this equation with
   // coordinates expressed in M's frame:
@@ -401,10 +398,10 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   std::vector<T> f_values = {f0, f1, f2, f3, f4};
 
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "pressure", std::move(f_values), volume_mesh.get());
+      std::move(f_values), volume_mesh.get());
 
   // Tests evaluation of the field on the element e0 {v0, v1, v2, v3}.
-  const VolumeElementIndex e0(0);
+  const int e0{0};
   const typename VolumeMesh<T>::template Barycentric<T> b{0.4, 0.3, 0.2, 0.1};
   const T expect_p = b(0) * f0 + b(1) * f1 + b(2) * f2 + b(3) * f3;
   EXPECT_EQ(expect_p, volume_mesh_field->Evaluate(e0, b));
@@ -451,13 +448,12 @@ class ScalarMixingTest : public ::testing::Test {
     // We construct an AutoDiffXd-valued mesh from the double-valued mesh. We
     // only set the derivatives for vertex 3. That means, operations on
     // test 0 *must* have derivatives, but tet 1 may not have them.
-    std::vector<VolumeVertex<AutoDiffXd>> vertices;
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(0)).r_MV());
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(1)).r_MV());
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(2)).r_MV());
-    vertices.emplace_back(math::initializeAutoDiff(
-        mesh_d_->vertex(VolumeVertexIndex(3)).r_MV()));
-    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(4)).r_MV());
+    std::vector<Vector3<AutoDiffXd>> vertices;
+    vertices.emplace_back(mesh_d_->vertex(0));
+    vertices.emplace_back(mesh_d_->vertex(1));
+    vertices.emplace_back(mesh_d_->vertex(2));
+    vertices.emplace_back(math::InitializeAutoDiff(mesh_d_->vertex(3)));
+    vertices.emplace_back(mesh_d_->vertex(4));
     std::vector<VolumeElement> elements(mesh_d_->tetrahedra());
 
     mesh_ad_ = std::make_unique<VolumeMesh<AutoDiffXd>>(std::move(elements),
@@ -467,18 +463,18 @@ class ScalarMixingTest : public ::testing::Test {
   std::unique_ptr<VolumeMesh<double>> mesh_d_;
   std::unique_ptr<VolumeMesh<AutoDiffXd>> mesh_ad_;
 
-  VolumeElementIndex e0_{0};
-  VolumeElementIndex e1_{1};
+  int e0_{0};
+  int e1_{1};
 };
 
 TEST_F(ScalarMixingTest, CalcBarycentric) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
   Vector3<double> p_WQ_d = Vector3<double>::Zero();
-  for (VolumeVertexIndex v(0); v < 4; ++v) {
-    p_WQ_d += mesh_d_->vertex(v).r_MV();
+  for (int v = 0; v < 4; ++v) {
+    p_WQ_d += mesh_d_->vertex(v);
   }
   p_WQ_d /= 4;
-  const Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ_d);
+  const Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ_d);
 
   const Vector4<double> b_expected = Vector4<double>{1, 1, 1, 1} / 4;
 
@@ -495,8 +491,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected, kEps));
   }
 
   {
@@ -506,8 +501,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b1(0).derivatives().size(), 3);
     EXPECT_EQ(b1(1).derivatives().size(), 3);
     EXPECT_EQ(b1(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b1), b_expected, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b1), b_expected, kEps));
 
     // AutoDiffXd-valued mesh with double-valued point on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
@@ -525,8 +519,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
     EXPECT_EQ(b(0).derivatives().size(), 3);
     EXPECT_EQ(b(1).derivatives().size(), 3);
     EXPECT_EQ(b(2).derivatives().size(), 3);
-    EXPECT_TRUE(
-        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected, kEps));
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(b), b_expected, kEps));
   }
 }
 
@@ -556,7 +549,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
     EXPECT_EQ(grad_W(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W(1).derivatives().size(), 3);
     EXPECT_EQ(grad_W(2).derivatives().size(), 3);
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W),
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(grad_W),
                                 grad_W_expected, kEps));
   }
 
@@ -568,7 +561,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
     EXPECT_EQ(grad_W1(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W1(1).derivatives().size(), 3);
     EXPECT_EQ(grad_W1(2).derivatives().size(), 3);
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W1),
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(grad_W1),
                                 grad_W_expected, kEps));
 
     // AutoDiffXd-valued mesh with double-valued field on triangle *without*
@@ -589,7 +582,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
     EXPECT_EQ(grad_W(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W(1).derivatives().size(), 3);
     EXPECT_EQ(grad_W(2).derivatives().size(), 3);
-    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W),
+    EXPECT_TRUE(CompareMatrices(math::ExtractValue(grad_W),
                                 grad_W_expected, kEps));
   }
 }

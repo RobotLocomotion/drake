@@ -162,6 +162,10 @@ class TestMath(unittest.TestCase):
             X.multiply(other=RigidTransform()), RigidTransform)
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
+        if T != Expression:
+            self.assertTrue(X.IsExactlyIdentity())
+            self.assertTrue(X.IsIdentityToEpsilon(translation_tolerance=0))
+            self.assertTrue(X.IsNearlyEqualTo(other=X, tolerance=0))
         # - Test shaping (#13885).
         v = np.array([0., 0., 0.])
         vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
@@ -399,13 +403,6 @@ class TestMath(unittest.TestCase):
         value = wrap_to(T(1.5), T(0.), T(1.))
         if T != Expression:
             self.assertEqual(value, T(.5))
-
-    # TODO(2021-10-01) Remove with completion of deprecation.
-    def test_orthonormal_basis(self):
-        with catch_drake_warnings(expected_count=1):
-            R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
-            self.assertAlmostEqual(np.linalg.det(R), 1.0)
-            self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
 
     def test_random_rotations(self):
         g = RandomGenerator()

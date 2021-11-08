@@ -193,9 +193,8 @@ void SurfaceVolumeIntersector<T>::RemoveDuplicateVertices(
 template <typename T>
 const std::vector<Vector3<T>>&
 SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
-    VolumeElementIndex element, const VolumeMesh<double>& volume_M,
-    SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
-    const math::RigidTransform<T>& X_MN) {
+    int element, const VolumeMesh<double>& volume_M, int face,
+    const SurfaceMesh<double>& surface_N, const math::RigidTransform<T>& X_MN) {
   // Although polygon_M starts out pointing to polygon_[0] that is not an
   // invariant in this function.
   std::vector<Vector3<T>>* polygon_M = &(polygon_[0]);
@@ -203,10 +202,8 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   // surface_N.
   polygon_M->clear();
   for (int i = 0; i < 3; ++i) {
-    SurfaceVertexIndex v = surface_N.element(face).vertex(i);
-    // TODO(SeanCurtis-TRI): The `M` in `r_MV()` is different from the M in this
-    //  function. More evidence that the `vertex(v).r_MV()` notation is *bad*.
-    const Vector3<T>& p_NV = surface_N.vertex(v).r_MV().cast<T>();
+    const int v = surface_N.element(face).vertex(i);
+    const Vector3<T>& p_NV = surface_N.vertex(v).cast<T>();
     polygon_M->push_back(X_MN * p_NV);
   }
   // Get the positions, in M's frame, of the four vertices of the tetrahedral
@@ -215,8 +212,8 @@ SurfaceVolumeIntersector<T>::ClipTriangleByTetrahedron(
   // as we do transformed computations below.
   Vector3<double> p_MVs[4];
   for (int i = 0; i < 4; ++i) {
-    VolumeVertexIndex v = volume_M.element(element).vertex(i);
-    p_MVs[i] = volume_M.vertex(v).r_MV();
+    int v = volume_M.element(element).vertex(i);
+    p_MVs[i] = volume_M.vertex(v);
   }
   // Sets up the four half spaces associated with the four triangular faces of
   // the tetrahedron. Assume the tetrahedron has the fourth vertex seeing the
@@ -285,7 +282,7 @@ bool SurfaceVolumeIntersector<T>::IsFaceNormalAlongPressureGradient(
     const VolumeMeshFieldLinear<double, double>& volume_field_M,
     const SurfaceMesh<double>& surface_N,
     const math::RigidTransform<double>& X_MN,
-    const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
+    int tet_index, int tri_index) {
   const Vector3<double> grad_p_M = volume_field_M.EvaluateGradient(tet_index);
   return IsFaceNormalInNormalDirection(grad_p_M.normalized(), surface_N,
                                        tri_index, X_MN.rotation());
@@ -308,21 +305,20 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   grad_eM_Ms->clear();
 
   std::vector<SurfaceFace> surface_faces;
-  std::vector<SurfaceVertex<T>> surface_vertices_M;
+  std::vector<Vector3<T>> surface_vertices_M;
   std::vector<T> surface_e;
   const VolumeMesh<double>& mesh_M = volume_field_M.mesh();
   // We know that each contact polygon has at most 7 vertices because
   // each surface triangle is clipped by four half-spaces of the four
   // triangular faces of a tetrahedron.
-  std::vector<SurfaceVertexIndex> contact_polygon;
+  std::vector<int> contact_polygon;
   contact_polygon.reserve(7);
 
   const math::RigidTransform<double> X_MN_d = convert_to_double(X_MN);
   auto callback = [&volume_field_M, &surface_N, &surface_faces,
                    &surface_vertices_M, &surface_e, &mesh_M, &X_MN_d, &X_MN,
                    &contact_polygon, grad_eM_Ms, representation,
-                   this](VolumeElementIndex tet_index,
-                         SurfaceFaceIndex tri_index) -> BvttCallbackResult {
+                   this](int tet_index, int tri_index) -> BvttCallbackResult {
     if (!this->IsFaceNormalAlongPressureGradient(
             volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
       return BvttCallbackResult::Continue;
@@ -380,7 +376,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const int num_current_vertices = surface_vertices_M.size();
     // Calculate values of the pressure field at the new vertices.
     for (int v = num_previous_vertices; v < num_current_vertices; ++v) {
-      const Vector3<T>& r_MV = surface_vertices_M[v].r_MV();
+      const Vector3<T>& r_MV = surface_vertices_M[v];
       const T pressure = volume_field_M.EvaluateCartesian(tet_index, r_MV);
       surface_e.push_back(pressure);
     }
@@ -395,7 +391,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
       std::move(surface_faces), std::move(surface_vertices_M));
   const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
+      std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
 template <typename T>

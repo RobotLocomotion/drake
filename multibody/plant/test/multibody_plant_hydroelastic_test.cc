@@ -73,7 +73,7 @@ class HydroelasticModelTests : public ::testing::Test {
 
     // Connect visualizer. Useful for when this test is used for debugging.
     drake::geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
-    ConnectContactResultsToDrakeVisualizer(&builder, *plant_);
+    ConnectContactResultsToDrakeVisualizer(&builder, *plant_, *scene_graph_);
 
     diagram_ = builder.Build();
 

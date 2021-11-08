@@ -4,11 +4,11 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis, Quaternion
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.math import BsplineBasis, RotationMatrix
+from pydrake.math import BsplineBasis, RigidTransform, RotationMatrix
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
-    BsplineTrajectory, PiecewisePolynomial, PiecewiseQuaternionSlerp,
-    Trajectory
+    BsplineTrajectory, PiecewisePolynomial, PiecewisePose,
+    PiecewiseQuaternionSlerp, Trajectory
 )
 
 
@@ -291,3 +291,38 @@ class TestTrajectories(unittest.TestCase):
         np.testing.assert_equal(
             np.zeros(3), pq.angular_acceleration(time=1)
         )
+
+    def test_piecewise_pose(self):
+        # Test empty constructor.
+        ppose = PiecewisePose()
+        self.assertEqual(ppose.rows(), 4)
+        self.assertEqual(ppose.cols(), 4)
+        self.assertEqual(ppose.get_number_of_segments(), 0)
+
+        t = [0., 1., 2.]
+        q = Quaternion()
+        pp = PiecewisePolynomial.FirstOrderHold(t, np.zeros((3, 3)))
+        pq = PiecewiseQuaternionSlerp(t, [q, q, q])
+        ppose = PiecewisePose(position_trajectory=pp,
+                              orientation_trajectory=pq)
+        self.assertEqual(ppose.get_number_of_segments(), 2)
+
+        np.testing.assert_equal(ppose.GetPose(
+            time=0).GetAsMatrix4(), np.eye(4))
+        np.testing.assert_equal(ppose.GetVelocity(time=0), np.zeros((6,)))
+        np.testing.assert_equal(
+            ppose.GetAcceleration(time=0), np.zeros((6,)))
+        self.assertTrue(ppose.IsApprox(other=ppose, tol=0.0))
+        self.assertIsInstance(
+            ppose.get_position_trajectory(), PiecewisePolynomial)
+        self.assertIsInstance(
+            ppose.get_orientation_trajectory(), PiecewiseQuaternionSlerp)
+
+        X = RigidTransform()
+        ppose = PiecewisePose.MakeLinear(times=t, poses=[X, X, X])
+        self.assertEqual(ppose.get_number_of_segments(), 2)
+
+        ppose = PiecewisePose.MakeCubicLinearWithEndLinearVelocity(
+            times=t, poses=[X, X, X], start_vel=np.zeros((3, 1)),
+            end_vel=np.zeros((3, 1)))
+        self.assertEqual(ppose.get_number_of_segments(), 2)

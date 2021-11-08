@@ -293,12 +293,12 @@ drake_py_unittest(
 drake_py_unittest(
     name = "optimization_test",
     timeout = "moderate",
-    tags = ["snopt"],
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
         ":optimization_py",
         ":parsing_py",
+        "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/solvers:ipopt_py",
         "//bindings/pydrake/solvers:snopt_py",

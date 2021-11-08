@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":static_equilibrium_problem",
         ":static_friction_cone_complementarity_constraint",
         ":static_friction_cone_constraint",
+        ":toppra",
     ],
 )
 
@@ -170,6 +171,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "toppra",
+    srcs = ["toppra.cc"],
+    hdrs = ["toppra.h"],
+    deps = [
+        "//common/trajectories",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
 drake_cc_googletest(
     name = "contact_wrench_evaluator_test",
     deps = [
@@ -256,6 +269,22 @@ drake_cc_googletest(
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//solvers:mathematical_program",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "toppra_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    use_default_main = False,
+    deps = [
+        ":toppra",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/tree",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
 )
 

@@ -91,8 +91,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
     return this->template GetNumericParameter<AcrobotParams>(context, 0);
   }
 
-  const AcrobotParams<T>& get_mutable_parameters(
-      systems::Context<T>* context) const {
+  AcrobotParams<T>& get_mutable_parameters(systems::Context<T>* context) const {
     return this->template GetMutableNumericParameter<AcrobotParams>(context, 0);
   }
 

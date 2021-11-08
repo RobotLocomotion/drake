@@ -22,7 +22,6 @@
 #include "drake/math/discrete_algebraic_riccati_equation.h"
 #include "drake/math/discrete_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
@@ -101,8 +100,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetAsIsometry3", &Class::GetAsIsometry3,
             cls_doc.GetAsIsometry3.doc)
         .def("SetIdentity", &Class::SetIdentity, cls_doc.SetIdentity.doc)
-        // .def("IsExactlyIdentity", ...)
-        // .def("IsIdentityToEpsilon", ...)
+        .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
+            cls_doc.IsExactlyIdentity.doc)
+        .def("IsIdentityToEpsilon", &Class::IsIdentityToEpsilon,
+            py::arg("translation_tolerance"), cls_doc.IsIdentityToEpsilon.doc)
+        .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
+            py::arg("tolerance"), cls_doc.IsNearlyEqualTo.doc)
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
         .def(
             "multiply",
@@ -320,16 +323,6 @@ void DoScalarIndependentDefinitions(py::module m) {
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
   using T = double;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("ComputeBasisFromAxis",
-      WrapDeprecated(doc.ComputeBasisFromAxis.doc_deprecated,
-          [](int axis_index, const Vector3<T>& axis) {
-            return ComputeBasisFromAxis(axis_index, axis);
-          }),
-      py::arg("axis_index"), py::arg("axis_W"),
-      doc.ComputeBasisFromAxis.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc)

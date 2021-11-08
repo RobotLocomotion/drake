@@ -22,11 +22,8 @@ using geometry::ContactSurface;
 using geometry::GeometryId;
 using geometry::MeshFieldLinear;
 using geometry::SceneGraph;
-using geometry::SurfaceFaceIndex;
 using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
-using geometry::SurfaceVertex;
-using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using math::RigidTransformd;
 using systems::Context;
@@ -42,15 +39,16 @@ namespace internal {
 // an open box with five faces but, for simplicity, we'll only
 // use the bottom face (two triangles).
 std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
-  std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
 
   // Create the vertices, all of which are offset vectors defined in the
   // halfspace body frame.
-  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
+  std::vector<Vector3<double>> vertices = {
+      {0.5, 0.5, -0.5},
+      {-0.5, 0.5, -0.5},
+      {-0.5, -0.5, -0.5},
+      {0.5, -0.5, -0.5},
+  };
 
   // Create the face comprising two triangles. The box penetrates into the
   // z = 0 plane from above. The contact surface should be constructed such that
@@ -67,15 +65,13 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   //       /     /|   /
   //   v2 /_____/_|__/ v3
   //           /  |
-  faces.emplace_back(
-      SurfaceVertexIndex(0), SurfaceVertexIndex(2), SurfaceVertexIndex(1));
-  faces.emplace_back(
-      SurfaceVertexIndex(2), SurfaceVertexIndex(0), SurfaceVertexIndex(3));
+  faces.emplace_back(0, 2, 1);
+  faces.emplace_back(2, 0, 3);
 
   auto mesh = std::make_unique<SurfaceMesh<double>>(
       std::move(faces), std::move(vertices));
 
-  for (SurfaceFaceIndex f(0); f < mesh->num_faces(); ++f) {
+  for (int f = 0; f < mesh->num_faces(); ++f) {
     // Can't use an ASSERT_TRUE here because it interferes with the return
     // value.
     if (!CompareMatrices(mesh->face_normal(f), -Vector3<double>::UnitZ(),
@@ -107,8 +103,8 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   // Create the "e" field values (i.e., "hydroelastic pressure") using
   // negated "z" values.
   std::vector<double> e_MN(mesh->num_vertices());
-  for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    e_MN[i] = -mesh->vertex(i).r_MV()[2];
+  for (int i = 0; i < mesh->num_vertices(); ++i)
+    e_MN[i] = -mesh->vertex(i).z();
 
   // Now transform the mesh to the world frame, as ContactSurface specifies.
   mesh->TransformVertices(X_WH);
@@ -117,7 +113,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
+          std::move(e_MN), mesh_pointer));
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -173,7 +169,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // world frame.
     HydroelasticQuadraturePointData<double> output =
         traction_calculator().CalcTractionAtPoint(
-            calculator_data(), SurfaceFaceIndex(0),
+            calculator_data(), 0 /* tri_index */,
             SurfaceMesh<double>::Barycentric<double>(1.0, 0.0, 0.0),
             dissipation, mu_coulomb);
 
@@ -569,9 +565,8 @@ class HydroelasticTractionCalculatorTester {
   static HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
       const HydroelasticTractionCalculator<T>& calculator,
       const typename HydroelasticTractionCalculator<T>::Data& data,
-      geometry::SurfaceFaceIndex face_index, const T& e,
-      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
-      const Vector3<T>& p_WQ) {
+      int face_index, const T& e, const Vector3<T>& nhat_W, double dissipation,
+      double mu_coulomb, const Vector3<T>& p_WQ) {
     return calculator.CalcTractionAtQHelper(data, face_index, e, nhat_W,
                                             dissipation, mu_coulomb, p_WQ);
   }
@@ -652,20 +647,20 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   HydroelasticTractionCalculator<AutoDiffXd> calculator;
 
   RigidTransform<AutoDiffXd> X_WA(
-      math::initializeAutoDiff(Vector3<double>(0, 0, 1)));
+      math::InitializeAutoDiff(Vector3<double>(0, 0, 1)));
   RigidTransform<AutoDiffXd> X_WB;
 
   // For this test, we need just enough contact surface so that the mesh can
   // report a centroid point (part of Data constructor).
   const Vector3<AutoDiffXd> p_WC =
       (X_WA.translation() + X_WB.translation()) / 2;
-  std::vector<SurfaceVertex<AutoDiffXd>> vertices;
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0));
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5));
-  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5));
+  std::vector<Vector3<AutoDiffXd>> vertices = {
+      p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0),
+      p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5),
+      p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5),
+  };
 
-  std::vector<SurfaceFace> faces({SurfaceFace{
-      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2)}});
+  std::vector<SurfaceFace> faces({SurfaceFace{0, 1, 2}});
   auto mesh_W = std::make_unique<geometry::SurfaceMesh<AutoDiffXd>>(
       std::move(faces), std::move(vertices));
   // Note: these values are garbage. They merely allow us to instantiate the
@@ -674,7 +669,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   std::vector<AutoDiffXd> values{0, 0, 0};
   auto field = std::make_unique<
       geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
-      "junk", std::move(values), mesh_W.get(), false);
+      std::move(values), mesh_W.get(), false);
   // N.B. get_new_id() makes no guarantee on the order.
   // Since the surface normal follows the convention that it points from B into
   // A, we generate a pair of id's such that idA < idB to ensure that
@@ -687,7 +682,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
                                                std::move(field));
 
   // Parameters for CalcTractionAtQHelper().
-  const geometry::SurfaceFaceIndex f0(0);
+  const int f0 = 0;
   // N.B. From documentation for CalcTractionAtQHelper(), nhat_W points from B
   // into A. Since the right-hand rule on the triangle above dictates the
   // direction of the normal to be in the +z axis, body A is situated above body
@@ -727,13 +722,12 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // This not only confirms that we get well-defined (non-NaN) derivatives but
   // also that values propagate correctly.
   const Matrix3<double> zeros = Matrix3<double>::Zero();
-  EXPECT_TRUE(
-      CompareMatrices(math::autoDiffToGradientMatrix(nhat_W), zeros, 1e-15));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(nhat_W), zeros, 1e-15));
   EXPECT_EQ(point_data.traction_Aq_W.x().derivatives().size(), 3);
   EXPECT_EQ(point_data.traction_Aq_W.y().derivatives().size(), 3);
   EXPECT_EQ(point_data.traction_Aq_W.z().derivatives().size(), 3);
   const Matrix3<double> grad_traction_Aq_W =
-      math::autoDiffToGradientMatrix(point_data.traction_Aq_W);
+      math::ExtractGradient(point_data.traction_Aq_W);
 
   // N.B. Since p_WB = 0, then p_WC = p_WA / 2.
   // For this simple case the expression for the traction traction_Aq_W is:
@@ -741,8 +735,7 @@ GTEST_TEST(HydroelasticTractionCalculatorTest,
   // Therefore the derivative of along p_WA[2] is:
   //   dtdz = 0.5 * E / h * nhat_W
   // The remaining 8 components of the gradient are trivially zero.
-  const Vector3<double> dtdz =
-      0.5 * E / h * math::autoDiffToValueMatrix(nhat_W);
+  const Vector3<double> dtdz = 0.5 * E / h * math::ExtractValue(nhat_W);
   Matrix3<double> expected_grad_traction_Aq_W = Matrix3<double>::Zero();
   expected_grad_traction_Aq_W.col(2) = dtdz;
   EXPECT_TRUE(CompareMatrices(grad_traction_Aq_W, expected_grad_traction_Aq_W));
@@ -796,14 +789,14 @@ class HydroelasticReportingTests
 
     // Create the e field values (i.e., "hydroelastic pressure").
     std::vector<double> e_MN(mesh->num_vertices());
-    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-      e_MN[i] = pressure(mesh->vertex(i).r_MV());
+    for (int i = 0; i < mesh->num_vertices(); ++i)
+      e_MN[i] = pressure(mesh->vertex(i));
 
     SurfaceMesh<double>* mesh_pointer = mesh.get();
     contact_surface_ = std::make_unique<ContactSurface<double>>(
-      null_id, null_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer));
+        null_id, null_id, std::move(mesh),
+        std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+            std::move(e_MN), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body
     // free so that we can test the slip velocity. Additionally, we'll
@@ -860,10 +853,10 @@ SpatialForce<double> MakeSpatialForce() {
 std::vector<HydroelasticQuadraturePointData<double>> GetQuadraturePointData() {
   HydroelasticQuadraturePointData<double> data;
   data.p_WQ = Vector3<double>(3.0, 5.0, 7.0);
-  data.face_index = SurfaceFaceIndex(1);
+  data.face_index = 1;
   data.vt_BqAq_W = Vector3<double>(11.0, 13.0, 17.0);
   data.traction_Aq_W = Vector3<double>(19.0, 23.0, 29.0);
-  return { data };
+  return {data};
 }
 
 HydroelasticContactInfo<double> CreateContactInfo(

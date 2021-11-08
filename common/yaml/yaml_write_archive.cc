@@ -5,83 +5,87 @@
 #include <vector>
 
 #include "third_party/com_github_jbeder_yaml_cpp/include/yaml-cpp/emitfromevents.h"  // NOLINT
+#include "yaml-cpp/yaml.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace yaml {
 namespace {
 
+// Boilerplate for std::visit.
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
 constexpr const char* const kKeyOrder = "__key_order";
 
 // This function uses the same approach as YAML::NodeEvents::Emit.
 // https://github.com/jbeder/yaml-cpp/blob/release-0.5.2/src/nodeevents.cpp#L55
-void RecursiveEmit(const YAML::Node& node, YAML::EmitFromEvents* sink) {
+//
+// The `sink` object keeps track of document state.  Our job is to feed it with
+// an event stream (e.g., start mapping, "foo", start sequence, "1", "2",
+// end sequence, end mapping) and then its job is to spit out the equivalent
+// YAML syntax for that stream (e.g., "foo: [1, 2]") with appropriately matched
+// delimiters (i.e., `:` or `{}` or `[]`) and horizontal indentation levels.
+void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
   const YAML::Mark no_mark;
   const YAML::anchor_t no_anchor = YAML::NullAnchor;
-  switch (node.Type()) {
-    case YAML::NodeType::Undefined: { return; }
-    case YAML::NodeType::Null: { return; }
-    case YAML::NodeType::Scalar: {
-      sink->OnScalar(no_mark, node.Tag(), no_anchor, node.Scalar());
-      return;
-    }
-    case YAML::NodeType::Sequence: {
+  node.Visit(overloaded{
+    [&](const internal::Node::ScalarData& data) {
+      sink->OnScalar(no_mark, node.GetTag(), no_anchor, data.scalar);
+    },
+    [&](const internal::Node::SequenceData& data) {
       // If all children are scalars, then format this sequence onto a
       // single line; otherwise, format as a bulleted list.
       auto style = YAML::EmitterStyle::Flow;
-      for (const auto& child : node) {
-        if (child.IsSequence() || child.IsMap()) {
+      for (const auto& child : data.sequence) {
+        if (!child.IsScalar()) {
           style = YAML::EmitterStyle::Block;
         }
       }
-      sink->OnSequenceStart(no_mark, node.Tag(), no_anchor, style);
-      for (const auto& child : node) {
+      sink->OnSequenceStart(no_mark, node.GetTag(), no_anchor, style);
+      for (const auto& child : data.sequence) {
         RecursiveEmit(child, sink);
       }
       sink->OnSequenceEnd();
-      return;
-    }
-    case YAML::NodeType::Map: {
+    },
+    [&](const internal::Node::MappingData& data) {
       // If there are no children, then format this map onto a single line;
       // otherwise, format over multiple "key: value\n" lines.
       auto style = YAML::EmitterStyle::Block;
-      if (node.size() == 0) {
+      if (data.mapping.empty()) {
         style = YAML::EmitterStyle::Flow;
       }
-      sink->OnMapStart(no_mark, node.Tag(), no_anchor, style);
-      // In yaml-cpp < 0.6.0, the iteration order of yaml-cpp NodeType::Map is
-      // not deterministic.  If there is a __key_order node inserted (as part
-      // of the Accept() method in our header file), use it to specify output
-      // order; otherwise, use alphabetical order.
+      sink->OnMapStart(no_mark, node.GetTag(), no_anchor, style);
+      // If there is a __key_order node inserted (as part of the Accept()
+      // member function in our header file), use it to specify output order;
+      // otherwise, use alphabetical order.
       std::vector<std::string> key_order;
-      const YAML::Node key_order_node = node[kKeyOrder];
-      if (key_order_node) {
-        // Use Accept()'s ordering.  (If SubstractDefaults has been called,
+      if (data.mapping.count(kKeyOrder)) {
+        const internal::Node& key_order_node = data.mapping.at(kKeyOrder);
+        // Use Accept()'s ordering.  (If EraseMatchingMaps has been called,
         // some of the keys may have disappeared.)
-        for (const auto& item : key_order_node) {
-          const std::string& key = item.Scalar();
-          if (node[key].IsDefined()) {
+        for (const auto& item : key_order_node.GetSequence()) {
+          const std::string& key = item.GetScalar();
+          if (data.mapping.count(key)) {
             key_order.push_back(key);
           }
         }
       } else {
         // Use alphabetical ordering.
-        for (const auto& yaml_key_value : node) {
-          key_order.push_back(yaml_key_value.first.Scalar());
+        for (const auto& [key, value] : data.mapping) {
+          unused(value);
+          key_order.push_back(key);
         }
-        std::sort(key_order.begin(), key_order.end());
       }
       for (const auto& string_key : key_order) {
-        const YAML::Node key(string_key);
-        RecursiveEmit(key, sink);
-        RecursiveEmit(node[string_key], sink);
+        RecursiveEmit(internal::Node::MakeScalar(string_key), sink);
+        RecursiveEmit(data.mapping.at(string_key), sink);
       }
       sink->OnMapEnd();
-      return;
-    }
-  }
-  DRAKE_UNREACHABLE();
+    },
+  });
 }
 
 }  // namespace
@@ -89,11 +93,10 @@ void RecursiveEmit(const YAML::Node& node, YAML::EmitFromEvents* sink) {
 const char* const YamlWriteArchive::kKeyOrderName = kKeyOrder;
 
 // Convert the given document to a string ala YAML::Dump, but emit Map nodes
-// using a deterministic key ordering.  (By default, the ordering build in to
-// YAML::Dump is non-deterministic in < 0.6 and addition-order in >= 0.6.  Once
-// we are using >= 0.6, perhaps this function can evaporate.)
+// using a specific key ordering (the visit order in case of structs, or else
+// alphabetical key order for any other kind of Map node).
 std::string YamlWriteArchive::YamlDumpWithSortedMaps(
-    const YAML::Node& document) {
+    const internal::Node& document) {
   YAML::Emitter emitter;
   YAML::EmitFromEvents sink(emitter);
   RecursiveEmit(document, &sink);
@@ -102,7 +105,7 @@ std::string YamlWriteArchive::YamlDumpWithSortedMaps(
 
 std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
   std::string result;
-  if (root_.IsNull()) {
+  if (root_.GetMapping().empty()) {
     if (root_name.empty()) {
       result = "{}\n";
     } else {
@@ -112,8 +115,8 @@ std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
     if (root_name.empty()) {
       result = YamlDumpWithSortedMaps(root_) + "\n";
     } else {
-      YAML::Node document;
-      document[root_name] = root_;
+      auto document = internal::Node::MakeMapping();
+      document.Add(root_name, root_);
       result = YamlDumpWithSortedMaps(document) + "\n";
     }
   }
@@ -122,143 +125,58 @@ std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
 
 namespace {
 
-// Returns true iff x and y have a identical node types and values throughout
-// their entire tree structure, but without trying to match representationally
-// distinct but semantically equal values (e.g., 0x0a compared to 10 may return
-// false even though they refer to the same integer).
-//
-// See https://github.com/jbeder/yaml-cpp/issues/274 for a feature request to
-// provide this kind of function directly as part of yaml-cpp.
-bool AreLexicallyEqual(const YAML::Node& x, const YAML::Node& y) {
-  DRAKE_DEMAND(x.IsDefined() && y.IsDefined());
-  const YAML::NodeType::value type = x.Type();
-  if (y.Type() != type) {
-    return false;
-  }
-  switch (type) {
-    case YAML::NodeType::Undefined: { DRAKE_UNREACHABLE(); }
-    case YAML::NodeType::Null: {
-      // Two nulls are always equal to each other.
-      return true;
-    }
-    case YAML::NodeType::Scalar: {
-      return x.Scalar() == y.Scalar();
-    }
-    case YAML::NodeType::Sequence: {
-      size_t size = x.size();
-      if (y.size() != size) {
-        return false;
-      }
-      for (size_t i = 0; i < size; ++i) {
-        if (!AreLexicallyEqual(x[i], y[i])) {
-          return false;
-        }
-      }
-      return true;
-    }
-    case YAML::NodeType::Map: {
-      if (x.size() != y.size()) {
-        return false;
-      }
-      if (x.Tag() != y.Tag()) {
-        return false;
-      }
-      for (const auto& x_key_value : x) {
-        const std::string& key = x_key_value.first.Scalar();
-        const YAML::Node& x_val = x_key_value.second;
-        const YAML::Node& y_val = y[key];
-        if (!y_val.IsDefined()) {
-          return false;
-        }
-        if (!AreLexicallyEqual(x_val, y_val)) {
-          return false;
-        }
-      }
-      return true;
-    }
-  }
-  DRAKE_UNREACHABLE();
-}
-
 // Implements YamlWriteArchive::EraseMatchingMaps recursively.
-void DoEraseMatchingMaps(YAML::Node* x, const YAML::Node* y) {
-  // If x and y are different types, then no subtraction that can be done.
+void DoEraseMatchingMaps(internal::Node* x, const internal::Node* y) {
   DRAKE_DEMAND((x != nullptr) && (y != nullptr));
-  DRAKE_DEMAND(x->IsDefined() && y->IsDefined());
-  const YAML::NodeType::value type = x->Type();
-  if (y->Type() != type) {
-    // If the types differ, we should not subtract.
-    return;
-  }
+
+  // If x and y are different types, then no subtraction can be done.
   // If their type is non-map, then we do not subtract them.  The reader's
   // retain_map_defaults mode only merges default maps; it does not, e.g.,
   // concatenate sequences.
-  switch (type) {
-    case YAML::NodeType::Undefined: { DRAKE_UNREACHABLE(); }
-    case YAML::NodeType::Null: { return; }
-    case YAML::NodeType::Scalar: { return; }
-    case YAML::NodeType::Sequence: { return; }
-    case YAML::NodeType::Map: {
-      break;
-    }
-  }
+  if (!(x->IsMapping())) { return; }
+  if (!(y->IsMapping())) { return; }
+  const std::map<std::string, internal::Node>& y_map = y->GetMapping();
+
   // Both x are y are maps.  Remove from x any key-value pair that is identical
   // within both x and y.
   std::vector<std::string> keys_to_prune;
-  for (const auto& x_key_value : *x) {
-    const std::string& key = x_key_value.first.Scalar();
-    if (key == kKeyOrder) {
+  for (const auto& [x_key, x_value] : x->GetMapping()) {
+    if (x_key == kKeyOrder) {
       // Subtraction should always leave the special kKeyOrder node alone when
       // considering which keys to prune.  If any keys are unpruned, we still
       // want to know in what order they should appear.  The only way to remove
       // a kKeyOrder node is when its enclosing Map is removed wholesale.
       continue;
     }
-    const YAML::Node& x_val = x_key_value.second;
-    const YAML::Node& y_val = (*y)[key];
-    if (!y_val.IsDefined()) {
-      // The key only appears in x, so we should not prune.
+    auto iter = y_map.find(x_key);
+    if (iter == y_map.end()) {
+      // The key only appears in x, so we should neither prune nor recurse.
       continue;
     }
-    if (!AreLexicallyEqual(x_val, y_val)) {
-      // The values do not match, so we should not prune.
+    const internal::Node& y_value = iter->second;
+    if (x_value == y_value) {
+      // The values match, so we should prune.  (We can't call Remove here,
+      // because it would invalidate the range-for iterator.)
+      keys_to_prune.push_back(x_key);
       continue;
     }
-    keys_to_prune.push_back(key);
+    // The maps are tagged differently, so we should not subtract their
+    // children, since they may have different semantics.
+    if (x_value.GetTag() != y_value.GetTag()) {
+      continue;
+    }
+    // Recurse into any children of x and y with the same key name.
+    internal::Node& x_value_mutable = x->At(x_key);
+    DoEraseMatchingMaps(&x_value_mutable, &y_value);
   }
   for (const auto& key : keys_to_prune) {
-    x->remove(key);
-  }
-  // Recurse into any children of x and y with the same key name.
-  for (auto&& x_key_value : *x) {
-    const std::string& key = x_key_value.first.Scalar();
-    if (key == kKeyOrder) {
-      // Subtraction should always leave the special kKeyOrder node alone.
-      // (See the other kKeyOrder guard a few lines above for details.)
-      continue;
-    }
-    YAML::Node& x_val = x_key_value.second;
-    const YAML::Node& y_val = (*y)[key];
-    if (!y_val.IsDefined()) {
-      // The key only appears in x, so we cannot recurse.
-      continue;
-    }
-    if (x_val.Tag() != y_val.Tag()) {
-      // The maps are tagged differently, so we should not subtract their
-      // children, since they may have different semantics.
-      continue;
-    }
-    DoEraseMatchingMaps(&x_val, &y_val);
+    x->Remove(key);
   }
 }
 
 }  // namespace
 
 void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
-  // Note that the implementations of DoEraseMatchingMaps and AreLexicallyEqual
-  // are both recursive.  It's possible that we could improve performance by
-  // merging them into a single recursive traveral.  However, for readability
-  // they are kept separate until we see a proven need for that optimization.
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
 }
 

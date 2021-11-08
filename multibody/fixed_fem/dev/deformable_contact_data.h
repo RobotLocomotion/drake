@@ -108,6 +108,12 @@ class DeformableContactData {
     return contact_pairs_;
   }
 
+  /* Returns the index of the deformable body in contact. For an empty contact
+   data, returns an invalid index. */
+  DeformableBodyIndex deformable_body_index() const {
+    return deformable_body_index_;
+  }
+
  private:
   /* Populates the data member `permuted_vertex_indexes_`. Only called by the
    constructor when there exists at least one contact pair. */
@@ -125,6 +131,7 @@ class DeformableContactData {
   std::vector<int> permuted_to_original_indexes_{};
   int num_contact_points_{0};
   int num_vertices_in_contact_{0};
+  DeformableBodyIndex deformable_body_index_;
 };
 
 }  // namespace internal

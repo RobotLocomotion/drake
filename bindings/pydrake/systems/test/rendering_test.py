@@ -26,10 +26,7 @@ from pydrake.systems.framework import (
     BasicVector,
     PortDataType,
 )
-from pydrake.common.eigen_geometry import (
-    Isometry3,
-    Quaternion,
-)
+from pydrake.common.eigen_geometry import Quaternion
 
 
 def normalized(x):

@@ -89,10 +89,8 @@ unique_ptr<SurfaceMesh<T>> GenerateMesh() {
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
   vector<SurfaceFace> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
-  const Vector3<T> vertex_data[4] = {
+  vector<Vector3<T>> vertices = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
-  vector<SurfaceVertex<T>> vertices;
-  for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh =
       make_unique<SurfaceMesh<T>>(move(faces), move(vertices));
   return surface_mesh;
@@ -114,8 +112,8 @@ ContactSurface<T> TestContactSurface() {
   const T e2{2.};
   const T e3{3.};
   vector<T> e_values = {e0, e1, e2, e3};
-  auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", move(e_values), surface_mesh.get());
+  auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(move(e_values),
+                                                           surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, move(surface_mesh),
                                     move(e_field));
@@ -130,7 +128,7 @@ ContactSurface<T> TestContactSurface() {
   EXPECT_EQ(4, contact_surface.mesh_W().num_vertices());
   // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
-    const SurfaceFaceIndex f0(0);
+    const int f0{0};
     const typename SurfaceMesh<T>::template Barycentric<double> b{0.2, 0.3,
                                                                   0.5};
     const T expect_e = b(0) * e0 + b(1) * e1 + b(2) * e2;
@@ -138,8 +136,8 @@ ContactSurface<T> TestContactSurface() {
   }
   // Tests area() of triangular faces.
   {
-    EXPECT_EQ(T(0.5), contact_surface.mesh_W().area(SurfaceFaceIndex(0)));
-    EXPECT_EQ(T(0.5), contact_surface.mesh_W().area(SurfaceFaceIndex(1)));
+    EXPECT_EQ(T(0.5), contact_surface.mesh_W().area(0));
+    EXPECT_EQ(T(0.5), contact_surface.mesh_W().area(1));
   }
 
   return contact_surface;
@@ -162,7 +160,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   auto make_e_field = [](SurfaceMesh<double>* mesh) {
     vector<double> e_values{0, 1, 2, 3};
     return make_unique<SurfaceMeshFieldLinear<double, double>>(
-        "e", move(e_values), mesh, false /* calc_gradient */);
+        move(e_values), mesh, false /* calc_gradient */);
   };
   vector<Vector3d> grad_e;
   for (int i = 0; i < surface_mesh->num_elements(); ++i) {
@@ -281,7 +279,7 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   EXPECT_EQ(original.mesh_W().num_faces(), copy.mesh_W().num_faces());
 
   // We check evaluation of field values only at one position.
-  const SurfaceFaceIndex f(0);
+  const int f{0};
   const typename SurfaceMesh<double>::Barycentric<double> b{0.2, 0.3, 0.5};
   EXPECT_EQ(original.e_MN().Evaluate(f, b), copy.e_MN().Evaluate(f, b));
 }
@@ -308,7 +306,7 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
   vector<double> field2_values(field.values());
   field2_values.at(0) += 2.0;
   auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
-                    field.name(), move(field2_values), mesh2.get());
+      move(field2_values), mesh2.get());
   auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
                                          move(mesh2), move(field2));
   EXPECT_FALSE(surface.Equal(surface2));
@@ -333,8 +331,8 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   ASSERT_LT(id_N, id_M);
   ContactSurface<double> dut(
       id_M, id_N, move(mesh),
-      make_unique<SurfaceMeshFieldLinear<double, double>>(
-          "e_MN", move(e_MN_values), mesh_pointer));
+      make_unique<SurfaceMeshFieldLinear<double, double>>(move(e_MN_values),
+                                                          mesh_pointer));
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
   // These tests are just to confirm that those things changed where we
@@ -350,7 +348,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
            f1.vertex(2) == f2.vertex(2);
   };
   // Face winding is changed.
-  for (SurfaceFaceIndex f(0); f < original.mesh_W().num_faces(); ++f) {
+  for (int f = 0; f < original.mesh_W().num_faces(); ++f) {
     EXPECT_FALSE(
         are_identical(dut.mesh_W().element(f), original.mesh_W().element(f)));
   }
@@ -358,7 +356,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // Evaluate the mesh field, once per face for an arbitrary point Q on the
   // interior of the triangle. We expect e_MN function hasn't changed.
   const SurfaceMesh<double>::Barycentric<double> b_Q{0.25, 0.25, 0.5};
-  for (SurfaceFaceIndex f(0); f < original.mesh_W().num_faces(); ++f) {
+  for (int f = 0; f < original.mesh_W().num_faces(); ++f) {
     EXPECT_EQ(dut.e_MN().Evaluate(f, b_Q), original.e_MN().Evaluate(f, b_Q));
   }
 }

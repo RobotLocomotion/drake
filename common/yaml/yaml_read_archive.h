@@ -343,6 +343,8 @@ class YamlReadArchive final {
   template <size_t I, typename Variant, typename T, typename... Remaining>
   void VariantHelperImpl(
       const std::string& tag, const char* name, Variant* storage) {
+    // For the first type declared in the variant<> (I == 0), the tag can be
+    // absent; otherwise, the tag must match one of the variant's types.
     if (((I == 0) && (tag.empty() || (tag == "?"))) ||
         IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
       T typed_storage{};
@@ -469,6 +471,11 @@ class YamlReadArchive final {
 
   template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
+    // For now, we only allow std::string as the keys of a serialized std::map.
+    // In the future, we could imagine handling any other kind of scalar value
+    // that was convertible to a string (int, double, string_view, etc.) if we
+    // found that useful.  However, to remain compatible with JSON semantics,
+    // we should never allow a YAML Sequence or Mapping to be a used as a key.
     static_assert(std::is_same_v<Key, std::string>,
                   "std::map keys must be strings");
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);

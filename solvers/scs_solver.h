@@ -37,11 +37,14 @@ struct ScsSolverDetails {
   /// Equal to SCS_INFO.res_infeas
   double residue_infeasibility{};
   /// unbounded certificate residue.
-  /// Equal to SCS_INFO.res_unbdd
-  double residue_unbounded{};
-  /// relative duality gap.
-  /// Equal to SCS_INFO.rel_gap.
-  double relative_duality_gap{};
+  /// Equal to SCS_INFO.res_unbdd_a
+  double residue_unbounded_a{};
+  /// unbounded certificate residue.
+  /// Equal to SCS_INFO.res_unbdd_p
+  double residue_unbounded_p{};
+  /// duality gap.
+  /// Equal to SCS_INFO.gap.
+  double duality_gap{};
   /// Time taken for SCS to setup in milliseconds.
   /// Equal to SCS_INFO.setup_time.
   double scs_setup_time{};

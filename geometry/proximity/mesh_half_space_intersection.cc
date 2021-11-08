@@ -32,8 +32,8 @@ int sgn(const T& x) {
  */
 template <typename T>
 Vector3<T> CalcEdgePlaneIntersection(
-    SurfaceVertexIndex a, SurfaceVertexIndex b, const T& s_a, const T& s_b,
-    const std::vector<SurfaceVertex<double>>& vertices_F,
+    int a, int b, const T& s_a, const T& s_b,
+    const std::vector<Vector3<double>>& vertices_F,
     const math::RigidTransform<T>& X_WF) {
   DRAKE_DEMAND(a != b);
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
@@ -45,8 +45,7 @@ Vector3<T> CalcEdgePlaneIntersection(
   // remainder on division, the assertion below should hold.
   DRAKE_DEMAND(t >= 0 && t <= 1);
   const Vector3<T> p_WV =
-      X_WF * (vertices_F[a].r_MV() +
-              t * (vertices_F[b].r_MV() - vertices_F[a].r_MV()));
+      X_WF * (vertices_F[a] + t * (vertices_F[b] - vertices_F[a]));
   return p_WV;
 }
 
@@ -60,23 +59,22 @@ Vector3<T> CalcEdgePlaneIntersection(
  @pre s_a and s_b must not have the same sign (positive, negative, or zero).
  */
 template <typename T>
-SurfaceVertexIndex GetVertexAddIfNeeded(
-    SurfaceVertexIndex a, SurfaceVertexIndex b, const T& s_a, const T& s_b,
-    const std::vector<SurfaceVertex<double>>& vertices_F,
+int GetVertexAddIfNeeded(
+    int a, int b, const T& s_a, const T& s_b,
+    const std::vector<Vector3<double>>& vertices_F,
     const math::RigidTransform<T>& X_WF,
-    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-        edges_to_newly_created_vertices,
-    std::vector<SurfaceVertex<T>>* new_vertices_W) {
+    std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices,
+    std::vector<Vector3<T>>* new_vertices_W) {
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
 
-  SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
+  SortedPair<int> edge_a_b(a, b);
   auto edge_a_b_intersection_iter =
       edges_to_newly_created_vertices->find(edge_a_b);
   if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
     bool inserted;
     std::tie(edge_a_b_intersection_iter, inserted) =
         edges_to_newly_created_vertices->insert(
-            {edge_a_b, SurfaceVertexIndex(new_vertices_W->size())});
+            {edge_a_b, static_cast<int>(new_vertices_W->size())});
     DRAKE_DEMAND(inserted);
     new_vertices_W->emplace_back(
         CalcEdgePlaneIntersection(a, b, s_a, s_b, vertices_F, X_WF));
@@ -91,23 +89,22 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
  method creates the vertex in `new_vertices_W` if it hasn't already been added.
  */
 template <typename T>
-SurfaceVertexIndex GetVertexAddIfNeeded(
-    const std::vector<SurfaceVertex<double>>& vertices_F,
-    SurfaceVertexIndex index, const math::RigidTransform<T>& X_WF,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-        vertices_to_newly_created_vertices,
-    std::vector<SurfaceVertex<T>>* new_vertices_W) {
+int GetVertexAddIfNeeded(
+    const std::vector<Vector3<double>>& vertices_F, int index,
+    const math::RigidTransform<T>& X_WF,
+    std::unordered_map<int, int>* vertices_to_newly_created_vertices,
+    std::vector<Vector3<T>>* new_vertices_W) {
   auto v_to_new_v_iter = vertices_to_newly_created_vertices->find(index);
   if (v_to_new_v_iter == vertices_to_newly_created_vertices->end()) {
     bool inserted;
     std::tie(v_to_new_v_iter, inserted) =
         vertices_to_newly_created_vertices->insert(
-            {index, SurfaceVertexIndex(new_vertices_W->size())});
+            {index, static_cast<int>(new_vertices_W->size())});
     DRAKE_DEMAND(inserted);
-    // Note: although r_MV is *always* Vector3<double>, we don't support
+    // Note: although the vertex is *always* Vector3<double>, we don't support
     // Vector3<AD> = RigidTransform<AD> * Vector3<double>. Therefore, we must
     // cast the vector to T to account for when it is AutoDiffXd.
-    const Vector3<T> p_WV = X_WF * vertices_F[index].r_MV().cast<T>();
+    const Vector3<T> p_WV = X_WF * vertices_F[index].cast<T>();
     new_vertices_W->emplace_back(p_WV);
   }
   return v_to_new_v_iter->second;
@@ -117,15 +114,13 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
 
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const SurfaceMesh<double>& mesh_F, SurfaceFaceIndex tri_index,
+    const SurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation,
-    std::vector<SurfaceVertex<T>>* new_vertices_W,
+    std::vector<Vector3<T>>* new_vertices_W,
     std::vector<SurfaceFace>* new_faces,
-    std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-        vertices_to_newly_created_vertices,
-    std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-        edges_to_newly_created_vertices) {
+    std::unordered_map<int, int>* vertices_to_newly_created_vertices,
+    std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices) {
   // TODO(SeanCurtis-TRI): This needs to support the "backface" culling that is
   //  implemented in mesh-mesh intersection. See the
   //  IsFaceNormalAlongPressureGradient() function in mesh_intersection.h.
@@ -134,7 +129,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   DRAKE_DEMAND(vertices_to_newly_created_vertices != nullptr);
   DRAKE_DEMAND(edges_to_newly_created_vertices != nullptr);
 
-  const std::vector<SurfaceVertex<double>>& vertices_F = mesh_F.vertices();
+  const std::vector<Vector3<double>>& vertices_F = mesh_F.vertices();
   const SurfaceFace& triangle = mesh_F.element(tri_index);
 
   // TODO(SeanCurtis-TRI): This code _might_ look cleaner if it used the same
@@ -204,8 +199,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   T s[3];
   int num_positive = 0;
   for (int i = 0; i < 3; ++i) {
-    s[i] =
-        half_space_F.CalcSignedDistance(vertices_F[triangle.vertex(i)].r_MV());
+    s[i] = half_space_F.CalcSignedDistance(vertices_F[triangle.vertex(i)]);
     if (s[i] > 0) ++num_positive;
   }
 
@@ -222,13 +216,13 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   if (num_positive == 0) {
     switch (representation) {
       case ContactPolygonRepresentation::kCentroidSubdivision: {
-        const SurfaceVertexIndex v0_new_index = GetVertexAddIfNeeded(
+        const int v0_new_index = GetVertexAddIfNeeded(
             vertices_F, triangle.vertex(0), X_WF,
             vertices_to_newly_created_vertices, new_vertices_W);
-        const SurfaceVertexIndex v1_new_index = GetVertexAddIfNeeded(
+        const int v1_new_index = GetVertexAddIfNeeded(
             vertices_F, triangle.vertex(1), X_WF,
             vertices_to_newly_created_vertices, new_vertices_W);
-        const SurfaceVertexIndex v2_new_index = GetVertexAddIfNeeded(
+        const int v2_new_index = GetVertexAddIfNeeded(
             vertices_F, triangle.vertex(2), X_WF,
             vertices_to_newly_created_vertices, new_vertices_W);
 
@@ -239,9 +233,9 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
       case ContactPolygonRepresentation::kSingleTriangle: {
         AddPolygonToMeshDataAsOneTriangle(
             {
-                X_WF * vertices_F[triangle.vertex(0)].r_MV().cast<T>(),
-                X_WF * vertices_F[triangle.vertex(1)].r_MV().cast<T>(),
-                X_WF * vertices_F[triangle.vertex(2)].r_MV().cast<T>(),
+                X_WF * vertices_F[triangle.vertex(0)].cast<T>(),
+                X_WF * vertices_F[triangle.vertex(1)].cast<T>(),
+                X_WF * vertices_F[triangle.vertex(2)].cast<T>(),
             },
             nhat_W, new_faces, new_vertices_W);
         break;
@@ -256,28 +250,26 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
       if (s[i0] >= 0) {
         const int i1 = (i0 + 1) % 3;
         const int i2 = (i0 + 2) % 3;
-        const SurfaceVertexIndex v0 = triangle.vertex(i0);
-        const SurfaceVertexIndex v1 = triangle.vertex(i1);
-        const SurfaceVertexIndex v2 = triangle.vertex(i2);
+        const int v0 = triangle.vertex(i0);
+        const int v1 = triangle.vertex(i1);
+        const int v2 = triangle.vertex(i2);
 
         switch (representation) {
           case ContactPolygonRepresentation::kCentroidSubdivision: {
             // Get the vertices that result from intersecting edge i0/i1 and
             // i0/i2.
-            const SurfaceVertexIndex edge_i0_i1_intersection_index =
-                GetVertexAddIfNeeded(v0, v1, s[i0], s[i1], vertices_F, X_WF,
-                                     edges_to_newly_created_vertices,
-                                     new_vertices_W);
-            const SurfaceVertexIndex edge_i0_i2_intersection_index =
-                GetVertexAddIfNeeded(v0, v2, s[i0], s[i2], vertices_F, X_WF,
-                                     edges_to_newly_created_vertices,
-                                     new_vertices_W);
+            const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+                v0, v1, s[i0], s[i1], vertices_F, X_WF,
+                edges_to_newly_created_vertices, new_vertices_W);
+            const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
+                v0, v2, s[i0], s[i2], vertices_F, X_WF,
+                edges_to_newly_created_vertices, new_vertices_W);
 
             // Get the indices of the new vertices, adding them if needed.
-            const SurfaceVertexIndex i1_new_index = GetVertexAddIfNeeded(
+            const int i1_new_index = GetVertexAddIfNeeded(
                 vertices_F, v1, X_WF, vertices_to_newly_created_vertices,
                 new_vertices_W);
-            const SurfaceVertexIndex i2_new_index = GetVertexAddIfNeeded(
+            const int i2_new_index = GetVertexAddIfNeeded(
                 vertices_F, v2, X_WF, vertices_to_newly_created_vertices,
                 new_vertices_W);
 
@@ -299,8 +291,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
           }
           case ContactPolygonRepresentation::kSingleTriangle: {
             AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v1].r_MV().cast<T>(),
-                 X_WF * vertices_F[v2].r_MV().cast<T>(),
+                {X_WF * vertices_F[v1].cast<T>(),
+                 X_WF * vertices_F[v2].cast<T>(),
                  CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
                                            X_WF),
                  CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
@@ -322,28 +314,26 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
       if (s[i0] <= 0) {
         const int i1 = (i0 + 1) % 3;
         const int i2 = (i0 + 2) % 3;
-        const SurfaceVertexIndex v0 = triangle.vertex(i0);
-        const SurfaceVertexIndex v1 = triangle.vertex(i1);
-        const SurfaceVertexIndex v2 = triangle.vertex(i2);
+        const int v0 = triangle.vertex(i0);
+        const int v1 = triangle.vertex(i1);
+        const int v2 = triangle.vertex(i2);
 
         switch (representation) {
           case ContactPolygonRepresentation::kCentroidSubdivision: {
             // Get the vertex that corresponds to i0.
-            const SurfaceVertexIndex i0_new_index = GetVertexAddIfNeeded(
+            const int i0_new_index = GetVertexAddIfNeeded(
                 vertices_F, v0, X_WF, vertices_to_newly_created_vertices,
                 new_vertices_W);
 
             // Get the vertex that results from intersecting edge i0/i1.
-            const SurfaceVertexIndex edge_i0_i1_intersection_index =
-                GetVertexAddIfNeeded(v0, v1, s[i0], s[i1], vertices_F, X_WF,
-                                     edges_to_newly_created_vertices,
-                                     new_vertices_W);
+            const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+                v0, v1, s[i0], s[i1], vertices_F, X_WF,
+                edges_to_newly_created_vertices, new_vertices_W);
 
             // Get the vertex that results from intersecting edge i0/i2.
-            const SurfaceVertexIndex edge_i0_i2_intersection_index =
-                GetVertexAddIfNeeded(v0, v2, s[i0], s[i2], vertices_F, X_WF,
-                                     edges_to_newly_created_vertices,
-                                     new_vertices_W);
+            const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
+                v0, v2, s[i0], s[i2], vertices_F, X_WF,
+                edges_to_newly_created_vertices, new_vertices_W);
 
             AddPolygonToMeshData({i0_new_index, edge_i0_i1_intersection_index,
                                   edge_i0_i2_intersection_index},
@@ -352,7 +342,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
           }
           case ContactPolygonRepresentation::kSingleTriangle: {
             AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v0].r_MV().cast<T>(),
+                {X_WF * vertices_F[v0].cast<T>(),
                  CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
                                            X_WF),
                  CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
@@ -374,15 +364,13 @@ std::unique_ptr<SurfaceMesh<T>>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const SurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F,
-    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const std::vector<int>& tri_indices,
     const math::RigidTransform<T>& X_WF,
     ContactPolygonRepresentation representation) {
-  std::vector<SurfaceVertex<T>> new_vertices_W;
+  std::vector<Vector3<T>> new_vertices_W;
   std::vector<SurfaceFace> new_faces;
-  std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
-      vertices_to_newly_created_vertices;
-  std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
-      edges_to_newly_created_vertices;
+  std::unordered_map<int, int> vertices_to_newly_created_vertices;
+  std::unordered_map<SortedPair<int>, int> edges_to_newly_created_vertices;
 
   for (const auto& tri_index : tri_indices) {
     ConstructTriangleHalfspaceIntersectionPolygon(
@@ -410,12 +398,12 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     ContactPolygonRepresentation representation) {
-  std::vector<SurfaceFaceIndex> tri_indices;
+  std::vector<int> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
   auto bvh_callback = [&tri_indices, &mesh_R,
                        R_WS = convert_to_double(X_WS).rotation(),
-                       R_WR = convert_to_double(X_WR).rotation()](
-                          SurfaceFaceIndex tri_index) {
+                       R_WR =
+                           convert_to_double(X_WR).rotation()](int tri_index) {
     // The gradient of the half space pressure field lies in the _opposite_
     // direction as its normal. Its normal is Sz. So, unit_grad_p_W = -Sz_W.
     const Eigen::Vector3d& unit_grad_p_W = -R_WS.col(2);
@@ -460,8 +448,8 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   std::vector<T> vertex_pressures;
   const PosedHalfSpace<T> hs_W{X_WR.rotation() * hs_R.normal(), X_WR * p_RSo};
   vertex_pressures.reserve(mesh_W->num_vertices());
-  for (SurfaceVertexIndex v(0); v < mesh_W->num_vertices(); ++v) {
-    const Vector3<T> p_WV = mesh_W->vertex(v).r_MV();
+  for (int v = 0; v < mesh_W->num_vertices(); ++v) {
+    const Vector3<T> p_WV = mesh_W->vertex(v);
     // The signed distance of the point is the negative of the penetration
     // depth. We can use the pressure_scale to directly compute pressure at the
     // point.
@@ -469,8 +457,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     vertex_pressures.push_back(-phi_V * pressure_scale);
   }
   auto field_W = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "pressure", std::move(vertex_pressures), mesh_W.get(),
-      false /* calc_gradient */);
+      std::move(vertex_pressures), mesh_W.get(), false /* calc_gradient */);
 
   // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface
   //  is a constant. It would be good if we could exploit this and *not* copy
