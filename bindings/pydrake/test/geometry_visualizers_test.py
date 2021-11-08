@@ -103,6 +103,11 @@ class TestGeometryVisualizers(unittest.TestCase):
         cloud.mutable_xyzs()[:] = np.zeros((3, 4))
         meshcat.SetObject(path="/test/cloud", cloud=cloud,
                           point_size=0.01, rgba=mut.Rgba(.5, .5, .5))
+        meshcat.SetLine(path="/test/line", vertices=np.eye(3),
+                        line_width=2.0, rgba=mut.Rgba(.3, .3, .3))
+        meshcat.SetLineSegments(path="/test/line_segments", start=np.eye(3),
+                                end=2*np.eye(3), line_width=2.0,
+                                rgba=mut.Rgba(.3, .3, .3))
         meshcat.SetProperty(path="/Background",
                             property="visible",
                             value=True)
