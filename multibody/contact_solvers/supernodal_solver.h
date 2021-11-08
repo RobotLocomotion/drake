@@ -116,59 +116,22 @@ class SuperNodalSolver {
   // Throws if Factor() has not been called.
   void SolveInPlace(Eigen::VectorXd* b);
 
+
  private:
   // This class is responsible for filling a dense matrix of the form
   // sub_matrix(M) + J^T_i G_i J_i where J_i is a block row of the Jacobian and
   // sub_matrix(M) is specified by AssignMassMatrix.
   class CliqueAssembler;
 
-  // Helper struct for assembling the input to the
-  // conex supernodal solver. The variable "cliques" 
-  // contains the nodes of a "supernodal elimination tree,"
-  // also called a "clique tree" or "junction tree". The variables "supernodes"
-  // and "separators" provide a partition of each node and satisfy
-  // cliques.at(i) = Union(separators.at(i), supernodes.at(i)).
-  // The variable "order" and "supernodes" together define 
-  // the elimination ordering:
-  //
-  //  elimination_order = [ supernodes.at(order(0)), supernodes.at(order(1)),
-  //  ...., supernodes.at(order.back()) ].
-  // 
-  // The variable "order" can also be interpreted as a concatenation
-  // of paths in the supernodal elimination tree.
-  //
-  // See page 290 of Chordal Graphs and Semidefinite Optimization
-  // by Vandenberghe and Andersen.
-  struct SolverData {
-    std::vector<std::vector<int>> cliques;
-    int num_vars;
-    std::vector<int> order;
-    std::vector<std::vector<int>> supernodes;
-    std::vector<std::vector<int>> separators;
-  };
-
-  struct SparsityData {
-    SolverData data;
-    // Expands the "block" cliques from SolverData into
-    // actual cliques of scalar variables.
-    std::vector<std::vector<int>> variable_cliques;
-  };
-
- private:
   using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
 
   void Initialize(const std::vector<std::vector<int>>& cliques,
                   const std::vector<std::vector<Eigen::MatrixXd>>& row_data);
-  SparsityData GetEliminationOrdering(
-      int num_jacobian_row_blocks,
-      const std::vector<BlockMatrixTriplet>& jacobian_blocks);
 
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
   const std::vector<MatrixBlock> mass_matrices_;
-  std::vector<Eigen::MatrixXd> weight_matrices_;
   std::vector<std::vector<int>> cliques_;
-  SparsityData clique_data_;
   std::unique_ptr<::conex::Solver> solver_;
   // N.B. This array stores pointers to clique assemblers owned by
   // owned_clique_assemblers_.
