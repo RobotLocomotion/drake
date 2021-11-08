@@ -149,14 +149,12 @@ class SuperNodalSolver::CliqueAssembler final
 };
 
 void SuperNodalSolver::CliqueAssembler::SetDenseData() {
-#ifndef NDEBUG
   if (!weight_matrix_) {
     throw std::runtime_error("Weight matrix not set.");
   }
   if (mass_matrix_position_.size() != mass_matrix_.size()) {
     throw std::runtime_error("Failed to add mass matrix.");
   }
-#endif
 
   SumOverWeightedMatrixBlocks(row_data_, *weight_matrix_, weight_start_,
                               weight_end_, &schur_complement_data.G,
@@ -338,7 +336,7 @@ void SuperNodalSolver::SetWeightMatrix(
     }
     if (num_rows_found != num_rows) {
       for (auto& ja : owned_clique_assemblers_) {
-        ja->SetWeightMatrixPointer(NULL);
+        ja->SetWeightMatrixPointer(nullptr);
       }
       throw std::runtime_error("Weight matrix incompatible with Jacobian.");
     }
@@ -350,7 +348,7 @@ void SuperNodalSolver::SetWeightMatrix(
 
   // Destroy references to argument weight_matrix.
   for (auto& c : owned_clique_assemblers_) {
-    c->SetWeightMatrixPointer(NULL);
+    c->SetWeightMatrixPointer(nullptr);
   }
 
   factorization_ready_ = false;

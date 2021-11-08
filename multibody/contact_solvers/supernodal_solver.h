@@ -103,7 +103,7 @@ class SuperNodalSolver {
   // succeeds, otherwise returns false.  Failure is triggered by an internal
   // failure of Eigen::LLT.  This can fail if, for instance, the input matrix M
   // + J^T G J is not positive definite. If failure is encountered, the user
-  // should verify that the specified matrix M + J^T G H is positive definite
+  // should verify that the specified matrix M + J^T G J is positive definite
   // and not poorly conditioned.  Throws if SetWeightMatrix() has not been
   // called.
   bool Factor();
