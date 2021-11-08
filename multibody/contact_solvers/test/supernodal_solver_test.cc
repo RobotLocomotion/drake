@@ -125,7 +125,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
        0, 0, 3, 3, 0, 0;
   // clang-format on
 
-  std::vector<BlockMatrixTriplet> Jtriplets(5);
+  std::vector<BlockMatrixTriplet> Jtriplets(4);
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
   get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
@@ -135,16 +135,12 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 4);
 
   get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 0;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 0);
+  get<1>(Jtriplets.at(2)) = 2;
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 4);
 
-  get<0>(Jtriplets.at(3)) = 1;
-  get<1>(Jtriplets.at(3)) = 2;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 4);
-
-  get<0>(Jtriplets.at(4)) = 2;
-  get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
+  get<0>(Jtriplets.at(3)) = 2;
+  get<1>(Jtriplets.at(3)) = 1;
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(9, 2);
 
   Eigen::MatrixXd G(12, 12);
   // clang-format off
@@ -191,18 +187,29 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
-GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
+
+
+// Similar to last test, but we provided unsorted Jacobian
+// triplets. This verifies there are no implicit sorting
+// assumptions on the input.
+GTEST_TEST(SupernodalSolver, JacobianTripletsNotNotSortedByColumn) {
   int num_row_blocks_of_J = 3;
   Eigen::MatrixXd J(12, 6);
 
-  // Here we repeat the first three rows to emulate a duplicated contact point,
-  // something a contact solver should recover from gracefully. clang-format off
-  J << 1, 2, 0, 0, 2, 4, 0, 1, 0, 0, 1, 3, 1, 3, 0, 0, 2, 4, 1, 2, 0, 0, 2, 4,
-      0, 1, 0, 0, 1, 3, 1, 3, 0, 0, 2, 4,
-
-      1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 2, 1, 1, 0, 0, 1, 1,
-
-      0, 0, 1, 1, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 3, 3, 0, 0;
+  
+  // clang-format off
+  J << 1, 2, 0, 0, 2, 4, 
+       0, 1, 0, 0, 1, 3, 
+       1, 3, 0, 0, 2, 4, 
+       1, 2, 0, 0, 2, 4,
+       0, 1, 0, 0, 1, 3, 
+       1, 3, 0, 0, 2, 4,
+       1, 1, 0, 0, 1, 1, 
+       1, 1, 0, 0, 1, 2, 
+       1, 1, 0, 0, 1, 1,
+       0, 0, 1, 1, 0, 0, 
+       0, 0, 2, 1, 0, 0, 
+       0, 0, 3, 3, 0, 0;
   // clang-format on
 
   std::vector<BlockMatrixTriplet> Jtriplets(5);
@@ -214,6 +221,8 @@ GTEST_TEST(SupernodalSolver, ColumnsNotSorted) {
   get<1>(Jtriplets.at(1)) = 2;
   get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 4);
 
+  // Unsorted inputs: column 2 appears before column
+  // 0.
   get<0>(Jtriplets.at(3)) = 1;
   get<1>(Jtriplets.at(3)) = 0;
   get<2>(Jtriplets.at(3)) = J.block<3 ,2>(6, 0);
@@ -380,11 +389,21 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   //  - Patch 1: 1 point.
   //  - Patch 2: 2 points.
   //  - Patch 3: 1 point. Total of 12 rows. Three trees of six dofs each = 18.
-  //    These are the blocks (and they are all of size 3x6): (p,t) = (0,6). 3x6.
-  //    (p,t) = (0,7). 3x6. (p,t) = (1,4). 3x6. (p,t) = (1,5). 3x6. (p,t) =
-  //    (2,6). 3x6. (p,t) = (3,0). 3x6. (p,t) = (4,4). 3x6. (p,t) = (5,2). 3x6.
-  //    (p,t) = (6,0). 3x6. (p,t) = (6,1). 3x6. (p,t) = (7,2). 3x6. (p,t) =
-  //    (7,3). 3x6.
+  //    These are the blocks (and they are all of size 3x6): 
+  //
+  //     (p,t) = (0,6)
+  //     (p,t) = (0,7)
+  //     (p,t) = (1,4)
+  //     (p,t) = (1,5)
+  //     (p,t) = (2,6)
+  //     (p,t) = (3,0)
+  //     (p,t) = (4,4)
+  //     (p,t) = (5,2)
+  //     (p,t) = (6,0)
+  //     (p,t) = (6,1)
+  //     (p,t) = (7,2)
+  //     (p,t) = (7,3)
+  //
   Eigen::MatrixXd J(24, 48);
   // clang-format off
   J << Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, J3x6, J3x6,
@@ -440,7 +459,10 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
-  Eigen::VectorXd x_ref = Eigen::VectorXd::Random(M.rows());
+  for (int i = 0; i < M.rows(); i++) {
+
+  }
+  Eigen::VectorXd x_ref; x_ref.setLinSpaced(M.rows(), -1, 1); 
   solver.Factor();
   EXPECT_NEAR((solver.Solve(full_matrix_ref * x_ref) - x_ref).norm(), 0, 1e-8);
 
@@ -548,7 +570,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   solver.SetWeightMatrix(blocks_of_G);
 
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
 
 }  // namespace internal
