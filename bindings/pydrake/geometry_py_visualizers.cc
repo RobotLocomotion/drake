@@ -209,6 +209,13 @@ void DoScalarIndependentDefinitions(py::module m) {
                 double, const Rgba&>(&Class::SetObject),
             py::arg("path"), py::arg("cloud"), py::arg("point_size") = 0.001,
             py::arg("rgba") = Rgba(.9, .9, .9, 1.), cls_doc.SetObject.doc_cloud)
+        .def("SetLine", &Class::SetLine, py::arg("path"), py::arg("vertices"),
+            py::arg("line_width") = 1.0,
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0), cls_doc.SetLine.doc)
+        .def("SetLineSegments", &Class::SetLineSegments, py::arg("path"),
+            py::arg("start"), py::arg("end"), py::arg("line_width") = 1.0,
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.1, 1.0),
+            cls_doc.SetLineSegments.doc)
         // TODO(russt): Bind SetCamera.
         .def("Set2dRenderMode", &Class::Set2dRenderMode,
             py::arg("X_WC") = RigidTransformd{Eigen::Vector3d{0, -1, 0}},
