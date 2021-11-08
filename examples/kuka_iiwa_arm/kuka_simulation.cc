@@ -5,12 +5,15 @@
 /// and lcmt_iiwa_command messages. It is intended to be a be a direct
 /// replacement for the KUKA iiwa driver and the actual robot hardware.
 
+#include <string.h>
+
 #include <memory>
 
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
@@ -185,6 +188,15 @@ int DoMain() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  // TODO(jwnimmer-tri) On 2022-01-01 once this deprecation date has passed,
+  // revert the portion of the patch that changed this file.
+  if (::strstr(argv[0], "bazel-bin/") == NULL) {
+    drake::log()->warn(
+        "The use of kuka_simulation outside of Drake"
+        " (i.e., via 'make install'  or a pre-compiled release image)"
+        " is deprecated and will be removed from the install"
+        " on or after 2022-01-01");
+  }
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::kuka_iiwa_arm::DoMain();
 }
