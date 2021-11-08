@@ -218,7 +218,7 @@ SuperNodalSolver::SparsityData SuperNodalSolver::GetEliminationOrdering(
   vector<vector<int>> supernodes(n);
   vector<vector<int>> separators(n);
   vector<vector<int>> cliques(n);
-  clique_data.cliques_assembler.resize(n);
+  clique_data.variable_cliques.resize(n);
 
   vector<int> column_block_sizes(jacobian_blocks.size());
   ::conex::RootedTree tree(n);
@@ -264,7 +264,7 @@ SuperNodalSolver::SparsityData SuperNodalSolver::GetEliminationOrdering(
     }
     for (auto s : cliques.at(i)) {
       for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
-        clique_data.cliques_assembler.at(i).push_back(offsets.at(s) + cnt);
+        clique_data.variable_cliques.at(i).push_back(offsets.at(s) + cnt);
       }
     }
   }
@@ -308,11 +308,11 @@ SuperNodalSolver::SuperNodalSolver(
       clique_data_(
           GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks)),
       solver_(std::make_unique<::conex::Solver>(
-          clique_data_.cliques_assembler, clique_data_.data.num_vars,
+          clique_data_.variable_cliques, clique_data_.data.num_vars,
           clique_data_.data.order, clique_data_.data.supernodes,
           clique_data_.data.separators)),
       owned_clique_assemblers_(num_jacobian_row_blocks) {
-  Initialize(clique_data_.cliques_assembler,
+  Initialize(clique_data_.variable_cliques,
              GetRowData(num_jacobian_row_blocks, jacobian_blocks));
 }
 

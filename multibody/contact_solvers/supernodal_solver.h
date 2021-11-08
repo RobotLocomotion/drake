@@ -29,24 +29,6 @@ using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 // weight matrix G is set with SetWeightMatrix(), which can be called multiple
 // times on a constructed object.
 //
-// Matrix M layout:
-//   M is symmetric positive definite with a block diagonal structure. The t-th
-//   diagonal entry Mₜ has size nₜ×nₜ. M has size nᵥ×nᵥ, with nᵥ = ∑nₜ.
-//
-// Matrix J layout:
-//   J will in general have a block sparse structure. Block Jₚₜ of the J has
-//   size nₚ×nₜ. The number of columns in the Jacobian is nᵥ. The number of rows
-//   is r = ∑nₚ.
-//
-// Weight matrix G layout:
-//   G is a block diagonal matrix where the k-th block has size nₖ×nₖ. The size
-//   of the matrix is r×r, with r = ∑nₖ.
-//   Note: the block structure of J and G both partition the set {1, 2, ...,
-//   num_rows(J) }.  We require that the partition induced by G refines the
-//   partition induced by J. See
-//   https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
-//   refinement.
-//
 // Example use case:
 //
 //  SolverNodalSolver solver( ... );
@@ -69,30 +51,47 @@ class SuperNodalSolver {
   // @param num_jacobian_row_blocks
   //   Number of row blocks in the matrix J.
   // @param jacobian_blocks
-  //   Blocks Jₚₜ provided as triplets (p, t, Jₚₜ).
-  //   Per each block row p, there can only be at most two blocks,
-  //   otherwise an exception is thrown.
+  //   A vector of triplets (p, t, Jₚₜ) specifying the non-zero blocks of the
+  //   Jacobian matrix.  The number of block columns num_block_col is inferred from the
+  //   largest column index t in the vector of triplets (p, t, Jₚₜ).  
+  //
+  //   An exception is thrown if any of the following conditions fail: 
+  //
+  //     1) There is at least one triplet  (p, t, Jₚₜ) with column index t for each t \in
+  //     \{0, 1,  num_block_col - 1\}.
+  //
+  //     2) There is at most two triplets (p, t, Jₚₜ) with the same row
+  //     index p.
+  //   
+  //
   // @param mass_matrices
-  //   Block diagonal matrix M provided as a vector of block diagonal entries.
-  SuperNodalSolver(int num_jacobian_row_blocks,
-                   const std::vector<BlockMatrixTriplet>& jacobian_blocks,
-                   const std::vector<Eigen::MatrixXd>& mass_matrices);
-
-  ~SuperNodalSolver();
-
-  // Sets the block-diagonal matrix G. The block sizes of G must refine
-  // the partition of the matrix J that was specified by the input
-  // to the constructor. For instance, if J is partitioned like
+  //   Specifies a block-diagonal mass matrix M.  The block columns of the mass
+  //   matrix and the block columns of the Jacobian J both induced a partition 
+  //   of the set {0, 1, ..., num_vars}, where num_vars denotes the number
+  //   of scalar decision variables. The partition induced by M
+  //   must refine the partition induced by J, otherwise an exception is thrown. 
+  //   (See https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
+  //   refinement.)  For instance, if J has block structure
   //
   //   J = |J1  0|
   //       |J2 J3|
   //
   //  Then we require existence of n and m such that
   //
-  //    num_rows(J1) = \sum^n_{i=1} num_rows (G_i),
-  //    num_rows(J2) = \sum^{m}_{i=n+1} num_rows (G_i)
+  //    num_cols(J1) = \sum^n_{i=1} num_cols (M_i),
+  //    num_cols(J3) = \sum^{m}_{i=n+1} num_cols (M_i)
   //
-  //  If this condition fails, an exception is thrown unless NDEBUG is defined.
+  //  If this condition fails, an exception is thrown. 
+  SuperNodalSolver(int num_jacobian_row_blocks,
+                   const std::vector<BlockMatrixTriplet>& jacobian_blocks,
+                   const std::vector<Eigen::MatrixXd>& mass_matrices);
+
+  ~SuperNodalSolver();
+
+  // Sets the block-diagonal weight matrix matrix G.  The block rows of J
+  // and G both partition the set {1, 2, ..., num_rows(J) }.  
+  // Similar to the mass_matrix, the partition induced by G must refine the
+  // partition induced by J, otherwise an exception is thrown. 
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
@@ -100,14 +99,13 @@ class SuperNodalSolver {
   // is done in place. Throws if SetWeightMatrix has not been called.
   Eigen::MatrixXd MakeFullMatrix();
 
-  // Computes the supernodal LLT factorization. Returns true
-  // if factorization succeeds, otherwise returns false.
-  // Failure is triggered by an internal failure of Eigen::LLT.
-  // This can fail if, for instance, the input matrix is not
-  // positive definite. If failure is encountered, the user
-  // should verify that the specified matrix M + J^T G H
-  // is positive definite and not poorly conditioned.
-  // Throws if SetWeightMatrix() has not been called.
+  // Computes the supernodal LLT factorization. Returns true if factorization
+  // succeeds, otherwise returns false.  Failure is triggered by an internal
+  // failure of Eigen::LLT.  This can fail if, for instance, the input matrix M
+  // + J^T G J is not positive definite. If failure is encountered, the user
+  // should verify that the specified matrix M + J^T G H is positive definite
+  // and not poorly conditioned.  Throws if SetWeightMatrix() has not been
+  // called.
   bool Factor();
 
   // Solves the system H⋅x = b and returns x.
@@ -124,11 +122,23 @@ class SuperNodalSolver {
   // sub_matrix(M) is specified by AssignMassMatrix.
   class CliqueAssembler;
 
-  // Helper struct for assembling input into the
-  // conex supernodal solver. Stores the cliques,
-  // the partition of the cliques into supernodes
-  // and seperators, and the order used for
-  // elimination.
+  // Helper struct for assembling the input to the
+  // conex supernodal solver. The variable "cliques" 
+  // contains the nodes of a "supernodal elimination tree,"
+  // also called a "clique tree" or "junction tree". The variables "supernodes"
+  // and "separators" provide a partition of each node and satisfy
+  // cliques.at(i) = Union(separators.at(i), supernodes.at(i)).
+  // The variable "order" and "supernodes" together define 
+  // the elimination ordering:
+  //
+  //  elimination_order = [ supernodes.at(order(0)), supernodes.at(order(1)),
+  //  ...., supernodes.at(order.back()) ].
+  // 
+  // The variable "order" can also be interpreted as a concatenation
+  // of paths in the supernodal elimination tree.
+  //
+  // See page 290 of Chordal Graphs and Semidefinite Optimization
+  // by Vandenberghe and Andersen.
   struct SolverData {
     std::vector<std::vector<int>> cliques;
     int num_vars;
@@ -139,7 +149,9 @@ class SuperNodalSolver {
 
   struct SparsityData {
     SolverData data;
-    std::vector<std::vector<int>> cliques_assembler;
+    // Expands the "block" cliques from SolverData into
+    // actual cliques of scalar variables.
+    std::vector<std::vector<int>> variable_cliques;
   };
 
  private:
