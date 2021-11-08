@@ -93,36 +93,25 @@ Open up your browser to the URL above.
   animation.SetTransform(
       40, "box", RigidTransformd(RotationMatrixd::MakeZRotation(2 * M_PI)));
   animation.set_repetitions(4);
-  meshcat->SetAnimation(animation);
-
-  // TODO(russt): Do all of these in a single animation pending resolution of
-  // https://github.com/rdeits/meshcat/issues/105
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-  MeshcatAnimation animation2;
-  animation2.SetProperty(0, "cylinder", "visible", true);
-  animation2.SetProperty(20, "cylinder", "visible", false);
-  animation2.SetProperty(40, "cylinder", "visible", true);
-  animation2.set_repetitions(4);
-  meshcat->SetAnimation(animation2);
 
   std::cout << "- the green cylinder should appear and disappear.\n";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-  MeshcatAnimation animation3;
-  animation3.SetProperty(0, "ellipsoid/<object>", "material.opacity", 1.0);
-  animation3.SetProperty(20, "ellipsoid/<object>", "material.opacity", 0.0);
-  animation3.SetProperty(40, "ellipsoid/<object>", "material.opacity", 1.0);
-  animation3.set_repetitions(4);
-  meshcat->SetAnimation(animation3);
+  animation.SetProperty(0, "cylinder", "visible", true);
+  animation.SetProperty(20, "cylinder", "visible", false);
+  animation.SetProperty(40, "cylinder", "visible", true);
+  animation.set_repetitions(4);
 
   std::cout
       << "- the pink ellipsoid should get less and then more transparent.\n";
+  animation.SetProperty(0, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.SetProperty(20, "ellipsoid/<object>", "material.opacity", 0.0);
+  animation.SetProperty(40, "ellipsoid/<object>", "material.opacity", 1.0);
+  animation.set_repetitions(4);
+
+  meshcat->SetAnimation(animation);
+
+  std::cout << "You can review/replay the animation from the controls menu.\n";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
 
   meshcat->Set2dRenderMode(math::RigidTransform(Eigen::Vector3d{0, -3, 0}), -4,
                            4, -2, 2);
