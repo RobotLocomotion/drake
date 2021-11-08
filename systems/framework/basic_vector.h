@@ -73,10 +73,9 @@ class BasicVector : public VectorBase<T> {
     values_ = value;
   }
 
-  /// Returns the entire vector as a const Eigen::VectorBlock.
-  Eigen::VectorBlock<const VectorX<T>> get_value() const {
-    return values_.head(values_.rows());
-  }
+  /// Returns a const reference to the contained `VectorX<T>`. This is the
+  /// preferred method for examining a BasicVector's value.
+  const VectorX<T>& value() const { return values_; }
 
   /// Returns the entire vector as a mutable Eigen::VectorBlock, which allows
   /// mutation of the values, but does not allow `resize()` to be invoked on
@@ -110,6 +109,14 @@ class BasicVector : public VectorBase<T> {
     auto clone = std::unique_ptr<BasicVector<T>>(DoClone());
     clone->set_value(this->get_value());
     return clone;
+  }
+
+  // TODO(sherm1) Consider deprecating this.
+  /// (Don't use this in new code) Returns the entire vector as a const
+  /// Eigen::VectorBlock. Prefer `value()` which returns direct access to the
+  /// underlying VectorX rather than wrapping it in a VectorBlock.
+  Eigen::VectorBlock<const VectorX<T>> get_value() const {
+    return values_.head(values_.rows());
   }
 
  protected:
@@ -161,10 +168,14 @@ class BasicVector : public VectorBase<T> {
     (*data)[index++] = T(constructor_arg);
   }
 
-  /// Provides const access to the element storage.
+  // TODO(sherm1) Deprecate this method.
+  /// Provides const access to the element storage. Prefer the synonymous
+  /// public `value()` method -- this protected method remains for backwards
+  /// compatibility in derived classes.
   const VectorX<T>& values() const { return values_; }
 
-  /// Provides mutable access to the element storage.
+  /// (Advanced) Provides mutable access to the element storage. Be careful
+  /// not to resize the storage unless you really know what you're doing.
   VectorX<T>& values() { return values_; }
 
  private:

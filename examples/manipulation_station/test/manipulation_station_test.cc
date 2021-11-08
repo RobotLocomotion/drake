@@ -179,8 +179,7 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
       plant.num_positions() + base_joint.velocity_start();
   VectorXd next_velocity =
       station.GetSubsystemDiscreteValues(plant, *next_state)
-          .get_vector()
-          .get_value()
+          .value()
           .segment<7>(iiwa_velocity_start);
 
   // Note: This tolerance could be much smaller if the wsg was not attached.

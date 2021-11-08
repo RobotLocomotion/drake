@@ -297,7 +297,7 @@ TEST_F(Rod2DDAETest, Output) {
       dut_->AllocateOutput();
   dut_->CalcOutput(*context_, output.get());
   for (int i = 0; i < xc.size(); ++i)
-    EXPECT_EQ(xc[i], output->get_vector_data(0)->get_value()(i));
+    EXPECT_EQ(xc[i], output->get_vector_data(0)->value()(i));
 }
 
 // Verifies that setting dut to an impacting state actually results in an
@@ -804,7 +804,7 @@ TEST_F(Rod2DDiscretizedTest, RodGoesToRest) {
   simulator.AdvanceTo(t_final);
 
   // Get angular orientation and velocity.
-  const auto xd = simulator.get_context().get_discrete_state(0).get_value();
+  const VectorXd& xd = simulator.get_context().get_discrete_state(0).value();
   const double theta = xd(2);
   const double theta_dot = xd(5);
 

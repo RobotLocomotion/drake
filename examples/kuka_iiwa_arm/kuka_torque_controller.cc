@@ -59,7 +59,7 @@ class StateDependentDamper : public LeafSystem<T> {
    * damping gain for the i-th joint is given by 2*sqrt(M(i,i)*stiffness(i)).
    */
   void CalcTorque(const Context<T>& context, BasicVector<T>* torque) const {
-    Eigen::VectorXd x = this->EvalVectorInput(context, 0)->get_value();
+    const Eigen::VectorXd& x = this->EvalVectorInput(context, 0)->value();
     plant_.SetPositionsAndVelocities(plant_context_.get(), x);
 
     const int num_v = plant_.num_velocities();
