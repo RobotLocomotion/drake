@@ -344,6 +344,41 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
   }
 }
 
+// Tests IsPhysicallyValid() fails within the constructor since the COM given is
+// inconsistently too far out for the unit inertia provided.
+GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsException) {
+  try {
+    const double mass = 0.634;
+    const Vector3<double> p_BoBcm_B(0, 0.016, -0.02);  // Center of mass.
+    const double Ixx = 0.0023989, Iyy = 0.0023566, Izz = 0.000570304;
+    const double Ixy = 0.000245, Ixz = 1.3e-05, Iyz = 0.00020438;
+    const RotationalInertia<double> I_BBcm_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+    const SpatialInertia<double> M_BBo_B =
+        SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B,
+                                                       I_BBcm_B);
+    // Check for physically correct spatial inertia.
+    EXPECT_TRUE(M_BBo_B.IsPhysicallyValid());
+
+    // Use a different constructor to elicit an error.
+    const UnitInertia<double> G_BBo_B(I_BBcm_B);
+    const SpatialInertia<double> M_BBo_BALT(mass, p_BoBcm_B, G_BBo_B);
+    EXPECT_FALSE(M_BBo_BALT.IsPhysicallyValid());
+
+    // GTEST_FAIL();
+  } catch (std::runtime_error& e) {
+    std::string expected_msg =
+        "The resulting spatial inertia:\n"
+        " mass = 0.634\n"
+        " com = [    0 0.016 -0.02]ᵀ\n"
+        " I =\n"
+        "  0.0015209  0.00015533   8.242e-06\n"
+        " 0.00015533  0.00149408 0.000129577\n"
+        "  8.242e-06 0.000129577 0.000361573\n"
+        " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
+    EXPECT_EQ(e.what(), expected_msg);
+  }
+}
+
 // Tessts that by setting skip_validity_check = true, it is possible to create
 // invalid spatial inertias with negative mass and malformed COM
 GTEST_TEST(SpatialInertia, SkipValidityCheck) {
