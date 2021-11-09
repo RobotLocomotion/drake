@@ -184,13 +184,13 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   solver.SetWeightMatrix(blocks_of_G);
 
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
 
 // Similar to last test, but we provided unsorted Jacobian
 // triplets. This verifies there are no implicit sorting
 // assumptions on the input.
-GTEST_TEST(SupernodalSolver, JacobianTripletsNotNotSortedByColumn) {
+GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
   int num_row_blocks_of_J = 3;
   Eigen::MatrixXd J(12, 6);
 
@@ -274,7 +274,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotNotSortedByColumn) {
   solver.SetWeightMatrix(blocks_of_G);
 
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
 
 // In this example there are three contact patches of one contact point each.
@@ -362,7 +362,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   solver.SetWeightMatrix(blocks_of_G);
 
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
 
 // Unit test for the sparsity pattern occuring on a problem with four stacks of
@@ -455,12 +455,12 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
+  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-12);
 
   Eigen::VectorXd x_ref;
   x_ref.setLinSpaced(M.rows(), -1, 1);
   solver.Factor();
-  EXPECT_NEAR((solver.Solve(full_matrix_ref * x_ref) - x_ref).norm(), 0, 1e-8);
+  EXPECT_NEAR((solver.Solve(full_matrix_ref * x_ref) - x_ref).norm(), 0, 1e-12);
 
   VectorXd b = full_matrix_ref * x_ref;
   solver.SolveInPlace(&b);
