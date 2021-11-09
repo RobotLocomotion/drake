@@ -20,7 +20,7 @@ namespace {
 
 // For each i \in [s, e], computes y(i, :) = w(i) * x(i, :),
 void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& w, int s, int e,
-                             const MatrixXd& x, MatrixXd* y) {
+                                 const MatrixXd& x, MatrixXd* y) {
   int start = 0;
   for (int index = s; index <= e; index++) {
     const int num_rows = w.at(s).rows();
@@ -32,9 +32,9 @@ void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& w, int s, int e,
 
 template <typename MatrixType>
 void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
-                                 const vector<MatrixXd>& weight_matrix,
-                                 int w_start, int w_end, MatrixType* yptr,
-                                 vector<MatrixXd>* temp) {
+                                const vector<MatrixXd>& weight_matrix,
+                                int w_start, int w_end, MatrixType* yptr,
+                                vector<MatrixXd>* temp) {
   auto& y = *yptr;
   y.setZero();
 
@@ -44,7 +44,8 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
     const auto& r = jacobian_row_data.at(i);
     for (size_t j = 0; j < jacobian_row_data.size(); j++) {
       const auto& c = jacobian_row_data.at(j);
-      LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end, c, &temp->at(j));
+      LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end, c,
+                                  &temp->at(j));
       y.block(r_offset, c_offset, r.cols(), c.cols()).noalias() +=
           r.transpose() * temp->at(j);
       c_offset += c.cols();
@@ -53,8 +54,8 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
   }
 }
 
-void SortJacobianRowDataByColumn(std::vector<int>* column, 
-                         std::vector<Eigen::MatrixXd>* jacobian) {
+void SortJacobianRowDataByColumn(std::vector<int>* column,
+                                 std::vector<Eigen::MatrixXd>* jacobian) {
   if (column->at(0) > column->at(1)) {
     const int temp = column->at(1);
     column->at(1) = column->at(0);
@@ -148,8 +149,8 @@ void SuperNodalSolver::CliqueAssembler::SetDenseData() {
   }
 
   Compute_Ji_transpose_Gi_Ji(jacobian_row_data_, *weight_matrix_, weight_start_,
-                              weight_end_, &schur_complement_data.G,
-                              &temporaries_);
+                             weight_end_, &schur_complement_data.G,
+                             &temporaries_);
   int i = 0;
   for (const auto& pos : mass_matrix_position_) {
     schur_complement_data.G.block(pos, pos, mass_matrix_.at(i).rows(),
@@ -195,40 +196,37 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
 // std::vector.
 SuperNodalSolver::~SuperNodalSolver() {}
 
+// Helper struct for assembling the input to the
+// conex supernodal solver. The variable "cliques"
+// contains the nodes of a "supernodal elimination tree,"
+// also called a "clique tree" or "junction tree". The variables "supernodes"
+// and "separators" provide a partition of each node and satisfy
+// cliques.at(i) = Union(separators.at(i), supernodes.at(i)).
+// The variable "order" and "supernodes" together define
+// the elimination ordering:
+//
+//  elimination_order = [ supernodes.at(order(0)), supernodes.at(order(1)),
+//  ...., supernodes.at(order.back()) ].
+//
+// The variable "order" can also be interpreted as a concatenation
+// of paths in the supernodal elimination tree.
+//
+// See page 290 of Chordal Graphs and Semidefinite Optimization
+// by Vandenberghe and Andersen.
+struct SolverData {
+  std::vector<std::vector<int>> cliques;
+  int num_vars;
+  std::vector<int> order;
+  std::vector<std::vector<int>> supernodes;
+  std::vector<std::vector<int>> separators;
+};
 
-
-  // Helper struct for assembling the input to the
-  // conex supernodal solver. The variable "cliques" 
-  // contains the nodes of a "supernodal elimination tree,"
-  // also called a "clique tree" or "junction tree". The variables "supernodes"
-  // and "separators" provide a partition of each node and satisfy
-  // cliques.at(i) = Union(separators.at(i), supernodes.at(i)).
-  // The variable "order" and "supernodes" together define 
-  // the elimination ordering:
-  //
-  //  elimination_order = [ supernodes.at(order(0)), supernodes.at(order(1)),
-  //  ...., supernodes.at(order.back()) ].
-  // 
-  // The variable "order" can also be interpreted as a concatenation
-  // of paths in the supernodal elimination tree.
-  //
-  // See page 290 of Chordal Graphs and Semidefinite Optimization
-  // by Vandenberghe and Andersen.
-  struct SolverData {
-    std::vector<std::vector<int>> cliques;
-    int num_vars;
-    std::vector<int> order;
-    std::vector<std::vector<int>> supernodes;
-    std::vector<std::vector<int>> separators;
-  };
-
-  struct SparsityData {
-    SolverData data;
-    // Expands the "block" cliques from SolverData into
-    // actual cliques of scalar variables.
-    std::vector<std::vector<int>> variable_cliques;
-  };
-
+struct SparsityData {
+  SolverData data;
+  // Expands the "block" cliques from SolverData into
+  // actual cliques of scalar variables.
+  std::vector<std::vector<int>> variable_cliques;
+};
 
 SparsityData GetEliminationOrdering(
     int num_jacobian_row_blocks,
@@ -274,8 +272,8 @@ SparsityData GetEliminationOrdering(
   //
   // They satisfy the running intersection property:
   //
-  //   new_clique.at(order.at(i)) \cap  new_clique.at(order.at(j)) 
-  //            \supseteq 
+  //   new_clique.at(order.at(i)) \cap  new_clique.at(order.at(j))
+  //            \supseteq
   //   new_clique.at(order.at(i)) \cap  new_clique.at(order.at(k))
   //
   // for all i < j < k.
@@ -284,7 +282,6 @@ SparsityData GetEliminationOrdering(
   // by Vandenberghe and Andersen.
   conex::PickCliqueOrder(cliques, largest_clique, &order, &supernodes,
                          &separators);
-
 
   // The cliques correspond to block columns of the Jacobian.
   // We now expand them into scalar variables for use by the
@@ -338,7 +335,8 @@ void SuperNodalSolver::Initialize(
     i++;
   }
 
-  auto mass_matrix_starting_columns = GetMassMatrixStartingColumn(mass_matrices);
+  auto mass_matrix_starting_columns =
+      GetMassMatrixStartingColumn(mass_matrices);
   int cnt = 0;
   for (const auto& c : mass_matrix_starting_columns) {
     auto position = FindPositionInClique(c, cliques);
@@ -354,11 +352,9 @@ SuperNodalSolver::SuperNodalSolver(
     int num_jacobian_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices)
-    : 
-      owned_clique_assemblers_(num_jacobian_row_blocks) {
-
+    : owned_clique_assemblers_(num_jacobian_row_blocks) {
   SparsityData clique_data_ =
-          GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks);
+      GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks);
 
   solver_ = std::make_unique<::conex::Solver>(
       clique_data_.variable_cliques, clique_data_.data.num_vars,
@@ -431,7 +427,8 @@ Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
         "Call to Solve() failed: factorization not ready.");
   }
   Eigen::VectorXd y = b;
-  // The supernodal solver uses a mapped MatrixXd as input, so we create this map.
+  // The supernodal solver uses a mapped MatrixXd as input, so we create this
+  // map.
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(y.data(), b.rows(), 1);
   solver_->SolveInPlace(&ymap);
   return y;

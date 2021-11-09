@@ -187,8 +187,6 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
 }
 
-
-
 // Similar to last test, but we provided unsorted Jacobian
 // triplets. This verifies there are no implicit sorting
 // assumptions on the input.
@@ -196,19 +194,18 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotNotSortedByColumn) {
   int num_row_blocks_of_J = 3;
   Eigen::MatrixXd J(12, 6);
 
-  
   // clang-format off
-  J << 1, 2, 0, 0, 2, 4, 
-       0, 1, 0, 0, 1, 3, 
-       1, 3, 0, 0, 2, 4, 
-       1, 2, 0, 0, 2, 4,
-       0, 1, 0, 0, 1, 3, 
+  J << 1, 2, 0, 0, 2, 4,
+       0, 1, 0, 0, 1, 3,
        1, 3, 0, 0, 2, 4,
-       1, 1, 0, 0, 1, 1, 
-       1, 1, 0, 0, 1, 2, 
+       1, 2, 0, 0, 2, 4,
+       0, 1, 0, 0, 1, 3,
+       1, 3, 0, 0, 2, 4,
        1, 1, 0, 0, 1, 1,
-       0, 0, 1, 1, 0, 0, 
-       0, 0, 2, 1, 0, 0, 
+       1, 1, 0, 0, 1, 2,
+       1, 1, 0, 0, 1, 1,
+       0, 0, 1, 1, 0, 0,
+       0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
   // clang-format on
 
@@ -225,7 +222,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotNotSortedByColumn) {
   // 0.
   get<0>(Jtriplets.at(3)) = 1;
   get<1>(Jtriplets.at(3)) = 0;
-  get<2>(Jtriplets.at(3)) = J.block<3 ,2>(6, 0);
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 0);
 
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 2;
@@ -389,7 +386,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   //  - Patch 1: 1 point.
   //  - Patch 2: 2 points.
   //  - Patch 3: 1 point. Total of 12 rows. Three trees of six dofs each = 18.
-  //    These are the blocks (and they are all of size 3x6): 
+  //    These are the blocks (and they are all of size 3x6):
   //
   //     (p,t) = (0,6)
   //     (p,t) = (0,7)
@@ -442,7 +439,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
         2, 5, 3,
         2, 3, 4;
   // clang-format on
-  Eigen::MatrixXd G(3*num_patches, 3*num_patches);
+  Eigen::MatrixXd G(3 * num_patches, 3 * num_patches);
   std::vector<Eigen::MatrixXd> blocks_of_G(num_patches);
   for (int i = 0; i < num_patches; ++i) {
     G.block(3 * i, 3 * i, 3, 3) = Gb;
@@ -459,10 +456,9 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-10);
-  for (int i = 0; i < M.rows(); i++) {
 
-  }
-  Eigen::VectorXd x_ref; x_ref.setLinSpaced(M.rows(), -1, 1); 
+  Eigen::VectorXd x_ref;
+  x_ref.setLinSpaced(M.rows(), -1, 1);
   solver.Factor();
   EXPECT_NEAR((solver.Solve(full_matrix_ref * x_ref) - x_ref).norm(), 0, 1e-8);
 

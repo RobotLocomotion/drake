@@ -52,24 +52,25 @@ class SuperNodalSolver {
   //   Number of row blocks in the matrix J.
   // @param jacobian_blocks
   //   A vector of triplets (p, t, Jₚₜ) specifying the non-zero blocks of the
-  //   Jacobian matrix.  The number of block columns num_block_col is inferred from the
-  //   largest column index t in the vector of triplets (p, t, Jₚₜ).  
+  //   Jacobian matrix.  The number of block columns num_block_col is inferred
+  //   from the largest column index t in the vector of triplets (p, t, Jₚₜ).
   //
-  //   An exception is thrown if any of the following conditions fail: 
+  //   An exception is thrown if any of the following conditions fail:
   //
-  //     1) There is at least one triplet  (p, t, Jₚₜ) with column index t for each t \in
+  //     1) There is at least one triplet  (p, t, Jₚₜ) with column index t for
+  //     each t \in
   //     \{0, 1,  num_block_col - 1\}.
   //
   //     2) There is at most two triplets (p, t, Jₚₜ) with the same row
   //     index p.
-  //   
+  //
   //
   // @param mass_matrices
   //   Specifies a block-diagonal mass matrix M.  The block columns of the mass
-  //   matrix and the block columns of the Jacobian J both induced a partition 
+  //   matrix and the block columns of the Jacobian J both induced a partition
   //   of the set {0, 1, ..., num_vars}, where num_vars denotes the number
   //   of scalar decision variables. The partition induced by M
-  //   must refine the partition induced by J, otherwise an exception is thrown. 
+  //   must refine the partition induced by J, otherwise an exception is thrown.
   //   (See https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
   //   refinement.)  For instance, if J has block structure
   //
@@ -81,7 +82,7 @@ class SuperNodalSolver {
   //    num_cols(J1) = \sum^n_{i=1} num_cols (M_i),
   //    num_cols(J3) = \sum^{m}_{i=n+1} num_cols (M_i)
   //
-  //  If this condition fails, an exception is thrown. 
+  //  If this condition fails, an exception is thrown.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
@@ -89,9 +90,9 @@ class SuperNodalSolver {
   ~SuperNodalSolver();
 
   // Sets the block-diagonal weight matrix matrix G.  The block rows of J
-  // and G both partition the set {1, 2, ..., num_rows(J) }.  
+  // and G both partition the set {1, 2, ..., num_rows(J) }.
   // Similar to the mass_matrix, the partition induced by G must refine the
-  // partition induced by J, otherwise an exception is thrown. 
+  // partition induced by J, otherwise an exception is thrown.
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
@@ -116,7 +117,6 @@ class SuperNodalSolver {
   // Throws if Factor() has not been called.
   void SolveInPlace(Eigen::VectorXd* b);
 
-
  private:
   // This class is responsible for filling a dense matrix of the form
   // sub_matrix(M) + J^T_i G_i J_i where J_i is a block row of the Jacobian and
@@ -125,9 +125,10 @@ class SuperNodalSolver {
 
   using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
 
-  void Initialize(const std::vector<std::vector<int>>& cliques,
-                  const std::vector<std::vector<Eigen::MatrixXd>>& jacobian_row_data,
-                  const std::vector<Eigen::MatrixXd>& mass_matrices);
+  void Initialize(
+      const std::vector<std::vector<int>>& cliques,
+      const std::vector<std::vector<Eigen::MatrixXd>>& jacobian_row_data,
+      const std::vector<Eigen::MatrixXd>& mass_matrices);
 
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
