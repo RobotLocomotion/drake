@@ -137,7 +137,7 @@ def _determine_macos(repository_ctx):
         macos_release = major_minor_versions[0]
 
     # Match supported macOS release(s).
-    if macos_release in ["10.15", "11"]:
+    if macos_release in ["11", "12"]:
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.
@@ -164,7 +164,7 @@ def determine_os(repository_ctx):
         - distribution: str either "ubuntu" or "macos" or "manylinux" iff no
                         error occurred, else None
         - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "10.15" or "11" iff on a supported macOS,
+        - macos_release: str like "11" or "12" iff on a supported macOS,
                          else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
@@ -192,7 +192,7 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 18.04" or "macOS 10.15"
+    - Exact release, via e.g., "Ubuntu 18.04" or "macOS 11"
     - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """
