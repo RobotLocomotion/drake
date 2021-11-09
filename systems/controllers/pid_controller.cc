@@ -83,10 +83,8 @@ PidController<T>::PidController(const PidController<U>& other)
 template <typename T>
 void PidController<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
-  const Eigen::VectorBlock<const VectorX<T>> state =
-      get_input_port_estimated_state().Eval(context);
-  const Eigen::VectorBlock<const VectorX<T>> state_d =
-      get_input_port_desired_state().Eval(context);
+  const VectorX<T>& state = get_input_port_estimated_state().Eval(context);
+  const VectorX<T>& state_d = get_input_port_desired_state().Eval(context);
 
   // The derivative of the continuous state is the instantaneous position error.
   VectorBase<T>& derivatives_vector = derivatives->get_mutable_vector();
@@ -99,10 +97,8 @@ void PidController<T>::DoCalcTimeDerivatives(
 template <typename T>
 void PidController<T>::CalcControl(const Context<T>& context,
                                    BasicVector<T>* control) const {
-  const Eigen::VectorBlock<const VectorX<T>> state =
-      get_input_port_estimated_state().Eval(context);
-  const Eigen::VectorBlock<const VectorX<T>> state_d =
-      get_input_port_desired_state().Eval(context);
+  const VectorX<T>& state = get_input_port_estimated_state().Eval(context);
+  const VectorX<T>& state_d = get_input_port_desired_state().Eval(context);
 
   // State error.
   const VectorX<T> controlled_state_diff =

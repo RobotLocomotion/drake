@@ -12,7 +12,7 @@ namespace {
 
 void Convert(
     const double time,
-    const Eigen::VectorBlock<const VectorX<double>>& input,
+    const VectorX<double>& input,
     lcmt_scope* output) {
   output->utime = static_cast<int64_t>(time * 1e6);
   output->size = input.size();

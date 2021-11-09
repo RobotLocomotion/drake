@@ -108,7 +108,7 @@ void RimlessWheelGeometry::OutputGeometryPose(
     geometry::FramePoseVector<double>* poses) const {
   DRAKE_DEMAND(frame_id_.is_valid());
 
-  Eigen::VectorBlock<const VectorXd> input = get_input_port(0).Eval(context);
+  const VectorXd& input = get_input_port(0).Eval(context);
   const math::RigidTransformd pose(math::RollPitchYawd(input.segment<3>(3)),
                                    input.head<3>());
 

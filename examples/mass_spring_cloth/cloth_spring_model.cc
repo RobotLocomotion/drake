@@ -230,8 +230,6 @@ void ClothSpringModel<T>::UpdateDiscreteState(
   // which we abbreviate as H * dv = f * dt.
   VectorX<T> dv = VectorX<T>::Zero(v_hat.size());
   VectorX<T> damping_force = VectorX<T>::Zero(v_hat.size());
-  // Extract a const Eigen::VectorBlock<const VectorX<T>>& tmp_v_hat to comply
-  // with the API of AccumulateDampingForce.
   AccumulateDampingForce(p, q_n, v_hat, &damping_force);
   CalcDiscreteDv(p, q_n, &damping_force, &dv);
 
