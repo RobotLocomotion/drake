@@ -35,15 +35,15 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
                                 const vector<MatrixXd>& weight_matrix,
                                 int w_start, int w_end, MatrixType* yptr,
                                 vector<MatrixXd>* temp) {
-  auto& y = *yptr;
+  MatrixType& y = *yptr;
   y.setZero();
 
   int r_offset = 0;
   for (size_t i = 0; i < jacobian_row_data.size(); i++) {
     int c_offset = 0;
-    const auto& r = jacobian_row_data.at(i);
+    const MatrixXd& r = jacobian_row_data.at(i);
     for (size_t j = 0; j < jacobian_row_data.size(); j++) {
-      const auto& c = jacobian_row_data.at(j);
+      const MatrixXd& c = jacobian_row_data.at(j);
       LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end, c,
                                   &temp->at(j));
       y.block(r_offset, c_offset, r.cols(), c.cols()).noalias() +=
@@ -163,9 +163,9 @@ void SuperNodalSolver::CliqueAssembler::SetDenseData() {
 std::pair<int, int> FindPositionInClique(int element,
                                          const vector<vector<int>>& clique) {
   int i = 0;
-  for (auto ci : clique) {
+  for (const auto& ci : clique) {
     int j = 0;
-    for (auto cj : ci) {
+    for (int cj : ci) {
       if (cj == element) {
         return std::pair<int, int>(i, j);
       }
@@ -286,18 +286,18 @@ SparsityData GetEliminationOrdering(
   // The cliques correspond to block columns of the Jacobian.
   // We now expand them into scalar variables for use by the
   // supernodal solver (which is unaware of the block-structure).
-  auto offsets = CumulativeSum(column_block_sizes, num_column_blocks);
+  const vector<int> offsets = CumulativeSum(column_block_sizes, num_column_blocks);
   vector<vector<int>> supernodes_full(order.size());
   vector<vector<int>> separators_full(order.size());
   vector<vector<int>> cliques_full_with_fill_in(order.size());
   for (size_t i = 0; i < order.size(); i++) {
-    for (auto s : supernodes.at(i)) {
+    for (int s : supernodes.at(i)) {
       for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
         supernodes_full.at(i).push_back(offsets.at(s) + cnt);
         cliques_full_with_fill_in.at(i).push_back(offsets.at(s) + cnt);
       }
     }
-    for (auto s : separators.at(i)) {
+    for (int s : separators.at(i)) {
       for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
         separators_full.at(i).push_back(offsets.at(s) + cnt);
         cliques_full_with_fill_in.at(i).push_back(offsets.at(s) + cnt);
@@ -305,7 +305,7 @@ SparsityData GetEliminationOrdering(
     }
     // Expand the original cliques (without fill-in) into
     // scalar variables.
-    for (auto s : cliques.at(i)) {
+    for (int s : cliques.at(i)) {
       for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
         clique_data.variable_cliques.at(i).push_back(offsets.at(s) + cnt);
       }
@@ -335,11 +335,11 @@ void SuperNodalSolver::Initialize(
     i++;
   }
 
-  auto mass_matrix_starting_columns =
+  const std::vector<int> mass_matrix_starting_columns =
       GetMassMatrixStartingColumn(mass_matrices);
   int cnt = 0;
   for (const auto& c : mass_matrix_starting_columns) {
-    auto position = FindPositionInClique(c, cliques);
+    const std::pair<int, int> position = FindPositionInClique(c, cliques);
     owned_clique_assemblers_.at(position.first)
         ->AssignMassMatrix(position.second, mass_matrices.at(cnt));
     ++cnt;
