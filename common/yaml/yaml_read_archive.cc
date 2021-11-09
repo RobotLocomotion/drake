@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <fmt/ostream.h>
+#include <yaml-cpp/yaml.h>
 
 #include "drake/common/nice_type_name.h"
 
@@ -145,12 +146,17 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(
 
 }  // namespace
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 YamlReadArchive::YamlReadArchive(const YAML::Node& root)
     : YamlReadArchive(root, Options{}) {}
 
 YamlReadArchive::YamlReadArchive(const YAML::Node& root, const Options& options)
     : YamlReadArchive(ConvertJbederYamlNodeToDrakeYamlNode({}, root), options) {
 }
+
+#pragma GCC diagnostic pop
 
 YamlReadArchive::YamlReadArchive(internal::Node root, const Options& options)
     : owned_root_(std::move(root)),
@@ -204,6 +210,12 @@ internal::Node YamlReadArchive::LoadStringAsNode(
   }
 }
 
+// TODO(jwnimmer-tri) On 2022-03-01 when the deprecated YAML::Node functions are
+// removed, the header file implementation that calls `convert<>` should move
+// into the cc file here, as an anonymous helper function.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 void YamlReadArchive::ParseScalar(const std::string& value, bool* result) {
   ParseScalar<bool>(value, result);
 }
@@ -215,6 +227,12 @@ void YamlReadArchive::ParseScalar(const std::string& value, double* result) {
 void YamlReadArchive::ParseScalar(const std::string& value, int* result) {
   ParseScalar<int>(value, result);
 }
+
+void YamlReadArchive::ParseScalar(const std::string& value, size_t* result) {
+  ParseScalar<size_t>(value, result);
+}
+
+#pragma GCC diagnostic pop
 
 void YamlReadArchive::ParseScalar(
     const std::string& value, std::string* result) {
