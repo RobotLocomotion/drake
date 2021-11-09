@@ -286,7 +286,8 @@ SparsityData GetEliminationOrdering(
   // The cliques correspond to block columns of the Jacobian.
   // We now expand them into scalar variables for use by the
   // supernodal solver (which is unaware of the block-structure).
-  const vector<int> offsets = CumulativeSum(column_block_sizes, num_column_blocks);
+  const vector<int> offsets =
+      CumulativeSum(column_block_sizes, num_column_blocks);
   vector<vector<int>> supernodes_full(order.size());
   vector<vector<int>> separators_full(order.size());
   vector<vector<int>> cliques_full_with_fill_in(order.size());
