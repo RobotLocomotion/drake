@@ -12,16 +12,24 @@
 #include <variant>
 #include <vector>
 
-#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 #include "drake/common/yaml/yaml_node.h"
+
+// Forward-declaration from "yaml-cpp/yaml.h".
+// TODO(jwnimmer-tri) Remove these on 2022-03-01 when the deprecated YAML::Node
+// functions in this file are also removed.
+namespace YAML {
+class Node;
+template <typename T> struct convert;
+}  // namespace YAML
 
 namespace drake {
 namespace yaml {
@@ -56,13 +64,15 @@ class YamlReadArchive final {
     bool retain_map_defaults{false};
   };
 
-  /// (Advanced) Creates an archive that reads from @p root.
+  /// (Deprecated) Creates an archive that reads from @p root.
   /// Prefer to use the functions in yaml_io.h, instead.
+  DRAKE_DEPRECATED("2022-03-01", "Use LoadYamlFile or LoadYamlString instead.")
   explicit YamlReadArchive(const YAML::Node& root);
 
-  /// (Advanced) Creates an archive that reads from @p root,
+  /// (Deprecated) Creates an archive that reads from @p root,
   /// with @p options that allow for less restrictive parsing.
   /// Prefer to use the functions in yaml_io.h, instead.
+  DRAKE_DEPRECATED("2022-03-01", "Use LoadYamlFile or LoadYamlString instead.")
   YamlReadArchive(const YAML::Node& root, const Options& options);
 
   /// (Internal use only.)
@@ -506,18 +516,28 @@ class YamlReadArchive final {
   // --------------------------------------------------------------------------
   // @name Scalar parsers
 
-  // For commonly-used scalars, avoid inlining the parsing code.
+  // These are the only scalar types that Drake supports.
+  // Users cannot add de-string-ification functions for custom scalars.
   void ParseScalar(const std::string& value, bool* result);
   void ParseScalar(const std::string& value, double* result);
   void ParseScalar(const std::string& value, int* result);
+  void ParseScalar(const std::string& value, size_t* result);
   void ParseScalar(const std::string& value, std::string* result);
 
-  template <typename T>
+  // We use DeprecatedYamlNode here to allow YAML::Node to be forward-declared
+  // in the typical case where this function is not called by any users' code.
+  // If we mentioned YAML::Node in the function body directly (i.e., without
+  // the template argument indirection), then the header file would fail to
+  // compile when using Clang 9.
+  template <typename T, typename DeprecatedYamlNode = YAML::Node>
+  DRAKE_DEPRECATED("2022-03-01",
+      "YAML loading only supports scalars of type bool, double, int, size_t, or"
+      "  string.  Please file a Drake issue if you need any additional types.")
   void ParseScalar(const std::string& value, T* result) {
     DRAKE_DEMAND(result != nullptr);
     // For the decode-able types, see /usr/include/yaml-cpp/node/convert.h.
     // Generally, all of the POD types are supported.
-    bool success = YAML::convert<T>::decode(YAML::Node(value), *result);
+    bool success = YAML::convert<T>::decode(DeprecatedYamlNode(value), *result);
     if (!success) {
       ReportError(fmt::format(
           "could not parse {} value", drake::NiceTypeName::Get<T>()));
