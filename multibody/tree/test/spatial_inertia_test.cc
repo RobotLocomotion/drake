@@ -150,8 +150,8 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   stream << std::fixed << std::setprecision(4) << M;
   std::string expected_string =
       "\n"
-      " mass = 2.5000\n"
-      " com = [ 0.1000 -0.2000  0.3000]ᵀ\n"
+      " mass = 2.5\n"
+      " com = [0.1  -0.2  0.3]ᵀ\n"
       " I =\n"
       " 5.0000  0.2500 -0.2500\n"
       " 0.2500  5.7500  0.5000\n"
@@ -312,8 +312,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
   } catch (std::runtime_error& e) {
     std::string expected_msg =
         "The resulting spatial inertia:\n"
-        " mass = -1\n"
-        " com = [0 0 0]ᵀ\n"
+        " mass = -1.0\n"
+        " com = [0.0  0.0  0.0]ᵀ\n"
         " I =\n"
         "-0.4   -0   -0\n"
         "  -0 -0.4   -0\n"
@@ -333,8 +333,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
   } catch (std::runtime_error& e) {
     std::string expected_msg =
         "The resulting spatial inertia:\n"
-        " mass = 1\n"
-        " com = [2 0 0]ᵀ\n"
+        " mass = 1.0\n"
+        " com = [2.0  0.0  0.0]ᵀ\n"
         " I =\n"
         "0.4   0   0\n"
         "  0 0.4   0\n"
@@ -369,7 +369,7 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsException) {
     std::string expected_msg =
         "The resulting spatial inertia:\n"
         " mass = 0.634\n"
-        " com = [    0 0.016 -0.02]ᵀ\n"
+        " com = [0.0  0.016  -0.02]ᵀ\n"
         " I =\n"
         "  0.0015209  0.00015533   8.242e-06\n"
         " 0.00015533  0.00149408 0.000129577\n"
