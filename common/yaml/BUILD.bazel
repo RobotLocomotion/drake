@@ -128,6 +128,17 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(jwnimmer-tri) On 2022-03-01 when the yaml deprecations retire,
+# we can remove this test entirely.
+drake_cc_googletest(
+    name = "yaml_read_archive_deprecated_test",
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":yaml_io",
+        "//common:name_value",
+    ],
+)
+
 drake_cc_googletest(
     name = "yaml_write_archive_test",
     deps = [

@@ -52,6 +52,23 @@ bool operator==(const StringStruct& a, const StringStruct& b) {
   return a.value == b.value;
 }
 
+struct AllScalarsStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(some_bool));
+    a->Visit(DRAKE_NVP(some_double));
+    a->Visit(DRAKE_NVP(some_int));
+    a->Visit(DRAKE_NVP(some_size_t));
+    a->Visit(DRAKE_NVP(some_string));
+  }
+
+  bool some_bool = false;
+  double some_double = kNominalDouble;
+  int some_int = 12;
+  size_t some_size_t = 13;
+  std::string some_string = "kNominalString";
+};
+
 struct ArrayStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
