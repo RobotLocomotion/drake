@@ -72,7 +72,7 @@ std::vector<std::vector<MatrixXd>> GetRowData(
   vector<std::vector<MatrixXd>> y(num_row_blocks);
   vector<vector<int>> column(num_row_blocks);
 
-  for (auto& j : jacobian_blocks) {
+  for (const auto& j : jacobian_blocks) {
     int index = std::get<0>(j);
     y.at(index).emplace_back(std::get<2>(j));
     column.at(index).emplace_back(std::get<1>(j));
@@ -329,7 +329,7 @@ void SuperNodalSolver::Initialize(
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
   int i = 0;
   clique_assemblers_ptrs_.resize(jacobian_row_data.size());
-  for (auto& c : jacobian_row_data) {
+  for (const auto& c : jacobian_row_data) {
     owned_clique_assemblers_.at(i) = std::make_unique<CliqueAssembler>();
     owned_clique_assemblers_.at(i)->Initialize(c);
     clique_assemblers_ptrs_.at(i) = owned_clique_assemblers_.at(i).get();
