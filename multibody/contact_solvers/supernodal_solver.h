@@ -82,6 +82,8 @@ class SuperNodalSolver {
   //    num_cols(J1) = \sum^n_{i=1} num_cols (M_i),
   //    num_cols(J3) = \sum^{m}_{i=n+1} num_cols (M_i)
   //
+  //  where m = M.size().
+  //
   //  If this condition fails, an exception is thrown.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
