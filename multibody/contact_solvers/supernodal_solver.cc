@@ -65,7 +65,8 @@ vector<std::vector<int>> GetRowToTripletMapping(
 
   // Sorts row data by column using our assumption that at most two columns
   // are non-zero per row.
-  auto sort_row_data_by_column = [](vector<int>* col_index, vector<int>* triplet_position){
+  auto sort_row_data_by_column = [](vector<int>* col_index,
+                                    vector<int>* triplet_position) {
     if (col_index->at(0) > col_index->at(1)) {
       std::swap(col_index->at(0), col_index->at(1));
       std::swap(triplet_position->at(0), triplet_position->at(1));
