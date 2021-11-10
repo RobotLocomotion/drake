@@ -1,9 +1,7 @@
 This directory contains logic to support the drake_bazel_installed use case,
-where external users can consume Drake binary releases via Bazel.
-
-The support for this feature is currently under development and experimental.
-In the future, we plan to document it as the "drake_bazel_installed" project
-within https://github.com/RobotLocomotion/drake-external-examples.
+where external users can consume Drake binary releases via Bazel.  Check the
+https://github.com/RobotLocomotion/drake-external-examples example named
+"drake_bazel_installed" for how to use this.
 
 The implementation mechanism is a single repo.bzl file that the user loads into
 their WORKSPACE, which is then able to rehydrate the @drake workspace based on
