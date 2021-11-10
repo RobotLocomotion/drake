@@ -19,13 +19,13 @@ namespace internal {
 namespace {
 
 // For each i \in [s, e], computes y(i, :) = g(i) * x(i, :),
-void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& w, int s, int e,
+void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& g, int s, int e,
                                  const MatrixXd& x, MatrixXd* y) {
   int start = 0;
   for (int index = s; index <= e; ++index) {
-    const int num_rows = w.at(s).rows();
+    const int num_rows = g.at(s).rows();
     y->middleRows(start, num_rows).noalias() =
-        w.at(index) * x.middleRows(start, num_rows);
+        g.at(index) * x.middleRows(start, num_rows);
     start += num_rows;
   }
 }
