@@ -7,7 +7,7 @@ def conex_repository(
     github_archive(
         name = name,
         repository = "ToyotaResearchInstitute/conex",
-        commit = "782e4d2ab1adfcebad234ddd48f5e32b0e41edde",
-        sha256 = "af6223d96ce6ebd3de64cd8b2547cc889f346b6cadf1742c21cf698a510f5136",
+        commit = "a3d606f0339fa189dd2f4fb63e4b2c7b4c7ac202",
+        sha256 = "0183056bbf3ca139251b218eadf2f6c0130519299acb0d07b4d870e8e7dc2289",
         mirrors = mirrors,
     )
