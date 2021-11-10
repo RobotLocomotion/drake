@@ -123,8 +123,6 @@ class SuperNodalSolver {
   // sub_matrix(M) is specified by AssignMassMatrix.
   class CliqueAssembler;
 
-  using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
-
   void Initialize(const std::vector<std::vector<int>>& cliques,
                   int num_jacobian_row_blocks,
                   const std::vector<BlockMatrixTriplet>& jacobian_blocks,

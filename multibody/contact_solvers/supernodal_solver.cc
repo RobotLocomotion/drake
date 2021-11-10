@@ -22,7 +22,7 @@ namespace {
 void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& w, int s, int e,
                                  const MatrixXd& x, MatrixXd* y) {
   int start = 0;
-  for (int index = s; index <= e; index++) {
+  for (int index = s; index <= e; ++index) {
     const int num_rows = w.at(s).rows();
     y->middleRows(start, num_rows).noalias() =
         w.at(index) * x.middleRows(start, num_rows);
@@ -39,10 +39,10 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
   y.setZero();
 
   int r_offset = 0;
-  for (size_t i = 0; i < jacobian_row_data.size(); i++) {
+  for (size_t i = 0; i < jacobian_row_data.size(); ++i) {
     int c_offset = 0;
     const MatrixXd& r = jacobian_row_data.at(i);
-    for (size_t j = 0; j < jacobian_row_data.size(); j++) {
+    for (size_t j = 0; j < jacobian_row_data.size(); ++j) {
       const MatrixXd& c = jacobian_row_data.at(j);
       LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end, c,
                                   &temp->at(j));
@@ -83,7 +83,7 @@ vector<std::vector<int>> GetRowToTripletMapping(
       throw std::runtime_error(
           "Jacobian can only be nonzero on at most two column blocks.");
     }
-    cnt++;
+    ++cnt;
   }
   return y;
 }
@@ -92,7 +92,7 @@ std::vector<int> GetMassMatrixStartingColumn(
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
   vector<int> y;
   int col_start = 0;
-  for (size_t i = 0; i < mass_matrices.size(); i++) {
+  for (size_t i = 0; i < mass_matrices.size(); ++i) {
     int col_size = mass_matrices.at(i).cols();
     y.emplace_back(col_start);
     col_start += col_size;
@@ -174,9 +174,9 @@ std::pair<int, int> FindPositionInClique(int element,
       if (cj == element) {
         return std::pair<int, int>(i, j);
       }
-      j++;
+      ++j;
     }
-    i++;
+    ++i;
   }
   throw std::runtime_error("Failed to find mass matrix indices.");
 }
@@ -184,14 +184,14 @@ std::pair<int, int> FindPositionInClique(int element,
 vector<int> CumulativeSum(const vector<int>& x, int N) {
   vector<int> y(N + 1);
   y.at(0) = 0;
-  for (int i = 1; i < N + 1; i++) {
+  for (int i = 1; i < N + 1; ++i) {
     y.at(i) = y.at(i - 1) + x.at(i - 1);
   }
   return y;
 }
 
 void SortTheCliques(std::vector<std::vector<int>>* path) {
-  for (size_t i = 0; i < path->size(); i++) {
+  for (size_t i = 0; i < path->size(); ++i) {
     std::sort(path->at(i).begin(), path->at(i).end());
   }
 }
@@ -261,7 +261,7 @@ SparsityData GetEliminationOrdering(
   SortTheCliques(&cliques);
 
   int largest_clique = 0;
-  for (size_t i = 1; i < cliques.size(); i++) {
+  for (size_t i = 1; i < cliques.size(); ++i) {
     if (cliques.at(i).size() > cliques.at(largest_clique).size()) {
       largest_clique = i;
     }
@@ -296,15 +296,15 @@ SparsityData GetEliminationOrdering(
   vector<vector<int>> supernodes_full(order.size());
   vector<vector<int>> separators_full(order.size());
   vector<vector<int>> cliques_full_with_fill_in(order.size());
-  for (size_t i = 0; i < order.size(); i++) {
+  for (size_t i = 0; i < order.size(); ++i) {
     for (int s : supernodes.at(i)) {
-      for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
+      for (int cnt = 0; cnt < column_block_sizes.at(s); ++cnt) {
         supernodes_full.at(i).push_back(offsets.at(s) + cnt);
         cliques_full_with_fill_in.at(i).push_back(offsets.at(s) + cnt);
       }
     }
     for (int s : separators.at(i)) {
-      for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
+      for (int cnt = 0; cnt < column_block_sizes.at(s); ++cnt) {
         separators_full.at(i).push_back(offsets.at(s) + cnt);
         cliques_full_with_fill_in.at(i).push_back(offsets.at(s) + cnt);
       }
@@ -312,7 +312,7 @@ SparsityData GetEliminationOrdering(
     // Expand the original cliques (without fill-in) into
     // scalar variables.
     for (int s : cliques.at(i)) {
-      for (int cnt = 0; cnt < column_block_sizes.at(s); cnt++) {
+      for (int cnt = 0; cnt < column_block_sizes.at(s); ++cnt) {
         clique_data.variable_cliques.at(i).push_back(offsets.at(s) + cnt);
       }
     }
@@ -336,7 +336,7 @@ void SuperNodalSolver::Initialize(
 
   vector<vector<int>> row_to_triplet_list =
       GetRowToTripletMapping(num_jacobian_row_blocks, jacobian_blocks);
-  for (size_t i = 0; i < cliques.size(); i++) {
+  for (size_t i = 0; i < cliques.size(); ++i) {
     owned_clique_assemblers_.at(i) = std::make_unique<CliqueAssembler>();
     std::vector<MatrixXd> jacobian_blocks_of_row;
     jacobian_blocks_of_row.reserve(row_to_triplet_list.at(i).size());
@@ -469,7 +469,7 @@ void SuperNodalSolver::CliqueAssembler::Initialize(
   jacobian_row_data_ = std::move(r);
   G_times_J_.resize(r.size());
   int num_vars = 0;
-  for (size_t j = 0; j < jacobian_row_data_.size(); j++) {
+  for (size_t j = 0; j < jacobian_row_data_.size(); ++j) {
     num_vars += r.at(j).cols();
     G_times_J_.at(j).resize(r.at(j).rows(), r.at(j).cols());
   }
