@@ -369,7 +369,7 @@ SuperNodalSolver::SuperNodalSolver(
   SparsityData clique_data_ =
       GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks);
 
-  solver_ = std::make_unique<::conex::Solver>(
+  solver_ = std::make_unique<::conex::SupernodalKKTSolver>(
       clique_data_.variable_cliques, clique_data_.data.num_vars,
       clique_data_.data.order, clique_data_.data.supernodes,
       clique_data_.data.separators);

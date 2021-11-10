@@ -12,7 +12,7 @@
 // Forward declaration to avoid the inclusion of conex's headers within a Drake
 // header.
 namespace conex {
-class Solver;
+class SupernodalKKTSolver;
 }
 
 namespace drake {
@@ -133,9 +133,7 @@ class SuperNodalSolver {
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
 
-  // TODO(FrankPermenter) remove mutable tag if constness
-  // is added to relevant ::conex::Solver functions.
-  mutable std::unique_ptr<::conex::Solver> solver_;
+  std::unique_ptr<::conex::SupernodalKKTSolver> solver_;
   // N.B. This array stores pointers to clique assemblers owned by
   // owned_clique_assemblers_.
   std::vector<CliqueAssembler*> clique_assemblers_ptrs_;
