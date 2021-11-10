@@ -142,7 +142,7 @@ class SuperNodalSolver::CliqueAssembler final
   // TODO(FrankPermenter): remove this and rely on Conex to allocate
   // its own memory (requires a Conex update).
   Eigen::VectorXd workspace_memory_;
-  const std::vector<Eigen::MatrixXd>* weight_matrix_;
+  const std::vector<Eigen::MatrixXd>* weight_matrix_ = nullptr;
   int weight_start_ = 0;
   int weight_end_ = 0;
 };
