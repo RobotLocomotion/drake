@@ -125,10 +125,10 @@ class SuperNodalSolver {
 
   using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
 
-  void Initialize(
-      const std::vector<std::vector<int>>& cliques,
-      const std::vector<std::vector<Eigen::MatrixXd>>& jacobian_row_data,
-      const std::vector<Eigen::MatrixXd>& mass_matrices);
+  void Initialize(const std::vector<std::vector<int>>& cliques,
+                  int num_jacobian_row_blocks,
+                  const std::vector<BlockMatrixTriplet>& jacobian_blocks,
+                  const std::vector<Eigen::MatrixXd>& mass_matrices);
 
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
