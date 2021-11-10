@@ -35,7 +35,9 @@ cp -r -t /wheel/pydrake/doc \
 # TODO we need a different way of shipping non-arch files (examples, models)
 cp -r -t /wheel/pydrake/share/drake \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
+    /opt/drake/share/drake/package.xml \
     /opt/drake/share/drake/examples \
+    /opt/drake/share/drake/geometry \
     /opt/drake/share/drake/manipulation \
 
 # TODO we need to remove these to keep the wheel from being too large, but (per
