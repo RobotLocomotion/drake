@@ -2,17 +2,24 @@
 # vi: set ft=python :
 
 load("@drake//tools/install:install.bzl", "InstallInfo")
+load("@drake//tools/skylark:pathutils.bzl", "basename")
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 
 def _impl(ctx):
     known_non_runfiles = [
         # These are installed in share/drake, but are not runfiles (at least,
         # not with these paths).
+        "manipulation/models/iiwa_description/iiwa_stack.LICENSE.txt",
         "setup/Brewfile",
         "setup/install_prereqs",
         "setup/packages-bionic.txt",
         "setup/packages-focal.txt",
         "setup/requirements.txt",
+    ]
+    known_non_runfiles_basenames = [
+        "LICENSE",
+        "LICENSE.TXT",
+        "LICENSE.txt",
     ]
     drake_runfiles = []
     drake_prologue = "share/drake/"
@@ -22,6 +29,8 @@ def _impl(ctx):
         if dest.startswith(drake_prologue):
             relative_path = dest[len(drake_prologue):]
             if relative_path in known_non_runfiles:
+                continue
+            if basename(relative_path) in known_non_runfiles_basenames:
                 continue
             drake_runfiles.append(relative_path)
         elif dest.startswith(lcmtypes_drake_py_prologue):
@@ -36,8 +45,6 @@ def _impl(ctx):
     }
     ctx.actions.write(
         output = ctx.outputs.out,
-        # TODO(jwnimmer-tri) The compact json format makes emacs sad; maybe we
-        # should artisally write it out as python so it is more readable?
         content = "MANIFEST = " + struct(**content).to_json(),
         is_executable = False,
     )
