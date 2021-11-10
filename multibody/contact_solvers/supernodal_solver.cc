@@ -184,9 +184,7 @@ std::pair<int, int> FindPositionInClique(int element,
 vector<int> CumulativeSum(const vector<int>& x, int N) {
   vector<int> y(N + 1);
   y.at(0) = 0;
-  for (int i = 1; i < N + 1; ++i) {
-    y.at(i) = y.at(i - 1) + x.at(i - 1);
-  }
+  std::partial_sum(x.begin(), x.begin() + N, y.begin() + 1);
   return y;
 }
 
