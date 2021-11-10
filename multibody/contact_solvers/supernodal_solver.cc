@@ -431,7 +431,7 @@ bool SuperNodalSolver::Factor() {
   return success;
 }
 
-Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
+Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) const {
   if (!factorization_ready_) {
     throw std::runtime_error(
         "Call to Solve() failed: factorization not ready.");
@@ -444,7 +444,7 @@ Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) {
   return y;
 }
 
-void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
+void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) const {
   if (!factorization_ready_) {
     throw std::runtime_error(
         "Call to Solve() failed: factorization not ready.");
@@ -453,7 +453,7 @@ void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) {
   solver_->SolveInPlace(&ymap);
 }
 
-Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() {
+Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() const {
   if (!matrix_ready_) {
     throw std::runtime_error(
         "Call to MakeFullMatrix() failed: weight matrix not set or matrix has "
