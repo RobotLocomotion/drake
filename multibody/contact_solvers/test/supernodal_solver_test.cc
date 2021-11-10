@@ -493,7 +493,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 2,  0, 0, 0,
        0, 0, 3,  0, 0, 0,
 
-       0, 0, 0,  0, 0, 1;
+       1, 1, 0,  0, 0, 1;
   // clang-format on
 
   std::vector<BlockMatrixTriplet> Jtriplets(7);
@@ -522,8 +522,8 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   get<2>(Jtriplets.at(5)) = J.block<1, 1>(12, 5);
 
   get<0>(Jtriplets.at(6)) = 3;
-  get<1>(Jtriplets.at(6)) = 2;
-  get<2>(Jtriplets.at(6)) = J.block<1, 2>(12, 0) * 0;
+  get<1>(Jtriplets.at(6)) = 0;
+  get<2>(Jtriplets.at(6)) = J.block<1, 2>(12, 0);
 
   Eigen::MatrixXd G(13, 13);
   // clang-format off
