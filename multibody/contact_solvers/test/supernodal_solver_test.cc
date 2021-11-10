@@ -457,6 +457,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-12);
 
+  // Construct arbitrary reference solution.
   Eigen::VectorXd x_ref;
   x_ref.setLinSpaced(M.rows(), -1, 1);
   solver.Factor();
