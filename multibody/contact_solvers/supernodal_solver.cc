@@ -54,14 +54,6 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
   }
 }
 
-void SortJacobianRowDataByColumn(std::vector<int>* column,
-                                 std::vector<int>* triplet_position) {
-  if (column->at(0) > column->at(1)) {
-    std::swap(column->at(0), column->at(1));
-    std::swap(triplet_position->at(0), triplet_position->at(1));
-  }
-}
-
 // Returns a vector<vector<int>> y where
 // y.at(i) contains the indices of the block Jacobians
 // on row i organized by column.
@@ -71,13 +63,22 @@ vector<std::vector<int>> GetRowToTripletMapping(
   vector<vector<int>> y(num_row_blocks);
   vector<vector<int>> column(num_row_blocks);
 
+  // Sorts row data by column using our assumption that at most two columns
+  // are non-zero per row.
+  auto sort_row_data_by_column = [](vector<int>* col_index, vector<int>* triplet_position){
+    if (col_index->at(0) > col_index->at(1)) {
+      std::swap(col_index->at(0), col_index->at(1));
+      std::swap(triplet_position->at(0), triplet_position->at(1));
+    }
+  };
+
   int cnt = 0;
   for (const auto& j : jacobian_blocks) {
     int index = std::get<0>(j);
     y.at(index).emplace_back(cnt);
     column.at(index).emplace_back(std::get<1>(j));
     if (column.at(index).size() == 2) {
-      SortJacobianRowDataByColumn(&column.at(index), &y.at(index));
+      sort_row_data_by_column(&column.at(index), &y.at(index));
     }
     if (column.at(index).size() > 2) {
       throw std::runtime_error(
