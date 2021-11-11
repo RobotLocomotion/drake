@@ -158,6 +158,7 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
@@ -592,6 +593,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
+        "//bindings/pydrake/common/test_utilities",
         "//lcmtypes:lcmtypes_drake_py",
     ],
 )
