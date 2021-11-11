@@ -11,6 +11,7 @@ ARG PYTHON=3
 ENV DEBIAN_FRONTEND=noninteractive
 
 ADD image/provision-base.sh /image/
+ADD image/known_hosts /root/.ssh/
 
 RUN /image/provision-base.sh
 
@@ -46,7 +47,8 @@ ADD image/build-drake.sh /image/
 ADD image/pip-drake.patch /image/
 ADD ${REPO}/git/refs/heads/master /tmp/drake.sha
 
-RUN /image/build-drake.sh
+RUN --mount=type=ssh \
+    /image/build-drake.sh
 
 ADD image/build-wheel.sh /image/
 ADD image/setup.py /wheel/
