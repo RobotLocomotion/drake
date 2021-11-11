@@ -65,6 +65,7 @@ def _drake_impl(repo_ctx):
     # Symlink our libraries into the repository.  We can use any path for
     # these, since our BUILD rules will declare new names for everything,
     # unrelated to their physical structure here.
+    repo_ctx.symlink(prefix.get_child("include"), ".include")
     repo_ctx.symlink(prefix.get_child("lib"), ".lib")
 
     # Create the stub BUILD files.  (During development, these live at
