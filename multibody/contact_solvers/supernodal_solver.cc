@@ -5,7 +5,6 @@
 
 #include "conex/clique_ordering.h"
 #include "conex/kkt_solver.h"
-#include "conex/supernodal_solver.h"
 
 using Eigen::MatrixXd;
 using std::vector;
@@ -105,7 +104,7 @@ std::vector<int> GetMassMatrixStartingColumn(
 }  // namespace
 
 class SuperNodalSolver::CliqueAssembler final
-    : public ::conex::LinearKKTAssemblerBase {
+    : public ::conex::SupernodalAssemblerBase {
  public:
   // Fills the matrix sub_matrix(M) + J^T_i G_i J_i.
 
@@ -156,13 +155,11 @@ void SuperNodalSolver::CliqueAssembler::SetDenseData() {
   }
 
   Compute_Ji_transpose_Gi_Ji(jacobian_row_data_, *weight_matrix_, weight_start_,
-                             weight_end_, &schur_complement_data.G,
-                             &G_times_J_);
+                             weight_end_, &submatrix_data_.G, &G_times_J_);
   int i = 0;
   for (const auto& pos : mass_matrix_position_) {
-    schur_complement_data.G.block(pos, pos, mass_matrix_.at(i).rows(),
-                                  mass_matrix_.at(i).cols()) +=
-        mass_matrix_.at(i);
+    submatrix_data_.G.block(pos, pos, mass_matrix_.at(i).rows(),
+                            mass_matrix_.at(i).cols()) += mass_matrix_.at(i);
     ++i;
   }
 }
@@ -358,6 +355,7 @@ void SuperNodalSolver::Initialize(
     ++cnt;
   }
 
+  // Make connections between clique_assemblers and solver->Assemble()
   solver_->Bind(clique_assemblers_ptrs_);
 }
 
@@ -381,9 +379,9 @@ SuperNodalSolver::SuperNodalSolver(
 void SuperNodalSolver::SetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
   // We copy these pointers so that SetDenseData (a virtual function override)
-  // can access the weight matrices when solver_->AssembleFromCliques is called
+  // can access the weight matrices when solver_->Assemble() is called
   // below.  For safety, we replace these pointers with NULL when
-  // solver_->AssembleFromCliques returns.
+  // solver_->Assemble() returns.
   for (auto& c : owned_clique_assemblers_) {
     c->SetWeightMatrixPointer(&weight_matrix);
   }
@@ -407,7 +405,9 @@ void SuperNodalSolver::SetWeightMatrix(
   }
 
   if (!weight_matrix_incompatible) {
-    solver_->AssembleFromCliques(clique_assemblers_ptrs_);
+    // Assembles using owned_clique_assemblers_
+    // solver_->Bind(clique_assemblers_ptrs_);
+    solver_->Assemble();
   }
 
   // Destroy references to argument weight_matrix.
@@ -474,10 +474,10 @@ void SuperNodalSolver::CliqueAssembler::Initialize(
     G_times_J_.at(j).resize(r.at(j).rows(), r.at(j).cols());
   }
 
-  LinearKKTAssemblerBase::SetNumberOfVariables(num_vars);
-  const int size = SizeOf(LinearKKTAssemblerBase::schur_complement_data);
+  SupernodalAssemblerBase::SetNumberOfVariables(num_vars);
+  const int size = SizeOf(SupernodalAssemblerBase::submatrix_data_);
   workspace_memory_.resize(size);
-  LinearKKTAssemblerBase::schur_complement_data.InitializeWorkspace(
+  SupernodalAssemblerBase::submatrix_data_.InitializeWorkspace(
       workspace_memory_.data());
 }
 }  // namespace internal
