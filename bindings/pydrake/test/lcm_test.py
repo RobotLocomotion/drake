@@ -1,5 +1,6 @@
 import unittest
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
 
 from drake import lcmt_quaternion
@@ -29,7 +30,8 @@ class TestLcm(unittest.TestCase):
         self.count += 1
 
     def test_mock_lcm_roundtrip(self):
-        dut = DrakeMockLcm()
+        with catch_drake_warnings(expected_count=1):
+            dut = DrakeMockLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
         dut.Subscribe(channel="TEST_CHANNEL", handler=self._handler)
         dut.Publish(channel="TEST_CHANNEL", buffer=self.quat.encode())
