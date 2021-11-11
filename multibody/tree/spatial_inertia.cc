@@ -8,61 +8,53 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-std::ostream& operator<<(std::ostream& out,
-                         const SpatialInertia<T>& M) {
+std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
+  // Write the data associated with the spatial inertia M of a body
+  // (or composite body) B about a point P, expressed in a frame E.
+  // Typically, point P is either Bo (B's origin) or Bcm (B's center of mass)
+  // and frame E is usually the body frame B.
   const T& mass = M.get_mass();
-  const Vector3<T>& p_BoBcm_B = M.get_com();
-  const T& x = p_BoBcm_B.x();
-  const T& y = p_BoBcm_B.y();
-  const T& z = p_BoBcm_B.z();
-  // The next line is similar to M.CalcRotationalInertia(), but without checks
+  const Vector3<T>& p_PBcm_B = M.get_com();
+  const T& x = p_PBcm_B.x();
+  const T& y = p_PBcm_B.y();
+  const T& z = p_PBcm_B.z();
+
+  // Get M's unit inertia about P (which may be Bo or Bcm) expressed in frame E.
+  // Similarly, get M's unit inertia about Bcm expressed in frame E.
+  const UnitInertia<T>& G_BP_B = M.get_unit_inertia();
+  const UnitInertia<T> G_BBcm_E = G_BP_B.ShiftToCenterOfMass(p_PBcm_B);
+
+  // The next lines are similar to M.CalcRotationalInertia(), but without checks
   // such as IsPhysicallyValid() so that operator<< works for error messages.
-  const Matrix3<T> I_BBcm_B = mass * M.get_unit_inertia().CopyToFullMatrix3();
+  const Matrix3<T> I_BP_B = mass * G_BP_B.CopyToFullMatrix3();
+  const Matrix3<T> I_BBcm_B = mass * G_BBcm_E.CopyToFullMatrix3();
+
   if constexpr (scalar_predicate<T>::is_bool) {
     out << std::endl
         << fmt::format(" mass = {}", mass) << std::endl
-        << fmt::format(" com = [{}  {}  {}]ᵀ", x, y, z) << std::endl
-        << " I =" << std::endl
-        << I_BBcm_B << std::endl;
+        << fmt::format(" Center of mass = [{}  {}  {}]", x, y, z) << std::endl;
   } else {
     // Print symbolic results.
     out << " mass = " << mass << std::endl
-        << " com = [" << p_BoBcm_B.transpose() << "]ᵀ" << std::endl
-        << " I =" << std::endl
+        << " Center of mass = [" << p_PBcm_B.transpose() << "]ᵀ" << std::endl
+        << " Inertia I_BP_B =" << std::endl
         << I_BBcm_B << std::endl;
   }
-  return out;
-}
 
-#if 0
-  return o << std::endl
-      << " mass = " << M.get_mass() << std::endl
-      << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
-      << " I =" << std::endl
-      // Like M.CalcRotationalInertia(), but without the IsPhysicallyValid
-      // checks, so that we can use operator<< in error messages.
-      << (M.get_mass() * M.get_unit_inertia().CopyToFullMatrix3())
-      << std::endl;
-
-template <typename T>
-std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
-  const Vector3<T>& p = X.translation();
-  if constexpr (scalar_predicate<T>::is_bool) {
-    const RotationMatrix<T>& R = X.rotation();
-    const RollPitchYaw<T> rpy(R);
-    out << rpy;
-    out << fmt::format(" xyz = {} {} {}", p.x(), p.y(), p.z());;
-  } else {
-    // TODO(14927) For symbolic type T, stream roll, pitch, yaw if conversion
-    //  from RotationMatrix to RollPitchYaw can be done in a way that provides
-    //  meaningful output to the end-user or developer (it is not trivial how
-    //  to do this symbolic conversion) and does not require an Environment.
-    out << "rpy = symbolic (not supported)";
-    out << " xyz = " << p.x() << " " << p.y() << " " << p.z();
+  // Write B's rotational inertia about point P if P is not at Bcm.
+  const boolean<T> is_position_zero = (p_PBcm_B == Vector3<T>::Zero());
+  if (!is_position_zero) {
+    out << " Inertia I_BP_B =" << std::endl
+        << I_BP_B << std::endl;
   }
+
+  // Write B's rotational inertia about Bcm always.
+  out << " Inertia I_BBcm_B =" << std::endl
+      << I_BBcm_B << std::endl;
+
   return out;
 }
-#endif
+
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const SpatialInertia<T>&)>(
