@@ -454,8 +454,6 @@ int ToMeshcatColor(const Rgba& rgba) {
          static_cast<int>(255 * rgba.b());
 }
 
-
-
 }  // namespace
 
 class Meshcat::WebSocketPublisher {

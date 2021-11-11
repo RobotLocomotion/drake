@@ -149,12 +149,13 @@ GTEST_TEST(MeshcatTest, SetObjectWithTriangleSurfaceMesh) {
       {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
   std::vector<Eigen::Vector3d> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
-  TriangleSurfaceMesh<double> surface_mesh(move(faces), std::move(vertices));
+  TriangleSurfaceMesh<double> surface_mesh(
+    std::move(faces), std::move(vertices));
   meshcat.SetObject("triangle_mesh", surface_mesh, Rgba(.9, 0, .9, 1.0));
   EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
 
   meshcat.SetObject("triangle_mesh_wireframe", surface_mesh,
-                     Rgba(.9, 0, .9, 1.0), true, 5.0);
+                    Rgba(.9, 0, .9, 1.0), true, 5.0);
   EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh_wireframe").empty());
 }
 
