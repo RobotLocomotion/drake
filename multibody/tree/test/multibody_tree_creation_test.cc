@@ -384,20 +384,17 @@ class TreeTopologyTests : public ::testing::Test {
     set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
     set<BodyIndex> expected_level3 = {BodyIndex(6)};
 
-    set<BodyIndex> level0 = {topology.get_body_node(BodyNodeIndex(0)).body};
-    set<BodyIndex> level1 = {topology.get_body_node(BodyNodeIndex(1)).body,
-                             topology.get_body_node(BodyNodeIndex(2)).body,
-                             topology.get_body_node(BodyNodeIndex(3)).body};
-    set<BodyIndex> level2 = {topology.get_body_node(BodyNodeIndex(4)).body,
-                             topology.get_body_node(BodyNodeIndex(5)).body,
-                             topology.get_body_node(BodyNodeIndex(6)).body};
-    set<BodyIndex> level3 = {topology.get_body_node(BodyNodeIndex(7)).body};
+    std::vector<std::set<BodyIndex>> levels(topology.num_bodies());
+    for (BodyIndex b(0); b < topology.num_bodies(); ++b) {
+      const BodyTopology& body = topology.get_body(b);
+      levels[body.level].insert(b);
+    }
 
     // Comparison of sets. The order of the elements is not important.
-    EXPECT_EQ(level0, expected_level0);
-    EXPECT_EQ(level1, expected_level1);
-    EXPECT_EQ(level2, expected_level2);
-    EXPECT_EQ(level3, expected_level3);
+    EXPECT_EQ(levels[0], expected_level0);
+    EXPECT_EQ(levels[1], expected_level1);
+    EXPECT_EQ(levels[2], expected_level2);
+    EXPECT_EQ(levels[3], expected_level3);
 
     // Verifies the expected number of child nodes.
     EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 3);

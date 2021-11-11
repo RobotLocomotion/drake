@@ -184,10 +184,10 @@ GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   // Verify that the implicit dynamics match the continuous ones.
   Eigen::VectorXd residual = plant.AllocateImplicitTimeDerivativesResidual();
   plant.CalcImplicitTimeDerivativesResidual(*context, *derivatives, &residual);
-  // Note the slightly looser tolerance of 2e-13 which was required for this
+  // Note the slightly looser tolerance of 4e-13 which was required for this
   // test.
   EXPECT_TRUE(CompareMatrices(
-      residual, Eigen::VectorXd::Zero(plant.num_multibody_states()), 2e-13));
+      residual, Eigen::VectorXd::Zero(plant.num_multibody_states()), 4e-13));
 }
 
 // Verifies we can do forward dynamics on a model with a zero-sized state.

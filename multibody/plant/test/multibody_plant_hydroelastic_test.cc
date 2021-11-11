@@ -436,17 +436,17 @@ class ContactModelTest : public ::testing::Test {
       const SpatialForce<double> F_Bc_W{Vector3d::Zero(),
                                         contact_info.contact_force()};
       const Vector3d& p_WC = contact_info.contact_point();
-      const Vector3d& p_WAo = plant_->get_body(contact_info.bodyA_index())
-                                  .EvalPoseInWorld(*plant_context_)
-                                  .translation();
+      const auto& bodyA = plant_->get_body(contact_info.bodyA_index());
+      const Vector3d& p_WAo =
+          bodyA.EvalPoseInWorld(*plant_context_).translation();
       const Vector3d& p_CAo_W = p_WAo - p_WC;
-      const Vector3d& p_WBo = plant_->get_body(contact_info.bodyB_index())
-                                  .EvalPoseInWorld(*plant_context_)
-                                  .translation();
+      const auto& bodyB = plant_->get_body(contact_info.bodyB_index());
+      const Vector3d& p_WBo =
+          bodyB.EvalPoseInWorld(*plant_context_).translation();
       const Vector3d& p_CBo_W = p_WBo - p_WC;
 
-      F_BBo_W_array[contact_info.bodyB_index()] += F_Bc_W.Shift(p_CBo_W);
-      F_BBo_W_array[contact_info.bodyA_index()] -= F_Bc_W.Shift(p_CAo_W);
+      F_BBo_W_array[bodyB.node_index()] += F_Bc_W.Shift(p_CBo_W);
+      F_BBo_W_array[bodyA.node_index()] -= F_Bc_W.Shift(p_CAo_W);
     }
 
     for (int i = 0; i < contacts.num_hydroelastic_contacts(); ++i) {
@@ -472,8 +472,8 @@ class ContactModelTest : public ::testing::Test {
       // The force applied to body A at a fixed point coincident with the
       // centroid point C.
       const SpatialForce<double>& F_Ac_W = contact_info.F_Ac_W();
-      F_BBo_W_array[body_A.index()] += F_Ac_W.Shift(p_CAo_W);
-      F_BBo_W_array[body_B.index()] -= F_Ac_W.Shift(p_CBo_W);
+      F_BBo_W_array[body_A.node_index()] += F_Ac_W.Shift(p_CAo_W);
+      F_BBo_W_array[body_B.node_index()] -= F_Ac_W.Shift(p_CBo_W);
     }
 
     return F_BBo_W_array;
