@@ -22,8 +22,8 @@
 ///   topology can be validated against the stored topology in debug builds.
 
 #include <algorithm>
-#include <queue>
 #include <set>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -88,7 +88,9 @@ struct BodyTopology {
   BodyIndex parent_body{};
 
   // Within the tree structure of a MultibodyTree, the immediate outboard (or
-  // "child") bodies to this Body.
+  // "child") bodies to this Body. Bodies appear in child_bodies in the order
+  // mobilizers were added to the model, with
+  // MultibodyTreeTopology::add_mobilizer().
   std::vector<BodyIndex> child_bodies;
 
   // Unique index to the frame associated with this body.
@@ -714,7 +716,7 @@ class MultibodyTreeTopology {
   // performs all the required pre-processing to perform computations at a
   // later stage. This preprocessing includes:
   //
-  // - sorting in BFT order for fast recursions through the tree,
+  // - sorting in DFT order for fast recursions through the tree,
   // - computation of state sizes and of pool sizes within cache entries,
   // - computation of index maps to retrieve either state or cache entries for
   //   each multibody element.
@@ -735,17 +737,14 @@ class MultibodyTreeTopology {
           "finalized MultibodyTree.");
     }
 
-    // Compute body levels in the tree. Root is the zero level.
-    // Breadth First Traversal (a.k.a. Level Order Traversal).
-    std::queue<BodyIndex> queue;
-    queue.push(BodyIndex(0));  // Starts at the root.
+    // For each body, assign a body node in a depth first traversal order.
+    std::stack<BodyIndex> stack;
+    stack.push(BodyIndex(0));  // Starts at the root.
     tree_height_ = 1;  // At least one level with the world body at the root.
-    // While at it, create body nodes and index them in this BFT order for
-    // fast tree traversals of MultibodyTree recursive algorithms.
     body_nodes_.reserve(num_bodies());
-    while (!queue.empty()) {
+    while (!stack.empty()) {
       const BodyNodeIndex node(get_num_body_nodes());
-      const BodyIndex current = queue.front();
+      const BodyIndex current = stack.top();
       const BodyIndex parent = bodies_[current].parent_body;
 
       bodies_[current].body_node = node;
@@ -762,7 +761,7 @@ class MultibodyTreeTopology {
       // Keep track of the number of levels, the deepest (i.e. max) level.
       tree_height_ = std::max(tree_height_, level + 1);
 
-      // Since we are doing a BFT, it is valid to ask for the parent node,
+      // Since we are doing a DFT, it is valid to ask for the parent node,
       // unless we are at the root.
       BodyNodeIndex parent_node;
       if (node != 0) {  // If we are not at the root:
@@ -778,11 +777,18 @@ class MultibodyTreeTopology {
           bodies_[current].parent_body       /* This node's parent body */,
           bodies_[current].inboard_mobilizer /* This node's mobilizer */);
 
-      // Pushes children to the back of the queue and pops current.
-      for (BodyIndex child : bodies_[current].child_bodies) {
-        queue.push(child);  // Pushes at the back.
+      // We process bodies in the order they were added to the vector of child
+      // bodies; this vector is filled in the order mobilizers are added to the
+      // model. Therefore, when a given node branches out, we spawn branches in
+      // the order mobilizers that connect this node to its children were added.
+      // Since we are using a stack to store bodies that will be processed next,
+      // we must place bodies in reverse order so that the first child is at the
+      // top of the stack.
+      stack.pop();  // Pops top element.
+      for (auto it = bodies_[current].child_bodies.rbegin();
+           it != bodies_[current].child_bodies.rend(); ++it) {
+        stack.push(*it);
       }
-      queue.pop();  // Pops front element.
     }
 
     // Checks that all bodies were reached. We could have this situation if a
@@ -808,7 +814,7 @@ class MultibodyTreeTopology {
     //
     // TODO(amcastro-tri): count body dofs (i.e. for flexible dofs).
     //
-    // Base-to-Tip loop in BFT order, skipping the world (node = 0).
+    // Base-to-Tip loop in DFT order, skipping the world (node = 0).
 
     // Count number of generalized positions and velocities.
     num_positions_ = 0;

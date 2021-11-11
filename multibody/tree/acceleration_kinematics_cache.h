@@ -91,7 +91,7 @@ class AccelerationKinematicsCache {
 
  private:
   // Pools store entries in the same order that multibody tree nodes are
-  // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
+  // ordered in the tree, i.e. in DFT (Depth-First Traversal) order. Therefore
   // clients of this class will access entries by BodyNodeIndex, see
   // `get_A_WB()` for instance.
 
