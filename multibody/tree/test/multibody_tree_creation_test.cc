@@ -216,35 +216,32 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
 // mobilizer index (assigned by MultibodyTree in the order mobilizers are
 // created).
 // At Finalize(), a body node is created per (body, inboard_mobilizer) pair.
-// Body node indexes are assigned according to a BFT order.
-// Tests below make reference to the indexes in this schematic. The following
-// points are important:
-// - Body nodes are ordered by a BFT sort however,
-// - There is no guarantee on which body node is assigned to which body,
-// - Body nodes at a particular level are not guaranteed to be in any particular
-//   order, only that they belong to the right level is important.
+// Body node indexes, shown in parentheses, are assigned in DFT order. In
+// addition, we know that internal::MultibodyTreeTopology assigns body nodes to
+// each branch in the order mobilizers are added. For instance, in the schematic
+// below, node (1) is created before node (2) because mobilizer m2 was added
+// before m4. Similarly, node (5) is created before (6) because mobilizer m1 was
+// added before m5.
 //
-//                        +---+
-//                        | 0 |                        Level 0 (root, world)
-//            +-----------+-+-+-----------+
-//            |             |             |
-//            | m6          | m2          | m4
-//            |             |             |
-//          +-v-+         +-v-+         +-v-+
-//          | 4 |         | 7 |         | 5 |          Level 1
-//       +--+---+--+      +---+         +-+-+
-//       |         |                      |
-//       | m1      | m5                   | m3
-//       |         |                      |
-//     +-v-+     +-v-+                  +-v-+
-//     | 2 |     | 1 |                  | 3 |          Level 2
-//     +---+     +-+-+                  +---+
-//                 |
-//                 | m0
-//                 |
-//               +-v-+
-//               | 6 |                                 Level 3
-//               +---+
+//                    ┌───┐
+//                    │ 0 │(0)                         Level 0 (root, world)
+//                    └─┬─┘
+//                      │
+//        ┌─────────────┼─────────────┐
+//        │ m2          │ m4          │ m6
+//      ┌─┴─┐         ┌─┴─┐         ┌─┴─┐
+//      │ 7 │(1)      │ 5 │(2)      │ 4 │(4)           Level 1
+//      └───┘         └─┬─┘         └─┬─┘
+//                      │             │
+//                      │       ┌─────┴──────┐
+//                      │ m3    │ m1         │ m5
+//                    ┌─┴─┐   ┌─┴─┐        ┌─┴─┐
+//                    │ 3 │(3)│ 2 │(5)     │ 1 │(6)    Level 2
+//                    └───┘   └───┘        └─┬─┘
+//                                           │ m0
+//                                         ┌─┴─┐
+//                                         │ 6 │(7)    Level 3
+//                                         └───┘
 //
 class TreeTopologyTests : public ::testing::Test {
  public:
@@ -384,20 +381,17 @@ class TreeTopologyTests : public ::testing::Test {
     set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
     set<BodyIndex> expected_level3 = {BodyIndex(6)};
 
-    set<BodyIndex> level0 = {topology.get_body_node(BodyNodeIndex(0)).body};
-    set<BodyIndex> level1 = {topology.get_body_node(BodyNodeIndex(1)).body,
-                             topology.get_body_node(BodyNodeIndex(2)).body,
-                             topology.get_body_node(BodyNodeIndex(3)).body};
-    set<BodyIndex> level2 = {topology.get_body_node(BodyNodeIndex(4)).body,
-                             topology.get_body_node(BodyNodeIndex(5)).body,
-                             topology.get_body_node(BodyNodeIndex(6)).body};
-    set<BodyIndex> level3 = {topology.get_body_node(BodyNodeIndex(7)).body};
+    std::vector<std::set<BodyIndex>> levels(topology.num_bodies());
+    for (BodyIndex b(0); b < topology.num_bodies(); ++b) {
+      const BodyTopology& body = topology.get_body(b);
+      levels[body.level].insert(b);
+    }
 
     // Comparison of sets. The order of the elements is not important.
-    EXPECT_EQ(level0, expected_level0);
-    EXPECT_EQ(level1, expected_level1);
-    EXPECT_EQ(level2, expected_level2);
-    EXPECT_EQ(level3, expected_level3);
+    EXPECT_EQ(levels[0], expected_level0);
+    EXPECT_EQ(levels[1], expected_level1);
+    EXPECT_EQ(levels[2], expected_level2);
+    EXPECT_EQ(levels[3], expected_level3);
 
     // Verifies the expected number of child nodes.
     EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 3);
@@ -413,6 +407,19 @@ class TreeTopologyTests : public ::testing::Test {
     for (BodyIndex body(0); body < kNumBodies; ++body) {
       TestBodyNode(topology, body);
     }
+
+    // We now verify the precise expected topology. We use our internal
+    // knowledge that branches are created according to the order in which
+    // mobilizers are added. Refer to schematic in the documentation of this
+    // test fixture.
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(0)).body, 0);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(1)).body, 7);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(2)).body, 5);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(3)).body, 3);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(4)).body, 4);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(5)).body, 2);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(6)).body, 1);
+    EXPECT_EQ(topology.get_body_node(BodyNodeIndex(7)).body, 6);
   }
 
  protected:
