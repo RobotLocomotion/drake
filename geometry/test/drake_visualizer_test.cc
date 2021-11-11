@@ -18,7 +18,6 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcm_messages.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_geometry_data.hpp"
@@ -51,7 +50,7 @@ class DrakeVisualizerTester {
  public:
   template <typename T>
   static std::string lcm_url(const DrakeVisualizer<T>& visualizer) {
-    return dynamic_cast<lcm::DrakeLcm*>(visualizer.lcm_)->get_lcm_url();
+    return visualizer.lcm_->get_lcm_url();
   }
 
   template <typename T>
@@ -315,7 +314,7 @@ class DrakeVisualizerTest : public ::testing::Test {
   static constexpr char kSourceName[] = "DrakeVisualizerTest";
 
   /* The LCM visualizer broadcasts messages on.  */
-  lcm::DrakeMockLcm lcm_;
+  lcm::DrakeLcm lcm_;
   /* The subscribers for draw and load messages.  */
   lcm::Subscriber<lcmt_viewer_draw> draw_subscriber_{&lcm_, kDrawChannel};
   lcm::Subscriber<lcmt_viewer_load_robot> load_subscriber_{&lcm_, kLoadChannel};
