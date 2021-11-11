@@ -457,9 +457,8 @@ DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
     x.value() = acos(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
-    // TODO(rpoyner-tri): implementation seems fishy --see #14051.
     atan, using std::atan;
-    x.derivatives() *= Scalar(1) / (1 + x.value() * x.value());
+    x.derivatives() *= Scalar(1) / (1 + numext::abs2(x.value()));
     x.value() = atan(x.value());)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
