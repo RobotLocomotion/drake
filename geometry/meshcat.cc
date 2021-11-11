@@ -81,6 +81,18 @@ using MsgPackMap = std::map<std::string, msgpack::object>;
 // reasonable meshfiles.
 constexpr static double kMaxBackPressure{50 * 1024 * 1024};
 
+void CheckBackPressure(const std::string& path, const std::string& message) {
+  if (message.size() > kMaxBackPressure) {
+    drake::log()->warn(
+        "The message describing the object at {} is too large for the "
+        "current websocket setup (size {} is greater than the max "
+        "backpressure {}).  You will either need to reduce the size of "
+        "your object/mesh/textures, or modify the code to increase the "
+        "allowance.",
+        path, message.size(), kMaxBackPressure);
+  }
+}
+
 class SceneTreeElement {
  public:
   // Member access methods (object_, transform_, and properties_ should be
@@ -545,15 +557,7 @@ class Meshcat::WebSocketPublisher {
       // (here and throughout) to avoid this copy.
       // https://github.com/redboltz/msgpack-c/wiki/v2_0_cpp_packer
       std::string message = message_stream.str();
-      if (message.size() > kMaxBackPressure) {
-        drake::log()->warn(
-            "The message describing the object at {} is too large for the "
-            "current websocket setup (size {} is greater than the max "
-            "backpressure {}).  You will either need to reduce the size of "
-            "your object/mesh/textures, or modify the code to increase the "
-            "allowance.",
-            data.path, message.size(), kMaxBackPressure);
-      }
+      CheckBackPressure(data.path, message);
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
@@ -581,6 +585,8 @@ class Meshcat::WebSocketPublisher {
     material->uuid = uuids::to_string(uuid_generator());
     material->type = "PointsMaterial";
     material->color = ToMeshcatColor(rgba);
+    material->transparent = (rgba.a() != 1.0);
+    material->opacity = rgba.a();
     material->size = point_size;
     material->vertexColors = cloud.has_rgbs();
     data.object.material = std::move(material);
@@ -596,15 +602,7 @@ class Meshcat::WebSocketPublisher {
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
       std::string message = message_stream.str();
-      if (message.size() > kMaxBackPressure) {
-        drake::log()->warn(
-            "The message describing the object at {} is too large for the "
-            "current websocket setup (size {} is greater than the max "
-            "backpressure {}).  You will either need to reduce the size of "
-            "your object/mesh/textures, or modify the code to increase the "
-            "allowance.",
-            data.path, message.size(), kMaxBackPressure);
-      }
+      CheckBackPressure(data.path, message);
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
@@ -645,15 +643,54 @@ class Meshcat::WebSocketPublisher {
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
       std::string message = message_stream.str();
-      if (message.size() > kMaxBackPressure) {
-        drake::log()->warn(
-            "The message describing the object at {} is too large for the "
-            "current websocket setup (size {} is greater than the max "
-            "backpressure {}).  You will either need to reduce the size of "
-            "your object/mesh/textures, or modify the code to increase the "
-            "allowance.",
-            data.path, message.size(), kMaxBackPressure);
-      }
+      CheckBackPressure(data.path, message);
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object() = std::move(message);
+    });
+  }
+
+  void SetTriangleMesh(std::string_view path,
+                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                       const Rgba& rgba, bool wireframe,
+                       double wireframe_line_width) {
+    DRAKE_DEMAND(std::this_thread::get_id() == main_thread_id_);
+    DRAKE_DEMAND(loop_ != nullptr);
+
+    uuids::uuid_random_generator uuid_generator{generator_};
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto geometry = std::make_unique<internal::BufferGeometryData>();
+    geometry->uuid = uuids::to_string(uuid_generator());
+    geometry->position = vertices.cast<float>();
+    geometry->faces = faces.cast<uint32_t>();
+    data.object.geometry = std::move(geometry);
+
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuids::to_string(uuid_generator());
+    material->type = "MeshPhongMaterial";
+    material->color = ToMeshcatColor(rgba);
+    material->transparent = (rgba.a() != 1.0);
+    material->opacity = rgba.a();
+    material->wireframe = wireframe;
+    material->wireframeLineWidth = wireframe_line_width;
+    material->vertexColors = false;
+    data.object.material = std::move(material);
+
+    internal::MeshData mesh;
+    mesh.uuid = uuids::to_string(uuid_generator());
+    mesh.type = "Mesh";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    loop_->defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      CheckBackPressure(data.path, message);
       app_->publish("all", message, uWS::OpCode::BINARY, false);
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object() = std::move(message);
@@ -1311,6 +1348,25 @@ void Meshcat::SetObject(std::string_view path,
   publisher_->SetObject(path, cloud, point_size, rgba);
 }
 
+void Meshcat::SetObject(std::string_view path,
+                        const TriangleSurfaceMesh<double>& mesh,
+                        const Rgba& rgba, bool wireframe,
+                        double wireframe_line_width) {
+  Eigen::Matrix3Xd vertices(3, mesh.num_vertices());
+  for (int i = 0; i < mesh.num_vertices(); ++i) {
+    vertices.col(i) = mesh.vertex(i);
+  }
+  Eigen::Matrix3Xi faces(3, mesh.num_triangles());
+  for (int i = 0; i < mesh.num_triangles(); ++i) {
+    const auto& e = mesh.element(i);
+    for (int j = 0; j < 3; ++j) {
+      faces(j, i) = e.vertex(j);
+    }
+  }
+  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+                              wireframe_line_width);
+}
+
 void Meshcat::SetLine(std::string_view path,
                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
                       double line_width, const Rgba& rgba) {
@@ -1330,6 +1386,14 @@ void Meshcat::SetLineSegments(std::string_view path,
   Eigen::Map<Eigen::Matrix3Xd> vertices(vstack.data(), 3, 2*start.cols());
   const bool kLineSegments = true;
   publisher_->SetLine(path, vertices, line_width, rgba, kLineSegments);
+}
+
+void Meshcat::SetTriangleMesh(
+    std::string_view path, const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+    const Eigen::Ref<const Eigen::Matrix3Xi>& faces, const Rgba& rgba,
+    bool wireframe, double wireframe_line_width) {
+  publisher_->SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+                              wireframe_line_width);
 }
 
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {

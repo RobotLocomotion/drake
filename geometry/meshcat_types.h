@@ -95,7 +95,7 @@ struct MaterialData {
   // is false (i.e. render as flat polygons).
   std::optional<bool> wireframe;
 
-  // For MeshBasicMateiral, controls wireframe thickness. The three.js default
+  // For MeshBasicMaterial, controls wireframe thickness. The three.js default
   // is 1.
   std::optional<double> wireframeLineWidth;
 
@@ -246,6 +246,7 @@ struct BufferGeometryData : public GeometryData {
   // deep hierarchy of dictionaries, and simply implement the packer manually.
   Eigen::Matrix3Xf position;
   Eigen::Matrix3Xf color;
+  Eigen::Matrix<uint32_t, 3, Eigen::Dynamic> faces;
 
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(msgpack::packer<std::stringstream>& o) const override {
@@ -254,7 +255,13 @@ struct BufferGeometryData : public GeometryData {
     o.pack("BufferGeometry");
     PACK_MAP_VAR(o, uuid);
     o.pack("data");
-    o.pack_map(1);
+    if (faces.cols() > 0) {
+      o.pack_map(2);
+      o.pack("index");
+      o.pack(faces);
+    } else {
+      o.pack_map(1);
+    }
     o.pack("attributes");
     if (color.cols() > 0) {
       o.pack_map(2);
@@ -454,9 +461,14 @@ struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
     if (std::is_floating_point_v<Scalar>) {
       o.pack("Float32Array");
       ext = 0x17;
-    } else if (std::is_same_v<Scalar, uint8_t>) {
+    } else if (std::is_same_v<std::remove_cv<Scalar>, uint8_t>) {
       o.pack("Uint8Array");
       ext = 0x12;
+    } else if (std::is_same_v<Scalar, uint32_t>) {
+      // TODO(russt): Using std::remove_cv<Scalar> did not work here (it failed
+      // to match).  Need to understand and resolve this.
+      o.pack("Uint32Array");
+      ext = 0x16;
     } else {
       throw std::runtime_error("Unsupported Scalar " +
                                drake::NiceTypeName::Get(typeid(Scalar)));
