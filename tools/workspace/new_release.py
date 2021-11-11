@@ -56,10 +56,6 @@ _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3",
     "pybind11",
-    # We've purposely pinned these to older revisions, as noted by comments in
-    # their repository.bzl files.
-    "fmt",
-    "spdlog",
 ]
 
 # For these repositories, we only look at tags, not releases.  For the dict
@@ -68,6 +64,7 @@ _IGNORED_REPOSITORIES = [
 # to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py": r"^(\d+.)",
+    "intel_realsense_ros": r"^(\d+\.\d+\.)",
     "pycodestyle": "",
     "ros_xacro": r"^(\d+\.\d+\.)",
 }
@@ -138,9 +135,20 @@ def _handle_github(workspace_name, gh, data):
     return old_commit, new_commit
 
 
+def _handle_buildifier(gh, data):
+    assert data["name"] == "buildifier"
+    old_version = data["version"]
+    time.sleep(0.2)  # Don't make github angry.
+    gh_repo = gh.repository("bazelbuild", "buildtools")
+    new_version = next(gh_repo.tags()).name
+    return old_version, new_version
+
+
 def _check_for_upgrades(gh, args, metadata):
     for workspace_name, data in sorted(metadata.items()):
         if workspace_name in _IGNORED_REPOSITORIES:
+            continue
+        if data.get("version_pin"):
             continue
         key = data["repository_rule_type"]
         if key == "github":
@@ -150,8 +158,12 @@ def _check_for_upgrades(gh, args, metadata):
             print("{} version {} needs manual inspection".format(
                 workspace_name, data["version"]))
             continue
+        elif workspace_name == "buildifier":
+            assert key == "manual"
+            old_commit, new_commit = _handle_buildifier(gh, data)
         elif key == "manual":
-            print("{} needs manual inspection".format(workspace_name))
+            print("{} version {} needs manual inspection".format(
+                workspace_name, data.get("version", "???")))
             continue
         else:
             raise RuntimeError("Bad key " + key)

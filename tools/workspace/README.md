@@ -8,8 +8,8 @@ third-party software, as cited by Drake's top-level `/WORKSPACE` file.
 Files directly in the `//tools/workspace` package are generic helpers,
 unrelated to any one third-party library.  Files in sub-packages such as
 `//tools/workspace/eigen` are specific to their third-party software; the
-sub-package is named to match that software's corresponding entry in the
-top-level `/WORKSPACE` file.
+sub-package is named to match that software's corresponding name in the
+`//tools/workspace/default.bzl` file.
 
 Files named `BUILD.bazel` denote the package structure within our sub-folders;
 in the case of the `//tools/workspace/...` packages, these are largely just
@@ -26,7 +26,85 @@ Drake is using:
   https://docs.bazel.build/versions/master/be/workspace.html
   https://docs.bazel.build/versions/master/skylark/repository_rules.html
 
-# Changing the version of third-party software
+# Semi-automated monthly upgrades
+
+Drake maintainers will use the ``bazel-bin/tools/workspace/new_release`` tool
+to report and upgrade any out-of-date externals.  The process is as follows:
+
+Begin from an up-to-date checkout of Drake ``master``.
+
+Read the documentation in ``//tools/workspace:new_release``.  In particular,
+note that only certain operating systems are supported by that tool.  If you
+haven't yet created GitHub API token per those docs, do that now.
+
+Open a new branch:
+
+```
+  git checkout -b upgrades
+```
+
+Run the "upgrades needed" report.  Copy its output into a temporary text file
+so that you can easily refer back to it as you proceed.
+
+```
+  bazel build //tools/workspace:new_release
+  bazel-bin/tools/workspace/new_release
+```
+
+For each external in the report, add a commit that upgrades it, as follows:
+
+Run the script to perform one upgrade (for some external "foo"):
+
+```
+  bazel-bin/tools/workspace/new_release --upgrade=foo
+```
+
+If the automated update doesn't succeed, then you'll need to make the edits
+manually.  Ask for help in drake developers slack channel for ``#build``.
+
+If the automated update succeeded, then inspect the diffs in your editor.
+Some diffs will have an instructive comment nearby, e.g., "If you change
+this commit, then you need to do X, Y, Z afterward."  Follow any advice
+that you find.
+
+Run ``bazel test --config lint //...`` as a sanity check of the edits.
+
+Once all edits are complete, add the commit using the instructions that
+were printed by ``new_release``, e.g.:
+
+```
+  git add tools/workspace/rules_python/repository.bzl
+  git commit -m'[workspace] Upgrade rules_python to latest release A.B.C'
+```
+
+Be sure to add any extra files that you edited, too.
+
+Repeat this process for all upgrades.  You can re-run the ``new_release``
+report anytime, to get the remaining items that need attention.
+
+Each external being upgraded should have exactly one commit that does the
+upgrade, and each commit should only impact exactly one external.  If we
+find any problem with an upgrade, we need to be able to revert the commit
+for just that one external upgrade, leaving the other upgrades intact.
+
+Once all upgrades are ready, open a Drake pull request and label it
+``status: commits are properly curated``.  Open the Reviewable page and
+change the drop-down that says "Combine commits for review" to choose
+"Review each commit separately" instead.
+
+Once the all Jenkins builds of the pull request have passed,
+additionally launch a macOS build, per
+
+https://drake.mit.edu/jenkins.html#scheduling-an-on-demand-build
+
+Once the macOS build passes, assign the pull request for review.
+
+If any of the changes were out of the ordinary (i.e., if they were anything
+more than just editing the version numbers and checksums), please be sure
+that those changes are explained in the pull request overview text, so that
+your reviewer(s) can understand the context and/or reasoning behind them.
+
+# Changing the version of third-party software manually
 
 The instructions for updating third-party software differ depending on how
 Drake is obtaining that software.
@@ -35,9 +113,6 @@ Most third-party software used by Drake will be incorporated via files named
 `//tools/workspace/foo:repository.bzl` where `foo` is the name of the software
 (`boost`, `eigen`, `vtk`, etc.).  Consult that file to check which download or
 installation helper is used; find the helper in the list below to continue.
-
-Drake maintainers can use the bazel-bin/tools/workspace/new_release tool to
-report any out-of-date externals.
 
 ## Updating github_archive software versions
 
@@ -179,7 +254,6 @@ commit on a monthly basis.
 * If the pin policy is unsatisfactory for the case of some specific external,
 consult Drake's build system maintainers for advice.
 
-For Git, the mainline branch is typically `master`, whereas for Mercurial it is
-`default`.
-
-TODO(jwnimmer-tri) Write the remainder of this section.
+Mimic an existing example to complete the process, e.g., look at
+`//tools/workspace/tinyobjloader` and mimic the `repository.bzl` and
+`package.BUILD.bazel` files.
