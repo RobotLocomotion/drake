@@ -32,10 +32,10 @@ To use Drake with CLion, your Drake checkout **must** be named ``drake``.
    academic license [here](https://www.jetbrains.com/shop/eform/students).
 
 The most recent versions that we have tested for compatibility are:
-* Ubuntu 18.04
-* Bazel 4.1.0 (2021-05-21)
-* CLion 2020.1.3 (2020-07-21)
-    * Bazel plugin 2020.12.01.0.1 (2021-01-01)
+* Ubuntu 20.04 (Focal)
+* Bazel 4.2.1 (2021-08-30)
+* CLion 2021.2.3 (2021-10-14)
+    * Bazel plugin 2021.11.03.1.1 (2021-11-08)
 
 Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
 with each other.  We strongly suggest using only the versions shown above, when
@@ -51,6 +51,11 @@ Users upgrading from a previous version of CLion should do the following:
    in your user directory, typically ``~/.local/share/applications``.
 2. Uninstall the previous version of the Bazel plugin and update to the latest
    version. See [Installing the Bazel Plugin](#installing-the-bazel-plugin).
+3. Run Bazel->Sync->Non-incrementally Sync Project with BUILD Files
+4. You may need to delete cached data in ``~/.cache/bazel`` and
+   ``~/.cache/JetBrains/CLion2021.2/caches`` if you get error messages
+   complaining about old files in the cache (substitute the right version
+   number).
 
 **Note**: It is not necessary to import your project into a *new* CLion project.
 Overwriting the old project is appropriate.
