@@ -20,7 +20,7 @@ namespace internal {
 // induced by M.
 GTEST_TEST(SupernodalSolver, InterfaceTest) {
   const int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(9, 6);
+  MatrixXd J(9, 6);
 
   // clang-format off
   J << 1, 2, 0, 0, 2, 4,
@@ -51,7 +51,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd G(9, 9);
+  MatrixXd G(9, 9);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
@@ -64,12 +64,12 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  std::vector<MatrixXd> blocks_of_G(3);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -80,7 +80,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
        0, 0, 0, 0, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
@@ -104,7 +104,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
 // partition of M. We expect an exception at construction.
 GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   const int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(9, 6);
+  MatrixXd J(9, 6);
 
   // clang-format off
   J << 1, 2, 0, 0, 2, 4,
@@ -138,7 +138,7 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   get<1>(Jtriplets.at(3)) = 0;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 0);
 
-  Eigen::MatrixXd G(9, 9);
+  MatrixXd G(9, 9);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
@@ -151,12 +151,12 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  std::vector<MatrixXd> blocks_of_G(3);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -167,7 +167,7 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
        0, 0, 0, 0, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
@@ -186,7 +186,7 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
 // throws an exception if more than two blocks per row are supplied.
 GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   const int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(9, 6);
+  MatrixXd J(9, 6);
 
   // clang-format off
   J << 1, 2, 0, 0, 2, 4,
@@ -225,7 +225,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd G(9, 9);
+  MatrixXd G(9, 9);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
@@ -238,12 +238,12 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  std::vector<MatrixXd> blocks_of_G(3);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -254,7 +254,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
        0, 0, 0, 0, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
@@ -272,7 +272,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
 GTEST_TEST(SupernodalSolver,
            ColumnPartitionOfJacobianRefinesMassMatrixPartition) {
   const int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(9, 6);
+  MatrixXd J(9, 6);
 
   // clang-format off
   J << 1, 2, 0, 0, 0, 4,
@@ -310,7 +310,7 @@ GTEST_TEST(SupernodalSolver,
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd G(9, 9);
+  MatrixXd G(9, 9);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
@@ -323,12 +323,12 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  std::vector<MatrixXd> blocks_of_G(3);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -339,7 +339,7 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 0, 0, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
@@ -358,7 +358,7 @@ GTEST_TEST(SupernodalSolver,
 GTEST_TEST(SupernodalSolver,
            PartitionOfMassMatrixRefinesJacobianColumnsPartition) {
   const int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(9, 6);
+  MatrixXd J(9, 6);
 
   // clang-format off
   J << 1, 2, 0, 0, 2, 4,
@@ -389,7 +389,7 @@ GTEST_TEST(SupernodalSolver,
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd G(9, 9);
+  MatrixXd G(9, 9);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
@@ -402,12 +402,12 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  std::vector<MatrixXd> blocks_of_G(3);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -418,7 +418,7 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 0, 0, 0, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(4);
+  std::vector<MatrixXd> blocks_of_M(4);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<1, 1>(4, 4);
@@ -441,7 +441,7 @@ GTEST_TEST(SupernodalSolver,
 //     not be true.
 GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(12, 6);
+  MatrixXd J(12, 6);
 
   // Here we repeat the first three rows to emulate a duplicated contact point,
   // something a contact solver should recover from gracefully.
@@ -477,7 +477,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(9, 2);
 
-  Eigen::MatrixXd G(12, 12);
+  MatrixXd G(12, 12);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -493,13 +493,13 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(4);
+  std::vector<MatrixXd> blocks_of_G(4);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
   blocks_of_G.at(3) = G.block<3, 3>(9, 9);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -510,7 +510,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
        0, 0, 0, 0, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
@@ -527,7 +527,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
 // assumptions on the input.
 GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
   int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(12, 6);
+  MatrixXd J(12, 6);
 
   // clang-format off
   J << 1, 2, 0, 0, 2, 4,
@@ -567,7 +567,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
-  Eigen::MatrixXd G(12, 12);
+  MatrixXd G(12, 12);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -583,13 +583,13 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(4);
+  std::vector<MatrixXd> blocks_of_G(4);
   blocks_of_G.at(0) = G.block<3, 3>(0, 0);
   blocks_of_G.at(1) = G.block<3, 3>(3, 3);
   blocks_of_G.at(2) = G.block<3, 3>(6, 6);
   blocks_of_G.at(3) = G.block<3, 3>(9, 9);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -600,7 +600,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
        0, 0, 0, 0, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
@@ -627,7 +627,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   // number of patches. In this example, it happens to equal the number of
   // contact points since each patch has only a single point.
   int num_row_blocks_of_J = 3;
-  Eigen::MatrixXd J(9, 7);
+  MatrixXd J(9, 7);
 
   // clang-format off
   J << 1, 2, 0, 0, 2, 4, 4,
@@ -658,7 +658,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  Eigen::MatrixXd G(9, 9);
+  MatrixXd G(9, 9);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0,
@@ -671,12 +671,12 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
        0, 0, 0, 0, 0, 0, 1, 2, 5;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  std::vector<MatrixXd> blocks_of_G(3);
   blocks_of_G.at(0) = G.block(0, 0, 3, 3);
   blocks_of_G.at(1) = G.block(3, 3, 3, 3);
   blocks_of_G.at(2) = G.block(6, 6, 3, 3);
 
-  Eigen::MatrixXd M(7, 7);
+  MatrixXd M(7, 7);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0, 0,
@@ -688,7 +688,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
        0, 0, 0, 0, 0, 0, 1;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  std::vector<MatrixXd> blocks_of_M(3);
   blocks_of_M.at(0) = M.block(0, 0, 2, 2);
   blocks_of_M.at(1) = M.block(2, 2, 2, 2);
   blocks_of_M.at(2) = M.block(4, 4, 3, 3);
@@ -731,7 +731,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   //     (p,t) = (7,2)
   //     (p,t) = (7,3)
   //
-  Eigen::MatrixXd J(24, 48);
+  MatrixXd J(24, 48);
   // clang-format off
   J << Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, J3x6, J3x6,
        Z3x6, Z3x6, Z3x6, Z3x6, J3x6, J3x6, Z3x6, Z3x6,
@@ -769,15 +769,15 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
         2, 5, 3,
         2, 3, 4;
   // clang-format on
-  Eigen::MatrixXd G(3 * num_patches, 3 * num_patches);
-  std::vector<Eigen::MatrixXd> blocks_of_G(num_patches);
+  MatrixXd G(3 * num_patches, 3 * num_patches);
+  std::vector<MatrixXd> blocks_of_G(num_patches);
   for (int i = 0; i < num_patches; ++i) {
     G.block(3 * i, 3 * i, 3, 3) = Gb;
     blocks_of_G.at(i) = Gb;
   }
   const MatrixXd Mt = VectorXd::LinSpaced(6, 1.0, 6.0).asDiagonal();
-  Eigen::MatrixXd M = MatrixXd::Zero(6 * num_trees, 6 * num_trees);
-  std::vector<Eigen::MatrixXd> blocks_of_M(num_trees);
+  MatrixXd M = MatrixXd::Zero(6 * num_trees, 6 * num_trees);
+  std::vector<MatrixXd> blocks_of_M(num_trees);
   for (int i = 0; i < num_trees; ++i) {
     M.block(6 * i, 6 * i, 6, 6) = Mt;
     blocks_of_M.at(i) = Mt;
@@ -788,7 +788,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-12);
 
   // Construct arbitrary reference solution.
-  Eigen::VectorXd x_ref;
+  VectorXd x_ref;
   x_ref.setLinSpaced(M.rows(), -1, 1);
   solver.Factor();
   EXPECT_NEAR((solver.Solve(full_matrix_ref * x_ref) - x_ref).norm(), 0, 1e-12);
@@ -803,7 +803,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
 // block-size.
 GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   int num_row_blocks_of_J = 4;
-  Eigen::MatrixXd J(13, 6);
+  MatrixXd J(13, 6);
 
   // Here we repeat the first three rows to emulate a duplicated contact point,
   // something a contact solver should recover from gracefully.
@@ -855,7 +855,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   get<1>(Jtriplets.at(6)) = 0;
   get<2>(Jtriplets.at(6)) = J.block<1, 2>(12, 0);
 
-  Eigen::MatrixXd G(13, 13);
+  MatrixXd G(13, 13);
   // clang-format off
   G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
        2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -872,14 +872,14 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_G(5);
+  std::vector<MatrixXd> blocks_of_G(5);
   blocks_of_G.at(0) = G.block(0, 0, 3, 3);
   blocks_of_G.at(1) = G.block(3, 3, 3, 3);
   blocks_of_G.at(2) = G.block(6, 6, 3, 3);
   blocks_of_G.at(3) = G.block(9, 9, 3, 3);
   blocks_of_G.at(4) = G.block(12, 12, 1, 1);
 
-  Eigen::MatrixXd M(6, 6);
+  MatrixXd M(6, 6);
 
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
@@ -890,7 +890,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 0, 0, 0, 4;
   // clang-format on
 
-  std::vector<Eigen::MatrixXd> blocks_of_M(4);
+  std::vector<MatrixXd> blocks_of_M(4);
   blocks_of_M.at(0) = M.block<2, 2>(0, 0);
   blocks_of_M.at(1) = M.block<1, 1>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(3, 3);
