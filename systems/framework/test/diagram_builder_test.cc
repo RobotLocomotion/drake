@@ -41,6 +41,16 @@ GTEST_TEST(DiagramBuilderTest, AddNamedSystem) {
   EXPECT_EQ(c->get_name(), "c");
 }
 
+// Tests one example of ThrowIfAlreadyBuilt().
+GTEST_TEST(DiagramBuilderTest, AlreadyBuilt) {
+  DiagramBuilder<double> builder;
+  builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  auto diagram = builder.Build();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.AddSystem<Adder>(2, 2),
+      ".*DiagramBuilder may no longer be used.*");
+}
+
 // A special class to distinguish between cycles and algebraic loops. The system
 // has one input and two outputs. One output simply "echoes" the input (direct
 // feedthrough). The other output merely outputs a const value. That means, the
