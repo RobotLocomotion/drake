@@ -54,7 +54,8 @@ std::string AbstractValue::GetNiceTypeName() const {
 void AbstractValue::ThrowCastError(const std::string& requested_type) const {
   throw std::logic_error(fmt::format(
       "AbstractValue: a request to cast to '{}' failed because "
-      "the actual type was '{}'.", requested_type, GetNiceTypeName()));
+      "the actual type was '{}'.", requested_type,
+      NiceTypeName::Get(static_type_info())));
 }
 
 }  // namespace drake
