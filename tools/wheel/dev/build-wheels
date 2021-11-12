@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+
+# This script uses Docker to build the PyPI wheels; run with --help for
+# more details.
+
+import argparse
+import atexit
+import os
+import subprocess
+import sys
+
+from datetime import datetime, timezone
+datetime.now(timezone.utc)
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+files_to_remove = []
+images_to_remove = []
+
+tag_base = 'pip-drake'
+
+stages = ['base', 'incubator', 'clean', 'wheel']
+
+targets = [
+    # Format is: python version, platform {name, version, alias}
+    # The platform alias is used for tag names
+    ('36', 'ubuntu', '18.04', 'bionic'),
+    ('37', 'ubuntu', '18.04', 'bionic'),
+    # TODO(mwoehlke-kitware) VTK 8.2 needs a patch to build against Python 3.8.
+    # ('38', 'ubuntu', '18.04'),
+]
+
+
+# -----------------------------------------------------------------------------
+def docker(*args):
+    """
+    Run a docker command; raise an exception on failure.
+    """
+    subprocess.run(['docker'] + list(args), check=True, cwd=script_dir)
+
+
+# -----------------------------------------------------------------------------
+def gripe(msg):
+    """
+    Print a message to stderr.
+    """
+    print(msg, file=sys.stderr)
+
+
+# -----------------------------------------------------------------------------
+def cleanup():
+    """
+    Remove temporary artifacts on exit.
+    """
+    for f in files_to_remove:
+        try:
+            os.unlink(f)
+        except:
+            gripe(f'Warning: failed to remove \'{f}\'?')
+    if len(images_to_remove):
+        docker('image', 'rm', *images_to_remove)
+
+
+# -----------------------------------------------------------------------------
+def create_source_tar(path, sha='HEAD'):
+    """
+    Create a tarball of the repository at the specified SHA
+    """
+    import git
+
+    root = git.cmd.Git(script_dir).rev_parse('--show-toplevel')
+    git.cmd.Git(root).archive('-o', path, sha)
+
+
+# -----------------------------------------------------------------------------
+def canonical_tag(prefix, target):
+    """
+    Return the complete tag from a target and prefix (partial tag name).
+    """
+    return f'{tag_base}:{prefix}-{target[3]}-py{target[0]}'
+
+# -----------------------------------------------------------------------------
+def build_stage(target, tag, args, stage=None):
+    """
+    Run a Docker build.
+    """
+
+    # Generate canonical tag from target.
+    tag = canonical_tag(tag, target)
+
+    # Generate extra arguments to specify what stage to build.
+    if stage is not None:
+        extra = ['--target', stage]
+    else:
+        extra = []
+
+    # Run the build.
+    print('! build', tag, extra + args)
+    docker('build', '--tag', tag, *extra, *args, script_dir)
+
+
+# -----------------------------------------------------------------------------
+def build_image(target, identifier, options):
+    """
+    Run the build for a target and (optionally) extract the wheel.
+    """
+    args = [
+        '--ssh', 'default',
+        '--build-arg', f'PYTHON={target[0][0]}.{target[0][1:]}',
+        '--build-arg', f'PLATFORM={target[1]}:{target[2]}',
+    ]
+    if not options.keep_containers:
+        args.append('--force-rm')
+
+    # Build the image.
+    if options.tag_stages:
+        for s in stages:
+            build_stage(target, s, args, stage=s)
+    else:
+        build_stage(target, identifier, args)
+
+    # Extract the wheel (if requested).
+    if not options.no_extract:
+        tag = canonical_tag(identifier, target)
+        print('! extract wheel(s) from', tag)
+
+        command = 'tar -cf - /wheel/wheelhouse/*.whl'
+        extractor = subprocess.Popen(
+            ['docker', 'run', '--rm', tag, 'bash', '-c', command],
+            stdout=subprocess.PIPE)
+        receiver = subprocess.check_output(
+            ['tar', '--strip-components=2', '-xf', '-'],
+            stdin=extractor.stdout, cwd=options.output_dir)
+        extractor.wait()
+
+
+# -----------------------------------------------------------------------------
+def main(args):
+    atexit.register(cleanup)
+
+    # Set up argument parser.
+    parser = argparse.ArgumentParser(
+        description='Build the Drake PyPI wheel(s).')
+    parser.add_argument(
+        '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
+        help='Directory into which to extract wheels')
+    parser.add_argument(
+        '-n', '--no-extract', action='store_true',
+        help='Build images but do not extract wheels')
+    parser.add_argument(
+        '-k', '--keep-containers', action='store_true',
+        help='Do not delete intermediate containers')
+    parser.add_argument(
+        '-s', '--tag-stages', action='store_true',
+        help='Permanently tag individual stages')
+    parser.add_argument(
+        '--platform', dest='platforms',
+        default=','.join(set([t[1] for t in targets])),
+        help='Platform(s) to build; separate with \',\'')
+    parser.add_argument(
+        '--python', dest='python_versions', metavar='VERSIONS',
+        default=','.join(set([t[0] for t in targets])),
+        help='Python version(s) to build; separate with \',\'')
+
+    # Parse arguments.
+    args = parser.parse_args()
+    args.python_versions = set(args.python_versions.split(','))
+
+    # Collect set of wheels to be built.
+    targets_to_build = []
+    for t in targets:
+        if t[0] in args.python_versions and t[1] in args.platforms:
+            targets_to_build.append(t)
+
+    # Check if there is anything to do.
+    if not len(targets_to_build):
+        gripe('Nothing to do! (Platform and/or Python version selection ' +
+              'resulted in an empty set of wheels)')
+        sys.exit(1)
+
+    # Generate a unique identifier for this build, if needed.
+    if args.tag_stages:
+        identifier = None
+    else:
+        salt = os.urandom(8).hex()
+        time = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+        identifier = f'{time}-{salt}'
+
+    # Generate the repository source archive.
+    source_tar = os.path.join(script_dir, 'image', 'drake-src.tar.gz')
+    create_source_tar(source_tar)
+    files_to_remove.append(source_tar)
+
+    # Enable BuildKit.
+    os.putenv('DOCKER_BUILDKIT', '1')
+
+    # Build the requested wheels.
+    for t in targets_to_build:
+        build_image(t, identifier, args)
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
