@@ -19,6 +19,16 @@ namespace systems {
 /// an input port for the time source. Otherwise, the system is created with
 /// zero input ports.
 ///
+/// @system
+/// name: Sine
+/// input_ports:
+/// - "[if not simulation-time-based] t"
+/// output_ports:
+/// - y
+/// - ẏ
+/// - ÿ
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

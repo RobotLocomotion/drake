@@ -35,6 +35,14 @@ namespace systems {
 /// Note: This will not be as performant as writing your own LeafSystem.
 /// It is meant primarily for rapid prototyping.
 ///
+/// @system
+/// name: SymbolicVectorSystem
+/// input_ports:
+/// - "[maybe] input"
+/// output_ports:
+/// - "[maybe] output"
+/// @endsystem
+///
 /// @tparam_default_scalar
 template <typename T>
 class SymbolicVectorSystem final : public LeafSystem<T> {

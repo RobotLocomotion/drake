@@ -32,6 +32,16 @@ namespace systems {
 /// In this "variable" configuration, at least one of the input ports must be
 /// connected.
 ///
+/// @system
+/// name: Saturation
+/// input_ports:
+/// - input
+/// - "[maybe] max_value"
+/// - "[maybe] min_value"
+/// output_ports:
+/// - output
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
@@ -43,6 +53,16 @@ class Saturation final : public LeafSystem<T> {
   /// are represented by vectors of identical size and can be supplied via the
   /// max_value_port and min_value_port respectively.
   ///
+  /// @system
+  /// name: Saturation
+  /// input_ports:
+  /// - input
+  /// - max_value
+  /// - min_value
+  /// output_ports:
+  /// - output
+  /// @endsystem
+  ///
   /// @param[in] input_size sets size of the input and output ports.
   ///
   /// Please consult this class's description for the requirements of
@@ -52,6 +72,14 @@ class Saturation final : public LeafSystem<T> {
   /// Constructs a constant %Saturation system where the upper and lower
   /// values are represented by vectors of identical size supplied via this
   /// constructor.
+  ///
+  /// @system
+  /// name: Saturation
+  /// input_ports:
+  /// - input
+  /// output_ports:
+  /// - output
+  /// @endsystem
   ///
   /// @param[in] u_min the lower (vector) limit to the
   /// saturation.
