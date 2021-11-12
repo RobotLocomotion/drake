@@ -17,6 +17,14 @@ namespace systems {
 /// for the unique integer value `kᵢ` that lands the output in the desired
 /// interval.
 ///
+/// @system
+/// name : WrapToSystem
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

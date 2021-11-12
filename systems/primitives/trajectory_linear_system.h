@@ -14,6 +14,14 @@ namespace systems {
 /// A continuous- or discrete-time Linear Time-Varying system with system
 /// matrices described by trajectories.
 ///
+/// @system
+/// name: TrajectoryLinearSystem
+/// input_ports:
+/// - u0
+/// output_ports:
+/// - y0
+/// @endsystem
+///
 /// @tparam_nonsymbolic_scalar
 /// @ingroup primitive_systems
 template <typename T>
