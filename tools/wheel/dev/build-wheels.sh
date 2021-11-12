@@ -5,12 +5,26 @@
 
 set -e
 
-salt=$(dd if=/dev/urandom bs=2 count=4 | od -An -x | tr -d ' ')
+drake_source_root=$(cd "$(dirname "${BASH_SOURCE}")" &&
+  git rev-parse --show-toplevel)
+
+salt=$(dd if=/dev/urandom bs=2 count=4 status=none | od -An -x | tr -d ' ')
 id=pip-drake:$(date -u +%Y%m%d%H%M%S)-$salt
 
 export DOCKER_BUILDKIT=1
 
 ###############################################################################
+
+images_to_remove=()
+files_to_remove=()
+at_exit()
+{
+    rm -f ${files_to_remove[*]}
+    if [[ ${#images_to_remove[@]} -gt 0 ]]; then
+        docker image rm ${images_to_remove[*]}
+    fi
+}
+trap at_exit EXIT
 
 build()
 {
@@ -21,7 +35,7 @@ build()
     docker build \
         --ssh default --force-rm --tag $id \
         "$@" "$(dirname "${BASH_SOURCE}")"
-    trap "docker image rm $id" EXIT
+    images_to_remove+=($id)
 }
 
 extract()
@@ -33,7 +47,14 @@ extract()
 
 ###############################################################################
 
-# Build wheels
+# Snapshot the current Drake sources to feed to Docker.
+echo -n "Creating Drake source archive ... "
+files_to_remove+=("${drake_source_root}"/tools/wheel/dev/image/drake-src.tar.gz)
+(cd "${drake_source_root}" &&
+ git archive -o tools/wheel/dev/image/drake-src.tar.gz HEAD)
+echo "done."
+
+# Build all wheels.
 build ${id}-py36 --build-arg PYTHON=3.6 --build-arg PLATFORM=ubuntu:18.04
 extract ${id}-py36
 
