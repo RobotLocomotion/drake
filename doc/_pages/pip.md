@@ -7,10 +7,14 @@ title: Installation via Pip
 Drake publishes pre-compiled binaries as
 [PyPI wheel packages](https://pypi.org/project/drake/).  Refer to
 [Supported Configurations](/installation.html#supported-configurations)
-for additional compatibility details.
+for additional compatibility details.  Drake wheels require a `pip`
+version of `pip >= 20.3`.
 
 To learn about other installation methods, refer to
 [Installation and Quickstart](/installation.html).
+
+If you experience any problems or questions with Drake, please
+[ask for help on Stack Overflow](/getting_help.html).
 
 <!--
 TODO(#15961) The wheels do not yet incorporate SNOPT.
