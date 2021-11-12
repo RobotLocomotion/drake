@@ -41,11 +41,13 @@ RUN /image/build-vtk.sh
 
 FROM incubator
 
-ENV REPO=https://api.github.com/repos/robotlocomotion/drake
+ARG REPO=https://github.com/RobotLocomotion/drake
+ARG REPO_ARCHIVE=${REPO}/archive/refs/heads/master.tar.gz
 
 ADD image/build-drake.sh /image/
 ADD image/pip-drake.patch /image/
-ADD ${REPO}/git/refs/heads/master /tmp/drake.sha
+
+ADD ${REPO_ARCHIVE} /drake/
 
 RUN --mount=type=ssh \
     /image/build-drake.sh

@@ -6,11 +6,12 @@
 
 set -e
 
-wheel_version="$1"
-wheel_dir="$(readlink -f "${2:-$PWD}")"
-test_root="$(readlink -f "$(dirname "${BASH_SOURCE}")")"
-
 ###############################################################################
+
+canonicalize()
+{
+    perl -e 'use Cwd;print Cwd::abs_path(shift) . "\n";' -- "$@"
+}
 
 test_wheel()
 {
@@ -32,6 +33,10 @@ test_wheel()
 }
 
 ###############################################################################
+
+wheel_version="$1"
+wheel_dir="$(canonicalize "${2:-$PWD}")"
+test_root="$(canonicalize "$(dirname "${BASH_SOURCE}")")"
 
 if [ -z "$wheel_version" ]; then
     echo "Usage: $0 <version> [<path to wheels>]" >&2

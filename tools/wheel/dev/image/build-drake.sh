@@ -2,11 +2,11 @@
 
 set -e
 
-cd /
-
-git clone https://github.com/RobotLocomotion/drake
-
 cd /drake
+
+if [ $(ls | wc -l) -eq 1 ] && [ -f *.tar.gz ]; then
+    tar --strip-components=1 -xf *.tar.gz
+fi
 
 git apply < /image/pip-drake.patch
 
