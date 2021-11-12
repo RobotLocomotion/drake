@@ -52,9 +52,17 @@ std::string AbstractValue::GetNiceTypeName() const {
 }
 
 void AbstractValue::ThrowCastError(const std::string& requested_type) const {
+  const auto dynamic_type = GetNiceTypeName();
+  const auto static_type = NiceTypeName::Get(static_type_info());
+  if (dynamic_type != static_type) {
+    throw std::logic_error(fmt::format(
+         "AbstractValue: a request to cast to '{}' failed because the value "
+         "was created using the static type '{}' (with a dynamic type of "
+         "'{}').", requested_type, static_type, dynamic_type));
+  }
   throw std::logic_error(fmt::format(
-      "AbstractValue: a request to cast to '{}' failed because "
-      "the actual type was '{}'.", requested_type, GetNiceTypeName()));
+     "AbstractValue: a request to cast to '{}' failed because the value "
+     "was created using the static type '{}'.", requested_type, static_type));
 }
 
 }  // namespace drake
