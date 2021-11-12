@@ -717,12 +717,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
           1, 2, 3, 4, 5, 6;
   // clang-format on
   const MatrixXd Z3x6 = MatrixXd::Zero(3, 6);
-  // Three patches:
-  //  - Patch 1: 1 point.
-  //  - Patch 2: 2 points.
-  //  - Patch 3: 1 point. Total of 12 rows. Three trees of six dofs each = 18.
-  //    These are the blocks (and they are all of size 3x6):
-  //
+  // There are 8 patches of size 3x6 located at:
   //     (p,t) = (0,6)
   //     (p,t) = (0,7)
   //     (p,t) = (1,4)
@@ -744,7 +739,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
        J3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6,
        Z3x6, Z3x6, Z3x6, Z3x6, J3x6, Z3x6, Z3x6, Z3x6,
        Z3x6, Z3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6,
-       0.6*J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6,
+       J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6,
        Z3x6, Z3x6, J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6;
   // clang-format on
   std::vector<BlockMatrixTriplet> Jtriplets;
@@ -763,7 +758,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   // Patch 5:
   Jtriplets.push_back({5, 2, J3x6});
   // Patch 6:
-  Jtriplets.push_back({6, 0, 0.6 * J3x6});
+  Jtriplets.push_back({6, 0, J3x6});
   Jtriplets.push_back({6, 1, J3x6});
   // Patch 7:
   Jtriplets.push_back({7, 2, J3x6});
