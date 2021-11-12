@@ -8,6 +8,8 @@ set -e
 salt=$(dd if=/dev/urandom bs=2 count=4 | od -An -x | tr -d ' ')
 id=pip-drake:$(date -u +%Y%m%d%H%M%S)-$salt
 
+export DOCKER_BUILDKIT=1
+
 ###############################################################################
 
 build()
@@ -16,7 +18,9 @@ build()
     shift 1
 
     # Remove --force-rm if you need to inspect artifacts of a failed build
-    docker build --force-rm --tag $id "$@" "$(dirname "${BASH_SOURCE}")"
+    docker build \
+        --ssh default --force-rm --tag $id \
+        "$@" "$(dirname "${BASH_SOURCE}")"
     trap "docker image rm $id" EXIT
 }
 
