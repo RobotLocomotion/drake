@@ -16,9 +16,9 @@ namespace systems {
  * @system
  * name: LinearTransformDensity
  * input_ports:
- * - w_in (random signal)
- * - A (matrix)
- * - b (vector, optional)
+ * - w_in
+ * - A
+ * - b
  * output_ports:
  * - w_out
  * - w_out_density

@@ -13,9 +13,9 @@ namespace systems {
 /// @system
 /// name: Adder
 /// input_ports:
-/// - input(0)
+/// - u0
 /// - ...
-/// - input(N-1)
+/// - u(N-1)
 /// output_ports:
 /// - sum
 /// @endsystem

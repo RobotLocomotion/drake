@@ -16,6 +16,7 @@ namespace systems {
 ///
 /// @tparam_nonsymbolic_scalar
 /// @ingroup primitive_systems
+/// @see TimeVaryingLinearSystem
 template <typename T>
 class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
  public:

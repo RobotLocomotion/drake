@@ -10,7 +10,7 @@ namespace systems {
 // function approximators if/when that set of tools comes online (see
 // corresponding TODO in drake/math/barycentric.h).
 
-/// A (stateless) vector system implemented as a multi-linear (barycentric)
+/// A (stateless) VectorSystem implemented as a multi-linear (barycentric)
 /// interpolation on a mesh over the inputs.
 ///
 /// This has many potential uses, including representing the policies that are
@@ -20,6 +20,7 @@ namespace systems {
 /// @tparam_double_only
 ///
 /// @see math::BarycentricMesh
+/// @see VectorSystem
 template <typename T>
 class BarycentricMeshSystem final : public VectorSystem<T> {
   // TODO(russt): Could generalize this to systems with state.

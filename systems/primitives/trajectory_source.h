@@ -18,6 +18,7 @@ namespace systems {
 ///
 /// @tparam_double_only
 /// @ingroup primitive_systems
+/// @see SingleOutputVectorSource
 template <typename T>
 class TrajectorySource final : public SingleOutputVectorSource<T> {
  public:

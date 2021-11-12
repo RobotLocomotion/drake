@@ -15,6 +15,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
+/// @see SingleOutputVectorSource
 template <typename T>
 class ConstantVectorSource final : public SingleOutputVectorSource<T> {
  public:

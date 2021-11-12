@@ -19,6 +19,22 @@ namespace systems {
 /// an input port for the time source. Otherwise, the system is created with
 /// zero input ports.
 ///
+/// @system
+/// name: Sine
+/// input_ports:
+/// - <span style="color:gray">u0</span>
+/// output_ports:
+/// - y0
+/// - y1
+/// - y2
+/// @endsystem
+///
+/// Port `u0` is present if and only if the constructor parameter
+/// `is_time_based` is false.
+///
+/// Port `y0` emits the value `y`; port `y1` emits the first derivative; port
+/// `y2` emits the second derivative.
+///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>

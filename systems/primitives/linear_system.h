@@ -97,6 +97,7 @@ class LinearSystem : public AffineSystem<T> {
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
+/// @see TimeVaryingAffineSystem
 template <typename T>
 class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
  public:

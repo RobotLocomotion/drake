@@ -30,6 +30,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
+/// @see VectorSystem
 template <typename T>
 class FirstOrderLowPassFilter final : public VectorSystem<T> {
  public:
