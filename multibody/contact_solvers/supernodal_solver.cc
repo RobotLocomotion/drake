@@ -106,8 +106,6 @@ std::vector<int> GetMassMatrixStartingColumn(
 class SuperNodalSolver::CliqueAssembler final
     : public ::conex::SupernodalAssemblerBase {
  public:
-  // Fills the matrix sub_matrix(M) + J^T_i G_i J_i.
-
   // Helper functions for specifying G_i
   void SetWeightMatrixIndex(int start, int end) {
     weight_start_ = start;
@@ -128,7 +126,7 @@ class SuperNodalSolver::CliqueAssembler final
   int NumRows() { return jacobian_row_data_.at(0).rows(); }
 
   // Copies in J_i and allocates memory for temporaries.
-  void Initialize(const std::vector<Eigen::MatrixXd>&& jacobian_row);
+  void Initialize(std::vector<Eigen::MatrixXd>&& jacobian_row);
 
  private:
   void SetDenseData() override;
@@ -193,7 +191,7 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
   }
 }
 
-// The constructor is defined in the source so we can use an incomplete
+// The destructor is defined in the source so we can use an incomplete
 // definition when storing unique pointers of CliqueAssembler within a
 // std::vector.
 SuperNodalSolver::~SuperNodalSolver() {}
@@ -465,14 +463,14 @@ Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() const {
 }
 
 void SuperNodalSolver::CliqueAssembler::Initialize(
-    const std::vector<Eigen::MatrixXd>&& r) {
-  jacobian_row_data_ = std::move(r);
+    std::vector<Eigen::MatrixXd>&& r) {
   G_times_J_.resize(r.size());
   int num_vars = 0;
-  for (size_t j = 0; j < jacobian_row_data_.size(); ++j) {
+  for (size_t j = 0; j < r.size(); ++j) {
     num_vars += r.at(j).cols();
     G_times_J_.at(j).resize(r.at(j).rows(), r.at(j).cols());
   }
+  jacobian_row_data_ = std::move(r);
 
   SupernodalAssemblerBase::SetNumberOfVariables(num_vars);
   const int size = SizeOf(SupernodalAssemblerBase::submatrix_data_);

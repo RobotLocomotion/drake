@@ -52,37 +52,34 @@ class SuperNodalSolver {
   //   Number of row blocks in the matrix J.
   // @param jacobian_blocks
   //   A vector of triplets (p, t, Jₚₜ) specifying the non-zero blocks of the
-  //   Jacobian matrix.  The number of block columns num_block_col is inferred
+  //   Jacobian matrix.  The number of block columns nₜ is inferred
   //   from the largest column index t in the vector of triplets (p, t, Jₚₜ).
   //
   //   An exception is thrown if any of the following conditions fail:
   //
   //     1) There is at least one triplet  (p, t, Jₚₜ) with column index t for
-  //     each t \in
-  //     \{0, 1,  num_block_col - 1\}.
+  //     each t ∈ {1,nₜ}.
   //
   //     2) There is at most two triplets (p, t, Jₚₜ) with the same row
   //     index p.
   //
   //
   // @param mass_matrices
-  //   Specifies a block-diagonal mass matrix M.  The block columns of the mass
-  //   matrix and the block columns of the Jacobian J both induced a partition
-  //   of the set {0, 1, ..., num_vars}, where num_vars denotes the number
-  //   of scalar decision variables. The partition induced by M
-  //   must refine the partition induced by J, otherwise an exception is thrown.
-  //   (See https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
+  //   Specifies a block-diagonal mass matrix M of size nᵥ x nᵥ.  The block
+  //   columns of the mass matrix and the block columns of the Jacobian J both
+  //   induce a partition of the set {0, 1, ..., nᵥ}, where nᵥ denotes the
+  //   number of scalar decision variables. The partition induced by M must
+  //   refine the partition induced by J, otherwise an exception is thrown. (See
+  //   https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
   //   refinement.)  For instance, if J has block structure
   //
-  //   J = |J1  0|
-  //       |J2 J3|
+  //   J = |J₁  0|
+  //       |J₂ J₃|
   //
-  //  Then we require existence of n and m such that
+  //  Then we require existence of n such that
   //
-  //    num_cols(J1) = \sum^n_{i=1} num_cols (M_i),
-  //    num_cols(J3) = \sum^{m}_{i=n+1} num_cols (M_i)
-  //
-  //  where m = M.size().
+  //    num_cols(J₁) =  ∑num_cols(Mₜ), t = 1…n
+  //    num_cols(J₃) =  ∑num_cols(Mₜ), t = n+1…nᵥ
   //
   //  If this condition fails, an exception is thrown.
   SuperNodalSolver(int num_jacobian_row_blocks,
@@ -121,7 +118,7 @@ class SuperNodalSolver {
 
  private:
   // This class is responsible for filling a dense matrix of the form
-  // sub_matrix(M) + J^T_i G_i J_i where J_i is a block row of the Jacobian and
+  // sub_matrix(M) +  Jᵀᵢ Gᵢ Jᵢ where Jᵢ is a block row of the Jacobian and
   // sub_matrix(M) is specified by AssignMassMatrix.
   class CliqueAssembler;
 
