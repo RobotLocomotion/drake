@@ -20,6 +20,7 @@ DiagramBuilder<T>::~DiagramBuilder() {}
 
 template <typename T>
 std::vector<const System<T>*> DiagramBuilder<T>::GetSystems() const {
+  ThrowIfAlreadyBuilt();
   std::vector<const System<T>*> result;
   result.reserve(registered_systems_.size());
   for (const auto& system : registered_systems_) {
@@ -30,6 +31,7 @@ std::vector<const System<T>*> DiagramBuilder<T>::GetSystems() const {
 
 template <typename T>
 std::vector<System<T>*> DiagramBuilder<T>::GetMutableSystems() {
+  ThrowIfAlreadyBuilt();
   std::vector<System<T>*> result;
   result.reserve(registered_systems_.size());
   for (const auto& system : registered_systems_) {
@@ -42,6 +44,7 @@ template <typename T>
 void DiagramBuilder<T>::Connect(
     const OutputPort<T>& src,
     const InputPort<T>& dest) {
+  ThrowIfAlreadyBuilt();
   InputPortLocator dest_id{&dest.get_system(), dest.get_index()};
   OutputPortLocator src_id{&src.get_system(), src.get_index()};
   ThrowIfSystemNotRegistered(&src.get_system());
@@ -85,6 +88,7 @@ void DiagramBuilder<T>::Connect(
 
 template <typename T>
 void DiagramBuilder<T>::Connect(const System<T>& src, const System<T>& dest) {
+  ThrowIfAlreadyBuilt();
   DRAKE_THROW_UNLESS(src.num_output_ports() == 1);
   DRAKE_THROW_UNLESS(dest.num_input_ports() == 1);
   Connect(src.get_output_port(0), dest.get_input_port(0));
@@ -92,6 +96,7 @@ void DiagramBuilder<T>::Connect(const System<T>& src, const System<T>& dest) {
 
 template <typename T>
 void DiagramBuilder<T>::Cascade(const System<T>& src, const System<T>& dest) {
+  ThrowIfAlreadyBuilt();
   Connect(src, dest);
 }
 
@@ -99,6 +104,7 @@ template <typename T>
 InputPortIndex DiagramBuilder<T>::ExportInput(
     const InputPort<T>& input,
     std::variant<std::string, UseDefaultName> name) {
+  ThrowIfAlreadyBuilt();
   const InputPortIndex diagram_port_index = DeclareInput(input, name);
   ConnectInput(diagram_port_index, input);
   return diagram_port_index;
@@ -135,6 +141,7 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
 template <typename T>
 void DiagramBuilder<T>::ConnectInput(
     const std::string& diagram_port_name, const InputPort<T>& input) {
+  ThrowIfAlreadyBuilt();
   DRAKE_THROW_UNLESS(diagram_input_indices_.count(diagram_port_name));
   ConnectInput(diagram_input_indices_[diagram_port_name], input);
 }
@@ -142,6 +149,7 @@ void DiagramBuilder<T>::ConnectInput(
 template <typename T>
 void DiagramBuilder<T>::ConnectInput(
     InputPortIndex diagram_port_index, const InputPort<T>& input) {
+  ThrowIfAlreadyBuilt();
   InputPortLocator id{&input.get_system(), input.get_index()};
   ThrowIfInputAlreadyWired(id);
   ThrowIfSystemNotRegistered(&input.get_system());
@@ -195,6 +203,7 @@ template <typename T>
 OutputPortIndex DiagramBuilder<T>::ExportOutput(
     const OutputPort<T>& output,
     std::variant<std::string, UseDefaultName> name) {
+  ThrowIfAlreadyBuilt();
   ThrowIfSystemNotRegistered(&output.get_system());
   OutputPortIndex return_id(output_port_ids_.size());
   output_port_ids_.push_back(
@@ -214,23 +223,34 @@ OutputPortIndex DiagramBuilder<T>::ExportOutput(
 
 template <typename T>
 std::unique_ptr<Diagram<T>> DiagramBuilder<T>::Build() {
-  std::unique_ptr<Diagram<T>> diagram(new Diagram<T>(Compile()));
-  return diagram;
+  ThrowIfAlreadyBuilt();
+  return std::unique_ptr<Diagram<T>>(new Diagram<T>(Compile()));
 }
 
 template <typename T>
 void DiagramBuilder<T>::BuildInto(Diagram<T>* target) {
+  ThrowIfAlreadyBuilt();
   target->Initialize(Compile());
 }
 
 template <typename T>
 bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
+  ThrowIfAlreadyBuilt();
   InputPortLocator id{&port.get_system(), port.get_index()};
   if (this->connection_map_.count(id) > 0 ||
       this->diagram_input_set_.count(id) > 0) {
     return true;
   }
   return false;
+}
+
+template <typename T>
+void DiagramBuilder<T>::ThrowIfAlreadyBuilt() const {
+  if (already_built_) {
+    throw std::logic_error(fmt::format(
+        "DiagramBuilder: Build() or BuildInto() has already been called to "
+        "create a Diagram; this DiagramBuilder may no longer be used."));
+  }
 }
 
 template <typename T>
@@ -411,6 +431,8 @@ std::unique_ptr<typename Diagram<T>::Blueprint> DiagramBuilder<T>::Compile() {
   blueprint->output_port_names = output_port_names_;
   blueprint->connection_map = connection_map_;
   blueprint->systems = std::move(registered_systems_);
+
+  already_built_ = true;
 
   return blueprint;
 }
