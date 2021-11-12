@@ -1125,6 +1125,34 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds an L2 norm cost |Ax+b|₂ (notice this cost is not quadratic since we
+   * don't take the square of the L2 norm).
+   * @note Currently no solver supports kL2NormCost, and the user will
+   * receive an error message if they add L2NormCost and call Solve().
+   */
+  // TODO (hongkai.dai): support L2NormCost in each solver.
+  Binding<L2NormCost> AddCost(const Binding<L2NormCost>& binding);
+
+  /**
+   * Adds an L2 norm cost |Ax+b|₂
+   * @pydrake_mkdoc_identifier{3args_A_b_vars}
+   */
+  Binding<L2NormCost> AddL2NormCost(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds an L2 norm cost |Ax+b|₂
+   * @pydrake_mkdoc_identifier{3args_A_b_vars_list}
+   */
+  Binding<L2NormCost> AddL2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                                    const Eigen::Ref<const Eigen::VectorXd>& b,
+                                    const VariableRefList& vars) {
+    return AddL2NormCost(A, b, ConcatenateVariableRefList(vars));
+  }
+
+  /**
    * Adds a cost term in the polynomial form.
    * @param e A symbolic expression in the polynomial form.
    * @return The newly created cost and the bound variables.
@@ -2780,6 +2808,11 @@ class MathematicalProgram {
     return quadratic_costs_;
   }
 
+  /** Getter for l2norm costs. */
+  const std::vector<Binding<L2NormCost>>& l2norm_costs() const {
+    return l2norm_costs_;
+  }
+
   /** Getter for linear constraints. */
   const std::vector<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
@@ -3193,6 +3226,7 @@ class MathematicalProgram {
   std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
   std::vector<Binding<LinearCost>> linear_costs_;
+  std::vector<Binding<L2NormCost>> l2norm_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_

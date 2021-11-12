@@ -28,6 +28,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/program_attribute.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/test/generic_trivial_constraints.h"
@@ -2510,7 +2511,7 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
   EXPECT_FALSE(cost10.evaluator()->is_convex());
 }
 
-GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
+GTEST_TEST(TestMathematicalProgram, Test2NormSquaredCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
@@ -2540,6 +2541,39 @@ GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
 
     x0 += Eigen::Vector2d::Constant(2);
   }
+}
+
+GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  Eigen::Matrix2d A;
+  A << 1, 2, 3, 4;
+  Eigen::Vector2d b(2, 3);
+
+  auto obj1 =
+      prog.AddCost(Binding<L2NormCost>(std::make_shared<L2NormCost>(A, b), x));
+  EXPECT_GT(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
+            0);
+  EXPECT_EQ(prog.l2norm_costs().size(), 1u);
+  EXPECT_EQ(prog.GetAllCosts().size(), 1u);
+
+  auto obj2 = prog.AddL2NormCost(A, b, x);
+  EXPECT_EQ(prog.l2norm_costs().size(), 2u);
+
+  prog.RemoveCost(obj1);
+  prog.RemoveCost(obj2);
+  EXPECT_EQ(prog.l2norm_costs().size(), 0u);
+  EXPECT_EQ(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
+            0u);
+
+  prog.AddL2NormCost(A, b, {x.head<1>(), x.tail<1>()});
+  EXPECT_EQ(prog.l2norm_costs().size(), 1u);
+  EXPECT_GT(prog.required_capabilities().count(ProgramAttribute::kL2NormCost),
+            0u);
+
+  auto new_prog = prog.Clone();
+  EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
 }
 
 // Helper function for ArePolynomialIsomorphic.
