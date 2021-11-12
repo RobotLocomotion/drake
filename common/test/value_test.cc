@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
@@ -544,6 +545,46 @@ GTEST_TEST(ValueTest, NonTypeTemplateParameter) {
   EXPECT_THROW(foo.get_value<T2>(), std::exception);
   EXPECT_THROW(foo.get_value<int>(), std::exception);
   EXPECT_THROW(foo.SetFrom(bar_value), std::exception);
+}
+
+// When a cast fails, the error message should report the actual types found
+// not to match. The request must match the static type of the Value container,
+// not the dynamic possibly-more-derived type of the contained value. When the
+// static and dynamic types differ, display both. See #15434.
+GTEST_TEST(ValueTest, TypesInBadCastMessage) {
+  using MyVector1d = systems::MyVector<double, 1>;
+
+  {
+    // Make a base-typed value container with a more-derived value inside.
+    auto value =
+        std::make_unique<Value<BasicVector<double>>>(MyVector1d{});
+    AbstractValue& abstract = *value;
+
+    // This request looks like it should work, but doesn't. The error message
+    // should indicate why.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        abstract.get_value<MyVector1d>(),
+        ".*request.*MyVector.*static.*BasicVector.*"
+        "dynamic.*MyVector.*'\\)\\.$");
+
+    // This is the proper request type.
+    DRAKE_EXPECT_NO_THROW(abstract.get_value<BasicVector<double>>());
+  }
+
+  {
+    // Make a value container that doesn't have the possibility of containing
+    // derived types.
+    Value<int> value;
+    AbstractValue& abstract = value;
+
+    // The error message in this case can be simpler. Test note: the regular
+    // expression here specifically rejects parentheses near the end of the
+    // line, to exclude the more elaborate error message matched in the case
+    // above.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        abstract.get_value<double>(),
+        ".*request.*double.*static.*int'\\.$");
+  }
 }
 
 }  // namespace test
