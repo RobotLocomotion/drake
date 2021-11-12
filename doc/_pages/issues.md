@@ -97,6 +97,11 @@ Every issue must have at most one ``component`` label. The components are:
   usually in ``drake/multibody``.
   * typical team: dynamics
 
+* ``softsim fem``
+  * Deformable body simulation using Finite Element Method (FEM) usually in
+  ``drake/multibody/fem``.
+  * typical team: dynamics
+
 * ``pydrake``
   * Python API and documentation under ``//bindings/pydrake`` (and
   its supporting Starlark macros), the ``RobotLocomotion/pybind11`` fork, etc.
