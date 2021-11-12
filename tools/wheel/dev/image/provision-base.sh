@@ -5,6 +5,10 @@ set -e
 BAZEL_VERSION=4.2.1
 BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
+# Fix ssh permissions
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/known_hosts
+
 # Install prerequisites
 apt-get -y update
 apt-get -y upgrade
@@ -16,7 +20,7 @@ apt-get -y install --no-install-recommends \
     gcc g++ gfortran libgfortran-7-dev \
     libclang-9-dev clang-format-9 \
     git cmake ninja-build pkg-config \
-    yasm file wget unzip zip
+    yasm file wget unzip zip ssh
 
 apt-get -y install --no-install-recommends \
     libglib2.0-dev libnlopt-dev \
