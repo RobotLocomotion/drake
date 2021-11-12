@@ -13,7 +13,7 @@ chrpath()
     done
 }
 
-# TODO most of this should move to bazel
+# TODO(mwoehlke-kitware) Most of this should move to Bazel.
 mkdir -p /wheel/drake
 mkdir -p /wheel/pydrake/lib
 mkdir -p /wheel/pydrake/share/drake
@@ -32,7 +32,8 @@ cp -r -t /wheel/pydrake/lib \
 cp -r -t /wheel/pydrake/doc \
     /opt/drake-dependencies/licenses/*
 
-# TODO we need a different way of shipping non-arch files (examples, models)
+# TODO(mwoehlke-kitware) We need a different way of shipping non-arch files
+# (examples, models).
 cp -r -t /wheel/pydrake/share/drake \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
     /opt/drake/share/drake/package.xml \
@@ -40,8 +41,9 @@ cp -r -t /wheel/pydrake/share/drake \
     /opt/drake/share/drake/geometry \
     /opt/drake/share/drake/manipulation \
 
-# TODO we need to remove these to keep the wheel from being too large, but (per
-# above), the whole of share/drake shouldn't be in the wheel
+# TODO(mwoehlke-kitware) We need to remove these to keep the wheel from being
+# too large, but (per above), the whole of share/drake shouldn't be in the
+# wheel.
 rm /wheel/pydrake/share/drake/examples/kuka_iiwa_arm/kuka_plan_runner
 rm /wheel/pydrake/share/drake/examples/kuka_iiwa_arm/kuka_simulation
 rm /wheel/pydrake/share/drake/manipulation/models/ycb/meshes/*.png

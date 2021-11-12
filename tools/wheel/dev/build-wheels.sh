@@ -17,7 +17,7 @@ build()
     local id=$1
     shift 1
 
-    # Remove --force-rm if you need to inspect artifacts of a failed build
+    # Remove --force-rm if you need to inspect artifacts of a failed build.
     docker build \
         --ssh default --force-rm --tag $id \
         "$@" "$(dirname "${BASH_SOURCE}")"

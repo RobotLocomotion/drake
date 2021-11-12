@@ -38,7 +38,7 @@ if [ -z "$wheel_version" ]; then
     exit 1
 fi
 
-# Test wheels
+# Test all wheels.
 test_wheel 36 ubuntu:18.04 3.6
 test_wheel 37 ubuntu:18.04 3.7
 
