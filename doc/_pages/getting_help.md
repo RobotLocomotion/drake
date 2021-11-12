@@ -19,8 +19,10 @@ to see if your issue has been encountered by someone else before.
 If you know your question is a bug or feature request, please
 [post a GitHub issue](https://github.com/RobotLocomotion/drake/issues/new).
 
-Otherwise, if you are seeking assistance (e.g. tutorials or a brief example),
-please [post a question on StackOverflow](https://stackoverflow.com/questions/ask?tags=drake)
+Otherwise, if you are seeking troubleshooting advice or other assistance with
+how to apply Drake to specific purposes (e.g., tutorials or a brief example),
+then please
+[post a question on StackOverflow](https://stackoverflow.com/questions/ask?tags=drake)
 with the ``drake`` tag.
 
 If you are actively developing with Drake and may need more active discussions
@@ -35,15 +37,19 @@ If you wish to contribute a patch, please see how to [submit a pull request](/de
 # Helpful Information
 
 When reporting an issue, please consider providing the following information
-(*examples in italics*, ``helper command in monospace``):
+(``helper command in monospace``):
 
-* Operating system (*Ubuntu 18.04, macOS Monterey*)
-* Language (C++, [Python](/python_bindings.html))
-    * C++ compiler (*GCC 7.5.0, GCC 9.3.0, Clang 6.0.0*)
-    * Python version (*Python 3.6.7*)
-    * Python distribution (*apt, homebrew*)
+* Operating system (e.g., Ubuntu 18.04 or macOS Monterey)
+* Installation method (e.g., pip, apt, binary tar.gz, docker image, or
+  rebuilding from source)
+* Language you are using (C++ or [Python](/python_bindings.html))
+    * If using C++:
+      * C++ compiler (e.g., GCC 7.5.0, GCC 9.3.0, Clang 6.0.0)
+    * If using Python:
+      * Python version (e.g., Python 3.6.7)
+      * Python distribution (e.g., Ubuntu apt, macOS homebrew)
 * If building from source:
-    * Build system (Bazel, CMake)
+    * Build system (Bazel or CMake)
         * Bazel version (``which bazel; bazel version``)
         * Bazel C++ compiler (``bazel run @drake//common:print_host_settings``)
         * CMake version (``which cmake; cmake --version``)
@@ -64,9 +70,3 @@ When reporting an issue, please consider providing the following information
           !cat /opt/drake/share/doc/drake/VERSION.TXT
 
       The output should look something like ``YYYYMMDDHHMMSS <git-sha>``.
-
-# Older Sources
-
-Some information was previously on a
-[mailing list](http://mailman.mit.edu/mailman/listinfo/drake-users).
-Please do not use these resources, as they are now inactive.
