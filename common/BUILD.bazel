@@ -1421,6 +1421,7 @@ drake_cc_googletest(
         ":value",
         "//common:essential",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:my_vector",
     ],
 )
