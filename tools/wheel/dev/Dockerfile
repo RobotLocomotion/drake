@@ -1,7 +1,7 @@
 ARG PLATFORM=ubuntu:18.04
 
 # -----------------------------------------------------------------------------
-# Create a base provisioned image
+# Create a base provisioned image.
 # -----------------------------------------------------------------------------
 
 FROM ${PLATFORM} AS base
@@ -20,7 +20,7 @@ ADD image/provision-python.sh /image/
 RUN /image/provision-python.sh ${PYTHON}
 
 # -----------------------------------------------------------------------------
-# Build Drake's dependencies
+# Build Drake's dependencies.
 # -----------------------------------------------------------------------------
 
 FROM base AS incubator
@@ -36,7 +36,7 @@ ADD image/vtk-args /vtk/
 RUN /image/build-vtk.sh
 
 # -----------------------------------------------------------------------------
-# Build the Drake wheel
+# Build the Drake wheel.
 # -----------------------------------------------------------------------------
 
 FROM incubator
