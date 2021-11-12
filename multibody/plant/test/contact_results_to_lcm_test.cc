@@ -648,6 +648,7 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     const auto& pair_data = contacts_in.hydroelastic_contact_info(i);
     const auto& surface = pair_data.contact_surface();
     const auto& mesh = surface.mesh_W();
+    const auto& field = surface.e_MN();
 
     const auto& name1 = geo_to_body_map.at(surface.id_M());
     EXPECT_EQ(pair_message.body1_name, name1.body);
@@ -677,32 +678,31 @@ TYPED_TEST(ContactResultsToLcmTest, HydroContactOnly) {
     // clang-format on
 
     /* Compare meshes and pressure fields. */
-    EXPECT_EQ(pair_message.num_triangles, mesh.num_triangles());
-    EXPECT_EQ(pair_message.triangles.size(), mesh.num_triangles());
-    const auto& field = surface.e_MN();
+
+    /* Confirm vertices (count and values) and per-vertex pressure values. */
+    EXPECT_EQ(static_cast<int>(pair_message.pressure.size()),
+              mesh.num_vertices());
+    EXPECT_EQ(pair_message.num_vertices, mesh.num_vertices());
+    EXPECT_EQ(static_cast<int>(pair_message.p_WV.size()), mesh.num_vertices());
+    for (int v = 0; v < mesh.num_vertices(); ++v) {
+      const auto& point_WV = pair_message.p_WV[v];
+      const Vector3<double> p_WV_message(point_WV.x, point_WV.y, point_WV.z);
+      EXPECT_TRUE(CompareMatrices(p_WV_message, mesh.vertex(v)));
+      EXPECT_EQ(pair_message.pressure[v], field.EvaluateAtVertex(v));
+    }
+
+    /* Confirm faces. Each triangle produces a sequence that looks like:
+    // [3, i0, i1, i2] in the face data. Confirm size and contents. */
+    ASSERT_EQ(pair_message.poly_data_int_count, mesh.num_triangles() * 4);
+    ASSERT_EQ(pair_message.poly_data.size(), mesh.num_triangles() * 4);
+
+    int index = -1;
     for (int f = 0; f < mesh.num_triangles(); ++f) {
-      const auto& tri_message = pair_message.triangles[f];
-      const auto& tri_data = mesh.element(f);
-      // clang-format off
-      EXPECT_TRUE(CompareMatrices(
-          Vector3<double>(tri_message.p_WA),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(0)))));
-      EXPECT_TRUE(CompareMatrices(
-          Vector3<double>(tri_message.p_WB),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(1)))));
-      EXPECT_TRUE(CompareMatrices(
-          Vector3<double>(tri_message.p_WC),
-          ExtractDoubleOrThrow(mesh.vertex(tri_data.vertex(2)))));
-      // clang-format on
-      EXPECT_EQ(
-          tri_message.pressure_A,
-          ExtractDoubleOrThrow(field.EvaluateAtVertex(tri_data.vertex(0))));
-      EXPECT_EQ(
-          tri_message.pressure_B,
-          ExtractDoubleOrThrow(field.EvaluateAtVertex(tri_data.vertex(1))));
-      EXPECT_EQ(
-          tri_message.pressure_C,
-          ExtractDoubleOrThrow(field.EvaluateAtVertex(tri_data.vertex(2))));
+      const auto& tri = mesh.element(f);
+      ASSERT_EQ(pair_message.poly_data[++index], 3);
+      ASSERT_EQ(pair_message.poly_data[++index], tri.vertex(0));
+      ASSERT_EQ(pair_message.poly_data[++index], tri.vertex(1));
+      ASSERT_EQ(pair_message.poly_data[++index], tri.vertex(2));
     }
 
     /* Compare quadrature data. */

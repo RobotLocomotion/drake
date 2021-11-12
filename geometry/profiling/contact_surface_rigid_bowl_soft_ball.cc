@@ -48,9 +48,12 @@ namespace contact_surface {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using geometry::AddContactMaterial;
+using geometry::AddRigidHydroelasticProperties;
+using geometry::AddSoftHydroelasticProperties;
 using geometry::Box;
-using geometry::ContactSurface;
 using geometry::Capsule;
+using geometry::ContactSurface;
 using geometry::Cylinder;
 using geometry::DrakeVisualizerd;
 using geometry::FrameId;
@@ -58,8 +61,6 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::AddRigidHydroelasticProperties;
-using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
 using geometry::Mesh;
 using geometry::ProximityProperties;
@@ -74,9 +75,9 @@ using std::make_unique;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::ExplicitEulerIntegrator;
-using systems::lcm::LcmPublisherSystem;
 using systems::LeafSystem;
 using systems::Simulator;
+using systems::lcm::LcmPublisherSystem;
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds. "
@@ -262,42 +263,43 @@ class ContactResultMaker final : public LeafSystem<double> {
     msg.num_hydroelastic_contacts = num_contacts;
     msg.hydroelastic_contacts.resize(num_contacts);
 
-    auto write_double3 = [](const Vector3d& src, double* dest) {
-      dest[0] = src(0);
-      dest[1] = src(1);
-      dest[2] = src(2);
-    };
-
     for (int i = 0; i < num_contacts; ++i) {
-      lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
+      lcmt_hydroelastic_contact_surface_for_viz& surface_message =
           msg.hydroelastic_contacts[i];
+      const ContactSurface<double>& surface = contacts[i];
 
-      surface_msg.body1_name = "Id_" + to_string(contacts[i].id_M());
-      surface_msg.body2_name = "Id_" + to_string(contacts[i].id_N());
+      const auto& mesh_W = surface.mesh_W();
+      const auto& e_MN_W = surface.e_MN();
 
-      const TriangleSurfaceMesh<double>& mesh_W = contacts[i].mesh_W();
-      surface_msg.num_triangles = mesh_W.num_triangles();
-      surface_msg.triangles.resize(surface_msg.num_triangles);
+      // TODO(SeanCurtis-TRI): This currently skips the full naming and doesn't
+      //  report any dynamics (e.g., force, moment, or quadrature data).
 
-      // Loop through each contact triangle on the contact surface.
-      const auto& field = contacts[i].e_MN();
-      for (int j = 0; j < surface_msg.num_triangles; ++j) {
-        lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
-            surface_msg.triangles[j];
+      surface_message.body1_name = "Id_" + to_string(surface.id_M());
+      surface_message.body2_name = "Id_" + to_string(surface.id_N());
 
-        // Get the three vertices.
-        const auto& face = mesh_W.element(j);
-        const Vector3d& vA = mesh_W.vertex(face.vertex(0));
-        const Vector3d& vB = mesh_W.vertex(face.vertex(1));
-        const Vector3d& vC = mesh_W.vertex(face.vertex(2));
+      const int num_vertices = mesh_W.num_vertices();
+      surface_message.num_vertices = num_vertices;
+      surface_message.p_WV.resize(num_vertices);
+      surface_message.pressure.resize(num_vertices);
 
-        write_double3(vA, tri_msg.p_WA);
-        write_double3(vB, tri_msg.p_WB);
-        write_double3(vC, tri_msg.p_WC);
+      // Write vertices and per vertex pressure values.
+      for (int v = 0; v < num_vertices; ++v) {
+        const Vector3d& p_WV = mesh_W.vertex(v);
+        surface_message.p_WV[v] = {p_WV.x(), p_WV.y(), p_WV.z()};
+        surface_message.pressure[v] =
+            ExtractDoubleOrThrow(e_MN_W.EvaluateAtVertex(v));
+      }
 
-        tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
-        tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
-        tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
+      // Write faces.
+      surface_message.poly_data_int_count = mesh_W.num_triangles() * 4;
+      surface_message.poly_data.resize(surface_message.poly_data_int_count);
+      int index = -1;
+      for (int t = 0; t < mesh_W.num_triangles(); ++t) {
+        const geometry::SurfaceTriangle& tri = mesh_W.element(t);
+        surface_message.poly_data[++index] = 3;
+        surface_message.poly_data[++index] = tri.vertex(0);
+        surface_message.poly_data[++index] = tri.vertex(1);
+        surface_message.poly_data[++index] = tri.vertex(2);
       }
     }
   }
