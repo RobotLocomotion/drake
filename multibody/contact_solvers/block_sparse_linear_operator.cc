@@ -74,6 +74,12 @@ void BlockSparseLinearOperator<T>::DoAssembleMatrix(
   A_sparse->setFromTriplets(non_zeros.begin(), non_zeros.end());
 }
 
+template <typename T>
+void BlockSparseLinearOperator<T>::DoAssembleMatrix(
+    BlockSparseMatrix<T>* A) const {
+  *A = *A_;
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody

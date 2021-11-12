@@ -19,6 +19,24 @@ SystemDynamicsData<T>::SystemDynamicsData(const LinearOperator<T>* Ainv,
   DRAKE_DEMAND(v_star->size() == num_velocities());
 }
 
+template <typename T>
+SystemDynamicsData<T>::SystemDynamicsData(const LinearOperator<T>* A,
+                                          const LinearOperator<T>* Ainv,
+                                          const VectorX<T>* v_star)
+    : A_(A), Ainv_(Ainv), v_star_(v_star) {
+  DRAKE_DEMAND((Ainv != nullptr) || (A != nullptr));
+  DRAKE_DEMAND(v_star != nullptr);
+  if (A != nullptr) DRAKE_DEMAND(A->rows() == A->cols());
+  if (Ainv != nullptr) DRAKE_DEMAND(Ainv->rows() == Ainv->cols());
+  if ((Ainv != nullptr) && (A != nullptr)) {
+    DRAKE_DEMAND(A->rows() == Ainv->rows());
+    DRAKE_DEMAND(A->cols() == Ainv->cols());
+    DRAKE_DEMAND(A->rows() == A->cols());
+  }
+  nv_ = A != nullptr ? A->rows() : Ainv->rows();
+  DRAKE_DEMAND(v_star->size() == num_velocities());
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
