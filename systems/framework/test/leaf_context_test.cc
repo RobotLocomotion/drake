@@ -899,7 +899,7 @@ TEST_F(LeafContextTest, TestStateSettingSugar) {
   // Type mismatch should be caught.
   DRAKE_EXPECT_THROWS_MESSAGE(
       context_.SetAbstractState(0, std::string("hello")), std::logic_error,
-      ".*cast to.*std::string.*failed.*actual type.*int.*");
+      ".*cast to.*std::string.*failed.*static type.*int.*");
 }
 
 // Check that hidden internal functionality needed by Simulator::Initialize()
