@@ -94,6 +94,8 @@ std::string to_string(const ProgramAttribute& attr) {
       return "PositiveSemidefiniteConstraint";
     case ProgramAttribute::kExponentialConeConstraint:
       return "ExponentialConeConstraint";
+    case ProgramAttribute::kL2NormCost:
+      return "L2NormCost";
     case ProgramAttribute::kBinaryVariable:
       return "BinaryVariable";
     case ProgramAttribute::kCallback:
