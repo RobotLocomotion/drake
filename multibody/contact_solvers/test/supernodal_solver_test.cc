@@ -99,6 +99,172 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
                               "Weight matrix incompatible with Jacobian.");
 }
 
+// In this test we are providing a Jacobian with an empty column block. The
+// result is that the solver cannot match the columns partition of J to the
+// partition of M. We expect an exception at construction.
+GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
+  const int num_row_blocks_of_J = 3;
+  Eigen::MatrixXd J(9, 6);
+
+  // clang-format off
+  J << 1, 2, 0, 0, 2, 4,
+       0, 1, 0, 0, 1, 3,
+       1, 3, 0, 0, 2, 4,
+       0, 0, 0, 0, 1, 2,
+       0, 0, 0, 0, 2, 1,
+       0, 0, 0, 0, 2, 3,
+       1, 1, 0, 0, 0, 0,
+       2, 1, 0, 0, 0, 0,
+       3, 3, 0, 0, 0, 0;
+  // clang-format on
+
+  // Block row p = 0.
+  std::vector<BlockMatrixTriplet> Jtriplets(4);
+  get<0>(Jtriplets.at(0)) = 0;
+  get<1>(Jtriplets.at(0)) = 0;
+  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
+
+  get<0>(Jtriplets.at(1)) = 0;
+  get<1>(Jtriplets.at(1)) = 2;
+  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 4);
+
+  // Block row p = 1.
+  get<0>(Jtriplets.at(2)) = 1;
+  get<1>(Jtriplets.at(2)) = 2;
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(3, 4);
+
+  // Block row p = 2.
+  get<0>(Jtriplets.at(3)) = 2;
+  get<1>(Jtriplets.at(3)) = 0;
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 0);
+
+  Eigen::MatrixXd G(9, 9);
+  // clang-format off
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
+       2, 5, 3, 0, 0, 0, 0, 0, 0,
+       2, 3, 4, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 4, 1, 1, 0, 0, 0,
+       0, 0, 0, 1, 4, 2, 0, 0, 0,
+       0, 0, 0, 1, 2, 5, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 4, 1, 1,
+       0, 0, 0, 0, 0, 0, 1, 4, 2,
+       0, 0, 0, 0, 0, 0, 1, 2, 5;
+  // clang-format on
+
+  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
+  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
+  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
+
+  Eigen::MatrixXd M(6, 6);
+
+  // clang-format off
+  M << 1, 1, 0, 0, 0, 0,
+       1, 5, 0, 0, 0, 0,
+       0, 0, 4, 1, 0, 0,
+       0, 0, 1, 4, 0, 0,
+       0, 0, 0, 0, 4, 2,
+       0, 0, 0, 0, 2, 5;
+  // clang-format on
+
+  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
+
+  // TODO(amcastro-tri): Fix this. SuperNodalSolver::Initialize() should throw
+  // before attempting to match partitions of J and M. Initialize() should
+  // detect that a column of J is empty.
+  // The error in this case should be more like "J and M have a different number
+  // of columns."
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      std::runtime_error, "Failed to find mass matrix indices.");
+}
+
+// SupernodalSolver assumes at most two blocks per row. We verify the solver
+// throws an exception if more than two blocks per row are supplied.
+GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
+  const int num_row_blocks_of_J = 3;
+  Eigen::MatrixXd J(9, 6);
+
+  // clang-format off
+  J << 1, 2, 0, 0, 2, 4,
+       0, 1, 0, 0, 1, 3,
+       1, 3, 0, 0, 2, 4,
+       0, 0, 0, 0, 1, 2,
+       0, 0, 0, 0, 2, 1,
+       0, 0, 0, 0, 2, 3,
+       0, 0, 1, 1, 0, 0,
+       0, 0, 2, 1, 0, 0,
+       0, 0, 3, 3, 0, 0;
+  // clang-format on
+
+  std::vector<BlockMatrixTriplet> Jtriplets(5);
+  // Block row p = 0. We intentionally supply three blocks for this row to
+  // verify an exception is thrown.
+  get<0>(Jtriplets.at(0)) = 0;
+  get<1>(Jtriplets.at(0)) = 0;
+  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
+
+  get<0>(Jtriplets.at(1)) = 0;
+  get<1>(Jtriplets.at(1)) = 2;
+  get<2>(Jtriplets.at(1)) = J.block<3, 1>(0, 4);
+
+  get<0>(Jtriplets.at(2)) = 0;
+  get<1>(Jtriplets.at(2)) = 3;
+  get<2>(Jtriplets.at(2)) = J.block<3, 1>(0, 5);
+
+  // Block row p = 1.
+  get<0>(Jtriplets.at(3)) = 1;
+  get<1>(Jtriplets.at(3)) = 2;
+  get<2>(Jtriplets.at(3)) = J.block<3, 2>(3, 4);
+
+  // Block row p = 2.
+  get<0>(Jtriplets.at(4)) = 2;
+  get<1>(Jtriplets.at(4)) = 1;
+  get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
+
+  Eigen::MatrixXd G(9, 9);
+  // clang-format off
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
+       2, 5, 3, 0, 0, 0, 0, 0, 0,
+       2, 3, 4, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 4, 1, 1, 0, 0, 0,
+       0, 0, 0, 1, 4, 2, 0, 0, 0,
+       0, 0, 0, 1, 2, 5, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 4, 1, 1,
+       0, 0, 0, 0, 0, 0, 1, 4, 2,
+       0, 0, 0, 0, 0, 0, 1, 2, 5;
+  // clang-format on
+
+  std::vector<Eigen::MatrixXd> blocks_of_G(3);
+  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
+  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
+  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
+
+  Eigen::MatrixXd M(6, 6);
+
+  // clang-format off
+  M << 1, 1, 0, 0, 0, 0,
+       1, 5, 0, 0, 0, 0,
+       0, 0, 4, 1, 0, 0,
+       0, 0, 1, 4, 0, 0,
+       0, 0, 0, 0, 4, 2,
+       0, 0, 0, 0, 2, 5;
+  // clang-format on
+
+  std::vector<Eigen::MatrixXd> blocks_of_M(3);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      std::runtime_error,
+      "Jacobian can only be nonzero on at most two column blocks.");
+}
+
 // In this test the partition of the columns of J refines the partition induced
 // by M.
 // We partition the columns of J as {{0, 1}, {2, 3}, {4}, {5}}.
