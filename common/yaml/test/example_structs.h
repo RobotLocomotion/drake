@@ -56,16 +56,22 @@ struct AllScalarsStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(some_bool));
+    a->Visit(DRAKE_NVP(some_float));
     a->Visit(DRAKE_NVP(some_double));
-    a->Visit(DRAKE_NVP(some_int));
-    a->Visit(DRAKE_NVP(some_size_t));
+    a->Visit(DRAKE_NVP(some_int32));
+    a->Visit(DRAKE_NVP(some_uint32));
+    a->Visit(DRAKE_NVP(some_int64));
+    a->Visit(DRAKE_NVP(some_uint64));
     a->Visit(DRAKE_NVP(some_string));
   }
 
   bool some_bool = false;
   double some_double = kNominalDouble;
-  int some_int = 12;
-  size_t some_size_t = 13;
+  float some_float = static_cast<float>(kNominalDouble);
+  int32_t some_int32 = 12;
+  uint32_t some_uint32 = 12;
+  int64_t some_int64 = 14;
+  uint64_t some_uint64 = 15;
   std::string some_string = "kNominalString";
 };
 
