@@ -41,8 +41,16 @@ py::object DoEval(const SomeObject* self, const systems::Context<T>& context) {
     }
     case systems::kAbstractValued: {
       const auto& abstract = self->template Eval<AbstractValue>(context);
-      py::object value_ref = py::cast(&abstract);
-      return value_ref.attr("get_value")();
+      // The storage for the abstract value is owned by the context, so we need
+      // to inform pybind that the abstract value reference should keep the
+      // entire context alive.  Note that `abstract_value_ref` itself will be
+      // immediately released (it's a local variable, and we don't return it)
+      // but in certain cases the return from `get_value` is an internal
+      // reference into the `abstract_value_ref`, and so will need to
+      // transitively keep the entire context alive as well.
+      py::object abstract_value_ref =
+          py::cast(&abstract, py_rvp::reference_internal, py::cast(&context));
+      return abstract_value_ref.attr("get_value")();
     }
   }
   DRAKE_UNREACHABLE();
