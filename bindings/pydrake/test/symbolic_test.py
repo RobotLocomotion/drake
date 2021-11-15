@@ -793,6 +793,11 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
 
+    def test_to_string(self):
+        e = (x + y)
+        self.assertEqual(e.to_string(), "(x + y)")
+        self.assertEqual(str(e), "(x + y)")
+
     def test_evaluate(self):
         env = {x: 3.0,
                y: 4.0}
