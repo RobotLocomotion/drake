@@ -655,17 +655,7 @@ class RollPitchYaw {
 /// `std::ostream`. Especially useful for debugging.
 /// @relates RollPitchYaw.
 template <typename T>
-inline std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
-  const T& roll = rpy.roll_angle();
-  const T& pitch = rpy.pitch_angle();
-  const T& yaw = rpy.yaw_angle();
-  if constexpr (scalar_predicate<T>::is_bool) {
-    out << fmt::format("rpy = {} {} {}", roll, pitch, yaw);
-  } else {
-    out << "rpy = " << roll << " " << pitch << " " << yaw;
-  }
-  return out;
-}
+std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy);
 
 /// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
 /// @relates RollPitchYaw
