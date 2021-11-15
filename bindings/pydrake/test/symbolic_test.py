@@ -176,6 +176,9 @@ class TestSymbolicVariable(unittest.TestCase):
         numpy_compare.assert_equal(
             sym.if_then_else(x > y, x, y), "(if (x > y) then x else y)")
         numpy_compare.assert_equal(
+            sym.if_then_else(f_cond=x > y, e_then=x, e_else=y),
+            "(if (x > y) then x else y)")
+        numpy_compare.assert_equal(
             sym.uninterpreted_function(name="func_name", arguments=[e_x, e_y]),
             "func_name(x, y)")
 
