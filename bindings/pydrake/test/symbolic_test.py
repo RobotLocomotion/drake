@@ -789,8 +789,11 @@ class TestSymbolicExpression(unittest.TestCase):
 
     def test_is_affine(self):
         M = np.array([[a * a * x, 3 * x], [2 * x, 3 * a]])
-        self.assertTrue(sym.IsAffine(M, sym.Variables([x])))
+        vars = sym.Variables([x])
+        self.assertTrue(sym.IsAffine(M, vars))
+        self.assertTrue(sym.IsAffine(m=M, vars=vars))
         self.assertFalse(sym.IsAffine(M))
+        self.assertFalse(sym.IsAffine(m=M))
 
     def test_differentiate(self):
         e = x * x
