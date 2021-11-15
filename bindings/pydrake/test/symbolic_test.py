@@ -777,6 +777,9 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(J[0, 1], - x * sym.sin(y))
         numpy_compare.assert_equal(J[1, 1], x * sym.cos(y))
         numpy_compare.assert_equal(J[2, 1], sym.Expression(0))
+        J = sym.Jacobian(
+            f=[x * sym.cos(y), x * sym.sin(y), x ** 2], vars=[x, y])
+        # NOTE: the above just tests the bindings kwargs f=, vars=.
 
     def test_method_jacobian(self):
         # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
