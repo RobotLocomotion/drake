@@ -18,6 +18,18 @@ typename std::enable_if<internal::is_autodiff_v<typename DerivedA::Scalar> ||
                         std::is_same_v<typename DerivedA::Scalar, double>>::type
 TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                       const Eigen::MatrixBase<DerivedB>& b) {
+  Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                DerivedB::ColsAtCompileTime>
+      x_eigen_d;
+  // To side-step clang optimizer problem, we separate this solve result
+  // x_eigen_d from its eventual use.
+  if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
+                std::is_same_v<typename DerivedB::Scalar, double>) {
+    x_eigen_d =
+        LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                       DerivedA::ColsAtCompileTime>>(A)
+            .solve(b);
+  }
   for (const bool use_deprecated : {true, false}) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -130,11 +142,7 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
       }
     } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&  // NOLINT
                          std::is_same_v<typename DerivedB::Scalar, double>) {
-      const auto x_eigen =
-          LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
-                                         DerivedA::ColsAtCompileTime>>(A)
-              .solve(b);
-      EXPECT_TRUE(CompareMatrices(x_eigen, x));
+      EXPECT_TRUE(CompareMatrices(x_eigen_d, x));
     }
   }
 }
