@@ -299,6 +299,10 @@ class TestSymbolicVariables(unittest.TestCase):
         vars = sym.Variables([x, y, z])
         count = vars.erase(x)
         self.assertEqual(count, 1)
+        self.assertEqual(vars.size(), 2)
+        count = vars.erase(key=y)
+        self.assertEqual(count, 1)
+        self.assertEqual(vars.size(), 1)
 
     def test_erase2(self):
         vars1 = sym.Variables([x, y, z])
@@ -306,6 +310,11 @@ class TestSymbolicVariables(unittest.TestCase):
         count = vars1.erase(vars2)
         self.assertEqual(count, 1)
         self.assertEqual(vars1.size(), 2)
+        vars1 = sym.Variables([x, y, z])
+        vars2 = sym.Variables([x, y])
+        count = vars1.erase(vars=vars2)
+        self.assertEqual(count, 2)
+        self.assertEqual(vars1.size(), 1)
 
     def test_include(self):
         vars = sym.Variables([x, y, z])
