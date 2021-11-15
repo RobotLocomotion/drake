@@ -226,9 +226,7 @@ class RotationalInertia {
     RotationalInertia<T> I;
     I.set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
                                                  Ixy, Ixz, Iyz);
-    if (!skip_validity_check) {
-      DRAKE_ASSERT_VOID(I.ThrowIfNotPhysicallyValid());
-    }
+    if (!skip_validity_check) I.ThrowIfNotPhysicallyValid();
     return I;
   }
 
