@@ -93,6 +93,10 @@ def _drake_impl(repo_ctx):
     manifest_bzl = "MANIFEST = " + struct(**_MANIFEST).to_json()
     repo_ctx.file(".manifest.bzl", content = manifest_bzl, executable = False)
 
+    # Annotate the OS for use by our BUILD files.
+    os_bzl = "NAME = \"{}\"\n".format(repo_ctx.os.name)
+    repo_ctx.file(".os.bzl", content = os_bzl, executable = False)
+
 # * # This placeholder definition in repo_template.bzl is rewritten by repo_gen
 # * # during the Drake source build.  Its new contents will be the bodies of
 # * # the drake*.BUILD.bazel stub files.  See README.md for details.
