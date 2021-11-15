@@ -843,13 +843,17 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_substitute_with_pair(self):
         e = x + y
         numpy_compare.assert_equal(e.Substitute(x, x + 5), x + y + 5)
+        numpy_compare.assert_equal(e.Substitute(var=x, e=(x + 5)), x + y + 5)
         numpy_compare.assert_equal(e.Substitute(y, z), x + z)
+        numpy_compare.assert_equal(e.Substitute(var=y, e=z), x + z)
         numpy_compare.assert_equal(e.Substitute(y, 3), x + 3)
+        numpy_compare.assert_equal(e.Substitute(var=y, e=3), x + 3)
 
     def test_substitute_with_dict(self):
         e = x + y
         env = {x: x + 2, y:  y + 3}
         numpy_compare.assert_equal(e.Substitute(env), x + y + 5)
+        numpy_compare.assert_equal(e.Substitute(s=env), x + y + 5)
 
     def test_copy(self):
         numpy_compare.assert_equal(copy.copy(e_x), e_x)
