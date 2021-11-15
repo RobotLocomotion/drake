@@ -24,6 +24,9 @@
 namespace drake {
 namespace multibody {
 
+// Forward declare for friendship below.
+template <typename T> class SpatialInertia;
+
 /// This class describes the mass distribution (inertia properties) of a
 /// body or composite body about a particular point.  Herein, "composite body"
 /// means one body or a collection of bodies that are welded together.  In this
@@ -200,9 +203,33 @@ class RotationalInertia {
   /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the rotational inertia of a uniform-density sphere or cube.
   /// In debug builds, throws std::exception if I_triaxial is negative/NaN.
-  // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
+  // TODO(mitiguy) Per issue #6139  Update to MakeTriaxiallySymmetric.
   static RotationalInertia<T> TriaxiallySymmetric(const T& I_triaxial) {
     return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
+  }
+
+  /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
+  /// @param[in] Ixx, Iyy, Izz Moments of inertia.
+  /// @param[in] Ixy, Ixz, Iyz Products of of inertia.
+  /// @param[in] skip_validity_check If false, The rotational inertia is checked
+  /// via CouldBePhysicallyValid() to ensure it is physically valid.  If true
+  /// (not generally recommended), the check is skipped (which reduces some
+  /// computational cost). The default value is false.
+  /// @throws std::exception if skip_validity_check = false and unable to make a
+  /// physically valid rotational inertia, i.e., CouldBePhysicallyValid() fails.
+  /// For internal use only.
+  static RotationalInertia<T> MakeFromMomentsAndProductsOfInertia(
+      const T& Ixx, const T& Iyy, const T& Izz,
+      const T& Ixy, const T& Ixz, const T& Iyz,
+      bool skip_validity_check = false) {
+    RotationalInertia<T> I;
+    I.set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
+                                                 Ixy, Ixz, Iyz);
+    if (!skip_validity_check) {
+      DRAKE_ASSERT_VOID(I.ThrowIfNotPhysicallyValid());
+    }
+    return I;
   }
 
   /// For consistency with Eigen's API, the rows() method returns 3.
@@ -758,6 +785,9 @@ class RotationalInertia {
   // constructor RotationalInertia<Scalar>(const Eigen::MatrixBase&) for an
   // Eigen expression templated on Scalar.
   template <typename> friend class RotationalInertia;
+
+  // Friend class for accessing protected/private internals of this class.
+  friend class SpatialInertia<T>;
 
   // Constructs a rotational inertia for a particle Q whose position vector
   // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
