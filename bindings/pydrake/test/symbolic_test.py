@@ -319,6 +319,7 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_include(self):
         vars = sym.Variables([x, y, z])
         self.assertTrue(vars.include(y))
+        self.assertTrue(vars.include(key=x))
         self.assertTrue(z in vars)
 
     def test_equalto(self):
