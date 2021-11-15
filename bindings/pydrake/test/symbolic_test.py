@@ -827,6 +827,8 @@ class TestSymbolicExpression(unittest.TestCase):
         partial_evaluated = (x + y + z).EvaluatePartial(env)
         expected = env[x] + env[y] + z
         self.assertTrue(partial_evaluated.EqualTo(expected))
+        partial_evaluated = (x + y + z).EvaluatePartial(env=env)
+        self.assertTrue(partial_evaluated.EqualTo(expected))
 
     def test_evaluate_exception_np_nan(self):
         env = {x: np.nan}
