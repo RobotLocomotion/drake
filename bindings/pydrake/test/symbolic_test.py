@@ -285,11 +285,15 @@ class TestSymbolicVariables(unittest.TestCase):
         vars = sym.Variables()
         vars.insert(x)
         self.assertEqual(vars.size(), 1)
+        vars.insert(var=y)
+        self.assertEqual(vars.size(), 2)
 
     def test_insert2(self):
         vars = sym.Variables([x])
         vars.insert(sym.Variables([y, z]))
         self.assertEqual(vars.size(), 3)
+        vars.insert(vars=sym.Variables([a, b, c]))
+        self.assertEqual(vars.size(), 6)
 
     def test_erase1(self):
         vars = sym.Variables([x, y, z])
