@@ -89,6 +89,75 @@ vector<std::vector<int>> GetRowToTripletMapping(
   return y;
 }
 
+bool VerifyMassMatrixPartitionRefinesJacobianPartition(
+    const std::vector<int>& jacobian_column_block_size,
+    const vector<MatrixXd>& mass_matrices) {
+  int size = 0;
+  size_t block_column = 0;
+  for (size_t i = 0; i < mass_matrices.size(); i++) {
+    // Check if too many mass matrices
+    if (block_column >= jacobian_column_block_size.size()) {
+      return false;
+    }
+
+    size += mass_matrices.at(i).cols();
+    // Check if mass matrix overlaps two jacobian blocks.
+    if (size > jacobian_column_block_size[block_column]) {
+      return false;
+    }
+
+    // Advance to next block if refinement of current block found.
+    if (size == jacobian_column_block_size[block_column]) {
+      ++block_column;
+      size = 0;
+    }
+  }
+
+  // Verify all jacobian blocks are refined.
+  if (block_column < jacobian_column_block_size.size()) {
+    return false;
+  }
+
+  return true;
+}
+
+std::vector<int> GetJacobianBlockSizesVerifyTriplets(
+    const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
+  int max_index = -1;
+  for (const auto& j : jacobian_blocks) {
+    int col_index = std::get<1>(j);
+    if (col_index > max_index) {
+      max_index = col_index;
+    }
+  }
+
+  std::vector<int> block_column_size(max_index + 1, -1);
+
+  for (const auto& j : jacobian_blocks) {
+    int col_index = std::get<1>(j);
+    if (block_column_size[col_index] == -1) {
+      block_column_size[col_index] = std::get<2>(j).cols();
+    } else {
+      if (block_column_size[col_index] != std::get<2>(j).cols()) {
+        throw std::runtime_error(
+            "Invalid Jacobian triplets: conflicting block sizes specified for "
+            "column " +
+            std::to_string(col_index) + ".");
+      }
+    }
+  }
+
+  for (int i = 0; i < max_index; i++) {
+    if (block_column_size[i] < 0) {
+      throw std::runtime_error(
+          "Invalid Jacobian triplets: no triplet provided for column " +
+          std::to_string(i) + ".");
+    }
+  }
+
+  return block_column_size;
+}
+
 std::vector<int> GetMassMatrixStartingColumn(
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
   vector<int> y;
@@ -327,6 +396,15 @@ void SuperNodalSolver::Initialize(
     const vector<vector<int>>& cliques, int num_jacobian_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
+  std::vector<int> jacobian_column_block_size =
+      GetJacobianBlockSizesVerifyTriplets(jacobian_blocks);
+  if (!VerifyMassMatrixPartitionRefinesJacobianPartition(
+          jacobian_column_block_size, mass_matrices)) {
+    throw std::runtime_error(
+        "Column partition induced by mass matrix must refine the partition "
+        "induced by the Jacobian.");
+  }
+
   clique_assemblers_ptrs_.resize(cliques.size());
 
   vector<vector<int>> row_to_triplet_list =

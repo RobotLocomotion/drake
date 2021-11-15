@@ -15,6 +15,82 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+// In this test the partition of the columns of J doesn't refine the partition
+// induced by M, nor the other way around. We partition the columns of J as {{0,
+// 1, 2, 3}, {4}, {5}}. However, we partition M as {{0, 1}, {2, 3}, {4, 5}}.
+GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
+  const int num_row_blocks_of_J = 3;
+  MatrixXd J(9, 6);
+
+  // clang-format off
+  J << 1, 2, 1, 2, 0, 0,
+       0, 1, 0, 1, 0, 0,
+       1, 3, 1, 3, 0, 0,
+       0, 0, 0, 0, 1, 0,
+       0, 0, 0, 0, 2, 0,
+       0, 0, 0, 0, 2, 0,
+       0, 0, 0, 0, 0, 1,
+       0, 0, 0, 0, 0, 1,
+       0, 0, 0, 0, 0, 3;
+  // clang-format on
+
+  std::vector<BlockMatrixTriplet> Jtriplets(3);
+  // Block row p = 0.
+  get<0>(Jtriplets.at(0)) = 0;
+  get<1>(Jtriplets.at(0)) = 0;
+  get<2>(Jtriplets.at(0)) = J.block<3, 4>(0, 0);
+
+  // Block row p = 1.
+  get<0>(Jtriplets.at(1)) = 1;
+  get<1>(Jtriplets.at(1)) = 1;
+  get<2>(Jtriplets.at(1)) = J.block<3, 1>(3, 4);
+
+  // Block row p = 2.
+  get<0>(Jtriplets.at(2)) = 2;
+  get<1>(Jtriplets.at(2)) = 2;
+  get<2>(Jtriplets.at(2)) = J.block<3, 1>(6, 5);
+
+  MatrixXd G(9, 9);
+  // clang-format off
+  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
+       2, 5, 3, 0, 0, 0, 0, 0, 0,
+       2, 3, 4, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 4, 1, 1, 0, 0, 0,
+       0, 0, 0, 1, 4, 2, 0, 0, 0,
+       0, 0, 0, 1, 2, 5, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 4, 1, 1,
+       0, 0, 0, 0, 0, 0, 1, 4, 2,
+       0, 0, 0, 0, 0, 0, 1, 2, 5;
+  // clang-format on
+
+  std::vector<MatrixXd> blocks_of_G(3);
+  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
+  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
+  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
+
+  MatrixXd M(6, 6);
+
+  // clang-format off
+  M << 1, 1, 0, 0, 0, 0,
+       1, 5, 0, 0, 0, 0,
+       0, 0, 4, 1, 0, 0,
+       0, 0, 1, 4, 0, 0,
+       0, 0, 0, 0, 4, 2,
+       0, 0, 0, 0, 2, 5;
+  // clang-format on
+
+  std::vector<MatrixXd> blocks_of_M(3);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+      std::runtime_error,
+      "Column partition induced by mass matrix must refine the partition "
+      "induced by the Jacobian.");
+}
+
 // Basic test of SupernodalSolver's public APIs.
 // In this case the columns's partition of J exactly matches the partition
 // induced by M.
@@ -172,14 +248,10 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
-  // TODO(amcastro-tri): Fix this. SuperNodalSolver::Initialize() should throw
-  // before attempting to match partitions of J and M. Initialize() should
-  // detect that a column of J is empty.
-  // The error in this case should be more like "J and M have a different number
-  // of columns."
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
-      std::runtime_error, "Failed to find mass matrix indices.");
+      std::runtime_error,
+      "Invalid Jacobian triplets: no triplet provided for column 1.");
 }
 
 // SupernodalSolver assumes at most two blocks per row. We verify the solver
@@ -189,9 +261,9 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   MatrixXd J(9, 6);
 
   // clang-format off
-  J << 1, 2, 0, 0, 2, 4,
-       0, 1, 0, 0, 1, 3,
-       1, 3, 0, 0, 2, 4,
+  J << 1, 2, 1, 3, 2, 4,
+       0, 1, 1, 3, 1, 3,
+       1, 3, 1, 2, 2, 4,
        0, 0, 0, 0, 1, 2,
        0, 0, 0, 0, 2, 1,
        0, 0, 0, 0, 2, 3,
@@ -208,12 +280,12 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
 
   get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<3, 1>(0, 4);
+  get<1>(Jtriplets.at(1)) = 1;
+  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 2);
 
   get<0>(Jtriplets.at(2)) = 0;
-  get<1>(Jtriplets.at(2)) = 3;
-  get<2>(Jtriplets.at(2)) = J.block<3, 1>(0, 5);
+  get<1>(Jtriplets.at(2)) = 2;
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(0, 5);
 
   // Block row p = 1.
   get<0>(Jtriplets.at(3)) = 1;
@@ -344,11 +416,11 @@ GTEST_TEST(SupernodalSolver,
   blocks_of_M.at(1) = M.block<2, 2>(2, 2);
   blocks_of_M.at(2) = M.block<2, 2>(4, 4);
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_G);
-
-  const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+      std::runtime_error,
+      "Column partition induced by mass matrix must refine the partition "
+      "induced by the Jacobian.");
 }
 
 // In this test the partition induced by M refines the partition of the columns
