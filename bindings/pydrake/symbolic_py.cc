@@ -232,7 +232,7 @@ PYBIND11_MODULE(symbolic, m) {
   py::class_<Variables>(m, "Variables", doc.Variables.doc)
       .def(py::init<>(), doc.Variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
-          py::arg("vec"), doc.Variables.ctor.doc_1args_vec)
+          doc.Variables.ctor.doc_1args_vec)
       .def("size", &Variables::size, doc.Variables.size.doc)
       .def("__len__", &Variables::size, doc.Variables.size.doc)
       .def("empty", &Variables::empty, doc.Variables.empty.doc)
