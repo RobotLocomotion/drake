@@ -529,20 +529,6 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
       .def(
-          "Evaluate",
-          [](const Formula& self, const Environment::map& env,
-              RandomGenerator* random_generator) {
-            return self.Evaluate(Environment{env}, random_generator);
-          },
-          py::arg("env") = Environment::map{},
-          py::arg("random_generator") = nullptr, doc.Formula.Evaluate.doc_2args)
-      .def(
-          "Evaluate",
-          [](const Formula& self, RandomGenerator* random_generator) {
-            return self.Evaluate(random_generator);
-          },
-          py::arg("random_generator"), doc.Formula.Evaluate.doc_1args)
-      .def(
           "Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
