@@ -285,7 +285,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
 
   get<0>(Jtriplets.at(2)) = 0;
   get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(0, 5);
+  get<2>(Jtriplets.at(2)) = J.block<3, 2>(0, 4);
 
   // Block row p = 1.
   get<0>(Jtriplets.at(3)) = 1;
