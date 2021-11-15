@@ -30,6 +30,11 @@ e_y = sym.Expression(y)
 
 
 class TestSymbolicVariable(unittest.TestCase):
+    def test_is_dummy(self):
+        self.assertFalse(a.is_dummy())
+        self.assertFalse(b.is_dummy())
+        self.assertFalse(c.is_dummy())
+
     def test_get_name(self):
         self.assertEqual(a.get_name(), "a")
         self.assertEqual(b.get_name(), "b")
