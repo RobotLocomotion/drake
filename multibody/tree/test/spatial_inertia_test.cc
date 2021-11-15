@@ -152,14 +152,16 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
       "\n"
       " mass = 2.5\n"
       " Center of mass = [0.1  -0.2  0.3]\n"
-      " Inertia I_BP_B =\n"
-      " 5.0000  0.2500 -0.2500\n"
-      " 0.2500  5.7500  0.5000\n"
-      "-0.2500  0.5000  6.0000\n"
+      " Inertia I_BBo_B =\n"
+      "[ 5.0000,  0.2500, -0.2500]\n"
+      "[ 0.2500,  5.7500,  0.5000]\n"
+      "[-0.2500,  0.5000,  6.0000]\n"
       " Inertia I_BBcm_B =\n"
-      " 4.6750  0.2000 -0.1750\n"
-      " 0.2000  5.5000  0.3500\n"
-      "-0.1750  0.3500  5.8750\n";
+      "[ 4.6750,  0.2000, -0.1750]\n"
+      "[ 0.2000,  5.5000,  0.3500]\n"
+      "[-0.1750,  0.3500,  5.8750]\n"
+      " Principal moments of inertia for Bcm =\n"
+      "[4.577587456841118  5.3861574930097635  6.086255050149117]\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -319,9 +321,11 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
         " mass = -1.0\n"
         " Center of mass = [0.0  0.0  0.0]\n"
         " Inertia I_BBcm_B =\n"
-        "-0.4   -0   -0\n"
-        "  -0 -0.4   -0\n"
-        "  -0   -0 -0.4\n"
+        "[-0.4,   -0,   -0]\n"
+        "[  -0, -0.4,   -0]\n"
+        "[  -0,   -0, -0.4]\n"
+        " Principal moments of inertia for Bcm =\n"
+        "[-0.4  -0.4  -0.4]\n"
         " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
@@ -339,14 +343,16 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
         "The resulting spatial inertia:\n"
         " mass = 1.0\n"
         " Center of mass = [2.0  0.0  0.0]\n"
-        " Inertia I_BP_B =\n"
-        "0.4   0   0\n"
-        "  0 0.4   0\n"
-        "  0   0 0.4\n"
+        " Inertia I_BBo_B =\n"
+        "[0.4,   0,   0]\n"
+        "[  0, 0.4,   0]\n"
+        "[  0,   0, 0.4]\n"
         " Inertia I_BBcm_B =\n"
-        " 0.4    0    0\n"
-        "   0 -3.6    0\n"
-        "   0    0 -3.6\n"
+        "[ 0.4,    0,    0]\n"
+        "[   0, -3.6,    0]\n"
+        "[   0,    0, -3.6]\n"
+        " Principal moments of inertia for Bcm =\n"
+        "[-3.6  -3.6  0.4]\n"
         " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
@@ -375,18 +381,20 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsException) {
     // GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
-        "The resulting spatial inertia:\n"
-        " mass = 0.634\n"
-        " Center of mass = [0.0  0.016  -0.02]\n"
-        " Inertia I_BP_B =\n"
-        "  0.0015209  0.00015533   8.242e-06\n"
-        " 0.00015533  0.00149408 0.000129577\n"
-        "  8.242e-06 0.000129577 0.000361573\n"
-        " Inertia I_BBcm_B =\n"
-        "    0.001105   0.00015533    8.242e-06\n"
-        "  0.00015533   0.00124048 -7.33031e-05\n"
-        "   8.242e-06 -7.33031e-05  0.000199269\n"
-        " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
+      "The resulting spatial inertia:\n"
+      " mass = 0.634\n"
+      " Center of mass = [0.0  0.016  -0.02]\n"
+      " Inertia I_BBo_B =\n"
+      "[  0.0015209,  0.00015533,   8.242e-06]\n"
+      "[ 0.00015533,  0.00149408, 0.000129577]\n"
+      "[  8.242e-06, 0.000129577, 0.000361573]\n"
+      " Inertia I_BBcm_B =\n"
+      "[    0.001105,   0.00015533,    8.242e-06]\n"
+      "[  0.00015533,   0.00124048, -7.33031e-05]\n"
+      "[   8.242e-06, -7.33031e-05,  0.000199269]\n"
+      " Principal moments of inertia for Bcm =\n"
+      "[0.0001937238722986095  0.0010059941731987896  0.0013450336905026007]\n"
+      " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
