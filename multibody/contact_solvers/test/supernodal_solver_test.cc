@@ -338,9 +338,8 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
 }
 
 // In this test the partition of the columns of J refines the partition induced
-// by M.
-// We partition the columns of J as {{0, 1}, {2, 3}, {4}, {5}}.
-// However, we partition M as {{0, 1}, {2, 3}, {4, 5}}.
+// by M. We partition the columns of J as {{0, 1}, {2, 3}, {4}, {5}}. However,
+// we partition M as {{0, 1}, {2, 3}, {4, 5}}.
 GTEST_TEST(SupernodalSolver,
            ColumnPartitionOfJacobianRefinesMassMatrixPartition) {
   const int num_row_blocks_of_J = 3;

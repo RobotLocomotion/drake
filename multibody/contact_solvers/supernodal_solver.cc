@@ -440,15 +440,15 @@ SuperNodalSolver::SuperNodalSolver(
     const std::vector<BlockMatrixTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices)
     : owned_clique_assemblers_(num_jacobian_row_blocks) {
-  SparsityData clique_data_ =
+  SparsityData clique_data =
       GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks);
 
   solver_ = std::make_unique<::conex::SupernodalKKTSolver>(
-      clique_data_.variable_cliques, clique_data_.data.num_vars,
-      clique_data_.data.order, clique_data_.data.supernodes,
-      clique_data_.data.separators);
+      clique_data.variable_cliques, clique_data.data.num_vars,
+      clique_data.data.order, clique_data.data.supernodes,
+      clique_data.data.separators);
 
-  Initialize(clique_data_.variable_cliques, num_jacobian_row_blocks,
+  Initialize(clique_data.variable_cliques, num_jacobian_row_blocks,
              jacobian_blocks, mass_matrices);
 }
 
@@ -481,8 +481,6 @@ void SuperNodalSolver::SetWeightMatrix(
   }
 
   if (!weight_matrix_incompatible) {
-    // Assembles using owned_clique_assemblers_
-    // solver_->Bind(clique_assemblers_ptrs_);
     solver_->Assemble();
   }
 
