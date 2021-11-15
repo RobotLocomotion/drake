@@ -1070,6 +1070,18 @@ class TestSymbolicMonomial(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             m.Evaluate(env)
 
+    def test_evaluate_partial(self):
+        m = sym.Monomial(x, 3) * sym.Monomial(y, 2)  # m = x³y²
+        env = {x: 2.0,
+               y: 3.0}
+        d_72, m_1 = m.EvaluatePartial(env)
+        self.assertEqual(d_72, 72.0)
+        self.assertEqual(m_1, sym.Monomial())  # Monomial{} = 1
+
+        d_8, y_2 = m.EvaluatePartial(env={x: 2.0})
+        self.assertEqual(d_8, 8.0)
+        self.assertEqual(y_2, sym.Monomial(y, 2))
+
 
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
