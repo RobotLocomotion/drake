@@ -50,10 +50,14 @@ drake_repository(name = "drake")
     with open(join(scratch_dir, "BUILD.bazel"), "w") as f:
         f.write(f"""
 load("@rules_python//python:defs.bzl", "py_test")
+load("@drake//:.os.bzl", OS_NAME = "NAME")
 
 cc_test(
     name = "text_logging_test",
     srcs = ["text_logging_test.cc"],
+    # TODO(jwnimmer-tri) On macOS, we need to pkg-config fmt for this to pass.
+    # For the moment, we'll say that :drake_shared_library is Ubuntu-only.
+    tags = ["manual"] if OS_NAME == "mac os x" else [],
     deps = ["@drake//:drake_shared_library"],
 )
 
