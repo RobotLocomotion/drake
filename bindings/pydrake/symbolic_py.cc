@@ -529,9 +529,27 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
       .def(
+          "Evaluate",
+          [](const Formula& self, const Environment::map& env) {
+            return self.Evaluate(Environment{env});
+          },
+          doc.Formula.Evaluate.doc_2args)
+      .def(
           "Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
+          },
+          py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
+      .def(
+          "Substitute",
+          [](const Formula& self, const Variable& var1, const Variable& var2) {
+            return self.Substitute(var1, var2);
+          },
+          py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
+      .def(
+          "Substitute",
+          [](const Formula& self, const Variable& var, const double c) {
+            return self.Substitute(var, c);
           },
           py::arg("var"), py::arg("e"), doc.Formula.Substitute.doc_2args)
       .def(
