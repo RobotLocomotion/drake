@@ -1094,6 +1094,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = sym.Polynomial(m)
         expected = 3 * x + 2 * y
         numpy_compare.assert_equal(p.ToExpression(), expected)
+        p2 = sym.Polynomial(map=m)
+        numpy_compare.assert_equal(p2.ToExpression(), expected)
 
     def test_constructor_expression(self):
         e = 2 * x + 3 * y

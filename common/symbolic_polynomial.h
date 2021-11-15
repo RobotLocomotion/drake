@@ -81,7 +81,7 @@ class Polynomial {
   explicit Polynomial(std::nullptr_t) : Polynomial() {}
 
   /// Constructs a polynomial from a map, Monomial → Expression.
-  explicit Polynomial(MapType init);
+  explicit Polynomial(MapType map);
 
   /// Constructs a polynomial from a monomial @p m. Note that all variables
   /// in `m` are considered as indeterminates.

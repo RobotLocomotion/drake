@@ -358,8 +358,8 @@ Variables GetDecisionVariables(const Polynomial::MapType& m) {
 
 }  // namespace
 
-Polynomial::Polynomial(MapType init)
-    : monomial_to_coefficient_map_{move(init)},
+Polynomial::Polynomial(MapType map)
+    : monomial_to_coefficient_map_{move(map)},
       indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   DRAKE_ASSERT_VOID(CheckInvariant());

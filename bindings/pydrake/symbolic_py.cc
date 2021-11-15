@@ -680,8 +680,8 @@ PYBIND11_MODULE(symbolic, m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)
       .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
-      .def(py::init<Polynomial::MapType>(), py::arg("init"),
-          doc.Polynomial.ctor.doc_1args_init)
+      .def(py::init<Polynomial::MapType>(), py::arg("map"),
+          doc.Polynomial.ctor.doc_1args_map)
       .def(py::init<const Monomial&>(), py::arg("m"),
           doc.Polynomial.ctor.doc_1args_m)
       .def(py::init<const Expression&>(), py::arg("e"),
