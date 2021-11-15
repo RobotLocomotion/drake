@@ -333,7 +333,8 @@ PYBIND11_MODULE(symbolic, m) {
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Expression> expr_cls(m, "Expression", doc.Expression.doc);
   expr_cls.def(py::init<>(), doc.Expression.ctor.doc_0args)
-      .def(py::init<double>(), py::arg("d"), doc.Expression.ctor.doc_1args_d)
+      .def(py::init<double>(), py::arg("constant"),
+          doc.Expression.ctor.doc_1args_constant)
       .def(py::init<const Variable&>(), py::arg("var"),
           doc.Expression.ctor.doc_1args_var)
       .def("__str__", &Expression::to_string, doc.Expression.to_string.doc)
