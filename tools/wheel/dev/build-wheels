@@ -61,14 +61,66 @@ def cleanup():
 
 
 # -----------------------------------------------------------------------------
+def git_root(path):
+    cmd = ['git', 'rev-parse', '--show-toplevel']
+    raw = subprocess.check_output(cmd, cwd=path, text=True)
+    return raw.rsplit('\n', maxsplit=1)[0]
+
+
+# -----------------------------------------------------------------------------
+def strip_tar_metadata(info):
+    """
+    Remove some metadata (owner, timestamp) from a TarInfo.
+    """
+    info.uid = info.gid = 0
+    info.uname = info.gname = 'root'
+    info.mtime = 0
+    return info
+
+
+# -----------------------------------------------------------------------------
+def add_to_tar(tar, name, parent_path, root_path, exclude=[]):
+    """
+    Add files or directories to the specified tar file.
+    """
+    tar_path = os.path.join(parent_path, name)
+    full_path = os.path.join(root_path, parent_path, name)
+
+    if os.path.isdir(full_path):
+        for f in sorted(os.listdir(full_path)):
+            if f in exclude:
+                continue
+
+            add_to_tar(tar, f, os.path.join(parent_path, name), root_path)
+    else:
+        tar.add(full_path, tar_path, recursive=False,
+                filter=strip_tar_metadata)
+
+
+# -----------------------------------------------------------------------------
 def create_source_tar(path, sha='HEAD'):
     """
-    Create a tarball of the repository at the specified SHA
+    Create a tarball of the repository at the specified SHA.
     """
-    import git
+    import tarfile
 
-    root = git.cmd.Git(script_dir).rev_parse('--show-toplevel')
-    git.cmd.Git(root).archive('-o', path, sha)
+    out = tarfile.open(path, "w:gz")
+    out.format = tarfile.GNU_FORMAT
+
+    repo_dir = git_root(script_dir)
+
+    print('[-] creating source archive', end='', flush=True)
+    for f in sorted(os.listdir(repo_dir)):
+        # Exclude build and VCS directories.
+        if f == '.git' or f.startswith('bazel-'):
+            continue
+
+        print('.', end='', flush=True)
+        exclude = ['wheel'] if f == 'tools' else []
+        add_to_tar(out, f, '', repo_dir, exclude=exclude)
+
+    print(' done')
+    out.close()
 
 
 # -----------------------------------------------------------------------------
