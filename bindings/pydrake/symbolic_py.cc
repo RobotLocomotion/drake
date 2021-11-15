@@ -235,7 +235,7 @@ PYBIND11_MODULE(symbolic, m) {
           py::arg("vec"), doc.Variables.ctor.doc_1args_vec)
       .def("size", &Variables::size, doc.Variables.size.doc)
       .def("__len__", &Variables::size, doc.Variables.size.doc)
-      .def("empty", &Variables::empty)
+      .def("empty", &Variables::empty, doc.Variables.empty.doc)
       .def("__str__", &Variables::to_string, doc.Variables.to_string.doc)
       .def("__repr__",
           [](const Variables& self) {
