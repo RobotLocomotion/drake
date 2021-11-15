@@ -340,9 +340,13 @@ class TestSymbolicVariables(unittest.TestCase):
         vars1 = sym.Variables([x, y, z])
         vars2 = sym.Variables([x, y])
         self.assertFalse(vars1.IsSubsetOf(vars2))
+        self.assertFalse(vars1.IsSubsetOf(vars=vars2))
         self.assertFalse(vars1.IsStrictSubsetOf(vars2))
+        self.assertFalse(vars1.IsStrictSubsetOf(vars=vars2))
         self.assertTrue(vars1.IsSupersetOf(vars2))
+        self.assertTrue(vars1.IsSupersetOf(vars=vars2))
         self.assertTrue(vars1.IsStrictSupersetOf(vars2))
+        self.assertTrue(vars1.IsStrictSupersetOf(vars=vars2))
 
     def test_eq(self):
         vars1 = sym.Variables([x, y, z])
