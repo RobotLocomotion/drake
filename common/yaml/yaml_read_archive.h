@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -519,9 +520,12 @@ class YamlReadArchive final {
   // These are the only scalar types that Drake supports.
   // Users cannot add de-string-ification functions for custom scalars.
   void ParseScalar(const std::string& value, bool* result);
+  void ParseScalar(const std::string& value, float* result);
   void ParseScalar(const std::string& value, double* result);
-  void ParseScalar(const std::string& value, int* result);
-  void ParseScalar(const std::string& value, size_t* result);
+  void ParseScalar(const std::string& value, int32_t* result);
+  void ParseScalar(const std::string& value, uint32_t* result);
+  void ParseScalar(const std::string& value, int64_t* result);
+  void ParseScalar(const std::string& value, uint64_t* result);
   void ParseScalar(const std::string& value, std::string* result);
 
   // We use DeprecatedYamlNode here to allow YAML::Node to be forward-declared
@@ -531,8 +535,8 @@ class YamlReadArchive final {
   // compile when using Clang 9.
   template <typename T, typename DeprecatedYamlNode = YAML::Node>
   DRAKE_DEPRECATED("2022-03-01",
-      "YAML loading only supports scalars of type bool, double, int, size_t, or"
-      "  string.  Please file a Drake issue if you need any additional types.")
+      "YAML loading only supports scalars of specific primitive types. "
+      "Please file a Drake issue if you need any additional types.")
   void ParseScalar(const std::string& value, T* result) {
     DRAKE_DEMAND(result != nullptr);
     // For the decode-able types, see /usr/include/yaml-cpp/node/convert.h.

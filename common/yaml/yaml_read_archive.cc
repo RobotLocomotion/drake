@@ -220,16 +220,28 @@ void YamlReadArchive::ParseScalar(const std::string& value, bool* result) {
   ParseScalar<bool>(value, result);
 }
 
+void YamlReadArchive::ParseScalar(const std::string& value, float* result) {
+  ParseScalar<float>(value, result);
+}
+
 void YamlReadArchive::ParseScalar(const std::string& value, double* result) {
   ParseScalar<double>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, int* result) {
-  ParseScalar<int>(value, result);
+void YamlReadArchive::ParseScalar(const std::string& value, int32_t* result) {
+  ParseScalar<int32_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, size_t* result) {
-  ParseScalar<size_t>(value, result);
+void YamlReadArchive::ParseScalar(const std::string& value, uint32_t* result) {
+  ParseScalar<uint32_t>(value, result);
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value, int64_t* result) {
+  ParseScalar<int64_t>(value, result);
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value, uint64_t* result) {
+  ParseScalar<uint64_t>(value, result);
 }
 
 #pragma GCC diagnostic pop
