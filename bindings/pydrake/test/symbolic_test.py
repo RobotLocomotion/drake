@@ -379,6 +379,8 @@ class TestSymbolicVariables(unittest.TestCase):
         vars2 = sym.Variables([y, w])
         vars3 = sym.intersect(vars1, vars2)  # = [y]
         self.assertEqual(vars3, sym.Variables([y]))
+        vars4 = sym.intersect(vars1=vars1, vars2=vars2)
+        self.assertEqual(vars4, sym.Variables([y]))
 
     def test_iterable(self):
         vars = sym.Variables([x, y, z])
