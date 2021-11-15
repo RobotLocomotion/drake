@@ -1180,6 +1180,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = sym.Polynomial(e, [x])  # p = ax²
         result = p.Differentiate(x)  # = 2ax
         numpy_compare.assert_equal(result.ToExpression(), 2 * a * x)
+        result = p.Differentiate(x=x)
+        numpy_compare.assert_equal(result.ToExpression(), 2 * a * x)
 
     def test_integrate(self):
         e = 3 * a * (x ** 2)
@@ -1303,6 +1305,9 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p_dy = sym.Polynomial(8 * y + 8 * x, [x, y])   # ∂p/∂y =  8y + 8x
 
         J = p.Jacobian([x, y])
+        numpy_compare.assert_equal(J[0], p_dx)
+        numpy_compare.assert_equal(J[1], p_dy)
+        J = p.Jacobian(vars=[x, y])
         numpy_compare.assert_equal(J[0], p_dx)
         numpy_compare.assert_equal(J[1], p_dy)
 
