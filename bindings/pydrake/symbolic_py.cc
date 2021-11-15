@@ -350,7 +350,6 @@ PYBIND11_MODULE(symbolic, m) {
           [m](const symbolic::Expression& e) {
             return internal::Unapply(m, e);
           },
-          // py::arg("e"), // NOTE: not allowed
           internal::kUnapplyDoc)
       .def("Expand", &Expression::Expand, doc.Expression.Expand.doc)
       .def(
