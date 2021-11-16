@@ -37,6 +37,9 @@ class SurfaceTriangle {
   explicit SurfaceTriangle(const int v[3])
       : SurfaceTriangle(v[0], v[1], v[2]) {}
 
+  /** Returns the number of vertices in this face. */
+  int num_vertices() const { return 3; }
+
   /** Returns the vertex index in TriangleSurfaceMesh of the i-th vertex of this
    triangle.
    @param i  The local index of the vertex in this triangle.
@@ -160,7 +163,7 @@ class TriangleSurfaceMesh {
    @param vertices  The vertices.
    */
   TriangleSurfaceMesh(std::vector<SurfaceTriangle>&& triangles,
-              std::vector<Vector3<T>>&& vertices)
+                      std::vector<Vector3<T>>&& vertices)
       : triangles_(std::move(triangles)),
         vertices_(std::move(vertices)),
         area_(triangles_.size()),  // Pre-allocate here, not yet calculated.
@@ -226,6 +229,15 @@ class TriangleSurfaceMesh {
     return face_normals_[t];
   }
 
+  /** Returns the centroid of a triangle. */
+  Vector3<T> centroid(int t) const {
+    DRAKE_DEMAND(0 <= t && t < num_triangles());
+    const auto& tri = triangles_[t];
+    return (vertices_[tri.vertex(0)] + vertices_[tri.vertex(1)] +
+            vertices_[tri.vertex(2)]) /
+           3;
+  }
+
   /** Returns the area-weighted geometric centroid of this surface mesh. The
    returned value is the position vector p_MSc from M's origin to the
    centroid Sc, expressed in frame M. (M is the frame in which this mesh's
@@ -284,8 +296,8 @@ class TriangleSurfaceMesh {
    @pre t ∈ {0, 1, 2,..., num_triangles()-1}.
    */
   template <typename C>
-  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(const Vector3<C>& p_MQ,
-                                                      int t) const {
+  Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
+      const Vector3<C>& p_MQ, int t) const {
     const Vector3<T>& v0 = vertex(element(t).vertex(0));
     const Vector3<T>& v1 = vertex(element(t).vertex(1));
     const Vector3<T>& v2 = vertex(element(t).vertex(2));
