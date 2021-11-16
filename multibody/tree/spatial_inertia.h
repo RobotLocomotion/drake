@@ -493,7 +493,8 @@ class SpatialInertia {
       const {
     if (!IsPhysicallyValid()) {
       throw std::runtime_error(fmt::format(
-          "The resulting spatial inertia:{} is not physically valid. "
+          "Error: The spatial inertia with"
+          "{} is not physically valid. "
           "See SpatialInertia::IsPhysicallyValid()", *this));
     }
   }

@@ -62,34 +62,48 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
 
 // Test rotational inertia factory method set via a 3x3 matrix.
 GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
-  // Form an arbitrary (but valid) rotational inertia.
-  const double Ixx = 17;
-  const double Iyy = 13;
-  const double Izz = 10;
-  const double Ixy = -3;
-  const double Ixz = -3;
-  const double Iyz = -6;
+  try {
+    // Form an arbitrary (but valid) rotational inertia.
+    const double Ixx = 17, Iyy = 13, Izz = 10;
+    const double Ixy = -3, Ixz = -3, Iyz = -6;
 
-  RotationalInertia<double> I =
-      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          Ixx, Iyy, Izz, Ixy, Ixz, Iyz, false);
-  EXPECT_TRUE(I.CouldBePhysicallyValid());
+    RotationalInertia<double> I =
+        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            Ixx, Iyy, Izz, Ixy, Ixz, Iyz, false);
+    EXPECT_TRUE(I.CouldBePhysicallyValid());
 
-  // Ensure an invalid rotational inertia always throws an exception if the
-  // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
-  EXPECT_THROW(
-      I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, false), std::exception);
-  EXPECT_THROW(
-      I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz), std::exception);
+    // Ensure an invalid rotational inertia always throws an exception if the
+    // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
+    EXPECT_THROW(
+        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, false),
+        std::exception);
+    EXPECT_THROW(
+        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
+        std::exception);
 
-  // Ensure an invalid rotational inertia does not throw an exception if the
-  // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
-  EXPECT_NO_THROW(
-      I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, true));
-  EXPECT_FALSE(I.CouldBePhysicallyValid());
+    // Ensure an invalid rotational inertia does not throw an exception if the
+    // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
+    EXPECT_NO_THROW(
+        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, true));
+    EXPECT_FALSE(I.CouldBePhysicallyValid());
+
+    // Check the message thrown when an invalid rotational inertia is created.
+    I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+
+    // GTEST_FAIL();
+  } catch (std::exception& e) {
+    std::string expected_msg =
+        "Error: The rotational inertia\n"
+        "[34, -3, -3]\n"
+        "[-3, 13, -6]\n"
+        "[-3, -6, 10]\n"
+        "did not pass the test CouldBePhysicallyValid().";
+    EXPECT_EQ(e.what(), expected_msg);
+  }
 }
 
 // Test constructor for a principal axes rotational inertia matrix (products

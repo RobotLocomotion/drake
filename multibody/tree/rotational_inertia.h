@@ -24,9 +24,6 @@
 namespace drake {
 namespace multibody {
 
-// Forward declare for friendship below.
-template <typename T> class SpatialInertia;
-
 /// This class describes the mass distribution (inertia properties) of a
 /// body or composite body about a particular point.  Herein, "composite body"
 /// means one body or a collection of bodies that are welded together.  In this
@@ -208,16 +205,16 @@ class RotationalInertia {
     return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
   }
 
-  /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
-  /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
+  /// Creates a rotational inertia with moments of inertia Ixx, Iyy, Izz,
+  /// and with products of inertia Ixy, Ixz, Iyz.
   /// @param[in] Ixx, Iyy, Izz Moments of inertia.
-  /// @param[in] Ixy, Ixz, Iyz Products of of inertia.
-  /// @param[in] skip_validity_check If false, The rotational inertia is checked
-  /// via CouldBePhysicallyValid() to ensure it is physically valid.  If true
-  /// (not generally recommended), the check is skipped (which reduces some
-  /// computational cost). The default value is false.
-  /// @throws std::exception if skip_validity_check = false and unable to make a
-  /// physically valid rotational inertia, i.e., CouldBePhysicallyValid() fails.
+  /// @param[in] Ixy, Ixz, Iyz Products of inertia.
+  /// @param[in] skip_validity_check If set to false, the rotational inertia is
+  /// checked via CouldBePhysicallyValid() to ensure it is physically valid.
+  /// If set to true (not generally recommended), the check is skipped (which
+  /// reduces some computational cost). The default value is false.
+  /// @throws std::exception if skip_validity_check is false and
+  /// CouldBePhysicallyValid() fails.
   /// For internal use only.
   static RotationalInertia<T> MakeFromMomentsAndProductsOfInertia(
       const T& Ixx, const T& Iyy, const T& Izz,
@@ -784,9 +781,6 @@ class RotationalInertia {
   // Eigen expression templated on Scalar.
   template <typename> friend class RotationalInertia;
 
-  // Friend class for accessing protected/private internals of this class.
-  friend class SpatialInertia<T>;
-
   // Constructs a rotational inertia for a particle Q whose position vector
   // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
   // expressed-in frame.  Particle Q's mass (or unit mass) is included in the
@@ -983,8 +977,11 @@ class RotationalInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid() {
     if (!CouldBePhysicallyValid()) {
-      throw std::logic_error("Error: Rotational inertia did not pass test: "
-                             "CouldBePhysicallyValid().");
+      // throw std::logic_error("Error: Rotational inertia did not pass test: "
+      //                        "CouldBePhysicallyValid().");
+      throw std::logic_error(fmt::format(
+          "Error: The rotational inertia\n"
+          "{}did not pass the test CouldBePhysicallyValid().", *this));
     }
   }
 
@@ -1047,34 +1044,7 @@ class RotationalInertia {
 /// Especially useful for debugging.
 /// @relates RotationalInertia
 template <typename T>
-std::ostream& operator<<(std::ostream& o,
-                         const RotationalInertia<T>& I) {
-  int width = 0;
-  // Computes largest width so that we can align columns for a prettier format.
-  // Idea taken from: Eigen::internal::print_matrix() in Eigen/src/Core/IO.h
-  for (int j = 0; j < I.cols(); ++j) {
-    for (int i = 0; i < I.rows(); ++i) {
-      std::stringstream sstr;
-      sstr.copyfmt(o);
-      sstr << I(i, j);
-      width = std::max<int>(width, static_cast<int>(sstr.str().length()));
-    }
-  }
-
-  // Outputs to stream.
-  for (int i = 0; i < I.rows(); ++i) {
-    o << "[";
-    if (width) o.width(width);
-    o << I(i, 0);
-    for (int j = 1; j < I.cols(); ++j) {
-      o << ", ";
-      if (width) o.width(width);
-      o << I(i, j);
-    }
-    o << "]" << std::endl;
-  }
-  return o;
-}
+std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
 
 // (This implementation is adapted from Simbody's Rotation::reexpressSymMat33.)
 // Use sneaky tricks from Featherstone to rotate a symmetric dyadic matrix.
