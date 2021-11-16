@@ -1,0 +1,4 @@
+#if !defined(INCLUDED_PETSCPKG_VERSION_H)
+#define INCLUDED_PETSCPKG_VERSION_H
+
+#endif

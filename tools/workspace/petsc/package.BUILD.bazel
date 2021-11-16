@@ -24,40 +24,35 @@ True or cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
-# Guessing headers with
-#       install(...
-#          guess_hdrs = "PACKAGE",
-#         )
-# fails and lists internal headers in addition to the public headers.
-PETSC_PUBLIC_HEADERS = [
-    "src/petsc/petsc.h",
-    "src/petsc/config.h",
-    "src/petsc/compiler.h",
-    "src/petsc/quat.h",
-    "src/petsc/vec3.h",
-    "src/petsc/petsc_export.h",
+HDRS = [
+    "include/petscksp.h",
+    "include/petscmat.h",
+    "include/petscpc.h",
+    "include/petscsys.h",
+    "include/petscvec.h",
+    "include/petscsystypes.h",
+    "include/petsccxxcomplexfix.h",
+    "include/petscversion.h",
 ]
 
-# Options used when building the petsc code. Handled by cmake in upstream code
-PETSC_COPTS = [
+SRCS = [
+]
+
+COPTS = [
     "-Wno-all",
     "-fvisibility=hidden",
 ]
 
-# Generates the library exported to users.  Upstream's CMake code lists out all
-# sources instead of globbing, but conveniently puts the public headers in one
-# place and private sources and headers in another; we'll use globbing here.
-True or cc_library(
+cc_library(
     name = "petsc",
-    srcs = glob([
-        "src/*.c",
-        "src/*.h",
-    ]),
-    hdrs = PETSC_PUBLIC_HEADERS,
-    copts = PETSC_COPTS,
-    defines = ["PETSC_STATIC_DEFINE"],
-    includes = ["src"],
+    srcs = SRCS,
+    hdrs = HDRS,
+    copts = COPTS,
+    includes = ["include"],
     linkstatic = 1,
+    deps = [
+        "@drake//tools/workspace/petsc:linux_config",
+    ]
 )
 
 True or install(
