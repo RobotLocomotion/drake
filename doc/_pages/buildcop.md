@@ -18,11 +18,11 @@ is maintained on the
 
 # Process
 
-The build cop is expected to be on duty during normal business hours Eastern
-Time, approximately 9am to 5pm on weekdays, holidays excepted. Developers are
-encouraged, but not required, to merge pull requests during times when the build
-cop is on duty. Nightly and weekly build failures will be addressed the
-following weekday morning.
+Two build cops are expected to be on duty on weekdays, holidays excepted. At
+least one build cop should be on duty during normal business hours Eastern Time,
+approximately 9am to 5pm. Developers are encouraged, but not required, to merge
+pull requests during times when the build cop is on duty. Nightly and weekly
+build failures will be addressed the following weekday morning.
 
 When a CI build failure occurs, the build cop will be notified by email.
 Notifications are sent to ``drake-alerts+jenkins@tri.global`` and
