@@ -25,14 +25,30 @@ True or cmake_configure_file(
 )
 
 HDRS = [
-    "include/petscksp.h",
-    "include/petscmat.h",
-    "include/petscpc.h",
-    "include/petscsys.h",
-    "include/petscvec.h",
-    "include/petscsystypes.h",
+    "include/petsc/mpiuni/mpi.h",
     "include/petsccxxcomplexfix.h",
+    "include/petscdevicetypes.h",
+    "include/petscdmtypes.h",
+    "include/petscdrawtypes.h",
+    "include/petscerror.h",
+    "include/petscis.h",
+    "include/petscistypes.h",
+    "include/petscksp.h",
+    "include/petsclog.h",
+    "include/petscmat.h",
+    "include/petscmath.h",
+    "include/petscoptions.h",
+    "include/petscpc.h",
+    "include/petscpctypes.h",
+    "include/petscsectiontypes.h",
+    "include/petscsftypes.h",
+    "include/petscsys.h",
+    "include/petscsystypes.h",
+    "include/petsctime.h",
+    "include/petscvec.h",
     "include/petscversion.h",
+    "include/petscviewer.h",
+    "include/petscviewertypes.h",
 ]
 
 SRCS = [
