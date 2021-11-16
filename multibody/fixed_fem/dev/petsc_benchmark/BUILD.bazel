@@ -15,6 +15,7 @@ drake_cc_binary(
     deps = [
         "@eigen",
         "@googlebenchmark//:benchmark",
+        "@petsc",
     ],
 )
 
