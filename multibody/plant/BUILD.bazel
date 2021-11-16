@@ -18,6 +18,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
+        ":compliant_contact_manager",
         ":contact_jacobians",
         ":contact_results",
         ":contact_results_to_meshcat",
@@ -34,6 +35,17 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_manager",
+    srcs = ["compliant_contact_manager.cc"],
+    hdrs = ["compliant_contact_manager.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//multibody/contact_solvers:contact_solver",
+        "//multibody/triangle_quadrature",
     ],
 )
 
@@ -320,6 +332,16 @@ drake_cc_library(
         ":multibody_plant_config",
         ":multibody_plant_core",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_manager_test",
+    deps = [
+        ":compliant_contact_manager",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/contact_solvers:pgs_solver",
     ],
 )
 
