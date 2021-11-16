@@ -220,10 +220,11 @@ class PetscFixture : public benchmark::Fixture {
   PC pc_;       /* preconditioner context */
   int num_nodes_{0};
   vector<Vector4i> elements_;
-  vector<int> nnz_; /* sparsity pattern: nnz_[i] gives the number of nonzero
-                       entries in the i-th row. */
+  vector<int> nnz_; /* sparsity pattern: nnz_[i] gives the number of nonzero */
+                    /*  entries in the i-th row. */
 };
 
+// NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
 BENCHMARK_F(PetscFixture, AssembleAndSolve)(benchmark::State& state) {
   for (auto _ : state) {
     AssembleMatrix();
@@ -231,6 +232,7 @@ BENCHMARK_F(PetscFixture, AssembleAndSolve)(benchmark::State& state) {
   }
 }
 
+// NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
 BENCHMARK_F(PetscFixture, BlockAssembleAndSolve)(benchmark::State& state) {
   for (auto _ : state) {
     AssembleBlockMatrix();
