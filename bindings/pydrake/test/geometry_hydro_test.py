@@ -86,6 +86,8 @@ class TestGeometryHydro(unittest.TestCase):
         self.assertEqual(len(mesh.triangles()), 2)
         self.assertEqual(len(mesh.vertices()), 4)
         self.assertListEqual(list(mesh.centroid()), [0, 0, 0])
+        self.assertListEqual(list(mesh.element_centroid(t=1)),
+                             [-1/3.0, 1/3.0, 0])
 
     def test_volume_mesh(self):
         # Create a mesh out of two tetrahedra with a single, shared face

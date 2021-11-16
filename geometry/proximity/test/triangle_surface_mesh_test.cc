@@ -129,9 +129,11 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   EXPECT_EQ(4, surface_mesh_W->num_vertices());
   for (int v = 0; v < 4; ++v)
     EXPECT_EQ(X_WM * vertex_data_M[v], surface_mesh_W->vertex(v));
-  for (int f = 0; f < 2; ++f)
+  for (int f = 0; f < 2; ++f) {
+    EXPECT_EQ(surface_mesh_W->element(f).num_vertices(), 3);
     for (int v = 0; v < 3; ++v)
       EXPECT_EQ(face_data[f][v], surface_mesh_W->element(f).vertex(v));
+  }
   return surface_mesh_W;
 }
 
@@ -195,9 +197,12 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
   const Vector3<double> centroid = surface_mesh->centroid();
-  EXPECT_NEAR(centroid[0], 1.0/6, tol);
-  EXPECT_NEAR(centroid[1], -1.0/6, tol);
-  EXPECT_NEAR(centroid[2], -0.5, tol);
+  EXPECT_TRUE(
+      CompareMatrices(centroid, Vector3d(1.0 / 6, -1.0 / 6, -0.5), tol));
+  EXPECT_TRUE(CompareMatrices(surface_mesh->element_centroid(0),
+                              Vector3d(-0.5 / 3, 0.5 / 3, -0.5), tol));
+  EXPECT_TRUE(CompareMatrices(surface_mesh->element_centroid(1),
+                              Vector3d(1.0 / 3, -1.0 / 3, -0.5), tol));
 
   // The documentation for the centroid method specifies particular behavior
   // when the total area is zero. Test that.
