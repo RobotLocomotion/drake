@@ -39,13 +39,13 @@ RUN /image/build-vtk.sh
 # Build the Drake wheel.
 # -----------------------------------------------------------------------------
 
-FROM incubator
-
-ENV REPO=https://api.github.com/repos/robotlocomotion/drake
+FROM incubator AS clean
 
 ADD image/build-drake.sh /image/
 ADD image/pip-drake.patch /image/
-ADD ${REPO}/git/refs/heads/master /tmp/drake.sha
+ADD image/drake-src.tar.xz /drake/
+
+FROM clean AS wheel
 
 RUN --mount=type=ssh \
     /image/build-drake.sh
