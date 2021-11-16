@@ -26,6 +26,8 @@ True or cmake_configure_file(
 
 PUBLIC_HDRS = [
     "include/petsc/mpiuni/mpi.h",
+    "include/petscbt.h",
+    "include/petscctable.h",
     "include/petsccxxcomplexfix.h",
     "include/petscdevicetypes.h",
     "include/petscdmtypes.h",
@@ -36,6 +38,7 @@ PUBLIC_HDRS = [
     "include/petscksp.h",
     "include/petsclog.h",
     "include/petscmat.h",
+    "include/petscmatcoarsen.h",
     "include/petscmath.h",
     "include/petscoptions.h",
     "include/petscpc.h",
@@ -52,15 +55,26 @@ PUBLIC_HDRS = [
 ]
 
 PRIVATE_HDRS =[
+    "include/petsc/private/isimpl.h",
     "include/petsc/private/logimpl.h",
+    "include/petsc/private/matimpl.h",
     "include/petsc/private/petscimpl.h",
+    "include/petsc/private/valgrind/valgrind.h",
     "include/petsc/private/vecimpl.h",
 ]
 
 SRCS = [
-    "src/vec/vec/interface/veccreate.c",
-    "src/vec/vec/interface/vector.c",
+    "src/mat/interface/matrix.c",
+    # "src/sys/classes/viewer/impls/glvis/glvis.c",
+    "src/sys/error/err.c",
     "src/sys/logging/plog.c",
+    "src/sys/logging/utils/eventlog.c",
+    "src/sys/mpiuni/mpi.c",
+    "src/sys/objects/init.c",
+    "src/sys/objects/pinit.c", 
+    "src/vec/vec/interface/veccreate.c",
+    "src/vec/vec/interface/vecreg.c",
+    "src/vec/vec/interface/vector.c",
 ]
 
 COPTS = [
