@@ -129,6 +129,21 @@ class TriangleSurfaceMesh {
     return triangles_[e];
   }
 
+  /** Returns the centroid of a triangle measured and expressed in the mesh's
+   frame. */
+  Vector3<T> element_centroid(int t) const {
+    DRAKE_DEMAND(0 <= t && t < num_triangles());
+    /* We're not pre-computing and returning stored values because the current
+     expectation is that the cost of storing the values (greater construction
+     time, more complexity in code) is probably not justified based on how
+     many times the centroid would be accessed. So, for now, we'll compute on
+     the fly until we know that the query cost dominates. */
+    const auto& tri = triangles_[t];
+    return (vertices_[tri.vertex(0)] + vertices_[tri.vertex(1)] +
+            vertices_[tri.vertex(2)]) /
+           3;
+  }
+
   /** Returns the triangles. */
   const std::vector<SurfaceTriangle>& triangles() const { return triangles_; }
 
@@ -227,15 +242,6 @@ class TriangleSurfaceMesh {
   const Vector3<T>& face_normal(int t) const {
     DRAKE_DEMAND(0 <= t && t < num_triangles());
     return face_normals_[t];
-  }
-
-  /** Returns the centroid of a triangle. */
-  Vector3<T> centroid(int t) const {
-    DRAKE_DEMAND(0 <= t && t < num_triangles());
-    const auto& tri = triangles_[t];
-    return (vertices_[tri.vertex(0)] + vertices_[tri.vertex(1)] +
-            vertices_[tri.vertex(2)]) /
-           3;
   }
 
   /** Returns the area-weighted geometric centroid of this surface mesh. The
