@@ -200,7 +200,8 @@ anonymous namespaces. Avoid `using namespace` directives otherwise.
 - Any symbol referenced in a module binding (even as function/method parameters)
 must either be *bound* in that compilation unit (with the binding evaluated
 before to the reference), or the module must import the pydrake module in which
-it is bound (e.g., `py::module::import("pydrake.foo"))`). Failure to do so will
+it is bound (e.g., `py::module::import("pydrake.foo"))`). Failure to do so can
+cause errors (unable to cast unregistered types from Python to C++) and can
 cause the generated docstring from pybind11 to render these types by their C++
 `typeid` rather than the Python type name.
 - If a module depends on the *bindings* for another module, then you should do
