@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include "drake/common/cond.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -141,10 +142,10 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
   T q3 = zA + zB;  // Third angle in rotation sequence.
 
   // If necessary, modify angles q1 and/or q3 to be between -pi and pi.
-  if (q1 > M_PI) q1 = q1 - 2 * M_PI;
-  if (q1 < -M_PI) q1 = q1 + 2 * M_PI;
-  if (q3 > M_PI) q3 = q3 - 2 * M_PI;
-  if (q3 < -M_PI) q3 = q3 + 2 * M_PI;
+  q1 = if_then_else(q1 > M_PI, q1 - 2 * M_PI, q1);
+  q1 = if_then_else(q1 < -M_PI, q1 + 2 * M_PI, q1);
+  q3 = if_then_else(q3 > M_PI, q3 - 2 * M_PI, q3);
+  q3 = if_then_else(q3 < -M_PI, q3 + 2 * M_PI, q3);
 
   // Return in Drake/ROS conventional SpaceXYZ q1, q2, q3 (roll-pitch-yaw) order
   // (which is equivalent to BodyZYX q3, q2, q1 order).
@@ -175,7 +176,8 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   const RotationMatrix<T> R_quaternion(quaternion);
   constexpr double tolerance = 20 * kEpsilon;
-  if (!R_quaternion.IsNearlyEqualTo(R, tolerance)) {
+  if (scalar_predicate<T>::is_bool &&
+      !R_quaternion.IsNearlyEqualTo(R, tolerance)) {
     std::string message = fmt::format("RollPitchYaw::{}():"
         " An element of the RotationMatrix R passed to this method differs by"
         " more than {:G} from the corresponding element of the RotationMatrix"
@@ -230,6 +232,29 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
                      tolerance_degrees, file_name, line_number);
     throw std::runtime_error(message);
 }
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
+  // Helper to represent an angle as a terse string.  If the angle is symbolic
+  // and ends up a string that's too long, return a placeholder instead.
+  auto repr = [](const T& angle) {
+    std::string result = fmt::format("{}", angle);
+    if (std::is_same_v<T, symbolic::Expression> && (result.size() >= 30)) {
+      result = "<symbolic>";
+    }
+    return result;
+  };
+  const T& roll = rpy.roll_angle();
+  const T& pitch = rpy.pitch_angle();
+  const T& yaw = rpy.yaw_angle();
+  out << fmt::format("rpy = {} {} {}", repr(roll), repr(pitch), repr(yaw));
+  return out;
+}
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    static_cast<std::ostream&(*)(std::ostream&, const RollPitchYaw<T>&)>(
+        &operator<< )
+))
 
 }  // namespace math
 }  // namespace drake
