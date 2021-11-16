@@ -631,7 +631,7 @@ void MultibodyTree<T>::FinalizeInternals() {
 
   // Creates BodyNode's:
   // This recursion order ensures that a BodyNode's parent is created before the
-  // node itself, since BodyNode objects are in Breadth First Traversal order.
+  // node itself, since BodyNode objects are in Depth First Traversal order.
   for (BodyNodeIndex body_node_index(0);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);

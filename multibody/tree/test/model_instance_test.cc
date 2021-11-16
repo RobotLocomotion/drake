@@ -75,12 +75,20 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
                               Vector1d(3)));
   EXPECT_TRUE(CompareMatrices(act_vector, Eigen::Vector3d(1, 2, 3)));
 
+  // N.B. These tests assume a specific ordering of the state. Each body in the
+  // model has an associated mobility. Mobilities are numbered in the order
+  // mobilizers are added. For this simple model MultibodyTree adds mobilizers
+  // for each joint in the order joints were added. Free floating mobilizers are
+  // added last at Finalize(). This implies that DOFs for the first tree are
+  // first, followed by DOFs of the second tree, etc.
+
   Eigen::VectorXd pos_vector(10);
   pos_vector << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
 
+  // DOFs for instance1 correspond to those DOFs in the first tree.
   Eigen::VectorXd instance1_pos =
       tree.GetPositionsFromArray(instance1, pos_vector);
-  EXPECT_TRUE(CompareMatrices(instance1_pos, Eigen::Vector2d(8, 10)));
+  EXPECT_TRUE(CompareMatrices(instance1_pos, Eigen::Vector2d(1, 2)));
 
   // Change the positions for this instance and check again.
   const Eigen::Vector2d new_pos(21, 23);
@@ -92,7 +100,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
       tree.GetPositionsFromArray(instance2, pos_vector);
 
   Eigen::VectorXd instance2_pos_expected(8);
-  instance2_pos_expected << 1, 2, 3, 4, 5, 6, 7, 9;
+  instance2_pos_expected << 3, 4, 5, 6, 7, 8, 9, 10;
   EXPECT_TRUE(CompareMatrices(instance2_pos, instance2_pos_expected));
 
   Eigen::VectorXd vel_vector(9);
@@ -100,7 +108,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
 
   Eigen::VectorXd instance1_vel =
       tree.GetVelocitiesFromArray(instance1, vel_vector);
-  EXPECT_TRUE(CompareMatrices(instance1_vel, Eigen::Vector2d(17, 19)));
+  EXPECT_TRUE(CompareMatrices(instance1_vel, Eigen::Vector2d(11, 12)));
 
   // Change the velocities for this instance and check again.
   const Eigen::Vector2d new_vel(29, 31);
@@ -111,7 +119,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   Eigen::VectorXd instance2_vel =
       tree.GetVelocitiesFromArray(instance2, vel_vector);
   Eigen::VectorXd instance2_vel_expected(7);
-  instance2_vel_expected << 11, 12, 13, 14, 15, 16, 18;
+  instance2_vel_expected << 13, 14, 15, 16, 17, 18, 19;
   EXPECT_TRUE(CompareMatrices(instance2_vel, instance2_vel_expected));
 
   // Create a MultibodyTreeSystem so that we can get a context.
