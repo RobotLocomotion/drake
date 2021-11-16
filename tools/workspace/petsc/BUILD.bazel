@@ -1,0 +1,42 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/skylark:py.bzl", "py_test")
+
+cc_library(
+    name = "stubs",
+    hdrs = [
+        "stubs/petscconf.h",
+        "stubs/petscconf_poison.h",
+        "stubs/petscconfiginfo.h",
+        "stubs/petscfix.h",
+        "stubs/petscmachineinfo.h",
+        "stubs/petscpkg_version.h",
+    ],
+    strip_include_prefix = "stubs",
+    tags = [
+        # Only build this library when petsc needs it, not as part of "...".
+        "manual",
+    ],
+    visibility = ["@petsc//:__pkg__"],
+)
+
+py_test(
+    name = "license_check_khash_test",
+    srcs = ["test/license_check_test.py"],
+    args = ["$(location @petsc//:LICENSE-khash.txt)"],
+    data = ["@petsc//:LICENSE-khash.txt"],
+    main = "test/license_check_test.py",
+    tags = ["no_kcov"],
+)
+
+py_test(
+    name = "license_check_valgrind_test",
+    srcs = ["test/license_check_test.py"],
+    args = ["$(location @petsc//:LICENSE-valgrind.txt)"],
+    data = ["@petsc//:LICENSE-valgrind.txt"],
+    main = "test/license_check_test.py",
+    tags = ["no_kcov"],
+)
+
+add_lint_tests()
