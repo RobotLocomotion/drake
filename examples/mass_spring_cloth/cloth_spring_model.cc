@@ -158,7 +158,7 @@ void ClothSpringModel<T>::CopyDiscreteStateOut(
   const systems::BasicVector<T>& discrete_state_vector =
       context.get_discrete_state(0);
   output->SetFromVector(
-      discrete_state_vector.get_value().head(3 * num_particles_));
+      discrete_state_vector.value().head(3 * num_particles_));
 }
 
 template <typename T>
@@ -195,9 +195,7 @@ template <typename T>
 void ClothSpringModel<T>::UpdateDiscreteState(
     const systems::Context<T>& context,
     systems::DiscreteValues<T>* next_states) const {
-  const systems::BasicVector<T>& current_state =
-      context.get_discrete_state().get_vector();
-  const VectorX<T>& current_state_values = current_state.get_value();
+  const VectorX<T>& current_state_values = context.get_discrete_state().value();
   const auto& q_n = current_state_values.head(3 * num_particles_);
   const auto& v_n = current_state_values.tail(3 * num_particles_);
   // v_hat is the velocity of the particles after adding the effect of the
@@ -232,8 +230,6 @@ void ClothSpringModel<T>::UpdateDiscreteState(
   // which we abbreviate as H * dv = f * dt.
   VectorX<T> dv = VectorX<T>::Zero(v_hat.size());
   VectorX<T> damping_force = VectorX<T>::Zero(v_hat.size());
-  // Extract a const Eigen::VectorBlock<const VectorX<T>>& tmp_v_hat to comply
-  // with the API of AccumulateDampingForce.
   AccumulateDampingForce(p, q_n, v_hat, &damping_force);
   CalcDiscreteDv(p, q_n, &damping_force, &dv);
 

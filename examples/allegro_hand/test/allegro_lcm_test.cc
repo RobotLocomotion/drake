@@ -26,7 +26,7 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
   dut.CalcOutput(*context, output.get());
   const double tol = 1e-5;
   EXPECT_TRUE(CompareMatrices(
-      expected, output->get_vector_data(0)->get_value(),
+      expected, output->get_vector_data(0)->value(),
       tol, MatrixCompareType::absolute));
 
   Eigen::VectorXd position(kAllegroNumJoints);
@@ -35,12 +35,12 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
   dut.set_initial_position(context.get(), position);
   dut.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(
-      position, output->get_vector_data(0)->get_value()
+      position, output->get_vector_data(0)->value()
       .head(kAllegroNumJoints),
       tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
       expected.tail(kAllegroNumJoints),
-      output->get_vector_data(0)->get_value().tail(kAllegroNumJoints),
+      output->get_vector_data(0)->value().tail(kAllegroNumJoints),
       tol, MatrixCompareType::absolute));
 
   Eigen::VectorXd delta(kAllegroNumJoints);
@@ -65,15 +65,15 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
   dut.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(
       position + delta,
-      output->get_vector_data(0)->get_value().head(kAllegroNumJoints),
+      output->get_vector_data(0)->value().head(kAllegroNumJoints),
       tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
       VectorX<double>::Zero(kAllegroNumJoints),
-      output->get_vector_data(0)->get_value().tail(kAllegroNumJoints),
+      output->get_vector_data(0)->value().tail(kAllegroNumJoints),
       tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
       VectorX<double>::Zero(kAllegroNumJoints),
-      output->get_vector_data(1)->get_value(),
+      output->get_vector_data(1)->value(),
       tol, MatrixCompareType::absolute));
 }
 

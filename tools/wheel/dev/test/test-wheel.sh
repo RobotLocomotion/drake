@@ -23,4 +23,6 @@ pip install "$1"
 python << EOF
 import pydrake.all
 print(pydrake.getDrakePath())
+print(pydrake.all.PackageMap().GetPath("drake"))
+assert pydrake.all.SnoptSolver().available(), "Missing SNOPT"
 EOF

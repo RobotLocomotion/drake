@@ -103,11 +103,32 @@ class TestGeometryVisualizers(unittest.TestCase):
         cloud.mutable_xyzs()[:] = np.zeros((3, 4))
         meshcat.SetObject(path="/test/cloud", cloud=cloud,
                           point_size=0.01, rgba=mut.Rgba(.5, .5, .5))
+        mesh = mut.TriangleSurfaceMesh(
+            triangles=[mut.SurfaceTriangle(
+                0, 1, 2), mut.SurfaceTriangle(3, 0, 2)],
+            vertices=[[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]])
+        meshcat.SetObject(path="/test/triangle_surface_mesh", mesh=mesh,
+                          rgba=mut.Rgba(0.3, 0.3, 0.3), wireframe=True,
+                          wireframe_line_width=2.0)
+        meshcat.SetLine(path="/test/line", vertices=np.eye(3),
+                        line_width=2.0, rgba=mut.Rgba(.3, .3, .3))
+        meshcat.SetLineSegments(path="/test/line_segments", start=np.eye(3),
+                                end=2*np.eye(3), line_width=2.0,
+                                rgba=mut.Rgba(.3, .3, .3))
+        meshcat.SetTriangleMesh(
+            path="/test/triangle_mesh",
+            vertices=np.array([[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]]).T,
+            faces=np.array([[0, 1, 2], [3, 0, 2]]).T,
+            rgba=mut.Rgba(0.3, 0.3, 0.3),
+            wireframe=True,
+            wireframe_line_width=2.0)
         meshcat.SetProperty(path="/Background",
                             property="visible",
                             value=True)
         meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
                             property="intensity", value=1.0)
+        meshcat.SetProperty(path="/Background", property="top_color",
+                            value=[0, 0, 0])
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()

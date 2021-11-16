@@ -158,8 +158,7 @@ void Sine<T>::CalcArg(
     time_vec.fill(context.get_time());
     *arg = frequency_.array() * time_vec.array() + phase_.array();
   } else {
-    Eigen::VectorBlock<const VectorX<T>> input =
-        this->get_input_port(0).Eval(context);
+    const VectorX<T>& input = this->get_input_port(0).Eval(context);
     *arg = frequency_.array() * input.array() + phase_.array();
   }
 }

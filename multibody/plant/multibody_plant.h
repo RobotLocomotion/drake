@@ -1469,11 +1469,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// [Hunt and Crossley, 1975], parameterized by a dissipation constant with
   /// units of inverse of velocity, i.e. `s/m`.
   ///
-  /// The elastic modulus and dissipation can be specified in one of two ways:
+  /// The dissipation can be specified in one of two ways:
   ///
-  /// - define them in an instance of geometry::ProximityProperties using
+  /// - define it in an instance of geometry::ProximityProperties using
   ///   the function geometry::AddContactMaterial(), or
-  /// - define them in an input URDF/SDF as detailed @ref sdf_contact_material
+  /// - define it in an input URDF/SDF as detailed @ref sdf_contact_material
+  ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
+  ///
+  /// The hydroelastic modulus can be specified in one of two ways:
+  ///
+  /// - define it in an instance of geometry::ProximityProperties using
+  ///   the function geometry::AddSoftHydroelasticProperties() and
+  ///   geometry::AddSoftHydroelasticPropertiesForHalfSpace(), or
+  /// - define it in an input URDF/SDF as detailed @ref sdf_contact_material
   ///   "here for SDF" or @ref urdf_contact_material "here for URDF".
   ///
   /// With the effective properties of the pair defined as above, the

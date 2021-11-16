@@ -844,8 +844,8 @@ TYPED_TEST(ContactResultsToLcmTest, Transmogrifcation) {
  */
 class ConnectVisualizerTest : public ::testing::Test {
  protected:
-  void ConfigureDiagram(bool is_nested) {
-    auto system_pair = AddMultibodyPlantSceneGraph(&builder_, 0.0);
+  void AddPlantAndSceneGraphAndOneLink(DiagramBuilder<double>* builder) {
+    auto system_pair = AddMultibodyPlantSceneGraph(builder, 0.0);
     plant_ = &system_pair.plant;
     scene_graph_ = &system_pair.scene_graph;
 
@@ -853,16 +853,21 @@ class ConnectVisualizerTest : public ::testing::Test {
     plant_->RegisterCollisionGeometry(body, {}, Sphere(1.0), kGeoName,
                                       CoulombFriction<double>{});
     plant_->Finalize();
+  }
 
+  void ConfigureDiagram(bool is_nested) {
     if (is_nested) {
       /* We'll treat the MBP-SG pair as a nested diagram so we can test all
        overloads of the DUT. This means, exporting the contact port out of the
        diagram. */
-      builder_.ExportOutput(plant_->get_contact_results_output_port(),
-                            "contact_results");
-
-      auto diagram = builder_.AddSystem(builder_.Build());
+      DiagramBuilder<double> inner_builder;
+      AddPlantAndSceneGraphAndOneLink(&inner_builder);
+      inner_builder.ExportOutput(plant_->get_contact_results_output_port(),
+                                 "contact_results");
+      auto diagram = builder_.AddSystem(inner_builder.Build());
       contact_results_port_ = &diagram->GetOutputPort("contact_results");
+    } else {
+      AddPlantAndSceneGraphAndOneLink(&builder_);
     }
   }
 

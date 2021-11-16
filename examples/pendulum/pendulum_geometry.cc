@@ -24,6 +24,9 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::MakePhongIllustrationProperties;
+using geometry::PerceptionProperties;
+using geometry::render::RenderLabel;
+using geometry::Rgba;
 using geometry::Sphere;
 using std::make_unique;
 
@@ -65,31 +68,51 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   const double mass = params.mass();
 
   // The base.
-  GeometryId id = scene_graph->RegisterAnchoredGeometry(
-      source_id_,
-      make_unique<GeometryInstance>(
-          math::RigidTransformd(Vector3d(0., 0., .025)),
-          make_unique<Box>(.05, 0.05, 0.05), "base"));
-  scene_graph->AssignRole(
-      source_id_, id, MakePhongIllustrationProperties(Vector4d(.3, .6, .4, 1)));
+  {
+    GeometryId id = scene_graph->RegisterAnchoredGeometry(
+        source_id_, make_unique<GeometryInstance>(
+                        math::RigidTransformd(Vector3d(0., 0., .025)),
+                        make_unique<Box>(.05, 0.05, 0.05), "base"));
+
+    scene_graph->AssignRole(
+        source_id_, id,
+        MakePhongIllustrationProperties(Vector4d(.3, .6, .4, 1)));
+    PerceptionProperties perception;
+    perception.AddProperty("phong", "diffuse", Rgba{0.3, 0.6, 0.4, 1.0});
+    perception.AddProperty("label", "id", RenderLabel::kDontCare);
+    scene_graph->AssignRole(source_id_, id, perception);
+  }
 
   // The arm.
-  id = scene_graph->RegisterGeometry(
-      source_id_, frame_id_,
-      make_unique<GeometryInstance>(
-          math::RigidTransformd(Vector3d(0., 0., -length / 2.)),
-          make_unique<Cylinder>(0.01, length), "arm"));
-  scene_graph->AssignRole(
-      source_id_, id, MakePhongIllustrationProperties(Vector4d(.9, .1, 0, 1)));
+  {
+    GeometryId id = scene_graph->RegisterGeometry(
+        source_id_, frame_id_,
+        make_unique<GeometryInstance>(
+            math::RigidTransformd(Vector3d(0., 0., -length / 2.)),
+            make_unique<Cylinder>(0.01, length), "arm"));
+    scene_graph->AssignRole(
+        source_id_, id,
+        MakePhongIllustrationProperties(Vector4d(.9, .1, 0, 1)));
+    PerceptionProperties perception;
+    perception.AddProperty("phong", "diffuse", Rgba{0.9, 0.1, 0, 1.0});
+    perception.AddProperty("label", "id", RenderLabel::kDontCare);
+    scene_graph->AssignRole(source_id_, id, perception);
+  }
 
   // The mass at the end of the arm.
-  id = scene_graph->RegisterGeometry(
-      source_id_, frame_id_,
-      make_unique<GeometryInstance>(
-          math::RigidTransformd(Vector3d(0., 0., -length)),
-          make_unique<Sphere>(mass / 40.), "arm point mass"));
-  scene_graph->AssignRole(
-      source_id_, id, MakePhongIllustrationProperties(Vector4d(0, 0, 1, 1)));
+  {
+    GeometryId id = scene_graph->RegisterGeometry(
+        source_id_, frame_id_,
+        make_unique<GeometryInstance>(
+            math::RigidTransformd(Vector3d(0., 0., -length)),
+            make_unique<Sphere>(mass / 40.), "arm point mass"));
+    scene_graph->AssignRole(
+        source_id_, id, MakePhongIllustrationProperties(Vector4d(0, 0, 1, 1)));
+    PerceptionProperties perception;
+    perception.AddProperty("phong", "diffuse", Rgba{0, 0, 1, 1});
+    perception.AddProperty("label", "id", RenderLabel::kDontCare);
+    scene_graph->AssignRole(source_id_, id, perception);
+  }
 }
 
 PendulumGeometry::~PendulumGeometry() = default;

@@ -20,7 +20,8 @@ namespace systems {
 /// DiagramBuilder is a factory class for Diagram.
 ///
 /// It is single use: after calling Build or BuildInto, DiagramBuilder gives up
-/// ownership of the constituent systems, and should therefore be discarded.
+/// ownership of the constituent systems, and should therefore be discarded;
+/// all member functions will throw an exception after this point.
 ///
 /// When a Diagram (or DiagramBuilder) that owns systems is destroyed, the
 /// systems will be destroyed in the reverse of the order they were added.
@@ -52,6 +53,7 @@ class DiagramBuilder {
   /// @tparam S The type of system to add.
   template<class S>
   S* AddSystem(std::unique_ptr<S> system) {
+    ThrowIfAlreadyBuilt();
     if (system->get_name().empty()) {
       system->set_name(system->GetMemoryObjectName());
     }
@@ -87,6 +89,7 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<class S, typename... Args>
   S* AddSystem(Args&&... args) {
+    ThrowIfAlreadyBuilt();
     return AddSystem(std::make_unique<S>(std::forward<Args>(args)...));
   }
 
@@ -117,6 +120,7 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<template<typename Scalar> class S, typename... Args>
   S<T>* AddSystem(Args&&... args) {
+    ThrowIfAlreadyBuilt();
     return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
@@ -133,6 +137,7 @@ class DiagramBuilder {
   /// @post The system's name is @p name.
   template<class S>
   S* AddNamedSystem(const std::string& name, std::unique_ptr<S> system) {
+    ThrowIfAlreadyBuilt();
     system->set_name(name);
     return AddSystem(std::move(system));
   }
@@ -163,6 +168,7 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<class S, typename... Args>
   S* AddNamedSystem(const std::string& name, Args&&... args) {
+    ThrowIfAlreadyBuilt();
     return AddNamedSystem(
         name, std::make_unique<S>(std::forward<Args>(args)...));
   }
@@ -195,12 +201,16 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<template<typename Scalar> class S, typename... Args>
   S<T>* AddNamedSystem(const std::string& name, Args&&... args) {
+    ThrowIfAlreadyBuilt();
     return AddNamedSystem(
         name, std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
   /// Returns whether any Systems have been added yet.
-  bool empty() const { return registered_systems_.empty(); }
+  bool empty() const {
+    ThrowIfAlreadyBuilt();
+    return registered_systems_.empty();
+  }
 
   /// Returns the list of contained Systems.
   /// See also GetMutableSystems().
@@ -311,6 +321,8 @@ class DiagramBuilder {
       const InputPort<T>& model_input,
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
 
+  void ThrowIfAlreadyBuilt() const;
+
   // Throws if the given input port (belonging to a child subsystem) has
   // already been connected to an output port, or exported to be an input
   // port of the whole diagram.
@@ -318,7 +330,6 @@ class DiagramBuilder {
 
   void ThrowIfSystemNotRegistered(const System<T>* system) const;
 
-  // (Defined lower down in this file.)
   void ThrowIfAlgebraicLoopsExist() const;
 
   // Produces the Blueprint that has been described by the calls to
@@ -327,6 +338,9 @@ class DiagramBuilder {
   // The DiagramBuilder passes ownership of the registered systems to the
   // blueprint.
   std::unique_ptr<typename Diagram<T>::Blueprint> Compile();
+
+  // Whether or not Build() or BuildInto() has been called yet.
+  bool already_built_{false};
 
   // The ordered inputs and outputs of the Diagram to be built.
   std::vector<InputPortLocator> input_port_ids_;

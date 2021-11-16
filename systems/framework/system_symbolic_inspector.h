@@ -75,35 +75,31 @@ class SystemSymbolicInspector {
 
   /// Returns a reference to the symbolic representation of the input.
   /// @param i The input port number.
-  Eigen::VectorBlock<const VectorX<symbolic::Variable>> input(int i) const {
+  const VectorX<symbolic::Variable>& input(int i) const {
     DRAKE_DEMAND(i >= 0 && i < static_cast<int>(input_variables_.size()));
-    return input_variables_[i].head(input_variables_[i].rows());
+    return input_variables_[i];
   }
 
   /// Returns a reference to the symbolic representation of the continuous
   /// state.
-  Eigen::VectorBlock<const VectorX<symbolic::Variable>> continuous_state()
-      const {
-    return continuous_state_variables_.head(continuous_state_variables_.rows());
+  const VectorX<symbolic::Variable>& continuous_state() const {
+    return continuous_state_variables_;
   }
 
   /// Returns a reference to the symbolic representation of the discrete state.
   /// @param i The discrete state group number.
-  Eigen::VectorBlock<const VectorX<symbolic::Variable>> discrete_state(
-      int i) const {
+  const VectorX<symbolic::Variable>& discrete_state(int i) const {
     DRAKE_DEMAND(i >= 0 &&
                  i < static_cast<int>(discrete_state_variables_.size()));
-    return discrete_state_variables_[i].head(
-        discrete_state_variables_[i].rows());
+    return discrete_state_variables_[i];
   }
 
   /// Returns a reference to the symbolic representation of the numeric
   /// parameters.
   /// @param i The numeric parameter group number.
-  Eigen::VectorBlock<const VectorX<symbolic::Variable>> numeric_parameters(
-      int i) const {
+  const VectorX<symbolic::Variable>& numeric_parameters(int i) const {
     DRAKE_DEMAND(i >= 0 && i < static_cast<int>(numeric_parameters_.size()));
-    return numeric_parameters_[i].head(numeric_parameters_[i].rows());
+    return numeric_parameters_[i];
   }
 
   /// Returns a copy of the symbolic representation of the continuous-time
@@ -115,17 +111,16 @@ class SystemSymbolicInspector {
   /// Returns a reference to the symbolic representation of the discrete-time
   /// dynamics.
   /// @param i The discrete state group number.
-  Eigen::VectorBlock<const VectorX<symbolic::Expression>> discrete_update(
-      int i) const {
+  const VectorX<symbolic::Expression>& discrete_update(int i) const {
     DRAKE_DEMAND(i >= 0 && i < context_->num_discrete_state_groups());
-    return discrete_updates_->get_vector(i).get_value();
+    return discrete_updates_->value(i);
   }
 
   /// Returns a reference to the symbolic representation of the output.
   /// @param i The output port number.
-  Eigen::VectorBlock<const VectorX<symbolic::Expression>> output(int i) const {
+  const VectorX<symbolic::Expression>& output(int i) const {
     DRAKE_DEMAND(output_port_types_[i] == kVectorValued);
-    return output_->get_vector_data(i)->get_value();
+    return output_->get_vector_data(i)->value();
   }
 
   /// Returns a reference to the symbolic representation of the constraints.

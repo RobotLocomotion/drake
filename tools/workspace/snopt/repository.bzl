@@ -193,12 +193,18 @@ def _impl(repo_ctx):
         _setup_local_archive(repo_ctx, snopt_path)
 
     # Add in the helper.
-    repo_ctx.symlink(
-        Label("@drake//tools/workspace/snopt:fortran-{}.bzl".format(
-            os_result.distribution,
-        )),
-        "fortran.bzl",
-    )
+    if os_result.is_ubuntu or os_result.is_manylinux:
+        repo_ctx.symlink(
+            Label("@drake//tools/workspace/snopt:fortran-ubuntu.bzl"),
+            "fortran.bzl",
+        )
+    elif os_result.is_macos:
+        repo_ctx.symlink(
+            Label("@drake//tools/workspace/snopt:fortran-macos.bzl"),
+            "fortran.bzl",
+        )
+    else:
+        fail("Operating system is NOT supported {}".format(os_result))
 
     return updated_attrs
 

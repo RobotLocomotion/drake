@@ -139,6 +139,73 @@ GTEST_TEST(MeshcatTest, SetObjectWithPointCloud) {
   EXPECT_FALSE(meshcat.GetPackedObject("rgb_cloud").empty());
 }
 
+GTEST_TEST(MeshcatTest, SetObjectWithTriangleSurfaceMesh) {
+  Meshcat meshcat;
+
+  const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
+  std::vector<SurfaceTriangle> faces;
+  for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
+  const Eigen::Vector3d vertex_data[4] = {
+      {0, 0, 0}, {0.5, 0, 0}, {0.5, 0.5, 0}, {0, 0.5, 0.5}};
+  std::vector<Eigen::Vector3d> vertices;
+  for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
+  TriangleSurfaceMesh<double> surface_mesh(
+      std::move(faces), std::move(vertices));
+  meshcat.SetObject("triangle_mesh", surface_mesh, Rgba(.9, 0, .9, 1.0));
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
+
+  meshcat.SetObject("triangle_mesh_wireframe", surface_mesh,
+                    Rgba(.9, 0, .9, 1.0), true, 5.0);
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh_wireframe").empty());
+}
+
+GTEST_TEST(MeshcatTest, SetLine) {
+  Meshcat meshcat;
+
+  Eigen::Matrix3Xd vertices(3, 200);
+  Eigen::RowVectorXd t = Eigen::RowVectorXd::LinSpaced(200, 0, 10 * M_PI);
+  vertices << .25 * t.array().sin(), .25 * t.array().cos(), t / (10 * M_PI);
+  meshcat.SetLine("line", vertices, 3.0, Rgba(0, 0, 1, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("line").empty());
+
+  Eigen::Matrix3Xd start(3, 4), end(3, 4);
+  // clang-format off
+  start << -.1, -.1,  .1, .1,
+           -.1,  .1, -.1, .1,
+           0, 0, 0, 0;
+  // clang-format on
+  end = start;
+  end.row(2) = Eigen::RowVector4d::Ones();
+  meshcat.SetLineSegments("line_segments", start, end, 5.0, Rgba(0, 1, 0, 1));
+  EXPECT_FALSE(meshcat.GetPackedObject("line_segments").empty());
+
+  // Throws if start.cols() != end.cols().
+  EXPECT_THROW(
+      meshcat.SetLineSegments("bad_segments", Eigen::Matrix3Xd::Identity(3, 4),
+                              Eigen::Matrix3Xd::Identity(3, 3)),
+      std::exception);
+}
+
+GTEST_TEST(MeshcatTest, SetTriangleMesh) {
+  Meshcat meshcat;
+
+  // Populate the vertices/faces transposed, for easier Eigen initialization.
+  Eigen::MatrixXd vertices(4, 3);
+  Eigen::MatrixXi faces(2, 3);
+  // clang-format off
+  vertices << 0, 0, 0,
+              1, 0, 0,
+              1, 0, 1,
+              0, 0, 1;
+  faces << 0, 1, 2,
+           3, 0, 2;
+  // clang-format on
+
+  meshcat.SetTriangleMesh("triangle_mesh", vertices.transpose(),
+                         faces.transpose(), Rgba(1, 0, 0, 1), true, 5.0);
+  EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
+}
+
 GTEST_TEST(MeshcatTest, SetTransform) {
   Meshcat meshcat;
   EXPECT_FALSE(meshcat.HasPath("frame"));

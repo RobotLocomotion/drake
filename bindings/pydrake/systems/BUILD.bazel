@@ -450,6 +450,16 @@ drake_py_unittest(
     ],
 )
 
+drake_jupyter_py_binary(
+    name = "test/lifetime_test_notebook",
+    testonly = True,
+    add_test_rule = 1,
+    deps = [
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
 drake_py_unittest(
     name = "custom_test",
     deps = [

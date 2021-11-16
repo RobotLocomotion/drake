@@ -25,7 +25,6 @@ drake_cc_package_library(
         ":lcm_log",
         ":lcm_messages",
         ":mock",
-        ":real",
     ],
 )
 
@@ -53,14 +52,19 @@ drake_cc_library(
     name = "mock",
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
+    # copts = ["-Wno-deprecated-declarations"],
     deps = [
-        ":real",
+        ":drake_lcm",
     ],
 )
 
-# TODO(jwnimmer-tri) Deprecate this compatibility shim.
 drake_cc_library(
     name = "real",
+    deprecation = "Spell this as @drake//lcm:drake_lcm instead.  The @drake//lcm:real spelling is deprecated and will be removed from Drake on or after 2022-03-01.",  # noqa
+    tags = [
+        "exclude_from_package",
+        "manual",
+    ],
     deps = [
         ":drake_lcm",
     ],
@@ -173,6 +177,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_mock_lcm_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":lcmt_drake_signal_utils",
         ":mock",

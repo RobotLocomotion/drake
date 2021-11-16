@@ -79,8 +79,8 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
     Eigen::VectorBlock<VectorX<T>>* output) const {
   unused(state);
 
-  const Eigen::VectorBlock<const VectorX<T>>& calibration_offsets =
-      context.get_numeric_parameter(0).get_value();
+  const VectorX<T>& calibration_offsets =
+      context.get_numeric_parameter(0).value();
   DRAKE_ASSERT(calibration_offsets.size() == num_encoders_);
 
   // Loop through the outputs.
@@ -109,9 +109,9 @@ void RotaryEncoders<T>::set_calibration_offsets(
 }
 
 template <typename T>
-Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
+const VectorX<T>& RotaryEncoders<T>::get_calibration_offsets(
     const Context<T>& context) const {
-  return context.get_numeric_parameter(0).get_value();
+  return context.get_numeric_parameter(0).value();
 }
 
 }  // namespace sensors

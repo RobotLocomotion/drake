@@ -18,6 +18,18 @@ typename std::enable_if<internal::is_autodiff_v<typename DerivedA::Scalar> ||
                         std::is_same_v<typename DerivedA::Scalar, double>>::type
 TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
                       const Eigen::MatrixBase<DerivedB>& b) {
+  Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                DerivedB::ColsAtCompileTime>
+      x_eigen_d;
+  // To side-step clang optimizer problem, we separate this solve result
+  // x_eigen_d from its eventual use.
+  if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
+                std::is_same_v<typename DerivedB::Scalar, double>) {
+    x_eigen_d =
+        LinearSolverType<Eigen::Matrix<double, DerivedA::RowsAtCompileTime,
+                                       DerivedA::ColsAtCompileTime>>(A)
+            .solve(b);
+  }
   for (const bool use_deprecated : {true, false}) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -95,6 +107,43 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
       EXPECT_TRUE(
           CompareMatrices(ExtractGradient(x_result), ExtractGradient(x)));
     }
+    // When T = AutoDiffScalar or double, check if we get the same result as
+    // calling Eigen's linear solver directly.
+    if constexpr (internal::is_autodiff_v<typename DerivedA::Scalar>) {
+      const LinearSolverType<
+          Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                        DerivedA::ColsAtCompileTime>>
+          eigen_linear_solver(A);
+      Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+                    DerivedB::ColsAtCompileTime>
+          x_eigen;
+      if constexpr (internal::is_autodiff_v<typename DerivedB::Scalar>) {
+        x_eigen = eigen_linear_solver.solve(b);
+      } else {
+        x_eigen = eigen_linear_solver.solve(
+            b.template cast<typename DerivedA::Scalar>());
+      }
+      EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen), ExtractValue(x)));
+      for (int i = 0; i < b.cols(); ++i) {
+        EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
+                                    ExtractGradient(x.col(i)), tol));
+      }
+    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> && // NOLINT
+                         internal::is_autodiff_v<typename DerivedB::Scalar>) {
+      const LinearSolverType<
+          Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
+                        DerivedA::ColsAtCompileTime>>
+          eigen_linear_solver(A.template cast<typename DerivedB::Scalar>());
+      const auto x_eigen = eigen_linear_solver.solve(b);
+      EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen), ExtractValue(x)));
+      for (int i = 0; i < b.cols(); ++i) {
+        EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
+                                    ExtractGradient(x.col(i)), tol));
+      }
+    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&  // NOLINT
+                         std::is_same_v<typename DerivedB::Scalar, double>) {
+      EXPECT_TRUE(CompareMatrices(x_eigen_d, x));
+    }
   }
 }
 
@@ -113,7 +162,7 @@ class LinearSolveTest : public ::testing::Test {
     }
     A_ad_(0, 0).derivatives() = Eigen::Vector3d(1, 2, 3);
     A_ad_(0, 1).derivatives() = Eigen::Vector3d(4, 5, 6);
-    A_ad_(1, 0).derivatives() = Eigen::Vector3d(7, 8, 9);
+    A_ad_(1, 0).derivatives() = Eigen::Vector3d(4, 5, 6);
     A_ad_(1, 1).derivatives() = Eigen::Vector3d(10, 11, 12);
 
     b_mat_val_ << 3, 5, 8, 1, -2, -3;
@@ -313,6 +362,7 @@ TEST_F(LinearSolveTest, TestAbWithMaybeEmptyGrad) {
   // Test SolveLinearSystem with both A and b containing gradient in
   // some entries, and empty gradient in some other entries.
   A_ad_(1, 0).derivatives() = Eigen::VectorXd(0);
+  A_ad_(0, 1).derivatives() = Eigen::VectorXd(0);
   b_vec_ad_(1).derivatives() = Eigen::VectorXd(0);
   TestSolveLinearSystem<Eigen::LLT>(A_ad_, b_vec_ad_);
   TestSolveLinearSystem<Eigen::LDLT>(A_ad_, b_vec_ad_);

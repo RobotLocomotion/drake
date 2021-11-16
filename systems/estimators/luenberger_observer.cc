@@ -125,14 +125,14 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
       observed_system_context_cache_entry_->Eval<Context<T>>(context);
 
   // Evaluate the observed system.
-  Eigen::VectorBlock<const VectorX<T>> yhat =
+  const VectorX<T>& yhat =
       observed_system_->get_output_port(0).Eval(observed_system_context);
   VectorX<T> xdothat =
       observed_system_->EvalTimeDerivatives(observed_system_context)
           .CopyToVector();
 
   // Get the measurements.
-  Eigen::VectorBlock<const VectorX<T>> y =
+  const VectorX<T>& y =
       this->get_observed_system_output_input_port().Eval(context);
 
   // xdothat = f(xhat,u) + L(y-yhat).

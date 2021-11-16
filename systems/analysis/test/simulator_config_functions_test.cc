@@ -4,14 +4,13 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
-#include "drake/common/yaml/yaml_read_archive.h"
-#include "drake/common/yaml/yaml_write_archive.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-using drake::yaml::YamlReadArchive;
-using drake::yaml::YamlWriteArchive;
+using drake::yaml::LoadYamlString;
+using drake::yaml::SaveYamlString;
 
 namespace drake {
 namespace systems {
@@ -88,19 +87,12 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
                                   "use_error_control: true\n"
                                   "target_realtime_rate: 3.0\n"
                                   "publish_every_time_step: true\n";
-  const YAML::Node bespoke_yaml = YAML::Load(bespoke_str);
 
   // Ensure that the string and the struct have the same fields.
-  YamlReadArchive::Options options;
-  options.allow_cpp_with_no_yaml = false;
-  options.allow_yaml_with_no_cpp = false;
-  SimulatorConfig bespoke;
-  YamlReadArchive(bespoke_yaml, options).Accept(&bespoke);
+  const auto bespoke = LoadYamlString<SimulatorConfig>(bespoke_str);
 
   // Ensure that a round trip through the archive process does not corrupt data.
-  YamlWriteArchive archive;
-  archive.Accept(bespoke);
-  const std::string readback_str = archive.EmitString("");
+  const std::string readback_str = SaveYamlString(bespoke);
   EXPECT_EQ(bespoke_str, readback_str);
 
   // Ensure that a roundtrip through the Accept and Extract functions does not

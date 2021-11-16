@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/lcm/drake_lcm.h"
@@ -70,12 +71,17 @@ PYBIND11_MODULE(lcm, m) {
     // TODO(eric.cousineau): Add remaining methods.
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   {
     using Class = DrakeMockLcm;
-    constexpr auto& cls_doc = doc.DrakeMockLcm;
-    py::class_<Class, DrakeLcm>(m, "DrakeMockLcm", cls_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc);
+    constexpr const char* deprecation =
+        "DrakeMockLcm is deprecated and will be removed from Drake on or after "
+        "2022-03-01. Use DrakeLcm(\"memq://\") instead.";
+    py::class_<Class, DrakeLcm>(m, "DrakeMockLcm", deprecation)
+        .def(py_init_deprecated<Class>(py::str(deprecation)), deprecation);
   }
+#pragma GCC diagnostic pop
 
   ExecuteExtraPythonCode(m);
 }
