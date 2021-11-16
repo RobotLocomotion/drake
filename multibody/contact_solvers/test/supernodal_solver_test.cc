@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -91,6 +92,7 @@ DenseBlockDiagonalPair Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices() {
 // 1, 2, 3}, {4}, {5}}. However, we partition M as {{0, 1}, {2, 3}, {4, 5}}.
 GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+  unused(M);
 
   // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
@@ -190,6 +192,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
 // partition of M. We expect an exception at construction.
 GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+  unused(M);
 
   // Build Jacobian with empty column block.
   const int num_row_blocks_of_J = 3;
@@ -237,6 +240,7 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
 // throws an exception if more than two blocks per row are supplied.
 GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+  unused(M);
 
   // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
@@ -291,6 +295,7 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
 GTEST_TEST(SupernodalSolver,
            ColumnPartitionOfJacobianRefinesMassMatrixPartition) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+  unused(M);
 
   // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
