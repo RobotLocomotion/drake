@@ -31,12 +31,12 @@ bool CalcEquilibriumPlane(int element0,
   const T f1_Mo = field1_N.EvaluateCartesian(element1, p_NMo);
 
   // In frame M, the two linear functions are:
-  //      f₀(p_MQ) = grad_f0_M.dot(p_MQ) + f0_Mo.                 (1)
-  //      f₁(p_MQ) = grad_f1_M.dot(p_MQ) + f1_Mo.                 (2)
+  //      f₀(p_MQ) = grad_f0_M.dot(p_MQ) + f0_Mo.
+  //      f₁(p_MQ) = grad_f1_M.dot(p_MQ) + f1_Mo.
   // Their equilibrium plane is:
-  //   (grad_f0_M - grad_f1_M).dot(p_MQ) + (f0_Mo - f1_Mo) = 0.   (3)
+  //   (grad_f0_M - grad_f1_M).dot(p_MQ) + (f0_Mo - f1_Mo) = 0.   (1)
   // Its perpendicular (but not necessarily unit-length) vector is:
-  //           n_M = grad_f0_M - grad_f1_M,                       (4)
+  //           n_M = grad_f0_M - grad_f1_M,
   // which is in the direction of increasing f₀ and decreasing f₁.
   const Vector3<T> n_M = grad_f0_M - grad_f1_M;
   const T magnitude = n_M.norm();
@@ -45,13 +45,13 @@ bool CalcEquilibriumPlane(int element0,
   }
   const Vector3<T> nhat_M = n_M / magnitude;
 
-  // Using the unit normal vector nhat_M, the plane equation (3) becomes:
+  // Using the unit normal vector nhat_M, the plane equation (1) becomes:
   //
-  //          nhat_M.dot(p_MQ) + Δ = 0,               (5)
+  //          nhat_M.dot(p_MQ) + Δ = 0,
   //
   // where Δ = (f0_Mo - f1_Mo)/‖n_M‖. One such p_MQ is:
   //
-  //                          p_MQ = -Δ * nhat_M      (6)
+  //                          p_MQ = -Δ * nhat_M
   //
   const Vector3<T> p_MQ = -((f0_Mo - f1_Mo) / magnitude) * nhat_M;
 

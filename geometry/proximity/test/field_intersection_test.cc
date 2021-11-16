@@ -132,6 +132,53 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneComplexTransform) {
               tolerance(expected_height));
 }
 
+// Tests special cases when the two linear functions have no equilibrium
+// plane. It can happen when their gradients are deemed identical, which means
+// the two functions are equal everywhere, or they are nowhere equal.
+TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneNone) {
+  // Same function in the same frame are equal everywhere, so there is no
+  // equilibrium plane. (Mathematically speaking, every plane is an
+  // equilibrium plane.)
+  {
+    // An arbitrary initial value of the plane.
+    const Plane<double> init_plane_M{Vector3d::UnitX(), Vector3d(1, 2, 3)};
+
+    Plane<double> plane_M(init_plane_M);
+    const bool success = CalcEquilibriumPlane(
+        0, field0_M_, 0, field0_M_, RigidTransformd::Identity(), &plane_M);
+
+    ASSERT_FALSE(success);
+    // Verify that the plane has not changed from its initial value.
+    EXPECT_EQ(plane_M.normal(), init_plane_M.normal());
+    // The choice of this query point is arbitrary.
+    const Vector3d p_FQ(0.1, 0.2, 0.3);
+    const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);
+    EXPECT_EQ(plane_M.CalcHeight<double>(p_FQ), expected_height);
+  }
+  // Use a translational frame L with respect to frame M to make two functions
+  // that are nowhere equal.
+  {
+    const RigidTransformd X_ML(Vector3d(0.4, 0.3, 0.5));
+    VolumeMeshFieldLinear<double, double> field2_L(field0_M_);
+
+    // An arbitrary initial value of the plane.
+    const Plane<double> init_plane_M{Vector3d::UnitX(), Vector3d(1, 2, 3)};
+
+    Plane<double> plane_M(init_plane_M);
+    const bool success =
+        CalcEquilibriumPlane(0, field0_M_, 0, field2_L, X_ML, &plane_M);
+
+    ASSERT_FALSE(success);
+    // Verify that the plane has not changed from its initial value.
+    EXPECT_EQ(plane_M.normal(), init_plane_M.normal());
+    // The choice of this query point is arbitrary.
+    const Vector3d p_FQ(0.1, 0.2, 0.3);
+    const double expected_height = init_plane_M.CalcHeight<double>(p_FQ);
+    EXPECT_EQ(plane_M.CalcHeight<double>(p_FQ), expected_height);
+  }
+}
+
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

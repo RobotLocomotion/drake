@@ -19,7 +19,8 @@ namespace internal {
  @param[in] X_MN Relative pose of frame N in frame M.
 
  @param[out] plane_M  Equilibrium plane expressed in frame M if it exists.
- Its unit normal vector n̂ will point *out* of f₁ and *into* f₀, i.e.,
+ It is not set if the gradient of the two field are deemed identical.
+ Its unit normal vector n̂ will point *out of* f₁ and *into* f₀, i.e.,
  n̂ points in the direction of increasing f₀ and decreasing f₁:
 
                  n̂ = (∇f₀−∇f₁)/‖∇f₀−∇f₁‖
@@ -30,6 +31,9 @@ namespace internal {
   decide.
 
  @note The equilibrium plane may or may not intersect the tetrahedra.
+
+ @throw std::runtime_error if `field0_M` or `field1_N` has no gradient
+ calculated.
 
  @tparam T A valid Eigen scalar.
  */
