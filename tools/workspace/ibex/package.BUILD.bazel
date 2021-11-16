@@ -183,7 +183,7 @@ genrule(
         "interval_lib_wrapper/filib/3rd/filibsrc-3.0.2.2.all.all.patch",
     ],
     outs = _FILIB_FILES,
-    cmd = "tar -xzf $(location interval_lib_wrapper/filib/3rd/filibsrc-3.0.2.2.tar.gz) -C $(@D) && patch --quiet -p1 -d $(@D) <$(location interval_lib_wrapper/filib/3rd/filibsrc-3.0.2.2.all.all.patch)",  # noqa
+    cmd = "tar --no-same-owner -xzf $(location interval_lib_wrapper/filib/3rd/filibsrc-3.0.2.2.tar.gz) -C $(@D) && patch --quiet -p1 -d $(@D) <$(location interval_lib_wrapper/filib/3rd/filibsrc-3.0.2.2.all.all.patch)",  # noqa
 )
 
 # Excerpt from the Filib CMakeLists.txt (contained in the .tar.gz file):
