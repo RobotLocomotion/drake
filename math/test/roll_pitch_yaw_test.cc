@@ -16,6 +16,8 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using symbolic::Expression;
+using symbolic::Variable;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -432,9 +434,6 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
 // symbolic::Expression.  We focus only on methods that required tweaks in
 // order to compile against Expression.
 GTEST_TEST(RollPitchYaw, SymbolicTest) {
-  using symbolic::Expression;
-  using symbolic::Variable;
-
   const Variable r1("r1");
   const Variable r2("r2");
   const Variable p1("p1");
@@ -487,11 +486,19 @@ GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   EXPECT_EQ(rpy_expected_string, streamB.str());
 
   // Test stream insertion for RollPitchYaw<symbolic::Expression>.
-  const symbolic::Variable r("roll"), p("pitch"), y("yaw");
-  const RollPitchYaw<symbolic::Expression> rpy_symbolic(r, p, y);
+  const symbolic::Variable r("foo"), p("bar"), y("baz");
+  const RollPitchYaw<Expression> rpy_symbolic(r, p, y);
   std::stringstream streamC;  streamC << rpy_symbolic;
-  rpy_expected_string = "rpy = roll pitch yaw";
+  rpy_expected_string = "rpy = foo bar baz";
   EXPECT_EQ(rpy_expected_string, streamC.str());
+
+  // When the expression strings are very long, they will be truncated.
+  const Expression big_expr = sqrt(pow(r, 2) + pow(p, 2) + pow(y, 2));
+  const RollPitchYaw<symbolic::Expression> rpy_symbolic_huge(
+      big_expr, big_expr, big_expr);
+  std::stringstream streamD;  streamD << rpy_symbolic_huge;
+  rpy_expected_string = "rpy = <symbolic> <symbolic> <symbolic>";
+  EXPECT_EQ(rpy_expected_string, streamD.str());
 }
 
 
