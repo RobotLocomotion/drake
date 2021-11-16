@@ -2,6 +2,7 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# TODO committed generated code for now, do this for realz.
 cc_library(
     name = "linux_config",
     hdrs = glob(["linux-include/*.h"]),
