@@ -141,7 +141,6 @@
 #define PETSC_SLSUFFIX "so"
 #define PETSC_UINTPTR_T uintptr_t
 #define PETSC_UNUSED __attribute((unused))
-#define PETSC_USE_AVX512_KERNELS 1
 #define PETSC_USE_BACKWARD_LOOP 1
 #define PETSC_USE_CTABLE 1
 #define PETSC_USE_DEBUGGER "gdb"
