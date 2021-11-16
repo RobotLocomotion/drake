@@ -1,0 +1,179 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # BSD-2-Clause AND BSD-4-Clause and MIT
+
+package(default_visibility = ["//visibility:private"])
+
+# In practice we'll need about ~80% of the headers found by globbing below, so
+# we might as well just glob them all. Headers are relatively cheap to "build";
+# it's the number of sources that really matters.
+
+# Headers in the public include directory (for use by downstream code).
+_PUBLIC_HDRS = glob(["include/petsc*.h"], allow_empty = False)
+
+# Headers in the private include directory (not for use by downstream code).
+_PRIVATE_HDRS = glob(["include/petsc/private/**/*.h"], allow_empty = False) + [
+    "include/petsc/mpiuni/mpi.h",
+]
+
+# Implementation-related header files that live in the src directory.
+_IMPL_HDRS = glob(["src/**/*.h"], exclude = [
+    "**/f90-mod/**",
+    "**/tutorials/**",
+    "src/binding/**",
+    "src/contrib/**",
+    "src/tao/**",
+], allow_empty = False)
+
+# C files that are included, rather than fed to the compiler directly.
+_YAML_HDRS = glob(["src/sys/yaml/src/*.c"], allow_empty = False)
+
+# This list was collected empirically based on what we need, and then excluding
+# the implementations that we cannot handle (due to their external dependencies
+# in most cases).
+_SRCS = glob([
+    "src/dm/**/*.c",
+    "src/ksp/**/*.c",
+    "src/mat/**/*.c",
+    "src/snes/**/*.c",
+    "src/sys/classes/draw/**/*.c",
+    "src/sys/classes/random/**/*.c",
+    "src/sys/classes/viewer/**/*.c",
+    "src/sys/dll/*.c",
+    "src/sys/error/*.c",
+    "src/sys/fileio/*.c",
+    "src/sys/info/*.c",
+    "src/sys/logging/**/*.c",
+    "src/sys/memory/*.c",
+    "src/sys/mpiuni/*.c",
+    "src/sys/objects/*.c",
+    "src/sys/python/*.c",
+    "src/sys/time/*.c",
+    "src/sys/utils/*.c",
+    "src/ts/**/*.c",
+    "src/vec/**/*.c",
+], exclude = [
+    # TODO(xuchenhan-tri): Exclude more irrelevant sources.
+    "**/f90-custom/**",
+    "**/ftn-custom/**",
+    "**/hypre/**",
+    "**/matlab/**",
+    "**/opencl/**",
+    "**/tests/**",
+    "**/tutorials/**",
+    "**/apple_*.c",
+    "src/dm/impls/da/hypre/**",
+    "src/dm/impls/da/usfft/**",
+    "src/dm/impls/forest/p4est/**",
+    "src/dm/impls/plex/generators/**",
+    "src/ksp/ksp/impls/gmres/agmres/**",
+    "src/ksp/ksp/interface/saws/**",
+    "src/ksp/pc/impls/h2opus/**",
+    "src/ksp/pc/impls/ml/**",
+    "src/ksp/pc/impls/parms/**",
+    "src/ksp/pc/impls/spai/**",
+    "src/mat/impls/aij/mpi/aijmkl/**",
+    "src/mat/impls/aij/mpi/mkl_cpardiso/**",
+    "src/mat/impls/aij/mpi/mumps/**",
+    "src/mat/impls/aij/mpi/pastix/**",
+    "src/mat/impls/aij/mpi/strumpack/**",
+    "src/mat/impls/aij/mpi/superlu_dist/**",
+    "src/mat/impls/aij/seq/aijmkl/**",
+    "src/mat/impls/aij/seq/cholmod/**",
+    "src/mat/impls/aij/seq/essl/**",
+    "src/mat/impls/aij/seq/klu/**",
+    "src/mat/impls/aij/seq/lusol/**",
+    "src/mat/impls/aij/seq/matlab/**",
+    "src/mat/impls/aij/seq/mkl_pardiso/**",
+    "src/mat/impls/aij/seq/spqr/**",
+    "src/mat/impls/aij/seq/superlu/**",
+    "src/mat/impls/aij/seq/umfpack/**",
+    "src/mat/impls/baij/mpi/baijmkl/**",
+    "src/mat/impls/baij/seq/baijmkl/**",
+    "src/mat/impls/fft/**",
+    "src/mat/impls/python/**",
+    "src/mat/impls/sbaij/seq/cholmod/**",
+    "src/mat/order/amd/**",
+    "src/mat/partition/impls/party/**",
+    "src/mat/partition/impls/pmetis/**",
+    "src/mat/partition/impls/scotch/**",
+    "src/snes/impls/python/**",
+    "src/snes/interface/saws/**",
+    "src/sys/classes/draw/impls/win32/**",
+    "src/sys/classes/draw/impls/x/**",
+    "src/sys/classes/random/impls/curand/**",
+    "src/sys/classes/random/impls/random123/**",
+    "src/sys/classes/random/impls/sprng/**",
+    "src/sys/classes/viewer/impls/adios/**",
+    "src/sys/classes/viewer/impls/ams/**",
+    "src/sys/classes/viewer/impls/hdf5/**",
+    "src/sys/classes/viewer/impls/mathematica/**",
+    "src/sys/classes/viewer/impls/matlab/**",
+    "src/sys/classes/viewer/impls/socket/**",
+    "src/ts/characteristic/**",
+    "src/ts/impls/implicit/radau5/**",
+    "src/ts/impls/implicit/sundials/**",
+    "src/ts/impls/python/**",
+    "src/vec/is/sf/impls/window/**",
+    "src/vec/vec/impls/seq/seqcuda/**",
+])
+
+cc_library(
+    name = "petsc",
+    srcs = _SRCS + ["src/sys/dll/cxx/demangle.cxx"],
+    hdrs = _PUBLIC_HDRS + _PRIVATE_HDRS + _IMPL_HDRS + _YAML_HDRS,
+    copts = [
+        "-Wno-all",
+        "-fvisibility=hidden",
+    ],
+    includes = ["include"],
+    linkopts = ["-ldl"],
+    linkstatic = 1,
+    deps = [
+        "@blas",
+        "@lapack",
+        "@drake//tools/workspace/petsc:stubs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "license-khash",
+    srcs = ["include/petsc/private/khash/khash.h"],
+    outs = ["LICENSE-khash.txt"],
+    # Select lines 5..25 of the header to get the license text.
+    cmd = "head -n 25 $< | tail +5 > $@",
+    visibility = ["@drake//tools/workspace/petsc:__pkg__"],
+)
+
+genrule(
+    name = "license-libyaml",
+    srcs = ["src/sys/yaml/License"],
+    outs = ["LICENSE-libyaml.txt"],
+    cmd = "cp $< $@",
+)
+
+genrule(
+    name = "license-valgrind",
+    srcs = ["include/petsc/private/valgrind/valgrind.h"],
+    outs = ["LICENSE-valgrind.txt"],
+    # Select lines 15..46 of the header to get the license text.
+    cmd = "head -n 46 $< | tail +15 > $@",
+    visibility = ["@drake//tools/workspace/petsc:__pkg__"],
+)
+
+install(
+    name = "install",
+    docs = [
+        "LICENSE",  # BSD-2-Clause
+        ":LICENSE-khash.txt",  # MIT
+        ":LICENSE-libyaml.txt",  # MIT
+        ":LICENSE-valgrind.txt",  # BSD-4-Clause
+    ],
+    visibility = ["//visibility:public"],
+)
