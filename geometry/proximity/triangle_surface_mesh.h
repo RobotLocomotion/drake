@@ -230,7 +230,7 @@ class TriangleSurfaceMesh {
   }
 
   /** Returns the centroid of a triangle. */
-  Vector3<T> centroid(int t) const {
+  Vector3<T> element_centroid(int t) const {
     DRAKE_DEMAND(0 <= t && t < num_triangles());
     const auto& tri = triangles_[t];
     return (vertices_[tri.vertex(0)] + vertices_[tri.vertex(1)] +

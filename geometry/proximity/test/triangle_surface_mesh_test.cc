@@ -199,9 +199,9 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   const Vector3<double> centroid = surface_mesh->centroid();
   EXPECT_TRUE(
       CompareMatrices(centroid, Vector3d(1.0 / 6, -1.0 / 6, -0.5), tol));
-  EXPECT_TRUE(CompareMatrices(surface_mesh->centroid(0),
+  EXPECT_TRUE(CompareMatrices(surface_mesh->element_centroid(0),
                               Vector3d(-0.5 / 3, 0.5 / 3, -0.5), tol));
-  EXPECT_TRUE(CompareMatrices(surface_mesh->centroid(1),
+  EXPECT_TRUE(CompareMatrices(surface_mesh->element_centroid(1),
                               Vector3d(1.0 / 3, -1.0 / 3, -0.5), tol));
 
   // The documentation for the centroid method specifies particular behavior
