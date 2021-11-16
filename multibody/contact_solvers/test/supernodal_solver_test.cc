@@ -15,10 +15,84 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+// Type used to represent a block diagonal matrix in two formats: 1) a dense
+// matrix and 2) a std::vector of block diagonal entries.
+typedef std::pair<MatrixXd, std::vector<MatrixXd>> DenseBlockDiagonalPair;
+
+// Makes a block diagonal SPD matrix with three diagonal SPD blocks of size
+// 2x2.
+DenseBlockDiagonalPair Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices() {
+  MatrixXd A(6, 6);
+  // clang-format off
+  A << 1, 1, 0, 0, 0, 0,
+       1, 5, 0, 0, 0, 0,
+       0, 0, 4, 1, 0, 0,
+       0, 0, 1, 4, 0, 0,
+       0, 0, 0, 0, 4, 2,
+       0, 0, 0, 0, 2, 5;
+  // clang-format on
+  std::vector<MatrixXd> blocks(3);
+  blocks.at(0) = A.block<2, 2>(0, 0);
+  blocks.at(1) = A.block<2, 2>(2, 2);
+  blocks.at(2) = A.block<2, 2>(4, 4);
+  return std::make_pair(A, blocks);
+}
+
+// Makes a block diagonal SPD matrix with three diagonal SPD blocks of size
+// 3x3.
+DenseBlockDiagonalPair Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices() {
+  MatrixXd A(9, 9);
+  // clang-format off
+  A << 1, 2, 2, 0, 0, 0, 0, 0, 0,
+       2, 5, 3, 0, 0, 0, 0, 0, 0,
+       2, 3, 8, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 4, 1, 1, 0, 0, 0,
+       0, 0, 0, 1, 4, 2, 0, 0, 0,
+       0, 0, 0, 1, 2, 5, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 4, 1, 1,
+       0, 0, 0, 0, 0, 0, 1, 4, 2,
+       0, 0, 0, 0, 0, 0, 1, 2, 5;
+  // clang-format on
+  std::vector<MatrixXd> blocks(3);
+  blocks.at(0) = A.block<3, 3>(0, 0);
+  blocks.at(1) = A.block<3, 3>(3, 3);
+  blocks.at(2) = A.block<3, 3>(6, 6);
+  return std::make_pair(A, blocks);
+}
+
+// Makes a block diagonal SPD matrix with four diagonal SPD blocks of size
+// 3x3.
+DenseBlockDiagonalPair Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices() {
+  MatrixXd A(12, 12);
+  // clang-format off
+  A << 5, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 2, 5, 3, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 2, 3, 8, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 4, 1, 1, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 1, 4, 2, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 1, 2, 5, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 1,
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 2,
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
+  // clang-format on
+  std::vector<MatrixXd> blocks(4);
+  blocks.at(0) = A.block<3, 3>(0, 0);
+  blocks.at(1) = A.block<3, 3>(3, 3);
+  blocks.at(2) = A.block<3, 3>(6, 6);
+  blocks.at(3) = A.block<3, 3>(9, 9);
+  return std::make_pair(A, blocks);
+}
+
 // In this test the partition of the columns of J doesn't refine the partition
 // induced by M, nor the other way around. We partition the columns of J as {{0,
 // 1, 2, 3}, {4}, {5}}. However, we partition M as {{0, 1}, {2, 3}, {4, 5}}.
 GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+
+  // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
   MatrixXd J(9, 6);
 
@@ -50,40 +124,6 @@ GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
   get<1>(Jtriplets.at(2)) = 2;
   get<2>(Jtriplets.at(2)) = J.block<3, 1>(6, 5);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
-
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
       std::runtime_error,
@@ -95,6 +135,8 @@ GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
 // In this case the columns's partition of J exactly matches the partition
 // induced by M.
 GTEST_TEST(SupernodalSolver, InterfaceTest) {
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+
   const int num_row_blocks_of_J = 3;
   MatrixXd J(9, 6);
 
@@ -127,39 +169,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
+  auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
@@ -179,6 +189,9 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
 // result is that the solver cannot match the columns partition of J to the
 // partition of M. We expect an exception at construction.
 GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+
+  // Build Jacobian with empty column block.
   const int num_row_blocks_of_J = 3;
   MatrixXd J(9, 6);
 
@@ -214,40 +227,6 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
   get<1>(Jtriplets.at(3)) = 0;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 0);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
-
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       std::runtime_error,
@@ -257,6 +236,9 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
 // SupernodalSolver assumes at most two blocks per row. We verify the solver
 // throws an exception if more than two blocks per row are supplied.
 GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+
+  // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
   MatrixXd J(9, 6);
 
@@ -297,40 +279,6 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
-
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       std::runtime_error,
@@ -342,6 +290,9 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
 // we partition M as {{0, 1}, {2, 3}, {4, 5}}.
 GTEST_TEST(SupernodalSolver,
            ColumnPartitionOfJacobianRefinesMassMatrixPartition) {
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+
+  // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
   MatrixXd J(9, 6);
 
@@ -381,40 +332,6 @@ GTEST_TEST(SupernodalSolver,
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
-
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
       std::runtime_error,
@@ -428,6 +345,23 @@ GTEST_TEST(SupernodalSolver,
 // However, we partition M as {{0, 1}, {2, 3}, {4}, {5}}.
 GTEST_TEST(SupernodalSolver,
            PartitionOfMassMatrixRefinesJacobianColumnsPartition) {
+  // Build mass matrix M.
+  MatrixXd M(6, 6);
+  // clang-format off
+  M << 1, 1, 0, 0, 0, 0,
+       1, 5, 0, 0, 0, 0,
+       0, 0, 4, 1, 0, 0,
+       0, 0, 1, 4, 0, 0,
+       0, 0, 0, 0, 4, 0,
+       0, 0, 0, 0, 0, 5;
+  // clang-format on
+  std::vector<MatrixXd> blocks_of_M(4);
+  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
+  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
+  blocks_of_M.at(2) = M.block<1, 1>(4, 4);
+  blocks_of_M.at(3) = M.block<1, 1>(5, 5);
+
+  // Build Jacobian matrix J.
   const int num_row_blocks_of_J = 3;
   MatrixXd J(9, 6);
 
@@ -447,53 +381,17 @@ GTEST_TEST(SupernodalSolver,
   get<0>(Jtriplets.at(0)) = 0;
   get<1>(Jtriplets.at(0)) = 0;
   get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-
   get<0>(Jtriplets.at(1)) = 0;
   get<1>(Jtriplets.at(1)) = 2;
   get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 4);
-
   get<0>(Jtriplets.at(2)) = 1;
   get<1>(Jtriplets.at(2)) = 2;
   get<2>(Jtriplets.at(2)) = J.block<3, 2>(3, 4);
-
   get<0>(Jtriplets.at(3)) = 2;
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 0,
-       0, 0, 0, 0, 0, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(4);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<1, 1>(4, 4);
-  blocks_of_M.at(3) = M.block<1, 1>(5, 5);
+  const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
@@ -548,43 +446,10 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(9, 2);
 
-  MatrixXd G(12, 12);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 2, 5, 3, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 2, 3, 8, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
-  // clang-format on
+  const auto [G, blocks_of_G] =
+      Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
-  std::vector<MatrixXd> blocks_of_G(4);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-  blocks_of_G.at(3) = G.block<3, 3>(9, 9);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
@@ -593,9 +458,8 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
 
-// Similar to last test, but we provided unsorted Jacobian
-// triplets. This verifies there are no implicit sorting
-// assumptions on the input.
+// In this test we provided Jacobian triplets in arbitrary order. This verifies
+// there are no implicit sorting assumptions on the input.
 GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
   int num_row_blocks_of_J = 3;
   MatrixXd J(12, 6);
@@ -638,43 +502,9 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
   get<1>(Jtriplets.at(4)) = 1;
   get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
-  MatrixXd G(12, 12);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 9, 2, 2, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 2, 5, 3, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 2, 3, 8, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(4);
-  blocks_of_G.at(0) = G.block<3, 3>(0, 0);
-  blocks_of_G.at(1) = G.block<3, 3>(3, 3);
-  blocks_of_G.at(2) = G.block<3, 3>(6, 6);
-  blocks_of_G.at(3) = G.block<3, 3>(9, 9);
-
-  MatrixXd M(6, 6);
-
-  // clang-format off
-  M << 1, 1, 0, 0, 0, 0,
-       1, 5, 0, 0, 0, 0,
-       0, 0, 4, 1, 0, 0,
-       0, 0, 1, 4, 0, 0,
-       0, 0, 0, 0, 4, 2,
-       0, 0, 0, 0, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_M(3);
-  blocks_of_M.at(0) = M.block<2, 2>(0, 0);
-  blocks_of_M.at(1) = M.block<2, 2>(2, 2);
-  blocks_of_M.at(2) = M.block<2, 2>(4, 4);
+  const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
+  const auto [G, blocks_of_G] =
+      Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
@@ -686,14 +516,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
 // In this example there are three contact patches of one contact point each.
 // There are three trees. The first two have two dofs and the third one has
 // three dofs. The purpose of this test is to verify correctness when trees
-// might have different number of dofs. The Jacobian's blocks are:
-//   - J00 is a 3x2 matrix.
-//   - J02 is a 3x3 matrix.
-//   - J12 is a 3x3 matrix.
-//   - J21 is a 3x2 matrix. The mass matrix's blocks are:
-//   - M00 a 2x2 matrix.
-//   - M11 a 2x2 matrix.
-//   - M22 a 3x3 matrix.
+// might have different number of dofs.
 GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   // number of patches. In this example, it happens to equal the number of
   // contact points since each patch has only a single point.
@@ -729,23 +552,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   get<1>(Jtriplets.at(3)) = 1;
   get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
-  MatrixXd G(9, 9);
-  // clang-format off
-  G << 1, 2, 2, 0, 0, 0, 0, 0, 0,
-       2, 5, 3, 0, 0, 0, 0, 0, 0,
-       2, 3, 4, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 4, 1, 1, 0, 0, 0,
-       0, 0, 0, 1, 4, 2, 0, 0, 0,
-       0, 0, 0, 1, 2, 5, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 4, 1, 1,
-       0, 0, 0, 0, 0, 0, 1, 4, 2,
-       0, 0, 0, 0, 0, 0, 1, 2, 5;
-  // clang-format on
-
-  std::vector<MatrixXd> blocks_of_G(3);
-  blocks_of_G.at(0) = G.block(0, 0, 3, 3);
-  blocks_of_G.at(1) = G.block(3, 3, 3, 3);
-  blocks_of_G.at(2) = G.block(6, 6, 3, 3);
+  const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   MatrixXd M(7, 7);
 
