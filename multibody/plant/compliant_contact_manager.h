@@ -51,6 +51,9 @@ struct ContactJacobianCache {
 // where p₀ is the object-centric virtual pressure field introduced by the
 // hydroelastic model.
 //
+// TODO(amcastro-tri): Retire code from MultibodyPlant as this contact manager
+// replaces all the contact related capabilities, per #16106.
+//
 // @tparam_nonsymbolic_scalar
 template <typename T>
 class CompliantContactManager : public internal::DiscreteUpdateManager<T> {

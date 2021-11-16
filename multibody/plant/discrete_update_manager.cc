@@ -7,6 +7,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
 template <typename T>
 std::unique_ptr<DiscreteUpdateManager<double>>
 DiscreteUpdateManager<T>::CloneToDouble() const {

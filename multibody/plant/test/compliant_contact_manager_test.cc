@@ -153,9 +153,8 @@ class CompliantContactManagerTest : public ::testing::Test {
   // properties and verifies the resulting contact pairs.
   // In this model sphere 1 always interacts with the ground using the
   // hydroelastic contact model.
-  // Only ContactParameters::point_stiffness is required and
-  // ContactParameters::hydro_modulus is ignored, for both input sphere's
-  // contact parameters.
+  // Point contact stiffness must be provided for both spheres in
+  // sphere1_point_params and sphere2_point_params.
   void VerifyDiscreteContactPairsFromPointContact(
       const ContactParameters& sphere1_point_params,
       const ContactParameters& sphere2_point_params) {
