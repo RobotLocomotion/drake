@@ -1496,6 +1496,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
                x: 2.0}
         self.assertEqual(p.Evaluate(env),
                          env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
+        self.assertEqual(p.Evaluate(env=env),
+                         env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
 
     def test_evaluate_exception_np_nan(self):
         p = sym.Polynomial(x * x, [x])
