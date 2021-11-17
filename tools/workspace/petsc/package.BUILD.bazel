@@ -47,7 +47,8 @@ _IMPL_HDRS = glob(["src/**/*.h"], exclude = [
 _YAML_HDRS = glob(["src/sys/yaml/src/*.c"], allow_empty = False)
 
 # This list was collected empirically based on what we need, and then excluding
-# the implementations that we cannot handle (due to their dependencies, usually).
+# the implementations that we cannot handle (due to their external dependencies
+# in most cases).
 _SRCS = glob([
     "src/dm/**/*.c",
     "src/ksp/**/*.c",
