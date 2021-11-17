@@ -233,7 +233,7 @@ class Polynomial {
   /// coefficients.
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p are almost equal (the difference
+  /// Returns true if this polynomial and @p p are almost equal (the difference
   /// in the corresponding coefficients are all less than @p tolerance), after
   /// expanding the coefficients.
   bool CoefficientsAlmostEqual(const Polynomial& p, double tolerance) const;
