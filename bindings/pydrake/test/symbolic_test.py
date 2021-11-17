@@ -1315,7 +1315,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertTrue(
             p.CoefficientsAlmostEqual(p + sym.Polynomial(1e-7 * x), 1e-6))
         self.assertFalse(
-            p.CoefficientsAlmostEqual(p + sym.Polynomial(2e-6 * x), 1e-6))
+            p.CoefficientsAlmostEqual(
+                p=(p + sym.Polynomial(2e-6 * x)), tolerance=1e-6))
 
     def test_repr(self):
         p = sym.Polynomial()

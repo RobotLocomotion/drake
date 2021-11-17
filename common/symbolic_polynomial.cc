@@ -720,9 +720,10 @@ bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
 }
 
 bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
-                                         double tol) const {
-  return PolynomialEqual((*this - p).RemoveTermsWithSmallCoefficients(tol),
-                         Polynomial(0), true);
+                                         double tolerance) const {
+  return PolynomialEqual(
+    (*this - p).RemoveTermsWithSmallCoefficients(tolerance),
+    Polynomial(0), true);
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {

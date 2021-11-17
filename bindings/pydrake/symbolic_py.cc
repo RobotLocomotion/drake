@@ -733,7 +733,7 @@ PYBIND11_MODULE(symbolic, m) {
           py::arg("coefficient_tol"),
           doc.Polynomial.RemoveTermsWithSmallCoefficients.doc)
       .def("CoefficientsAlmostEqual", &Polynomial::CoefficientsAlmostEqual,
-          py::arg("p"), py::arg("tol"),
+          py::arg("p"), py::arg("tolerance"),
           doc.Polynomial.CoefficientsAlmostEqual.doc)
       .def(py::self + py::self)
       .def(py::self + Monomial())
