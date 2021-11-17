@@ -9,7 +9,7 @@ load(
     "install",
 )
 
-licenses(["notice"])  # BSD-2-Clause AND MIT
+licenses(["notice"])  # BSD-2-Clause AND BSD-4-Clause and MIT
 
 package(default_visibility = ["//visibility:private"])
 
@@ -162,6 +162,7 @@ install(
         "LICENSE",  # BSD-2-Clause
         "src/sys/yaml/License",  # MIT
         # TODO valgrind is BSD-4-Clause
+        # TODO khash is MIT
     ],
     visibility = ["//visibility:public"],
 )
