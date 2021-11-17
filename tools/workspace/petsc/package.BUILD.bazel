@@ -219,6 +219,11 @@ PRIVATE_HDRS = [
     "src/sys/utils/ftn-kernels/fcopy.h",
     "src/sys/yaml/include/yaml.h",
     "src/sys/yaml/src/api.c",
+    "src/sys/yaml/src/loader.c",
+    "src/sys/yaml/src/parser.c",
+    "src/sys/yaml/src/reader.c",
+    "src/sys/yaml/src/scanner.c",
+    "src/sys/yaml/src/yaml_private.h",
     "src/vec/is/ao/aoimpl.h",
     "src/vec/is/is/impls/general/general.h",
     "src/vec/is/sf/impls/basic/allgatherv/sfallgatherv.h",
@@ -730,6 +735,7 @@ cc_library(
     ]
 )
 
+# XXX There are a bunch of sub-License files as well, like for yaml.
 True or install(
     name = "install",
     docs = ["BSD-LICENSE"],
