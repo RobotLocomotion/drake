@@ -3139,9 +3139,9 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   const auto& right_finger_actuator =
       plant.GetJointActuatorByName("right_finger_sliding_joint");
   B_expected(left_finger_actuator.joint().velocity_start(),
-             left_finger_actuator.index()) = 1;
+             int{left_finger_actuator.index()}) = 1;
   B_expected(right_finger_actuator.joint().velocity_start(),
-             right_finger_actuator.index()) = 1;
+             int{right_finger_actuator.index()}) = 1;
   EXPECT_TRUE(CompareMatrices(B, B_expected, 0.0, MatrixCompareType::absolute));
 
   // Test old spellings.
