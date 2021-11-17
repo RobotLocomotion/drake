@@ -3,12 +3,21 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/skylark:py.bzl", "py_test")
 
-# TODO committed generated code for now, do this for realz.
 cc_library(
-    name = "linux_config",
-    hdrs = glob(["linux-include/*.h"]),
-    strip_include_prefix = "linux-include",
-    tags = ["nolint"],
+    name = "stubs",
+    hdrs = [
+        "stubs/petscconf.h",
+        "stubs/petscconf_poison.h",
+        "stubs/petscconfiginfo.h",
+        "stubs/petscfix.h",
+        "stubs/petscmachineinfo.h",
+        "stubs/petscpkg_version.h",
+    ],
+    strip_include_prefix = "stubs",
+    tags = [
+        # Only build this library when petsc needs it, not as part of "...".
+        "manual",
+    ],
     visibility = ["@petsc//:__pkg__"],
 )
 
@@ -28,23 +37,6 @@ py_test(
     data = ["@petsc//:LICENSE-valgrind.txt"],
     main = "test/license_check_test.py",
     tags = ["no_kcov"],
-)
-
-cc_library(
-    name = "stubs",
-    hdrs = [
-        "stubs/petscconf_poison.h",
-        "stubs/petscconfiginfo.h",
-        "stubs/petscfix.h",
-        "stubs/petscmachineinfo.h",
-        "stubs/petscpkg_version.h",
-    ],
-    strip_include_prefix = "stubs",
-    tags = [
-        # Only build this library when petsc needs it, not as part of "...".
-        "manual",
-    ],
-    visibility = ["@petsc//:__pkg__"],
 )
 
 add_lint_tests()

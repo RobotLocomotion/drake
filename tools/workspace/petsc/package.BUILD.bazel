@@ -1,10 +1,6 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
-)
-load(
     "@drake//tools/install:install.bzl",
     "install",
 )
@@ -12,15 +8,6 @@ load(
 licenses(["notice"])  # BSD-2-Clause AND BSD-4-Clause and MIT
 
 package(default_visibility = ["//visibility:private"])
-
-# TODO dead code, do this for realz.
-True or cmake_configure_file(
-    name = "config",
-    src = "src/petsc/config.h.cmake.in",
-    out = "src/petsc/config.h",
-    defines = ["PETSC_DOUBLE"],
-    visibility = ["//visibility:private"],
-)
 
 # In practice we'll need about ~80% of the headers found by globbing below, so
 # we might as well just glob them all. Headers are relatively cheap to "build";
@@ -150,7 +137,6 @@ cc_library(
     deps = [
         "@blas",
         "@lapack",
-        "@drake//tools/workspace/petsc:linux_config",
         "@drake//tools/workspace/petsc:stubs",
     ],
     visibility = ["//visibility:public"],

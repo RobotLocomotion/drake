@@ -1,12 +1,14 @@
-#if !defined(INCLUDED_PETSCCONF_H)
-#define INCLUDED_PETSCCONF_H
+#pragma once
 
-#define MPI_Comm_create_errhandler(p_err_fun,p_errhandler) MPI_Errhandler_create((p_err_fun),(p_errhandler))
-#define MPI_Comm_set_errhandler(comm,p_errhandler) MPI_Errhandler_set((comm),(p_errhandler))
-#define MPI_Type_create_struct(count,lens,displs,types,newtype) MPI_Type_struct((count),(lens),(displs),(types),(newtype))
+#define MPI_Comm_create_errhandler(p_err_fun, p_errhandler) \
+  MPI_Errhandler_create((p_err_fun), (p_errhandler))
+#define MPI_Comm_set_errhandler(comm, p_errhandler) \
+  MPI_Errhandler_set((comm), (p_errhandler))
+#define MPI_Type_create_struct(count, lens, displs, types, newtype) \
+  MPI_Type_struct((count), (lens), (displs), (types), (newtype))
 #define PETSC_ARCH "NO_PETSC_ARCH"
 #define PETSC_ATTRIBUTEALIGNED(size) __attribute((aligned(size)))
-#define PETSC_Alignx(a,b)   
+#define PETSC_Alignx(a, b)
 #define PETSC_BLASLAPACK_UNDERSCORE 1
 #define PETSC_CLANGUAGE_C 1
 #define PETSC_CXX_INLINE inline
@@ -111,7 +113,7 @@
 #define PETSC_HAVE_VSNPRINTF 1
 #define PETSC_HAVE_XMMINTRIN_H 1
 #define PETSC_IS_COLORING_MAX USHRT_MAX
-#define PETSC_IS_COLORING_VALUE_TYPE short
+#define PETSC_IS_COLORING_VALUE_TYPE short  // NOLINT
 #define PETSC_IS_COLORING_VALUE_TYPE_F integer2
 #define PETSC_LEVEL1_DCACHE_LINESIZE 64
 #define PETSC_LIB_DIR "NO_PETSC_LIB_DIR"
@@ -124,9 +126,10 @@
 #define PETSC_PREFETCH_HINT_T1 _MM_HINT_T1
 #define PETSC_PREFETCH_HINT_T2 _MM_HINT_T2
 #define PETSC_PYTHON_EXE "NO_PETSC_PYTHON_EXE"
-#define PETSC_Prefetch(a,b,c) _mm_prefetch((const char*)(a),(c))
+#define PETSC_Prefetch(a, b, c) \
+  _mm_prefetch((const char*)(a), (c))
 #define PETSC_REPLACE_DIR_SEPARATOR '\\'
-#define PETSC_SIGNAL_CAST  
+#define PETSC_SIGNAL_CAST
 #define PETSC_SIZEOF_ENUM 4
 #define PETSC_SIZEOF_INT 4
 #define PETSC_SIZEOF_LONG 8
@@ -156,4 +159,3 @@
 #define PETSC__BSD_SOURCE 1
 #define PETSC__DEFAULT_SOURCE 1
 #define PETSC__GNU_SOURCE 1
-#endif
