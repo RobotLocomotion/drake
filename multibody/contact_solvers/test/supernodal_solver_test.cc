@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/supernodal_solver.h"
 
-#include "conex/clique_ordering.h"
+#include <tuple>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -87,6 +88,31 @@ DenseBlockDiagonalPair Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices() {
   return std::make_pair(A, blocks);
 }
 
+// Helper to make block matrix triplets for an input dense matrix A.
+// block_positions[b] corresponds to the (bi, bj) block indexes of the non-zero
+// b-th block.
+// dense_positions[b] corresponds to the (i, j) indexes of the top-left corner
+// of the b-th block in the dense matrix A.
+// block_sizes[b] corresponds to the number of rows (first) and columns (second)
+// for the b-th block.
+std::vector<BlockMatrixTriplet> MakeBlockTriplets(
+    const MatrixXd& A, const std::vector<std::pair<int, int>>& block_positions,
+    const std::vector<std::pair<int, int>>& dense_positions,
+    const std::vector<std::pair<int, int>>& block_sizes) {
+  DRAKE_DEMAND(block_positions.size() == dense_positions.size());
+  DRAKE_DEMAND(block_positions.size() == block_sizes.size());
+  const int num_blocks = block_positions.size();
+  std::vector<BlockMatrixTriplet> triplets(num_blocks);
+  for (int b = 0; b < num_blocks; ++b) {
+    get<0>(triplets[b]) = block_positions[b].first;
+    get<1>(triplets[b]) = block_positions[b].second;
+    get<2>(triplets[b]) =
+        A.block(dense_positions[b].first, dense_positions[b].second,
+                block_sizes[b].first, block_sizes[b].second);
+  }
+  return triplets;
+}
+
 // In this test the partition of the columns of J doesn't refine the partition
 // induced by M, nor the other way around. We partition the columns of J as {{0,
 // 1, 2, 3}, {4}, {5}}. However, we partition M as {{0, 1}, {2, 3}, {4, 5}}.
@@ -108,23 +134,11 @@ GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
        0, 0, 0, 0, 0, 1,
        0, 0, 0, 0, 0, 1,
        0, 0, 0, 0, 0, 3;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {1, 1}, {2, 2}},
+      {{0, 0}, {3, 4}, {6, 5}},
+      {{3, 4}, {3, 1}, {3, 1}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(3);
-  // Block row p = 0.
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 4>(0, 0);
-
-  // Block row p = 1.
-  get<0>(Jtriplets.at(1)) = 1;
-  get<1>(Jtriplets.at(1)) = 1;
-  get<2>(Jtriplets.at(1)) = J.block<3, 1>(3, 4);
-
-  // Block row p = 2.
-  get<0>(Jtriplets.at(2)) = 2;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 1>(6, 5);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
@@ -152,30 +166,16 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
+      {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
+      {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(4);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 4);
-
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(3, 4);
-
-  get<0>(Jtriplets.at(3)) = 2;
-  get<1>(Jtriplets.at(3)) = 1;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
   auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
-
   const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 
@@ -208,27 +208,11 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
        1, 1, 0, 0, 0, 0,
        2, 1, 0, 0, 0, 0,
        3, 3, 0, 0, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 2}, {2, 0}},
+      {{0, 0}, {0, 4}, {3, 4}, {6, 0}},
+      {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
-
-  // Block row p = 0.
-  std::vector<BlockMatrixTriplet> Jtriplets(4);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 4);
-
-  // Block row p = 1.
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(3, 4);
-
-  // Block row p = 2.
-  get<0>(Jtriplets.at(3)) = 2;
-  get<1>(Jtriplets.at(3)) = 0;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
@@ -256,32 +240,11 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 1}, {0, 2}, {1, 2}, {2, 1}},
+      {{0, 0}, {0, 2}, {0, 4}, {3, 4}, {6, 2}},
+      {{3, 2}, {3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(5);
-  // Block row p = 0. We intentionally supply three blocks for this row to
-  // verify an exception is thrown.
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 1;
-  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 2);
-
-  get<0>(Jtriplets.at(2)) = 0;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(0, 4);
-
-  // Block row p = 1.
-  get<0>(Jtriplets.at(3)) = 1;
-  get<1>(Jtriplets.at(3)) = 2;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(3, 4);
-
-  // Block row p = 2.
-  get<0>(Jtriplets.at(4)) = 2;
-  get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
@@ -311,31 +274,11 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 3}, {1, 2}, {1, 3}, {2, 1}},
+      {{0, 0}, {0, 5}, {3, 4}, {3, 5}, {6, 2}},
+      {{3, 2}, {3, 1}, {3, 1}, {3, 1}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(5);
-  // Block row p = 0.
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 3;
-  get<2>(Jtriplets.at(1)) = J.block<3, 1>(0, 5);
-
-  // Block row p = 1.
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 1>(3, 4);
-
-  get<0>(Jtriplets.at(3)) = 1;
-  get<1>(Jtriplets.at(3)) = 3;
-  get<2>(Jtriplets.at(3)) = J.block<3, 1>(3, 5);
-
-  // Block row p = 2.
-  get<0>(Jtriplets.at(4)) = 2;
-  get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block<3, 2>(6, 2);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
@@ -380,27 +323,16 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
+      {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
+      {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(4);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<3, 2>(0, 4);
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(3, 4);
-  get<0>(Jtriplets.at(3)) = 2;
-  get<1>(Jtriplets.at(3)) = 1;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
   const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
-
   const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
@@ -432,33 +364,18 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
+      {{0, 0}, {0, 4}, {6, 4}, {9, 2}},
+      {{6, 2}, {6, 2}, {3, 2}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(4);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 4);
-
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 4);
-
-  get<0>(Jtriplets.at(3)) = 2;
-  get<1>(Jtriplets.at(3)) = 1;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(9, 2);
 
   const auto [G, blocks_of_G] =
       Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices();
-
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
-
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
@@ -482,30 +399,12 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
+  // We place unsorted inputs: column 2 appears before column 0.
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 0}, {1, 2}, {2, 1}},
+      {{0, 0}, {0, 4}, {6, 0}, {6, 4}, {9, 2}},
+      {{6, 2}, {6, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(5);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 4);
-
-  // Unsorted inputs: column 2 appears before column
-  // 0.
-  get<0>(Jtriplets.at(3)) = 1;
-  get<1>(Jtriplets.at(3)) = 0;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 0);
-
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 4);
-
-  get<0>(Jtriplets.at(4)) = 2;
-  get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block<3, 2>(9, 2);
 
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
   const auto [G, blocks_of_G] =
@@ -513,7 +412,6 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
-
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
@@ -538,29 +436,15 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
        0, 0, 1, 1, 0, 0, 0,
        0, 0, 2, 1, 0, 0, 0,
        0, 0, 3, 3, 0, 0, 0;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
+      {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
+      {{3, 2}, {3, 3}, {3, 3}, {3, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(4);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<3, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<3, 3>(0, 4);
-
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 2;
-  get<2>(Jtriplets.at(2)) = J.block<3, 3>(3, 4);
-
-  get<0>(Jtriplets.at(3)) = 2;
-  get<1>(Jtriplets.at(3)) = 1;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 2);
 
   const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
   MatrixXd M(7, 7);
-
   // clang-format off
   M << 1, 1, 0, 0, 0, 0, 0,
        1, 5, 0, 0, 0, 0, 0,
@@ -578,7 +462,6 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
-
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
@@ -707,36 +590,11 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 3,  0, 0, 0,
 
        1, 1, 0,  0, 0, 1;
+  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+      {{0, 0}, {0, 2}, {1, 0}, {1, 2}, {2, 1}, {3, 3}, {3, 0}},
+      {{0, 0}, {0, 3}, {6, 0}, {6, 3}, {9, 2}, {12, 5}, {12, 0}},
+      {{6, 2}, {6, 2}, {3, 2}, {3, 2}, {3, 1}, {1, 1}, {1, 2}});
   // clang-format on
-
-  std::vector<BlockMatrixTriplet> Jtriplets(7);
-  get<0>(Jtriplets.at(0)) = 0;
-  get<1>(Jtriplets.at(0)) = 0;
-  get<2>(Jtriplets.at(0)) = J.block<6, 2>(0, 0);
-
-  get<0>(Jtriplets.at(1)) = 0;
-  get<1>(Jtriplets.at(1)) = 2;
-  get<2>(Jtriplets.at(1)) = J.block<6, 2>(0, 3);
-
-  get<0>(Jtriplets.at(2)) = 1;
-  get<1>(Jtriplets.at(2)) = 0;
-  get<2>(Jtriplets.at(2)) = J.block<3, 2>(6, 0);
-
-  get<0>(Jtriplets.at(3)) = 1;
-  get<1>(Jtriplets.at(3)) = 2;
-  get<2>(Jtriplets.at(3)) = J.block<3, 2>(6, 3);
-
-  get<0>(Jtriplets.at(4)) = 2;
-  get<1>(Jtriplets.at(4)) = 1;
-  get<2>(Jtriplets.at(4)) = J.block<3, 1>(9, 2);
-
-  get<0>(Jtriplets.at(5)) = 3;
-  get<1>(Jtriplets.at(5)) = 3;
-  get<2>(Jtriplets.at(5)) = J.block<1, 1>(12, 5);
-
-  get<0>(Jtriplets.at(6)) = 3;
-  get<1>(Jtriplets.at(6)) = 0;
-  get<2>(Jtriplets.at(6)) = J.block<1, 2>(12, 0);
 
   MatrixXd G(13, 13);
   // clang-format off
@@ -763,7 +621,6 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   blocks_of_G.at(4) = G.block(12, 12, 1, 1);
 
   MatrixXd M(6, 6);
-
   // clang-format off
   M << 1, 1, 0, 0, 0, 0,
        1, 5, 0, 0, 0, 0,
@@ -781,7 +638,6 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
 
   SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
-
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
