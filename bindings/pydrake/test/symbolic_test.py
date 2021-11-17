@@ -988,22 +988,31 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m.total_degree(), 0)
 
     def test_constructor_variable(self):
-        m = sym.Monomial(x)  # m = x¹
-        self.assertEqual(m.degree(x), 1)
-        self.assertEqual(m.total_degree(), 1)
+        def check_monomial(m):  # m = x¹
+            self.assertEqual(m.degree(x), 1)
+            self.assertEqual(m.total_degree(), 1)
+
+        check_monomial(sym.Monomial(x))
+        check_monomial(sym.Monomial(var=x))
 
     def test_constructor_variable_int(self):
-        m = sym.Monomial(x, 2)  # m = x²
-        self.assertEqual(m.degree(x), 2)
-        self.assertEqual(m.total_degree(), 2)
+        def check_monomial(m):  # m = x²
+            self.assertEqual(m.degree(x), 2)
+            self.assertEqual(m.total_degree(), 2)
+
+        check_monomial(sym.Monomial(x, 2))
+        check_monomial(sym.Monomial(var=x, exponent=2))
 
     def test_constructor_map(self):
+        def check_monomial(m):
+            powers_out = EqualToDict(m.get_powers())
+            self.assertEqual(powers_out[x], 2)
+            self.assertEqual(powers_out[y], 3)
+            self.assertEqual(powers_out[z], 4)
+
         powers_in = {x: 2, y: 3, z: 4}
-        m = sym.Monomial(powers_in)
-        powers_out = EqualToDict(m.get_powers())
-        self.assertEqual(powers_out[x], 2)
-        self.assertEqual(powers_out[y], 3)
-        self.assertEqual(powers_out[z], 4)
+        check_monomial(sym.Monomial(powers_in))
+        check_monomial(sym.Monomial(powers=powers_in))
 
     def test_constructor_vars_exponents(self):
         m = sym.Monomial([x, y], [1, 2])
