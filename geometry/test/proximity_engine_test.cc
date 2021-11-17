@@ -1883,7 +1883,6 @@ GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
 // Confirms that the ComputeContactSurfaces() computation returns the
 // same results twice in a row. This test is explicitly required because it is
 // known that updating the pose in the FCL tree can lead to erratic ordering.
-// We also test ComputePolygonalContactSurfaces() similarly.
 class ProximityEngineHydro : public testing::Test {
  protected:
   void SetUp() override {
@@ -1934,25 +1933,9 @@ TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
   }
 }
 
-TEST_F(ProximityEngineHydro, ComputePolygonalContactSurfacesResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputePolygonalContactSurfaces(poses_);
-  ASSERT_EQ(results1.size(), poses_.size());
-
-  engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputePolygonalContactSurfaces(poses_);
-  ASSERT_EQ(results2.size(), poses_.size());
-
-  for (size_t i = 0; i < poses_.size(); ++i) {
-    EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
-    EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
-  }
-}
-
 // Confirms that the ComputeContactSurfacesWithFallback() computation returns
 // the same results twice in a row. This test is explicitly required because it
 // is known that updating the pose in the FCL tree can lead to erratic ordering.
-// We also test ComputePolygonalContactSurfacesWithFallback() similarly.
 class ProximityEngineHydroWithFallback : public testing::Test {
  protected:
   void SetUp() override {
@@ -2004,32 +1987,6 @@ TEST_F(ProximityEngineHydroWithFallback,
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
   engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces2, &points2);
-  ASSERT_EQ(surfaces2.size(), N_ / 2);
-  ASSERT_EQ(points2.size(), N_ / 2);
-
-  for (size_t i = 0; i < N_ / 2; ++i) {
-    EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
-    EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
-    EXPECT_EQ(points1[i].id_A, points2[i].id_A);
-    EXPECT_EQ(points1[i].id_B, points2[i].id_B);
-  }
-}
-
-TEST_F(ProximityEngineHydroWithFallback,
-       ComputePolygonalContactSurfacesWithFallbackResultOrdering) {
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces1;
-  vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces1,
-                                                      &points1);
-  ASSERT_EQ(surfaces1.size(), N_ / 2);
-  ASSERT_EQ(points1.size(), N_ / 2);
-
-  engine_.UpdateWorldPoses(poses_);
-  vector<ContactSurface<double>> surfaces2;
-  vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputePolygonalContactSurfacesWithFallback(poses_, &surfaces2,
-                                                      &points2);
   ASSERT_EQ(surfaces2.size(), N_ / 2);
   ASSERT_EQ(points2.size(), N_ / 2);
 

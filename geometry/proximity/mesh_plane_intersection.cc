@@ -66,7 +66,6 @@ void SliceTetWithPlane(int tet_index,
                        const VolumeMeshFieldLinear<double, double>& field_M,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
-                       ContactPolygonRepresentation representation,
                        std::vector<SurfaceTriangle>* faces,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
@@ -91,11 +90,7 @@ void SliceTetWithPlane(int tet_index,
   int num_intersections = 0;
   // Indices of the new polygon's vertices in vertices_W. There can be, at
   // most, four due to the intersection with the plane.
-  // Used for ContactPolygonRepresentation::kCentroidSubdivision.
   std::vector<int> face_verts(4);
-  // Positions of the new polygon's vertices.
-  // Used for ContactPolygonRepresentation::kSingleTriangle.
-  std::vector<Vector3<T>> polygon_W(4);
   for (int e = 0; e < 4; ++e) {
     const int edge_index = intersected_edges[e];
     if (edge_index == -1) break;
@@ -106,8 +101,7 @@ void SliceTetWithPlane(int tet_index,
     const SortedPair<int> mesh_edge{v0, v1};
 
     auto iter = cut_edges->find(mesh_edge);
-    if (representation == ContactPolygonRepresentation::kCentroidSubdivision &&
-        iter != cut_edges->end()) {
+    if (iter != cut_edges->end()) {
       // Result has already been computed.
       face_verts[e] = iter->second;
     } else {
@@ -126,22 +120,13 @@ void SliceTetWithPlane(int tet_index,
       const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
       const Vector3<T> p_WC = X_WM * p_MC;
 
-      switch (representation) {
-        case ContactPolygonRepresentation::kCentroidSubdivision: {
-          int new_index = static_cast<int>(vertices_W->size());
-          vertices_W->emplace_back(p_WC);
-          const double e0 = field_M.EvaluateAtVertex(v0);
-          const double e1 = field_M.EvaluateAtVertex(v1);
-          surface_e->emplace_back(e0 + t * (e1 - e0));
-          (*cut_edges)[mesh_edge] = new_index;
-          face_verts[e] = new_index;
-          break;
-        }
-        case ContactPolygonRepresentation::kSingleTriangle: {
-          polygon_W[e] = p_WC;
-          break;
-        }
-      }
+      int new_index = static_cast<int>(vertices_W->size());
+      vertices_W->emplace_back(p_WC);
+      const double e0 = field_M.EvaluateAtVertex(v0);
+      const double e1 = field_M.EvaluateAtVertex(v1);
+      surface_e->emplace_back(e0 + t * (e1 - e0));
+      (*cut_edges)[mesh_edge] = new_index;
+      face_verts[e] = new_index;
     }
   }
 
@@ -149,18 +134,8 @@ void SliceTetWithPlane(int tet_index,
   // need to provide a normal expressed in the same.
   const Vector3<T> nhat_W = X_WM.rotation() * plane_M.normal();
   const size_t before = vertices_W->size();
-  switch (representation) {
-    case ContactPolygonRepresentation::kCentroidSubdivision: {
-      face_verts.resize(num_intersections);
-      AddPolygonToMeshData(face_verts, nhat_W, faces, vertices_W);
-      break;
-    }
-    case ContactPolygonRepresentation::kSingleTriangle: {
-      polygon_W.resize(num_intersections);
-      AddPolygonToMeshDataAsOneTriangle(polygon_W, nhat_W, faces, vertices_W);
-      break;
-    }
-  }
+  face_verts.resize(num_intersections);
+  AddPolygonToMeshData(face_verts, nhat_W, faces, vertices_W);
   for (size_t v = before; v < vertices_W->size(); ++v) {
     const Vector3<T> p_MV = X_WM.inverse() * vertices_W->at(v);
     surface_e->emplace_back(field_M.EvaluateCartesian(tet_index, p_MV));
@@ -173,8 +148,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     const VolumeMeshFieldLinear<double, double>& mesh_field_M,
     GeometryId plane_id, const Plane<T>& plane_M,
     const std::vector<int>& tet_indices,
-    const math::RigidTransform<T>& X_WM,
-    ContactPolygonRepresentation representation) {
+    const math::RigidTransform<T>& X_WM) {
   if (tet_indices.size() == 0) return nullptr;
 
   std::vector<SurfaceTriangle> faces;
@@ -187,8 +161,8 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   for (const auto& tet_index : tet_indices) {
     const Vector3<T>& grad_eMi_W =
         X_WM.rotation() * mesh_field_M.EvaluateGradient(tet_index).cast<T>();
-    SliceTetWithPlane(tet_index, mesh_field_M, plane_M, X_WM, representation,
-                      &faces, &vertices_W, &surface_e, &cut_edges);
+    SliceTetWithPlane(tet_index, mesh_field_M, plane_M, X_WM, &faces,
+                      &vertices_W, &surface_e, &cut_edges);
     // The gradient of every triangle that arises from slicing a tet with a
     // plane is the *constant* gradient inside that tet.
     for (size_t i = old_face_count; i < faces.size(); ++i) {
@@ -218,8 +192,7 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation) {
+    const math::RigidTransform<T>& X_WR) {
   std::vector<int> tet_indices;
   tet_indices.reserve(field_S.mesh().num_elements());
   auto callback = [&tet_indices](int tet_index) {
@@ -244,8 +217,7 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
 
   // Build the contact surface from the plane and the list of tetrahedron
   // indices.
-  return ComputeContactSurface(id_S, field_S, id_R, plane_S, tet_indices, X_WS,
-                               representation);
+  return ComputeContactSurface(id_S, field_S, id_R, plane_S, tet_indices, X_WS);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
