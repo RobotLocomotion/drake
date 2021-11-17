@@ -156,14 +156,42 @@ class _ConfigDialog(QtGui.QDialog):
         layout.addWidget(self.show_pressure, row, 1)
         row += 1
 
-        # Whether to show the contact surface as a wireframe.
-        layout.addWidget(QtGui.QLabel('Render contact surface wireframe'),
-                         row, 0)
-        self.show_contact_edges = QtGui.QCheckBox()
-        self.show_contact_edges.setChecked(visualizer.show_contact_edges)
-        self.show_contact_edges.setToolTip('Renders the edges of the '
-                                           'contact surface.')
-        layout.addWidget(self.show_contact_edges, row, 1)
+        layout.addWidget(QtGui.QLabel("Render contact surface edges"), row, 0)
+        self.show_edges = QtGui.QCheckBox()
+        self.show_edges.setChecked(visualizer.show_edges)
+        self.show_pressure.setToolTip('Renders the edges of the contact '
+                                      'surface faces.')
+        layout.addWidget(self.show_edges, row, 1)
+        self.show_edges.clicked.connect(self.toggle_show_edges)
+        row += 1
+
+        layout.addWidget(QtGui.QLabel("Edge width"), row, 0,
+                         QtCore.Qt.AlignRight)
+        mini_layout = QtGui.QGridLayout()
+        mini_layout.setColumnStretch(0, 0)
+        mini_layout.setColumnStretch(1, 1)
+        layout.addLayout(mini_layout, row, 1)
+        self.edge_width_display = QtGui.QLabel(str(visualizer.edge_width))
+        mini_layout.addWidget(self.edge_width_display, 0, 0)
+        self.edge_width = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.edge_width.setToolTip('Controls the thickness of the visible '
+                                   'contact surface edges. Use the left/right '
+                                   'arrow keys or drag on the handle to '
+                                   'change width.')
+        self.edge_width.value = visualizer.edge_width
+        self.edge_width.minimum = 0
+        self.edge_width.maximum = 10
+        # When a user clicks on the bar and not the handle, this causes the
+        # handle to take one step toward the mouse click from the current
+        # position. Ideally, the handle should jump straight to the position.
+        # This stackoverflow suggests a method:
+        # https://stackoverflow.com/questions/11132597/qslider-mouse-direct-jump?rq=1 # noqa
+        # however, attempts to implement the solution produced segfaults when
+        # invoking the parent class's setStyle() method. So, this is left
+        # as an exercise for future readers.
+        self.edge_width.setPageStep(1)
+        mini_layout.addWidget(self.edge_width, 0, 1)
+        self.edge_width.valueChanged.connect(self.update_width_label)
         row += 1
 
         contact_data_grp = QtGui.QGroupBox("Contact data")
@@ -291,6 +319,12 @@ class _ConfigDialog(QtGui.QDialog):
         self.pressure_value_label.setText("Maximum pressure value observed: "
                                           f"{value:.5e}")
 
+    def toggle_show_edges(self, state):
+        self.edge_width.setEnabled(state)
+
+    def update_width_label(self, value):
+        self.edge_width_display.text = str(value)
+
 
 class ColorMap:
     # Virtual class for mapping a range of values to colors.
@@ -361,13 +395,24 @@ class IntensityMap(ColorMap):
     def __init__(self, data_range=None):
         ColorMap.__init__(self, data_range)
 
+    def _high_intensity(self):
+        """Returns the color for highest intensity."""
+        # For the auto contrasting color, make sure this color is always full
+        # contrast (e.g., one channel must be zero).
+        return np.array((1.0, 0.6, 0.0), dtype=np.float)
+
     def _do_get_color(self, norm_data):
         # TODO(drum) Make the color configurable.
-        return np.array((1.0, 0.0, 0.0), dtype=np.float) * norm_data
+        return self._high_intensity() * norm_data
 
-    # TODO(drum): Make this vary when the color is configurable.
     def _do_get_contrasting_color(self):
-        return [0.0, 0.0, 1.0]
+        # This works best for full saturation colors because at least one
+        # channel of the high intensity color will be zero. That means its
+        # contrasting color will likewise be full saturation. However, if the
+        # high intensity color were white, this would become black and wouldn't
+        # contrast with the low intensity black. We need a color that is
+        # reasonably contrasty with both colors simultaneously.
+        return np.array((1.0, 1.0, 1.0)) - self._high_intensity()
 
 
 class TwoToneMap(ColorMap):
@@ -494,7 +539,10 @@ class _Contact:
     @staticmethod
     def make_key(surface: lcmt_hydroelastic_contact_surface_for_viz):
         """Creates the key for this contact surface (based on the
-        geometries involved)."""
+        geometries involved).
+
+        Args:
+            surface: The contact surface data."""
         need_names = (surface.collision_count1 > 1
                       or surface.collision_count2 > 1)
         return (surface.geometry1_name, surface.geometry2_name, need_names)
@@ -805,8 +853,8 @@ class VisualModel:
             update_callback: Functor of the form
                 `f(item: VisualItem, mesh_data: vtk.vtkPolyData)` called when
                 an item is updated. The mesh_data is the data that has been
-                assigned to the item. It can be used to provide custom
-                configuration."""
+                assigned to the item. It can be used to provide custom updating
+                behavior."""
         key = _BodyContact.make_key(surface)
         body_contact = self._body_contacts[key]
         body_contact.set_mesh_data(surface, mesh_data, item_name, add_callback,
@@ -838,7 +886,8 @@ class HydroelasticContactVisualizer:
         self.min_pressure = 0
         self.max_pressure = 1e8
         self.texture_size = 128
-        self.show_contact_edges = True
+        self.show_edges = True
+        self.edge_width = 2
         self.show_pressure = True
         self.max_pressure_observed = 0
         self.show_spatial_force = True
@@ -864,30 +913,23 @@ class HydroelasticContactVisualizer:
         self.dlg = _ConfigDialog(self, applogic.getMainWindow())
 
         # Connect all of the widgets in the dialog to callbacks
-        self.dlg.color_map_mode.connect("currentIndexChanged(int)",
-                                        self.set_color_map)
-        self.dlg.min_pressure.connect("editingFinished()",
-                                      self.set_min_pressure)
-        self.dlg.max_pressure.connect("editingFinished()",
-                                      self.set_max_pressure)
-        self.dlg.show_pressure.connect("toggled(bool)",
-                                       self.toggle_show_pressure)
-        self.dlg.show_contact_edges.connect("toggled(bool)",
-                                            self.toggle_show_edges)
-        self.dlg.show_spatial_force.connect("toggled(bool)",
-                                            self.toggle_show_spatial_force)
-        self.dlg.show_traction_vectors.connect(
-            "toggled(bool)", self.toggle_show_traction_vectors)
-        self.dlg.show_slip_velocity_vectors.connect(
-            "toggled(bool)", self.toggle_show_slip_velocity)
-        self.dlg.magnitude_mode.connect("currentIndexChanged(int)",
-                                        self.set_magnitude_mode)
-        self.dlg.global_scale.connect("editingFinished()",
-                                      self.set_global_scale)
-        self.dlg.min_magnitude.connect("editingFinished()",
-                                       self.set_min_magnitude)
-        self.dlg.reset_button.connect("clicked()",
-                                      self.clear_max_observed_pressure)
+        self.dlg.color_map_mode.currentIndexChanged.connect(self.set_color_map)
+        self.dlg.min_pressure.editingFinished.connect(self.set_min_pressure)
+        self.dlg.max_pressure.editingFinished.connect(self.set_max_pressure)
+        self.dlg.show_pressure.toggled.connect(self.toggle_show_pressure)
+        self.dlg.show_edges.toggled.connect(self.toggle_show_edges)
+        self.dlg.edge_width.valueChanged.connect(self.set_edge_width)
+        self.dlg.show_spatial_force.toggled.connect(
+            self.toggle_show_spatial_force)
+        self.dlg.show_traction_vectors.toggled.connect(
+            self.toggle_show_traction_vectors)
+        self.dlg.show_slip_velocity_vectors.toggled.connect(
+            self.toggle_show_slip_velocity)
+        self.dlg.magnitude_mode.currentIndexChanged.connect(
+            self.set_magnitude_mode)
+        self.dlg.global_scale.editingFinished.connect(self.set_global_scale)
+        self.dlg.min_magnitude.editingFinished.connect(self.set_min_magnitude)
+        self.dlg.reset_button.clicked.connect(self.clear_max_observed_pressure)
 
     def create_color_map(self):
         if self.color_map_mode == ColorMapModes.kFlameMap:
@@ -976,13 +1018,16 @@ class HydroelasticContactVisualizer:
             self.update_pressure_range()
             self.update_visual_data_from_message()
 
+    def edges_visible(self):
+        return self.show_edges and self.edge_width > 0
+
     def update_mesh_drawing_callback(self, vis_item):
         """Callback for coordinating changes to how the contact surface is
         drawn."""
-        vis_item.item.actor.GetProperty().SetLineWidth(1)
+        vis_item.item.actor.GetProperty().SetLineWidth(self.edge_width)
         vis_item.item.actor.SetTexture(
             self.texture if self.show_pressure else None)
-        visible = self.show_pressure or self.show_contact_edges
+        visible = self.show_pressure or self.edges_visible()
         # TODO(SeanCurtis-TRI): Perhaps it would be better if I popped the item
         #  out of the object model
         vis_item.item.setProperty('Visible', visible)
@@ -990,7 +1035,7 @@ class HydroelasticContactVisualizer:
             # Only change the drawing mode if it's visible.
             if self.show_pressure:
                 mode = 'Surface'
-                if self.show_contact_edges:
+                if self.edges_visible():
                     mode += ' with edges'
             else:
                 mode = 'Wireframe'
@@ -1006,8 +1051,16 @@ class HydroelasticContactVisualizer:
 
     def toggle_show_edges(self, state):
         """Slot for dialog widget"""
-        if self.show_contact_edges != state:
-            self.show_contact_edges = state
+        if self.show_edges != state:
+            self.show_edges = state
+            if self.visual_model:
+                self.visual_model.update_items(
+                    'Contact surface', self.update_mesh_drawing_callback)
+
+    def set_edge_width(self, width):
+        """Slot for dialog widget."""
+        if self.edge_width != width:
+            self.edge_width = width
             if self.visual_model:
                 self.visual_model.update_items(
                     'Contact surface', self.update_mesh_drawing_callback)
@@ -1361,7 +1414,7 @@ class HydroelasticContactVisualizer:
                 surface, slip_data, "Slip velocity")
 
             vtk_polydata = None
-            if self.show_pressure or self.show_contact_edges:
+            if self.show_pressure or self.edges_visible():
                 vtk_polydata = self.make_mesh(surface)
 
             self.visual_model.set_contact_mesh_data(
@@ -1395,12 +1448,12 @@ class HydroelasticContactVisualizer:
         # Disable lighting so the surface appears the same looking from either
         # side.
         item.actor.GetProperty().SetLighting(False)
-        if self.show_contact_edges:
+        if self.edge_width > 0:
             color_map = self.create_color_map()
             [r, g, b] = color_map.get_contrasting_color()
             line_color = [r*255, g*255, b*255]
             item.actor.GetProperty().SetEdgeColor(line_color)
-            item.actor.GetProperty().SetLineWidth(1)
+            item.actor.GetProperty().SetLineWidth(self.edge_width)
             if self.show_pressure:
                 item.setProperty('Surface Mode', 'Surface with edges')
                 item.actor.SetTexture(self.texture)
