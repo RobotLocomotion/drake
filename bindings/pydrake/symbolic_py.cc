@@ -653,7 +653,7 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("env"), doc.Monomial.EvaluatePartial.doc)
       .def("pow_in_place", &Monomial::pow_in_place, py_rvp::reference_internal,
-          doc.Monomial.pow_in_place.doc)
+          py::arg("p"), doc.Monomial.pow_in_place.doc)
       .def("__pow__",
           [](const Monomial& self, const int p) { return pow(self, p); });
 

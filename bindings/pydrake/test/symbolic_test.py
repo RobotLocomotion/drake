@@ -1068,6 +1068,12 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m1.degree(y), 2)
         self.assertEqual(m2.degree(x), 4)
         self.assertEqual(m2.degree(y), 2)
+        # Test repeated for testing kwarg p=2
+        m3 = m1.pow_in_place(p=2)
+        self.assertEqual(m1.degree(x), 8)
+        self.assertEqual(m1.degree(y), 4)
+        self.assertEqual(m3.degree(x), 8)
+        self.assertEqual(m3.degree(y), 4)
 
     def test_get_powers(self):
         m = sym.Monomial(x, 2) * sym.Monomial(y)  # m = x²y
