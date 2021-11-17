@@ -4,7 +4,7 @@
 #define MPI_Comm_create_errhandler(p_err_fun,p_errhandler) MPI_Errhandler_create((p_err_fun),(p_errhandler))
 #define MPI_Comm_set_errhandler(comm,p_errhandler) MPI_Errhandler_set((comm),(p_errhandler))
 #define MPI_Type_create_struct(count,lens,displs,types,newtype) MPI_Type_struct((count),(lens),(displs),(types),(newtype))
-#define PETSC_ARCH "arch-linux-c-opt"
+#define PETSC_ARCH "NO_PETSC_ARCH"
 #define PETSC_ATTRIBUTEALIGNED(size) __attribute((aligned(size)))
 #define PETSC_Alignx(a,b)   
 #define PETSC_BLASLAPACK_UNDERSCORE 1
@@ -17,7 +17,7 @@
 #define PETSC_DEPRECATED_FUNCTION(why) __attribute((deprecated))
 #define PETSC_DEPRECATED_MACRO(why) _Pragma(why)
 #define PETSC_DEPRECATED_TYPEDEF(why) __attribute((deprecated))
-#define PETSC_DIR "/home/jwnimmer/jwnimmer-tri/drake/multibody/fixed_fem/dev/tmp/petsc"
+#define PETSC_DIR "NO_PETSC_DIR"
 #define PETSC_DIR_SEPARATOR '/'
 #define PETSC_FUNCTION_NAME_C __func__
 #define PETSC_FUNCTION_NAME_CXX __func__
@@ -118,7 +118,7 @@
 #define PETSC_IS_COLORING_VALUE_TYPE short
 #define PETSC_IS_COLORING_VALUE_TYPE_F integer2
 #define PETSC_LEVEL1_DCACHE_LINESIZE 64
-#define PETSC_LIB_DIR "/home/jwnimmer/jwnimmer-tri/drake/multibody/fixed_fem/dev/tmp/petsc/arch-linux-c-opt/lib"
+#define PETSC_LIB_DIR "NO_PETSC_LIB_DIR"
 #define PETSC_MAX_PATH_LEN 4096
 #define PETSC_MEMALIGN 16
 #define PETSC_MPICC_SHOW "Unavailable"
@@ -127,7 +127,7 @@
 #define PETSC_PREFETCH_HINT_T0 _MM_HINT_T0
 #define PETSC_PREFETCH_HINT_T1 _MM_HINT_T1
 #define PETSC_PREFETCH_HINT_T2 _MM_HINT_T2
-#define PETSC_PYTHON_EXE "/usr/bin/python3"
+#define PETSC_PYTHON_EXE "NO_PETSC_PYTHON_EXE"
 #define PETSC_Prefetch(a,b,c) _mm_prefetch((const char*)(a),(c))
 #define PETSC_REPLACE_DIR_SEPARATOR '\\'
 #define PETSC_SIGNAL_CAST  
@@ -143,7 +143,6 @@
 #define PETSC_UNUSED __attribute((unused))
 #define PETSC_USE_BACKWARD_LOOP 1
 #define PETSC_USE_CTABLE 1
-#define PETSC_USE_DEBUGGER "gdb"
 #define PETSC_USE_INFO 1
 #define PETSC_USE_ISATTY 1
 #define PETSC_USE_LOG 1
@@ -155,9 +154,9 @@
 #define PETSC_USE_VISIBILITY_C 1
 #define PETSC_USE_VISIBILITY_CXX 1
 #define PETSC_USING_64BIT_PTR 1
-#define PETSC_VERSION_BRANCH_GIT "HEAD"
-#define PETSC_VERSION_DATE_GIT "2021-11-01 22:20:01 -0500"
-#define PETSC_VERSION_GIT "v3.16.1"
+#define PETSC_VERSION_BRANCH_GIT "NO_PETSC_VERSION_BRANCH_GIT"
+#define PETSC_VERSION_DATE_GIT "NO_PETSC_VERSION_DATE_GIT"
+#define PETSC_VERSION_GIT "NO_PETSC_VERSION_GIT"
 #define PETSC__BSD_SOURCE 1
 #define PETSC__DEFAULT_SOURCE 1
 #define PETSC__GNU_SOURCE 1
