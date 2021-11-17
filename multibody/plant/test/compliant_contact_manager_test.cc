@@ -112,6 +112,9 @@ class CompliantContactManagerTest : public ::testing::Test {
     sphere1_ = &AddSphere(sphere1_params);
     sphere2_ = &AddSphere(sphere2_params);
 
+    plant_->mutable_gravity_field().set_gravity_vector(-gravity_ *
+                                                       Vector3d::UnitZ());
+
     plant_->set_contact_model(
         drake::multibody::ContactModel::kHydroelasticWithFallback);
 
@@ -261,9 +264,18 @@ class CompliantContactManagerTest : public ::testing::Test {
     return contact_manager_->EvalContactJacobianCache(context);
   }
 
+  const VectorXd CalcFreeMotionVelocities(
+      const systems::Context<double>& context) const {
+    VectorXd v_star(plant_->num_velocities());
+    contact_manager_->CalcFreeMotionVelocities(context, &v_star);
+    return v_star;
+  }
+
  protected:
   // Arbitrary positive value so that the model is discrete.
   double time_step_{0.001};
+
+  const double gravity_{10.0};  // Acceleration of gravity, in m/s².
 
   // Default penetration distance. The configuration of the model is set so that
   // ground/sphere1 and sphere1/sphere2 interpenetrate by this amount.
@@ -452,6 +464,48 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
                                   MatrixCompareType::relative));
     }
   }
+}
+
+// Verifies the correctness of the computation of free motion velocities.
+TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocities) {
+  MakeDefaultSetup();
+  const double kTolerance = std::numeric_limits<double>::epsilon();
+
+  // We set an arbitrary non-zero external force to the plant to verify it gets
+  // properly applied as part of the computation.
+  const int nv = plant_->num_velocities();
+  const VectorXd tau = VectorXd::LinSpaced(nv, 1.0, 12.0);
+  plant_->get_applied_generalized_force_input_port().FixValue(plant_context_,
+                                                              tau);
+
+  // Arbitrary velocity of sphere 1.
+  const Vector3d v_WS1(1, 2, 3);
+  const Vector3d w_WS1(4, 5, 6);
+  const SpatialVelocity<double> V_WS1(w_WS1, v_WS1);
+  plant_->SetFreeBodySpatialVelocity(plant_context_, *sphere1_, V_WS1);
+
+  // Arbitrary velocity of sphere 2.
+  const Vector3d v_WS2(7, 8, 9);
+  const Vector3d w_WS2(10, 11, 12);
+  const SpatialVelocity<double> V_WS2(w_WS2, v_WS2);
+  plant_->SetFreeBodySpatialVelocity(plant_context_, *sphere2_, V_WS2);
+
+  // Since velocities are zero, Coriolis terms are zero and the momentum
+  // equation reduces to: M * (v-v0)/dt = tau_g + tau.
+  const double dt = plant_->time_step();
+  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
+  MatrixXd M(nv, nv);
+  plant_->CalcMassMatrix(*plant_context_, &M);
+  const auto v0 = plant_->GetVelocities(*plant_context_);
+  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g + tau);
+
+  // Compute the velocities the system would have next time step in the absence
+  // of constraints.
+  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
+  plant_->SetVelocities(plant_context_, v_star);
+
+  EXPECT_TRUE(CompareMatrices(v_star, v_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace internal

@@ -161,6 +161,15 @@ class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
   const internal::ContactJacobianCache<T>& EvalContactJacobianCache(
       const systems::Context<T>& context) const;
 
+  // Given the previous state x0 stored in `context`, this method computes the
+  // "free motion" velocities, denoted v*. This method is meant to be paired
+  // with the symplectic Euler scheme, in which the next state velocities are
+  // used to update the next state configurations. Therefore this method
+  // evaluates all multibody quantities, including external forces, at the
+  // previous state x0.
+  void CalcFreeMotionVelocities(const systems::Context<T>& context,
+                                VectorX<T>* v_star) const;
+
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;
 };
