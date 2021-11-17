@@ -9,7 +9,7 @@ load(
     "install",
 )
 
-# XXX licenses(["notice"])  # BSD-3-Clause
+licenses(["notice"])  # BSD-2-Clause AND MIT
 
 package(
     default_visibility = ["//visibility:public"],
@@ -902,7 +902,7 @@ SRCS = [
     "src/sys/objects/options.c",
     "src/sys/objects/optionsyaml.c",
     "src/sys/objects/pgname.c",
-    "src/sys/objects/pinit.c", 
+    "src/sys/objects/pinit.c",
     "src/sys/objects/pname.c",
     "src/sys/objects/prefix.c",
     "src/sys/objects/ptype.c",
@@ -1078,11 +1078,13 @@ cc_library(
         "@blas",
         "@lapack",
         "@drake//tools/workspace/petsc:linux_config",
-    ]
+    ],
 )
 
-# XXX There are a bunch of sub-License files as well, like for yaml.
-True or install(
+install(
     name = "install",
-    docs = ["BSD-LICENSE"],
+    docs = [
+        "LICENSE",  # BSD-2-Clause
+        "src/sys/yaml/License",  # MIT
+    ],
 )

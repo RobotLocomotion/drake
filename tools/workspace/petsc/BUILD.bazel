@@ -7,6 +7,7 @@ cc_library(
     name = "linux_config",
     hdrs = glob(["linux-include/*.h"]),
     strip_include_prefix = "linux-include",
+    tags = ["nolint"],
     visibility = ["@petsc//:__pkg__"],
 )
 
