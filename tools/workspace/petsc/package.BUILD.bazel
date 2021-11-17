@@ -856,6 +856,7 @@ SRCS = [
     "src/sys/classes/viewer/interface/viewers.c",
     "src/sys/classes/viewer/interface/viewreg.c",
     "src/sys/classes/viewer/interface/viewregall.c",
+    "src/sys/dll/cxx/demangle.cxx",
     "src/sys/dll/dl.c",
     "src/sys/dll/dlimpl.c",
     "src/sys/dll/reg.c",
