@@ -1520,7 +1520,13 @@ class TestSymbolicPolynomial(unittest.TestCase):
             p.EvaluatePartial(env),
             sym.Polynomial(env[a] * x * x + env[b] * x + env[c], [x]))
         numpy_compare.assert_equal(
+            p.EvaluatePartial(env=env),
+            sym.Polynomial(env[a] * x * x + env[b] * x + env[c], [x]))
+        numpy_compare.assert_equal(
             p.EvaluatePartial(a, 2),
+            sym.Polynomial(2 * x * x + b * x + c, [x]))
+        numpy_compare.assert_equal(
+            p.EvaluatePartial(var=a, c=2),
             sym.Polynomial(2 * x * x + b * x + c, [x]))
 
 
