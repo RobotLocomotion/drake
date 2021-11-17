@@ -1078,6 +1078,7 @@ cc_library(
         "@blas",
         "@lapack",
         "@drake//tools/workspace/petsc:linux_config",
+        "@drake//tools/workspace/petsc:stubs",
     ],
 )
 
