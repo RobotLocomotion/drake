@@ -16,15 +16,10 @@ To learn about other installation methods, refer to
 If you experience any problems or questions with Drake, please
 [ask for help on Stack Overflow](/getting_help.html).
 
-<!--
-TODO(#15961) The wheels do not yet incorporate SNOPT.
-Once they do, we should uncomment this paragraph:
-
 Drake binary releases incorporate a pre-compiled version of
 [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
--->
 
 ## Stable Releases
 
