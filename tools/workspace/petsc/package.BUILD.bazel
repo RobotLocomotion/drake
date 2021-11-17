@@ -162,6 +162,7 @@ genrule(
     outs = ["LICENSE-khash.txt"],
     # Select lines 5..25 of the header to get the license text.
     cmd = "head -n 25 $< | tail +5 > $@",
+    visibility = ["@drake//tools/workspace/petsc:__pkg__"],
 )
 
 genrule(
@@ -177,6 +178,7 @@ genrule(
     outs = ["LICENSE-valgrind.txt"],
     # Select lines 15..46 of the header to get the license text.
     cmd = "head -n 46 $< | tail +15 > $@",
+    visibility = ["@drake//tools/workspace/petsc:__pkg__"],
 )
 
 install(

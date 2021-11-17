@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/skylark:py.bzl", "py_test")
 
 # TODO committed generated code for now, do this for realz.
 cc_library(
@@ -9,6 +10,24 @@ cc_library(
     strip_include_prefix = "linux-include",
     tags = ["nolint"],
     visibility = ["@petsc//:__pkg__"],
+)
+
+py_test(
+    name = "license_check_khash_test",
+    srcs = ["test/license_check_test.py"],
+    args = ["$(location @petsc//:LICENSE-khash.txt)"],
+    data = ["@petsc//:LICENSE-khash.txt"],
+    main = "test/license_check_test.py",
+    tags = ["no_kcov"],
+)
+
+py_test(
+    name = "license_check_valgrind_test",
+    srcs = ["test/license_check_test.py"],
+    args = ["$(location @petsc//:LICENSE-valgrind.txt)"],
+    data = ["@petsc//:LICENSE-valgrind.txt"],
+    main = "test/license_check_test.py",
+    tags = ["no_kcov"],
 )
 
 cc_library(
