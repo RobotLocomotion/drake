@@ -676,7 +676,7 @@ class _BodyContact:
         in the given surface.
 
         Args:
-            surface: The surface whose contact body is to be named..
+            surface: The surface whose contact body is to be named.
             body_index: The index of the body to name (must be 0 or 1)."""
         key = _BodyContact.make_key(surface)
         model, body, is_unique = key[body_index]
@@ -734,14 +734,12 @@ class VisualModel:
         self._timestamp = self._timestamp + 1
         for surface in message.hydroelastic_contacts:
             body_pair_key = _BodyContact.make_key(surface)
-            if body_pair_key in self._body_contacts:
-                # Add or update a contact for this body pair.
-                self._body_contacts[body_pair_key].add_contact(surface,
-                                                               self._timestamp)
-            else:
+            if body_pair_key not in self._body_contacts:
                 body_contact = _BodyContact(surface, self._root_folder)
-                body_contact.add_contact(surface, self._timestamp)
                 self._body_contacts[body_pair_key] = body_contact
+            # Add or update a contact for this body pair.
+            self._body_contacts[body_pair_key].add_contact(surface,
+                                                           self._timestamp)
 
         # Remove anything that didn't get persisted from the previous message
         # (detected by an expired timestamp).
@@ -904,24 +902,24 @@ class HydroelasticContactVisualizer:
     def show_dialog(self):
         self.dlg.show()
 
+    def color_map_callback(self, vis_item, line_color):
+        vis_item.item.actor.SetTexture(
+            self.texture if self.show_pressure else None)
+        vis_item.item.actor.GetProperty().SetEdgeColor(line_color)
+
     def set_color_map(self, new_index: int):
         """Slot for dialog widget"""
         if new_index != self.color_map_mode:
             self.color_map_mode = new_index
-            self.texture = create_texture(self.texture_size,
-                                          self.create_color_map())
+            color_map = self.create_color_map()
+            self.texture = create_texture(self.texture_size, color_map)
             if self.visual_model:
-                self.visual_model.update_items(
-                    'Contact surface',
-                    lambda vis_item:
-                        vis_item.item.actor.SetTexture(self.texture))
-                color_map = self.create_color_map()
                 [r, g, b] = color_map.get_contrasting_color()
                 line_color = [r*255, g*255, b*255]
                 self.visual_model.update_items(
-                    'Mesh edges',
-                    lambda vis_item:
-                        vis_item.item.actor.GetProperty().SetColor(line_color))
+                    'Contact surface',
+                    lambda vis_item: self.color_map_callback(vis_item,
+                                                             line_color))
                 applogic.getCurrentRenderView().render()
 
     def update_uv_transform(self, xform: vtk.vtkTransformTextureCoords):
@@ -978,15 +976,41 @@ class HydroelasticContactVisualizer:
             self.update_pressure_range()
             self.update_visual_data_from_message()
 
+    def update_mesh_drawing_callback(self, vis_item):
+        """Callback for coordinating changes to how the contact surface is
+        drawn."""
+        vis_item.item.actor.GetProperty().SetLineWidth(1)
+        vis_item.item.actor.SetTexture(
+            self.texture if self.show_pressure else None)
+        visible = self.show_pressure or self.show_contact_edges
+        # TODO(SeanCurtis-TRI): Perhaps it would be better if I popped the item
+        #  out of the object model
+        vis_item.item.setProperty('Visible', visible)
+        if visible:
+            # Only change the drawing mode if it's visible.
+            if self.show_pressure:
+                mode = 'Surface'
+                if self.show_contact_edges:
+                    mode += ' with edges'
+            else:
+                mode = 'Wireframe'
+            vis_item.item.setProperty('Surface Mode', mode)
+
     def toggle_show_pressure(self, state):
         """Slot for dialog widget"""
-        self.show_pressure = state
-        self.update_visual_data_from_message()
+        if self.show_pressure != state:
+            self.show_pressure = state
+            if self.visual_model:
+                self.visual_model.update_items(
+                    'Contact surface', self.update_mesh_drawing_callback)
 
     def toggle_show_edges(self, state):
         """Slot for dialog widget"""
-        self.show_contact_edges = state
-        self.update_visual_data_from_message()
+        if self.show_contact_edges != state:
+            self.show_contact_edges = state
+            if self.visual_model:
+                self.visual_model.update_items(
+                    'Contact surface', self.update_mesh_drawing_callback)
 
     def toggle_show_spatial_force(self, state):
         """Slot for dialog widget"""
@@ -1076,67 +1100,6 @@ class HydroelasticContactVisualizer:
         else:
             self.remove_subscriber()
 
-    # TODO(xuchenhan-tri): At the moment, we are reconstructing the mesh from
-    # individual triangles passed in by lcm. This process involves some ugly
-    # python code but provides a decent boost in performance. Ideally, the lcm
-    # message about the contact surface from upstream should provide mesh
-    # information instead of just information about individual triangles.
-    def process_triangles(self, surface):
-        """Process a hydroelastic surface message and return the positions of
-        the vertices the texture coordinates, the pressure triangle mesh and
-        the contact edge segment mesh. Both the pressure triangle mesh and the
-        contact edge segment mesh index into the positions of the vertices. The
-        pressure triangle mesh forms the contact patch while the contact edge
-        segment mesh forms the wireframe of the contact patch."""
-        triangles = surface.triangles
-        vertex_id = 0
-        tri_mesh_id = 0
-        vertex_position_to_id = {}
-        max_num_verts = surface.num_triangles*3
-        pos = np.empty((max_num_verts, 3))
-        uvs = np.empty((max_num_verts, 2))
-        tri_mesh = np.empty((surface.num_triangles, 3), dtype=int)
-        seg_mesh_set = set()
-        for tri in triangles:
-            va_np = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
-            vb_np = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
-            vc_np = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
-            va = (tri.p_WA[0], tri.p_WA[1], tri.p_WA[2])
-            vb = (tri.p_WB[0], tri.p_WB[1], tri.p_WB[2])
-            vc = (tri.p_WC[0], tri.p_WC[1], tri.p_WC[2])
-            for v, pressure, v_np in \
-                zip([va, vb, vc],
-                    [tri.pressure_A, tri.pressure_B, tri.pressure_C],
-                    [va_np, vb_np, vc_np]):
-                if v not in vertex_position_to_id:
-                    vertex_position_to_id[v] = vertex_id
-                    pos[vertex_id] = v_np
-                    # We use the pressure value as the u-value in the texture
-                    # coordinate and rely on texture coordinate scaling to
-                    # visualize it in the user-specified domain.
-                    uvs[vertex_id] = (pressure, 0)
-                    self.update_max_pressure(pressure)
-                    vertex_id += 1
-            va_id = vertex_position_to_id[va]
-            vb_id = vertex_position_to_id[vb]
-            vc_id = vertex_position_to_id[vc]
-            # Record trimesh.
-            tri_mesh[tri_mesh_id] = [va_id, vb_id, vc_id]
-            tri_mesh_id += 1
-            # Record segmesh.
-            if (min(va_id, vb_id), max(va_id, vb_id)) not in seg_mesh_set:
-                seg_mesh_set.add((min(va_id, vb_id), max(va_id, vb_id)))
-            if (min(va_id, vc_id), max(va_id, vc_id)) not in seg_mesh_set:
-                seg_mesh_set.add((min(va_id, vc_id), max(va_id, vc_id)))
-            if (min(vb_id, vc_id), max(vb_id, vc_id)) not in seg_mesh_set:
-                seg_mesh_set.add((min(vb_id, vc_id), max(vb_id, vc_id)))
-        # Cut off values that were not written to.
-        tri_mesh = tri_mesh[:tri_mesh_id]
-        pos = pos[:vertex_id]
-        uvs = uvs[:vertex_id]
-        seg_mesh = list(seg_mesh_set)
-        return pos, uvs, tri_mesh, seg_mesh
-
     def clear_on_load(self, msg):
         """Clears the entire visual model because it detected a robot load
         message."""
@@ -1155,6 +1118,43 @@ class HydroelasticContactVisualizer:
         self.message = msg
         self.update_visual_data_from_message()
 
+    def make_mesh(self, surface: lcmt_hydroelastic_contact_surface_for_viz):
+        """
+        Creates a vtk.vtkPolyData instance from the given contact surface
+        message.
+
+        Args:
+            surface: The contact surface to add to the object model."""
+        p_WVs = np.empty((surface.num_vertices, 3))
+        uvs = np.empty((surface.num_vertices, 2))
+        for i in range(surface.num_vertices):
+            p_WV = surface.p_WV[i]
+            p_WVs[i, :] = (p_WV.x, p_WV.y, p_WV.z)
+            uvs[i, :] = (surface.pressure[i], 0)
+            self.update_max_pressure(surface.pressure[i])
+
+        vtk_polys = vtk.vtkCellArray()
+        i = 0
+        poly_count = 0
+        while i < surface.poly_data_int_count:
+            count = surface.poly_data[i]
+            poly_count += 1
+            i += count + 1
+        vtk_polys.Allocate(poly_count)
+        i = 0
+        while i < surface.poly_data_int_count:
+            vertex_count = surface.poly_data[i]
+            i += 1
+            poly_indices = surface.poly_data[i:i + vertex_count]
+            vtk_polys.InsertNextCell(vertex_count, poly_indices)
+            i += vertex_count
+        vtk_polydata = vtk.vtkPolyData()
+        vtk_polydata.SetPoints(vnp.getVtkPointsFromNumpy(p_WVs))
+        vtk_polydata.SetPolys(vtk_polys)
+        vtk_polydata.GetPointData().SetTCoords(
+            vnp.getVtkFromNumpy(uvs))
+        return vtk_polydata
+
     def update_visual_data_from_message(self):
         """Updates the visual state based on the currently owned message. This
         reconstructs *everything* as if the message were newly received."""
@@ -1167,9 +1167,6 @@ class HydroelasticContactVisualizer:
         #  configuration changes. *Any* change triggers a re-evaluation of
         #  *all* visualization data. It's a simple, yet *huge* hammer.
         #  Investigate making the updating more targeted in the future.
-
-        # Set the color map.
-        color_map = self.create_color_map()
 
         # The scale value attributable to auto-scale.
         auto_force_scale = 1.0
@@ -1363,49 +1360,13 @@ class HydroelasticContactVisualizer:
             self.visual_model.set_contact_debug_data(
                 surface, slip_data, "Slip velocity")
 
+            vtk_polydata = None
             if self.show_pressure or self.show_contact_edges:
-                pos, uvs, tri_mesh, seg_mesh = \
-                    self.process_triangles(surface)
-
-            vtk_polydata_tris = None
-            if self.show_pressure and len(tri_mesh) > 0:
-                # Copy data to VTK objects.
-                vtk_uvs = vnp.getVtkFromNumpy(uvs)
-                vtk_tris = vtk.vtkCellArray()
-                vtk_tris.Allocate(len(tri_mesh))
-                for tri in tri_mesh:
-                    vtk_tris.InsertNextCell(3, tri)
-
-                vtk_polydata_tris = vtk.vtkPolyData()
-                vtk_polydata_tris.SetPoints(
-                    vnp.getVtkPointsFromNumpy(pos))
-                vtk_polydata_tris.SetPolys(vtk_tris)
-                vtk_polydata_tris.GetPointData().SetTCoords(vtk_uvs)
+                vtk_polydata = self.make_mesh(surface)
 
             self.visual_model.set_contact_mesh_data(
-                surface, vtk_polydata_tris, 'Contact surface',
+                surface, vtk_polydata, 'Contact surface',
                 self.add_pressure_mesh_cb, self.update_pressure_mesh_cb)
-
-            vtk_polydata_segs = None
-            if self.show_contact_edges and len(seg_mesh) > 0:
-                # Copy data to VTK objects.
-                vtk_segs = vtk.vtkCellArray()
-                vtk_segs.Allocate(len(seg_mesh))
-                for seg in seg_mesh:
-                    vtk_segs.InsertNextCell(2, seg)
-                vtk_polydata_segs = vtk.vtkPolyData()
-                vtk_polydata_segs.SetPoints(
-                    vnp.getVtkPointsFromNumpy(pos))
-                vtk_polydata_segs.SetLines(vtk_segs)
-
-                [r, g, b] = color_map.get_contrasting_color()
-                line_color = [r*255, g*255, b*255]
-            self.visual_model.set_contact_mesh_data(
-                surface, vtk_polydata_segs, 'Mesh edges',
-                lambda vis_item, mesh_data:
-                    vis_item.item.actor.GetProperty().SetColor(line_color),
-                lambda vis_item, mesh_data:
-                    vis_item.item.setPolyData(mesh_data))
 
     def add_pressure_mesh_cb(self, vis_item: VisualItem,
                              mesh_data: vtk.vtkPolyData):
@@ -1425,7 +1386,29 @@ class HydroelasticContactVisualizer:
         mapper = item.actor.GetMapper()
         mapper.SetInputData(None)
         mapper.SetInputConnection(xform.GetOutputPort())
-        item.actor.SetTexture(self.texture)
+        if self.show_pressure:
+            item.actor.SetTexture(self.texture)
+        else:
+            item.actor.SetTexture(None)
+
+        # Now configure hidden-line drawing.
+        # Disable lighting so the surface appears the same looking from either
+        # side.
+        item.actor.GetProperty().SetLighting(False)
+        if self.show_contact_edges:
+            color_map = self.create_color_map()
+            [r, g, b] = color_map.get_contrasting_color()
+            line_color = [r*255, g*255, b*255]
+            item.actor.GetProperty().SetEdgeColor(line_color)
+            item.actor.GetProperty().SetLineWidth(1)
+            if self.show_pressure:
+                item.setProperty('Surface Mode', 'Surface with edges')
+                item.actor.SetTexture(self.texture)
+            else:
+                item.setProperty('Surface Mode', 'Wireframe')
+                item.actor.SetTexture(None)
+        else:
+            item.setProperty('Surface Mode', 'Surface')
 
     def update_pressure_mesh_cb(self, vis_item: VisualItem,
                                 mesh_data: vtk.vtkPolyData):

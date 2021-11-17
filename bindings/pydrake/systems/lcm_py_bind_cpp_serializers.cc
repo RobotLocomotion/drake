@@ -18,7 +18,6 @@
 #include "drake/lcmt_force_torque.hpp"
 #include "drake/lcmt_header.hpp"
 #include "drake/lcmt_hydroelastic_contact_surface_for_viz.hpp"
-#include "drake/lcmt_hydroelastic_contact_surface_tri_for_viz.hpp"
 #include "drake/lcmt_hydroelastic_quadrature_per_point_data_for_viz.hpp"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -80,8 +79,6 @@ void BindCppSerializers() {
   BindCppSerializer<drake::lcmt_force_torque>("drake");
   BindCppSerializer<drake::lcmt_header>("drake");
   BindCppSerializer<drake::lcmt_hydroelastic_contact_surface_for_viz>("drake");
-  BindCppSerializer<drake::lcmt_hydroelastic_contact_surface_tri_for_viz>(
-      "drake");
   BindCppSerializer<drake::lcmt_hydroelastic_quadrature_per_point_data_for_viz>(
       "drake");
   BindCppSerializer<drake::lcmt_iiwa_command>("drake");
