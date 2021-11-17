@@ -9,11 +9,12 @@ database=/home/jwnimmer/jwnimmer-tri/drake/multibody/fixed_fem/dev/tmp/petsc/obj
 if [[ ! -e ${database} ]]; then
   find . -name '*.o' |
     xargs -t -n1 objdump -w -t 2>&1 |
+    fgrep -v '*UND*' |
     cat > ${database}
 fi
 
 cat ${database} |
-  egrep '(^objdump|bss.*'"$1"'|text.*'"$1"'$)' |
-  egrep -B 1 '\.(bss|text)' |
+  egrep '(^objdump|bss.*'"$1"'|text.*'"$1"'$|O.*data.*'"$1"')' |
+  egrep -B 1 '\.(bss|text|data\.rel\.local)' |
   head -n 1 |
   sed -e 's#.*\./#src/#; s#\.o#.c#;'
