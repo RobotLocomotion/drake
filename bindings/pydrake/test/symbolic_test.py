@@ -1253,6 +1253,7 @@ class TestSymbolicPolynomial(unittest.TestCase):
         e = a * (x ** 2) + b * (y ** 3) + c * z
         p = sym.Polynomial(e, [x, y, z])
         self.assertEqual(p.Degree(x), 2)
+        self.assertEqual(p.Degree(v=y), 3)
         self.assertEqual(p.TotalDegree(), 3)
 
     def test_monomial_to_coefficient_map(self):
