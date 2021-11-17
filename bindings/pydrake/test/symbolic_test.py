@@ -1286,6 +1286,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         m = sym.Monomial(x)
         p.AddProduct(sym.Expression(3), m)  # p += 3 * x
         numpy_compare.assert_equal(p.ToExpression(), 3 * x)
+        p.AddProduct(coeff=sym.Expression(3), m=m)  # p += 3 * x
+        numpy_compare.assert_equal(p.ToExpression(), 6 * x)
 
     def test_remove_terms_with_small_coefficients(self):
         e = 3 * x + 1e-12 * y
