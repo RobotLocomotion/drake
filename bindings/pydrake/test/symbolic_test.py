@@ -1065,7 +1065,7 @@ class TestSymbolicMonomial(unittest.TestCase):
         m2 = sym.Monomial(y, 3)
         m3 = m1 * m2
         self.assertEqual(m3.degree(x), 2)
-        self.assertEqual(m3.degree(y), 3)
+        self.assertEqual(m3.degree(v=y), 3)  # NOTE: tests kwarg v binding.
 
     def test_multiplication2(self):
         m1 = sym.Monomial(x, 2)
