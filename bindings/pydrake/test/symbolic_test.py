@@ -1294,6 +1294,10 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = sym.Polynomial(e, [x, y])
         q = p.RemoveTermsWithSmallCoefficients(1e-6)
         numpy_compare.assert_equal(q.ToExpression(), 3 * x)
+        e = 3 * x + 1e-12 * y
+        p = sym.Polynomial(e, [x, y])
+        q = p.RemoveTermsWithSmallCoefficients(coefficient_tol=1e-6)
+        numpy_compare.assert_equal(q.ToExpression(), 3 * x)
 
     def test_comparison(self):
         p = sym.Polynomial()
