@@ -409,18 +409,22 @@ drake_cc_library(
 drake_cc_library(
     name = "mesh_field",
     srcs = [
+        "polygon_surface_mesh_field.cc",
         "triangle_surface_mesh_field.cc",
         "volume_mesh_field.cc",
     ],
     hdrs = [
         "mesh_field_linear.h",
+        "polygon_surface_mesh_field.h",
         "triangle_surface_mesh_field.h",
         "volume_mesh_field.h",
     ],
     deps = [
         ":mesh_traits",
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        "//common:nice_type_name",
         "//common:reset_on_copy",
         "//common:sorted_pair",
     ],
