@@ -425,13 +425,6 @@ ContactModel MultibodyPlant<T>::get_contact_model() const {
 }
 
 template <typename T>
-void MultibodyPlant<T>::set_low_resolution_contact_surface(
-    bool use_low_resolution) {
-  DRAKE_MBP_THROW_IF_FINALIZED();
-  use_low_resolution_contact_surface_ = use_low_resolution;
-}
-
-template <typename T>
 void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
     const Body<T>& body) {
   RandomGenerator generator;
@@ -1987,8 +1980,10 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 
   const auto& query_object = EvalGeometryQueryInput(context);
 
-  if (is_discrete() && use_low_resolution_contact_surface_) {
-    *contact_surfaces = query_object.ComputePolygonalContactSurfaces();
+  if (is_discrete()) {
+    // NOTE: This is currently being left here as a place holder for when
+    // ComputeContactSurfaces takes a flag for indicating mesh representation.
+    *contact_surfaces = query_object.ComputeContactSurfaces();
   } else {
     *contact_surfaces = query_object.ComputeContactSurfaces();
   }
@@ -2014,9 +2009,12 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
-    if (is_discrete() && use_low_resolution_contact_surface_) {
-      query_object.ComputePolygonalContactSurfacesWithFallback(
-          &data->contact_surfaces, &data->point_pairs);
+    if (is_discrete()) {
+      // NOTE: This is currently being left here as a place holder for when
+      // ComputeContactSurfacesWithFallback takes a flag for indicating mesh
+      // representation.
+      query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
+                                                      &data->point_pairs);
     } else {
       query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
                                                       &data->point_pairs);

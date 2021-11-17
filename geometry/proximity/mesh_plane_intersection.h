@@ -35,8 +35,7 @@ namespace internal {
      vertex in `vertices_W`.
    - No intersection guarantees no changes to _any_ of the output parameters.
 
- For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
- this method represents the intersected polygon as its fan-triangulation
+ This method represents the intersected polygon as its fan-triangulation
  around its centroid and guarantees the output surface mesh has the same
  topological coherency as the input mesh. For example, if the plane cuts
  through a tetrahedron edge e at vertex v, then each of the tetrahedra
@@ -51,11 +50,6 @@ namespace internal {
      edge and plane can be found in `cut_edges`. All remaining vertex
      positions are the centroids of the intersected polygons.
 
- For `representation` = ContactPolygonRepresentation::kSingleTriangle, this
- choice produces 3 or 4 times fewer triangles than the other choice by
- representing the intersected polygon as one triangle. However, it does not
- guarantee unique vertices and ignores the `cut_edges` parameter.
-
  @param[in] tet_index       The index of the tetrahedron to attempt to
                             intersect.
  @param[in] field_M         The _linear_ volume mesh field (and mesh) containing
@@ -67,8 +61,6 @@ namespace internal {
                             in Frame M.
  @param[in] X_WM            The relative pose between the mesh frame M and the
                             world frame W.
- @param[in] representation  The preferred representation of the intersected
-                            polygon.
  @param[in,out] faces       The triangles (defined by triples of vertex
                             indices) forming the intersection mesh so far.
  @param[in,out] vertices_W  The vertex positions for the intersecting mesh,
@@ -86,7 +78,6 @@ void SliceTetWithPlane(int tet_index,
                        const VolumeMeshFieldLinear<double, double>& field_M,
                        const Plane<T>& plane_M,
                        const math::RigidTransform<T>& X_WM,
-                       ContactPolygonRepresentation representation,
                        std::vector<SurfaceTriangle>* faces,
                        std::vector<Vector3<T>>* vertices_W,
                        std::vector<T>* surface_e,
@@ -111,8 +102,6 @@ void SliceTetWithPlane(int tet_index,
                             world frame W. Used to guarantee that the contact
                             surface is measured and expressed in the world
                             frame.
- @param[in] representation  The preferred representation of each contact
-                            polygon.
 
  @returns `nullptr` if there is no intersection, otherwise the appropriate
            ContactSurface. The normals of the contact surface mesh will all
@@ -126,8 +115,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     const VolumeMeshFieldLinear<double, double>& mesh_field_M,
     GeometryId plane_id, const Plane<T>& plane_M,
     const std::vector<int>& tet_indices,
-    const math::RigidTransform<T>& X_WM,
-    ContactPolygonRepresentation representation);
+    const math::RigidTransform<T>& X_WM);
 
 // TODO(SeanCurtis-TRI): This is, in some sense, the "public" api. It refers to
 //  half spaces. Does it belong in this file? Does it belong elsewhere? At the
@@ -151,8 +139,6 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
  @param[in] id_R        The id of the rigid half space.
  @param[in] X_WR        The relative pose between Frame R -- the frame the half
                         space is defined in -- and the world frame W.
- @param[in] representation  The preferred representation of each contact
-                            polygon.
 
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. The normals of the contact surface mesh
@@ -165,8 +151,7 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation);
+    const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
