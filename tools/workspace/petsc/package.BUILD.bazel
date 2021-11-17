@@ -863,6 +863,8 @@ cc_library(
     linkopts = ["-ldl"],
     linkstatic = 1,
     deps = [
+        "@blas",
+        "@lapack",
         "@drake//tools/workspace/petsc:linux_config",
     ]
 )
