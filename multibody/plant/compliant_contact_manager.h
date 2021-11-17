@@ -34,11 +34,11 @@ struct ContactJacobianCache {
 // contact computations can be consumed by MultibodyPlant.
 //
 // In particular, this manager sets up a contact problem where each of the
-// bodies in the MultibodyPlant model is compliant, i.e. the contact model does
-// not introduce state. Supported models include point contact with a linear
-// model of compliance, see GetPointContactStiffness() and the hydroelastic
-// contact model, see @ref mbp_hydroelastic_materials_properties in
-// MultibodyPlant's Doxygen documentation.
+// bodies in the MultibodyPlant model is compliant without introducing state.
+// Supported models include point contact with a linear model of compliance, see
+// GetPointContactStiffness() and the hydroelastic contact model, see @ref
+// mbp_hydroelastic_materials_properties in MultibodyPlant's Doxygen
+// documentation.
 // Dissipation is modeled using a linear model. For point contact, given the
 // penetration distance x and its time derivative ẋ, the normal contact force
 // (in Newtons) is modeled as:
@@ -56,7 +56,8 @@ struct ContactJacobianCache {
 //
 // @tparam_nonsymbolic_scalar
 template <typename T>
-class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
+class CompliantContactManager final
+    : public internal::DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
@@ -67,7 +68,7 @@ class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
       std::unique_ptr<contact_solvers::internal::ContactSolver<T>>
           contact_solver);
 
-  ~CompliantContactManager() = default;
+  ~CompliantContactManager() final;
 
  private:
   // Struct used to conglomerate the indexes of cache entries declared by the
@@ -160,6 +161,11 @@ class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
   // Eval version of CalcContactJacobianCache().
   const internal::ContactJacobianCache<T>& EvalContactJacobianCache(
       const systems::Context<T>& context) const;
+
+  // Given the previous state x0 stored in `context`, this method computes the
+  // "free motion" velocities, denoted v*.
+  void CalcFreeMotionVelocities(const systems::Context<T>& context,
+                                VectorX<T>* v_star) const;
 
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
   CacheIndexes cache_indexes_;

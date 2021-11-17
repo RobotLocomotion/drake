@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
@@ -75,24 +76,22 @@ class CompliantContactManagerTest : public ::testing::Test {
   //   - Sphere 1 penetrates into the ground penetration_distance_.
   //   - Sphere 1 and 2 penetrate penetration_distance_.
   //   - Velocities are zero.
-  void MakeDefaultSetup() {
+  void MakeDefaultSetup(bool sphere1_on_prismatic_joint = false) {
     const ContactParameters soft_contact{1.0e5, 1.0e5, 0.01, 1.0};
     const ContactParameters hard_hydro_contact{
         std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
-    const SphereParameters sphere1_params{"Sphere1",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          soft_contact};
-    const SphereParameters sphere2_params{"Sphere2",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          soft_contact};
-    MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
+    const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
+                                          0.2 /* size */, soft_contact};
+    const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
+                                          0.2 /* size */, soft_contact};
+    MakeModel(hard_hydro_contact, sphere1_params, sphere2_params,
+              sphere1_on_prismatic_joint);
   }
 
   void MakeModel(const ContactParameters& ground_params,
                  const SphereParameters& sphere1_params,
-                 const SphereParameters& sphere2_params) {
+                 const SphereParameters& sphere2_params,
+                 bool sphere1_on_prismatic_joint = false) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, time_step_);
@@ -111,6 +110,17 @@ class CompliantContactManagerTest : public ::testing::Test {
     // Add models of the spheres.
     sphere1_ = &AddSphere(sphere1_params);
     sphere2_ = &AddSphere(sphere2_params);
+
+    // Model with sphere 1 mounted on a prismatic joint with lower limits.
+    if (sphere1_on_prismatic_joint) {
+      slider1_ = &plant_->AddJoint<PrismaticJoint>(
+          "Sphere1Slider", plant_->world_body(), std::nullopt, *sphere1_,
+          std::nullopt, Vector3<double>::UnitZ(),
+          sphere1_params.radius /* lower limit */);
+    }
+
+    plant_->mutable_gravity_field().set_gravity_vector(-gravity_ *
+                                                       Vector3d::UnitZ());
 
     plant_->set_contact_model(
         drake::multibody::ContactModel::kHydroelasticWithFallback);
@@ -139,8 +149,12 @@ class CompliantContactManagerTest : public ::testing::Test {
                        const SphereParameters& sphere2_params) const {
     DRAKE_DEMAND(plant_ != nullptr);
     const double sphere1_com_z = sphere1_params.radius - penetration_distance_;
-    const RigidTransformd X_WB1(Vector3d(0, 0, sphere1_com_z));
-    plant_->SetFreeBodyPose(plant_context_, *sphere1_, X_WB1);
+    if (slider1_ != nullptr) {
+      slider1_->set_translation(plant_context_, sphere1_com_z);
+    } else {
+      const RigidTransformd X_WB1(Vector3d(0, 0, sphere1_com_z));
+      plant_->SetFreeBodyPose(plant_context_, *sphere1_, X_WB1);
+    }
     const double sphere2_com_z = 2.0 * sphere1_params.radius +
                                  sphere2_params.radius -
                                  2.0 * penetration_distance_;
@@ -168,14 +182,10 @@ class CompliantContactManagerTest : public ::testing::Test {
 
     const ContactParameters hard_hydro_contact{
         std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
-    const SphereParameters sphere1_params{"Sphere1",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          sphere1_contact_params};
-    const SphereParameters sphere2_params{"Sphere2",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          sphere2_contact_params};
+    const SphereParameters sphere1_params{
+        "Sphere1", 10.0 /* mass */, 0.2 /* size */, sphere1_contact_params};
+    const SphereParameters sphere2_params{
+        "Sphere2", 10.0 /* mass */, 0.2 /* size */, sphere2_contact_params};
 
     // Soft sphere/hard ground.
     MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
@@ -261,9 +271,18 @@ class CompliantContactManagerTest : public ::testing::Test {
     return contact_manager_->EvalContactJacobianCache(context);
   }
 
+  VectorXd CalcFreeMotionVelocities(
+      const systems::Context<double>& context) const {
+    VectorXd v_star(plant_->num_velocities());
+    contact_manager_->CalcFreeMotionVelocities(context, &v_star);
+    return v_star;
+  }
+
  protected:
   // Arbitrary positive value so that the model is discrete.
   double time_step_{0.001};
+
+  const double gravity_{10.0};  // Acceleration of gravity, in m/s².
 
   // Default penetration distance. The configuration of the model is set so that
   // ground/sphere1 and sphere1/sphere2 interpenetrate by this amount.
@@ -274,6 +293,7 @@ class CompliantContactManagerTest : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   const RigidBody<double>* sphere1_{nullptr};
   const RigidBody<double>* sphere2_{nullptr};
+  const PrismaticJoint<double>* slider1_{nullptr};
   CompliantContactManager<double>* contact_manager_{nullptr};
   std::unique_ptr<Context<double>> diagram_context_;
   Context<double>* plant_context_{nullptr};
@@ -452,6 +472,88 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
                                   MatrixCompareType::relative));
     }
   }
+}
+
+// Verifies the correctness of the computation of free motion velocities when
+// external forces are applied.
+TEST_F(CompliantContactManagerTest,
+       CalcFreeMotionVelocitiesWithExternalForces) {
+  MakeDefaultSetup();
+  const double kTolerance = std::numeric_limits<double>::epsilon();
+
+  // We set an arbitrary non-zero external force to the plant to verify it gets
+  // properly applied as part of the computation.
+  const int nv = plant_->num_velocities();
+  const VectorXd tau = VectorXd::LinSpaced(nv, 1.0, 2.0);
+  plant_->get_applied_generalized_force_input_port().FixValue(plant_context_,
+                                                              tau);
+
+  // Set arbitrary non-zero velocities.
+  const VectorXd v0 = VectorXd::LinSpaced(nv, 2.0, 3.0);
+  plant_->SetVelocities(plant_context_, v0);
+
+  // Since the spheres's frames are located at their COM and since their
+  // rotational inertias are triaxially symmetric, the Coriolis term is zero.
+  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g + tau.
+  const double dt = plant_->time_step();
+  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
+  MatrixXd M(nv, nv);
+  plant_->CalcMassMatrix(*plant_context_, &M);
+  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g + tau);
+
+  // Compute the velocities the system would have next time step in the absence
+  // of constraints.
+  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
+
+  EXPECT_TRUE(CompareMatrices(v_star, v_expected, kTolerance,
+                              MatrixCompareType::relative));
+}
+
+// Verifies that joint limit forces are applied.
+TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
+  // In this model sphere 1 is attached to the world by a prismatic joint with
+  // lower limit z = 0.
+  const bool sphere1_on_prismatic_joint = true;
+  MakeDefaultSetup(sphere1_on_prismatic_joint);
+
+  const int nv = plant_->num_velocities();
+
+  // Set arbitrary non-zero velocities.
+  const VectorXd non_zero_vs = VectorXd::LinSpaced(nv, 2.0, 3.0);
+  plant_->SetVelocities(plant_context_, non_zero_vs);
+
+  // The slider velocity is set to be negative to ensure the joint limit is
+  // active. That is, the position was set to be below the lower and in addition
+  // it is decreasing.
+  slider1_->set_translation_rate(plant_context_, -1.0);
+
+  // Initial velocities.
+  const VectorXd v0 = plant_->GetVelocities(*plant_context_);
+
+  // Since sphere 2's frame is located at its COM and since its inertia is
+  // triaxially symmetric, the Coriolis term for sphere 2 is zero. The Coriolis
+  // term is trivially zero for sphere 1, which only can move along the z-axis.
+  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g.
+  // We compute the expected velocities in the absence of joint limits.
+  const double dt = plant_->time_step();
+  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
+  MatrixXd M(nv, nv);
+  plant_->CalcMassMatrix(*plant_context_, &M);
+  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g);
+  // Obtain the slider's velocity at v_expected.
+  const double v_slider_no_limits = v_expected(slider1_->velocity_start());
+
+  // Compute the velocities the system would have next time step in the absence
+  // of constraints.
+  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
+  // Obtain the slider's velocity at v*.
+  const double v_slider_star = v_star(slider1_->velocity_start());
+
+  // While other MultibodyPlant tests verify the correcness of joint limit
+  // forces, this test is simply limited to verifying the manager applied them.
+  // Therefore we only check the force limits have the effect of making the
+  // slider velocity larger than if not present.
+  EXPECT_GT(v_slider_star, v_slider_no_limits);
 }
 
 }  // namespace internal

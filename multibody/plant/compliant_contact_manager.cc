@@ -31,6 +31,9 @@ CompliantContactManager<T>::CompliantContactManager(
 }
 
 template <typename T>
+CompliantContactManager<T>::~CompliantContactManager() {}
+
+template <typename T>
 void CompliantContactManager<T>::DeclareCacheEntries() {
   // N.B. We use xd_ticket() instead of q_ticket() since discrete
   // multibody plant does not have q's, but rather discrete state.
@@ -419,6 +422,36 @@ CompliantContactManager<T>::EvalContactJacobianCache(
   return plant()
       .get_cache_entry(cache_indexes_.contact_jacobian)
       .template Eval<internal::ContactJacobianCache<T>>(context);
+}
+
+template <typename T>
+void CompliantContactManager<T>::CalcFreeMotionVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+
+  // N.B. Forces are evaluated at the previous time step state. This is
+  // consistent with the explicit Euler and symplectic Euler schemes.
+  // TODO(amcastro-tri): Implement free-motion velocities update based on the
+  // theta-method, as in the SAP paper.
+  MultibodyForces<T> forces(this->plant());
+  this->CalcNonContactForces(context, &forces);
+
+  // Compute accelerations using the articulated body algorithm.
+  const auto& tree_topology = this->internal_tree().get_topology();
+  multibody::internal::ArticulatedBodyForceCache<T> aba_force_cache(
+      tree_topology);
+  this->internal_tree().CalcArticulatedBodyForceCache(context, forces,
+                                                      &aba_force_cache);
+  multibody::internal::AccelerationKinematicsCache<T> ac(tree_topology);
+  this->internal_tree().CalcArticulatedBodyAccelerations(context,
+                                                         aba_force_cache, &ac);
+
+  const VectorX<T>& vdot0 = ac.get_vdot();
+  const double dt = this->plant().time_step();
+  const VectorX<T>& x0 =
+      context.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(this->plant().num_velocities());
+  *v_star = v0 + dt * vdot0;
 }
 
 }  // namespace internal
