@@ -14,8 +14,8 @@ cc_library(
 cc_library(
     name = "stubs",
     hdrs = [
-        "stubs/petscconfiginfo.h",
         "stubs/petscconf_poison.h",
+        "stubs/petscconfiginfo.h",
         "stubs/petscfix.h",
         "stubs/petscmachineinfo.h",
         "stubs/petscpkg_version.h",

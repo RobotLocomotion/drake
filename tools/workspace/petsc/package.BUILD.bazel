@@ -11,9 +11,7 @@ load(
 
 licenses(["notice"])  # BSD-2-Clause AND MIT
 
-package(
-    default_visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:private"])
 
 # TODO dead code, do this for realz.
 True or cmake_configure_file(
@@ -1080,6 +1078,7 @@ cc_library(
         "@drake//tools/workspace/petsc:linux_config",
         "@drake//tools/workspace/petsc:stubs",
     ],
+    visibility = ["//visibility:public"],
 )
 
 install(
@@ -1088,4 +1087,5 @@ install(
         "LICENSE",  # BSD-2-Clause
         "src/sys/yaml/License",  # MIT
     ],
+    visibility = ["//visibility:public"],
 )
