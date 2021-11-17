@@ -716,16 +716,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return data.collisions_exist;
   }
 
-  // Helper of ComputeContactSurfaces() and ComputePolygonalContactSurfaces().
-  vector<ContactSurface<T>> ComputeContactSurfacesImpl(
-      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      ContactPolygonRepresentation representation) const {
+  vector<ContactSurface<T>> ComputeContactSurfaces(
+      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     vector<ContactSurface<T>> surfaces;
-    // All these quantities, except `representation`, are aliased in the
-    // callback data.
+    // All these quantities are aliased in the callback data.
     hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
                                        &hydroelastic_geometries_,
-                                       representation, &surfaces};
+                                       &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
@@ -739,36 +736,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return surfaces;
   }
 
-  vector<ContactSurface<T>> ComputeContactSurfaces(
-      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-    vector<ContactSurface<T>> surfaces;
-    return ComputeContactSurfacesImpl(
-        X_WGs, ContactPolygonRepresentation::kCentroidSubdivision);
-  }
-
-  vector<ContactSurface<T>> ComputePolygonalContactSurfaces(
-      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-    // TODO(14579): Change kSingleTriangle to the future polygon representation.
-    return ComputeContactSurfacesImpl(
-        X_WGs, ContactPolygonRepresentation::kSingleTriangle);
-  }
-
-  // Helper of ComputeContactSurfacesWithFallback() and
-  // ComputePolygonalContactSurfacesWithFallback().
-  void ComputeContactSurfacesWithFallbackImpl(
+  void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      ContactPolygonRepresentation representation,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces != nullptr);
     DRAKE_DEMAND(point_pairs != nullptr);
 
-    // All these quantities, except `representation`, are aliased in the
-    // callback data.
+    // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
         hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
-                                      &hydroelastic_geometries_, representation,
-                                      surfaces},
+                                      &hydroelastic_geometries_, surfaces},
         point_pairs};
 
     // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
@@ -781,29 +759,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
 
     std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
-  }
-
-  void ComputeContactSurfacesWithFallback(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces != nullptr);
-    DRAKE_DEMAND(point_pairs != nullptr);
-    ComputeContactSurfacesWithFallbackImpl(
-        X_WGs, ContactPolygonRepresentation::kCentroidSubdivision, surfaces,
-        point_pairs);
-  }
-
-  void ComputePolygonalContactSurfacesWithFallback(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-      std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-    DRAKE_DEMAND(surfaces != nullptr);
-    DRAKE_DEMAND(point_pairs != nullptr);
-    // TODO(14579): Change kSingleTriangle to the future polygon representation.
-    ComputeContactSurfacesWithFallbackImpl(
-        X_WGs, ContactPolygonRepresentation::kSingleTriangle, surfaces,
-        point_pairs);
   }
 
   // Testing utilities
@@ -1122,28 +1077,12 @@ std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-ProximityEngine<T>::ComputePolygonalContactSurfaces(
-    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputePolygonalContactSurfaces(X_WGs);
-}
-
-template <typename T>
 void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
                                                    point_pairs);
-}
-
-template <typename T>
-void ProximityEngine<T>::ComputePolygonalContactSurfacesWithFallback(
-    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
-    std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  return impl_->ComputePolygonalContactSurfacesWithFallback(X_WGs, surfaces,
-                                                            point_pairs);
 }
 
 template <typename T>

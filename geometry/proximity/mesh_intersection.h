@@ -64,10 +64,6 @@ class SurfaceVolumeIntersector {
        A bounding volume hierarchy built on the geometry `surface_N`.
    @param[in] X_MN
        The pose of frame N in frame M.
-   @param[in] representation
-       Specify the preferred representation of each intersecting polygon,
-       which is the intersection of a tetrahedron and a triangle from the two
-       meshes.
    @param[out] surface_MN_M
        The intersecting surface between the volume mesh M and the surface N.
        Vertex positions are measured and expressed in M's frame. If no
@@ -88,7 +84,6 @@ class SurfaceVolumeIntersector {
       const TriangleSurfaceMesh<double>& surface_N,
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      ContactPolygonRepresentation representation,
       std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
       std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
       std::vector<Vector3<T>>* grad_eM_Ms);
@@ -337,9 +332,6 @@ class SurfaceVolumeIntersector {
      A bounding volume hierarchy built on the geometry contained in `mesh_R`.
  @param[in] X_WR
      The pose of the rigid frame R in the world frame W.
- @param[in] representation
-     Specify the preferred representation of each contact polygon between the
-     two geometries.
  @return
      The contact surface between M and N. Geometries S and R map to M and N
      with a consistent mapping (as documented in ContactSurface) but without any
@@ -372,8 +364,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS,
     const GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation);
+    const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry

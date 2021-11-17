@@ -27,19 +27,12 @@ namespace internal {
  This function is a component of the larger operation of clipping a
  TriangleSurfaceMesh by a half space.
 
- For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
- we do not introduce any duplicate vertices (beyond those already in the input
+ We do not introduce any duplicate vertices (beyond those already in the input
  mesh). This function uses bookkeeping to prevent the addition of such
  duplicate vertices, which can be created when either a vertex lies inside/on
  the half space or when an edge intersects the half space. The method tracks
  these resultant vertices using `vertices_to_newly_created_vertices` and
  `edges_to_newly_created_vertices`, respectively.
-
- For `representation` = ContactPolygonRepresentation::kSingleTriangle, it
- creates 3 or 4 times fewer triangles than the other choice by representing
- the intersected polygon (triangle or quadrilateral) as one triangle. However,
- it allows duplicate vertices and ignores `vertices_to_newly_created_vertices`
- and `edges_to_newly_created_vertices`.
 
  @param mesh_F
      The surface mesh to intersect, measured and expressed in Frame F.
@@ -50,8 +43,6 @@ namespace internal {
      The half space measured and expressed in Frame F.
  @param X_WF
      The relative pose between Frame F and Frame W.
- @param[in] representation
-     The preferred representation of the intersected polygon.
  @param[in,out] new_vertices_W
      The accumulator for all of the vertices in the intersecting mesh. It should
      be empty for the first call and will gradually accumulate all of the
@@ -85,7 +76,6 @@ template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
     std::vector<SurfaceTriangle>* new_faces,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
@@ -96,15 +86,10 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
  triangles drawn from the given surface mesh. The indicated triangles would
  typically be the result of broadphase culling.
 
- For `representation` = ContactPolygonRepresentation::kCentroidSubdivision,
- each triangle in `mesh_W` is a proper subset of one triangle in `input_mesh_F`
+ Each triangle in `mesh_W` is a proper subset of one triangle in `input_mesh_F`
  (i.e., fully contained within the triangle in `input_mesh_F`). As such,
  the face normal for each triangle in `mesh_W` will point in the same direction
  as its containing triangle in `input_mesh_F`.
-
- For `representation` = ContactPolygonRepresentation::kSingleTriangle, each
- triangle in `mesh_W` corresponds to one triangle in `input_mesh_F` that
- intersects the half space. Their face normals will point in the same direction.
 
  @param input_mesh_F
      The mesh with vertices measured and expressed in some frame, F.
@@ -114,8 +99,6 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
      A collection of triangle indices in `input_mesh_F`.
  @param X_WF
      The relative pose of Frame F with the world frame W.
- @param[in] representation
-     The preferred representation of each intersected polygon.
  @retval `mesh_W`, the TriangleSurfaceMesh corresponding to the intersection
          between the mesh and the half space; the vertices are measured and
          expressed in Frame W. `nullptr` if there is no intersection.
@@ -125,8 +108,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>>
 ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const TriangleSurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F, const std::vector<int>& tri_indices,
-    const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation);
+    const math::RigidTransform<T>& X_WF);
 
 /*
  Computes the ContactSurface formed by a soft half space and the given rigid
@@ -149,8 +131,6 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
                             mesh measured and expressed in Frame R.
  @param[in] X_WR            The relative pose between Frame R -- the frame the
                             mesh is defined in -- and the world frame W.
- @param[in] representation  The preferred representation of each contact
-                            polygon.
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. Each triangle in the contact surface is a
           piece of a triangle in the input `mesh_R`; the normals of the former
@@ -164,8 +144,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation);
+    const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
