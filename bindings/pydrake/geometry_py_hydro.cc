@@ -37,8 +37,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("triangles", &Class::triangles,
             doc.TriangleSurfaceMesh.triangles.doc)
         .def("vertices", &Class::vertices, doc.TriangleSurfaceMesh.vertices.doc)
-        .def(
-            "centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc);
+        .def("centroid", &Class::centroid, doc.TriangleSurfaceMesh.centroid.doc)
+        .def("element_centroid", &Class::element_centroid, py::arg("t"),
+            doc.TriangleSurfaceMesh.element_centroid.doc);
   }
 
   // VolumeMesh
