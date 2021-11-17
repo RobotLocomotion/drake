@@ -156,13 +156,36 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "license-khash",
+    srcs = ["include/petsc/private/khash/khash.h"],
+    outs = ["LICENSE-khash.txt"],
+    # Select lines 5..25 of the header to get the license text.
+    cmd = "head -n 25 $< | tail +5 > $@",
+)
+
+genrule(
+    name = "license-libyaml",
+    srcs = ["src/sys/yaml/License"],
+    outs = ["LICENSE-libyaml.txt"],
+    cmd = "cp $< $@",
+)
+
+genrule(
+    name = "license-valgrind",
+    srcs = ["include/petsc/private/valgrind/valgrind.h"],
+    outs = ["LICENSE-valgrind.txt"],
+    # Select lines 15..46 of the header to get the license text.
+    cmd = "head -n 46 $< | tail +15 > $@",
+)
+
 install(
     name = "install",
     docs = [
         "LICENSE",  # BSD-2-Clause
-        "src/sys/yaml/License",  # MIT
-        # TODO valgrind is BSD-4-Clause
-        # TODO khash is MIT
+        ":LICENSE-khash.txt",  # MIT
+        ":LICENSE-libyaml.txt",  # MIT
+        ":LICENSE-valgrind.txt",  # BSD-4-Clause
     ],
     visibility = ["//visibility:public"],
 )
