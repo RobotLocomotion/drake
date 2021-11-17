@@ -1226,12 +1226,15 @@ class TestSymbolicPolynomial(unittest.TestCase):
         e = a * x + b * y + c * z
         p1 = sym.Polynomial(e, sym.Variables([x, y, z]))
         p2 = sym.Polynomial(e=e, indeterminates=sym.Variables([x, y, z]))
+        p3 = sym.Polynomial(e=e, indeterminates=[x, y, z])
         decision_vars = sym.Variables([a, b, c])
         indeterminates = sym.Variables([x, y, z])
         self.assertEqual(p1.indeterminates(), indeterminates)
         self.assertEqual(p1.decision_variables(), decision_vars)
         self.assertEqual(p2.indeterminates(), indeterminates)
         self.assertEqual(p2.decision_variables(), decision_vars)
+        self.assertEqual(p3.indeterminates(), indeterminates)
+        self.assertEqual(p3.decision_variables(), decision_vars)
 
     def test_set_indeterminates(self):
         e = a * x * x + b * y + c * z
