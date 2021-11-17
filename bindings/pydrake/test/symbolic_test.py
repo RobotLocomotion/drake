@@ -770,22 +770,29 @@ class TestSymbolicExpression(unittest.TestCase):
         #  = |cos(y)   -x * sin(y)|
         #    |sin(y)    x * cos(y)|
         #    | 2 * x             0|
-        J = sym.Jacobian([x * sym.cos(y), x * sym.sin(y), x ** 2], [x, y])
-        numpy_compare.assert_equal(J[0, 0], sym.cos(y))
-        numpy_compare.assert_equal(J[1, 0], sym.sin(y))
-        numpy_compare.assert_equal(J[2, 0], 2 * x)
-        numpy_compare.assert_equal(J[0, 1], - x * sym.sin(y))
-        numpy_compare.assert_equal(J[1, 1], x * sym.cos(y))
-        numpy_compare.assert_equal(J[2, 1], sym.Expression(0))
-        J = sym.Jacobian(
-            f=[x * sym.cos(y), x * sym.sin(y), x ** 2], vars=[x, y])
-        # NOTE: the above just tests the bindings kwargs f=, vars=.
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0, 0], sym.cos(y))
+            numpy_compare.assert_equal(J[1, 0], sym.sin(y))
+            numpy_compare.assert_equal(J[2, 0], 2 * x)
+            numpy_compare.assert_equal(J[0, 1], - x * sym.sin(y))
+            numpy_compare.assert_equal(J[1, 1], x * sym.cos(y))
+            numpy_compare.assert_equal(J[2, 1], sym.Expression(0))
+
+        f = [x * sym.cos(y), x * sym.sin(y), x ** 2]
+        vars = [x, y]
+        check_jacobian(sym.Jacobian(f, vars))
+        check_jacobian(sym.Jacobian(f=f, vars=vars))
 
     def test_method_jacobian(self):
         # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
-        J = (x * sym.cos(y)).Jacobian([x, y])
-        numpy_compare.assert_equal(J[0], sym.cos(y))
-        numpy_compare.assert_equal(J[1], -x * sym.sin(y))
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0], sym.cos(y))
+            numpy_compare.assert_equal(J[1], -x * sym.sin(y))
+
+        e = x * sym.cos(y)
+        vars = [x, y]
+        check_jacobian(e.Jacobian(vars))
+        check_jacobian(e.Jacobian(vars=vars))
 
     def test_is_affine(self):
         M = np.array([[a * a * x, 3 * x], [2 * x, 3 * a]])
@@ -1319,12 +1326,13 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p_dx = sym.Polynomial(10 * x + 8 * y, [x, y])  # ∂p/∂x = 10x + 8y
         p_dy = sym.Polynomial(8 * y + 8 * x, [x, y])   # ∂p/∂y =  8y + 8x
 
-        J = p.Jacobian([x, y])
-        numpy_compare.assert_equal(J[0], p_dx)
-        numpy_compare.assert_equal(J[1], p_dy)
-        J = p.Jacobian(vars=[x, y])
-        numpy_compare.assert_equal(J[0], p_dx)
-        numpy_compare.assert_equal(J[1], p_dy)
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0], p_dx)
+            numpy_compare.assert_equal(J[1], p_dy)
+
+        vars = [x, y]
+        check_jacobian(p.Jacobian(vars))
+        check_jacobian(p.Jacobian(vars=vars))
 
     def test_jacobian_matrix(self):
         p1 = sym.Polynomial(x * x + y, [x, y])      # p1 = x² + y
@@ -1334,11 +1342,16 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p2_dx = sym.Polynomial(2, [x, y])           # ∂p1/∂x = 2
         p2_dy = sym.Polynomial(2 * y, [x, y])       # ∂p1/∂y =  2y
 
-        J = sym.Jacobian([p1, p2], [x, y])
-        numpy_compare.assert_equal(J[0, 0], p1_dx)
-        numpy_compare.assert_equal(J[0, 1], p1_dy)
-        numpy_compare.assert_equal(J[1, 0], p2_dx)
-        numpy_compare.assert_equal(J[1, 1], p2_dy)
+        def check_jacobian(J):
+            numpy_compare.assert_equal(J[0, 0], p1_dx)
+            numpy_compare.assert_equal(J[0, 1], p1_dy)
+            numpy_compare.assert_equal(J[1, 0], p2_dx)
+            numpy_compare.assert_equal(J[1, 1], p2_dy)
+
+        f = [p1, p2]
+        vars = [x, y]
+        check_jacobian(sym.Jacobian(f, vars))
+        check_jacobian(sym.Jacobian(f=f, vars=vars))
 
     def test_evaluate_polynomial_matrix(self):
         p1 = sym.Polynomial(x * x + y, [x, y])      # p1 = x² + y
