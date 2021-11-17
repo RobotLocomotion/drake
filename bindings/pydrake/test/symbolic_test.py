@@ -1201,24 +1201,37 @@ class TestSymbolicPolynomial(unittest.TestCase):
     def test_constructor_maptype(self):
         m = {sym.Monomial(x): sym.Expression(3),
              sym.Monomial(y): sym.Expression(2)}  # 3x + 2y
-        p = sym.Polynomial(m)
-        expected = 3 * x + 2 * y
-        numpy_compare.assert_equal(p.ToExpression(), expected)
+        p1 = sym.Polynomial(m)
         p2 = sym.Polynomial(map=m)
+        expected = 3 * x + 2 * y
+        numpy_compare.assert_equal(p1.ToExpression(), expected)
+        numpy_compare.assert_equal(p2.ToExpression(), expected)
+
+    def test_constructor_monomial(self):
+        m = sym.Monomial(x, 2)
+        p1 = sym.Polynomial(m)
+        p2 = sym.Polynomial(m=m)
+        expected = "pow(x, 2)"
+        numpy_compare.assert_equal(p1.ToExpression(), expected)
         numpy_compare.assert_equal(p2.ToExpression(), expected)
 
     def test_constructor_expression(self):
         e = 2 * x + 3 * y
-        p = sym.Polynomial(e)
-        numpy_compare.assert_equal(p.ToExpression(), e)
+        p1 = sym.Polynomial(e)
+        p2 = sym.Polynomial(e=e)
+        numpy_compare.assert_equal(p1.ToExpression(), e)
+        numpy_compare.assert_equal(p2.ToExpression(), e)
 
     def test_constructor_expression_indeterminates(self):
         e = a * x + b * y + c * z
-        p = sym.Polynomial(e, sym.Variables([x, y, z]))
+        p1 = sym.Polynomial(e, sym.Variables([x, y, z]))
+        p2 = sym.Polynomial(e=e, indeterminates=sym.Variables([x, y, z]))
         decision_vars = sym.Variables([a, b, c])
         indeterminates = sym.Variables([x, y, z])
-        self.assertEqual(p.indeterminates(), indeterminates)
-        self.assertEqual(p.decision_variables(), decision_vars)
+        self.assertEqual(p1.indeterminates(), indeterminates)
+        self.assertEqual(p1.decision_variables(), decision_vars)
+        self.assertEqual(p2.indeterminates(), indeterminates)
+        self.assertEqual(p2.decision_variables(), decision_vars)
 
     def test_set_indeterminates(self):
         e = a * x * x + b * y + c * z
