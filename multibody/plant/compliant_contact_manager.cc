@@ -17,11 +17,28 @@
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RotationMatrix;
+using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// To compute accelerations due to external forces (in particular non-contact
+// forces), we pack forces, ABA cache and accelerations into a single struct to
+// confine memory allocations into a single cache entry.
+template <typename T>
+struct AccelerationsDueToExternalForcesCache {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationsDueToExternalForcesCache)
+  explicit AccelerationsDueToExternalForcesCache(
+      const MultibodyTreeTopology& topology)
+      : forces(topology.num_bodies(), topology.num_velocities()),
+        aba_forces(topology),
+        ac(topology) {}
+  MultibodyForces<T> forces;  // The external forces causing accelerations.
+  multibody::internal::ArticulatedBodyForceCache<T> aba_forces;  // ABA cache.
+  multibody::internal::AccelerationKinematicsCache<T> ac;  // Accelerations.
+};
 
 template <typename T>
 CompliantContactManager<T>::CompliantContactManager(
@@ -29,6 +46,9 @@ CompliantContactManager<T>::CompliantContactManager(
     : contact_solver_(std::move(contact_solver)) {
   DRAKE_DEMAND(contact_solver_ != nullptr);
 }
+
+template <typename T>
+CompliantContactManager<T>::~CompliantContactManager() {}
 
 template <typename T>
 void CompliantContactManager<T>::DeclareCacheEntries() {
@@ -56,6 +76,34 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_jacobian = contact_jacobian_cache_entry.cache_index();
+
+  // Accelerations due to non-contact forces.
+  // We cache non-contact forces, ABA forces and accelerations into a
+  // AccelerationsDueToExternalForcesCache.
+  AccelerationsDueToExternalForcesCache<T> non_contact_forces_accelerations(
+      this->internal_tree().get_topology());
+  auto& non_contact_forces_accelerations_cache_entry = this->DeclareCacheEntry(
+      std::string("Non-contact forces accelerations."),
+      systems::ValueProducer(
+          non_contact_forces_accelerations,
+          std::function<void(const systems::Context<T>&,
+                             AccelerationsDueToExternalForcesCache<T>*)>{
+              [this](const systems::Context<T>& context,
+                     AccelerationsDueToExternalForcesCache<T>*
+                         no_contact_accelerations_cache) {
+                this->CalcNonContactForces(
+                    context, &no_contact_accelerations_cache->forces);
+                this->internal_tree().CalcArticulatedBodyForceCache(
+                    context, no_contact_accelerations_cache->forces,
+                    &no_contact_accelerations_cache->aba_forces);
+                this->internal_tree().CalcArticulatedBodyAccelerations(
+                    context, no_contact_accelerations_cache->aba_forces,
+                    &no_contact_accelerations_cache->ac);
+              }}),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.non_contact_forces_accelerations =
+      non_contact_forces_accelerations_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -419,6 +467,33 @@ CompliantContactManager<T>::EvalContactJacobianCache(
   return plant()
       .get_cache_entry(cache_indexes_.contact_jacobian)
       .template Eval<internal::ContactJacobianCache<T>>(context);
+}
+
+template <typename T>
+const multibody::internal::AccelerationKinematicsCache<T>&
+CompliantContactManager<T>::EvalAccelerationsDueToNonContactForces(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.non_contact_forces_accelerations)
+      .template Eval<AccelerationsDueToExternalForcesCache<T>>(context)
+      .ac;
+}
+
+template <typename T>
+void CompliantContactManager<T>::CalcFreeMotionVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+  // N.B. Forces are evaluated at the previous time step state. This is
+  // consistent with the explicit Euler and symplectic Euler schemes.
+  // TODO(amcastro-tri): Implement free-motion velocities update based on the
+  // theta-method, as in the SAP paper.
+  const VectorX<T>& vdot0 =
+      EvalAccelerationsDueToNonContactForces(context).get_vdot();
+  const double dt = this->plant().time_step();
+  const VectorX<T>& x0 =
+      context.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(this->plant().num_velocities());
+  *v_star = v0 + dt * vdot0;
 }
 
 }  // namespace internal
