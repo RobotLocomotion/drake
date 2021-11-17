@@ -421,6 +421,42 @@ CompliantContactManager<T>::EvalContactJacobianCache(
       .template Eval<internal::ContactJacobianCache<T>>(context);
 }
 
+template <typename T>
+void CompliantContactManager<T>::CalcFreeMotionVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+
+  const multibody::internal::PositionKinematicsCache<T>& pc =
+      this->plant().EvalPositionKinematics(context);
+  const multibody::internal::VelocityKinematicsCache<T>& vc =
+      this->plant().EvalVelocityKinematics(context);
+
+  // N.B. Forces are evaluated at the previous time step state. This is
+  // consistent with the explicit Euler and symplectic Euler schemes.
+  MultibodyForces<T> forces(this->plant());
+  // Compute forces applied by force elements. Note that this resets forces to
+  // zero so it must come before other force calculations.
+  this->internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
+  this->AddInForcesFromInputPorts(context, &forces);
+
+  // Compute accelerations using the articulated body algorithm.
+  const auto& tree_topology = this->internal_tree().get_topology();
+  multibody::internal::ArticulatedBodyForceCache<T> aba_force_cache(
+      tree_topology);
+  this->internal_tree().CalcArticulatedBodyForceCache(context, forces,
+                                                      &aba_force_cache);
+  multibody::internal::AccelerationKinematicsCache<T> ac(tree_topology);
+  this->internal_tree().CalcArticulatedBodyAccelerations(context,
+                                                         aba_force_cache, &ac);
+
+  const VectorX<T>& vdot0 = ac.get_vdot();
+  const double dt = this->plant().time_step();
+  const auto& x0 =
+      context.get_discrete_state(this->multibody_state_index()).get_value();
+  const auto& v0 = x0.bottomRows(this->plant().num_velocities());
+  *v_star = v0 + dt * vdot0;
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
