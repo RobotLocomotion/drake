@@ -15,7 +15,7 @@ AllocateContext(), AllocateOutput(), etc.
 
 In most cases users should be able to ignore this compatibility checking
 mechanism; setting and checking of IDs should happen naturally in most
-cases. However, when copying data values between similar systems, some case
+cases. However, when copying data values between similar systems, some care
 must be taken. for example, a Clone() of a checked object will not work with a
 system different from its source, but constructing a destination object using
 methods of the destination System and using SetFrom() or lower level value
