@@ -1,0 +1,40 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_binary(
+    name = "render_engine_vtk_minimal_example",
+    srcs = ["render_engine_vtk_minimal_example.cc"],
+    add_test_rule = 1,
+    data = [
+        "//manipulation/models/ycb:models",
+    ],
+    test_rule_args = [
+        "--simulation_time=0.1",
+    ],
+    test_rule_tags = vtk_test_tags(),
+    deps = [
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:constant_vector_source",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "//systems/sensors:rgbd_sensor",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
