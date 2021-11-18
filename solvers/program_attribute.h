@@ -31,6 +31,8 @@ enum class ProgramAttribute {
 
   kExponentialConeConstraint,  /// An exponential cone constraint.
 
+  kL2NormCost,  /// An L2 norm |Ax+b|
+
   kBinaryVariable,  /// variable taking binary value {0, 1}.
 
   kCallback,  /// support callback during solving the problem.

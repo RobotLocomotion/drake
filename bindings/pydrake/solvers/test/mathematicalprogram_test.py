@@ -981,6 +981,13 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
 
+    def test_add_l2norm_cost(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        prog.AddL2NormCost(
+            A=np.array([[1, 2.], [3., 4]]), b=np.array([1., 2.]), vars=x)
+        self.assertEqual(len(prog.l2norm_costs()), 1)
+
     def test_addcost_shared_ptr(self):
         # In particular, confirm that LinearCost ends up in linear_costs, etc.
         # as opposed to everything ending up as a generic_cost.
@@ -1000,13 +1007,12 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIsInstance(binding.evaluator(), mp.QuadraticCost)
         self.assertEqual(len(prog.quadratic_costs()), 1)
 
-        # Confirm that I can add an L2NormCost. This is the only way to add an
-        # L2NormCost to a MathematicalProgram pending further progress on
-        # #15366.
+        # Confirm that I can add an L2NormCost.
         binding = prog.AddCost(mp.L2NormCost([[1.0]], [0.0]), x)
         self.assertIsInstance(binding, mp.Binding[mp.Cost])
         self.assertIsInstance(binding.evaluator(), mp.L2NormCost)
-        self.assertEqual(len(prog.generic_costs()), 1)
+        self.assertEqual(len(prog.generic_costs()), 0)
+        self.assertEqual(len(prog.l2norm_costs()), 1)
 
     def test_addconstraint_matrix(self):
         prog = mp.MathematicalProgram()
