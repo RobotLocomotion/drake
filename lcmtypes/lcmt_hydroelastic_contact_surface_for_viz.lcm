@@ -41,20 +41,30 @@ struct lcmt_hydroelastic_contact_surface_for_viz {
   // at the centroid of the contact surface.
   double moment_C_W[3];
 
-  // The number of triangles.
-  int32_t num_triangles;
-
-  // The contact surface mesh and associated data.
-  lcmt_hydroelastic_contact_surface_tri_for_viz triangles[num_triangles];
-
-  // The number of quadrature points.
+  // The *total* number of quadrature points. The number of per-face quadrature
+  // points are typically 1 or 3 (in the future, some arbitrary number may be
+  // permitted). There is no guaranteed pattern of correspondence between the
+  // ith quadrature point and the jth mesh face.
   int32_t num_quadrature_points;
 
-  // The quadrature point data. Quadrature points are stored sequentially with
-  // the triangles, meaning that quadrature point data at indices 0, 1, 2
-  // correspond to the triangle with index 0; quadrature point data at indices
-  // 3, 4, 5 correspond to the triangle with index 1; etc. (given, in this
-  // example, three quadrature points per triangle).
+  // The quadrature point data.
   lcmt_hydroelastic_quadrature_per_point_data_for_viz
       quadrature_point_data[num_quadrature_points];
+
+  // The vertices.
+  int32_t num_vertices;
+  // TODO(SeanCurtis-TRI): It would be nice to have a simple Vector3 type here,
+  //  but the concept of a 3D point is perfectly sufficient.
+  lcmt_point p_WV[num_vertices];
+
+  // Pressure values at each vertex.
+  double pressure[num_vertices];
+
+  // The polygons are encoded in one long stream as
+  // c0, v00, v01, ..., c1, v10, v11, ...
+  // Such that each polygon has a count of vertices ci, followed by ci number
+  // of 0-indexed indices into the vertex set. The total number of integer
+  // values is recorded here.
+  int32_t poly_data_int_count;
+  int32_t poly_data[poly_data_int_count];
 }
