@@ -223,7 +223,6 @@ drake_cc_googletest(
     deps = [
         ":supernodal_solver",
         "//common/test_utilities:expect_throws_message",
-        "@conex//conex:supernodal_solver",
     ],
 )
 

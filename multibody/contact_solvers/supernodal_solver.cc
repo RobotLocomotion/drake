@@ -346,8 +346,8 @@ SparsityData GetEliminationOrdering(
   // Computes new set of cliques and clique order such that the "Running
   // Intersection Property" holds. The new cliques are the input cliques with
   // added variables that correspond to fill-in in the Cholesky factorization.
-  // The new cliques are stored stored implicitly as the union
-  // of separators and supernodes:
+  // The new cliques are stored implicitly as the union of separators and
+  // supernodes:
   //
   //   new_clique = Union(supernodes[i], separators[i])
   //

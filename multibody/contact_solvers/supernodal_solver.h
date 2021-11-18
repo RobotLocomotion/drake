@@ -62,8 +62,6 @@ class SuperNodalSolver {
   //
   //     2) There is at most two triplets (p, t, Jₚₜ) with the same row
   //     index p.
-  //
-  //
   // @param mass_matrices
   //   Specifies a block-diagonal mass matrix M of size nᵥ x nᵥ.  The block
   //   columns of the mass matrix and the block columns of the Jacobian J both
