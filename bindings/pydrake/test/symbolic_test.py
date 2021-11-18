@@ -313,6 +313,8 @@ class TestSymbolicVariables(unittest.TestCase):
         count = vars1.erase(vars2)
         self.assertEqual(count, 1)
         self.assertEqual(vars1.size(), 2)
+
+    def test_erase2_kwarg(self):
         vars1 = sym.Variables([x, y, z])
         vars2 = sym.Variables([x, y])
         count = vars1.erase(vars=vars2)
