@@ -44,9 +44,9 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
     for (size_t j = 0; j < jacobian_row_data.size(); ++j) {
       const MatrixXd& c = jacobian_row_data[j];
       LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end, c,
-                                  &temp->at(j));
+                                  &(*temp)[j]);
       y.block(r_offset, c_offset, r.cols(), c.cols()).noalias() +=
-          r.transpose() * temp->at(j);
+          r.transpose() * (*temp)[j];
       c_offset += c.cols();
     }
     r_offset += r.cols();
@@ -66,9 +66,9 @@ vector<std::vector<int>> GetRowToTripletMapping(
   // are non-zero per row.
   auto sort_row_data_by_column = [](vector<int>* col_index,
                                     vector<int>* triplet_position) {
-    if (col_index->at(0) > col_index->at(1)) {
-      std::swap(col_index->at(0), col_index->at(1));
-      std::swap(triplet_position->at(0), triplet_position->at(1));
+    if ((*col_index)[0] > (*col_index)[1]) {
+      std::swap((*col_index)[0], (*col_index)[1]);
+      std::swap((*triplet_position)[0], (*triplet_position)[1]);
     }
   };
 
@@ -268,7 +268,7 @@ vector<int> CumulativeSum(const vector<int>& x, int N) {
 
 void SortTheCliques(std::vector<std::vector<int>>* path) {
   for (size_t i = 0; i < path->size(); ++i) {
-    std::sort(path->at(i).begin(), path->at(i).end());
+    std::sort((*path)[i].begin(), (*path)[i].end());
   }
 }
 
