@@ -42,9 +42,10 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     switch (solver_type) {
       case SolverType::Direct:
         KSPSetType(solver_, KSPPREONLY);
-        DRAKE_THROW_UNLESS(
-            preconditioner_type == PreconditionerType::Cholesky,
-            "Direct solver can only be paired with Cholesky preconditioner.");
+        if (preconditioner_type != PreconditionerType::Cholesky) {
+          throw std::logic_error(
+              "Direct solver can only be paired with Cholesky preconditioner.");
+        }
         break;
       case SolverType::MINRES:
         KSPSetType(solver_, KSPMINRES);
