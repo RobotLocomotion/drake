@@ -936,11 +936,7 @@ class TestSymbolicFormula(unittest.TestCase):
                          env[x] > env[y])
         self.assertEqual((x < y).Evaluate(env=env),
                          env[x] < env[y])
-        # To test default Evaluate(env={}), substitute in for x and y.
-        const_3 = sym.Expression(3.0)
-        const_4 = sym.Expression(4.0)
-        x_gt_y = (x > y).Substitute(x, const_3).Substitute(y, const_4)
-        self.assertFalse(x_gt_y.Evaluate())
+        self.assertTrue(sym.Formula.True_().Evaluate())
 
     def test_evaluate_exception_np_nan(self):
         env = {x: np.nan}
