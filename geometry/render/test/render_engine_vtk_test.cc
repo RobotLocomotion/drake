@@ -1560,7 +1560,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderLabelImage(color_camera, &label);
 
     SCOPED_TRACE("Far plane in front of scene");
-    VerifyUniformColor(kBgColor, 255u, &color);
+    VerifyUniformColor(kBgColor, 0u, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
     VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
   }
@@ -1584,7 +1584,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderLabelImage(color_camera, &label);
 
     SCOPED_TRACE("Near plane beyond scene");
-    VerifyUniformColor(kBgColor, 255u, &color);
+    VerifyUniformColor(kBgColor, 0u, &color);
     VerifyUniformLabel(RenderLabel::kEmpty, &label);
     VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
   }

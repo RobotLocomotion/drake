@@ -34,6 +34,7 @@ filegroup(
         "lib/**/*.dylib",
         "lib/**/*.py",
         "lib/**/*.so",
+        "lib/**/*.so.1",
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",
@@ -41,7 +42,6 @@ filegroup(
     data = [
         ":drake_visualizer_python_deps",
         "@lcm//:libdrake_lcm.so",
-        "@vtk",
     ],
     visibility = ["//visibility:public"],
 )

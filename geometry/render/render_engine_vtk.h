@@ -56,7 +56,7 @@ class ShaderCallback : public vtkCommand {
   static ShaderCallback* New() { return new ShaderCallback; }
 
   // NOLINTNEXTLINE(runtime/int): To match pre-existing APIs.
-  void Execute(vtkObject*, unsigned long, void* callback_object) VTK_OVERRIDE {
+  void Execute(vtkObject*, unsigned long, void* callback_object) override {
     vtkShaderProgram* program =
         reinterpret_cast<vtkShaderProgram*>(callback_object);
     program->SetUniformf("z_near", z_near_);

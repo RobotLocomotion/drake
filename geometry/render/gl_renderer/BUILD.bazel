@@ -199,6 +199,7 @@ drake_cc_library_ubuntu_only(
         "//common:filesystem",
         "//geometry/render/gl_renderer:opengl_context",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkImagingCore",
     ],
 )
 

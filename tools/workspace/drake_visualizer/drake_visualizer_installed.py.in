@@ -19,6 +19,7 @@ assert isdir(join(PREFIX_DIR, "bin")), f"Bad location: {PREFIX_DIR}"
 # real drake-visualizer handles this on its own.
 site_dir = join(PREFIX_DIR, "@PYTHON_SITE_PACKAGES_RELPATH@")
 sys.path.insert(0, site_dir)
+sys.path.insert(0, f"{site_dir}/director/thirdparty")
 
 from _drake_visualizer_builtin_scripts import (  # noqa
     _exec_drake_visualizer_with_plugins,

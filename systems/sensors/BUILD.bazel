@@ -160,6 +160,7 @@ drake_cc_library(
         "//systems/framework",
         "@libpng",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkImagingCore",
         "@zlib",
     ],
 )
@@ -244,6 +245,7 @@ drake_cc_library(
         "//systems/framework",
         "@vtk//:vtkCommonDataModel",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkImagingCore",
     ],
 )
 
@@ -310,6 +312,7 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//common/test_utilities",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkImagingCore",
     ],
 )
 

@@ -177,11 +177,15 @@ cc_library(
         "@vtk//:vtkCommonDataModel",
         "@vtk//:vtkCommonTransforms",
         "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersHybrid",
         "@vtk//:vtkFiltersSources",
         "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkImagingCore",
+        "@vtk//:vtkImagingSources",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingUI",
     ],
 )
 
