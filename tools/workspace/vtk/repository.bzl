@@ -32,7 +32,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "8.2"
+VTK_MAJOR_MINOR_VERSION = "9.1"
 
 VTK_MAJOR_MINOR_PATCH_VERSION = "{}.0".format(VTK_MAJOR_MINOR_VERSION)
 
@@ -115,11 +115,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.2.0-1-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"
-            sha256 = "d8d8bd13605f065839942d47eb9d556d8aa3f55e5759eb424773d05c46e805ee"  # noqa
+            archive = "vtk-9.1.0-1-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"
+            sha256 = "ce30a68de521fef0eef3c1e447489f04beaaf99d2c7015e9367899e4defa2297"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-8.2.0-1-python-3.8.5-qt-5.12.8-focal-x86_64.tar.gz"
-            sha256 = "927811bbecb1537c7d46c2eb73112ee7d46caf5ff765b5b8951b624ddf7d2928"  # noqa
+            archive = "vtk-9.1.0-1-python-3.8.10-qt-5.12.8-focal-x86_64.tar.gz"
+            sha256 = "77b56123d6b138b4080c3d9ae59a201797b4119f43d566eae9b6fd7401374165"  # noqa
         else:
             fail("Operating system is NOT supported {}".format(os_result))
 
@@ -154,16 +154,306 @@ licenses([
     # Note that we only create library targets for enough of VTK to support
     # those used directly or indirectly by Drake.
 
-    # TODO(jamiesnape): Create a script to help generate the targets.
+    ###########################################################################
+    #                                                                         #
+    #                                                                         #
+    # TODO finalize / fix these                                               #
+    #                                                                         #
+    #                                                                         #
+    ###########################################################################
+    # The following libraries are thirdparty libraries VTK bundles into its
+    # build, and not all are used directly (though some appear in transitive
+    # link dependencies).
+    ###########################################################################
+    # TODO: NOTE: these were the original configurations on these libraries.
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkkwiml",
+        hdrs = [
+            "vtk_kwiml.h",
+            "vtkkwiml/abi.h",
+            "vtkkwiml/int.h",
+        ],
+        visibility = ["//visibility:private"],
+        header_only = True,
+    )
+
+    # NOTE: currently added below without any explicit deps.
+    # file_content += _vtk_cc_library(
+    #     os_result,
+    #     "vtkmetaio",
+    #     deps = ["@zlib"],
+    # )
+
+    if os_result.is_manylinux:
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtksys",
+            linkopts = ["-ldl"],
+        )
+
+        file_content += _vtk_cc_library(os_result, "vtkglew")
+
+    else:
+        file_content += _vtk_cc_library(os_result, "vtksys")
+
+    ###########################################################################
+    # TODO: NOTE: these were the libraries discovered in the vtk 9 tarball that
+    # are candidates, and their abbreviated ldd results below.  Beneath the ldd
+    # results are a listing of all libraries that include this library when
+    # `ldd` is executed.
+    #
+    # Of particular interest is the `os_result.is_manylinux` -ldl split.
+    file_content += _vtk_cc_library(os_result, "vtkcgns")
+    # linux-vdso.so.1
+    # libhdf5_serial.so.103
+    # libc.so.6
+    # libpthread.so.0
+    # libsz.so.2
+    # libz.so.1
+    # libdl.so.2
+    # libm.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # libaec.so.0
+    # -------------------------------------------------------------------------
+    # libvtkIOCGNSReader-9.1.so => vtkcgns           [[[ target NOT CREATED ]]]
+    # libvtkioss-9.1.so => vtkcgns                                 [[[ TODO ]]]
+
+    file_content += _vtk_cc_library(os_result, "vtkfmt")
+    # linux-vdso.so.1
+    # libstdc++.so.6
+    # libgcc_s.so.1
+    # libc.so.6
+    # libm.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # libvtkFiltersGeneral-9.1.so => vtkfmt                       [[[ ADDED ]]]
+
+    # NOTE: currently on macOS the brew formula uses an external gl2ps.
+    # TODO: exclude this on macOS?
+    file_content += _vtk_cc_library(os_result, "vtkgl2ps")
+    # linux-vdso.so.1
+    # libm.so.6
+    # libOpenGL.so.0
+    # libpng16.so.16
+    # libz.so.1
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # libGLdispatch.so.0
+    # libdl.so.2
+    # -------------------------------------------------------------------------
+    # libvtkIOExportGL2PS-9.1.so => vtkgl2ps         [[[ target NOT created ]]]
+    # libvtkRenderingGL2PSOpenGL2-9.1.so => vtkgl2ps [[[ target NOT created ]]]
+
+    file_content += _vtk_cc_library(os_result, "vtkioss")
+    # linux-vdso.so.1
+    # libvtkexodusII-9.1.so.1
+    # libvtkcgns-9.1.so.1
+    # libnetcdf.so.15
+    # libpthread.so.0
+    # libstdc++.so.6
+    # libm.so.6
+    # libgcc_s.so.1
+    # libc.so.6
+    # libhdf5_serial_hl.so.100
+    # libhdf5_serial.so.103
+    # libcurl-gnutls.so.4
+    # /lib64/ld-linux-x86-64.so.2
+    # libsz.so.2
+    # libz.so.1
+    # libdl.so.2
+    # libnghttp2.so.14
+    # libidn2.so.0
+    # librtmp.so.1
+    # libssh.so.4
+    # libpsl.so.5
+    # libnettle.so.7
+    # libgnutls.so.30
+    # libgssapi_krb5.so.2
+    # libldap_r-2.4.so.2
+    # liblber-2.4.so.2
+    # libbrotlidec.so.1
+    # libaec.so.0
+    # libunistring.so.2
+    # libhogweed.so.5
+    # libgmp.so.10
+    # libcrypto.so.1.1
+    # libp11-kit.so.0
+    # libtasn1.so.6
+    # libkrb5.so.3
+    # libk5crypto.so.3
+    # libcom_err.so.2
+    # libkrb5support.so.0
+    # libresolv.so.2
+    # libsasl2.so.2
+    # libgssapi.so.3
+    # libbrotlicommon.so.1
+    # libffi.so.7
+    # libkeyutils.so.1
+    # libheimntlm.so.0
+    # libkrb5.so.26
+    # libasn1.so.8
+    # libhcrypto.so.4
+    # libroken.so.18
+    # libwind.so.0
+    # libheimbase.so.1
+    # libhx509.so.5
+    # libsqlite3.so.0
+    # libcrypt.so.1
+    # -------------------------------------------------------------------------
+    # libvtkIOIOSS-9.1.so => vtkioss                 [[[ target NOT created ]]]
+
+    file_content += _vtk_cc_library(os_result, "vtkkissfft")
+    # linux-vdso.so.1
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # libvtkCommonMath-9.1.so => vtkkissfft                       [[[ ADDED ]]]
+
+    file_content += _vtk_cc_library(os_result, "vtkharu")
+    # linux-vdso.so.1
+    # libpng16.so.16
+    # libz.so.1
+    # libc.so.6
+    # libm.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # NONE discovered...
+
+    file_content += _vtk_cc_library(os_result, "vtkproj")
+    # linux-vdso.so.1
+    # libm.so.6
+    # libpthread.so.0
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # NONE discovered...
+
+    file_content += _vtk_cc_library(os_result, "vtkloguru")
+    # linux-vdso.so.1
+    # libdl.so.2
+    # libpthread.so.0
+    # libstdc++.so.6
+    # libgcc_s.so.1
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # libm.so.6
+    # -------------------------------------------------------------------------
+    # libvtkCommonCore-9.1.so => vtkloguru                        [[[ ADDED ]]]
+
+    file_content += _vtk_cc_library(os_result, "vtkmetaio")
+    # linux-vdso.so.1
+    # libz.so.1
+    # libstdc++.so.6
+    # libgcc_s.so.1
+    # libc.so.6
+    # libm.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # libvtkIOImage-9.1.so => vtkmetaio                           [[[ ADDED ]]]
+
+    file_content += _vtk_cc_library(os_result, "vtkpugixml")
+    # linux-vdso.so.1
+    # libstdc++.so.6
+    # libm.so.6
+    # libgcc_s.so.1
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # libvtkCommonDataModel-9.1.so => vtkpugixml       [[[ TODO macOS split ]]]
+    # libvtkIOCityGML-9.1.so => vtkpugixml           [[[ target NOT created ]]]
+    # libvtkIOImage-9.1.so => vtkpugixml               [[[ TODO macOS split ]]]
+
+    # NOTE: currently added above from the originals
+    # file_content += _vtk_cc_library(os_result, "vtksys")
+    # linux-vdso.so.1
+    # libdl.so.2
+    # libstdc++.so.6
+    # libgcc_s.so.1
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # libm.so.6
+    # -------------------------------------------------------------------------
+    # NOTE: just added it to vtkCommonCore...
+    # libvtkChartsCore-9.1.so => vtksys
+    # libvtkCommonCore-9.1.so => vtksys
+    # libvtkCommonDataModel-9.1.so => vtksys
+    # libvtkCommonExecutionModel-9.1.so => vtksys
+    # libvtkCommonMisc-9.1.so => vtksys
+    # libvtkCommonSystem-9.1.so => vtksys
+    # libvtkDomainsChemistry-9.1.so => vtksys
+    # libvtkFiltersGeneral-9.1.so => vtksys
+    # libvtkFiltersHybrid-9.1.so => vtksys
+    # libvtkFiltersSources-9.1.so => vtksys
+    # libvtkGUISupportQtSQL-9.1.so => vtksys
+    # libvtkIOAMR-9.1.so => vtksys
+    # libvtkIOAsynchronous-9.1.so => vtksys
+    # libvtkIOCGNSReader-9.1.so => vtksys
+    # libvtkIOCONVERGECFD-9.1.so => vtksys
+    # libvtkIOChemistry-9.1.so => vtksys
+    # libvtkIOCityGML-9.1.so => vtksys
+    # libvtkIOCore-9.1.so => vtksys
+    # libvtkIOEnSight-9.1.so => vtksys
+    # libvtkIOExodus-9.1.so => vtksys
+    # libvtkIOExport-9.1.so => vtksys
+    # libvtkIOExportGL2PS-9.1.so => vtksys
+    # libvtkIOGeometry-9.1.so => vtksys
+    # libvtkIOHDF-9.1.so => vtksys
+    # libvtkIOIOSS-9.1.so => vtksys
+    # libvtkIOImage-9.1.so => vtksys
+    # libvtkIOImport-9.1.so => vtksys
+    # libvtkIOInfovis-9.1.so => vtksys
+    # libvtkIOLSDyna-9.1.so => vtksys
+    # libvtkIOLegacy-9.1.so => vtksys
+    # libvtkIOMINC-9.1.so => vtksys
+    # libvtkIOMotionFX-9.1.so => vtksys
+    # libvtkIONetCDF-9.1.so => vtksys
+    # libvtkIOOggTheora-9.1.so => vtksys
+    # libvtkIOPLY-9.1.so => vtksys
+    # libvtkIOParallel-9.1.so => vtksys
+    # libvtkIOParallelXML-9.1.so => vtksys
+    # libvtkIOSQL-9.1.so => vtksys
+    # libvtkIOVideo-9.1.so => vtksys
+    # libvtkIOXML-9.1.so => vtksys
+    # libvtkIOXMLParser-9.1.so => vtksys
+    # libvtkImagingHybrid-9.1.so => vtksys
+    # libvtkInfovisCore-9.1.so => vtksys
+    # libvtkParallelCore-9.1.so => vtksys
+    # libvtkPythonInterpreter-9.1.so => vtksys
+    # libvtkRenderingCore-9.1.so => vtksys
+    # libvtkRenderingOpenGL2-9.1.so => vtksys
+    # libvtkRenderingUI-9.1.so => vtksys
+    # libvtkRenderingVtkJS-9.1.so => vtksys
+    # libvtkTestingRendering-9.1.so => vtksys
+
+    file_content += _vtk_cc_library(os_result, "vtkverdict")
+    # linux-vdso.so.1
+    # libm.so.6
+    # libc.so.6
+    # /lib64/ld-linux-x86-64.so.2
+    # -------------------------------------------------------------------------
+    # libvtkFiltersVerdict-9.1.so => vtkverdict      [[[ target NOT created ]]]
+    ###########################################################################
+    #                                                                         #
+    #                                                                         #
+    # TODO [[[ END finalize / fix these ]]]                                   #
+    #                                                                         #
+    #                                                                         #
+    ###########################################################################
 
     # To see what the VTK module dependencies are, you can inspect VTK's source
     # tree. For example, for vtkIOXML and vtkIOXMLParser:
-    #   VTK/IO/XML/module.cmake
-    #   VTK/IO/XMLParser/module.cmake
-
+    #   VTK/IO/XML/vtk.module
+    #   VTK/IO/XMLParser/vtk.module
+    # Make sure to include the sections from both DEPENDS and PRIVATE_DEPENDS.
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonColor",
+        hdrs = [
+            "vtkColorSeries.h",
+            "vtkCommonColorModule.h",
+            "vtkNamedColors.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -173,105 +463,559 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonComputationalGeometry",
+        hdrs = [
+            "vtkBilinearQuadIntersection.h",
+            "vtkCardinalSpline.h",
+            "vtkCommonComputationalGeometryModule.h",
+            "vtkKochanekSpline.h",
+            "vtkParametricBohemianDome.h",
+            "vtkParametricBour.h",
+            "vtkParametricBoy.h",
+            "vtkParametricCatalanMinimal.h",
+            "vtkParametricConicSpiral.h",
+            "vtkParametricCrossCap.h",
+            "vtkParametricDini.h",
+            "vtkParametricEllipsoid.h",
+            "vtkParametricEnneper.h",
+            "vtkParametricFigure8Klein.h",
+            "vtkParametricFunction.h",
+            "vtkParametricHenneberg.h",
+            "vtkParametricKlein.h",
+            "vtkParametricKuen.h",
+            "vtkParametricMobius.h",
+            "vtkParametricPluckerConoid.h",
+            "vtkParametricPseudosphere.h",
+            "vtkParametricRandomHills.h",
+            "vtkParametricRoman.h",
+            "vtkParametricSpline.h",
+            "vtkParametricSuperEllipsoid.h",
+            "vtkParametricSuperToroid.h",
+            "vtkParametricTorus.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
         ],
     )
 
+    vtk_common_core_deps = [
+        ":vtkkwiml",
+        ":vtkfmt",
+        ":vtkkissfft",
+        ":vtkloguru",
+        ":vtksys",
+    ]
+    if not os_result.is_macos:
+        vtk_common_core_deps.append(":vtkpugixml")
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonCore",
         hdrs = [
             "vtkABI.h",
-            "vtkAbstractArray.h",
             "vtkAOSDataArrayTemplate.h",
             "vtkAOSDataArrayTemplate.txx",
+            "vtkAbstractArray.h",
+            "vtkAnimationCue.h",
+            "vtkArchiver.h",
+            "vtkArray.h",
+            "vtkArrayCoordinates.h",
+            "vtkArrayDispatch.h",
+            "vtkArrayDispatch.txx",
+            "vtkArrayDispatchArrayList.h",
+            "vtkArrayExtents.h",
+            "vtkArrayExtentsList.h",
+            "vtkArrayInterpolate.h",
+            "vtkArrayInterpolate.txx",
             "vtkArrayIterator.h",
+            "vtkArrayIteratorIncludes.h",
             "vtkArrayIteratorTemplate.h",
             "vtkArrayIteratorTemplate.txx",
-            "vtkAtomic.h",
-            "vtkAtomicTypeConcepts.h",
-            "vtkAtomicTypes.h",
+            "vtkArrayIteratorTemplateImplicit.txx",
+            "vtkArrayPrint.h",
+            "vtkArrayPrint.txx",
+            "vtkArrayRange.h",
+            "vtkArraySort.h",
+            "vtkArrayWeights.h",
+            "vtkAssume.h",
             "vtkAutoInit.h",
+            "vtkBitArray.h",
+            "vtkBitArrayIterator.h",
+            "vtkBoxMuellerRandomSequence.h",
+            "vtkBreakPoint.h",
             "vtkBuffer.h",
+            "vtkBuild.h",
+            "vtkByteSwap.h",
+            "vtkCallbackCommand.h",
+            "vtkCharArray.h",
             "vtkCollection.h",
+            "vtkCollectionIterator.h",
+            "vtkCollectionRange.h",
             "vtkCommand.h",
             "vtkCommonCoreModule.h",
-            "vtkConfigure.h",
+            "vtkCommonInformationKeyManager.h",
+            "vtkCompiler.h",
+            "vtkConditionVariable.h",
+            "vtkCriticalSection.h",
             "vtkDataArray.h",
+            "vtkDataArrayAccessor.h",
+            "vtkDataArrayCollection.h",
+            "vtkDataArrayCollectionIterator.h",
+            "vtkDataArrayIteratorMacro.h",
+            "vtkDataArrayMeta.h",
+            "vtkDataArrayRange.h",
+            "vtkDataArraySelection.h",
+            "vtkDataArrayTupleRange_AOS.h",
+            "vtkDataArrayTupleRange_Generic.h",
+            "vtkDataArrayValueRange_AOS.h",
+            "vtkDataArrayValueRange_Generic.h",
+            "vtkDebug.h",
+            "vtkDebugLeaks.h",
             "vtkDebugLeaksManager.h",
+            "vtkDebugRangeIterators.h",
+            "vtkDenseArray.h",
+            "vtkDenseArray.txx",
+            "vtkDeprecation.h",
+            "vtkDoubleArray.h",
+            "vtkDynamicLoader.h",
+            "vtkEndian.h",
+            "vtkEventData.h",
+            "vtkEventForwarderCommand.h",
+            "vtkFeatures.h",
+            "vtkFileOutputWindow.h",
             "vtkFloatArray.h",
+            "vtkFloatingPointExceptions.h",
+            "vtkGarbageCollector.h",
+            "vtkGarbageCollectorManager.h",
+            "vtkGaussianRandomSequence.h",
             "vtkGenericDataArray.h",
             "vtkGenericDataArray.txx",
             "vtkGenericDataArrayLookupHelper.h",
+            "vtkIOStream.h",
+            "vtkIOStreamFwd.h",
             "vtkIdList.h",
+            "vtkIdListCollection.h",
             "vtkIdTypeArray.h",
             "vtkIndent.h",
             "vtkInformation.h",
+            "vtkInformationDataObjectKey.h",
+            "vtkInformationDoubleKey.h",
+            "vtkInformationDoubleVectorKey.h",
+            "vtkInformationIdTypeKey.h",
+            "vtkInformationInformationKey.h",
+            "vtkInformationInformationVectorKey.h",
+            "vtkInformationIntegerKey.h",
+            "vtkInformationIntegerPointerKey.h",
+            "vtkInformationIntegerVectorKey.h",
+            "vtkInformationInternals.h",
+            "vtkInformationIterator.h",
+            "vtkInformationKey.h",
+            "vtkInformationKeyLookup.h",
+            "vtkInformationKeyVectorKey.h",
+            "vtkInformationObjectBaseKey.h",
+            "vtkInformationObjectBaseVectorKey.h",
+            "vtkInformationRequestKey.h",
+            "vtkInformationStringKey.h",
+            "vtkInformationStringVectorKey.h",
+            "vtkInformationUnsignedLongKey.h",
+            "vtkInformationVariantKey.h",
+            "vtkInformationVariantVectorKey.h",
             "vtkInformationVector.h",
             "vtkIntArray.h",
-            "vtkIOStream.h",
+            "vtkLargeInteger.h",
+            "vtkLegacy.h",
+            "vtkLogger.h",
+            "vtkLongArray.h",
+            "vtkLongLongArray.h",
+            "vtkLookupTable.h",
+            "vtkMappedDataArray.h",
+            "vtkMappedDataArray.txx",
             "vtkMath.h",
             "vtkMathConfigure.h",
+            "vtkMathPrivate.hxx",
+            "vtkMathUtilities.h",
+            "vtkMatrixUtilities.h",
+            "vtkMersenneTwister.h",
+            "vtkMeta.h",
+            "vtkMinimalStandardRandomSequence.h",
+            "vtkMultiThreader.h",
+            "vtkMutexLock.h",
             "vtkNew.h",
+            "vtkOStrStreamWrapper.h",
+            "vtkOStreamWrapper.h",
             "vtkObject.h",
             "vtkObjectBase.h",
             "vtkObjectFactory.h",
-            "vtkOStreamWrapper.h",
-            "vtkOStrStreamWrapper.h",
+            "vtkObjectFactoryCollection.h",
+            "vtkOldStyleCallbackCommand.h",
+            "vtkOptions.h",
+            "vtkOutputWindow.h",
+            "vtkOverrideInformation.h",
+            "vtkOverrideInformationCollection.h",
+            "vtkPlatform.h",
             "vtkPoints.h",
+            "vtkPoints2D.h",
+            "vtkPriorityQueue.h",
+            "vtkRandomPool.h",
+            "vtkRandomSequence.h",
+            "vtkRange.h",
+            "vtkRangeIterableTraits.h",
+            "vtkReferenceCount.h",
+            "vtkSMP.h",
+            "vtkSMPThreadLocal.h",
+            "vtkSMPThreadLocalObject.h",
+            "vtkSOADataArrayTemplate.h",
+            "vtkSOADataArrayTemplate.txx",
+            "vtkScalarsToColors.h",
             "vtkSetGet.h",
+            "vtkShortArray.h",
+            "vtkSignedCharArray.h",
+            "vtkSimpleCriticalSection.h",
             "vtkSmartPointer.h",
             "vtkSmartPointerBase.h",
+            "vtkSortDataArray.h",
+            "vtkSparseArray.h",
+            "vtkSparseArray.txx",
             "vtkStdString.h",
+            "vtkStringArray.h",
+            "vtkStringOutputWindow.h",
             "vtkSystemIncludes.h",
+            "vtkTemplateAliasMacro.h",
+            "vtkTestDataArray.h",
+            "vtkThreads.h",
+            "vtkTimePointUtility.h",
             "vtkTimeStamp.h",
             "vtkType.h",
+            "vtkTypeFloat32Array.h",
+            "vtkTypeFloat64Array.h",
+            "vtkTypeInt16Array.h",
+            "vtkTypeInt32Array.h",
+            "vtkTypeInt64Array.h",
+            "vtkTypeInt8Array.h",
+            "vtkTypeList.h",
+            "vtkTypeList.txx",
+            "vtkTypeListMacros.h",
             "vtkTypeTraits.h",
+            "vtkTypeUInt16Array.h",
+            "vtkTypeUInt32Array.h",
+            "vtkTypeUInt64Array.h",
+            "vtkTypeUInt8Array.h",
+            "vtkTypedArray.h",
+            "vtkTypedArray.txx",
+            "vtkTypedDataArray.h",
+            "vtkTypedDataArray.txx",
+            "vtkTypedDataArrayIterator.h",
             "vtkUnicodeString.h",
+            "vtkUnicodeStringArray.h",
             "vtkUnsignedCharArray.h",
+            "vtkUnsignedIntArray.h",
+            "vtkUnsignedLongArray.h",
+            "vtkUnsignedLongLongArray.h",
+            "vtkUnsignedShortArray.h",
+            "vtkVTK_USE_SCALED_SOA_ARRAYS.h",
             "vtkVariant.h",
+            "vtkVariantArray.h",
             "vtkVariantCast.h",
+            "vtkVariantCreate.h",
+            "vtkVariantExtract.h",
             "vtkVariantInlineOperators.h",
             "vtkVersion.h",
+            "vtkVersionFull.h",
             "vtkVersionMacros.h",
+            "vtkVoidArray.h",
             "vtkWeakPointer.h",
             "vtkWeakPointerBase.h",
+            "vtkWeakReference.h",
             "vtkWin32Header.h",
             "vtkWindow.h",
+            "vtkWindows.h",
             "vtkWrappingHints.h",
+            "vtkXMLFileOutputWindow.h",
         ],
-        deps = [
-            ":vtkkwiml",
-            ":vtksys",
-        ],
+        deps = vtk_common_core_deps,
     )
 
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonDataModel",
         hdrs = [
+            "vtkAMRBox.h",
+            "vtkAMRDataInternals.h",
+            "vtkAMRInformation.h",
+            "vtkAMRUtilities.h",
             "vtkAbstractCellLinks.h",
+            "vtkAbstractCellLocator.h",
+            "vtkAbstractElectronicData.h",
+            "vtkAbstractPointLocator.h",
+            "vtkAdjacentVertexIterator.h",
+            "vtkAngularPeriodicDataArray.h",
+            "vtkAngularPeriodicDataArray.txx",
+            "vtkAnimationScene.h",
+            "vtkAnnotation.h",
+            "vtkAnnotationLayers.h",
+            "vtkArrayData.h",
+            "vtkArrayListTemplate.h",
+            "vtkArrayListTemplate.txx",
+            "vtkAtom.h",
+            "vtkAttributesErrorMetric.h",
+            "vtkBSPCuts.h",
+            "vtkBSPIntersections.h",
+            "vtkBezierCurve.h",
+            "vtkBezierHexahedron.h",
+            "vtkBezierInterpolation.h",
+            "vtkBezierQuadrilateral.h",
+            "vtkBezierTetra.h",
+            "vtkBezierTriangle.h",
+            "vtkBezierWedge.h",
+            "vtkBiQuadraticQuad.h",
+            "vtkBiQuadraticQuadraticHexahedron.h",
+            "vtkBiQuadraticQuadraticWedge.h",
+            "vtkBiQuadraticTriangle.h",
+            "vtkBond.h",
+            "vtkBoundingBox.h",
+            "vtkBox.h",
             "vtkCell.h",
+            "vtkCell3D.h",
             "vtkCellArray.h",
+            "vtkCellArrayIterator.h",
             "vtkCellData.h",
+            "vtkCellIterator.h",
             "vtkCellLinks.h",
+            "vtkCellLocator.h",
+            "vtkCellLocatorStrategy.h",
             "vtkCellType.h",
             "vtkCellTypes.h",
+            "vtkClosestNPointsStrategy.h",
+            "vtkClosestPointStrategy.h",
+            "vtkColor.h",
             "vtkCommonDataModelModule.h",
+            "vtkCompositeDataIterator.h",
+            "vtkCompositeDataSet.h",
+            "vtkCompositeDataSet.txx",
+            "vtkCompositeDataSetNodeReference.h",
+            "vtkCompositeDataSetRange.h",
+            "vtkCone.h",
+            "vtkConvexPointSet.h",
+            "vtkCubicLine.h",
+            "vtkCylinder.h",
+            "vtkDataArrayDispatcher.h",
+            "vtkDataAssembly.h",
+            "vtkDataAssemblyUtilities.h",
+            "vtkDataAssemblyVisitor.h",
             "vtkDataObject.h",
+            "vtkDataObjectCollection.h",
+            "vtkDataObjectTree.h",
+            "vtkDataObjectTreeInternals.h",
+            "vtkDataObjectTreeIterator.h",
+            "vtkDataObjectTreeRange.h",
+            "vtkDataObjectTypes.h",
             "vtkDataSet.h",
             "vtkDataSetAttributes.h",
             "vtkDataSetAttributesFieldList.h",
+            "vtkDataSetCellIterator.h",
+            "vtkDataSetCollection.h",
+            "vtkDirectedAcyclicGraph.h",
+            "vtkDirectedGraph.h",
+            "vtkDispatcher.h",
+            "vtkDispatcher_Private.h",
+            "vtkDistributedGraphHelper.h",
+            "vtkDoubleDispatcher.h",
+            "vtkEdgeListIterator.h",
+            "vtkEdgeTable.h",
+            "vtkEmptyCell.h",
+            "vtkExplicitStructuredGrid.h",
+            "vtkExtractStructuredGridHelper.h",
             "vtkFieldData.h",
+            "vtkFindCellStrategy.h",
+            "vtkGenericAdaptorCell.h",
+            "vtkGenericAttribute.h",
+            "vtkGenericAttributeCollection.h",
+            "vtkGenericCell.h",
+            "vtkGenericCellIterator.h",
+            "vtkGenericCellTessellator.h",
+            "vtkGenericDataSet.h",
+            "vtkGenericEdgeTable.h",
+            "vtkGenericInterpolatedVelocityField.h",
+            "vtkGenericPointIterator.h",
+            "vtkGenericSubdivisionErrorMetric.h",
+            "vtkGeometricErrorMetric.h",
+            "vtkGraph.h",
+            "vtkGraphEdge.h",
+            "vtkGraphInternals.h",
+            "vtkHexagonalPrism.h",
+            "vtkHexahedron.h",
+            "vtkHierarchicalBoxDataIterator.h",
+            "vtkHierarchicalBoxDataSet.h",
+            "vtkHigherOrderCurve.h",
+            "vtkHigherOrderHexahedron.h",
+            "vtkHigherOrderInterpolation.h",
+            "vtkHigherOrderQuadrilateral.h",
+            "vtkHigherOrderTetra.h",
+            "vtkHigherOrderTriangle.h",
+            "vtkHigherOrderWedge.h",
+            "vtkHyperTree.h",
+            "vtkHyperTreeCursor.h",
+            "vtkHyperTreeGrid.h",
+            "vtkHyperTreeGridEntry.h",
+            "vtkHyperTreeGridGeometryEntry.h",
+            "vtkHyperTreeGridGeometryLevelEntry.h",
+            "vtkHyperTreeGridLevelEntry.h",
+            "vtkHyperTreeGridNonOrientedCursor.h",
+            "vtkHyperTreeGridNonOrientedGeometryCursor.h",
+            "vtkHyperTreeGridNonOrientedMooreSuperCursor.h",
+            "vtkHyperTreeGridNonOrientedMooreSuperCursorLight.h",
+            "vtkHyperTreeGridNonOrientedSuperCursor.h",
+            "vtkHyperTreeGridNonOrientedSuperCursorLight.h",
+            "vtkHyperTreeGridNonOrientedVonNeumannSuperCursor.h",
+            "vtkHyperTreeGridNonOrientedVonNeumannSuperCursorLight.h",
+            "vtkHyperTreeGridOrientedCursor.h",
+            "vtkHyperTreeGridOrientedGeometryCursor.h",
+            "vtkHyperTreeGridScales.h",
+            "vtkHyperTreeGridTools.h",
             "vtkImageData.h",
+            "vtkImageIterator.h",
+            "vtkImageTransform.h",
+            "vtkImplicitBoolean.h",
+            "vtkImplicitDataSet.h",
+            "vtkImplicitFunction.h",
+            "vtkImplicitFunctionCollection.h",
+            "vtkImplicitHalo.h",
+            "vtkImplicitSelectionLoop.h",
+            "vtkImplicitSum.h",
+            "vtkImplicitVolume.h",
+            "vtkImplicitWindowFunction.h",
+            "vtkInEdgeIterator.h",
+            "vtkIncrementalOctreeNode.h",
+            "vtkIncrementalOctreePointLocator.h",
+            "vtkIncrementalPointLocator.h",
+            "vtkInformationQuadratureSchemeDefinitionVectorKey.h",
+            "vtkIntersectionCounter.h",
+            "vtkIterativeClosestPointTransform.h",
+            "vtkKdNode.h",
+            "vtkKdTree.h",
+            "vtkKdTreePointLocator.h",
+            "vtkLagrangeCurve.h",
+            "vtkLagrangeHexahedron.h",
+            "vtkLagrangeInterpolation.h",
+            "vtkLagrangeQuadrilateral.h",
+            "vtkLagrangeTetra.h",
+            "vtkLagrangeTriangle.h",
+            "vtkLagrangeWedge.h",
+            "vtkLine.h",
+            "vtkLocator.h",
+            "vtkMappedUnstructuredGrid.h",
+            "vtkMappedUnstructuredGrid.txx",
+            "vtkMappedUnstructuredGridCellIterator.h",
+            "vtkMappedUnstructuredGridCellIterator.txx",
+            "vtkMarchingCubesTriangleCases.h",
+            "vtkMarchingSquaresLineCases.h",
+            "vtkMeanValueCoordinatesInterpolator.h",
+            "vtkMergePoints.h",
+            "vtkMolecule.h",
+            "vtkMultiBlockDataSet.h",
+            "vtkMultiPieceDataSet.h",
+            "vtkMutableDirectedGraph.h",
+            "vtkMutableUndirectedGraph.h",
+            "vtkNonLinearCell.h",
+            "vtkNonMergingPointLocator.h",
+            "vtkNonOverlappingAMR.h",
+            "vtkOctreePointLocator.h",
+            "vtkOctreePointLocatorNode.h",
+            "vtkOrderedTriangulator.h",
+            "vtkOutEdgeIterator.h",
+            "vtkOverlappingAMR.h",
+            "vtkPartitionedDataSet.h",
+            "vtkPartitionedDataSetCollection.h",
+            "vtkPath.h",
+            "vtkPentagonalPrism.h",
+            "vtkPeriodicDataArray.h",
+            "vtkPeriodicDataArray.txx",
+            "vtkPerlinNoise.h",
+            "vtkPiecewiseFunction.h",
+            "vtkPixel.h",
+            "vtkPixelExtent.h",
+            "vtkPixelTransfer.h",
+            "vtkPlane.h",
+            "vtkPlaneCollection.h",
+            "vtkPlanes.h",
+            "vtkPlanesIntersection.h",
             "vtkPointData.h",
+            "vtkPointLocator.h",
             "vtkPointSet.h",
+            "vtkPointSetCellIterator.h",
+            "vtkPointsProjectedHull.h",
             "vtkPolyData.h",
+            "vtkPolyDataCollection.h",
+            "vtkPolyDataInternals.h",
+            "vtkPolyLine.h",
+            "vtkPolyPlane.h",
+            "vtkPolyVertex.h",
+            "vtkPolygon.h",
+            "vtkPolyhedron.h",
+            "vtkPyramid.h",
+            "vtkQuad.h",
+            "vtkQuadraticEdge.h",
+            "vtkQuadraticHexahedron.h",
+            "vtkQuadraticLinearQuad.h",
+            "vtkQuadraticLinearWedge.h",
+            "vtkQuadraticPolygon.h",
+            "vtkQuadraticPyramid.h",
+            "vtkQuadraticQuad.h",
+            "vtkQuadraticTetra.h",
+            "vtkQuadraticTriangle.h",
+            "vtkQuadraticWedge.h",
+            "vtkQuadratureSchemeDefinition.h",
+            "vtkQuadric.h",
             "vtkRect.h",
+            "vtkRectilinearGrid.h",
+            "vtkReebGraph.h",
+            "vtkReebGraphSimplificationMetric.h",
+            "vtkSelection.h",
+            "vtkSelectionNode.h",
+            "vtkSimpleCellTessellator.h",
+            "vtkSmoothErrorMetric.h",
+            "vtkSortFieldData.h",
+            "vtkSphere.h",
+            "vtkSpheres.h",
+            "vtkSpline.h",
+            "vtkStaticCellLinks.h",
+            "vtkStaticCellLinksTemplate.h",
+            "vtkStaticCellLinksTemplate.txx",
+            "vtkStaticCellLocator.h",
+            "vtkStaticEdgeLocatorTemplate.h",
+            "vtkStaticEdgeLocatorTemplate.txx",
+            "vtkStaticPointLocator.h",
+            "vtkStaticPointLocator2D.h",
             "vtkStructuredData.h",
+            "vtkStructuredExtent.h",
+            "vtkStructuredGrid.h",
+            "vtkStructuredPoints.h",
+            "vtkStructuredPointsCollection.h",
+            "vtkSuperquadric.h",
+            "vtkTable.h",
+            "vtkTetra.h",
+            "vtkTree.h",
+            "vtkTreeBFSIterator.h",
+            "vtkTreeDFSIterator.h",
+            "vtkTreeIterator.h",
+            "vtkTriQuadraticHexahedron.h",
+            "vtkTriQuadraticPyramid.h",
+            "vtkTriangle.h",
+            "vtkTriangleStrip.h",
+            "vtkUndirectedGraph.h",
+            "vtkUniformGrid.h",
+            "vtkUniformGridAMR.h",
+            "vtkUniformGridAMRDataIterator.h",
+            "vtkUniformHyperTreeGrid.h",
+            "vtkUnstructuredGrid.h",
+            "vtkUnstructuredGridBase.h",
+            "vtkUnstructuredGridCellIterator.h",
             "vtkVector.h",
+            "vtkVectorOperators.h",
+            "vtkVertex.h",
+            "vtkVertexListIterator.h",
+            "vtkVoxel.h",
+            "vtkWedge.h",
+            "vtkXMLDataElement.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -279,6 +1023,8 @@ licenses([
             ":vtkCommonMisc",
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
+            # TODO: on macOS this is not available (unless remove brew)
+            # ":vtkpugixml",
             ":vtksys",
         ],
     )
@@ -288,12 +1034,75 @@ licenses([
         "vtkCommonExecutionModel",
         hdrs = [
             "vtkAlgorithm.h",
+            "vtkAlgorithmOutput.h",
+            "vtkAnnotationLayersAlgorithm.h",
+            "vtkArrayDataAlgorithm.h",
+            "vtkCachedStreamingDemandDrivenPipeline.h",
+            "vtkCastToConcrete.h",
             "vtkCommonExecutionModelModule.h",
+            "vtkCompositeDataPipeline.h",
+            "vtkCompositeDataSetAlgorithm.h",
+            "vtkDataObjectAlgorithm.h",
+            "vtkDataSetAlgorithm.h",
             "vtkDemandDrivenPipeline.h",
+            "vtkDirectedGraphAlgorithm.h",
+            "vtkEnsembleSource.h",
             "vtkExecutive.h",
+            "vtkExplicitStructuredGridAlgorithm.h",
+            "vtkExtentRCBPartitioner.h",
+            "vtkExtentSplitter.h",
+            "vtkExtentTranslator.h",
+            "vtkFilteringInformationKeyManager.h",
+            "vtkGraphAlgorithm.h",
+            "vtkHierarchicalBoxDataSetAlgorithm.h",
+            "vtkHyperTreeGridAlgorithm.h",
             "vtkImageAlgorithm.h",
+            "vtkImageInPlaceFilter.h",
+            "vtkImageProgressIterator.h",
+            "vtkImageToStructuredGrid.h",
+            "vtkImageToStructuredPoints.h",
+            "vtkInformationDataObjectMetaDataKey.h",
+            "vtkInformationExecutivePortKey.h",
+            "vtkInformationExecutivePortVectorKey.h",
+            "vtkInformationIntegerRequestKey.h",
+            "vtkMoleculeAlgorithm.h",
+            "vtkMultiBlockDataSetAlgorithm.h",
+            "vtkMultiTimeStepAlgorithm.h",
+            "vtkNonOverlappingAMRAlgorithm.h",
+            "vtkOverlappingAMRAlgorithm.h",
+            "vtkParallelReader.h",
+            "vtkPartitionedDataSetAlgorithm.h",
+            "vtkPartitionedDataSetCollectionAlgorithm.h",
+            "vtkPassInputTypeAlgorithm.h",
+            "vtkPiecewiseFunctionAlgorithm.h",
+            "vtkPiecewiseFunctionShiftScale.h",
+            "vtkPointSetAlgorithm.h",
             "vtkPolyDataAlgorithm.h",
+            "vtkProgressObserver.h",
+            "vtkReaderAlgorithm.h",
+            "vtkReaderExecutive.h",
+            "vtkRectilinearGridAlgorithm.h",
+            "vtkSMPProgressObserver.h",
+            "vtkScalarTree.h",
+            "vtkSelectionAlgorithm.h",
+            "vtkSimpleImageToImageFilter.h",
+            "vtkSimpleReader.h",
+            "vtkSimpleScalarTree.h",
+            "vtkSpanSpace.h",
+            "vtkSphereTree.h",
             "vtkStreamingDemandDrivenPipeline.h",
+            "vtkStructuredGridAlgorithm.h",
+            "vtkTableAlgorithm.h",
+            "vtkThreadedCompositeDataPipeline.h",
+            "vtkThreadedImageAlgorithm.h",
+            "vtkTreeAlgorithm.h",
+            "vtkTrivialConsumer.h",
+            "vtkTrivialProducer.h",
+            "vtkUndirectedGraphAlgorithm.h",
+            "vtkUniformGridAMRAlgorithm.h",
+            "vtkUniformGridPartitioner.h",
+            "vtkUnstructuredGridAlgorithm.h",
+            "vtkUnstructuredGridBaseAlgorithm.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -307,16 +1116,41 @@ licenses([
         os_result,
         "vtkCommonMath",
         hdrs = [
+            "vtkAmoebaMinimizer.h",
             "vtkCommonMathModule.h",
+            "vtkFFT.h",
+            "vtkFunctionSet.h",
+            "vtkInitialValueProblemSolver.h",
+            "vtkMatrix3x3.h",
             "vtkMatrix4x4.h",
+            "vtkPolynomialSolversUnivariate.h",
+            "vtkQuaternion.h",
+            "vtkQuaternion.txx",
+            "vtkQuaternionInterpolator.h",
+            "vtkRungeKutta2.h",
+            "vtkRungeKutta4.h",
+            "vtkRungeKutta45.h",
             "vtkTuple.h",
         ],
-        deps = [":vtkCommonCore"],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkkissfft",
+        ],
     )
 
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonMisc",
+        hdrs = [
+            "vtkCommonMiscModule.h",
+            "vtkContourValues.h",
+            "vtkErrorCode.h",
+            "vtkExprTkFunctionParser.h",
+            "vtkFunctionParser.h",
+            "vtkHeap.h",
+            "vtkPolygonBuilder.h",
+            "vtkResourceFileLocator.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonMath",
@@ -327,6 +1161,17 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkCommonSystem",
+        hdrs = [
+            "vtkClientSocket.h",
+            "vtkCommonSystemModule.h",
+            "vtkDirectory.h",
+            "vtkExecutableRunner.h",
+            "vtkServerSocket.h",
+            "vtkSocket.h",
+            "vtkSocketCollection.h",
+            "vtkThreadMessager.h",
+            "vtkTimerLog.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtksys",
@@ -339,9 +1184,21 @@ licenses([
         hdrs = [
             "vtkAbstractTransform.h",
             "vtkCommonTransformsModule.h",
+            "vtkCylindricalTransform.h",
+            "vtkGeneralTransform.h",
             "vtkHomogeneousTransform.h",
+            "vtkIdentityTransform.h",
+            "vtkLandmarkTransform.h",
             "vtkLinearTransform.h",
+            "vtkMatrixToHomogeneousTransform.h",
+            "vtkMatrixToLinearTransform.h",
+            "vtkPerspectiveTransform.h",
+            "vtkSphericalTransform.h",
+            "vtkThinPlateSplineTransform.h",
             "vtkTransform.h",
+            "vtkTransform2D.h",
+            "vtkTransformCollection.h",
+            "vtkWarpTransform.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -352,6 +1209,17 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkDICOMParser",
+        hdrs = [
+            "DICOMAppHelper.h",
+            "DICOMCMakeConfig.h",
+            "DICOMCallback.h",
+            "DICOMConfig.h",
+            "DICOMFile.h",
+            "DICOMParser.h",
+            "DICOMParserMap.h",
+            "DICOMTypes.h",
+            "vtkDICOMParserModule.h",
+        ],
         deps = [":vtksys"],
     )
 
@@ -359,8 +1227,118 @@ licenses([
         os_result,
         "vtkFiltersCore",
         hdrs = [
+            "vtk3DLinearGridCrinkleExtractor.h",
+            "vtk3DLinearGridPlaneCutter.h",
+            "vtkAppendArcLength.h",
+            "vtkAppendCompositeDataLeaves.h",
+            "vtkAppendDataSets.h",
+            "vtkAppendFilter.h",
+            "vtkAppendPolyData.h",
+            "vtkAppendSelection.h",
+            "vtkArrayCalculator.h",
+            "vtkAssignAttribute.h",
+            "vtkAttributeDataToFieldDataFilter.h",
+            "vtkBinCellDataFilter.h",
+            "vtkBinnedDecimation.h",
+            "vtkCellCenters.h",
+            "vtkCellDataToPointData.h",
+            "vtkCenterOfMass.h",
             "vtkCleanPolyData.h",
+            "vtkClipPolyData.h",
+            "vtkCompositeCutter.h",
+            "vtkCompositeDataProbeFilter.h",
+            "vtkConnectivityFilter.h",
+            "vtkContour3DLinearGrid.h",
+            "vtkContourFilter.h",
+            "vtkContourGrid.h",
+            "vtkContourHelper.h",
+            "vtkConvertToMultiBlockDataSet.h",
+            "vtkConvertToPartitionedDataSetCollection.h",
+            "vtkCutter.h",
+            "vtkDataObjectGenerator.h",
+            "vtkDataObjectToDataSetFilter.h",
+            "vtkDataSetEdgeSubdivisionCriterion.h",
+            "vtkDataSetToDataObjectFilter.h",
+            "vtkDecimatePolylineFilter.h",
+            "vtkDecimatePro.h",
+            "vtkDelaunay2D.h",
+            "vtkDelaunay3D.h",
+            "vtkEdgeSubdivisionCriterion.h",
+            "vtkElevationFilter.h",
+            "vtkExecutionTimer.h",
+            "vtkExplicitStructuredGridCrop.h",
+            "vtkExplicitStructuredGridToUnstructuredGrid.h",
+            "vtkFeatureEdges.h",
+            "vtkFieldDataToAttributeDataFilter.h",
             "vtkFiltersCoreModule.h",
+            "vtkFlyingEdges2D.h",
+            "vtkFlyingEdges3D.h",
+            "vtkFlyingEdgesPlaneCutter.h",
+            "vtkGlyph2D.h",
+            "vtkGlyph3D.h",
+            "vtkGridSynchronizedTemplates3D.h",
+            "vtkHedgeHog.h",
+            "vtkHull.h",
+            "vtkIdFilter.h",
+            "vtkImageAppend.h",
+            "vtkImageDataToExplicitStructuredGrid.h",
+            "vtkImplicitPolyDataDistance.h",
+            "vtkImplicitProjectOnPlaneDistance.h",
+            "vtkMarchingCubes.h",
+            "vtkMarchingSquares.h",
+            "vtkMaskFields.h",
+            "vtkMaskPoints.h",
+            "vtkMaskPolyData.h",
+            "vtkMassProperties.h",
+            "vtkMergeDataObjectFilter.h",
+            "vtkMergeFields.h",
+            "vtkMergeFilter.h",
+            "vtkMoleculeAppend.h",
+            "vtkMultiObjectMassProperties.h",
+            "vtkPassThrough.h",
+            "vtkPlaneCutter.h",
+            "vtkPointDataToCellData.h",
+            "vtkPolyDataConnectivityFilter.h",
+            "vtkPolyDataEdgeConnectivityFilter.h",
+            "vtkPolyDataNormals.h",
+            "vtkPolyDataPlaneClipper.h",
+            "vtkPolyDataTangents.h",
+            "vtkProbeFilter.h",
+            "vtkQuadricClustering.h",
+            "vtkQuadricDecimation.h",
+            "vtkRearrangeFields.h",
+            "vtkRectilinearSynchronizedTemplates.h",
+            "vtkRemoveDuplicatePolys.h",
+            "vtkRemoveUnusedPoints.h",
+            "vtkResampleToImage.h",
+            "vtkResampleWithDataSet.h",
+            "vtkReverseSense.h",
+            "vtkSimpleElevationFilter.h",
+            "vtkSmoothPolyDataFilter.h",
+            "vtkSphereTreeFilter.h",
+            "vtkStaticCleanPolyData.h",
+            "vtkStreamerBase.h",
+            "vtkStreamingTessellator.h",
+            "vtkStripper.h",
+            "vtkStructuredGridAppend.h",
+            "vtkStructuredGridOutlineFilter.h",
+            "vtkSynchronizedTemplates2D.h",
+            "vtkSynchronizedTemplates3D.h",
+            "vtkSynchronizedTemplatesCutter3D.h",
+            "vtkTensorGlyph.h",
+            "vtkThreshold.h",
+            "vtkThresholdPoints.h",
+            "vtkTransposeTable.h",
+            "vtkTriangleFilter.h",
+            "vtkTriangleMeshPointNormals.h",
+            "vtkTubeBender.h",
+            "vtkTubeFilter.h",
+            "vtkUnstructuredGridQuadricDecimation.h",
+            "vtkUnstructuredGridToExplicitStructuredGrid.h",
+            "vtkVectorDot.h",
+            "vtkVectorNorm.h",
+            "vtkVoronoi2D.h",
+            "vtkWindowedSincPolyDataFilter.h",
         ],
         visibility = ["//visibility:private"],
         deps = [
@@ -377,6 +1355,34 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkFiltersGeometry",
+        hdrs = [
+            "vtkAbstractGridConnectivity.h",
+            "vtkCompositeDataGeometryFilter.h",
+            "vtkDataSetGhostGenerator.h",
+            "vtkDataSetRegionSurfaceFilter.h",
+            "vtkDataSetSurfaceFilter.h",
+            "vtkExplicitStructuredGridSurfaceFilter.h",
+            "vtkFiltersGeometryModule.h",
+            "vtkGeometryFilter.h",
+            "vtkHierarchicalDataSetGeometryFilter.h",
+            "vtkImageDataGeometryFilter.h",
+            "vtkImageDataToUniformGrid.h",
+            "vtkLinearToQuadraticCellsFilter.h",
+            "vtkMarkBoundaryFilter.h",
+            "vtkProjectSphereFilter.h",
+            "vtkRectilinearGridGeometryFilter.h",
+            "vtkRectilinearGridPartitioner.h",
+            "vtkStructuredAMRGridConnectivity.h",
+            "vtkStructuredAMRNeighbor.h",
+            "vtkStructuredGridConnectivity.h",
+            "vtkStructuredGridGeometryFilter.h",
+            "vtkStructuredGridGhostDataGenerator.h",
+            "vtkStructuredGridPartitioner.h",
+            "vtkStructuredNeighbor.h",
+            "vtkStructuredPointsGeometryFilter.h",
+            "vtkUniformGridGhostDataGenerator.h",
+            "vtkUnstructuredGridGeometryFilter.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -389,8 +1395,135 @@ licenses([
         os_result,
         "vtkFiltersGeneral",
         hdrs = [
+            "vtkAnimateModes.h",
+            "vtkAnnotationLink.h",
+            "vtkAppendLocationAttributes.h",
+            "vtkAppendPoints.h",
+            "vtkApproximatingSubdivisionFilter.h",
+            "vtkAreaContourSpectrumFilter.h",
+            "vtkAxes.h",
+            "vtkBlankStructuredGrid.h",
+            "vtkBlankStructuredGridWithImage.h",
+            "vtkBlockIdScalars.h",
+            "vtkBooleanOperationPolyDataFilter.h",
+            "vtkBoxClipDataSet.h",
+            "vtkBrownianPoints.h",
+            "vtkCellDerivatives.h",
+            "vtkCellTreeLocator.h",
+            "vtkCellValidator.h",
+            "vtkClipClosedSurface.h",
+            "vtkClipConvexPolyData.h",
+            "vtkClipDataSet.h",
+            "vtkClipVolume.h",
+            "vtkCoincidentPoints.h",
+            "vtkContourTriangulator.h",
+            "vtkCountFaces.h",
+            "vtkCountVertices.h",
+            "vtkCursor2D.h",
+            "vtkCursor3D.h",
+            "vtkCurvatures.h",
+            "vtkDataSetGradient.h",
+            "vtkDataSetGradientPrecompute.h",
+            "vtkDataSetTriangleFilter.h",
+            "vtkDateToNumeric.h",
+            "vtkDeflectNormals.h",
+            "vtkDeformPointSet.h",
+            "vtkDensifyPolyData.h",
+            "vtkDicer.h",
+            "vtkDiscreteFlyingEdges2D.h",
+            "vtkDiscreteFlyingEdges3D.h",
+            "vtkDiscreteFlyingEdgesClipper2D.h",
+            "vtkDiscreteMarchingCubes.h",
+            "vtkDistancePolyDataFilter.h",
+            "vtkEdgePoints.h",
+            "vtkEqualizerFilter.h",
+            "vtkExtractArray.h",
+            "vtkExtractGhostCells.h",
+            "vtkExtractSelectedFrustum.h",
+            "vtkExtractSelectionBase.h",
             "vtkFiltersGeneralModule.h",
+            "vtkGradientFilter.h",
+            "vtkGraphLayoutFilter.h",
+            "vtkGraphToPoints.h",
+            "vtkGraphWeightEuclideanDistanceFilter.h",
+            "vtkGraphWeightFilter.h",
+            "vtkGroupDataSetsFilter.h",
+            "vtkGroupTimeStepsFilter.h",
+            "vtkHierarchicalDataLevelFilter.h",
+            "vtkHyperStreamline.h",
+            "vtkIconGlyphFilter.h",
+            "vtkImageDataToPointSet.h",
+            "vtkImageMarchingCubes.h",
+            "vtkInterpolateDataSetAttributes.h",
+            "vtkInterpolatingSubdivisionFilter.h",
+            "vtkIntersectionPolyDataFilter.h",
+            "vtkLevelIdScalars.h",
+            "vtkLinkEdgels.h",
+            "vtkLoopBooleanPolyDataFilter.h",
+            "vtkMarchingContourFilter.h",
+            "vtkMatricizeArray.h",
+            "vtkMergeArrays.h",
+            "vtkMergeCells.h",
+            "vtkMergeTimeFilter.h",
+            "vtkMergeVectorComponents.h",
+            "vtkMultiBlockDataGroupFilter.h",
+            "vtkMultiBlockFromTimeSeriesFilter.h",
+            "vtkMultiBlockMergeFilter.h",
+            "vtkMultiThreshold.h",
+            "vtkNormalizeMatrixVectors.h",
+            "vtkOBBDicer.h",
+            "vtkOBBTree.h",
+            "vtkOverlappingAMRLevelIdScalars.h",
+            "vtkPassArrays.h",
+            "vtkPassSelectedArrays.h",
+            "vtkPointConnectivityFilter.h",
+            "vtkPolyDataStreamer.h",
+            "vtkPolyDataToReebGraphFilter.h",
+            "vtkProbePolyhedron.h",
+            "vtkQuadraturePointInterpolator.h",
+            "vtkQuadraturePointsGenerator.h",
+            "vtkQuadratureSchemeDictionaryGenerator.h",
+            "vtkQuantizePolyDataPoints.h",
+            "vtkRandomAttributeGenerator.h",
+            "vtkRectilinearGridClip.h",
+            "vtkRectilinearGridToPointSet.h",
+            "vtkRectilinearGridToTetrahedra.h",
+            "vtkRecursiveDividingCubes.h",
+            "vtkReflectionFilter.h",
+            "vtkRemovePolyData.h",
+            "vtkRotationFilter.h",
+            "vtkSampleImplicitFunctionFilter.h",
+            "vtkShrinkFilter.h",
+            "vtkShrinkPolyData.h",
+            "vtkSpatialRepresentationFilter.h",
+            "vtkSphericalHarmonics.h",
+            "vtkSplineFilter.h",
+            "vtkSplitByCellScalarFilter.h",
+            "vtkSplitColumnComponents.h",
+            "vtkSplitField.h",
+            "vtkStructuredGridClip.h",
+            "vtkSubPixelPositionEdgels.h",
+            "vtkSubdivisionFilter.h",
+            "vtkSynchronizeTimeFilter.h",
+            "vtkTableBasedClipDataSet.h",
+            "vtkTableFFT.h",
+            "vtkTableToPolyData.h",
+            "vtkTableToStructuredGrid.h",
+            "vtkTemporalPathLineFilter.h",
+            "vtkTemporalStatistics.h",
+            "vtkTessellatorFilter.h",
+            "vtkTimeSourceExample.h",
+            "vtkTransformFilter.h",
             "vtkTransformPolyDataFilter.h",
+            "vtkUncertaintyTubeFilter.h",
+            "vtkVertexGlyphFilter.h",
+            "vtkVolumeContourSpectrumFilter.h",
+            "vtkVoxelContoursToSurfaceFilter.h",
+            "vtkWarpLens.h",
+            "vtkWarpScalar.h",
+            "vtkWarpTo.h",
+            "vtkWarpVector.h",
+            "vtkYoungsMaterialInterface.h",
         ],
         deps = [
             ":vtkCommonComputationalGeometry",
@@ -402,6 +1535,55 @@ licenses([
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
             ":vtkFiltersCore",
+            ":vtkfmt",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkFiltersHybrid",
+        hdrs = [
+            "vtkAdaptiveDataSetSurfaceFilter.h",
+            "vtkBSplineTransform.h",
+            "vtkDSPFilterDefinition.h",
+            "vtkDSPFilterGroup.h",
+            "vtkDepthSortPolyData.h",
+            "vtkEarthSource.h",
+            "vtkFacetReader.h",
+            "vtkFiltersHybridModule.h",
+            "vtkForceTime.h",
+            "vtkGreedyTerrainDecimation.h",
+            "vtkGridTransform.h",
+            "vtkImageToPolyDataFilter.h",
+            "vtkImplicitModeller.h",
+            "vtkPCAAnalysisFilter.h",
+            "vtkPolyDataSilhouette.h",
+            "vtkProcrustesAlignmentFilter.h",
+            "vtkProjectedTerrainPath.h",
+            "vtkRenderLargeImage.h",
+            "vtkTemporalArrayOperatorFilter.h",
+            "vtkTemporalDataSetCache.h",
+            "vtkTemporalFractal.h",
+            "vtkTemporalInterpolator.h",
+            "vtkTemporalShiftScale.h",
+            "vtkTemporalSnapToTimeStep.h",
+            "vtkTransformToGrid.h",
+            "vtkWeightedTransformFilter.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonMisc",
+            ":vtkCommonTransforms",
+            ":vtkFiltersGeometry",
+            ":vtkFiltersCore",
+            ":vtkFiltersGeneral",
+            ":vtkImagingCore",
+            ":vtkImagingSources",
+            ":vtkRenderingCore",
+            ":vtksys",
         ],
     )
 
@@ -409,11 +1591,49 @@ licenses([
         os_result,
         "vtkFiltersSources",
         hdrs = [
+            "vtkArcSource.h",
+            "vtkArrowSource.h",
+            "vtkButtonSource.h",
+            "vtkCapsuleSource.h",
+            "vtkCellTypeSource.h",
+            "vtkConeSource.h",
+            "vtkCubeSource.h",
             "vtkCylinderSource.h",
+            "vtkDiagonalMatrixSource.h",
+            "vtkDiskSource.h",
+            "vtkEllipseArcSource.h",
+            "vtkEllipticalButtonSource.h",
             "vtkFiltersSourcesModule.h",
+            "vtkFrustumSource.h",
+            "vtkGlyphSource2D.h",
+            "vtkGraphToPolyData.h",
+            "vtkHandleSource.h",
+            "vtkHyperTreeGridSource.h",
+            "vtkLineSource.h",
+            "vtkOutlineCornerFilter.h",
+            "vtkOutlineCornerSource.h",
+            "vtkOutlineSource.h",
+            "vtkParametricFunctionSource.h",
+            "vtkPartitionedDataSetCollectionSource.h",
+            "vtkPartitionedDataSetSource.h",
             "vtkPlaneSource.h",
+            "vtkPlatonicSolidSource.h",
+            "vtkPointHandleSource.h",
+            "vtkPointSource.h",
+            "vtkPolyLineSource.h",
+            "vtkPolyPointSource.h",
+            "vtkProgrammableDataObjectSource.h",
+            "vtkProgrammableSource.h",
+            "vtkRandomHyperTreeGridSource.h",
+            "vtkRectangularButtonSource.h",
+            "vtkRegularPolygonSource.h",
+            "vtkSelectionSource.h",
             "vtkSphereSource.h",
+            "vtkSuperquadricSource.h",
+            "vtkTessellatedBoxSource.h",
+            "vtkTextSource.h",
             "vtkTexturedSphereSource.h",
+            "vtkUniformHyperTreeGridSource.h",
         ],
         deps = [
             ":vtkCommonComputationalGeometry",
@@ -430,9 +1650,34 @@ licenses([
         os_result,
         "vtkIOCore",
         hdrs = [
+            "vtkASCIITextCodec.h",
+            "vtkAbstractParticleWriter.h",
             "vtkAbstractPolyDataReader.h",
+            "vtkArrayDataReader.h",
+            "vtkArrayDataWriter.h",
+            "vtkArrayReader.h",
+            "vtkArrayWriter.h",
+            "vtkBase64InputStream.h",
+            "vtkBase64OutputStream.h",
+            "vtkBase64Utilities.h",
+            "vtkDataCompressor.h",
+            "vtkDelimitedTextWriter.h",
+            "vtkGlobFileNames.h",
             "vtkIOCoreModule.h",
+            "vtkInputStream.h",
+            "vtkJavaScriptDataWriter.h",
+            "vtkLZ4DataCompressor.h",
+            "vtkLZMADataCompressor.h",
+            "vtkNumberToString.h",
+            "vtkOutputStream.h",
+            "vtkSortFileNames.h",
+            "vtkTextCodec.h",
+            "vtkTextCodecFactory.h",
+            "vtkUTF16TextCodec.h",
+            "vtkUTF8TextCodec.h",
+            "vtkUpdateCellsV8toV9.h",
             "vtkWriter.h",
+            "vtkZLibDataCompressor.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -447,10 +1692,15 @@ licenses([
         ],
     )
 
-    # See: VTK/IO/XMLParser/{*.h,module.cmake}
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOXMLParser",
+        hdrs = [
+            "vtkIOXMLParserModule.h",
+            "vtkXMLDataParser.h",
+            "vtkXMLParser.h",
+            "vtkXMLUtilities.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -460,16 +1710,63 @@ licenses([
         ],
     )
 
-    # See: VTK/IO/XML/{*.h,module.cmake}
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOXML",
         hdrs = [
             "vtkIOXMLModule.h",
+            "vtkRTXMLPolyDataReader.h",
+            "vtkXMLCompositeDataReader.h",
+            "vtkXMLCompositeDataWriter.h",
+            "vtkXMLDataObjectWriter.h",
             "vtkXMLDataReader.h",
+            "vtkXMLDataSetWriter.h",
+            "vtkXMLFileReadTester.h",
+            "vtkXMLGenericDataObjectReader.h",
+            "vtkXMLHierarchicalBoxDataFileConverter.h",
+            "vtkXMLHierarchicalBoxDataReader.h",
+            "vtkXMLHierarchicalBoxDataWriter.h",
+            "vtkXMLHierarchicalDataReader.h",
+            "vtkXMLHyperTreeGridReader.h",
+            "vtkXMLHyperTreeGridWriter.h",
+            "vtkXMLImageDataReader.h",
+            "vtkXMLImageDataWriter.h",
+            "vtkXMLMultiBlockDataReader.h",
+            "vtkXMLMultiBlockDataWriter.h",
+            "vtkXMLMultiGroupDataReader.h",
+            "vtkXMLPDataObjectReader.h",
+            "vtkXMLPDataReader.h",
+            "vtkXMLPHyperTreeGridReader.h",
+            "vtkXMLPImageDataReader.h",
+            "vtkXMLPPolyDataReader.h",
+            "vtkXMLPRectilinearGridReader.h",
+            "vtkXMLPStructuredDataReader.h",
+            "vtkXMLPStructuredGridReader.h",
+            "vtkXMLPTableReader.h",
+            "vtkXMLPUnstructuredDataReader.h",
+            "vtkXMLPUnstructuredGridReader.h",
+            "vtkXMLPartitionedDataSetCollectionReader.h",
+            "vtkXMLPartitionedDataSetReader.h",
             "vtkXMLPolyDataReader.h",
+            "vtkXMLPolyDataWriter.h",
             "vtkXMLReader.h",
+            "vtkXMLRectilinearGridReader.h",
+            "vtkXMLRectilinearGridWriter.h",
+            "vtkXMLStructuredDataReader.h",
+            "vtkXMLStructuredDataWriter.h",
+            "vtkXMLStructuredGridReader.h",
+            "vtkXMLStructuredGridWriter.h",
+            "vtkXMLTableReader.h",
+            "vtkXMLTableWriter.h",
+            "vtkXMLUniformGridAMRReader.h",
+            "vtkXMLUniformGridAMRWriter.h",
             "vtkXMLUnstructuredDataReader.h",
+            "vtkXMLUnstructuredDataWriter.h",
+            "vtkXMLUnstructuredGridReader.h",
+            "vtkXMLUnstructuredGridWriter.h",
+            "vtkXMLWriter.h",
+            "vtkXMLWriterBase.h",
+            "vtkXMLWriterC.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -486,6 +1783,53 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkImagingCore",
+        hdrs = [
+            "vtkAbstractImageInterpolator.h",
+            "vtkExtractVOI.h",
+            "vtkGenericImageInterpolator.h",
+            "vtkImageAppendComponents.h",
+            "vtkImageBSplineCoefficients.h",
+            "vtkImageBSplineInternals.h",
+            "vtkImageBSplineInterpolator.h",
+            "vtkImageBlend.h",
+            "vtkImageCacheFilter.h",
+            "vtkImageCast.h",
+            "vtkImageChangeInformation.h",
+            "vtkImageClip.h",
+            "vtkImageConstantPad.h",
+            "vtkImageDataStreamer.h",
+            "vtkImageDecomposeFilter.h",
+            "vtkImageDifference.h",
+            "vtkImageExtractComponents.h",
+            "vtkImageFlip.h",
+            "vtkImageInterpolator.h",
+            "vtkImageIterateFilter.h",
+            "vtkImageMagnify.h",
+            "vtkImageMapToColors.h",
+            "vtkImageMask.h",
+            "vtkImageMirrorPad.h",
+            "vtkImagePadFilter.h",
+            "vtkImagePermute.h",
+            "vtkImagePointDataIterator.h",
+            "vtkImagePointIterator.h",
+            "vtkImageProbeFilter.h",
+            "vtkImageResample.h",
+            "vtkImageResize.h",
+            "vtkImageReslice.h",
+            "vtkImageResliceToColors.h",
+            "vtkImageShiftScale.h",
+            "vtkImageShrink3D.h",
+            "vtkImageSincInterpolator.h",
+            "vtkImageStencilAlgorithm.h",
+            "vtkImageStencilData.h",
+            "vtkImageStencilIterator.h",
+            "vtkImageStencilSource.h",
+            "vtkImageThreshold.h",
+            "vtkImageTranslateExtent.h",
+            "vtkImageWrapPad.h",
+            "vtkImagingCoreModule.h",
+            "vtkRTAnalyticSource.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -498,6 +1842,17 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkImagingMath",
+        hdrs = [
+            "vtkImageDivergence.h",
+            "vtkImageDotProduct.h",
+            "vtkImageLogarithmicScale.h",
+            "vtkImageLogic.h",
+            "vtkImageMagnitude.h",
+            "vtkImageMaskBits.h",
+            "vtkImageMathematics.h",
+            "vtkImageWeightedSum.h",
+            "vtkImagingMathModule.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -507,12 +1862,101 @@ licenses([
 
     file_content += _vtk_cc_library(
         os_result,
+        "vtkImagingSources",
+        hdrs = [
+            "vtkImageCanvasSource2D.h",
+            "vtkImageEllipsoidSource.h",
+            "vtkImageGaussianSource.h",
+            "vtkImageGridSource.h",
+            "vtkImageMandelbrotSource.h",
+            "vtkImageNoiseSource.h",
+            "vtkImageSinusoidSource.h",
+            "vtkImagingSourcesModule.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkImagingCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkIOExport",
+        hdrs = [
+            "vtkExporter.h",
+            "vtkGLTFExporter.h",
+            "vtkIOExportModule.h",
+            "vtkIVExporter.h",
+            "vtkJSONDataSetWriter.h",
+            "vtkJSONRenderWindowExporter.h",
+            "vtkJSONSceneExporter.h",
+            "vtkOBJExporter.h",
+            "vtkOOGLExporter.h",
+            "vtkPOVExporter.h",
+            "vtkRIBExporter.h",
+            "vtkRIBLight.h",
+            "vtkRIBProperty.h",
+            "vtkSVGContextDevice2D.h",
+            "vtkSVGExporter.h",
+            "vtkSingleVTPExporter.h",
+            "vtkVRMLExporter.h",
+            "vtkX3D.h",
+            "vtkX3DExporter.h",
+            "vtkX3DExporterFIWriter.h",
+            "vtkX3DExporterWriter.h",
+            "vtkX3DExporterXMLWriter.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonMath",
+            ":vtkCommonTransforms",
+            ":vtkFiltersGeometry",
+            ":vtkIOCore",
+            ":vtkIOGeometry",
+            ":vtkImagingCore",
+            ":vtkIOImage",
+            ":vtkIOXML",
+            ":vtkRenderingContext2D",
+            ":vtkRenderingCore",
+            ":vtkRenderingFreeType",
+            ":vtkRenderingVtkJS",
+            ":vtklibharu",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
         "vtkIOGeometry",
         hdrs = [
+            "vtkAVSucdReader.h",
+            "vtkBYUReader.h",
+            "vtkBYUWriter.h",
+            "vtkChacoReader.h",
+            "vtkFLUENTReader.h",
+            "vtkFacetWriter.h",
+            "vtkGAMBITReader.h",
+            "vtkGLTFDocumentLoader.h",
+            "vtkGLTFReader.h",
+            "vtkGLTFWriter.h",
+            "vtkHoudiniPolyDataWriter.h",
             "vtkIOGeometryModule.h",
+            "vtkIVWriter.h",
+            "vtkMCubesReader.h",
+            "vtkMCubesWriter.h",
+            "vtkMFIXReader.h",
             "vtkOBJReader.h",
             "vtkOBJWriter.h",
+            "vtkOpenFOAMReader.h",
+            "vtkPTSReader.h",
+            "vtkParticleReader.h",
+            "vtkProStarReader.h",
             "vtkSTLReader.h",
+            "vtkSTLWriter.h",
+            "vtkTecplotReader.h",
+            "vtkWindBladeReader.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -521,9 +1965,13 @@ licenses([
             ":vtkCommonMisc",
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
+            ":vtkFiltersGeneral",
+            ":vtkFiltersHybrid",
+            ":vtkImagingCore",
             ":vtkIOCore",
             ":vtkIOImage",
             ":vtkIOLegacy",
+            ":vtkRenderingCore",
             ":vtksys",
             "@zlib",
         ],
@@ -533,15 +1981,46 @@ licenses([
         os_result,
         "vtkIOImage",
         hdrs = [
-            "vtkImageExport.h",
-            "vtkImageReader2.h",
-            "vtkImageWriter.h",
+            "vtkBMPReader.h",
+            "vtkBMPWriter.h",
+            "vtkDEMReader.h",
+            "vtkDICOMImageReader.h",
+            "vtkGESignaReader.h",
+            "vtkHDRReader.h",
             "vtkIOImageModule.h",
+            "vtkImageExport.h",
+            "vtkImageImport.h",
+            "vtkImageImportExecutive.h",
+            "vtkImageReader.h",
+            "vtkImageReader2.h",
+            "vtkImageReader2Collection.h",
+            "vtkImageReader2Factory.h",
+            "vtkImageWriter.h",
             "vtkJPEGReader.h",
+            "vtkJPEGWriter.h",
+            "vtkJSONImageWriter.h",
+            "vtkMRCReader.h",
+            "vtkMedicalImageProperties.h",
+            "vtkMedicalImageReader2.h",
+            "vtkMetaImageReader.h",
+            "vtkMetaImageWriter.h",
+            "vtkNIFTIImageHeader.h",
+            "vtkNIFTIImageReader.h",
+            "vtkNIFTIImageWriter.h",
+            "vtkNrrdReader.h",
+            "vtkOMETIFFReader.h",
             "vtkPNGReader.h",
             "vtkPNGWriter.h",
+            "vtkPNMReader.h",
+            "vtkPNMWriter.h",
+            "vtkPostScriptWriter.h",
+            "vtkSEPReader.h",
+            "vtkSLCReader.h",
+            "vtkTGAReader.h",
             "vtkTIFFReader.h",
             "vtkTIFFWriter.h",
+            "vtkVolume16Reader.h",
+            "vtkVolumeReader.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -553,6 +2032,8 @@ licenses([
             ":vtkCommonTransforms",
             ":vtkDICOMParser",
             ":vtkmetaio",
+            # TODO: on macOS this is not available (unless remove brew)
+            # ":vtkpugixml",
             "@libtiff",
             "@libjpeg",
             "@libpng",
@@ -565,9 +2046,14 @@ licenses([
         os_result,
         "vtkIOImport",
         hdrs = [
-            "vtkImporter.h",
+            "vtk3DS.h",
+            "vtk3DSImporter.h",
+            "vtkGLTFImporter.h",
             "vtkIOImportModule.h",
+            "vtkImporter.h",
             "vtkOBJImporter.h",
+            "vtkOBJImporterInternals.h",
+            "vtkVRMLImporter.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -586,6 +2072,38 @@ licenses([
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOLegacy",
+        hdrs = [
+            "vtkCompositeDataReader.h",
+            "vtkCompositeDataWriter.h",
+            "vtkDataObjectReader.h",
+            "vtkDataObjectWriter.h",
+            "vtkDataReader.h",
+            "vtkDataSetReader.h",
+            "vtkDataSetWriter.h",
+            "vtkDataWriter.h",
+            "vtkGenericDataObjectReader.h",
+            "vtkGenericDataObjectWriter.h",
+            "vtkGraphReader.h",
+            "vtkGraphWriter.h",
+            "vtkIOLegacyModule.h",
+            "vtkPixelExtentIO.h",
+            "vtkPolyDataReader.h",
+            "vtkPolyDataWriter.h",
+            "vtkRectilinearGridReader.h",
+            "vtkRectilinearGridWriter.h",
+            "vtkSimplePointsReader.h",
+            "vtkSimplePointsWriter.h",
+            "vtkStructuredGridReader.h",
+            "vtkStructuredGridWriter.h",
+            "vtkStructuredPointsReader.h",
+            "vtkStructuredPointsWriter.h",
+            "vtkTableReader.h",
+            "vtkTableWriter.h",
+            "vtkTreeReader.h",
+            "vtkTreeWriter.h",
+            "vtkUnstructuredGridReader.h",
+            "vtkUnstructuredGridWriter.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -600,28 +2118,149 @@ licenses([
         os_result,
         "vtkRenderingCore",
         hdrs = [
+            "vtkAbstractHyperTreeGridMapper.h",
+            "vtkAbstractInteractionDevice.h",
             "vtkAbstractMapper.h",
             "vtkAbstractMapper3D.h",
+            "vtkAbstractPicker.h",
+            "vtkAbstractPropPicker.h",
+            "vtkAbstractRenderDevice.h",
+            "vtkAbstractVolumeMapper.h",
             "vtkActor.h",
+            "vtkActor2D.h",
+            "vtkActor2DCollection.h",
             "vtkActorCollection.h",
+            "vtkAreaPicker.h",
+            "vtkAssembly.h",
+            "vtkAssemblyNode.h",
+            "vtkAssemblyPath.h",
+            "vtkAssemblyPaths.h",
+            "vtkAvatar.h",
+            "vtkBackgroundColorMonitor.h",
+            "vtkBillboardTextActor3D.h",
+            "vtkCIEDE2000.h",
             "vtkCamera.h",
+            "vtkCameraActor.h",
+            "vtkCameraInterpolator.h",
+            "vtkCellCenterDepthSort.h",
+            "vtkCellPicker.h",
+            "vtkColorTransferFunction.h",
+            "vtkCompositeDataDisplayAttributes.h",
+            "vtkCompositeDataDisplayAttributesLegacy.h",
+            "vtkCompositePolyDataMapper.h",
+            "vtkCoordinate.h",
+            "vtkCuller.h",
+            "vtkCullerCollection.h",
+            "vtkDataSetMapper.h",
+            "vtkDiscretizableColorTransferFunction.h",
+            "vtkDistanceToCamera.h",
+            "vtkFXAAOptions.h",
+            "vtkFlagpoleLabel.h",
+            "vtkFollower.h",
+            "vtkFrameBufferObjectBase.h",
+            "vtkFrustumCoverageCuller.h",
+            "vtkGPUInfo.h",
+            "vtkGPUInfoList.h",
+            "vtkGPUInfoListArray.h",
+            "vtkGenericVertexAttributeMapping.h",
+            "vtkGlyph3DMapper.h",
+            "vtkGraphMapper.h",
+            "vtkGraphToGlyphs.h",
+            "vtkGraphicsFactory.h",
+            "vtkHardwareSelector.h",
+            "vtkHardwareWindow.h",
+            "vtkHierarchicalPolyDataMapper.h",
+            "vtkImageActor.h",
+            "vtkImageMapper.h",
+            "vtkImageMapper3D.h",
+            "vtkImageProperty.h",
+            "vtkImageSlice.h",
+            "vtkImageSliceMapper.h",
+            "vtkInteractorEventRecorder.h",
+            "vtkInteractorObserver.h",
+            "vtkInteractorStyle.h",
+            "vtkInteractorStyle3D.h",
+            "vtkInteractorStyleSwitchBase.h",
+            "vtkLODProp3D.h",
+            "vtkLabeledContourMapper.h",
             "vtkLight.h",
+            "vtkLightActor.h",
+            "vtkLightCollection.h",
+            "vtkLightKit.h",
+            "vtkLogLookupTable.h",
+            "vtkLookupTableWithEnabling.h",
+            "vtkMapArrayValues.h",
             "vtkMapper.h",
+            "vtkMapper2D.h",
+            "vtkMapperCollection.h",
+            "vtkNoise200x200.h",
+            "vtkObserverMediator.h",
+            "vtkPicker.h",
+            "vtkPickingManager.h",
+            "vtkPointGaussianMapper.h",
+            "vtkPointPicker.h",
             "vtkPolyDataMapper.h",
+            "vtkPolyDataMapper2D.h",
             "vtkProp.h",
             "vtkProp3D.h",
+            "vtkProp3DCollection.h",
+            "vtkProp3DFollower.h",
+            "vtkPropAssembly.h",
             "vtkPropCollection.h",
+            "vtkPropPicker.h",
             "vtkProperty.h",
+            "vtkProperty2D.h",
+            "vtkPythagoreanQuadruples.h",
+            "vtkRayCastStructures.h",
+            "vtkRenderPass.h",
+            "vtkRenderState.h",
+            "vtkRenderTimerLog.h",
+            "vtkRenderWidget.h",
+            "vtkRenderWindow.h",
+            "vtkRenderWindowCollection.h",
+            "vtkRenderWindowInteractor.h",
+            "vtkRenderWindowInteractor3D.h",
+            "vtkRenderedAreaPicker.h",
             "vtkRenderer.h",
             "vtkRendererCollection.h",
+            "vtkRendererDelegate.h",
+            "vtkRendererSource.h",
+            "vtkRenderingCoreEnums.h",
             "vtkRenderingCoreModule.h",
-            "vtkRenderPass.h",
-            "vtkRenderWindow.h",
+            "vtkResizingWindowToImageFilter.h",
+            "vtkScenePicker.h",
+            "vtkSelectVisiblePoints.h",
+            "vtkShaderProperty.h",
+            "vtkSkybox.h",
+            "vtkStateStorage.h",
+            "vtkStereoCompositor.h",
+            "vtkStringToImage.h",
+            "vtkTDxConfigure.h",
+            "vtkTDxInteractorStyle.h",
+            "vtkTDxInteractorStyleCamera.h",
+            "vtkTDxInteractorStyleSettings.h",
+            "vtkTDxMotionEventInfo.h",
+            "vtkTextActor.h",
+            "vtkTextActor3D.h",
+            "vtkTextMapper.h",
+            "vtkTextProperty.h",
+            "vtkTextPropertyCollection.h",
+            "vtkTextRenderer.h",
             "vtkTexture.h",
+            "vtkTexturedActor2D.h",
+            "vtkTransformCoordinateSystems.h",
+            "vtkTransformInterpolator.h",
+            "vtkTupleInterpolator.h",
+            "vtkUniforms.h",
+            "vtkViewDependentErrorMetric.h",
             "vtkViewport.h",
+            "vtkVisibilitySort.h",
             "vtkVolume.h",
             "vtkVolumeCollection.h",
+            "vtkVolumeProperty.h",
+            "vtkWindowLevelLookupTable.h",
             "vtkWindowToImageFilter.h",
+            "vtkWorldPointPicker.h",
         ],
         deps = [
             ":vtkCommonColor",
@@ -640,6 +2279,208 @@ licenses([
         ],
     )
 
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkRenderingContext2D",
+        hdrs = [
+            "vtkAbstractContextBufferId.h",
+            "vtkAbstractContextItem.h",
+            "vtkBlockItem.h",
+            "vtkBrush.h",
+            "vtkContext2D.h",
+            "vtkContext3D.h",
+            "vtkContextActor.h",
+            "vtkContextClip.h",
+            "vtkContextDevice2D.h",
+            "vtkContextDevice3D.h",
+            "vtkContextItem.h",
+            "vtkContextKeyEvent.h",
+            "vtkContextMapper2D.h",
+            "vtkContextMouseEvent.h",
+            "vtkContextScene.h",
+            "vtkContextTransform.h",
+            "vtkImageItem.h",
+            "vtkLabeledContourPolyDataItem.h",
+            "vtkMarkerUtilities.h",
+            "vtkPen.h",
+            "vtkPolyDataItem.h",
+            "vtkPropItem.h",
+            "vtkRenderingContext2DModule.h",
+            "vtkTooltipItem.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
+            ":vtkRenderingCore",
+            ":vtkFiltersGeneral",
+            ":vtkRenderingFreeType",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkRenderingFreeType",
+        hdrs = [
+            "vtkFreeTypeStringToImage.h",
+            "vtkFreeTypeTools.h",
+            "vtkMathTextFreeTypeTextRenderer.h",
+            "vtkMathTextUtilities.h",
+            "vtkRenderingFreeTypeModule.h",
+            "vtkScaledTextActor.h",
+            "vtkTextRendererStringToImage.h",
+            "vtkVectorText.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkFiltersGeneral",
+            ":vtkRenderingCore",
+        ],
+    )
+
+    vtk_rendering_ui_hdrs = [
+        "vtkGenericRenderWindowInteractor.h",
+        "vtkRenderingUIModule.h",
+    ]
+    if not os_result.is_macos:
+        vtk_rendering_ui_hdrs.append("vtkXRenderWindowInteractor.h")
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkRenderingUI",
+        hdrs = vtk_rendering_ui_hdrs,
+        deps = [
+            ":vtkRenderingCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        os_result,
+        "vtkRenderingVtkJS",
+        hdrs = [
+            "vtkRenderingVtkJSModule.h",
+            "vtkVtkJSSceneGraphSerializer.h",
+            "vtkVtkJSViewNodeFactory.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkRenderingSceneGraph",
+            ":vtkRenderingCore",
+        ],
+    )
+
+    vtk_rendering_opengl2_hdrs = [
+        "vtkCameraPass.h",
+        "vtkClearRGBPass.h",
+        "vtkClearZPass.h",
+        "vtkCompositeMapperHelper2.h",
+        "vtkCompositePolyDataMapper2.h",
+        "vtkCompositePolyDataMapper2Internal.h",
+        "vtkDataTransferHelper.h",
+        "vtkDefaultPass.h",
+        "vtkDepthImageProcessingPass.h",
+        "vtkDepthOfFieldPass.h",
+        "vtkDepthPeelingPass.h",
+        "vtkDualDepthPeelingPass.h",
+        "vtkDummyGPUInfoList.h",
+        "vtkEDLShading.h",
+        "vtkEquirectangularToCubeMapTexture.h",
+        "vtkFramebufferPass.h",
+        "vtkGaussianBlurPass.h",
+        "vtkGenericOpenGLRenderWindow.h",
+        "vtkHiddenLineRemovalPass.h",
+        "vtkImageProcessingPass.h",
+        "vtkLightingMapPass.h",
+        "vtkLightsPass.h",
+        "vtkOpaquePass.h",
+        "vtkOpenGLActor.h",
+        "vtkOpenGLBillboardTextActor3D.h",
+        "vtkOpenGLBufferObject.h",
+        "vtkOpenGLCamera.h",
+        "vtkOpenGLCellToVTKCellMap.h",
+        "vtkOpenGLError.h",
+        "vtkOpenGLFXAAFilter.h",
+        "vtkOpenGLFXAAPass.h",
+        "vtkOpenGLFluidMapper.h",
+        "vtkOpenGLFramebufferObject.h",
+        "vtkOpenGLGL2PSHelper.h",
+        "vtkOpenGLGlyph3DHelper.h",
+        "vtkOpenGLGlyph3DMapper.h",
+        "vtkOpenGLHardwareSelector.h",
+        "vtkOpenGLHelper.h",
+        "vtkOpenGLImageAlgorithmHelper.h",
+        "vtkOpenGLImageMapper.h",
+        "vtkOpenGLImageSliceMapper.h",
+        "vtkOpenGLIndexBufferObject.h",
+        "vtkOpenGLInstanceCulling.h",
+        "vtkOpenGLLabeledContourMapper.h",
+        "vtkOpenGLLight.h",
+        "vtkOpenGLPointGaussianMapper.h",
+        "vtkOpenGLPolyDataMapper.h",
+        "vtkOpenGLPolyDataMapper2D.h",
+        "vtkOpenGLProperty.h",
+        "vtkOpenGLQuadHelper.h",
+        "vtkOpenGLRenderPass.h",
+        "vtkOpenGLRenderTimer.h",
+        "vtkOpenGLRenderTimerLog.h",
+        "vtkOpenGLRenderUtilities.h",
+        "vtkOpenGLRenderWindow.h",
+        "vtkOpenGLRenderer.h",
+        "vtkOpenGLShaderCache.h",
+        "vtkOpenGLShaderProperty.h",
+        "vtkOpenGLSkybox.h",
+        "vtkOpenGLSphereMapper.h",
+        "vtkOpenGLState.h",
+        "vtkOpenGLStickMapper.h",
+        "vtkOpenGLTextActor.h",
+        "vtkOpenGLTextActor3D.h",
+        "vtkOpenGLTextMapper.h",
+        "vtkOpenGLTexture.h",
+        "vtkOpenGLUniforms.h",
+        "vtkOpenGLVertexArrayObject.h",
+        "vtkOpenGLVertexBufferObject.h",
+        "vtkOpenGLVertexBufferObjectCache.h",
+        "vtkOpenGLVertexBufferObjectGroup.h",
+        "vtkOrderIndependentTranslucentPass.h",
+        "vtkOutlineGlowPass.h",
+        "vtkOverlayPass.h",
+        "vtkPBRIrradianceTexture.h",
+        "vtkPBRLUTTexture.h",
+        "vtkPBRPrefilterTexture.h",
+        "vtkPanoramicProjectionPass.h",
+        "vtkPixelBufferObject.h",
+        "vtkPointFillPass.h",
+        "vtkRenderPassCollection.h",
+        "vtkRenderStepsPass.h",
+        "vtkRenderbuffer.h",
+        "vtkRenderingOpenGL2Module.h",
+        "vtkRenderingOpenGLConfigure.h",
+        "vtkSSAAPass.h",
+        "vtkSSAOPass.h",
+        "vtkSequencePass.h",
+        "vtkShader.h",
+        "vtkShaderProgram.h",
+        "vtkShadowMapBakerPass.h",
+        "vtkShadowMapPass.h",
+        "vtkSimpleMotionBlurPass.h",
+        "vtkSobelGradientMagnitudePass.h",
+        "vtkTextureObject.h",
+        "vtkTextureUnitManager.h",
+        "vtkToneMappingPass.h",
+        "vtkTransformFeedback.h",
+        "vtkTranslucentPass.h",
+        "vtkValuePass.h",
+        "vtkVolumetricPass.h",
+    ]
+    if not os_result.is_macos:
+        vtk_rendering_opengl2_hdrs.append("vtkXOpenGLRenderWindow.h")
+
     if os_result.is_manylinux:
         vtk_glew_library = ":vtkglew"
         vtk_opengl_linkopts = ["-lX11", "-lXt", "-lGLX"]
@@ -651,18 +2492,7 @@ licenses([
         os_result,
         "vtkRenderingOpenGL2",
         visibility = ["//visibility:public"],
-        hdrs = [
-            "vtkOpenGLHelper.h",
-            "vtkOpenGLPolyDataMapper.h",
-            "vtkOpenGLRenderWindow.h",
-            "vtkOpenGLTexture.h",
-            "vtkRenderingOpenGL2Module.h",
-            "vtkRenderingOpenGLConfigure.h",
-            "vtkShader.h",
-            "vtkShaderProgram.h",
-            "vtkStateStorage.h",
-            "vtkTextureObject.h",
-        ],
+        hdrs = vtk_rendering_opengl2_hdrs,
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -680,33 +2510,28 @@ licenses([
 
     file_content += _vtk_cc_library(
         os_result,
-        "vtkkwiml",
+        "vtkRenderingSceneGraph",
         hdrs = [
-            "vtk_kwiml.h",
-            "vtkkwiml/abi.h",
-            "vtkkwiml/int.h",
+            "vtkActorNode.h",
+            "vtkCameraNode.h",
+            "vtkLightNode.h",
+            "vtkMapperNode.h",
+            "vtkPolyDataMapperNode.h",
+            "vtkRendererNode.h",
+            "vtkRenderingSceneGraphModule.h",
+            "vtkViewNode.h",
+            "vtkViewNodeFactory.h",
+            "vtkVolumeMapperNode.h",
+            "vtkVolumeNode.h",
+            "vtkWindowNode.h",
         ],
-        visibility = ["//visibility:private"],
-        header_only = True,
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonMath",
+            ":vtkRenderingCore",
+        ],
     )
-
-    file_content += _vtk_cc_library(
-        os_result,
-        "vtkmetaio",
-        deps = ["@zlib"],
-    )
-
-    if os_result.is_manylinux:
-        file_content += _vtk_cc_library(
-            os_result,
-            "vtksys",
-            linkopts = ["-ldl"],
-        )
-
-        file_content += _vtk_cc_library(os_result, "vtkglew")
-
-    else:
-        file_content += _vtk_cc_library(os_result, "vtksys")
 
     # Glob all files for the data dependency of //tools:drake_visualizer.
     file_content += """

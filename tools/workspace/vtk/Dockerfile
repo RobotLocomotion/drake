@@ -5,14 +5,17 @@
 
 ARG UBUNTU_CODENAME=bionic
 FROM ubuntu:${UBUNTU_CODENAME}
+# NOTE: a newer CMake on bionic is needed, gpg and wget get installed to obtain
+# the newer CMake (see: https://apt.kitware.com/). They can be removed when
+# bionic support is dropped.
 RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update --quiet --quiet \
+  && apt-get update --quiet \
   && apt-get install --no-install-recommends --quiet --yes \
     ca-certificates \
-    cmake \
     g++ \
     gcc \
     git \
+    gpg \
     libdouble-conversion-dev \
     libeigen3-dev \
     libexpat1-dev \
@@ -30,6 +33,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     libnetcdf-dev \
     libogg-dev \
     libpng-dev \
+    libqt5opengl5-dev \
     libqt5x11extras5-dev \
     libsqlite3-dev \
     libtheora-dev \
@@ -41,13 +45,21 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3-dev \
     qt5-default \
     qttools5-dev \
+    wget \
     zlib1g-dev \
+  && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
+  | gpg --dearmor - \
+  | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null \
+  && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" \
+  | tee /etc/apt/sources.list.d/kitware.list >/dev/null \
+  && apt-get update \
+  && rm /usr/share/keyrings/kitware-archive-keyring.gpg \
+  && apt-get install --no-install-recommends --quiet --yes kitware-archive-keyring \
+  && apt-get install --no-install-recommends --quiet --yes cmake \
+  && cmake --version \
   && rm -rf /var/lib/apt/lists/*
-COPY *.patch /vtk-patch/
-RUN git clone --branch v8.2.0 --config advice.detachedHead=false --depth 1 --quiet \
-    https://gitlab.kitware.com/vtk/vtk.git /vtk \
-  && git -C /vtk apply /vtk-patch/*.patch \
-  && rm -rf /vtk-patch
+RUN git clone --branch v9.1.0 --config advice.detachedHead=false --depth 1 --quiet \
+    https://gitlab.kitware.com/vtk/vtk.git /vtk
 RUN mkdir -p /vtk-build /opt/vtk \
   && cd /vtk-build \
   && cmake \
@@ -59,47 +71,39 @@ RUN mkdir -p /vtk-build /opt/vtk \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/vtk \
     -DCMAKE_MODULE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
     -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
-    -DPYTHON_EXECUTABLE:PATH=/usr/bin/python3 \
-    -DVTK_ENABLE_VTKPYTHON:BOOL=OFF \
-    -DVTK_Group_Qt:BOOL=ON \
-    -DVTK_LEGACY_REMOVE:BOOL=ON \
-    -DVTK_QT_VERSION:STRING=5 \
-    -DVTK_USE_SYSTEM_DOUBLECONVERSION:BOOL=ON \
-    -DVTK_USE_SYSTEM_EIGEN:BOOL=ON \
-    -DVTK_USE_SYSTEM_EXPAT:BOOL=ON \
-    -DVTK_USE_SYSTEM_FREETYPE:BOOL=ON \
-    -DVTK_USE_SYSTEM_GLEW:BOOL=ON \
-    -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
-    -DVTK_USE_SYSTEM_JPEG:BOOL=ON \
-    -DVTK_USE_SYSTEM_JSONCPP:BOOL=ON \
-    -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
-    -DVTK_USE_SYSTEM_LZ4:BOOL=ON \
-    -DVTK_USE_SYSTEM_LZMA:BOOL=ON \
-    -DVTK_USE_SYSTEM_NETCDF:BOOL=ON \
-    -DVTK_USE_SYSTEM_OGG:BOOL=ON \
-    -DVTK_USE_SYSTEM_PNG:BOOL=ON \
-    -DVTK_USE_SYSTEM_SQLITE:BOOL=ON \
-    -DVTK_USE_SYSTEM_THEORA:BOOL=ON \
-    -DVTK_USE_SYSTEM_TIFF:BOOL=ON \
-    -DVTK_USE_SYSTEM_ZLIB:BOOL=ON \
+    -DPython3_EXECUTABLE:PATH=/usr/bin/python3 \
+    -DVTK_PYTHON_VERSION:STRING=3 \
     -DVTK_WRAP_PYTHON:BOOL=ON \
+    -DVTK_GROUP_ENABLE_Qt:STRING=YES \
+    -DVTK_QT_VERSION:STRING=5 \
+    -DVTK_MODULE_ENABLE_VTK_GUISupportQtQuick:STRING=DONT_WANT \
+    -DVTK_LEGACY_REMOVE:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_doubleconversion:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_eigen:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_expat:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_gl2ps:BOOL=OFF \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_freetype:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_glew:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_hdf5:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_jpeg:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_jsoncpp:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_libxml2:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_lz4:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_lzma:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_netcdf:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_ogg:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_png:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_pugixml:BOOL=OFF \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_sqlite:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_theora:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_tiff:BOOL=ON \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_utf8:BOOL=OFF \
+    -DVTK_MODULE_USE_EXTERNAL_VTK_zlib:BOOL=ON \
     -GNinja \
     -Wno-dev \
     /vtk \
   && ninja install/strip \
   && rm -rf /vtk /vtk-build \
-  && find /opt/vtk -name __pycache__ -type d -exec rm -rf {} + \
-  && sed --in-place \
-    's|VTK_RUNTIME_DIRS "/opt/vtk/bin"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/bin"|g' \
-    /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
-  && sed --in-place \
-    's|VTK_RUNTIME_DIRS "/opt/vtk/lib"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/lib"|g' \
-    /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
-  && sed --in-place \
-    's|/opt/vtk|${_IMPORT_PREFIX}|g' \
-    /opt/vtk/lib/cmake/vtk-*/VTKTargets.cmake \
-  && sed --in-place \
-    's|VTK_PYTHONPATH "/opt/vtk/lib/python3"|VTK_PYTHONPATH "${VTK_INSTALL_PREFIX}/lib/python3"|g' \
-    /opt/vtk/lib/cmake/vtk-*/Modules/vtkPython.cmake
+  && find /opt/vtk -name __pycache__ -type d -exec rm -rf {} +
 RUN cd /opt/vtk \
-  && tar --create --gzip --file vtk-8.2.0-1-python-$(python3 --version | sed --quiet --expression 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed --quiet --expression 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64.tar.gz -- *
+  && tar --create --gzip --file vtk-9.1.0-1-python-$(python3 --version | sed --quiet --expression 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed --quiet --expression 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64.tar.gz -- *
