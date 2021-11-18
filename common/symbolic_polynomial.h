@@ -81,7 +81,7 @@ class Polynomial {
   explicit Polynomial(std::nullptr_t) : Polynomial() {}
 
   /// Constructs a polynomial from a map, Monomial → Expression.
-  explicit Polynomial(MapType init);
+  explicit Polynomial(MapType map);
 
   /// Constructs a polynomial from a monomial @p m. Note that all variables
   /// in `m` are considered as indeterminates.
@@ -233,10 +233,10 @@ class Polynomial {
   /// coefficients.
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p are almost equal (the difference
-  /// in the corresponding coefficients are all less than @p tol), after
+  /// Returns true if this polynomial and @p p are almost equal (the difference
+  /// in the corresponding coefficients are all less than @p tolerance), after
   /// expanding the coefficients.
-  bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
+  bool CoefficientsAlmostEqual(const Polynomial& p, double tolerance) const;
 
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.

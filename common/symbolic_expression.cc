@@ -79,7 +79,8 @@ shared_ptr<ExpressionCell> Expression::make_cell(const double d) {
 Expression::Expression(const Variable& var)
     : Expression{make_shared<ExpressionVar>(var)} {}
 
-Expression::Expression(const double d) : Expression{make_cell(d)} {}
+Expression::Expression(const double constant)
+    : Expression{make_cell(constant)} {}
 
 Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
     : ptr_{std::move(ptr)} {
