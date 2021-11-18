@@ -58,6 +58,7 @@ _SRCS = glob([
     "src/ts/**/*.c",
     "src/vec/**/*.c",
 ], exclude = [
+    # TODO(xuchenhan-tri): Exclude more irrelevant sources.
     "**/f90-custom/**",
     "**/ftn-custom/**",
     "**/hypre/**",
@@ -113,7 +114,6 @@ _SRCS = glob([
     "src/sys/classes/viewer/impls/hdf5/**",
     "src/sys/classes/viewer/impls/mathematica/**",
     "src/sys/classes/viewer/impls/matlab/**",
-    "src/sys/classes/viewer/impls/socket/**",
     "src/sys/classes/viewer/impls/socket/**",
     "src/ts/characteristic/**",
     "src/ts/impls/implicit/radau5/**",
