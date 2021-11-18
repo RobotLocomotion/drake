@@ -896,13 +896,17 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_substitute_with_pair(self):
         f = x > y
         self.assertEqual(f.Substitute(y, y + 5), x > y + 5)
+        self.assertEqual(f.Substitute(var=y, e=y + 5), x > y + 5)
         self.assertEqual(f.Substitute(y, z), x > z)
+        self.assertEqual(f.Substitute(var=y, e=z), x > z)
         self.assertEqual(f.Substitute(y, 3), x > 3)
+        self.assertEqual(f.Substitute(var=y, e=3), x > 3)
 
     def test_substitute_with_dict(self):
         f = x + y > z
-        self.assertEqual(f.Substitute({x: x + 2, y:  y + 3}),
-                         x + y + 5 > z)
+        s = {x: x + 2, y:  y + 3}
+        self.assertEqual(f.Substitute(s), x + y + 5 > z)
+        self.assertEqual(f.Substitute(s=s), x + y + 5 > z)
 
     def test_to_string(self):
         f = x > y
@@ -947,37 +951,6 @@ class TestSymbolicFormula(unittest.TestCase):
         env = {x: float('nan')}
         with self.assertRaises(RuntimeError):
             (x > 1).Evaluate(env)
-
-    def test_substitute(self):
-        f = (x > y + z)
-        self.assertEqual(str(f), "(x > (y + z))")
-
-        # Variable -> Expression substitution (same as C++).
-        var = y
-        e = (a - b)
-        expected = "(x > (z + a - b))"
-        self.assertEqual(str(f.Substitute(var, e)), expected)
-        self.assertEqual(str(f.Substitute(var=var, e=e)), expected)
-
-        # Variable -> Variable convenience override.
-        var1 = y
-        var2 = a
-        expected = "(x > (z + a))"
-        self.assertEqual(str(f.Substitute(var1, var2)), expected)
-        self.assertEqual(str(f.Substitute(var=var1, e=var2)), expected)
-
-        # Variable -> double (constant) convenience override.
-        var = y
-        constant = 3.0
-        expected = "(x > (3 + z))"
-        self.assertEqual(str(f.Substitute(var, constant)), expected)
-        self.assertEqual(str(f.Substitute(var=var, e=constant)), expected)
-
-        # Substitution (similar to C++).
-        s = {y: (a - b)}
-        expected = "(x > (z + a - b))"
-        self.assertEqual(str(f.Substitute(s)), expected)
-        self.assertEqual(str(f.Substitute(s=s)), expected)
 
 
 class TestSymbolicMonomial(unittest.TestCase):
