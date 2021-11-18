@@ -28,7 +28,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   ~Impl() {
     KSPDestroy(&solver_);
     MatDestroy(&A_);
-  };
+  }
 
   void SetZero() { MatZeroEntries(A_); }
 

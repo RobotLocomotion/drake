@@ -21,7 +21,7 @@ using std::vector;
 
 constexpr double kEps = 4.0 * std::numeric_limits<double>::epsilon();
 // clang-format off
- const Matrix3d A00 =
+const Matrix3d A00 =
     (Eigen::Matrix3d() << -1, 2, 3,
                           2, -5, 6,
                           3, 6, -19).finished();

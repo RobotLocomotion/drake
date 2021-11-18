@@ -965,8 +965,8 @@ drake_cc_library(
         "petsc_symmetric_block_sparse_matrix.h",
     ],
     deps = [
-        "//common:essential",
         "//common:default_scalars",
+        "//common:essential",
         "@petsc",
     ],
 )
@@ -979,6 +979,5 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ],
 )
-
 
 add_lint_tests()
