@@ -421,11 +421,11 @@ class TestSymbolicExpression(unittest.TestCase):
         # with NumPy 1.16, it became PY2 too. Figure out why.
         install_numpy_warning_filters(force=True)
 
-    def test_constructor_bindings(self):
-        e_z = sym.Expression(z)
-        e_z = sym.Expression(var=z)
-        e_constant = sym.Expression(2.2)
-        e_constant = sym.Expression(constant=2.2)
+    def test_constructor(self):
+        sym.Expression(z)
+        sym.Expression(var=z)
+        sym.Expression(2.2)
+        sym.Expression(constant=2.2)
 
     def _check_algebra(self, algebra):
         xv = algebra.to_algebra(x)
