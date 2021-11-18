@@ -805,6 +805,7 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_differentiate(self):
         e = x * x
         numpy_compare.assert_equal(e.Differentiate(x), 2 * x)
+        numpy_compare.assert_equal(e.Differentiate(x=x), 2 * x)
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
