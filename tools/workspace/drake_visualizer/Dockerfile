@@ -203,6 +203,24 @@ RUN mkdir -p /director-build /opt/director \
     /opt/director/lib/python3 \
     /opt/director/lib/robotlocomotion-lcmtypes \
   && find /opt/director -name __pycache__ -type d -exec rm -rf {} + \
+  && cp /opt/drake/lib/*vtk*.so.1 /opt/director/lib \
+  && find /opt/director/lib -type f -mindepth 1 -maxdepth 1 -iname "*vtk*.so.1" \
+    -exec patchelf --set-rpath '$ORIGIN' {} \; \
+  && py_ver="$(python3 -c 'import sys; print("{}.{}".format(*sys.version_info[:2]))')" \
+  && cp /opt/drake/lib/python3.*/site-packages/vtk.py \
+    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/ \
+  && sed -i "s/'vtkmodules'/'director.thirdparty.vtkmodules'/g" \
+    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtk.py \
+  && sed -i "s/'vtkmodules.all'/'director.thirdparty.vtkmodules.all'/g" \
+    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtk.py \
+  && cp -r /opt/drake/lib/python3.*/site-packages/vtkmodules \
+    /opt/director/lib/python$py_ver/site-packages/director/thirdparty/ \
+  && find /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtkmodules \
+    -type f -mindepth 1 -maxdepth 1 -name "vtk*.py" \
+    -exec sed -i 's/from \.\(vtk.*\) import \*/from importlib import __import__;_m_i = __import__("director.thirdparty.vtkmodules.\1", fromlist=["*"]);_m_i_x = {k: getattr(_m_i, k) for k in dir(_m_i) if not k.startswith("__")};globals().update(_m_i_x);del globals()["_m_i"];del globals()["_m_i_x"]/g' {} \; \
+  && find /opt/director/lib/python$py_ver/site-packages/director/thirdparty/vtkmodules \
+    -type f -mindepth 1 -maxdepth 1 -name "vtk*Python.so" \
+    -exec patchelf --set-rpath '$ORIGIN/../../../../..' {} \; \
   && strip \
     /opt/director/bin/drake-visualizer \
     /opt/director/lib/*.so \
@@ -211,10 +229,10 @@ RUN mkdir -p /director-build /opt/director \
   && chrpath --replace '$ORIGIN/../lib' /opt/director/bin/drake-visualizer \
   && chrpath --replace '$ORIGIN' /opt/director/lib/libddApp.so \
   && chrpath --replace '$ORIGIN/../../..' \
-    /opt/director/lib/python3.*/site-packages/director/vtkDRCFiltersPython.so \
-  && chrpath --delete \
-    /opt/director/lib/python3.*/site-packages/director/thirdparty/*.so
+    /opt/director/lib/python3.*/site-packages/director/vtkDRCFiltersPython.so
 # Create archive named dv-<version>-python-<python version>-qt-<qt version>
-#   -vtk-<vtk version>-<distribution codename>-<processor architecture>.tar.gz,
+#   -vtk-<vtk version>-<distribution codename>-<processor architecture>
+#   -<build_number>.tar.gz,
+# build_number introduced to distinguish VTK-8/VTK-9 director split.
 RUN cd /opt/director \
-  && tar --create --gzip --file dv-0.1.0-406-g4c3e570a-python-$(python3 --version 2>&1 | sed --quiet --expression 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed --quiet --expression 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-vtk-8.2.0-$(lsb_release --codename --short)-$(uname --processor).tar.gz -- *
+  && tar --create --gzip --file dv-0.1.0-406-g4c3e570a-python-$(python3 --version 2>&1 | sed --quiet --expression 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed --quiet --expression 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-vtk-8.2.0-$(lsb_release --codename --short)-$(uname --processor)-2.tar.gz -- *

@@ -24,9 +24,9 @@ trap 'docker rmi dv-bionic' EXIT
 docker run --detach --name dv-bionic-build --tty dv-bionic
 trap 'docker rm --force dv-bionic-build && docker rmi dv-bionic' EXIT
 docker cp dv-bionic-build:$(docker exec dv-bionic-build \
-  find /opt/director/ -maxdepth 1 -name 'dv-*-bionic-x86_64.tar.gz') .
+  find /opt/director/ -maxdepth 1 -name 'dv-*-bionic-*.tar.gz') .
 
-shasum --algorithm 256 dv-*-bionic-x86_64.tar.gz | tee dv-bionic-x86_64.tar.gz.sha256
+shasum --algorithm 256 dv-*-bionic-*.tar.gz | tee dv-bionic-x86_64.tar.gz.sha256
 
 if ! compgen -G "${BASH_SOURCE%/*}/vtk-*-focal-x86_64.tar.gz" &> /dev/null; then
   echo 'ERROR: vtk tar.gz archive for focal x86_64 was NOT found. Please copy or download it to the same directory as this script.'  >&2
@@ -38,6 +38,6 @@ trap 'docker rmi dv-focal && docker rm --force dv-bionic-build && docker rmi dv-
 docker run --detach --name dv-focal-build --tty dv-focal
 trap 'docker rm --force dv-focal-build && docker rmi dv-focal && docker rm --force dv-bionic-build && docker rmi dv-bionic' EXIT
 docker cp dv-focal-build:$(docker exec dv-focal-build \
-  find /opt/director/ -maxdepth 1 -name 'dv-*-focal-x86_64.tar.gz') .
+  find /opt/director/ -maxdepth 1 -name 'dv-*-focal-*.tar.gz') .
 
-shasum --algorithm 256 dv-*-focal-x86_64.tar.gz | tee dv-focal-x86_64.tar.gz.sha256
+shasum --algorithm 256 dv-*-focal-*.tar.gz | tee dv-focal-x86_64.tar.gz.sha256

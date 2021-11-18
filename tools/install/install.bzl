@@ -212,11 +212,13 @@ def _install_cc_actions(ctx, target):
     dests = {
         "a": ctx.attr.archive_dest,
         "so": ctx.attr.library_dest,
+        "so.1": ctx.attr.library_dest,
         None: ctx.attr.runtime_dest,
     }
     strip_prefixes = {
         "a": ctx.attr.archive_strip_prefix,
         "so": ctx.attr.library_strip_prefix,
+        "so.1": ctx.attr.library_strip_prefix,
         None: ctx.attr.runtime_strip_prefix,
     }
     actions = _install_actions(
