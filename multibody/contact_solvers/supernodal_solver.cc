@@ -17,7 +17,7 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
-// For each i \in [s, e], computes y(i, :) = g(i) * x(i, :),
+// For each i in [s, e], computes y(i, :) = g(i) * x(i, :),
 void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& g, int s, int e,
                                  const MatrixXd& x, MatrixXd* y) {
   int start = 0;
@@ -353,9 +353,9 @@ SparsityData GetEliminationOrdering(
   //
   // They satisfy the running intersection property:
   //
-  //   new_clique.at(order.at(i)) \cap  new_clique.at(order.at(j))
-  //            \supseteq
-  //   new_clique.at(order.at(i)) \cap  new_clique.at(order.at(k))
+  //   new_clique.at(order.at(i)) ∩ new_clique.at(order.at(j))
+  //            ⊇
+  //   new_clique.at(order.at(i)) ∩ new_clique.at(order.at(k))
   //
   // for all i < j < k.
   //

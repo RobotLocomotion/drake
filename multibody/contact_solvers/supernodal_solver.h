@@ -31,7 +31,7 @@ using BlockMatrixTriplet = std::tuple<int, int, Eigen::MatrixXd>;
 //
 // Example use case:
 //
-//  SolverNodalSolver solver( ... );
+//  SuperNodalSolver solver( ... );
 //  solver.SetWeightMatrix( ... );
 //  solver.Factor();
 //
@@ -88,10 +88,10 @@ class SuperNodalSolver {
 
   ~SuperNodalSolver();
 
-  // Sets the block-diagonal weight matrix matrix G.  The block rows of J
-  // and G both partition the set {1, 2, ..., num_rows(J) }.
-  // Similar to the mass_matrix, the partition induced by G must refine the
-  // partition induced by J, otherwise an exception is thrown.
+  // Sets the block-diagonal weight matrix G.  The block rows of J and G both
+  // partition the set {1, 2, ..., num_rows(J)}. Similar to the mass_matrix,
+  // the partition induced by G must refine the partition induced by J,
+  // otherwise an exception is thrown.
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
@@ -118,8 +118,10 @@ class SuperNodalSolver {
 
  private:
   // This class is responsible for filling a dense matrix of the form
-  // sub_matrix(M) +  Jᵀᵢ Gᵢ Jᵢ where Jᵢ is a block row of the Jacobian and
-  // sub_matrix(M) is specified by AssignMassMatrix.
+  // sub_matrix(M) +  Jᵀₚ Gₚ Jₚ where Jₚ is a block row of the Jacobian. Each
+  // row of the Jacobian can have at most two blocks, i.e. Jₚ = [Jₚ,ₜ₁ Jₚ,ₜ₂],
+  // where blocks t₁ and t₂ correspond to block-diagonal entries in M. That is,
+  // sub_matrix(M) = diag(Mₜ₁ Mₜ₂).
   class CliqueAssembler;
 
   void Initialize(const std::vector<std::vector<int>>& cliques,
