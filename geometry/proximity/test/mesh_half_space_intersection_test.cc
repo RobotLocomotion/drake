@@ -114,7 +114,7 @@ static TriangleSurfaceMesh<double> CreateMeshWithCentroids(
     // confirm that the new faces have normals that match the input face.
     std::vector<int> polygon{f.vertex(0), f.vertex(1), f.vertex(2)};
     const Vector3d& nhat_W = R_WF * mesh_F.face_normal(f_index);
-    AddPolygonToMeshData(polygon, nhat_W, &new_faces, &new_vertices_W);
+    AddPolygonToTriangleMeshData(polygon, nhat_W, &new_faces, &new_vertices_W);
 
     // Confirm polygon winding matches between source triangle and triangles
     // in the new fan.
@@ -564,7 +564,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
   expected_vertices_W = quad_W;
   const int b{0}, c{1}, d{2}, e{3};
   const std::vector<int> polygon{b, c, d, e};
-  AddPolygonToMeshData(polygon, nhat_W, &expected_faces, &expected_vertices_W);
+  AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
+                               &expected_vertices_W);
   SCOPED_TRACE("Triangle intersects; forms quad");
   this->VerifyMeshesEquivalent(
       TriangleSurfaceMesh<double>{move(expected_faces),
@@ -626,7 +627,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
   expected_vertices_W = degenerated_quadrilateral_W;
   const int b{0}, c{1}, d{2}, e{3};
   std::vector<int> polygon{b, c, d, e};
-  AddPolygonToMeshData(polygon, nhat_W, &expected_faces, &expected_vertices_W);
+  AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
+                               &expected_vertices_W);
   SCOPED_TRACE("Triangle intersects; single vertex on boundary");
   this->VerifyMeshesEquivalent(
       TriangleSurfaceMesh<double>{move(expected_faces),
@@ -678,7 +680,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
   const Vector3d nhat_W = X_WF_d.rotation() * nhat_F;
   expected_vertices_W = triangle_W;
   std::vector<int> polygon{0, 1, 2};
-  AddPolygonToMeshData(polygon, nhat_W, &expected_faces, &expected_vertices_W);
+  AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
+                               &expected_vertices_W);
   SCOPED_TRACE("Triangle intersects; forms a smaller triangle");
   this->VerifyMeshesEquivalent(
       TriangleSurfaceMesh<double>{move(expected_faces),

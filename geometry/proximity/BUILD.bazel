@@ -142,6 +142,8 @@ drake_cc_library(
     srcs = ["contact_surface_utility.cc"],
     hdrs = ["contact_surface_utility.h"],
     deps = [
+        ":mesh_field",
+        ":polygon_surface_mesh",
         ":triangle_surface_mesh",
         "//common:default_scalars",
     ],
