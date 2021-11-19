@@ -135,7 +135,7 @@ void SliceTetWithPlane(int tet_index,
   const Vector3<T> nhat_W = X_WM.rotation() * plane_M.normal();
   const size_t before = vertices_W->size();
   face_verts.resize(num_intersections);
-  AddPolygonToMeshData(face_verts, nhat_W, faces, vertices_W);
+  AddPolygonToTriangleMeshData(face_verts, nhat_W, faces, vertices_W);
   for (size_t v = before; v < vertices_W->size(); ++v) {
     const Vector3<T> p_MV = X_WM.inverse() * vertices_W->at(v);
     surface_e->emplace_back(field_M.EvaluateCartesian(tet_index, p_MV));
