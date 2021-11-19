@@ -27,6 +27,7 @@ b = sym.Variable("b")
 c = sym.Variable("c")
 e_x = sym.Expression(x)
 e_y = sym.Expression(y)
+boolean = sym.Variable(name="boolean", type=sym.Variable.Type.BOOLEAN)
 
 
 class TestSymbolicVariable(unittest.TestCase):
@@ -889,6 +890,22 @@ class TestSymbolicExpression(unittest.TestCase):
 
 
 class TestSymbolicFormula(unittest.TestCase):
+    def test_constructor(self):
+        sym.Formula(var=boolean)
+
+    def test_factory_functions(self):
+        f = sym.forall(vars=sym.Variables([x]), f=(x > 0))
+        self.assertEqual(f.get_kind(), sym.FormulaKind.Forall)
+
+        f = sym.isnan(e_x)
+        self.assertEqual(f.get_kind(), sym.FormulaKind.Isnan)
+
+        f = sym.positive_semidefinite([e_x])
+        self.assertEqual(f.get_kind(), sym.FormulaKind.PositiveSemidefinite)
+
+    def test_get_kind(self):
+        self.assertEqual((x > y).get_kind(), sym.FormulaKind.Gt)
+
     def test_get_free_variables(self):
         f = x > y
         self.assertEqual(f.GetFreeVariables(), sym.Variables([x, y]))
@@ -1598,7 +1615,7 @@ class TestDecomposeLumpedParameters(unittest.TestCase):
         numpy_compare.assert_equal(w0, [sym.Expression(x), sym.Expression(0)])
 
 
-class TestUnapply(unittest.TestCase):
+class TestUnapplyExpression(unittest.TestCase):
     def setUp(self):
         # For these kinds of expressions, the unapplied args should only ever
         # be of type Expression or float.
@@ -1706,3 +1723,68 @@ class TestUnapply(unittest.TestCase):
             for arg in old_args
         ]
         return ctor(*new_args)
+
+
+class TestUnapplyFormula(unittest.TestCase):
+    def setUp(self):
+        self._relational_formulas = [
+            x == y,
+            x != y,
+            x > y,
+            x >= y,
+            x < y,
+            x <= y,
+        ]
+        self._compound_formulas = [
+            sym.logical_and((x > y), (x > z)),
+            sym.logical_or((x > y), (x > z)),
+            sym.logical_not(x < y),
+        ]
+        self._misc_formulas = [
+            sym.Formula.False_(),
+            sym.Formula.True_(),
+            sym.Formula(boolean),
+            sym.forall(vars=sym.Variables([x]), f=(x > 0)),
+            sym.isnan(e_x),
+            sym.positive_semidefinite([e_x]),
+        ]
+        self._all_formulas = (
+            self._relational_formulas
+            + self._compound_formulas
+            + self._misc_formulas
+        )
+
+    def test_round_trip(self):
+        """Focused unit test to check each kind of Formula at least once."""
+        for f in self._all_formulas:
+            with self.subTest(f=f):
+                self._check_one_round_trip(f)
+
+    def _check_one_round_trip(self, f):
+        ctor, args = f.Unapply()
+        result = ctor(*args)
+        self.assertTrue(f.EqualTo(result), msg=repr(result))
+
+    def test_all_relational(self):
+        """Relational formulas should have Expression args."""
+        for f in self._relational_formulas:
+            with self.subTest(f=f):
+                self._check_one_relational(f)
+
+    def _check_one_relational(self, f):
+        ctor, args = f.Unapply()
+        self.assertEqual(len(args), 2)
+        self.assertIsInstance(args[0], sym.Expression)
+        self.assertIsInstance(args[1], sym.Expression)
+
+    def test_all_compound(self):
+        """Relational formulas should have Formula args."""
+        for f in self._compound_formulas:
+            with self.subTest(f=f):
+                self._check_one_compound(f)
+
+    def _check_one_compound(self, f):
+        ctor, args = f.Unapply()
+        self.assertGreaterEqual(len(args), 1)
+        for arg in args:
+            self.assertIsInstance(arg, sym.Formula)

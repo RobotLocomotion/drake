@@ -332,6 +332,8 @@ class FormulaIsnan : public FormulaCell {
   [[nodiscard]] bool Evaluate(const Environment& env) const override;
   [[nodiscard]] Formula Substitute(const Substitution& s) const override;
   std::ostream& Display(std::ostream& os) const override;
+  /** Returns the operand expression. */
+  [[nodiscard]] const Expression& get_unary_expression() const { return e_; }
 
  private:
   const Expression e_;

@@ -345,6 +345,8 @@ Formula isfinite(const Expression& e);
  * `positive_semidefinite(m.triangularView<Eigen::Lower>())` or
  * `positive_semidefinite(m.triangularView<Eigen::Upper>())` instead of
  * `positive_semidefinite(m)`.
+ *
+ * @pydrake_mkdoc_identifier{1args_m}
  */
 Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 
@@ -367,6 +369,8 @@ Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
  * // psd_u includes [1.0 2.0]
  * //                [2.0 4.0].
  * @endcode
+ *
+ * @exclude_from_pydrake_mkdoc{This overload is not bound.}
  */
 Formula positive_semidefinite(const MatrixX<Expression>& m,
                               Eigen::UpLoType mode);
@@ -383,6 +387,8 @@ Formula positive_semidefinite(const MatrixX<Expression>& m,
  * // psd includes [1.0 3.0]
  * //              [3.0 4.0].
  * @endcode
+ *
+ * @exclude_from_pydrake_mkdoc{This overload is not bound.}
  */
 template <typename Derived>
 typename std::enable_if_t<
@@ -406,6 +412,8 @@ positive_semidefinite(const Eigen::TriangularView<Derived, Eigen::Lower>& l) {
  * // psd includes [1.0 2.0]
  * //              [2.0 4.0].
  * @endcode
+ *
+ * @exclude_from_pydrake_mkdoc{This overload is not bound.}
  */
 template <typename Derived>
 typename std::enable_if_t<
@@ -468,6 +476,12 @@ const Expression& get_lhs_expression(const Formula& f);
  *  \pre{@p f is a relational formula.}
  */
 const Expression& get_rhs_expression(const Formula& f);
+
+/** Returns the expression in a unary expression formula @p f.
+ *  Currently, an isnan() formula is the only kind of unary expression formula.
+ *  \pre{@p f is a unary expression formula.}
+ */
+const Expression& get_unary_expression(const Formula& f);
 
 /** Returns the set of formulas in a n-ary formula @p f.
  *  \pre{@p f is a n-ary formula.}
