@@ -1029,6 +1029,7 @@ TEST_F(SymbolicFormulaTest, IsIsnan) {
                        f_and_, f_or_, not_f_or_, f_forall_, f_psd_static_2x2_,
                        f_psd_dynamic_2x2_, f_psd_static_3x3_},
                       is_isnan));
+  EXPECT_PRED2(ExprEqual, get_unary_expression(isnan(x_)), x_);
 }
 
 TEST_F(SymbolicFormulaTest, IsPositiveSemidefinite) {

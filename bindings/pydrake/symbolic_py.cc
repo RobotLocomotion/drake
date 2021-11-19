@@ -351,7 +351,7 @@ PYBIND11_MODULE(symbolic, m) {
           [m](const symbolic::Expression& e) {
             return internal::Unapply(m, e);
           },
-          internal::kUnapplyDoc)
+          internal::kUnapplyExpressionDoc)
       .def("Expand", &Expression::Expand, doc.Expression.Expand.doc)
       .def(
           "Evaluate",
@@ -524,8 +524,36 @@ PYBIND11_MODULE(symbolic, m) {
           const Expression& e) { return Substitute(M, var, e); },
       py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
 
+  {
+    constexpr auto& cls_doc = doc.FormulaKind;
+    py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
+        .value("False", FormulaKind::False, cls_doc.False.doc)
+        .value("True", FormulaKind::True, cls_doc.True.doc)
+        .value("Var", FormulaKind::Var, cls_doc.Var.doc)
+        .value("Eq", FormulaKind::Eq, cls_doc.Eq.doc)
+        .value("Neq", FormulaKind::Neq, cls_doc.Neq.doc)
+        .value("Gt", FormulaKind::Gt, cls_doc.Gt.doc)
+        .value("Geq", FormulaKind::Geq, cls_doc.Geq.doc)
+        .value("Lt", FormulaKind::Lt, cls_doc.Lt.doc)
+        .value("Leq", FormulaKind::Leq, cls_doc.Leq.doc)
+        .value("And", FormulaKind::And, cls_doc.And.doc)
+        .value("Or", FormulaKind::Or, cls_doc.Or.doc)
+        .value("Not", FormulaKind::Not, cls_doc.Not.doc)
+        .value("Forall", FormulaKind::Forall, cls_doc.Forall.doc)
+        .value("Isnan", FormulaKind::Isnan, cls_doc.Isnan.doc)
+        .value("PositiveSemidefinite", FormulaKind::PositiveSemidefinite,
+            cls_doc.PositiveSemidefinite.doc);
+  }
+
   py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
-  formula_cls
+  formula_cls.def(py::init<>(), doc.Expression.ctor.doc_0args)
+      .def(py::init<const Variable&>(), py::arg("var"),
+          doc.Expression.ctor.doc_1args_var)
+      .def(
+          "Unapply",
+          [m](const symbolic::Formula& f) { return internal::Unapply(m, f); },
+          internal::kUnapplyFormulaDoc)
+      .def("get_kind", &Formula::get_kind, doc.Formula.get_kind.doc)
       .def("GetFreeVariables", &Formula::GetFreeVariables,
           doc.Formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
@@ -599,6 +627,15 @@ PYBIND11_MODULE(symbolic, m) {
       .def("__logical_or",
           [](const Formula& a, const Formula& b) { return a || b; })
       .def("logical_not", [](const Formula& a) { return !a; });
+
+  m.def("isnan", &symbolic::isnan, py::arg("e"), doc.isnan.doc);
+  m.def("forall", &symbolic::forall, py::arg("vars"), py::arg("f"),
+      doc.forall.doc);
+  m.def("positive_semidefinite",
+      overload_cast_explicit<Formula,
+          const Eigen::Ref<const MatrixX<Expression>>&>(
+          &symbolic::positive_semidefinite),
+      py::arg("m"), doc.positive_semidefinite.doc_1args_m);
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)
