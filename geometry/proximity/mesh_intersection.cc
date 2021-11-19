@@ -355,10 +355,11 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
         X_MN.rotation() * surface_N.face_normal(tri_index).cast<T>();
 
     size_t old_count = surface_faces.size();
-    AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
-                         &surface_vertices_M);
+    AddPolygonToTriangleMeshData(contact_polygon, nhat_M, &surface_faces,
+                                 &surface_vertices_M);
     // TODO(SeanCurtis-TRI) Consider rolling this operation into
-    // AddPolygonToMeshData to eliminate the extra pass through triangles.
+    //  AddPolygonToTriangleMeshData to eliminate the extra pass through
+    //  triangles.
     const Vector3<double>& grad_eMi_M =
         volume_field_M.EvaluateGradient(tet_index);
     for (size_t i = old_count; i < surface_faces.size(); ++i) {
