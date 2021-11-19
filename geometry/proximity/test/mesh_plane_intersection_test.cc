@@ -156,29 +156,21 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   */
   ::testing::AssertionResult CallSliceTetWithPlane(
       const Plane<double>& plane_F, const RigidTransformd& X_FM,
-      ContactPolygonRepresentation representation,
       bool do_analysis) {
     VolumeMesh<double> mesh_F = TrivialVolumeMesh(X_FM);
     // Make an arbitrary mesh field with heterogeneous values.
     vector<double> values{0.25, 0.5, 0.75, 1, -1};
     VolumeMeshFieldLinear<double, double> field_F{move(values), &mesh_F};
-    representation_ = representation;
 
     faces_.clear();
     vertices_W_.clear();
     surface_pressure_.clear();
     cut_edges_.clear();
     int tet_index{0};
-    SliceTetWithPlane(tet_index, field_F, plane_F, X_WF_, representation_,
-                      &faces_, &vertices_W_, &surface_pressure_, &cut_edges_);
+    SliceTetWithPlane(tet_index, field_F, plane_F, X_WF_, &faces_, &vertices_W_,
+                      &surface_pressure_, &cut_edges_);
     if (do_analysis) {
-      switch (representation_) {
-        case ContactPolygonRepresentation::kCentroidSubdivision:
-          return SliceIsConsistentWithCentroidSubdivision(tet_index, field_F);
-        case ContactPolygonRepresentation::kSingleTriangle:
-          return SliceIsConsistentWithSingleTriangleRepresentation(
-              tet_index, field_F, plane_F);
-      }
+      return SliceIsConsistent(tet_index, field_F);
     }
     return ::testing::AssertionSuccess();
   }
@@ -199,93 +191,12 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     test_features(faces_, num_faces, "faces");
     // For no faces, there are no vertices. But for n faces, we expect n + 1
     // vertices.
-    size_t num_verts = 0;
-    switch (representation_) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        num_verts = num_faces == 0 ? 0 : num_faces + 1;
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        num_verts = 3 * num_faces;
-        break;
-    }
+    const size_t num_verts = num_faces == 0 ? 0 : num_faces + 1;
     test_features(vertices_W_, num_verts, "vertices");
     test_features(surface_pressure_, num_verts, "pressure values");
-
-    if (representation_ == ContactPolygonRepresentation::kCentroidSubdivision) {
-      test_features(cut_edges_, num_faces, "cut edges");
-    }
+    test_features(cut_edges_, num_faces, "cut edges");
 
     return error ? failure : ::testing::AssertionSuccess();
-  }
-
-  /* Checks the values in faces_, vertices_W_, and surface_pressure_ are
-   consistent with ContactPolygonRepresentation::kSingleTriangle. The
-   following is tested:
-
-      1. The faces_ consists of one triangle whether the intersected polygon
-         is a triangle or a quadrilateral.
-      2. The vertices are on the slicing plane as an indicator of consistency
-         with the marching tetrahedron algorithm.
-      3. The surface_pressure_ has the same value as the scalar field at the
-         vertex locations.
-
-   We do not check the exact locations of vertices because the
-   single-triangle representation does not guarantee that locations of
-   vertices_W_ are exactly the same as the intersected polygon. It only
-   guarantees that the representative triangle has the same centroid and area
-   as the intersected polygon, which is done and tested in the subroutine
-   AddPolygonToMeshDataAsOneTriangle() in another file.
-  */
-  ::testing::AssertionResult SliceIsConsistentWithSingleTriangleRepresentation(
-      int tet_index, const VolumeMeshFieldLinear<double, double>& field_F,
-      const Plane<double>& plane_F) const {
-    // Check faces_.
-    if (faces_.size() != 1) {
-      return ::testing::AssertionFailure()
-             << "\nFailed SliceIsConsistentWithSingleTriangleRepresentation:\n"
-             << " Expect one triangle, but found " << faces_.size()
-             << "triangle(s)";
-    }
-    // Assume that AddPolygonToMeshDataAsOneTriangle() sets up the face-vertex
-    // connectivity this way.
-    if (faces_[0].vertex(0) != 0 || faces_[0].vertex(1) != 1 ||
-        faces_[0].vertex(2) != 2) {
-      return ::testing::AssertionFailure()
-             << "\nFailed SliceIsConsistentWithSingleTriangleRepresentation:\n"
-             << " Incorrect face-vertex connectivity.";
-    }
-
-    constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
-
-    // Check vertices_W_.
-    for (size_t v = 0; v < vertices_W_.size(); ++v) {
-      const Vector3d& p_WV = vertices_W_.at(v);
-      const Vector3d p_FV = X_WF_.inverse() * p_WV;
-      const double height = plane_F.CalcHeight(p_FV);
-      if (std::abs(height) > kEps) {
-        return ::testing::AssertionFailure()
-               << "\nFailed SliceIsConsistentWithSingleTriangleRepresentation\n"
-               << " Vertex V(v = " << v << ") is not on the plane_F.\n"
-               << " Its height from the plane = " << height << ".\n";
-      }
-    }
-
-    // Check surface_pressure_.
-    for (int v = 0; v < static_cast<int>(vertices_W_.size()); ++v) {
-      const double pressure = surface_pressure_[v];
-      const Vector3d& p_WV = vertices_W_[v];
-      const Vector3d p_FV = X_WF_.inverse() * p_WV;
-      const double expected_pressure =
-          field_F.EvaluateCartesian(tet_index, p_FV);
-      if (std::abs(pressure - expected_pressure) > kEps) {
-        return ::testing::AssertionFailure()
-               << "\nFailed SliceIsConsistentWithSingleTriangleRepresentation\n"
-               << " Surface vertex " << v << " has wrong pressure\n"
-               << " Found    " << pressure << "\n"
-               << " Expected " << expected_pressure;
-      }
-    }
-    return ::testing::AssertionSuccess();
   }
 
   /* Determine which vertex is the center of the triangle fan; it should be the
@@ -507,8 +418,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
   }
 
   /* This tests the values in faces_, vertices_W_, and surface_pressure_ against
-   the given mesh and confirms they are consistent with
-   ContactPolygonRepresentation::kCentroidSubdivision. It assumes that the
+   the given mesh and confirms they are consistent. It assumes that the
    result has no duplicate vertices. The following is tested:
 
       1. The vertices all lie within the tetrahedron (and contains no NaN
@@ -523,7 +433,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
       5. The reported pressure at a perimeter vertex is a linear combination
          of its edge vertex values just like the vertex position is -- using
          the same weight. */
-  ::testing::AssertionResult SliceIsConsistentWithCentroidSubdivision(
+  ::testing::AssertionResult SliceIsConsistent(
       int tet_index,
       const VolumeMeshFieldLinear<double, double>& field_F) const {
     // Confirms that the triangles lie within the tetrahedron; the barycentric
@@ -590,8 +500,6 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     return CompareMatrices(expected_n_W, n_W, kEps);
   }
 
-  /* Input to the SliceTetWithPlane() method. */
-  ContactPolygonRepresentation representation_;
   RigidTransformd X_WF_;
 
   /* The accumulators for the SliceTetWithPlane() method. */
@@ -605,7 +513,12 @@ class SliceTetWithPlaneTest : public ::testing::Test {
  completely on either side of the plane produces no mesh artifacts. Then, with
  a small perturbation confirms that artifacts *are* created, properly bounding
  the sensitivity between intersecting and not intersecting. The correctness of
- the values of those artifacts can be found in subsequent tests. */
+ the values of those artifacts can be found in subsequent tests.
+
+ We confirm intersection/separation by confirming that we have zero faces
+ when separated and a non-zero number of faces when intersecting. The exact
+ value of that non-zero value is not important to the test -- merely that it is
+ non-zero, indicating intersection. */
 TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
   // This uses a plane whose normal is aligned with the Mz axis. To assess the
   // thresholds of detecting intersection and not, we need to know the extrema
@@ -638,46 +551,25 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
 
     // Case: Plane lies completely above the tet (just beyond V3)
     CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax + offset_F}, X_FM,
-                          ContactPolygonRepresentation::kCentroidSubdivision,
-                          no_analysis);
-    EXPECT_TRUE(HasNFaces(0));
-    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax + offset_F}, X_FM,
-                          ContactPolygonRepresentation::kSingleTriangle,
                           no_analysis);
     EXPECT_TRUE(HasNFaces(0));
 
     // Case: Plane lies _almost_ completely above the tet (V3 penetrates the
     // plane).
     CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax - offset_F}, X_FM,
-                          ContactPolygonRepresentation::kCentroidSubdivision,
                           no_analysis);
     EXPECT_TRUE(HasNFaces(3));
-    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMax - offset_F}, X_FM,
-                          ContactPolygonRepresentation::kSingleTriangle,
-                          no_analysis);
-    // The intersection is so small that this option skips it.
-    EXPECT_TRUE(HasNFaces(0));
 
     // Case: Plane lies completely below the tet (the bottom faces lies on the
     // z = 0 plane in Frame M).
     CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin - offset_F}, X_FM,
-                          ContactPolygonRepresentation::kCentroidSubdivision,
-                          no_analysis);
-    EXPECT_TRUE(HasNFaces(0));
-    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin - offset_F}, X_FM,
-                          ContactPolygonRepresentation::kSingleTriangle,
                           no_analysis);
     EXPECT_TRUE(HasNFaces(0));
 
     // Case: Plane lies _almost_ completely below the tet.
     CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin + offset_F}, X_FM,
-                          ContactPolygonRepresentation::kCentroidSubdivision,
                           no_analysis);
     EXPECT_TRUE(HasNFaces(3));
-    CallSliceTetWithPlane(Plane<double>{Mz_F, p_FMin + offset_F}, X_FM,
-                          ContactPolygonRepresentation::kSingleTriangle,
-                          no_analysis);
-    EXPECT_TRUE(HasNFaces(1));
 
     // Tests in which the plane normal is _not_ the Mz axis. We'll align it so
     // that it is normal to the v1, v2, v3 plane. We happen to know that
@@ -690,25 +582,15 @@ TEST_F(SliceTetWithPlaneTest, NonIntersectingConfiguration) {
 
     // Case: Plane is just beyond the v1, v2, v3, plane; it passes through a
     // point _near_ V3, but just offset in the normal direction.
-    CallSliceTetWithPlane(
-        Plane<double>{normal_F, p_FMax + kEps * normal_F}, X_FM,
-        ContactPolygonRepresentation::kCentroidSubdivision, no_analysis);
-    EXPECT_TRUE(HasNFaces(0));
-    CallSliceTetWithPlane(
-        Plane<double>{normal_F, p_FMax + kEps * normal_F}, X_FM,
-        ContactPolygonRepresentation::kSingleTriangle, no_analysis);
+    CallSliceTetWithPlane(Plane<double>{normal_F, p_FMax + kEps * normal_F},
+                          X_FM, no_analysis);
     EXPECT_TRUE(HasNFaces(0));
 
     // Case: Plane intersects the tet near the v1, v2, v3, plane; it passes
     // through a point _near_ V3, but offset in the _negative_ normal direction.
-    CallSliceTetWithPlane(
-        Plane<double>{normal_F, p_FMax - 4 * kEps * normal_F}, X_FM,
-        ContactPolygonRepresentation::kCentroidSubdivision, no_analysis);
+    CallSliceTetWithPlane(Plane<double>{normal_F, p_FMax - 4 * kEps * normal_F},
+                          X_FM, no_analysis);
     EXPECT_TRUE(HasNFaces(3));
-    CallSliceTetWithPlane(
-        Plane<double>{normal_F, p_FMax - 4 * kEps * normal_F}, X_FM,
-        ContactPolygonRepresentation::kSingleTriangle, no_analysis);
-    EXPECT_TRUE(HasNFaces(1));
   }
 }
 
@@ -777,9 +659,8 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
             EXPECT_LT(plane_sign * plane_F.CalcHeight(p_FVj), 0);
           }
         }
-        ASSERT_TRUE(CallSliceTetWithPlane(
-            plane_F, X_FM, ContactPolygonRepresentation::kCentroidSubdivision,
-            true /* do_analysis */));
+        ASSERT_TRUE(
+            CallSliceTetWithPlane(plane_F, X_FM, true /* do_analysis */));
 
         // Further consistency analysis.
         ASSERT_TRUE(HasNFaces(3));
@@ -787,14 +668,6 @@ TEST_F(SliceTetWithPlaneTest, TriangleIntersections) {
         for (int t = 0; t < 3; ++t) {
           EXPECT_TRUE(FaceNormalMatches(t, nhat_W));
         }
-
-        ASSERT_TRUE(CallSliceTetWithPlane(
-            plane_F, X_FM, ContactPolygonRepresentation::kSingleTriangle,
-            true /* do_analysis */));
-
-        // Further consistency analysis.
-        ASSERT_TRUE(HasNFaces(1));
-        EXPECT_TRUE(FaceNormalMatches(0, nhat_W));
       }
     }
   }
@@ -885,9 +758,8 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
           }
         }
 
-        ASSERT_TRUE(CallSliceTetWithPlane(
-            plane_F, X_FM, ContactPolygonRepresentation::kCentroidSubdivision,
-            true /* do_analysis */));
+        ASSERT_TRUE(
+            CallSliceTetWithPlane(plane_F, X_FM, true /* do_analysis */));
 
         // Further consistency analysis.
         ASSERT_TRUE(HasNFaces(4));
@@ -895,14 +767,6 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
         for (int t = 0; t < 4; ++t) {
           FaceNormalMatches(t, nhat_W);
         }
-
-        ASSERT_TRUE(CallSliceTetWithPlane(
-            plane_F, X_FM, ContactPolygonRepresentation::kSingleTriangle,
-            true /* do_analysis */));
-
-        // Further consistency analysis.
-        ASSERT_TRUE(HasNFaces(1));
-        FaceNormalMatches(0, nhat_W);
       }
     }
   }
@@ -910,8 +774,7 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
 
 /* Confirms that unique vertices on the VolumeMesh produce unique vertices on
  the output (and conversely duplicate input vertices lead to duplicate output
- vertices). The output has this property only when `representation` parameter
- is ContactPolygonRepresentation::kCentroidSubdivision.  */
+ vertices). */
 TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
   // We create the mesh twice; once with duplicates, once without. The plane
   // will slice through *both* tets simultaneously. In both cases we should
@@ -950,11 +813,9 @@ TEST_F(SliceTetWithPlaneTest, DuplicateOutputFromDuplicateInput) {
 
   for (int i = 0; i < 2; ++i) {
     SliceTetWithPlane(i, min_field_F, plane_F, X_WF_,
-                      ContactPolygonRepresentation::kCentroidSubdivision,
                       &min_faces, &min_vertices_F, &min_surface_pressure,
                       &min_cut_edges);
     SliceTetWithPlane(i, dupe_field_F, plane_F, X_WF_,
-                      ContactPolygonRepresentation::kCentroidSubdivision,
                       &dupe_faces, &dupe_vertices_F, &dupe_surface_pressure,
                       &dupe_cut_edges);
   }
@@ -1003,37 +864,26 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
   VolumeMeshFieldLinear<double, double> field_M{move(values), &mesh_M};
 
   // Slicing against tet 0 should intersect and produce the faces.
-  for (const auto representation :
-        {ContactPolygonRepresentation::kCentroidSubdivision,
-         ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+  {
     vector<SurfaceTriangle> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<int>, int> cut_edges;
     int tet_index{0};
-    SliceTetWithPlane(tet_index, field_M, plane_M, I, representation, &faces,
-                      &vertices_W, &surface_pressure, &cut_edges);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(faces.size(), 3u); break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(faces.size(), 1u); break;
-    }
+    SliceTetWithPlane(tet_index, field_M, plane_M, I, &faces, &vertices_W,
+                      &surface_pressure, &cut_edges);
+    EXPECT_EQ(faces.size(), 3u);
   }
 
   // Slicing against tet 1 should produce no intersection.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+  {
     vector<SurfaceTriangle> faces;
     vector<Vector3d> vertices_W;
     vector<double> surface_pressure;
     unordered_map<SortedPair<int>, int> cut_edges;
     int tet_index{1};
-    SliceTetWithPlane(tet_index, field_M, plane_M, I, representation,
-                      &faces, &vertices_W, &surface_pressure, &cut_edges);
+    SliceTetWithPlane(tet_index, field_M, plane_M, I, &faces, &vertices_W,
+                      &surface_pressure, &cut_edges);
     EXPECT_EQ(faces.size(), 0);
   }
 }
@@ -1109,12 +959,7 @@ TEST_F(ComputeContactSurfaceTest, NoIntersectionReturnsNullPtr) {
     const Vector3d p_FB = X_FM_.translation() + 1.5 * Mz_F;
     const Plane<double> plane_F{Mz_F, p_FB};
     EXPECT_EQ(ComputeContactSurface<double>(
-                  mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-                  ContactPolygonRepresentation::kCentroidSubdivision),
-              nullptr);
-    EXPECT_EQ(ComputeContactSurface<double>(
-                  mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-                  ContactPolygonRepresentation::kSingleTriangle),
+                  mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_),
               nullptr);
   }
 
@@ -1124,12 +969,7 @@ TEST_F(ComputeContactSurfaceTest, NoIntersectionReturnsNullPtr) {
     const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
     const Plane<double> plane_F{Mz_F, p_FB};
     EXPECT_EQ(ComputeContactSurface<double>(
-                  mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_,
-                  ContactPolygonRepresentation::kCentroidSubdivision),
-              nullptr);
-    EXPECT_EQ(ComputeContactSurface<double>(
-                  mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_,
-                  ContactPolygonRepresentation::kSingleTriangle),
+                  mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_),
               nullptr);
   }
 }
@@ -1146,23 +986,14 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   // Passing in all tet indices produces the full intersection.
   unique_ptr<ContactSurface<double>> contact_surface =
       ComputeContactSurface<double>(
-          mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-          ContactPolygonRepresentation::kCentroidSubdivision);
+          mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_);
   ASSERT_NE(contact_surface, nullptr);
   EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
-  EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-  contact_surface =
-      ComputeContactSurface<double>(
-          mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-          ContactPolygonRepresentation::kSingleTriangle);
-  ASSERT_NE(contact_surface, nullptr);
-  EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
   EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
 
   // Passing just one or the other produces only one tet's worth of triangles.
   auto contact_surface_0 = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_0_, X_WF_,
-      ContactPolygonRepresentation::kCentroidSubdivision);
+      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_0_, X_WF_);
   ASSERT_NE(contact_surface_0, nullptr);
   EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 3);
   EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 4);
@@ -1174,39 +1005,12 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
     const Vector3d& p_MV = X_MW * p_WV;
     EXPECT_GT(p_MV(2), 0);
   }
-  contact_surface_0 = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_0_, X_WF_,
-      ContactPolygonRepresentation::kSingleTriangle);
-  ASSERT_NE(contact_surface_0, nullptr);
-  EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 1);
-  EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 3);
-  {
-    // For tet 0, the z-value of the last vertex should be > 0.
-    const Vector3d& p_WV =
-        contact_surface_0->mesh_W().vertices().back();
-    const Vector3d& p_MV = X_MW * p_WV;
-    EXPECT_GT(p_MV(2), 0);
-  }
 
   auto contact_surface_1 = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_,
-      ContactPolygonRepresentation::kCentroidSubdivision);
+      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_);
   ASSERT_NE(contact_surface_1, nullptr);
   EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 3);
   EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 4);
-  {
-    // For tet 1, the z-value of the last vertex should be < 0.
-    const Vector3d& p_WV =
-        contact_surface_1->mesh_W().vertices().back();
-    const Vector3d& p_MV = X_MW * p_WV;
-    EXPECT_LT(p_MV(2), 0);
-  }
-  contact_surface_1 = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, only_tet_1_, X_WF_,
-      ContactPolygonRepresentation::kSingleTriangle);
-  ASSERT_NE(contact_surface_1, nullptr);
-  EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 1);
-  EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 3);
   {
     // For tet 1, the z-value of the last vertex should be < 0.
     const Vector3d& p_WV =
@@ -1218,9 +1022,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
 
 /* Tests responsibility 3: no duplicates are introduced. While this is implied
  by the *counts* of vertices observed in other tests, this one explicitly
- compares vertex values to make sure they are reasonably distant. It has this
- property only when `representation` parameter is
- ContactPolygonRepresentation::kCentroidSubdivision. */
+ compares vertex values to make sure they are reasonably distant. */
 TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
   const Vector3d& Mx_F = X_FM_.rotation().col(0);
   // The plane's normal aligns with Mx; slices through both tets.
@@ -1251,8 +1053,7 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // Passing in all tet indices produces the full intersection: 6 triangles.
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(
-            mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-            ContactPolygonRepresentation::kCentroidSubdivision);
+            mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_);
     ASSERT_NE(contact_surface, nullptr);
     const TriangleSurfaceMesh<double>& contact_mesh_W =
         contact_surface->mesh_W();
@@ -1284,8 +1085,7 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // Passing in all tet indices produces the full intersection: 6 triangles.
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(
-            mesh_id_, dupe_field_F, plane_id_, plane_F, both_tets_, X_WF_,
-            ContactPolygonRepresentation::kCentroidSubdivision);
+            mesh_id_, dupe_field_F, plane_id_, plane_F, both_tets_, X_WF_);
     ASSERT_NE(contact_surface, nullptr);
     const TriangleSurfaceMesh<double>& contact_mesh_W =
         contact_surface->mesh_W();
@@ -1316,13 +1116,11 @@ TEST_F(ComputeContactSurfaceTest, ContactSurfaceFieldReferencesMesh) {
   const Plane<double> plane_F{Mz_F, p_FB};
 
   unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-      ContactPolygonRepresentation::kCentroidSubdivision);
+      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_);
   EXPECT_EQ(&contact->mesh_W(), &contact->e_MN().mesh());
 
   contact = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_,
-      ContactPolygonRepresentation::kSingleTriangle);
+      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_);
   EXPECT_EQ(&contact->mesh_W(), &contact->e_MN().mesh());
 }
 
@@ -1340,26 +1138,20 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
   const vector<pair<GeometryId, GeometryId>> ids{{mesh_id_, plane_id_},
                                                  {plane_id_, mesh_id_}};
 
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-    for (const auto& [id_A, id_B] : ids) {
-      SCOPED_TRACE(fmt::format("[id_A, id_B] = [{}, {}]", id_A, id_B));
-      unique_ptr<ContactSurface<double>> contact =
-          ComputeContactSurface<double>(id_A, *field_F_, id_B, plane_F,
-                                        both_tets_, X_WF_, representation);
+  for (const auto& [id_A, id_B] : ids) {
+    SCOPED_TRACE(fmt::format("[id_A, id_B] = [{}, {}]", id_A, id_B));
+    unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
+        id_A, *field_F_, id_B, plane_F, both_tets_, X_WF_);
 
-      const double normal_sign = contact->id_N() == id_B ? 1.0 : -1.0;
-      const Vector3d nhat_W = X_WF_.rotation() * (normal_sign * Mz_F);
-      // NOTE: When we set the normals directly from the plane, this precision
-      // will improve.
-      constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
-      const TriangleSurfaceMesh<double>& mesh_W = contact->mesh_W();
-      for (int f = 0; f < mesh_W.num_triangles(); ++f) {
-        SCOPED_TRACE(fmt::format("Face index f = {}", f));
-        EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
-      }
+    const double normal_sign = contact->id_N() == id_B ? 1.0 : -1.0;
+    const Vector3d nhat_W = X_WF_.rotation() * (normal_sign * Mz_F);
+    // NOTE: When we set the normals directly from the plane, this precision
+    // will improve.
+    constexpr double kEps = 64 * std::numeric_limits<double>::epsilon();
+    const TriangleSurfaceMesh<double>& mesh_W = contact->mesh_W();
+    for (int f = 0; f < mesh_W.num_triangles(); ++f) {
+      SCOPED_TRACE(fmt::format("Face index f = {}", f));
+      EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
     }
   }
 }
@@ -1384,24 +1176,13 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
   // six triangles. The gradient for pressure field on M should be defined, N
   // is not. The gradient reported on the first three triangles is that of tet
   // 0, and for the last three should be tet 1.
-  for (const auto representation :
-       {ContactPolygonRepresentation::kCentroidSubdivision,
-        ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
+  {
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                      both_tets_, X_WF_, representation);
+                                      both_tets_, X_WF_);
     ASSERT_NE(contact_surface, nullptr);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-        break;
-    }
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
     EXPECT_TRUE(contact_surface->HasGradE_M());
     EXPECT_FALSE(contact_surface->HasGradE_N());
     int num_triangles = contact_surface->mesh_W().num_elements();
@@ -1419,23 +1200,13 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
 
   // Case: Reversing the ids will swap M and N. Otherwise all results should
   // be the same.
-  for (const auto representation :
-      {ContactPolygonRepresentation::kCentroidSubdivision,
-       ContactPolygonRepresentation::kSingleTriangle}) {
+  {
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(plane_id_, *field_F_, mesh_id_, plane_F,
-                                      both_tets_, X_WF_, representation);
+                                      both_tets_, X_WF_);
     ASSERT_NE(contact_surface, nullptr);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
-        EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
-        break;
-    }
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
     EXPECT_FALSE(contact_surface->HasGradE_M());
     EXPECT_TRUE(contact_surface->HasGradE_N());
     int num_triangles = contact_surface->mesh_W().num_elements();
@@ -1457,8 +1228,7 @@ TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
 
   1. Simply that all of the values contribute to the output (poses, ids, etc.)
 */
-void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
-    const ContactPolygonRepresentation representation) {
+void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace() {
   const GeometryId id_A = GeometryId::get_new_id();
   const GeometryId id_B = GeometryId::get_new_id();
   // Create mesh and volume mesh.
@@ -1491,7 +1261,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     // indicators.
     SCOPED_TRACE("Case 1: Initial configuration gets a contact surface.");
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WR, representation);
+        id_A, field_F, bvh_F, X_WS, id_B, X_WR);
     EXPECT_TRUE(contact_surface->HasGradE_M());
     EXPECT_FALSE(contact_surface->HasGradE_N());
     ASSERT_NE(contact_surface, nullptr);
@@ -1499,22 +1269,13 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     ASSERT_LT(id_A, id_B);
     EXPECT_EQ(contact_surface->id_M(), id_A);
     EXPECT_EQ(contact_surface->id_N(), id_B);
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        EXPECT_EQ(contact_surface->mesh_W().num_elements(), 2);
-        break;
-    }
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
     // Sample the face normals.
-    const Vector3d& norm_W =
-        contact_surface->mesh_W().face_normal(0);
+    const Vector3d& norm_W = contact_surface->mesh_W().face_normal(0);
     const Vector3d& Sx_W = X_WS.rotation().col(0);
     EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
     // Sample the vertex positions: in the S frame they should all have x = 0.5.
-    const Vector3d& p_WV =
-        contact_surface->mesh_W().vertex(0);
+    const Vector3d& p_WV = contact_surface->mesh_W().vertex(0);
     const Vector3d p_SV = X_WS.inverse() * p_WV;
     EXPECT_NEAR(p_SV(0), 0.5, kEps);
   }
@@ -1526,7 +1287,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     SCOPED_TRACE("Case 2: Move the mesh out of intersection.");
     const RigidTransformd X_SM{Vector3d{-0.51, 0, 0}};
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR, representation);
+        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR);
     ASSERT_EQ(contact_surface, nullptr);
   }
 
@@ -1534,14 +1295,14 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
     SCOPED_TRACE("Case 3: Move the plane out of intersection.");
     const RigidTransformd X_SR2{X_SR.rotation(), Vector3d{1.01, 0, 0}};
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2, representation);
+        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2);
     ASSERT_EQ(contact_surface, nullptr);
   }
 
   {
     SCOPED_TRACE("Case 4: Reverse GeometryIds.");
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_B, field_F, bvh_F, X_WS, id_A, X_WR, representation);
+        id_B, field_F, bvh_F, X_WS, id_A, X_WR);
     ASSERT_NE(contact_surface, nullptr);
     EXPECT_EQ(contact_surface->id_M(), id_A);
     EXPECT_EQ(contact_surface->id_N(), id_B);
@@ -1555,16 +1316,7 @@ void MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
 }
 
 GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
-  {
-    SCOPED_TRACE("ContactPolygonRepresentation::kCentroidSubdivision");
-    MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
-        ContactPolygonRepresentation::kCentroidSubdivision);
-  }
-  {
-    SCOPED_TRACE("ContactPolygonRepresentation::kSingleTriangle");
-    MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace(
-        ContactPolygonRepresentation::kSingleTriangle);
-  }
+  MeshPlaneIntersectionTestSoftVolumeRigidHalfSpace();
 }
 
 /* This test fixture enables some limited testing of the autodiff-valued contact
@@ -1745,8 +1497,7 @@ class MeshPlaneDerivativesTest : public ::testing::Test {
       const RigidTransform<AutoDiffXd> X_WS(R_WS_d.cast<AutoDiffXd>(), p_WS);
 
       auto surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_S_, *field_S_, *bvh_S_, X_WS, id_R_, X_WR_,
-          ContactPolygonRepresentation::kCentroidSubdivision);
+          id_S_, *field_S_, *bvh_S_, X_WS, id_R_, X_WR_);
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
@@ -2084,7 +1835,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
 
     auto surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
         this->id_S_, *this->field_S_, *this->bvh_S_, X_WS, this->id_R_,
-        this->X_WR_, ContactPolygonRepresentation::kCentroidSubdivision);
+        this->X_WR_);
 
     SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
     ASSERT_NE(surface, nullptr);
