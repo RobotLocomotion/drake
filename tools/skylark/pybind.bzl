@@ -100,6 +100,30 @@ def pybind_py_library(
 # TODO(eric.cousineau): Rename `drake_pybind_library` to
 # `drake_pybind_py_library`.
 
+def _check_cc_deps(*, cc_deps, testonly):
+    """Fails-fast in case of potential ODR violations."""
+    allowed_prefix = [
+        # The dep uses a fully-qualified path to somewhere within pydrake.
+        "//bindings/pydrake",
+        # The dep is local to pydrake already.
+        ":",
+        # The dep is a header-only library with no dependencies (unless those
+        # dependencies are also header-only).
+        "//common:nice_type_name_override_header",
+    ]
+    if testonly:
+        allowed_prefix.extend([
+            # The utilities are not part of libdrake.so, so do not violate ODR.
+            "//common/test_utilities",
+            # TODO(jwnimmer-tri) This *definitely* violates ODR, but is not
+            # quite easy to remove from the one place it's currently used.
+            "//common:nice_type_name",
+        ])
+    for item in (cc_deps or []):
+        if any([item.startswith(p) for p in allowed_prefix]):
+            continue
+        fail("Not allowed to link {} statically".format(item))
+
 def drake_pybind_library(
         name,
         cc_srcs = [],
@@ -136,6 +160,7 @@ def drake_pybind_library(
     """
     if package_info == None:
         fail("`package_info` must be supplied.")
+    _check_cc_deps(cc_deps = cc_deps, testonly = testonly)
     if not cc_so_name:
         if name.endswith("_py"):
             cc_so_name = name[:-3]
@@ -255,6 +280,7 @@ def drake_pybind_cc_googletest(
         tags = []):
     """Defines a C++ test (using `pybind`) which has access to Python
     libraries. """
+    _check_cc_deps(cc_deps = cc_deps, testonly = True)
     cc_name = name + "_cc"
     if not cc_srcs:
         cc_srcs = ["test/{}.cc".format(name)]
