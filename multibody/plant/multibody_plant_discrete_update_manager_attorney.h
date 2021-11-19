@@ -59,6 +59,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalDiscreteContactPairs(context);
   }
 
+  static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalContactSurfaces(context);
+  }
+
   static std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context,
       const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) {
@@ -71,9 +76,10 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     plant.AddInForcesFromInputPorts(context, forces);
   }
 
-  static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalContactSurfaces(context);
+  static void CalcNonContactForces(const MultibodyPlant<T>& plant,
+                            const drake::systems::Context<T>& context,
+                            MultibodyForces<T>* forces) {
+    return plant.CalcNonContactForces(context, true /* is discrete */, forces);
   }
 
   // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
