@@ -76,7 +76,7 @@ Later edited by hand to:
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
           <effort>320</effort>
-          <velocity>1.39626</velocity>
+          <velocity>1.4835298641951802</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -138,7 +138,7 @@ Later edited by hand to:
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
           <effort>320</effort>
-          <velocity>1.39626</velocity>
+          <velocity>1.4835298641951802</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -209,7 +209,7 @@ Later edited by hand to:
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
           <effort>176</effort>
-          <velocity>1.74533</velocity>
+          <velocity>1.7453292519943295</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -269,7 +269,7 @@ Later edited by hand to:
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
           <effort>176</effort>
-          <velocity>1.309</velocity>
+          <velocity>1.3089969389957472</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -340,7 +340,7 @@ Later edited by hand to:
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
           <effort>110</effort>
-          <velocity>2.26893</velocity>
+          <velocity>2.2689280275926285</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -400,7 +400,7 @@ Later edited by hand to:
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
           <effort>40</effort>
-          <velocity>2.35619</velocity>
+          <velocity>2.356194490192345</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
@@ -451,7 +451,7 @@ Later edited by hand to:
           <lower>-3.05433</lower>
           <upper>3.05433</upper>
           <effort>40</effort>
-          <velocity>2.35619</velocity>
+          <velocity>2.356194490192345</velocity>
         </limit>
         <dynamics>
           <damping>0.0</damping>
