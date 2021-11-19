@@ -30,15 +30,28 @@ struct ContactJacobianCache {
   std::vector<drake::math::RotationMatrix<T>> R_WC_list;
 };
 
+// To compute accelerations due to external forces (in particular non-contact
+// forces), we pack forces, ABA cache and accelerations into a single struct
+// to confine memory allocations into a single cache entry.
+template <typename T>
+struct AccelerationsDueToExternalForcesCache {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationsDueToExternalForcesCache)
+  explicit AccelerationsDueToExternalForcesCache(
+      const MultibodyTreeTopology& topology);
+  MultibodyForces<T> forces;  // The external forces causing accelerations.
+  multibody::internal::ArticulatedBodyForceCache<T> aba_forces;  // ABA cache.
+  multibody::internal::AccelerationKinematicsCache<T> ac;  // Accelerations.
+};
+
 // This class implements the interface given by DiscreteUpdateManager so that
 // contact computations can be consumed by MultibodyPlant.
 //
 // In particular, this manager sets up a contact problem where each of the
-// bodies in the MultibodyPlant model is compliant, i.e. the contact model does
-// not introduce state. Supported models include point contact with a linear
-// model of compliance, see GetPointContactStiffness() and the hydroelastic
-// contact model, see @ref mbp_hydroelastic_materials_properties in
-// MultibodyPlant's Doxygen documentation.
+// bodies in the MultibodyPlant model is compliant without introducing state.
+// Supported models include point contact with a linear model of compliance, see
+// GetPointContactStiffness() and the hydroelastic contact model, see @ref
+// mbp_hydroelastic_materials_properties in MultibodyPlant's Doxygen
+// documentation.
 // Dissipation is modeled using a linear model. For point contact, given the
 // penetration distance x and its time derivative ẋ, the normal contact force
 // (in Newtons) is modeled as:
@@ -56,7 +69,8 @@ struct ContactJacobianCache {
 //
 // @tparam_nonsymbolic_scalar
 template <typename T>
-class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
+class CompliantContactManager final
+    : public internal::DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
@@ -67,14 +81,17 @@ class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
       std::unique_ptr<contact_solvers::internal::ContactSolver<T>>
           contact_solver);
 
-  ~CompliantContactManager() = default;
+  ~CompliantContactManager() final;
 
  private:
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
-    systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex contact_jacobian;
+    systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex free_motion_velocities;
+    systems::CacheIndex non_contact_forces_accelerations;
+    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
   using internal::DiscreteUpdateManager<T>::plant;
@@ -83,16 +100,24 @@ class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
   friend class CompliantContactManagerTest;
 
   // TODO(amcastro-tri): Implement these methods in future PRs.
-  void DoCalcContactSolverResults(
-      const systems::Context<T>&,
-      contact_solvers::internal::ContactSolverResults<T>*) const final {}
+  void DoCalcDiscreteValues(const drake::systems::Context<T>&,
+                            drake::systems::DiscreteValues<T>*) const final {
+    throw std::runtime_error(
+        "CompliantContactManager::DoCalcDiscreteValues() must be "
+        "implemented.");
+  }
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
-      multibody::internal::AccelerationKinematicsCache<T>*) const final {}
-  void DoCalcDiscreteValues(const drake::systems::Context<T>&,
-                            drake::systems::DiscreteValues<T>*) const final {}
+      multibody::internal::AccelerationKinematicsCache<T>*) const final {
+    throw std::runtime_error(
+        "CompliantContactManager::DoCalcAccelerationKinematicsCache() must be "
+        "implemented.");
+  }
 
   void DeclareCacheEntries() final;
+  void DoCalcContactSolverResults(
+      const systems::Context<T>&,
+      contact_solvers::internal::ContactSolverResults<T>*) const final;
 
   // Returns the point contact stiffness stored in group
   // geometry::internal::kMaterialGroup with property
@@ -159,6 +184,26 @@ class CompliantContactManager : public internal::DiscreteUpdateManager<T> {
 
   // Eval version of CalcContactJacobianCache().
   const internal::ContactJacobianCache<T>& EvalContactJacobianCache(
+      const systems::Context<T>& context) const;
+
+  // Given the previous state x0 stored in `context`, this method computes the
+  // "free motion" velocities, denoted v*.
+  void CalcFreeMotionVelocities(const systems::Context<T>& context,
+                                VectorX<T>* v_star) const;
+
+  // Eval version of CalcFreeMotionVelocities().
+  const VectorX<T>& EvalFreeMotionVelocities(
+      const systems::Context<T>& context) const;
+
+  // Calc non-contact forces and the accelerations they induce.
+  void CalcAccelerationsDueToNonContactForcesCache(
+      const systems::Context<T>& context,
+      AccelerationsDueToExternalForcesCache<T>* no_contact_accelerations_cache)
+      const;
+
+  // Eval version of CalcAccelerationsDueToNonContactForcesCache().
+  const multibody::internal::AccelerationKinematicsCache<T>&
+  EvalAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context) const;
 
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
