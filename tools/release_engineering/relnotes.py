@@ -4,7 +4,7 @@ adding commit messages' content into a structured document template.
 This program is intended only for use by Drake maintainers who are preparing
 Drake's release notes documentation.
 
-This program is supported only on Ubuntu Bionic 18.04.
+This program is supported only on Ubuntu Bionic 20.04.
 
 The usage of this tool is outlined in the Drake release playbook
 document:
