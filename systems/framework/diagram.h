@@ -340,6 +340,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   const SystemBase& GetRootSystemBase() const final;
 
+  std::string GetUnsupportedScalarConversionMessage(
+      const std::type_info& source_type,
+      const std::type_info& destination_type) const final;
+
   // Returns true if there might be direct feedthrough from the given
   // @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool DiagramHasDirectFeedthrough(int input_port, int output_port) const;

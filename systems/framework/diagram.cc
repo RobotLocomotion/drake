@@ -1053,6 +1053,33 @@ const SystemBase& Diagram<T>::GetRootSystemBase() const {
 }
 
 template <typename T>
+std::string Diagram<T>::GetUnsupportedScalarConversionMessage(
+    const std::type_info& source_type,
+    const std::type_info& destination_type) const {
+  // Start with the default message for this system.
+  std::stringstream result;
+  result << SystemBase::GetUnsupportedScalarConversionMessage(
+      source_type, destination_type);
+
+  // Append extra details, if we are able to.
+  std::vector<std::string> causes;
+  for (const auto& system : registered_systems_) {
+    const auto& converter = system->get_system_scalar_converter();
+    if (converter.IsConvertible(destination_type, source_type)) {
+      continue;
+    }
+    causes.push_back(internal::DiagramSystemBaseAttorney::
+        GetUnsupportedScalarConversionMessage(
+            *system, source_type, destination_type));
+  }
+  if (!causes.empty()) {
+    result << fmt::format(" (because {})", fmt::join(causes, " and "));
+  }
+
+  return result.str();
+}
+
+template <typename T>
 bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
     const {
   DRAKE_ASSERT(input_port >= 0);

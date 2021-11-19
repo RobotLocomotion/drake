@@ -113,8 +113,15 @@ class SystemScalarConverter {
   template <typename T, typename U>
   bool IsConvertible() const;
 
+  /// Returns true iff this object can convert a System<U> into a System<T>,
+  /// i.e., whether Convert() will return non-null.
+  bool IsConvertible(
+      const std::type_info& t_info,
+      const std::type_info& u_info) const;
+
   /// Converts a System<U> into a System<T>.  This is the API that LeafSystem
   /// uses to provide a default implementation of DoToAutoDiffXd, etc.
+  /// Returns null when IsConvertible() is false.
   template <typename T, typename U>
   std::unique_ptr<System<T>> Convert(const System<U>& other) const;
 
@@ -175,12 +182,6 @@ class SystemScalarConverter {
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)
-
-template <typename T, typename U>
-bool SystemScalarConverter::IsConvertible() const {
-  const ErasedConverterFunc* converter = Find(typeid(T), typeid(U));
-  return (converter != nullptr);
-}
 
 template <typename T, typename U>
 std::unique_ptr<System<T>> SystemScalarConverter::Convert(
