@@ -14,6 +14,7 @@ load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
+load("@drake//tools/workspace/conex:repository.bzl", "conex_repository")
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
@@ -123,6 +124,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         common_robotics_utilities_repository(name = "common_robotics_utilities", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
         commons_io_repository(name = "commons_io", mirrors = mirrors)
+    if "conex" not in excludes:
+        conex_repository(name = "conex", mirrors = mirrors)
     if "csdp" not in excludes:
         csdp_repository(name = "csdp", mirrors = mirrors)
     if "double_conversion" not in excludes:
