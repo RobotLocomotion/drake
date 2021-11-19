@@ -53,9 +53,8 @@ void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
   }
 }
 
-// Returns a vector<vector<int>> y where
-// y[i] contains the indices of the block Jacobians
-// on row i organized by column.
+// Returns a vector<vector<int>> y where y[i] contains the indices of the block
+// Jacobians on row i organized by column.
 vector<std::vector<int>> GetRowToTripletMapping(
     int num_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
@@ -277,23 +276,24 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
 // std::vector.
 SuperNodalSolver::~SuperNodalSolver() {}
 
-// Helper struct for assembling the input to the
-// conex supernodal solver. The variable "cliques"
-// contains the nodes of a "supernodal elimination tree,"
+// Helper struct for assembling the input to the conex supernodal solver. The
+// variable "cliques" contains the nodes of a "supernodal elimination tree,"
 // also called a "clique tree" or "junction tree". The variables "supernodes"
 // and "separators" provide a partition of each node and satisfy
-// cliques[i] = Union(separators[i], supernodes[i]).
+//
+//   cliques[i] = Union(separators[i], supernodes[i]).
+//
 // The variable "order" and "supernodes" together define
 // the elimination ordering:
 //
-//  elimination_order = [ supernodes[order(0]), supernodes[order(1]),
-//  ...., supernodes[order.back(]) ].
+//   elimination_order = { supernodes[order[0]], supernodes[order[1]],
+//   ...., supernodes[order.back()] };
 //
-// The variable "order" can also be interpreted as a concatenation
-// of paths in the supernodal elimination tree.
+// The variable "order" can also be interpreted as a concatenation of paths in
+// the supernodal elimination tree.
 //
-// See page 290 of Chordal Graphs and Semidefinite Optimization
-// by Vandenberghe and Andersen.
+// See page 290 of Chordal Graphs and Semidefinite Optimization by Vandenberghe
+// and Andersen.
 struct SolverData {
   std::vector<std::vector<int>> cliques;
   int num_vars;
@@ -304,8 +304,8 @@ struct SolverData {
 
 struct SparsityData {
   SolverData data;
-  // Expands the "block" cliques from SolverData into
-  // actual cliques of scalar variables.
+  // Expands the "block" cliques from SolverData into actual cliques of scalar
+  // variables.
   std::vector<std::vector<int>> variable_cliques;
 };
 
@@ -364,9 +364,9 @@ SparsityData GetEliminationOrdering(
   conex::PickCliqueOrder(cliques, largest_clique, &order, &supernodes,
                          &separators);
 
-  // The cliques correspond to block columns of the Jacobian.
-  // We now expand them into scalar variables for use by the
-  // supernodal solver (which is unaware of the block-structure).
+  // The cliques correspond to block columns of the Jacobian. We now expand them
+  // into scalar variables for use by the supernodal solver (which is unaware of
+  // the block-structure).
   const vector<int> offsets =
       CumulativeSum(column_block_sizes, num_column_blocks);
   vector<vector<int>> supernodes_full(order.size());
@@ -385,8 +385,7 @@ SparsityData GetEliminationOrdering(
         cliques_full_with_fill_in[i].push_back(offsets[s] + cnt);
       }
     }
-    // Expand the original cliques (without fill-in) into
-    // scalar variables.
+    // Expand the original cliques (without fill-in) into scalar variables.
     for (int s : cliques[i]) {
       for (int cnt = 0; cnt < column_block_sizes[s]; ++cnt) {
         clique_data.variable_cliques[i].push_back(offsets[s] + cnt);
@@ -425,8 +424,7 @@ void SuperNodalSolver::Initialize(
     for (const auto& j : row_to_triplet_list[i]) {
       jacobian_blocks_of_row.push_back(std::get<2>(jacobian_blocks[j]));
     }
-    owned_clique_assemblers_[i]->Initialize(
-        std::move(jacobian_blocks_of_row));
+    owned_clique_assemblers_[i]->Initialize(std::move(jacobian_blocks_of_row));
     clique_assemblers_ptrs_[i] = owned_clique_assemblers_[i].get();
   }
 
@@ -435,12 +433,12 @@ void SuperNodalSolver::Initialize(
   int cnt = 0;
   for (const auto& c : mass_matrix_starting_columns) {
     const std::pair<int, int> position = FindPositionInClique(c, cliques);
-    owned_clique_assemblers_[position.first]
-        ->AssignMassMatrix(position.second, mass_matrices[cnt]);
+    owned_clique_assemblers_[position.first]->AssignMassMatrix(
+        position.second, mass_matrices[cnt]);
     ++cnt;
   }
 
-  // Make connections between clique_assemblers and solver->Assemble()
+  // Make connections between clique_assemblers and solver->Assemble().
   solver_->Bind(clique_assemblers_ptrs_);
 }
 
@@ -465,7 +463,7 @@ void SuperNodalSolver::SetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
   // We copy these pointers so that SetDenseData (a virtual function override)
   // can access the weight matrices when solver_->Assemble() is called
-  // below.  For safety, we replace these pointers with NULL when
+  // below. For safety, we replace these pointers with nullptr when
   // solver_->Assemble() returns.
   for (auto& c : owned_clique_assemblers_) {
     c->SetWeightMatrixPointer(&weight_matrix);
