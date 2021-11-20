@@ -7,7 +7,8 @@ def conex_repository(
     github_archive(
         name = name,
         repository = "ToyotaResearchInstitute/conex",
-        commit = "2a87558fa5cf1fdc23bf36d1038aab79f8a28a67",
-        sha256 = "5fa479b38bb28c004946c23ef1767cbf0ff646c8ca8f5df4f1821cb4db743395",  # noqa
+        commit = "e53ebc612ccb5c4da757bbe90f7be07ff13db0a4",
+        sha256 = "adfaef47709a751da0c8445719fb97f133acf79c3e75594b2663e89be76879e4",  # noqa
+        build_file = "@drake//tools/workspace/conex:package.BUILD.bazel",
         mirrors = mirrors,
     )
