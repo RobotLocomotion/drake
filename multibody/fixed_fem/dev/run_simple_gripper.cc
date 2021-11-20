@@ -106,7 +106,7 @@ int DoMain() {
   box_config.set_mass_density(FLAGS_density);
   box_config.set_material_model(MaterialModel::kCorotated);
   constexpr int kNumSubdivision =
-      3;  // Number of blocks to divide the box into.
+      5;  // Number of blocks to divide the box into.
   const internal::ReferenceDeformableGeometry<double> box_geometry =
       MakeDiamondCubicBoxDeformableGeometry<double>(box, kL / kNumSubdivision,
                                                     p_WB);

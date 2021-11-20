@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
+#include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -87,6 +88,18 @@ class DirichletBoundaryCondition {
       tangent_matrix->col(dof_index) *= T(0);
       tangent_matrix->coeffRef(dof_index, dof_index) = T(1);
     }
+  }
+
+  void ApplyBcToTangentMatrix(
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
+    DRAKE_DEMAND(tangent_matrix != nullptr);
+    DRAKE_DEMAND(tangent_matrix->rows() == tangent_matrix->cols());
+    if (bcs_.size() == 0) {
+      return;
+    }
+    /* Check validity of the dof indices stored. */
+    VerifyBcIndexes(tangent_matrix->cols());
+    std::cout << "boundary not fixed!" << std::endl;
   }
 
   /** Modifies the given residual that arises from an FEM system without BC into

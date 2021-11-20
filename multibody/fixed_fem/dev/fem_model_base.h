@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/fem_state_base.h"
+#include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 #include "drake/multibody/fixed_fem/dev/state_updater.h"
 
 namespace drake {
@@ -82,6 +83,9 @@ class FemModelBase {
   void CalcResidual(const FemStateBase<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
+  // TODO(xuchenhan-tri): Decide whether it makes sense to keep the signature
+  // with Eigen::SparseMatrix. If so, consider unifying the two matrix types.
+
   /** Calculates the tangent matrix at the given FemStateBase. The ij-th
    entry of the tangent matrix is the derivative of the i-th entry of the
    residual (calculated by CalcResidual()) with respect to the j-th generalized
@@ -98,6 +102,15 @@ class FemModelBase {
   void CalcTangentMatrix(const FemStateBase<T>& state,
                          Eigen::SparseMatrix<T>* tangent_matrix) const;
 
+  /* Alternative signature for calculating tangent matrix that writes to an
+   PETSc matrix.
+   @pre tangent_matrix != nullptr.
+   @pre tangent_matrix points to a PetscSymmetricBlockSparseMatrix created by
+        this->MakePetscSymmetricBlockSparseTangentMatrix(). */
+  void CalcTangentMatrix(
+      const FemStateBase<T>& state,
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
+
   /** Sets the sparsity pattern for the tangent matrix of this %FemModelBase.
    @param[out] tangent_matrix    The tangent matrix of this %FemModelBase. Its
    size and sparsity pattern will be set so that it will be ready to be passed
@@ -105,6 +118,9 @@ class FemModelBase {
    @pre `tangent_matrix` must not be the null pointer. */
   void SetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+  MakePetscSymmetricBlockSparseTangentMatrix() const;
 
   /** Extracts the unknown variable from the given FEM `state`.
    @throw std::exception if the type of concrete FemState for `state` is not
@@ -185,9 +201,21 @@ class FemModelBase {
       Eigen::SparseMatrix<T>* tangent_matrix) const = 0;
 
   /** Derived classes must override this method to provide an implementation for
+   the NVI CalcTangentMatrix(). The input `state` is guaranteed to be compatible
+   with `this` FEM model. */
+  virtual void DoCalcTangentMatrix(
+      const FemStateBase<T>& state,
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const = 0;
+
+  /** Derived classes must override this method to provide an implementation for
    the NVI SetTangentMatrixSparsityPattern(). */
   virtual void DoSetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const = 0;
+
+  /** Derived classes must override this method to provide an implementation for
+   the NVI MakePetscSymmetricBlockSparseTangentMatrix(). */
+  virtual std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
+  DoMakePetscSymmetricBlockSparseTangentMatrix() const = 0;
 
   /** Derived classes must invoke this method to update the number of nodes in
    the model when they add more nodes to the FEM model. */
