@@ -143,6 +143,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.DeleteAddedControls()
         self.assertIn("data:application/octet-binary;base64",
                       meshcat.StaticHtml())
+        meshcat.Flush()
 
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)
