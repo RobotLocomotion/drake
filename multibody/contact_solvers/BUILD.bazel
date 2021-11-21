@@ -221,7 +221,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "supernodal_solver_test",
-    tags = ["no_asan"],
+    tags = [
+        "no_asan",
+        "no_memcheck",
+    ],
     deps = [
         ":supernodal_solver",
         "//common/test_utilities:expect_throws_message",
