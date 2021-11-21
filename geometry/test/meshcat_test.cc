@@ -457,6 +457,10 @@ GTEST_TEST(MeshcatTest, SetPropertyWebSocket) {
       "property": "visible",
       "value": false
     })""");
+
+  // Confirm that meshcat.Flush() doesn't crash even when we've had multiple
+  // clients connect, received data, and disconnect.
+  meshcat.Flush();
 }
 
 GTEST_TEST(MeshcatTest, SetPerspectiveCamera) {

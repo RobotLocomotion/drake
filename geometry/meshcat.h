@@ -103,6 +103,13 @@ class Meshcat {
   interface.  Most users should connect via a browser opened to web_url(). */
   std::string ws_url() const;
 
+  /** Blocks the calling thread until all buffered data in the websocket thread
+  has been sent to any connected clients. This can be especially useful when
+  sending many or large mesh files / texture maps, to avoid large "backpressure"
+  and/or simply to make sure that the simulation does not get far ahead of the
+  visualization. */
+  void Flush() const;
+
   /** Sets the 3D object at a given `path` in the scene tree.  Note that
   `path`="/foo" will always set an object in the tree at "/foo/<object>".  See
   @ref meshcat_path.  Any objects previously set at this `path` will be
