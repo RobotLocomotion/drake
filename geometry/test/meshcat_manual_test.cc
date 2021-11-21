@@ -135,6 +135,11 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
+  std::cout << "Calling meshcat.Flush(), which will block until all clients "
+               "have received all the data)...";
+  meshcat->Flush();
+  std::cout << "Done." << std::endl;
+
   std::cout << "Animations:\n";
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
