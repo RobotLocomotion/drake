@@ -13,3 +13,30 @@ rosrun xacro xacro -o urdf/dual_iiwa14_polytope_collision.urdf urdf/dual_iiwa14_
 ```
 
 [1] http://wiki.ros.org/xacro#Conditional_Blocks
+
+Beware when generating the URDF files as some of them might have been edited manually.
+
+# Additonal Edits
+
+## Velocity and effort Limits
+
+Velocity and effort limits are added to the xacro files, and then manually merged into
+the hand-edited files.
+
+The limits were derived from the third table at page 30 of the followking KUKA brochure:
+
+* "KUKA Sensitive robotics_LBR iiwa. (URL:
+<https://www.kuka.com/-/media/kuka-downloads/imported/9cb8e311bfd744b4b0eab25ca883f6d3/kuka_lbr_iiwa_brochure_en.pdf>, Accessed
+on 2021-11-21)
+
+For the record, the velocity and effort limits:
+
+|Axis data  |Max. Torque|Max. Velocity|
+|-----------|----------:|------------:|
+|Axis 1 (A1)|320 Nm     |85 deg/s     |
+|Axis 2 (A2)|320 Nm     |85 deg/s     |
+|Axis 3 (A3)|176 Nm     |100 deg/s    |
+|Axis 4 (A4)|176 Nm     |75 deg/s     |
+|Axis 5 (A5)|110 Nm     |130 deg/s    |
+|Axis 6 (A6)|40 Nm      |135 deg/s    |
+|Axis 7 (A7)|40 Nm      |135 deg/s    |
