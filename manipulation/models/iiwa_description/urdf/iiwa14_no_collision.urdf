@@ -196,7 +196,7 @@
     <child link="iiwa_link_5"/>
     <origin rpy="-1.570796326794897 3.141592653589793 0" xyz="0 0.1845 0"/>
     <axis xyz="0 0 1"/>
-    <limit effort="110" lower="-2.96705972839" upper="2.96705972839" velocity="2.9670597283903604"/>
+    <limit effort="110" lower="-2.96705972839" upper="2.96705972839" velocity="2.2689280275926285"/>
     <safety_controller k_position="100" k_velocity="2" soft_lower_limit="-2.05948851735" soft_upper_limit="2.05948851735"/>
     <dynamics damping="0.5"/>
   </joint>

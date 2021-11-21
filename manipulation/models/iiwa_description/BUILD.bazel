@@ -26,6 +26,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "joint_limit_variants_test",
+    srcs = ["test/joint_limit_variants_test.cc"],
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+)
+
 install_data(
     extra_prod_models = [
         "LICENSE.TXT",
