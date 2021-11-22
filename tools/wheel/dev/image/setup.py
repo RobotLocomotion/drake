@@ -5,7 +5,7 @@ import setuptools
 from setuptools import setup, find_packages, glob
 from setuptools.dist import Distribution
 
-DRAKE_VERSION = '0.32.0'
+DRAKE_VERSION = os.environ.get('DRAKE_VERSION', '0.0.0')
 
 # Required python packages that will be pip installed along with pydrake
 # TODO Can we remove any of these?

@@ -158,6 +158,7 @@ def build_image(target, identifier, options):
     python_version = target.python_version
     args = [
         '--ssh', 'default',
+        '--build-arg', f'DRAKE_VERSION={options.version}',
         '--build-arg', f'PYTHON={python_version[0]}.{python_version[1:]}',
         '--build-arg', f'PLATFORM={platform_name}:{platform_version}',
     ]
@@ -199,6 +200,9 @@ def main(args):
     # Set up argument parser.
     parser = argparse.ArgumentParser(
         description='Build the Drake PyPI wheel(s).')
+    parser.add_argument(
+        'version',
+        help='version number with which to label the wheels')
     parser.add_argument(
         '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
         help='directory into which to extract wheels (default: .)')
