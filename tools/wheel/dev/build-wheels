@@ -40,14 +40,19 @@ targets = (
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-def docker(*args):
+def docker(*args, pipe=False):
     """
     Runs a docker command; raises an exception on failure.
     """
     command = ['docker'] + list(args)
     environment = os.environ.copy()
     environment['DOCKER_BUILDKIT'] = '1'
-    subprocess.run(command, check=True, cwd=script_dir, env=environment)
+    if pipe:
+        return subprocess.Popen(command, stdout=subprocess.PIPE,
+                                cwd=script_dir, env=environment)
+    else:
+        return subprocess.run(command, check=True,
+                              cwd=script_dir, env=environment)
 
 
 def gripe(message):
@@ -181,9 +186,8 @@ def build_image(target, identifier, options):
         print('[-] Extracting wheel(s) from', tag)
 
         command = 'tar -cf - /wheel/wheelhouse/*.whl'
-        extractor = subprocess.Popen(
-            ['docker', 'run', '--rm', tag, 'bash', '-c', command],
-            stdout=subprocess.PIPE)
+        extractor = docker(
+            'run', '--rm', tag, 'bash', '-c', command, pipe=True)
         subprocess.check_call(
             ['tar', '--strip-components=2', '-xf', '-'],
             stdin=extractor.stdout, cwd=options.output_dir)
