@@ -1,4 +1,9 @@
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
@@ -270,6 +275,25 @@ Open up your browser to the URL above.
 
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  const std::string html_filename(temp_directory() + "/meshcat_static.html");
+  std::ofstream html_file(html_filename);
+  html_file << meshcat->StaticHtml();
+  html_file.close();
+
+  std::cout << "A standalone HTML file capturing this scene (including the "
+               "animation) has been written to file://"
+            << html_filename
+            << "\nOpen that location in your browser now and confirm that "
+               "the iiwa is visible and the animation plays."
+            << std::endl;
+
+  std::cout << "[Press RETURN to continue]." << std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  std::remove(html_filename.c_str());
+  std::cout
+      << "Note: I've deleted the temporary HTML file (it's several Mb).\n\n";
 
   meshcat->AddButton("ButtonTest");
   meshcat->AddSlider("SliderTest", 0, 1, 0.01, 0.5);
