@@ -93,6 +93,17 @@ void CheckBackPressure(const std::string& path, const std::string& message) {
   }
 }
 
+// Encode the meshcat command into a Javascript fetch() command.
+std::string CreateCommand(const std::string& data) {
+  return fmt::format(R"""(
+fetch("data:application/octet-binary;base64,{}")
+    .then(res => res.arrayBuffer())
+    .then(buffer => viewer.handle_command_bytearray(new Uint8Array(buffer)));
+)""",
+                     common_robotics_utilities::base64_helpers::Encode(
+                         std::vector<uint8_t>(data.begin(), data.end())));
+}
+
 class SceneTreeElement {
  public:
   // Member access methods (object_, transform_, and properties_ should be
@@ -192,6 +203,26 @@ class SceneTreeElement {
       unused(name);
       child->Send(ws);
     }
+  }
+
+  std::string CreateCommands() {
+    std::string html;
+    if (object_) {
+      html += CreateCommand(*object_);
+    }
+    if (transform_) {
+      html += CreateCommand(*transform_);
+    }
+    for (const auto& [property, msg] : properties_) {
+      unused(property);
+      html += CreateCommand(msg);
+    }
+
+    for (const auto& [name, child] : children_) {
+      unused(name);
+      html += child->CreateCommands();
+    }
+    return std::move(html);
   }
 
  private:
@@ -1073,6 +1104,40 @@ class Meshcat::WebSocketPublisher {
     }
   }
 
+  std::string StaticHtml() {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    std::string html = GetUrlContent("/");
+
+    std::promise<std::string> p;
+    std::future<std::string> f = p.get_future();
+    loop_->defer([this, p = std::move(p)]() mutable {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      std::string commands = scene_tree_root_.CreateCommands();
+      if (!animation_.empty()) {
+        commands += CreateCommand(animation_);
+      }
+      p.set_value(std::move(commands));
+    });
+
+    // Replace connect block with the static commands.
+    size_t start = html.find("try {");
+    DRAKE_DEMAND(start != std::string::npos);
+    size_t end = html.find('}', start+5);  // first '}'
+    DRAKE_DEMAND(end != std::string::npos);
+    end = html.find('}', end+1);  // second '}'
+    DRAKE_DEMAND(end != std::string::npos);
+    html.replace(start, end-start+1, std::move(f.get()));
+
+    // Insert the javascript directly into the html.
+    const std::string meshcat_src_link(" src=\"meshcat.js\"");
+    start = html.find(meshcat_src_link);
+    DRAKE_DEMAND(start != std::string::npos);
+    html.erase(start, meshcat_src_link.size());
+    html.insert(start+1, GetUrlContent("/meshcat.js"));
+
+    return std::move(html);
+  }
+
   bool HasPath(std::string_view path) const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
     DRAKE_DEMAND(loop_ != nullptr);
@@ -1498,6 +1563,10 @@ void Meshcat::DeleteSlider(std::string name) {
 
 void Meshcat::DeleteAddedControls() {
   publisher_->DeleteAddedControls();
+}
+
+std::string Meshcat::StaticHtml() {
+  return publisher_->StaticHtml();
 }
 
 bool Meshcat::HasPath(std::string_view path) const {

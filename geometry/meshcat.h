@@ -420,6 +420,15 @@ class Meshcat {
 
   //@}
 
+  /** Returns an HTML string that can be saved to a file for a snapshot of the
+  visualizer and its contents. The HTML can be viewed in the browser
+  without any connection to a Meshcat "server" (e.g. `this`). This is a great
+  way to save and share your 3D content.
+
+  Note that controls (e.g. sliders and buttons) are not included in the HTML
+  output, because their usefulness relies on a connection to the server. */
+  std::string StaticHtml();
+
   /* These remaining public methods are intended to primarily for testing. These
   calls must safely acquire the data from the websocket thread and will block
   execution waiting for that data to be acquired. They are intentionally

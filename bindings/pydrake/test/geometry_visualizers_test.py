@@ -141,6 +141,8 @@ class TestGeometryVisualizers(unittest.TestCase):
             name="slider"), 0.7, delta=1e-14)
         meshcat.DeleteSlider(name="slider")
         meshcat.DeleteAddedControls()
+        self.assertIn("data:application/octet-binary;base64",
+                      meshcat.StaticHtml())
 
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)

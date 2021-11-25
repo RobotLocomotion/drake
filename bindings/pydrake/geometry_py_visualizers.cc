@@ -280,7 +280,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,
-            cls_doc.DeleteAddedControls.doc);
+            cls_doc.DeleteAddedControls.doc)
+        .def("StaticHtml", &Class::StaticHtml, cls_doc.StaticHtml.doc);
     // Note: we intentionally do not bind the advanced methods (HasProperty and
     // GetPacked*) which were intended primarily for testing in C++.
   }
