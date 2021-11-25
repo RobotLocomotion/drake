@@ -18,6 +18,7 @@ namespace {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using ::testing::HasSubstr;
 
 // A small wrapper around std::system to ensure correct argument passing.
@@ -25,7 +26,7 @@ int SystemCall(const std::vector<std::string>& argv) {
   std::string command;
   for (const std::string& arg : argv) {
     // Note: Can't use ASSERT_THAT inside this subroutine.
-    EXPECT_THAT(arg, ::testing::Not(::testing::HasSubstr("'")));
+    EXPECT_THAT(arg, ::testing::Not(HasSubstr("'")));
     command = std::move(command) + "'" + arg + "' ";
   }
   return std::system(command.c_str());
@@ -644,6 +645,28 @@ GTEST_TEST(MeshcatTest, ResetRenderMode) {
   EXPECT_FALSE(meshcat.GetPackedProperty("/Grid", "visible").empty());
   EXPECT_FALSE(meshcat.GetPackedProperty("/Axes", "visible").empty());
 }
+
+GTEST_TEST(MeshcatTest, StaticHtml) {
+  Meshcat meshcat;
+
+  // Call each command that will be saved (at least) once.
+  meshcat.SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
+  meshcat.SetTransform("box", RigidTransformd(Vector3d{0, 0, 0}));
+  meshcat.SetProperty("/Background", "visible", false);
+
+  MeshcatAnimation animation;
+  animation.SetTransform(0, "box", RigidTransformd());
+  animation.SetTransform(20, "box",
+                         RigidTransformd(RotationMatrixd::MakeZRotation(M_PI)));
+
+  const std::string html = meshcat.StaticHtml();
+  // Confirm that I have some base64 content.
+  EXPECT_THAT(html, HasSubstr("data:application/octet-binary;base64"));
+
+  // Confirm that the meshcat.js link was replaced.
+  EXPECT_THAT(html, ::testing::Not(HasSubstr("meshcat.js")));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
