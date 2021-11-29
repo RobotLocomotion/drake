@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <limits>
 #include <optional>
-#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -32,8 +31,9 @@ using multibody::Body;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
-using symbolic::Expression;
 using systems::Context;
+using symbolic::Expression;
+
 
 HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
                  const HPolyhedron& domain, const IrisOptions& options) {
@@ -64,7 +64,6 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   MatrixXd tangent_matrix;
 
   while (true) {
-    DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
     for (int i = 0; i < N; ++i) {
       const auto touch = E.MinimumUniformScalingToTouch(*obstacles[i]);
@@ -107,11 +106,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
 
     E = P.MaximumVolumeInscribedEllipsoid();
     const double volume = E.Volume();
-    const double delta_volume = volume - best_volume;
-    if (delta_volume <= options.termination_threshold) {
-      break;
-    }
-    if (delta_volume / best_volume <= options.relative_termination_threshold) {
+    if (volume - best_volume <= options.termination_threshold) {
       break;
     }
     best_volume = volume;
@@ -213,7 +208,7 @@ class SamePointConstraint : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint)
 
   SamePointConstraint(const MultibodyPlant<double>* plant,
-                      const Context<double>& context)
+                  const Context<double>& context)
       : solvers::Constraint(3, plant ? plant->num_positions() + 6 : 0,
                             Vector3d::Zero(), Vector3d::Zero()),
         plant_(plant),
@@ -224,9 +219,13 @@ class SamePointConstraint : public solvers::Constraint {
 
   ~SamePointConstraint() override {}
 
-  void set_frameA(const multibody::Frame<double>* frame) { frameA_ = frame; }
+  void set_frameA(const multibody::Frame<double>* frame) {
+    frameA_ = frame;
+  }
 
-  void set_frameB(const multibody::Frame<double>* frame) { frameB_ = frame; }
+  void set_frameB(const multibody::Frame<double>* frame) {
+    frameB_ = frame;
+  }
 
   void EnableSymbolic() {
     if (symbolic_plant_ != nullptr) {
@@ -327,8 +326,8 @@ class SamePointConstraint : public solvers::Constraint {
 bool FindClosestCollision(
     std::shared_ptr<SamePointConstraint> same_point_constraint,
     const multibody::Frame<double>& frameA,
-    const multibody::Frame<double>& frameB, const ConvexSet& setA,
-    const ConvexSet& setB, const Hyperellipsoid& E,
+    const multibody::Frame<double>& frameB,
+    const ConvexSet& setA, const ConvexSet& setB, const Hyperellipsoid& E,
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
     const solvers::SolverInterface& solver,
@@ -392,7 +391,8 @@ bool FindClosestCollision(
 // Add the tangent to the (scaled) ellipsoid at @p point as a
 // constraint.
 void AddTangentToPolytope(
-    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
+    const Hyperellipsoid& E,
+    const Eigen::Ref<const Eigen::VectorXd>& point,
     const IrisOptions& options,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
     Eigen::VectorXd* b, int* num_constraints) {
@@ -403,52 +403,28 @@ void AddTangentToPolytope(
   }
 
   A->row(*num_constraints) =
-      (E.A().transpose() * E.A() * (point - E.center())).normalized();
+        (E.A().transpose() * E.A() *(point - E.center())).normalized();
   (*b)[*num_constraints] =
       A->row(*num_constraints) * point - options.configuration_space_margin;
   *num_constraints += 1;
 }
 
-struct GeometryPairWithDistance {
-  GeometryId geomA;
-  GeometryId geomB;
-  double distance;
-
-  GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
-      : geomA(gA), geomB(gB), distance(dist) {}
-
-  bool operator<(const GeometryPairWithDistance& other) {
-    return distance < other.distance;
-  }
-};
-
 }  // namespace
 
 HPolyhedron IrisInConfigurationSpace(
-    const MultibodyPlant<double>& plant, const Context<double>& context,
+    const MultibodyPlant<double>& plant,
+    const Context<double>& context,
     const Eigen::Ref<const Eigen::VectorXd>& sample,
     const IrisOptions& options) {
-  const int nq = plant.num_positions();
-  DRAKE_DEMAND(sample.size() == nq);
-
-  auto sample_context = plant.CreateDefaultContext();
-  plant.FixInputPortsFrom(plant, context, sample_context.get());
-  sample_context->SetTimeStateAndParametersFrom(context);
-  plant.SetPositions(sample_context.get(), sample);
-  return IrisInConfigurationSpace(plant, *sample_context, options);
-}
-
-HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
-                                     const Context<double>& context,
-                                     const IrisOptions& options) {
   // Check the inputs.
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
-  const Eigen::VectorXd sample = plant.GetPositions(context);
+  DRAKE_DEMAND(sample.size() == nq);
   // Note: We require finite joint limits to define the bounding box for the
   // IRIS algorithm.
   DRAKE_DEMAND(plant.GetPositionLowerLimits().array().isFinite().all());
   DRAKE_DEMAND(plant.GetPositionUpperLimits().array().isFinite().all());
+
 
   // Make the polytope and ellipsoid.
   HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
@@ -477,23 +453,15 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     frames.emplace(geom_id, &plant.GetBodyFromFrameId(frame_id)->body_frame());
   }
 
+  // TODO(russt): As a surrogate for the true objective, we could use convex
+  // optimization to compute the (squared?) distance between each collision pair
+  // from the sample point configuration, then sort the pairs by that distance.
+  // This could improve computation times in Ibex here and produce regions with
+  // less faces.
   auto pairs = inspector.GetCollisionCandidates();
   const int N = static_cast<int>(pairs.size());
   auto same_point_constraint =
       std::make_shared<SamePointConstraint>(&plant, context);
-
-  // As a surrogate for the true objective, the pairs are sorted by the distance
-  // between each collision pair from the sample point configuration. This could
-  // improve computation times in Ibex here and produce regions with fewer
-  // faces.
-  std::vector<GeometryPairWithDistance> sorted_pairs;
-  for (const auto [geomA, geomB] : pairs) {
-    sorted_pairs.emplace_back(
-        geomA, geomB,
-        query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
-            .distance);
-  }
-  std::sort(sorted_pairs.begin(), sorted_pairs.end());
 
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices with a generous maximum
@@ -519,24 +487,16 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   while (true) {
     int num_constraints = 2 * nq;  // Start with just the joint limits.
-    bool sample_point_requirement = true;
-    DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
 
     // First use a fast nonlinear optimizer to add as many constraint as it
     // can find.
-    for (const auto pair : sorted_pairs) {
-      while (sample_point_requirement &&
-             FindClosestCollision(
-                 same_point_constraint, *frames.at(pair.geomA),
-                 *frames.at(pair.geomB), *sets.at(pair.geomA),
-                 *sets.at(pair.geomB), E, A.topRows(num_constraints),
-                 b.head(num_constraints), *solver, sample, &closest)) {
+    for (const auto& [geomA, geomB] : pairs) {
+      while (FindClosestCollision(
+          same_point_constraint, *frames.at(geomA), *frames.at(geomB),
+          *sets.at(geomA), *sets.at(geomB), E, A.topRows(num_constraints),
+          b.head(num_constraints), *solver, sample, &closest)) {
         AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
-        if (options.require_sample_point_is_contained) {
-          sample_point_requirement =
-              A.row(num_constraints - 1) * sample <= b(num_constraints - 1);
-        }
       }
     }
 
@@ -544,23 +504,20 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
       // Now loop back through and use Ibex for rigorous certification.
       // TODO(russt): Consider (re-)implementing a "feasibility only" version of
       // the IRIS check + nonlinear optimization to improve.
-      for (const auto pair : sorted_pairs) {
-        while (sample_point_requirement &&
-               FindClosestCollision(
-                   same_point_constraint, *frames.at(pair.geomA),
-                   *frames.at(pair.geomB), *sets.at(pair.geomA),
-                   *sets.at(pair.geomB), E, A.topRows(num_constraints),
-                   b.head(num_constraints), *ibex, sample, &closest)) {
+      for (const auto& [geomA, geomB] : pairs) {
+        while (FindClosestCollision(
+            same_point_constraint, *frames.at(geomA), *frames.at(geomB),
+            *sets.at(geomA), *sets.at(geomB), E, A.topRows(num_constraints),
+            b.head(num_constraints), *ibex, sample, &closest)) {
           AddTangentToPolytope(E, closest, options, &A, &b, &num_constraints);
-          if (options.require_sample_point_is_contained) {
-            sample_point_requirement =
-                A.row(num_constraints - 1) * sample <= b(num_constraints - 1);
-          }
         }
       }
     }
 
-    if (!sample_point_requirement) {
+    if (options.require_sample_point_is_contained &&
+        ((A.topRows(num_constraints) * sample).array() >=
+         b.head(num_constraints).array())
+            .any()) {
       break;
     }
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
@@ -572,15 +529,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
     E = P.MaximumVolumeInscribedEllipsoid();
     const double volume = E.Volume();
-    const double delta_volume = volume - best_volume;
-    if (delta_volume <= options.termination_threshold) {
-      break;
-    }
-    if (delta_volume / best_volume <= options.relative_termination_threshold) {
+    if (volume - best_volume <= options.termination_threshold) {
       break;
     }
     best_volume = volume;
-  }
+    }
   return P;
 }
 
