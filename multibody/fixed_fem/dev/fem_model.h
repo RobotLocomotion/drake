@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -281,7 +282,6 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     std::vector<int> nonzero_blocks(this->num_nodes());
     for (int i = 0; i < this->num_nodes(); ++i) {
       nonzero_blocks[i] = neighbor_nodes[i].size();
-      std::cout << nonzero_blocks[i] << std::endl;
     }
     return std::make_unique<internal::PetscSymmetricBlockSparseMatrix>(
         num_dofs(), kDim, nonzero_blocks);
