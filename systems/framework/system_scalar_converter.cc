@@ -42,6 +42,17 @@ void SystemScalarConverter::Remove() {
   funcs_.erase(Key(typeid(T), typeid(U)));
 }
 
+template <typename T, typename U>
+bool SystemScalarConverter::IsConvertible() const {
+  return IsConvertible(typeid(T), typeid(U));
+}
+
+bool SystemScalarConverter::IsConvertible(
+    const std::type_info& t_info, const std::type_info& u_info) const {
+  const auto* converter = Find(t_info, u_info);
+  return (converter != nullptr);
+}
+
 const SystemScalarConverter::ErasedConverterFunc* SystemScalarConverter::Find(
     const std::type_info& t_info, const std::type_info& u_info) const {
   const auto& key = Key{t_info, u_info};
@@ -106,6 +117,7 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
 }  // namespace system_scalar_converter_internal
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &SystemScalarConverter::IsConvertible<T, U>,
     &SystemScalarConverter::Remove<T, U>
 ))
 
