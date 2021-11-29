@@ -48,6 +48,7 @@ ADD image/drake-src.tar.xz /drake/
 FROM clean AS wheel
 
 RUN --mount=type=ssh \
+    --mount=type=cache,target=/var/cache/bazel \
     /image/build-drake.sh
 
 ADD image/build-wheel.sh /image/

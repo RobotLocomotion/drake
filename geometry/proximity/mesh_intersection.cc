@@ -296,7 +296,6 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const TriangleSurfaceMesh<double>& surface_N,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
     const math::RigidTransform<T>& X_MN,
-    ContactPolygonRepresentation representation,
     std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
@@ -318,7 +317,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   const math::RigidTransform<double> X_MN_d = convert_to_double(X_MN);
   auto callback = [&volume_field_M, &surface_N, &surface_faces,
                    &surface_vertices_M, &surface_e, &mesh_M, &X_MN_d, &X_MN,
-                   &contact_polygon, grad_eM_Ms, representation,
+                   &contact_polygon, grad_eM_Ms,
                    this](int tet_index, int tri_index) -> BvttCallbackResult {
     if (!this->IsFaceNormalAlongPressureGradient(
             volume_field_M, surface_N, X_MN_d, tet_index, tri_index)) {
@@ -343,29 +342,21 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     if (poly_vertex_count < 3) return BvttCallbackResult::Continue;
 
     const int num_previous_vertices = surface_vertices_M.size();
-    if (representation == ContactPolygonRepresentation::kCentroidSubdivision) {
-      // Add the new polygon vertices to the mesh vertices and construct a
-      // polygon from the vertex indices.
-      contact_polygon.clear();
-      for (int i = 0; i < poly_vertex_count; ++i) {
-        contact_polygon.emplace_back(surface_vertices_M.size());
-        surface_vertices_M.emplace_back(polygon_vertices_M[i]);
-      }
+
+    // Add the new polygon vertices to the mesh vertices and construct a
+    // polygon from the vertex indices.
+    contact_polygon.clear();
+    for (int i = 0; i < poly_vertex_count; ++i) {
+      contact_polygon.emplace_back(surface_vertices_M.size());
+      surface_vertices_M.emplace_back(polygon_vertices_M[i]);
     }
+
     const Vector3<T> nhat_M =
         X_MN.rotation() * surface_N.face_normal(tri_index).cast<T>();
 
     size_t old_count = surface_faces.size();
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision:
-        AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
-                             &surface_vertices_M);
-        break;
-      case ContactPolygonRepresentation::kSingleTriangle:
-        AddPolygonToMeshDataAsOneTriangle(polygon_vertices_M, nhat_M,
-                                          &surface_faces, &surface_vertices_M);
-        break;
-    }
+    AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
+                         &surface_vertices_M);
     // TODO(SeanCurtis-TRI) Consider rolling this operation into
     // AddPolygonToMeshData to eliminate the extra pass through triangles.
     const Vector3<double>& grad_eMi_M =
@@ -403,8 +394,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
     const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation) {
+    const math::RigidTransform<T>& X_WR) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
   //  scalar, and the mesh vertex-position scalar. However, short term, it is
@@ -427,8 +417,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::vector<Vector3<T>> grad_eS_S;
 
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(
-      field_S, bvh_S, mesh_R, bvh_R, X_SR, representation,
-      &surface_SR, &e_SR, &grad_eS_S);
+      field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR, &e_SR, &grad_eS_S);
 
   if (surface_SR == nullptr) return nullptr;
 

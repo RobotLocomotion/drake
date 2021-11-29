@@ -116,7 +116,6 @@ template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<T>& half_space_F, const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation,
     std::vector<Vector3<T>>* new_vertices_W,
     std::vector<SurfaceTriangle>* new_faces,
     std::unordered_map<int, int>* vertices_to_newly_created_vertices,
@@ -214,33 +213,18 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   // Case 1: triangle lies completely within the half space. Preserve
   // the ordering of the triangle vertices.
   if (num_positive == 0) {
-    switch (representation) {
-      case ContactPolygonRepresentation::kCentroidSubdivision: {
-        const int v0_new_index = GetVertexAddIfNeeded(
-            vertices_F, triangle.vertex(0), X_WF,
-            vertices_to_newly_created_vertices, new_vertices_W);
-        const int v1_new_index = GetVertexAddIfNeeded(
-            vertices_F, triangle.vertex(1), X_WF,
-            vertices_to_newly_created_vertices, new_vertices_W);
-        const int v2_new_index = GetVertexAddIfNeeded(
-            vertices_F, triangle.vertex(2), X_WF,
-            vertices_to_newly_created_vertices, new_vertices_W);
+    const int v0_new_index = GetVertexAddIfNeeded(
+        vertices_F, triangle.vertex(0), X_WF,
+        vertices_to_newly_created_vertices, new_vertices_W);
+    const int v1_new_index = GetVertexAddIfNeeded(
+        vertices_F, triangle.vertex(1), X_WF,
+        vertices_to_newly_created_vertices, new_vertices_W);
+    const int v2_new_index = GetVertexAddIfNeeded(
+        vertices_F, triangle.vertex(2), X_WF,
+        vertices_to_newly_created_vertices, new_vertices_W);
 
-        AddPolygonToMeshData({v0_new_index, v1_new_index, v2_new_index},
-                             nhat_W, new_faces, new_vertices_W);
-        break;
-      }
-      case ContactPolygonRepresentation::kSingleTriangle: {
-        AddPolygonToMeshDataAsOneTriangle(
-            {
-                X_WF * vertices_F[triangle.vertex(0)].cast<T>(),
-                X_WF * vertices_F[triangle.vertex(1)].cast<T>(),
-                X_WF * vertices_F[triangle.vertex(2)].cast<T>(),
-            },
-            nhat_W, new_faces, new_vertices_W);
-        break;
-      }
-    }
+    AddPolygonToMeshData({v0_new_index, v1_new_index, v2_new_index}, nhat_W,
+                         new_faces, new_vertices_W);
     return;
   }
 
@@ -254,53 +238,38 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         const int v1 = triangle.vertex(i1);
         const int v2 = triangle.vertex(i2);
 
-        switch (representation) {
-          case ContactPolygonRepresentation::kCentroidSubdivision: {
-            // Get the vertices that result from intersecting edge i0/i1 and
-            // i0/i2.
-            const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
-                v0, v1, s[i0], s[i1], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
-            const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
-                v0, v2, s[i0], s[i2], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
+        // Get the vertices that result from intersecting edge i0/i1 and
+        // i0/i2.
+        const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+            v0, v1, s[i0], s[i1], vertices_F, X_WF,
+            edges_to_newly_created_vertices, new_vertices_W);
+        const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
+            v0, v2, s[i0], s[i2], vertices_F, X_WF,
+            edges_to_newly_created_vertices, new_vertices_W);
 
-            // Get the indices of the new vertices, adding them if needed.
-            const int i1_new_index = GetVertexAddIfNeeded(
-                vertices_F, v1, X_WF, vertices_to_newly_created_vertices,
-                new_vertices_W);
-            const int i2_new_index = GetVertexAddIfNeeded(
-                vertices_F, v2, X_WF, vertices_to_newly_created_vertices,
-                new_vertices_W);
+        // Get the indices of the new vertices, adding them if needed.
+        const int i1_new_index = GetVertexAddIfNeeded(
+            vertices_F, v1, X_WF, vertices_to_newly_created_vertices,
+            new_vertices_W);
+        const int i2_new_index = GetVertexAddIfNeeded(
+            vertices_F, v2, X_WF, vertices_to_newly_created_vertices,
+            new_vertices_W);
 
-            // Add the polygon (i1, i2, e02, e01)
-            //
-            //             i0
-            //            ╱╲
-            //       e01 ╱  ╲ e02
-            //    ______╱____╲___
-            //         ╱      ╲
-            //        ╱________╲
-            //      i1          i2
-            //
-            AddPolygonToMeshData(
-                {i1_new_index, i2_new_index, edge_i0_i2_intersection_index,
-                 edge_i0_i1_intersection_index},
-                nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-          case ContactPolygonRepresentation::kSingleTriangle: {
-            AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v1].cast<T>(),
-                 X_WF * vertices_F[v2].cast<T>(),
-                 CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
-                                           X_WF),
-                 CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
-                                           X_WF)},
-                nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-        }
+        // Add the polygon (i1, i2, e02, e01)
+        //
+        //             i0
+        //            ╱╲
+        //       e01 ╱  ╲ e02
+        //    ______╱____╲___
+        //         ╱      ╲
+        //        ╱________╲
+        //      i1          i2
+        //
+        AddPolygonToMeshData(
+            {i1_new_index, i2_new_index, edge_i0_i2_intersection_index,
+             edge_i0_i1_intersection_index},
+            nhat_W, new_faces, new_vertices_W);
+
         return;
       }
     }
@@ -318,39 +287,25 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         const int v1 = triangle.vertex(i1);
         const int v2 = triangle.vertex(i2);
 
-        switch (representation) {
-          case ContactPolygonRepresentation::kCentroidSubdivision: {
-            // Get the vertex that corresponds to i0.
-            const int i0_new_index = GetVertexAddIfNeeded(
-                vertices_F, v0, X_WF, vertices_to_newly_created_vertices,
-                new_vertices_W);
+        // Get the vertex that corresponds to i0.
+        const int i0_new_index = GetVertexAddIfNeeded(
+            vertices_F, v0, X_WF, vertices_to_newly_created_vertices,
+            new_vertices_W);
 
-            // Get the vertex that results from intersecting edge i0/i1.
-            const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
-                v0, v1, s[i0], s[i1], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
+        // Get the vertex that results from intersecting edge i0/i1.
+        const int edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+            v0, v1, s[i0], s[i1], vertices_F, X_WF,
+            edges_to_newly_created_vertices, new_vertices_W);
 
-            // Get the vertex that results from intersecting edge i0/i2.
-            const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
-                v0, v2, s[i0], s[i2], vertices_F, X_WF,
-                edges_to_newly_created_vertices, new_vertices_W);
+        // Get the vertex that results from intersecting edge i0/i2.
+        const int edge_i0_i2_intersection_index = GetVertexAddIfNeeded(
+            v0, v2, s[i0], s[i2], vertices_F, X_WF,
+            edges_to_newly_created_vertices, new_vertices_W);
 
-            AddPolygonToMeshData({i0_new_index, edge_i0_i1_intersection_index,
-                                  edge_i0_i2_intersection_index},
-                                 nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-          case ContactPolygonRepresentation::kSingleTriangle: {
-            AddPolygonToMeshDataAsOneTriangle(
-                {X_WF * vertices_F[v0].cast<T>(),
-                 CalcEdgePlaneIntersection(v0, v1, s[i0], s[i1], vertices_F,
-                                           X_WF),
-                 CalcEdgePlaneIntersection(v0, v2, s[i0], s[i2], vertices_F,
-                                           X_WF)},
-                nhat_W, new_faces, new_vertices_W);
-            break;
-          }
-        }
+        AddPolygonToMeshData({i0_new_index, edge_i0_i1_intersection_index,
+                              edge_i0_i2_intersection_index},
+                             nhat_W, new_faces, new_vertices_W);
+
         return;
       }
     }
@@ -365,8 +320,7 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const TriangleSurfaceMesh<double>& input_mesh_F,
     const PosedHalfSpace<T>& half_space_F,
     const std::vector<int>& tri_indices,
-    const math::RigidTransform<T>& X_WF,
-    ContactPolygonRepresentation representation) {
+    const math::RigidTransform<T>& X_WF) {
   std::vector<Vector3<T>> new_vertices_W;
   std::vector<SurfaceTriangle> new_faces;
   std::unordered_map<int, int> vertices_to_newly_created_vertices;
@@ -374,8 +328,8 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
 
   for (const auto& tri_index : tri_indices) {
     ConstructTriangleHalfspaceIntersectionPolygon(
-        input_mesh_F, tri_index, half_space_F, X_WF, representation,
-        &new_vertices_W, &new_faces, &vertices_to_newly_created_vertices,
+        input_mesh_F, tri_index, half_space_F, X_WF, &new_vertices_W,
+        &new_faces, &vertices_to_newly_created_vertices,
         &edges_to_newly_created_vertices);
   }
 
@@ -396,8 +350,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR,
-    ContactPolygonRepresentation representation) {
+    const math::RigidTransform<T>& X_WR) {
   std::vector<int> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
   auto bvh_callback = [&tri_indices, &mesh_R,
@@ -438,8 +391,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   //  methods.
   std::unique_ptr<TriangleSurfaceMesh<T>> mesh_W =
       ConstructSurfaceMeshFromMeshHalfspaceIntersection(mesh_R, hs_R,
-                                                        tri_indices, X_WR,
-                                                        representation);
+                                                        tri_indices, X_WR);
 
   if (mesh_W == nullptr) return nullptr;
 

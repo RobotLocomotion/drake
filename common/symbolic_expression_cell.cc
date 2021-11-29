@@ -1866,6 +1866,7 @@ Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
       // TODO(ggould-tri) The logic of where/whether to find discontinuities
       // in a `Formula` belongs in that class, not here.  That could also
       // handle eg the degenerate case of constant formulae.
+      // Refer to #8648 for additional information.
       return if_then_else(
           get_lhs_expression(f_cond_) == get_rhs_expression(f_cond_),
           Expression::NaN(),

@@ -942,26 +942,13 @@ TEST_F(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   unique_ptr<TriangleSurfaceMesh<double>> surface_S;
   unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_field;
 
-  {
-    SCOPED_TRACE("Triangulate each polygon around its centroid.");
-    SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        *field_S_, *bvh_mesh_S_, *surface_R_, *bvh_surface_R_, X_SR_,
-        ContactPolygonRepresentation::kCentroidSubdivision,
-        &surface_S, &e_field, &grad_eS_S);
+  SCOPED_TRACE("Triangulate each polygon around its centroid.");
+  SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
+      *field_S_, *bvh_mesh_S_, *surface_R_, *bvh_surface_R_, X_SR_, &surface_S,
+      &e_field, &grad_eS_S);
 
-    EXPECT_EQ(6, surface_S->num_triangles());
-    VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);
-  }
-  {
-    SCOPED_TRACE("Single triangle for each polygon");
-    SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        *field_S_, *bvh_mesh_S_, *surface_R_, *bvh_surface_R_, X_SR_,
-        ContactPolygonRepresentation::kSingleTriangle,
-        &surface_S, &e_field, &grad_eS_S);
-
-    EXPECT_EQ(2, surface_S->num_triangles());
-    VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);
-  }
+  EXPECT_EQ(6, surface_S->num_triangles());
+  VerifySampleVolumeFieldOnSurface(surface_S, e_field, grad_eS_S);
 }
 
 // Tests the generation of the ContactSurface between a soft volume and rigid
@@ -981,37 +968,32 @@ TEST_F(MeshIntersectionFixture, TestComputeContactSurfaceSoftRigid) {
   const RigidTransformd X_WS = RigidTransformd::Identity();
   const RigidTransformd X_WR = X_WS * X_SR_;
 
-  for (const auto representation :
-       {ContactPolygonRepresentation::kCentroidSubdivision,
-        ContactPolygonRepresentation::kSingleTriangle}) {
-    SCOPED_TRACE(fmt::format("representation = {}", representation));
-    // Regardless of how we assign id_A and id_B to mesh_S_ and surface_R_, the
-    // contact surfaces will always have id_M = id_A and id_N = id_B (because
-    // of the ordering).
+  // Regardless of how we assign id_A and id_B to mesh_S_ and surface_R_, the
+  // contact surfaces will always have id_M = id_A and id_N = id_B (because
+  // of the ordering).
 
-    // In this case, we assign id_A to soft and we already know that
-    // id_A < id_B. Confirm order
-    auto contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        id_A, *field_S_, *bvh_mesh_S_, X_WS, id_B, *surface_R_,
-        *bvh_surface_R_, X_WR, representation);
-    EXPECT_EQ(contact_SR->id_M(), id_A);
-    EXPECT_EQ(contact_SR->id_N(), id_B);
-    EXPECT_TRUE(contact_SR->HasGradE_M());
-    EXPECT_FALSE(contact_SR->HasGradE_N());
+  // In this case, we assign id_A to soft and we already know that
+  // id_A < id_B. Confirm order
+  auto contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+      id_A, *field_S_, *bvh_mesh_S_, X_WS, id_B, *surface_R_, *bvh_surface_R_,
+      X_WR);
+  EXPECT_EQ(contact_SR->id_M(), id_A);
+  EXPECT_EQ(contact_SR->id_N(), id_B);
+  EXPECT_TRUE(contact_SR->HasGradE_M());
+  EXPECT_FALSE(contact_SR->HasGradE_N());
 
-    // Now reverse the ids. It should *still* be the case that the reported id_A
-    // is less than id_B, but we should further satisfy various invariants
-    // in VerifyComputeContactSurfaceFromSoftRigid().
-    auto contact_RS = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        id_B, *field_S_, *bvh_mesh_S_, X_WS, id_A, *surface_R_,
-        *bvh_surface_R_, X_WR, representation);
-    EXPECT_EQ(contact_RS->id_M(), id_A);
-    EXPECT_EQ(contact_RS->id_N(), id_B);
-    EXPECT_FALSE(contact_RS->HasGradE_M());
-    EXPECT_TRUE(contact_RS->HasGradE_N());
+  // Now reverse the ids. It should *still* be the case that the reported id_A
+  // is less than id_B, but we should further satisfy various invariants
+  // in VerifyComputeContactSurfaceFromSoftRigid().
+  auto contact_RS = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+      id_B, *field_S_, *bvh_mesh_S_, X_WS, id_A, *surface_R_, *bvh_surface_R_,
+      X_WR);
+  EXPECT_EQ(contact_RS->id_M(), id_A);
+  EXPECT_EQ(contact_RS->id_N(), id_B);
+  EXPECT_FALSE(contact_RS->HasGradE_M());
+  EXPECT_TRUE(contact_RS->HasGradE_N());
 
-    VerifyComputeContactSurfaceFromSoftRigid(contact_SR, contact_RS, X_WS);
-  }
+  VerifyComputeContactSurfaceFromSoftRigid(contact_SR, contact_RS, X_WS);
 }
 
 /* This test fixture enables some limited testing of the autodiff-valued contact
@@ -1213,8 +1195,7 @@ class MeshMeshDerivativesTest : public ::testing::Test {
       const RigidTransform<AutoDiffXd> X_WS(R_WS_d.cast<AutoDiffXd>(), p_WS);
 
       auto surface = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          id_S_, *field_S_, *bvh_S_, X_WS, id_R_, *tri_mesh_R_, *bvh_R_,
-          X_WR_, ContactPolygonRepresentation::kCentroidSubdivision);
+          id_S_, *field_S_, *bvh_S_, X_WS, id_R_, *tri_mesh_R_, *bvh_R_, X_WR_);
 
       SCOPED_TRACE(config.name);
       ASSERT_NE(surface, nullptr);
@@ -1555,8 +1536,7 @@ TEST_F(MeshMeshDerivativesTest, FaceNormalsWrtOrientation) {
 
     auto surface = ComputeContactSurfaceFromSoftVolumeRigidSurface(
         this->id_S_, *this->field_S_, *this->bvh_S_, X_WS, this->id_R_,
-        *this->tri_mesh_R_, *this->bvh_R_, this->X_WR_,
-        ContactPolygonRepresentation::kCentroidSubdivision);
+        *this->tri_mesh_R_, *this->bvh_R_, this->X_WR_);
 
     SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
     ASSERT_NE(surface, nullptr);

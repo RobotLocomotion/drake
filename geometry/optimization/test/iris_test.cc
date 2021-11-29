@@ -139,6 +139,44 @@ GTEST_TEST(IrisTest, MultipleBoxes) {
   EXPECT_FALSE(region.PointInSet(Vector2d(0.0, -.99)));
 }
 
+GTEST_TEST(IrisTest, TerminationConditions) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
+
+  const Vector2d sample{0, 0};  // center of the bounding box.
+  IrisOptions options;
+  options.iteration_limit = 1;
+  // Negative thresholds disable the termination condition.
+  options.termination_threshold = -1;
+  options.relative_termination_threshold = -1;
+  const HPolyhedron iteration_region = Iris(obstacles, sample, domain, options);
+  EXPECT_EQ(iteration_region.b().size(),
+            8);  // 4 from bbox + 1 from each obstacle.
+
+  options.iteration_limit = 100;
+  options.termination_threshold = 0.1;
+  options.relative_termination_threshold = -1;
+  const HPolyhedron abs_volume_region =
+      Iris(obstacles, sample, domain, options);
+  EXPECT_EQ(abs_volume_region.b().size(),
+            8);  // 4 from bbox + 1 from each obstacle.
+
+  options.iteration_limit = 100;
+  options.termination_threshold = -1;
+  options.relative_termination_threshold = 0.1;
+  const HPolyhedron rel_volume_region =
+      Iris(obstacles, sample, domain, options);
+  EXPECT_EQ(rel_volume_region.b().size(),
+            8);  // 4 from bbox + 1 from each obstacle.
+}
+
 GTEST_TEST(IrisTest, BallInBoxNDims) {
   const int N = 8;
   ConvexSets obstacles;
@@ -280,6 +318,50 @@ TEST_F(SceneGraphTester, MultipleBoxes) {
   EXPECT_TRUE(region.PointInSet(Vector3d(0.0, 0.0, -0.99)));
 }
 
+// One prismatic link with joint limits.  Iris should return the joint limits.
+GTEST_TEST(DeprecatedIrisInConfigurationSpaceTest, JointLimits) {
+  const std::string limits_urdf = R"(
+<robot name="limits">
+  <link name="movable">
+    <collision>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="movable" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)";
+
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+  multibody::Parser(&plant).AddModelFromString(limits_urdf, "urdf");
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+  auto context = diagram->CreateDefaultContext();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  HPolyhedron region = IrisInConfigurationSpace(
+      plant, plant.GetMyContextFromRoot(*context), sample, options);
+#pragma GCC diagnostic pop
+
+  EXPECT_EQ(region.ambient_dimension(), 1);
+
+  const double kTol = 1e-5;
+  const double qmin = -2.0, qmax = 2.0;
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+}
+
 namespace {
 
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
@@ -294,8 +376,9 @@ HPolyhedron IrisFromUrdf(const std::string urdf,
   auto diagram = builder.Build();
 
   auto context = diagram->CreateDefaultContext();
+  plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()), sample);
   return IrisInConfigurationSpace(plant, plant.GetMyContextFromRoot(*context),
-                                  sample, options);
+                                  options);
 }
 
 }  // namespace
