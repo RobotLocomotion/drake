@@ -28,6 +28,10 @@ LIBDRAKE_COMPONENTS = [
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
+    "//examples/mesh_painter:mask_image_camera",  # unpackaged
+    "//examples/mesh_painter:mesh_painter_system",  # unpackaged
+    "//examples/mesh_painter:painter_shader",  # unpackaged
+    "//examples/mesh_painter:render_engine_vtk_with_mask_images",  # unpackaged
     "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged

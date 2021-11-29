@@ -1,0 +1,103 @@
+# -*- python -*-
+
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+    "drake_cc_test",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "mask_image_camera",
+    srcs = ["mask_image_camera.cc"],
+    hdrs = ["mask_image_camera.h"],
+    deps = [
+        ":render_engine_vtk_with_mask_images",
+        "//systems/sensors:rgbd_sensor",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_painter_system",
+    srcs = ["mesh_painter_system.cc"],
+    hdrs = ["mesh_painter_system.h"],
+    # NOTE: Required for compatibility with tinyobjloader.
+    linkstatic = 1,
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//geometry:scene_graph",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:make_cylinder_mesh",
+        "//geometry/proximity:make_ellipsoid_mesh",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:volume_mesh",
+        "//systems/framework:leaf_system",
+        "@tinyobjloader",
+    ],
+)
+
+drake_cc_binary(
+    name = "mesh_painting_example",
+    srcs = ["mesh_painting_example.cc"],
+    data = [
+        "diag_gradient.png",
+        "textured_quad.obj",
+    ],
+    visibility = ["//visibility:private"],
+    # tags = vtk_test_tags(),
+    deps = [
+        ":mask_image_camera",
+        ":mesh_painter_system",
+        ":render_engine_vtk_with_mask_images",
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "@gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "painter_shader",
+    srcs = ["painter_shader.cc"],
+    hdrs = ["painter_shader.h"],
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_roles",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_vtk_with_mask_images",
+    srcs = [
+        "render_engine_vtk_with_mask_images.cc",
+        "render_engine_vtk_with_mask_images_factory.cc",
+    ],
+    hdrs = [
+        "render_engine_vtk_with_mask_images.h",
+        "render_engine_vtk_with_mask_images_factory.h",
+    ],
+    # render_engine_vtk_with_mask_images.h pulls in VTK headers; leave
+    # it out of the install.
+    install_hdrs_exclude = ["render_engine_vtk_with_mask_images.h"],
+    deps = [
+        ":painter_shader",
+        "//geometry/render:render_engine_vtk",
+    ],
+)
+
+install_data()
+
+add_lint_tests()

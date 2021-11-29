@@ -42,6 +42,7 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/compass_gait",
     "//examples/kuka_iiwa_arm",
     "//examples/manipulation_station",
+    "//examples/mesh_painter",
     "//examples/multibody/cart_pole",
     "//examples/pendulum",
     "//examples/planar_gripper",

@@ -75,6 +75,19 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "mesh_painter_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["mesh_painter_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -130,6 +143,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
     ":compass_gait_py",
     ":manipulation_station_py",
+    ":mesh_painter_py",
     ":pendulum_py",
     ":quadrotor_py",
     ":rimless_wheel_py",

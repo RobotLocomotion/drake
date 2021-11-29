@@ -1,0 +1,11 @@
+# A single quad lying on the z = 0 plane with unit length. It has texture
+# coordinates on it.
+v -0.5 -0.5 0
+v 0.5 -0.5 0
+v 0.5 0.5 0
+v -0.5 0.5 0
+vt 0 0
+vt 1 0
+vt 1 1
+vt 0 1
+f 1/1 2/2 3/3 4/4

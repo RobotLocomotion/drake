@@ -42,6 +42,7 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
         "//examples/acrobot/..."
         "//examples/compass_gait/..."
         "//examples/manipulation_station/..."
+        "//examples/mesh_painter/..."
         "//examples/pendulum/..."
         "//examples/quadrotor/..."
         "//examples/rimless_wheel/..."
