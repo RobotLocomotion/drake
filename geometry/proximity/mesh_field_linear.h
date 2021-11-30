@@ -291,8 +291,9 @@ class MeshFieldLinear {
    */
   void TransformGradients(
       const math::RigidTransform<typename MeshType::ScalarType>& X_NM) {
-    for (auto& grad : gradients_) {
-      grad = X_NM.rotation() * grad;
+    for (size_t i = 0; i < gradients_.size(); ++i) {
+      gradients_[i] = X_NM.rotation() * gradients_[i];
+      values_at_Mo_[i] -= gradients_[i].dot(X_NM.translation());
     }
   }
 
