@@ -10,6 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -62,48 +63,68 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
 
 // Test rotational inertia factory method set via a 3x3 matrix.
 GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
-  try {
     // Form an arbitrary (but valid) rotational inertia.
     const double Ixx = 17, Iyy = 13, Izz = 10;
     const double Ixy = -3, Ixz = -3, Iyz = -6;
 
     RotationalInertia<double> I =
         RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            Ixx, Iyy, Izz, Ixy, Ixz, Iyz, false);
+            Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
     EXPECT_TRUE(I.CouldBePhysicallyValid());
 
     // Ensure an invalid rotational inertia always throws an exception if the
     // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
-    EXPECT_THROW(
-        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, false),
+    EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+        2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
         std::exception);
-    EXPECT_THROW(
-        I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
+    EXPECT_THROW(RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+        2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz),
         std::exception);
 
     // Ensure an invalid rotational inertia does not throw an exception if the
     // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
     EXPECT_NO_THROW(
         I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, true));
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validyt_check = */ true));
     EXPECT_FALSE(I.CouldBePhysicallyValid());
 
-    // Check the message thrown when an invalid rotational inertia is created.
-    I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-
-    // GTEST_FAIL();
-  } catch (std::exception& e) {
+    // Check for a thrown exception with proper error message when creating an
+    // invalid rotational inertia (a principal moment of inertia is negative).
     std::string expected_msg =
-        "Error: The rotational inertia\n"
-        "[34, -3, -3]\n"
-        "[-3, 13, -6]\n"
-        "[-3, -6, 10]\n"
-        "did not pass the test CouldBePhysicallyValid().";
-    EXPECT_EQ(e.what(), expected_msg);
-  }
+      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+        "\\[ 1, -3, -3\\]\n"
+        "\\[-3, 13, -6\\]\n"
+        "\\[-3, -6, 10\\]\n"
+        "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+    expected_msg += fmt::format(
+        "\nThe associated principal moments of inertia:"
+        "\n-1.583957883\\d+  7.881702629\\d+  17.702255254\\d+"
+        "\nare invalid since at least one is negative.");
+    // Note: The principal moments of inertia (with more significant digits)
+    // are: -1.583957883490135  7.881702629192435  17.702255254297697.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+          std::exception, expected_msg);
+
+    // Check for a thrown exception with proper error message when creating a
+    // rotational inertia that violates the triangle inequality.
+    expected_msg =
+      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+        "\\[34, -3, -3\\]\n"
+        "\\[-3, 13, -6\\]\n"
+        "\\[-3, -6, 10\\]\n"
+        "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+    expected_msg += fmt::format(
+        "\nThe associated principal moments of inertia:"
+        "\n4.70955263953\\d+  17.66953281\\d+  34.6209145475\\d+"
+        "\ndo not satisify the triangle inequality.");
+    // Note: The principal moments of inertia (with more significant digits)
+    // are:  4.709552639531104  17.66953281292159  34.620914547547315.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
+          std::exception, expected_msg);
 }
 
 // Test constructor for a principal axes rotational inertia matrix (products

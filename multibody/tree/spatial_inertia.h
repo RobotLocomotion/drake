@@ -492,10 +492,11 @@ class SpatialInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
     if (!IsPhysicallyValid()) {
-      throw std::runtime_error(fmt::format(
-          "Error: The spatial inertia with"
-          "{} is not physically valid. "
-          "See SpatialInertia::IsPhysicallyValid()", *this));
+      std::string error_msg = fmt::format(
+          "Spatial inertia fails SpatialInertia::IsPhysicallyValid()."
+          "{}", *this);
+      WriteExtraCentralInertiaProperties(error_msg);
+      throw std::runtime_error(error_msg);
     }
   }
 
@@ -513,10 +514,18 @@ class SpatialInertia {
   // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
+
+  // Augments operator<< to write additional information about a SpatialInertia
+  // into the std::ostream `out`.  If I_BBcm, the rotational inertia about Bcm
+  // (the center of mass of the body or composite body B) differs from I_BP,
+  // the rotational inertia about point P, then I_BBcm is written to `out`.
+  // In all cases, the central principal moments of inertia for I_BBcm are also
+  // written to `out`, which helps identify an invalid rotational inertia that
+  // violates the "triangle inequality".
+  void WriteExtraCentralInertiaProperties(std::string& msg) const;
 };
 
-/// Stream insertion operator to write an instance of SpatialInertia into a
-/// `std::ostream`. Especially useful for debugging.
+/// Writes an instance of SpatialInertia into a std::ostream.
 /// @relates SpatialInertia
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M);

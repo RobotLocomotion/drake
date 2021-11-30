@@ -182,7 +182,7 @@ class RotationalInertia {
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
                                                Ixy, Ixz, Iyz);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
   /// Constructs a rotational inertia for a particle Q of mass `mass`, whose
@@ -205,8 +205,8 @@ class RotationalInertia {
     return RotationalInertia(I_triaxial, I_triaxial, I_triaxial, 0.0, 0.0, 0.0);
   }
 
-  /// Creates a rotational inertia with moments of inertia Ixx, Iyy, Izz,
-  /// and with products of inertia Ixy, Ixz, Iyz.
+  /// (Internal use only) Creates a rotational inertia with moments of inertia
+  /// Ixx, Iyy, Izz, and with products of inertia Ixy, Ixz, Iyz.
   /// @param[in] Ixx, Iyy, Izz Moments of inertia.
   /// @param[in] Ixy, Ixz, Iyz Products of inertia.
   /// @param[in] skip_validity_check If set to false, the rotational inertia is
@@ -215,7 +215,7 @@ class RotationalInertia {
   /// reduces some computational cost). The default value is false.
   /// @throws std::exception if skip_validity_check is false and
   /// CouldBePhysicallyValid() fails.
-  /// For internal use only.
+
   static RotationalInertia<T> MakeFromMomentsAndProductsOfInertia(
       const T& Ixx, const T& Iyy, const T& Izz,
       const T& Ixy, const T& Ixz, const T& Iyz,
@@ -223,7 +223,7 @@ class RotationalInertia {
     RotationalInertia<T> I;
     I.set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
                                                  Ixy, Ixz, Iyz);
-    if (!skip_validity_check) I.ThrowIfNotPhysicallyValid();
+    if (!skip_validity_check) I.ThrowIfNotPhysicallyValid(__func__);
     return I;
   }
 
@@ -358,7 +358,7 @@ class RotationalInertia {
   /// subtracting B's rotational inertia from S's rotational inertia.
   RotationalInertia<T>& operator-=(const RotationalInertia<T>& I_BP_E) {
     MinusEqualsUnchecked(I_BP_E);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
     return *this;
   }
 
@@ -803,7 +803,7 @@ class RotationalInertia {
     const T mzz = mz*z;
     set_moments_and_products_no_validity_check(myy + mzz, mxx + mzz, mxx + myy,
                                                -mx * y,   -mx * z,   -my * z);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
   // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
@@ -822,7 +822,7 @@ class RotationalInertia {
                   "as this rotational inertia");
     I_SP_E_ = I;
     if (!skip_validity_check) {
-      DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+      DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
     }
   }
 
@@ -975,13 +975,32 @@ class RotationalInertia {
   // inequality.
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid() {
-    if (!CouldBePhysicallyValid()) {
-      // throw std::logic_error("Error: Rotational inertia did not pass test: "
-      //                        "CouldBePhysicallyValid().");
-      throw std::logic_error(fmt::format(
-          "Error: The rotational inertia\n"
-          "{}did not pass the test CouldBePhysicallyValid().", *this));
+  ThrowIfNotPhysicallyValid(const char* func_name) {
+    DRAKE_ASSERT(func_name != nullptr);
+    if (!CouldBePhysicallyValid() && func_name != nullptr) {
+      std::string error_msg = fmt::format(
+          "{}(): The rotational inertia\n"
+          "{}did not pass the test CouldBePhysicallyValid().",
+          func_name, *this);
+      // Provide additional information if a moment of inertia is non-negative
+      // or if moments of inertia do not satisfy the triangle inequality.
+      if constexpr (scalar_predicate<T>::is_bool) {
+        if (!IsNaN()) {
+          const Vector3<double> p = CalcPrincipalMomentsOfInertia();
+          if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+                  p(0), p(1), p(2), /* epsilon = */ 0.0)) {
+            error_msg += fmt::format(
+                "\nThe associated principal moments of inertia:"
+                "\n{}  {}  {}", p(0), p(1), p(2));
+            if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
+              error_msg += "\nare invalid since at least one is negative.";
+            } else
+              error_msg += "\ndo not satisify the triangle inequality.";
+          }
+        }
+      }
+
+      throw std::logic_error(error_msg);
     }
   }
 
@@ -989,7 +1008,7 @@ class RotationalInertia {
   // numeric types.
   template <typename T1 = T>
   typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid() {}
+  ThrowIfNotPhysicallyValid(const char*) {}
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
@@ -1040,8 +1059,7 @@ class RotationalInertia {
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
 
-/// Insertion operator to write %RotationalInertia's into a `std::ostream`.
-/// Especially useful for debugging.
+/// Writes an instance of RotationalInertia into a std::ostream.
 /// @relates RotationalInertia
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I);
@@ -1150,7 +1168,7 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
 
   // If both `this` and `R_AE` were valid upon entry to this method, the
   // returned rotational inertia should be valid.  Otherwise, it may not be.
-  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   return *this;
 }
 
