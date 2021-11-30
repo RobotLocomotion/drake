@@ -269,7 +269,6 @@ drake_cc_library(
         "//geometry/query_results:signed_distance_pair",
         "//geometry/query_results:signed_distance_to_point",
         "//systems/framework",
-        "//systems/rendering:pose_bundle",
     ],
 )
 

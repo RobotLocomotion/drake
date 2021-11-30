@@ -162,8 +162,6 @@ class TestAll(unittest.TestCase):
             "PySerializer",
             # - primitives
             "Adder",
-            # - rendering
-            "PoseVector",
             # - scalar_conversion
             "TemplateSystem",
             # - sensors

@@ -57,21 +57,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("all_frame_ids",
-        WrapDeprecated(cls_doc.all_frame_ids.doc_deprecated,
-            [](Class* self) -> std::vector<FrameId> {
-              std::vector<FrameId> frame_ids;
-              frame_ids.reserve(self->num_frames());
-              for (FrameId id : self->all_frame_ids()) {
-                frame_ids.push_back(id);
-              }
-              return frame_ids;
-            }),
-        cls_doc.all_frame_ids.doc_deprecated);
-#pragma GCC diagnostic pop
-
     cls  // BR
         .def("GetAllFrameIds", &Class::GetAllFrameIds,
             cls_doc.GetAllFrameIds.doc)
@@ -190,16 +175,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
             py_rvp::reference_internal, cls_doc.get_source_pose_port.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("get_pose_bundle_output_port",
-            WrapDeprecated(cls_doc.get_pose_bundle_output_port.doc_deprecated,
-                &Class::get_pose_bundle_output_port),
-            py_rvp::reference_internal,
-            cls_doc.get_pose_bundle_output_port.doc_deprecated);
-#pragma GCC diagnostic pop
 
     cls  // BR
         .def("get_query_output_port", &Class::get_query_output_port,

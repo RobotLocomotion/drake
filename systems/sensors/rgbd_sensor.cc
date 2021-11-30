@@ -13,7 +13,6 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/zero_order_hold.h"
-#include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 
@@ -70,13 +69,6 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
   label_image_port_ = &this->DeclareAbstractOutputPort(
       "label_image", label_image, &RgbdSensor::CalcLabelImage);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  X_WB_pose_port_ =
-      &this->DeclareVectorOutputPort("X_WB", rendering::PoseVector<double>(),
-                                     &RgbdSensor::CalcX_WB_pose_vector);
-#pragma GCC diagnostic pop
-
   body_pose_in_world_output_port_ = &this->DeclareAbstractOutputPort(
       "body_pose_in_world", &RgbdSensor::CalcX_WB);
 
@@ -115,10 +107,6 @@ const OutputPort<double>& RgbdSensor::label_image_output_port() const {
   return *label_image_port_;
 }
 
-const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
-  return *X_WB_pose_port_;
-}
-
 const OutputPort<double>& RgbdSensor::body_pose_in_world_output_port() const {
   return *body_pose_in_world_output_port_;
 }
@@ -153,25 +141,6 @@ void RgbdSensor::CalcLabelImage(const Context<double>& context,
       color_camera_, parent_frame_id_,
       X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), label_image);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void RgbdSensor::CalcX_WB_pose_vector(
-    const Context<double>& context,
-    rendering::PoseVector<double>* pose_vector) const {
-  static const logging::Warn log_once(
-      "Do not use RgbdSensor's PoseVector-valued output port. It is deprecated "
-      "for removal on or after 2021-12-01. Instead use "
-      "body_pose_in_world_output_port().");
-  RigidTransformd X_WB;
-  this->CalcX_WB(context, &X_WB);
-
-  Translation3d trans{X_WB.translation()};
-  pose_vector->set_translation(trans);
-
-  pose_vector->set_rotation(X_WB.rotation().ToQuaternion());
-}
-#pragma GCC diagnostic pop
 
 void RgbdSensor::CalcX_WB(const Context<double>& context,
                           RigidTransformd* X_WB) const {
@@ -259,11 +228,6 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
         builder.ExportOutput(zoh_label->get_output_port(), "label_image");
   }
 
-  // No need to place a ZOH on pose output.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  X_WB_output_port_ = builder.ExportOutput(camera_->X_WB_output_port(), "X_WB");
-#pragma GCC diagnostic pop
   body_pose_in_world_output_port_ = builder.ExportOutput(
       camera_->body_pose_in_world_output_port(), "body_pose_in_world");
 
