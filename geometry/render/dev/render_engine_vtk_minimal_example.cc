@@ -34,14 +34,29 @@ namespace render {
 namespace minimal_example {
 namespace {
 
+/** This example serves as the baseline demonstration of all the features
+ RenderEngineVtk currently can exercise. The goal is to exhaust different
+ functionalities of rendering color, depth, and label images via a purposely
+ designed scene with various rendering settings. Below is a checklist
+ enumerating each feature we plan to exercise in this example(s).
+
+   - Render existing .obj files.
+   - Render different primitives.
+   - Render objects with and without texture.
+   - Render objects with asymmetric or high-contrast textures.
+   - Correctly map a given texture to an object.
+   - Test texture loading logic (from a .png file with the same name as the
+       .obj file rather than a .mtl file).
+   - Test different camera configurations (nominal or non-conventional
+       extrinsic and intrinsic parameters).
+   - Render moving objects.
+   - Exercise clipping range for color, depth, and label images.
+   - Exercise depth range for a depth image.
+   - Exercise five different types of labels (empty, don't care, don't render,
+       unspecified, user-defined) in a label image.
+   - (optional) Exercise layered transparency. */
+
 using Eigen::Vector3d;
-using geometry::DrakeVisualizerd;
-using geometry::SceneGraph;
-using geometry::render::ColorRenderCamera;
-using geometry::render::DepthRenderCamera;
-using geometry::render::RenderEngineVtkParams;
-using geometry::render::RenderLabel;
-using geometry::SceneGraph;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -72,48 +87,12 @@ int do_main() {
 
   // Add ycb models into a MultibodyPlant.
   Parser parser{plant};
-  const auto craker_box = parser.AddModelFromFile(
-      FindResourceOrThrow(
-          "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf"),
-          "cracker_box");
-  const RigidTransformd X_WCrackerBox(
-      RollPitchYawd{0, 0, 0}, Vector3d(0, 0.2, 0));
-
-  plant->WeldFrames(
-      plant->world_frame(),
-      plant->GetFrameByName("base_link_cracker", craker_box),
-      X_WCrackerBox);
-
-  const auto sugar_box = parser.AddModelFromFile(
-      FindResourceOrThrow(
-          "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf"),
-          "sugar_box");
-  const RigidTransformd X_WSugarBox(
-      RollPitchYawd{0, 0, M_PI / 2}, Vector3d(-0.2, 0.1, 0));
-
-  plant->WeldFrames(
-      plant->world_frame(),
-      plant->GetFrameByName("base_link_sugar", sugar_box),
-      X_WSugarBox);
-
-  const auto soup_can = parser.AddModelFromFile(
-      FindResourceOrThrow(
-          "drake/manipulation/models/ycb/sdf/005_tomato_soup_can.sdf"),
-          "tomato_soup_can");
-  const RigidTransformd X_WSoupCan(
-      RollPitchYawd{0, M_PI / 2, 0}, Vector3d(0.3, -0.05, 0));
-
-  plant->WeldFrames(
-      plant->world_frame(),
-      plant->GetFrameByName("base_link_soup", soup_can),
-      X_WSoupCan);
-
   const auto mustard_bottle = parser.AddModelFromFile(
       FindResourceOrThrow(
           "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf"),
           "mustard_bottle");
   const RigidTransformd X_WMustardBottle(
-      RollPitchYawd{-M_PI / 2, 0, -M_PI / 2}, Vector3d(0, -0.2, 0));
+      RollPitchYawd{-M_PI / 2, 0, -M_PI / 2}, Vector3d(0, 0, 0));
 
   plant->WeldFrames(
       plant->world_frame(),
