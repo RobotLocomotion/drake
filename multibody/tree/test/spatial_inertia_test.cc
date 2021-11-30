@@ -303,6 +303,13 @@ GTEST_TEST(SpatialInertia, Shift) {
       M_BBcm_W.CopyToFullMatrix6(), kEpsilon));
 }
 
+// Tests that it is possible to create a spatial inertia with zero mass.
+GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
+  SpatialInertia<double> M(0.0, Vector3d::Zero(),
+                           UnitInertia<double>::SolidSphere(1.0));
+  EXPECT_TRUE(M.IsPhysicallyValid());
+}
+
 // Tests that it is not possible to create a spatial inertia with negative mass
 // since IsPhysicallyValid() will fail in the constructor.
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
