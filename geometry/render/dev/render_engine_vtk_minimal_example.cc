@@ -40,21 +40,33 @@ namespace {
  designed scene with various rendering settings. Below is a checklist
  enumerating each feature we plan to exercise in this example(s).
 
-   - Render existing .obj files.
-   - Render different primitives.
-   - Render objects with and without texture.
-   - Render objects with asymmetric or high-contrast textures.
-   - Correctly map a given texture to an object.
-   - Test texture loading logic (from a .png file with the same name as the
-       .obj file rather than a .mtl file).
-   - Test different camera configurations (nominal or non-conventional
-       extrinsic and intrinsic parameters).
-   - Render moving objects.
-   - Exercise clipping range for color, depth, and label images.
-   - Exercise depth range for a depth image.
-   - Exercise five different types of labels (empty, don't care, don't render,
-       unspecified, user-defined) in a label image.
-   - (optional) Exercise layered transparency. */
+   - Render each supported shape type (see shape_specification.h)
+     - Once with arbitrary RGBA color (unique for each object)
+     - Once with diffuse texture
+       - Textures should have asymmetric features so that the application of
+         the texture is clearly correct -- not flipped, rotated, etc.
+   - Mesh texture specified in two different ways
+     - obj/png file name replacement
+     - Specified in PerceptionProperties (this is the *only* mechanism for
+       applying a diffuse texture to other shapes)
+   - Camera functionality
+     - Exercise full intrinsic and extrinsic properties. Two separate cameras
+       would be sufficient.
+   - Moving objects (showing object pose updated -- this should include
+      translation and rotation)
+   - Clipping range across all output image types
+     - Make sure there are objects at the limits of the clipping range that
+       will get clipped (such that the image would be different if they
+       weren't clipped).
+   - Depth range
+     - Similar to clipping range -- make sure we have objects near the limits
+       of the depth range such that if the depth range were incorrect, we'd
+       produce a different image.
+   - Render labels
+     - Exercise all five types of labels (empty, don't care, don't render,
+       unspecified, user-defined).
+   - (optional) Confirm that occluding *transparent* objects are rendered the
+     same. */
 
 using Eigen::Vector3d;
 using lcm::DrakeLcm;
