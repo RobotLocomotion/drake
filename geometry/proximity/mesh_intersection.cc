@@ -432,7 +432,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   //  3. Re-expressing the gradients of the soft-mesh's pressure field
   //    (grad_eS_S) in the world frame (grad_eS_W).
   surface_SR->TransformVertices(X_WS);
-  e_SR->TransformGradients(X_WS);
+  e_SR->Transform(X_WS);
   std::unique_ptr<std::vector<Vector3<T>>> grad_eS_W;
   grad_eS_W = std::make_unique<std::vector<Vector3<T>>>();
   grad_eS_W->reserve(grad_eS_S.size());
