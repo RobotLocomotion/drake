@@ -516,12 +516,11 @@ class SpatialInertia {
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 
   // Augments operator<< to write additional information about a SpatialInertia
-  // into the std::ostream `out`.  If I_BBcm, the rotational inertia about Bcm
-  // (the center of mass of the body or composite body B) differs from I_BP,
-  // the rotational inertia about point P, then I_BBcm is written to `out`.
-  // In all cases, the central principal moments of inertia for I_BBcm are also
-  // written to `out`, which helps identify an invalid rotational inertia that
-  // violates the "triangle inequality".
+  // into the std::ostream `out`.  If I_BBcm, the rotational inertia of body B
+  // about Bcm (B's center of mass) differs from I_BP, the rotational inertia
+  // about point P, then I_BBcm is also written to `out`.  In all cases, the
+  // central principal moments of inertia are written to `out`, which helps
+  // identify a rotational inertia that violates the "triangle inequality".
   void WriteExtraCentralInertiaProperties(std::string& msg) const;
 };
 
