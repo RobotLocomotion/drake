@@ -9,7 +9,8 @@ namespace multibody {
 
 template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
-    std::string& msg) const  {
+    std::string* msg) const {
+  DRAKE_DEMAND(msg != nullptr);
   const T& mass = get_mass();
   const Vector3<T>& p_PBcm = get_com();
 
@@ -30,13 +31,13 @@ void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
   // If point P is not at Bcm, write B's rotational inertia about Bcm.
   const boolean<T> is_position_zero = (p_PBcm == Vector3<T>::Zero());
   if (!is_position_zero)
-    msg += fmt::format(" Inertia about center of mass, I_BBcm =\n{}", I_BBcm);
+    *msg += fmt::format(" Inertia about center of mass, I_BBcm =\n{}", I_BBcm);
 
   // Write B's principal moments of inertia about Bcm.
   if constexpr (scalar_predicate<T>::is_bool) {
     const Vector3<double> eig = I_BBcm.CalcPrincipalMomentsOfInertia();
     const double Imin = eig(0), Imed = eig(1), Imax = eig(2);
-    msg += fmt::format(
+    *msg += fmt::format(
         " Principal moments of inertia about Bcm (center of mass) ="
         "\n[{}  {}  {}]\n", Imin, Imed, Imax);
   }
@@ -47,7 +48,8 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
   // Write the data associated with the spatial inertia M of a body
   // (or composite body) B about a point P, expressed in a frame E.
   // Typically point P is either Bo (B's origin) or Bcm (B's center of mass)
-  // and frame E is usually the body frame B.
+  // and frame E is usually the body frame B.  More spatial inertia information
+  // can be written via SpatialInertia::WriteExtraCentralInertiaProperties().
   const T& mass = M.get_mass();
   const Vector3<T>& p_PBcm = M.get_com();
   const T& x = p_PBcm.x();

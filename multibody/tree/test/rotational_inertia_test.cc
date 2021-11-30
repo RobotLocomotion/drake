@@ -85,7 +85,8 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
     // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
     EXPECT_NO_THROW(
         I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validyt_check = */ true));
+            2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz,
+            /* skip_validity_check = */ true));
     EXPECT_FALSE(I.CouldBePhysicallyValid());
 
     // Check for a thrown exception with proper error message when creating an

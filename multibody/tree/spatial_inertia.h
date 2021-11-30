@@ -4,6 +4,7 @@
 #include <exception>
 #include <iostream>
 #include <limits>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -495,7 +496,7 @@ class SpatialInertia {
       std::string error_msg = fmt::format(
           "Spatial inertia fails SpatialInertia::IsPhysicallyValid()."
           "{}", *this);
-      WriteExtraCentralInertiaProperties(error_msg);
+      WriteExtraCentralInertiaProperties(&error_msg);
       throw std::runtime_error(error_msg);
     }
   }
@@ -521,7 +522,7 @@ class SpatialInertia {
   // about point P, then I_BBcm is also written to `out`.  In all cases, the
   // central principal moments of inertia are written to `out`, which helps
   // identify a rotational inertia that violates the "triangle inequality".
-  void WriteExtraCentralInertiaProperties(std::string& msg) const;
+  void WriteExtraCentralInertiaProperties(std::string* msg) const;
 };
 
 /// Writes an instance of SpatialInertia into a std::ostream.

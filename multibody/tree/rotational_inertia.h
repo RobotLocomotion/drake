@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -994,8 +995,9 @@ class RotationalInertia {
                 "\n{}  {}  {}", p(0), p(1), p(2));
             if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
               error_msg += "\nare invalid since at least one is negative.";
-            } else
+            } else {
               error_msg += "\ndo not satisify the triangle inequality.";
+            }
           }
         }
       }
