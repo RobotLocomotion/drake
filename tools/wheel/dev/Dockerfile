@@ -47,11 +47,15 @@ ADD image/drake-src.tar.xz /drake/
 
 FROM clean AS wheel
 
+ARG DRAKE_VERSION
+
 RUN --mount=type=ssh \
     --mount=type=cache,target=/var/cache/bazel \
     /image/build-drake.sh
 
 ADD image/build-wheel.sh /image/
 ADD image/setup.py /wheel/
+
+ENV DRAKE_VERSION=${DRAKE_VERSION}
 
 RUN /image/build-wheel.sh
