@@ -15,7 +15,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
  public:
   Impl(int size, int block_size, const std::vector<int>& nonzero_entries)
       : size_(size), block_size_(block_size), num_blocks_(size / block_size) {
-    DRAKE_DEMAND(size >= block_size_ && block_size_ > 0);
+    DRAKE_DEMAND(size >= 0 && block_size_ > 0);
     DRAKE_DEMAND(size_ % block_size_ == 0);
     PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
     MatCreateSeqSBAIJ(PETSC_COMM_SELF, block_size, size, size, 0,
@@ -40,29 +40,29 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
 
     switch (solver_type) {
-      case SolverType::Direct:
+      case SolverType::kDirect:
         KSPSetType(solver_, KSPPREONLY);
-        if (preconditioner_type != PreconditionerType::Cholesky) {
+        if (preconditioner_type != PreconditionerType::kCholesky) {
           throw std::logic_error(
               "Direct solver can only be paired with Cholesky preconditioner.");
         }
         break;
-      case SolverType::MINRES:
+      case SolverType::kMINRES:
         KSPSetType(solver_, KSPMINRES);
         break;
-      case SolverType::ConjugateGradient:
+      case SolverType::kConjugateGradient:
         KSPSetType(solver_, KSPCG);
         break;
     }
 
     switch (preconditioner_type) {
-      case PreconditionerType::Cholesky:
+      case PreconditionerType::kCholesky:
         PCSetType(preconditioner_, PCCHOLESKY);
         break;
-      case PreconditionerType::IncompleteCholesky:
+      case PreconditionerType::kIncompleteCholesky:
         PCSetType(preconditioner_, PCICC);
         break;
-      case PreconditionerType::BlockJacobi:
+      case PreconditionerType::kBlockJacobi:
         PCSetType(preconditioner_, PCBJACOBI);
         break;
     }
@@ -147,6 +147,11 @@ class PetscSymmetricBlockSparseMatrix::Impl {
                        PETSC_NULL);
   }
 
+  void SetRelativeTolerance(double tolerance) {
+    KSPSetTolerances(solver_, tolerance, PETSC_DEFAULT, PETSC_DEFAULT,
+                     PETSC_DEFAULT);
+  }
+
   int size() const { return size_; }
 
  private:
@@ -180,6 +185,9 @@ MatrixX<double> PetscSymmetricBlockSparseMatrix::MakeDenseMatrix() const {
 void PetscSymmetricBlockSparseMatrix::ZeroRowsAndColumns(
     const std::vector<int>& indexes, double value) {
   pimpl_->ZeroRowsAndColumns(indexes, value);
+}
+void PetscSymmetricBlockSparseMatrix::SetRelativeTolerance(double tolerance) {
+  pimpl_->SetRelativeTolerance(tolerance);
 }
 
 int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }

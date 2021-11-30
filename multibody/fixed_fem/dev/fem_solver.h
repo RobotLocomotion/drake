@@ -49,6 +49,7 @@ class FemSolver {
   explicit FemSolver(const FemModelBase<T>* model) : model_(model) {
     DRAKE_DEMAND(model_ != nullptr);
     Resize();
+    set_linear_solve_tolerance(1e-4);
   }
 
   /** For dynamic models, advances the given FEM state from the previous time
@@ -111,7 +112,7 @@ class FemSolver {
   /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
    considered as converged if ‖dz‖ < `tolerance`⋅‖z‖ where z is the unknown
    variable defined in FemModelBase. The default value is 1e-6. */
-  void set_relative_tolerance(const T& tolerance) {
+  void set_relative_tolerance(double tolerance) {
     relative_tolerance_ = tolerance;
   }
 
@@ -120,14 +121,17 @@ class FemSolver {
    has the unit of m/s², and for static elasticity, it has the unit of m. The
    Newton-Raphson iterations are considered as converged if the change in the
    state is smaller than the absolute tolerance. The default value is 1e-6. */
-  void set_absolute_tolerance(const T& tolerance) {
+  void set_absolute_tolerance(double tolerance) {
     absolute_tolerance_ = tolerance;
   }
 
   /** Sets the relative tolerance for the linear solver used in `this`
-   FemSolver if the linear solver is iterative. No-op if the linear solver is
-   direct. */
-  void set_linear_solve_tolerance(const T& tolerance) { unused(tolerance); }
+   FemSolver if the linear solver is iterative. The default value is 1e-4. No-op
+   if the linear solver is direct. */
+  void set_linear_solve_tolerance(double tolerance) {
+    DRAKE_DEMAND(A_ != nullptr);
+    A_->SetRelativeTolerance(tolerance);
+  }
 
  private:
   /* Uses a Newton-Raphson solver to solve for the equilibrium state that
@@ -151,10 +155,10 @@ class FemSolver {
   mutable VectorX<double> dz_;
   /* The relative tolerance for determining the convergence of the Newton
    solver, unitless. */
-  T relative_tolerance_{1e-6};
+  double relative_tolerance_{1e-6};
   /* The absolute tolerance for determining the convergence of the Newton
    solver. It has the same unit as the unknown variable z. */
-  T absolute_tolerance_{1e-6};
+  double absolute_tolerance_{1e-6};
   // TODO(xuchenhan-tri): Consider making `kMaxIterations_` configurable.
   /* Any reasonable Newton solve should converge within 20 iterations. If it
    doesn't converge in 20 iterations, chances are it will never converge. */

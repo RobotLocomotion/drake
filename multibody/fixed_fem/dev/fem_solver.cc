@@ -10,11 +10,9 @@ namespace fem {
 
 template <typename T>
 void FemSolver<T>::Resize() const {
-  if (b_.size() != model_->num_dofs()) {
-    b_.resize(model_->num_dofs());
-    dz_.resize(model_->num_dofs());
-    A_ = model_->MakePetscSymmetricBlockSparseTangentMatrix();
-  }
+  b_.resize(model_->num_dofs());
+  dz_.resize(model_->num_dofs());
+  A_ = model_->MakePetscSymmetricBlockSparseTangentMatrix();
 }
 
 template <typename T>
@@ -30,7 +28,9 @@ int FemSolver<double>::SolveWithInitialGuess(
     FemStateBase<double>* state) const {
   /* Make sure the scratch quantities are of the correct size and apply BC if
    one is specified. */
-  Resize();
+  if (b_.size() != model_->num_dofs()) {
+    Resize();
+  }
   model_->ApplyBoundaryCondition(state);
   model_->CalcResidual(*state, &b_);
   int iter = 0;
@@ -44,9 +44,9 @@ int FemSolver<double>::SolveWithInitialGuess(
     model_->CalcTangentMatrix(*state, A_.get());
     /* Solving for A * dz = -b. */
     dz_ = A_->Solve(internal::PetscSymmetricBlockSparseMatrix::SolverType::
-                        ConjugateGradient,
+                        kConjugateGradient,
                     internal::PetscSymmetricBlockSparseMatrix::
-                        PreconditionerType::IncompleteCholesky,
+                        PreconditionerType::kIncompleteCholesky,
                     -b_);
     model_->UpdateStateFromChangeInUnknowns(dz_, state);
     model_->CalcResidual(*state, &b_);

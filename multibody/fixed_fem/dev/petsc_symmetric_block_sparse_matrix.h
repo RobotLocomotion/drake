@@ -45,8 +45,7 @@ class PetscSymmetricBlockSparseMatrix {
    @param nonzero_entries The sparsity pattern of the matrix.
                           `nonzero_entries[i]` should contain the number of
                           nonzero entries in the i-th row.
-   @pre `size` >= `block_size` > 0, and `size` is a integer multiple of
-   `block_size`.
+   @pre `size` >=  0, and `size` is a integer multiple of `block_size`.
    @pre nonzero_entries.size() == size.
    @pre nonzero_entries[i] <= size. */
   PetscSymmetricBlockSparseMatrix(int size, int block_size,
@@ -58,8 +57,8 @@ class PetscSymmetricBlockSparseMatrix {
    for (int i = 0; i < block_indices.size(); ++i) {
      for (int j = 0; j < block_indices.size(); ++j){
        // `A` is `this` matrix. `b` is block size specified at construction.
-       int block_row = block_indices(i);
-       int block_col = block_indices(j);
+       const int block_row = block_indices(i);
+       const int block_col = block_indices(j);
        A.block(block_row * b, block_col * b, b, b) +=
            block.block(i * b, j * b, b, b);
      }
@@ -67,7 +66,8 @@ class PetscSymmetricBlockSparseMatrix {
    ```
    @pre block is symmetric.
    @pre block.rows() = block_indices.size() * block_size.
-   @pre 0 <= block_indices[i] < size for each i = 0,...,block_indices.size()-1.
+   @pre 0 <= block_indices[i] * block_size < size for each i =
+   0, ..., block_indices.size()-1.
    @warn None of the prerequisite is checked since this is used in inner loop.
   */
   void AddToBlock(const VectorX<int>& block_indices,
@@ -91,6 +91,9 @@ class PetscSymmetricBlockSparseMatrix {
   /* Zeros out all rows and columns whose index is included in `indexes` and
    sets the diagonal entry of these rows and columns to `value`. */
   void ZeroRowsAndColumns(const std::vector<int>& indexes, double value);
+
+  /* Sets the relative tolerance of the linear solve A*x = b. */
+  void SetRelativeTolerance(double tolerance);
 
   int rows() const;
   int cols() const;
