@@ -89,18 +89,33 @@ def strip_cpp_comment_cruft(comment):
 
 
 def _process_doxygen(s, transform_func):
+    """Given a multiline string s (potentially the entire contents of a c++
+    file), this finds the @system / @endsystem tags and calls transform_func()
+    on their contents.
+
+    Raises exceptions on obsolete (brace-delimited) syntax, missing @endsystem
+    tag, and illegal nesting of @system / @endsystem pairs.
+
     """
-    Given a multiline string s (potentially the entire contents of a c++ file),
-    this finds the @system / @endsystem tags and calls transform_func() on
-    their contents.
-    """
+    obsolete_syntax = "@system{"
+    if s.find(obsolete_syntax) >= 0:
+        raise RuntimeError(
+            f'obsolete syntax "{obsolete_syntax}" found; use @system /'
+            f' @endsystem instead. Found in """\n{s}"""')
     index = 0
     start_tag = "@system"
     end_tag = "@endsystem"
     while s.find(start_tag, index) > 0:
         start = s.find(start_tag, index)
         end = s.find(end_tag, start + len(start_tag))
+        if end < 0:
+            raise RuntimeError(
+                f'missing @endsystem tag in """\n{s[start:]}"""')
         comment = s[start + len(start_tag):end]
+        nested = comment.find(start_tag)
+        if nested >= 0:
+            raise RuntimeError(
+                f'illegal nested @system tag in """\n{comment}"""')
         comment_stripped = strip_cpp_comment_cruft(comment)
         transformed = transform_func(comment_stripped)
         s = s[:start] + transformed + s[end + len(end_tag):]
