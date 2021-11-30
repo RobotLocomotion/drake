@@ -6,6 +6,7 @@
 import argparse
 import atexit
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -42,7 +43,12 @@ targets = (
 
 def docker(*args, pipe=False):
     """
-    Runs a docker command; raises an exception on failure.
+    Runs a docker command.
+
+    If pipe is false, blocks until completion and returns a CompletedProcess
+    instance; raises an exception on failure.
+
+    If pipe is true, returns the process instance with its stdout captured.
     """
     command = ['docker'] + list(args)
     environment = os.environ.copy()
@@ -154,19 +160,27 @@ def build_stage(target, args, tag_prefix, stage=None):
     return tag
 
 
-def build_image(target, identifier, options):
+def target_args(target):
     """
-    Runs the build for a target and (optionally) extract the wheel.
+    Returns the docker build arguments for the specified platform target.
     """
     platform_name = target.platform_name
     platform_version = target.platform_version
     python_version = target.python_version
-    args = [
-        '--ssh', 'default',
-        '--build-arg', f'DRAKE_VERSION={options.version}',
+    return [
         '--build-arg', f'PYTHON={python_version[0]}.{python_version[1:]}',
         '--build-arg', f'PLATFORM={platform_name}:{platform_version}',
     ]
+
+
+def build_image(target, identifier, options):
+    """
+    Runs the build for a target and (optionally) extract the wheel.
+    """
+    args = [
+        '--ssh', 'default',
+        '--build-arg', f'DRAKE_VERSION={options.version}',
+    ] + target_args(target)
     if not options.keep_containers:
         args.append('--force-rm')
 
@@ -198,6 +212,34 @@ def build_image(target, identifier, options):
                                                 extractor.args, None, None)
 
 
+def test_wheel(target, options):
+    """
+    Runs the test script for the wheel matching the specified target.
+    """
+    vm = f'cp{target.python_version}'
+    wheel = f'drake-{options.version}-{vm}-{vm}m-manylinux_2_27_x86_64.whl'
+
+    platform = target.platform_alias
+    container = f'{tag_base}:test-{platform}-py{target.python_version}'
+    test_dir = os.path.join(script_dir, 'test')
+
+    docker('build', '-t', container, *target_args(target), test_dir)
+
+    docker('run', '--rm', '-t',
+           '-v' f'{test_dir}:/test',
+           '-v' f'{options.output_dir}:/wheel',
+           container, '/test/test-wheel.sh', f'/wheel/{wheel}')
+
+
+def check_version(version):
+    return re.match(
+        r'^([1-9][0-9]*!)?(0|[1-9][0-9]*)'
+        r'(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?'
+        r'(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?'
+        r'([+][a-z0-9]+([-_\.][a-z0-9]+)*)?$',
+        version) is not None
+
+
 def main(args):
     atexit.register(cleanup)
 
@@ -206,7 +248,7 @@ def main(args):
         description='Build the Drake PyPI wheel(s).')
     parser.add_argument(
         'version',
-        help='version number with which to label the wheels')
+        help='PEP 440 version number with which to label the wheels')
     parser.add_argument(
         '-o', '--output-dir', metavar='DIR', default=os.path.realpath('.'),
         help='directory into which to extract wheels (default: .)')
@@ -219,6 +261,9 @@ def main(args):
     parser.add_argument(
         '-s', '--tag-stages', action='store_true',
         help='permanently tag individual stages')
+    parser.add_argument(
+        '-t', '--test', action='store_true',
+        help='run tests on wheels')
     parser.add_argument(
         '--platform', dest='platforms',
         default=','.join(set([t.platform_name for t in targets])),
@@ -234,6 +279,14 @@ def main(args):
     options = parser.parse_args(args)
     options.python_versions = set(options.python_versions.split(','))
     options.platforms = set(options.platforms.split(','))
+
+    if options.test and not options.extract:
+        gripe('Testing wheels requires wheels to be extracted')
+        sys.exit(1)
+
+    if not check_version(options.version):
+        gripe(f'Version {options.version} does not conform to PEP 440')
+        sys.exit(1)
 
     # Collect set of wheels to be built.
     targets_to_build = []
@@ -264,6 +317,9 @@ def main(args):
     # Build the requested wheels.
     for t in targets_to_build:
         build_image(t, identifier, options)
+
+        if options.test:
+            test_wheel(t, options)
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
