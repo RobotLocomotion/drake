@@ -19,20 +19,20 @@ class PetscSymmetricBlockSparseMatrix {
 
   enum class SolverType {
     /* For positive definite matrix. */
-    ConjugateGradient,
+    kConjugateGradient,
     /* For positive definite matrix. Can only be paired with Cholesky
                    preconditioner. */
-    Direct,
+    kDirect,
     /* For generic symmetric matrix. */
-    MINRES
+    kMINRES
   };
 
   enum class PreconditionerType {
     /* For generic matrix. */
-    BlockJacobi,
+    kBlockJacobi,
     /* For positive definite matrix. */
-    Cholesky,
-    IncompleteCholesky,
+    kCholesky,
+    kIncompleteCholesky,
   };
 
   ~PetscSymmetricBlockSparseMatrix();
@@ -77,7 +77,7 @@ class PetscSymmetricBlockSparseMatrix {
    @warn The compatibility of the solver and preconditioner type with the
    problem at hand is not checked. Callers need to be careful to choose the
    reasonable combination of solver and preconditioner given the type of matrix.
-  */
+   @pre b.size() == A.rows() */
   VectorX<double> Solve(SolverType solver_type,
                         PreconditionerType preconditioner_type,
                         const VectorX<double>& b);
@@ -85,12 +85,12 @@ class PetscSymmetricBlockSparseMatrix {
   /* Sets all blocks to zeros while maintaining the sparsity pattern. */
   void SetZero();
 
-  /* For this matrix A, performs the operation y = A⋅x. x must be of size
-   cols() and y must be a non-nullptr to a vector of size rows(). */
-  void Multiply(const VectorX<double>& x, VectorX<double>* y) const;
-
   /* Makes a dense matrix representation of this block-sparse matrix. */
   MatrixX<double> MakeDenseMatrix() const;
+
+  /* Zeros out all rows and columns whose index is included in `indexes` and
+   sets the diagonal entry of these rows and columns to `value`. */
+  void ZeroRowsAndColumns(const std::vector<int>& indexes, double value);
 
   int rows() const;
   int cols() const;

@@ -139,6 +139,14 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     return eigen_dense;
   }
 
+  void ZeroRowsAndColumns(const std::vector<int>& indexes, double value) {
+    // Ensure that the matrix has been assembled.
+    MatAssemblyBegin(A_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
+    MatZeroRowsColumns(A_, indexes.size(), indexes.data(), value, PETSC_NULL,
+                       PETSC_NULL);
+  }
+
   int size() const { return size_; }
 
  private:
@@ -167,6 +175,11 @@ void PetscSymmetricBlockSparseMatrix::SetZero() { pimpl_->SetZero(); }
 
 MatrixX<double> PetscSymmetricBlockSparseMatrix::MakeDenseMatrix() const {
   return pimpl_->MakeDenseMatrix();
+}
+
+void PetscSymmetricBlockSparseMatrix::ZeroRowsAndColumns(
+    const std::vector<int>& indexes, double value) {
+  pimpl_->ZeroRowsAndColumns(indexes, value);
 }
 
 int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }

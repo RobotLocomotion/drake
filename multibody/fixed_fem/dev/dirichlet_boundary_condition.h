@@ -3,6 +3,7 @@
 #include <map>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Sparse>
 
@@ -99,7 +100,15 @@ class DirichletBoundaryCondition {
     }
     /* Check validity of the dof indices stored. */
     VerifyBcIndexes(tangent_matrix->cols());
-    std::cout << "boundary not fixed!" << std::endl;
+
+    /* Zero out all rows and columns of the tangent matrix corresponding to dofs
+     under the BC (except the diagonal entry which is set to 1). */
+    std::vector<int> indexes(bcs_.size());
+    int i = 0;
+    for (const auto& it : bcs_) {
+      indexes[i++] = it.first;
+    }
+    tangent_matrix->ZeroRowsAndColumns(indexes, /* diagonal entry */ 1.0);
   }
 
   /** Modifies the given residual that arises from an FEM system without BC into

@@ -144,12 +144,11 @@ class FemSolver {
   /* The FEM model being solved by `this` solver. */
   const FemModelBase<T>* model_;
   /* Tangent matrix. */
-  mutable std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix> A_{
-      nullptr};
+  mutable std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix> A_;
   /* A scratch vector to store the residual of the model. */
-  mutable VectorX<T> b_;
+  mutable VectorX<double> b_;
   /* A scratch vector to store the solution to A * dz = -b. */
-  mutable VectorX<T> dz_;
+  mutable VectorX<double> dz_;
   /* The relative tolerance for determining the convergence of the Newton
    solver, unitless. */
   T relative_tolerance_{1e-6};
@@ -161,9 +160,6 @@ class FemSolver {
    doesn't converge in 20 iterations, chances are it will never converge. */
   int kMaxIterations_{20};
 };
-
-template <>
-void FemSolver<double>::Resize() const;
 
 template <>
 int FemSolver<double>::SolveWithInitialGuess(FemStateBase<double>*) const;

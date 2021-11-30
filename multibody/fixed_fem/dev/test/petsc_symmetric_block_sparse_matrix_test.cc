@@ -107,9 +107,24 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   const VectorXd b = MakeVector();
   const VectorXd x_expected = A_eigen.lu().solve(b);
   const VectorXd x = A->Solve(
-      PetscSymmetricBlockSparseMatrix::SolverType::MINRES,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::BlockJacobi, b);
+      PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kBlockJacobi, b);
   EXPECT_TRUE(CompareMatrices(x, x_expected, 1e-13));
+}
+
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, ZeroRowsAndColumns) {
+  unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
+  const vector<int> indexes = {1, 2, 5};
+  constexpr double kDiagnoalValue = 3;
+  A->ZeroRowsAndColumns(indexes, kDiagnoalValue);
+
+  MatrixXd A_eigen = MakeDenseMatrix();
+  for (int i : indexes) {
+    A_eigen.row(i).setZero();
+    A_eigen.col(i).setZero();
+    A_eigen(i, i) = kDiagnoalValue;
+  }
+  EXPECT_TRUE(CompareMatrices(A->MakeDenseMatrix(), A_eigen, 1e-13));
 }
 
 }  // namespace

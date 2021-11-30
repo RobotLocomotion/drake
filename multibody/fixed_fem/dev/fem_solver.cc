@@ -10,12 +10,18 @@ namespace fem {
 
 template <typename T>
 void FemSolver<T>::Resize() const {
-  DRAKE_DEMAND(false);
+  if (b_.size() != model_->num_dofs()) {
+    b_.resize(model_->num_dofs());
+    dz_.resize(model_->num_dofs());
+    A_ = model_->MakePetscSymmetricBlockSparseTangentMatrix();
+  }
 }
 
 template <typename T>
 int FemSolver<T>::SolveWithInitialGuess(FemStateBase<T>*) const {
-  DRAKE_DEMAND(false);
+  throw std::logic_error(
+      "The only scalar type that supports "
+      "FemSolver<T>::SolveWithInitialGuess() is T = double.");
   return 0;
 }
 
@@ -58,16 +64,6 @@ int FemSolver<double>::SolveWithInitialGuess(
         " iterations. Please provide a better initial guess.");
   }
   return iter;
-}
-
-/* Resize the scratch quantities to the size of the model. */
-template <>
-void FemSolver<double>::Resize() const {
-  if (b_.size() != model_->num_dofs()) {
-    b_.resize(model_->num_dofs());
-    dz_.resize(model_->num_dofs());
-    A_ = model_->MakePetscSymmetricBlockSparseTangentMatrix();
-  }
 }
 
 }  // namespace fem
