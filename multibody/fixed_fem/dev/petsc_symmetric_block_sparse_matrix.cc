@@ -1,8 +1,11 @@
 #include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 
+#include <iostream>
 #include <numeric>
 
 #include <petscksp.h>
+
+#include "drake/multibody/fixed_fem/dev/petsc_internal.h"
 
 namespace drake {
 namespace multibody {
@@ -112,22 +115,12 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   /* Makes a dense matrix representation of this block-sparse matrix. */
   MatrixX<double> MakeDenseMatrix() const {
-    // Ensure that the matrix has been assembled.
-    MatAssemblyBegin(A_, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
-    MatrixX<double> eigen_dense(size_, size_);
-    vector<int> indexes(size_);
-    std::iota(indexes.begin(), indexes.end(), 0);
-    // PETSc uses row major and Eigen defaults to column major, but since
-    // the matrix is symmetric, the storage order doesn't matter.
-    MatGetValues(A_, size_, indexes.data(), size_, indexes.data(),
-                 eigen_dense.data());
+    MatrixX<double> eigen_dense = internal::MakeDenseMatrix(A_);
     // Notice that we store the matrix in PETSc as upper triangular matrix
-    // and the lower triangular part is ignored. That means that the Eigen
-    // matrix is missing the upper triangular blocks. To restore the full
+    // and the lower triangular part is ignored. To restore the full
     // matrix, we need to fill in these blocks by hand.
     for (int i = 0; i < num_blocks_; ++i) {
-      for (int j = i + 1; j < num_blocks_; ++j) {
+      for (int j = 0; j < i; ++j) {
         eigen_dense.block(i * block_size_, j * block_size_, block_size_,
                           block_size_) =
             eigen_dense
@@ -152,10 +145,19 @@ class PetscSymmetricBlockSparseMatrix::Impl {
                      PETSC_DEFAULT);
   }
 
+  PetscSparseMatrix MakePetscSparseMatrix() const {
+    // Ensure that the matrix has been assembled.
+    MatAssemblyBegin(A_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
+    return PetscSparseMatrix(A_);
+  }
+
   int size() const { return size_; }
 
  private:
+  // The underlying PETSc matrix stored as MATSEQSBAIJ.
   Mat A_;
+  // Rows and columns of the matrix.
   int size_{0};
   int block_size_{0};
   int num_blocks_{0};
@@ -186,6 +188,7 @@ void PetscSymmetricBlockSparseMatrix::ZeroRowsAndColumns(
     const std::vector<int>& indexes, double value) {
   pimpl_->ZeroRowsAndColumns(indexes, value);
 }
+
 void PetscSymmetricBlockSparseMatrix::SetRelativeTolerance(double tolerance) {
   pimpl_->SetRelativeTolerance(tolerance);
 }
@@ -193,6 +196,11 @@ void PetscSymmetricBlockSparseMatrix::SetRelativeTolerance(double tolerance) {
 int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }
 
 int PetscSymmetricBlockSparseMatrix::cols() const { return pimpl_->size(); }
+
+PetscSparseMatrix PetscSymmetricBlockSparseMatrix::MakePetscSparseMatrix()
+    const {
+  return pimpl_->MakePetscSparseMatrix();
+}
 
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix(
     int size, int block_size, const std::vector<int>& nonzero_entries)

@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/fixed_fem/dev/petsc_internal.h"
+#include "drake/multibody/fixed_fem/dev/petsc_schur_complement.h"
 
 namespace drake {
 namespace multibody {
@@ -46,7 +48,7 @@ const Matrix3d A22 =
         -----------------
           0  | A21 | A22
 where A21 = A12.transpose(). */
-MatrixXd MakeDenseMatrix() {
+MatrixXd MakeEigenDenseMatrix() {
   MatrixXd A = MatrixXd::Zero(9, 9);
   A.block<3, 3>(0, 0) = A00;
   A.block<3, 3>(3, 3) = A11;
@@ -94,7 +96,7 @@ VectorXd MakeVector() {
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Construction) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
   MatrixXd A_dense = A->MakeDenseMatrix();
-  const MatrixXd A_expected = MakeDenseMatrix();
+  const MatrixXd A_expected = MakeEigenDenseMatrix();
   EXPECT_TRUE(CompareMatrices(A_dense, A_expected, kEps));
   A->SetZero();
   A_dense = A->MakeDenseMatrix();
@@ -103,7 +105,7 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Construction) {
 
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Solve) {
   unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
-  const MatrixXd A_eigen = MakeDenseMatrix();
+  const MatrixXd A_eigen = MakeEigenDenseMatrix();
   const VectorXd b = MakeVector();
   const VectorXd x_expected = A_eigen.lu().solve(b);
   const VectorXd x = A->Solve(
@@ -118,13 +120,30 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, ZeroRowsAndColumns) {
   constexpr double kDiagnoalValue = 3;
   A->ZeroRowsAndColumns(indexes, kDiagnoalValue);
 
-  MatrixXd A_eigen = MakeDenseMatrix();
+  MatrixXd A_eigen = MakeEigenDenseMatrix();
   for (int i : indexes) {
     A_eigen.row(i).setZero();
     A_eigen.col(i).setZero();
     A_eigen(i, i) = kDiagnoalValue;
   }
   EXPECT_TRUE(CompareMatrices(A->MakeDenseMatrix(), A_eigen, 1e-13));
+}
+
+GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, CalcSchurComplement) {
+  unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
+  const vector<int> eliminated = {2};
+  const vector<int> rest = {0, 1};
+  const PetscSchurComplement petsc_schur_complement(*A, eliminated, rest);
+  const MatrixXd schur_complement_matrix =
+      petsc_schur_complement.get_D_complement();
+  const MatrixXd A_eigen = MakeEigenDenseMatrix();
+  const MatrixXd expected_schur_complement =
+      A_eigen.topLeftCorner<6, 6>() -
+      A_eigen.topRightCorner<6, 3>() *
+          A_eigen.bottomRightCorner<3, 3>().lu().solve(
+              A_eigen.bottomLeftCorner<3, 6>());
+  EXPECT_TRUE(CompareMatrices(schur_complement_matrix,
+                              expected_schur_complement, 1e-13));
 }
 
 }  // namespace

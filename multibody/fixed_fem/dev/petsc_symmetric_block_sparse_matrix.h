@@ -11,6 +11,8 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+class PetscSparseMatrix;
+
 /* Wrapper around PETSc symmetric block sparse matrix.
  @tparam_nonsymbolic_scalar */
 class PetscSymmetricBlockSparseMatrix {
@@ -94,6 +96,10 @@ class PetscSymmetricBlockSparseMatrix {
 
   /* Sets the relative tolerance of the linear solve A*x = b. */
   void SetRelativeTolerance(double tolerance);
+
+  /* (Advanced) Returns the same matrix represented in another PETSc format
+   (MATSEQAIJ). */
+  PetscSparseMatrix MakePetscSparseMatrix() const;
 
   int rows() const;
   int cols() const;
