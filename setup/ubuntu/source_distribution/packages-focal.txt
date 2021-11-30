@@ -18,7 +18,6 @@ libglew-dev
 libglib2.0-dev
 libglx-dev
 libjpeg-turbo8-dev
-libjsoncpp-dev
 liblapack-dev
 liblz4-dev
 liblzma-dev
