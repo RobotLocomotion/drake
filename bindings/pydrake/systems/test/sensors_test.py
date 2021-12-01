@@ -254,8 +254,6 @@ class TestSensors(unittest.TestCase):
             self.assertIsInstance(system.label_image_output_port(), OutputPort)
             self.assertIsInstance(system.body_pose_in_world_output_port(),
                                   OutputPort)
-            with catch_drake_warnings(expected_count=1):
-                self.assertIsInstance(system.X_WB_output_port(), OutputPort)
 
         # Use HDTV size.
         width = 1280
