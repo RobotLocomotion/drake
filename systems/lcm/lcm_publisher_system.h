@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/hash.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -23,10 +22,6 @@ class DrakeLcm;
 
 namespace systems {
 namespace lcm {
-
-using TriggerTypeSet
-DRAKE_DEPRECATED("2021-12-01", "Use drake::systems::TriggerTypeSet instead.")
-= systems::TriggerTypeSet;
 
 /**
  * Publishes an LCM message containing information from its input port.

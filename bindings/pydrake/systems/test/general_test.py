@@ -64,7 +64,6 @@ from pydrake.systems.primitives import (
     Integrator,
     LinearSystem,
     PassThrough, PassThrough_,
-    SignalLogger,
     ZeroOrderHold,
     )
 
