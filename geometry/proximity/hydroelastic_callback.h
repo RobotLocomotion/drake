@@ -110,7 +110,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
           soft.pressure_field();
       const Bvh<Obb, VolumeMesh<double>>& bvh_S = soft.bvh();
       return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-          id_S, field_S, bvh_S, X_WS, id_R, X_WR);
+          id_S, field_S, bvh_S, X_WS, id_R, X_WR,
+          HydroelasticContactRepresentation::kTriangle);
     }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.
