@@ -14,16 +14,6 @@ namespace internal {
 // Throw an error message.
 [[noreturn]] void Throw(const char* condition, const char* func,
                         const char* file, int line);
-
-template <bool>
-constexpr void DrakeThrowUnlessWasUsedWithRawPointer() {}
-template<>
-[[deprecated("\nDRAKE DEPRECATED: When using DRAKE_THROW_UNLESS on a raw"
-" pointer, always write out DRAKE_THROW_UNLESS(foo != nullptr), do not write"
-" DRAKE_THROW_UNLESS(foo) and rely on implicit pointer-to-bool conversion."
-"\nThe deprecated code will be removed from Drake on or after 2021-12-01.")]]
-constexpr void DrakeThrowUnlessWasUsedWithRawPointer<true>() {}
-
 }  // namespace internal
 }  // namespace drake
 
@@ -41,14 +31,17 @@ constexpr void DrakeThrowUnlessWasUsedWithRawPointer<true>() {}
 /// users, we should err on the side of extra detail about the failure. The
 /// meaning of "foo" isolated within error message text does not make it
 /// clear that a null pointer is the proximate cause of the problem.
-#define DRAKE_THROW_UNLESS(condition)                                        \
-  do {                                                                       \
-    typedef ::drake::assert::ConditionTraits<                                \
-        typename std::remove_cv_t<decltype(condition)>> Trait;               \
-    static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
-    ::drake::internal::DrakeThrowUnlessWasUsedWithRawPointer<                \
-        std::is_pointer_v<decltype(condition)>>();                           \
-    if (!Trait::Evaluate(condition)) {                                       \
-      ::drake::internal::Throw(#condition, __func__, __FILE__, __LINE__);    \
-    }                                                                        \
+#define DRAKE_THROW_UNLESS(condition)                                         \
+  do {                                                                        \
+    typedef ::drake::assert::ConditionTraits<                                 \
+        typename std::remove_cv_t<decltype(condition)>> Trait;                \
+    static_assert(Trait::is_valid, "Condition should be bool-convertible.");  \
+    static_assert(                                                            \
+        !std::is_pointer_v<decltype(condition)>,                              \
+        "When using DRAKE_THROW_UNLESS on a raw pointer, always write out "   \
+        "DRAKE_THROW_UNLESS(foo != nullptr), do not write DRAKE_THROW_UNLESS" \
+        "(foo) and rely on implicit pointer-to-bool conversion.");            \
+    if (!Trait::Evaluate(condition)) {                                        \
+      ::drake::internal::Throw(#condition, __func__, __FILE__, __LINE__);     \
+    }                                                                         \
   } while (0)

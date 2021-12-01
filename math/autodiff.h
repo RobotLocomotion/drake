@@ -109,31 +109,6 @@ DiscardGradient(const Eigen::MatrixBase<Derived>& matrix) {
   return matrix;
 }
 
-template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
-typename std::enable_if_t<
-    !std::is_same_v<_Scalar, double>,
-    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
-DiscardGradient(const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&
-                    auto_diff_transform) {
-  return Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>(
-      ExtractValue(auto_diff_transform.matrix()));
-}
-
-template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
-typename std::enable_if_t<std::is_same_v<_Scalar, double>,
-                          const Eigen::Transform<_Scalar, _Dim, _Mode,
-    _Options>&>
-DiscardGradient(
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform) {
-  return transform;
-}
-
 /** Initializes a single AutoDiff matrix given the corresponding value matrix.
 
 Sets the values of `auto_diff_matrix` (after resizing if necessary) to be equal
@@ -251,52 +226,6 @@ AutoDiffMatrixType<Derived, nq> initializeAutoDiff(
       num_derivatives == -1 ? std::nullopt
                             : std::optional<int>(num_derivatives),
       static_cast<int>(deriv_num_start));
-}
-
-// TODO(sherm1) DRAKE_DEPRECATED("2021-12-01") Remove this internal:: block when
-//  resizeDerivativesToMatchScalar() below is removed.
-namespace internal {
-template <typename Derived, typename Scalar>
-struct ResizeDerivativesToMatchScalarImpl {
-  static void run(const Scalar&, Eigen::MatrixBase<Derived>*) {}
-};
-
-template <typename Derived, typename DerivType>
-struct ResizeDerivativesToMatchScalarImpl<Derived,
-                                          Eigen::AutoDiffScalar<DerivType>> {
-  using Scalar = Eigen::AutoDiffScalar<DerivType>;
-  static void run(const Scalar& scalar, Eigen::MatrixBase<Derived>* mat) {
-    for (int i = 0; i < mat->size(); ++i) {
-      auto& derivs = (*mat)(i).derivatives();
-      if (derivs.size() == 0) {
-        derivs.resize(scalar.derivatives().size());
-        derivs.setZero();
-      }
-    }
-  }
-};
-}  // namespace internal
-
-/** Resize derivatives vector of each element of a matrix to match the size
- * of the derivatives vector of a given scalar.
- * \brief If the mat and scalar inputs are AutoDiffScalars, resize the
- * derivatives vector of each element of the matrix mat to match
- * the number of derivatives of the scalar. This is useful in functions that
- * return matrices that do not depend on an AutoDiffScalar
- * argument (e.g. a function with a constant output), while it is desired that
- * information about the number of derivatives is preserved.
- * \param mat matrix, for which the derivative vectors of the elements will be
- * resized
- * \param scalar scalar to match the derivative size vector against.
- */
-template <typename Derived>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub if you need this method.")
-// NOLINTNEXTLINE(runtime/references).
-void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& matrix,
-                                    const typename Derived::Scalar& scalar) {
-  internal::ResizeDerivativesToMatchScalarImpl<
-      Derived, typename Derived::Scalar>::run(scalar, &matrix);
 }
 
 namespace internal {

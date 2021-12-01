@@ -33,8 +33,6 @@ drake_cc_package_library(
         ":port_switch",
         ":random_source",
         ":saturation",
-        ":signal_log",
-        ":signal_logger",
         ":sine",
         ":symbolic_vector_system",
         ":trajectory_affine_system",
@@ -242,26 +240,6 @@ drake_cc_library(
     deps = [
         "//math:saturate",
         "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "signal_logger",
-    srcs = ["signal_logger.cc"],
-    hdrs = ["signal_logger.h"],
-    deps = [
-        ":signal_log",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "signal_log",
-    srcs = ["signal_log.cc"],
-    hdrs = ["signal_log.h"],
-    deps = [
-        "//common:default_scalars",
-        "//common:essential",
     ],
 )
 
@@ -613,22 +591,6 @@ drake_cc_googletest(
     name = "saturation_test",
     deps = [
         ":saturation",
-    ],
-)
-
-drake_cc_googletest(
-    name = "signal_logger_test",
-    deps = [
-        ":affine_system",
-        ":constant_vector_source",
-        ":linear_system",
-        ":signal_logger",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_no_throw",
-        "//common/test_utilities:expect_throws_message",
-        "//systems/analysis:simulator",
-        "//systems/framework",
-        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

@@ -213,24 +213,6 @@ initializeAutoDiffGivenGradientMatrix(
   return InitializeAutoDiff(val, gradient);
 }
 
-template <typename DerivedGradient, typename DerivedAutoDiff>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub if you need this method.")
-void gradientMatrixToAutoDiff(
-    const Eigen::MatrixBase<DerivedGradient>& gradient,
-    // NOLINTNEXTLINE(runtime/references).
-    Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
-  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
-  auto nx = gradient.cols();
-  for (Index row = 0; row < auto_diff_matrix.rows(); ++row) {
-    for (Index col = 0; col < auto_diff_matrix.cols(); ++col) {
-      auto_diff_matrix(row, col).derivatives().resize(nx, 1);
-      auto_diff_matrix(row, col).derivatives() =
-          gradient.row(row + col * auto_diff_matrix.rows()).transpose();
-    }
-  }
-}
-
 /** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
 AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
 the gradient matrix is empty or zero.  For a matrix of type, e.g.
@@ -276,35 +258,6 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
                    double precision = 0.) {
   unused(precision);
   return matrix;
-}
-
-template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
-typename std::enable_if_t<
-    !std::is_same_v<_Scalar, double>,
-    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>
-DiscardZeroGradient(
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& auto_diff_transform,
-    const typename Eigen::NumTraits<typename _Scalar::Scalar>::Real& precision =
-        Eigen::NumTraits<typename _Scalar::Scalar>::dummy_precision()) {
-  return Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>(
-      DiscardZeroGradient(auto_diff_transform.matrix(), precision));
-}
-
-template <typename _Scalar, int _Dim, int _Mode, int _Options>
-DRAKE_DEPRECATED("2021-12-01",
-    "Apparently unused. File a Drake issue on GitHub"
-    " if you need this specialization.")
-typename std::enable_if_t<
-    std::is_same_v<_Scalar, double>,
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>
-DiscardZeroGradient(
-    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform,
-    double precision = 0.) {
-  unused(precision);
-  return transform;
 }
 
 /**

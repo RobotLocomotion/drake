@@ -60,9 +60,6 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
 
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(
-                scene_graph.get_pose_bundle_output_port(), OutputPort)
         self.assertIsInstance(
             scene_graph.get_query_output_port(), OutputPort)
 
@@ -77,11 +74,6 @@ class TestGeometrySceneGraph(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_frames(), 3)
-        with catch_drake_warnings(expected_count=3):
-            self.assertEqual(len(inspector.all_frame_ids()), 3)
-            self.assertTrue(inspector.world_frame_id()
-                            in inspector.all_frame_ids())
-            self.assertTrue(global_frame in inspector.all_frame_ids())
         self.assertEqual(len(inspector.GetAllFrameIds()), 3)
         self.assertTrue(inspector.world_frame_id()
                         in inspector.GetAllFrameIds())

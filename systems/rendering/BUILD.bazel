@@ -14,74 +14,7 @@ drake_cc_package_library(
     name = "rendering",
     visibility = ["//visibility:public"],
     deps = [
-        ":frame_velocity",
         ":multibody_position_to_geometry_pose",
-        ":pose_aggregator",
-        ":pose_bundle",
-        ":pose_bundle_to_draw_message",
-        ":pose_vector",
-        ":render_pose_to_geometry_pose",
-    ],
-)
-
-drake_cc_library(
-    name = "pose_aggregator",
-    srcs = ["pose_aggregator.cc"],
-    hdrs = ["pose_aggregator.h"],
-    # Not necessary for gcc, but clang gets cranky without this.
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":pose_bundle",
-        ":pose_vector",
-        "//common:default_scalars",
-        "//common:essential",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "pose_bundle_to_draw_message",
-    srcs = ["pose_bundle_to_draw_message.cc"],
-    hdrs = ["pose_bundle_to_draw_message.h"],
-    deps = [
-        ":pose_bundle",
-        "//common:essential",
-        "//lcmtypes:viewer",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-# TODO(david-german-tri): Rename PoseVector to FramePose.
-drake_cc_library(
-    name = "pose_vector",
-    srcs = ["pose_vector.cc"],
-    hdrs = ["pose_vector.h"],
-    deps = [
-        "//common:default_scalars",
-        "//math:geometric_transform",
-        "//systems/framework:vector",
-    ],
-)
-
-drake_cc_library(
-    name = "frame_velocity",
-    srcs = ["frame_velocity.cc"],
-    hdrs = ["frame_velocity.h"],
-    deps = [
-        "//common:default_scalars",
-        "//multibody/math:spatial_algebra",
-        "//systems/framework:vector",
-    ],
-)
-
-drake_cc_library(
-    name = "pose_bundle",
-    srcs = ["pose_bundle.cc"],
-    hdrs = ["pose_bundle.h"],
-    deps = [
-        ":frame_velocity",
-        "//common:default_scalars",
-        "//common:essential",
     ],
 )
 
@@ -97,52 +30,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "render_pose_to_geometry_pose",
-    srcs = ["render_pose_to_geometry_pose.cc"],
-    hdrs = ["render_pose_to_geometry_pose.h"],
-    # Not necessary for gcc, but clang gets cranky without this.
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":pose_vector",
-        "//geometry:frame_kinematics",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_googletest(
-    name = "pose_aggregator_test",
-    deps = [
-        ":pose_aggregator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:autodiff",
-    ],
-)
-
-drake_cc_googletest(
-    name = "pose_vector_test",
-    deps = [
-        ":pose_vector",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "frame_velocity_test",
-    deps = [
-        ":frame_velocity",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "pose_bundle_to_draw_message_test",
-    deps = [
-        ":pose_bundle_to_draw_message",
-    ],
-)
-
 drake_cc_googletest(
     name = "multibody_position_to_geometry_pose_test",
     data = ["//manipulation/models/iiwa_description:models"],
@@ -151,15 +38,6 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/parsing",
-        "//systems/framework/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "render_pose_to_geometry_pose_test",
-    deps = [
-        ":render_pose_to_geometry_pose",
-        "//common/test_utilities",
         "//systems/framework/test_utilities",
     ],
 )
