@@ -5,6 +5,8 @@
 #include <Eigen/SparseCore>
 #include <gtest/gtest.h>
 
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -103,6 +105,14 @@ TEST_F(BlockSparseLinearOperatorTest, AssembleMatrix) {
   A_operator_->AssembleMatrix(&A_sparse);
   // Copy into a dense matrix for comparison.
   const MatrixX<double> A_dense = A_sparse;
+  EXPECT_EQ(A_dense, A_);
+}
+
+TEST_F(BlockSparseLinearOperatorTest, AssembleMatrixBlockSparse) {
+  BlockSparseMatrix<double> A_block;
+  A_operator_->AssembleMatrix(&A_block);
+  // Copy into a dense matrix for comparison.
+  const MatrixX<double> A_dense = A_block.MakeDenseMatrix();
   EXPECT_EQ(A_dense, A_);
 }
 

@@ -15,6 +15,9 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+template <typename T>
+class BlockSparseMatrix;
+
 // This abstract class provides a generic interface for linear operators
 // A ∈ ℝⁿˣᵐ defined by their application from ℝᵐ into ℝⁿ, y = A⋅x.
 // Derived classes must provide an implementation for this application
@@ -107,6 +110,13 @@ class LinearOperator {
     DoAssembleMatrix(A);
   }
 
+  // Assembles this operator into a BlockSparseMatrix.
+  // @throws if A is nullptr.
+  void AssembleMatrix(BlockSparseMatrix<T>* A) const {
+    DRAKE_DEMAND(A != nullptr);
+    DoAssembleMatrix(A);
+  }
+
   // TODO(amcastro-tri): expand operations as needed, e.g.:
   // - MultiplyAndAdd(): z = y + A * x
   // - AXPY(): Y = Y + a * X
@@ -143,6 +153,11 @@ class LinearOperator {
   // TODO(amcastro-tri): A default implementation for this method based on
   // repeated multiplies by unit vectors could be provided.
   virtual void DoAssembleMatrix(Eigen::SparseMatrix<T>* A) const;
+
+  // Implementation to the NVI AssembleMatrix(BlockSparseMatrix<T>*).
+  // The NVI already checked for a valid non-null pointer.
+  // The default implementation throws a std::exception.
+  virtual void DoAssembleMatrix(BlockSparseMatrix<T>* A) const;
 
  private:
   std::string name_;
