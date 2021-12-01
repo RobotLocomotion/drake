@@ -717,12 +717,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   vector<ContactSurface<T>> ComputeContactSurfaces(
+      HydroelasticContactRepresentation representation,
       const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
                                        &hydroelastic_geometries_,
-                                       &surfaces};
+                                       representation, &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
@@ -737,6 +738,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation representation,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
@@ -746,7 +748,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
         hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
-                                      &hydroelastic_geometries_, surfaces},
+                                      &hydroelastic_geometries_, representation,
+                                      surfaces},
         point_pairs};
 
     // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
@@ -1072,17 +1075,19 @@ ProximityEngine<T>::ComputePointPairPenetration(
 
 template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
+    HydroelasticContactRepresentation representation,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputeContactSurfaces(X_WGs);
+  return impl_->ComputeContactSurfaces(representation, X_WGs);
 }
 
 template <typename T>
 void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+    HydroelasticContactRepresentation representation,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
-  return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
-                                                   point_pairs);
+  return impl_->ComputeContactSurfacesWithFallback(representation, X_WGs,
+                                                   surfaces, point_pairs);
 }
 
 template <typename T>
