@@ -1,3 +1,5 @@
+# IIWA Models
+
 Execute the following commands to regenerate the URDF files using xacro. Note
 that ROS Jade or newer must be used because the xacro scripts make use of more
 expressive conditional statements [1].
@@ -16,11 +18,11 @@ rosrun xacro xacro -o urdf/dual_iiwa14_polytope_collision.urdf urdf/dual_iiwa14_
 
 Beware when generating the URDF files as some of them might have been edited manually.
 
-# Additonal Edits
+## Additional Edits
 
-## Velocity and effort Limits
+### Velocity and Effort Limits
 
-Velocity and effort limits are added to the xacro files, and then manually merged into
+Velocity and effort limits have been added to the xacro files, and then manually merged into
 the hand-edited files.
 
 The limits were derived from the third table at page 30 of the followking KUKA brochure:
