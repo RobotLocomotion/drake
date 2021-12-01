@@ -1,7 +1,17 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
+#include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/plane.h"
+#include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/geometry/proximity/triangle_surface_mesh_field.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -44,6 +54,55 @@ bool CalcEquilibriumPlane(int element0,
                           const VolumeMeshFieldLinear<double, double>& field1_N,
                           const math::RigidTransform<T>& X_MN,
                           Plane<T>* plane_M);
+
+template <typename T>
+void IntersectPlaneTetrahedron(
+    int tetrahedron, const VolumeMeshFieldLinear<double, double>& field_M,
+    const Plane<T>& plane_M, std::vector<Vector3<T>>* polygon_M);
+
+/*
+ @retval `polygon_M` contains the locations of vertices of the contact polygon.
+         `polygon_nhat_M` is its unit normal vector pointing out of element1
+         and into element0.
+ */
+template <typename T>
+std::vector<Vector3<T>> IntersectTetrahedra(
+    int element0, const VolumeMeshFieldLinear<double, double>& field0_M,
+    int element1, const VolumeMeshFieldLinear<double, double>& field1_N,
+    const math::RigidTransform<T>& X_MN, const Plane<T>& equilibrium_plane_M);
+
+bool IsPlaneNormalAlongPressureGradient(
+    const Vector3<double>& nhat_M, int tetrahedron,
+    const VolumeMeshFieldLinear<double, double>& field_M);
+
+void FieldIntersection(
+    const VolumeMeshFieldLinear<double, double>& field0_M,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
+    const VolumeMeshFieldLinear<double, double>& field1_N,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
+    const math::RigidTransform<double>& X_MN,
+    std::unique_ptr<TriangleSurfaceMesh<double>>* surface_MN_M,
+    std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>>* e_MN_M,
+    std::vector<Vector3<double>>* grad_eM_Ms,
+    std::vector<Vector3<double>>* grad_eN_Ms);
+
+std::unique_ptr<ContactSurface<double>>
+ComputeContactSurfaceFromCompliantVolumes(
+  GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
+  const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
+  const math::RigidTransform<double>& X_WF,
+  GeometryId id1, const VolumeMeshFieldLinear<double, double>& field1_G,
+  const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
+  const math::RigidTransform<double>& X_WG);
+
+std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurfaceFromCompliantVolumes(
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
+    const math::RigidTransform<AutoDiffXd>& X_WF, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_G,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
+    const math::RigidTransform<AutoDiffXd>& X_WG);
 
 }  // namespace internal
 }  // namespace geometry

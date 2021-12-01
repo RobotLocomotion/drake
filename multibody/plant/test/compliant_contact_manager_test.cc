@@ -394,13 +394,13 @@ TEST_F(CompliantContactManagerTest,
   const std::vector<PenetrationAsPointPair<double>>& point_pairs =
       EvalPointPairPenetrations(*plant_context_);
   const int num_point_pairs = point_pairs.size();
-  EXPECT_EQ(num_point_pairs, 1);
+  EXPECT_EQ(num_point_pairs, 0);
   const std::vector<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
 
   const std::vector<geometry::ContactSurface<double>>& surfaces =
       EvalContactSurfaces(*plant_context_);
-  ASSERT_EQ(surfaces.size(), 1u);
+  ASSERT_EQ(surfaces.size(), 2u);
   const geometry::TriangleSurfaceMesh<double>& patch = surfaces[0].mesh_W();
   EXPECT_EQ(pairs.size(), patch.num_triangles() + num_point_pairs);
 }
