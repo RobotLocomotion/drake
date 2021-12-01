@@ -371,21 +371,6 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   // (so even compiling is a success).
   Eigen::Vector3d test3out = DiscardGradient(test3);
   EXPECT_TRUE(CompareMatrices(test3out, test2));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
-  EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).linear(), test5.linear()));
-  EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).translation(),
-                              test5.translation()));
-
-  Isometry3<AutoDiffXd> test6 = Isometry3<AutoDiffXd>::Identity();
-  test6.translate(Vector3<AutoDiffXd>{3., 2., 1.});
-  Eigen::Isometry3d test6b = DiscardGradient(test6);
-  EXPECT_TRUE(CompareMatrices(test6b.linear(), Eigen::Matrix3d::Identity()));
-  EXPECT_TRUE(
-      CompareMatrices(test6b.translation(), Eigen::Vector3d{3., 2., 1.}));
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
@@ -422,29 +407,6 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
 
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
   DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
-  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test5));
-  EXPECT_TRUE(
-      CompareMatrices(DiscardZeroGradient(test5).linear(), test5.linear()));
-  EXPECT_TRUE(CompareMatrices(DiscardZeroGradient(test5).translation(),
-                              test5.translation()));
-  // Check that the returned value is a reference to the original data.
-  EXPECT_EQ(&DiscardZeroGradient(test5), &test5);
-
-  Isometry3<AutoDiffXd> test6 = Isometry3<AutoDiffXd>::Identity();
-  test6.translate(Vector3<AutoDiffXd>{3., 2., 1.});
-  DRAKE_EXPECT_NO_THROW(DiscardZeroGradient(test5));
-  Eigen::Isometry3d test6b = DiscardZeroGradient(test6);
-  EXPECT_TRUE(CompareMatrices(test6b.linear(), Eigen::Matrix3d::Identity()));
-  EXPECT_TRUE(
-      CompareMatrices(test6b.translation(), Eigen::Vector3d{3., 2., 1.}));
-  test6.linear()(0, 0).derivatives() = Vector3d{1., 2., 3.};
-
-  EXPECT_THROW(DiscardZeroGradient(test6), std::runtime_error);
-#pragma GCC diagnostic pop
 }
 
 // Make sure that casting to autodiff always results in zero gradients.
