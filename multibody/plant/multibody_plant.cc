@@ -1983,9 +1983,11 @@ void MultibodyPlant<T>::CalcContactSurfaces(
   if (is_discrete()) {
     // NOTE: This is currently being left here as a place holder for when
     // ComputeContactSurfaces takes a flag for indicating mesh representation.
-    *contact_surfaces = query_object.ComputeContactSurfaces();
+    *contact_surfaces = query_object.ComputeContactSurfaces(
+      geometry::HydroelasticContactRepresentation::kTriangle);
   } else {
-    *contact_surfaces = query_object.ComputeContactSurfaces();
+    *contact_surfaces = query_object.ComputeContactSurfaces(
+      geometry::HydroelasticContactRepresentation::kTriangle);
   }
 }
 
@@ -2013,11 +2015,13 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
       // NOTE: This is currently being left here as a place holder for when
       // ComputeContactSurfacesWithFallback takes a flag for indicating mesh
       // representation.
-      query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                      &data->point_pairs);
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle,
+          &data->contact_surfaces, &data->point_pairs);
     } else {
-      query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                      &data->point_pairs);
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle,
+          &data->contact_surfaces, &data->point_pairs);
     }
   }
 }

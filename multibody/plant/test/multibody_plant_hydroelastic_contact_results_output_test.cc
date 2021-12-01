@@ -108,7 +108,8 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Compute the contact surface using the hydroelastic engine.
   ASSERT_FALSE(plant_->is_discrete());
   std::vector<geometry::ContactSurface<double>> contact_surfaces =
-      query_object.ComputeContactSurfaces();
+      query_object.ComputeContactSurfaces(
+          geometry::HydroelasticContactRepresentation::kTriangle);
 
   // Check that the two contact surfaces are equivalent.
   ASSERT_EQ(contact_surfaces.size(), 1);
@@ -264,7 +265,8 @@ TEST_F(HydroelasticContactResultsOutputTester, AutoDiffXdSupport) {
   // as a reality check; make sure that the underlying contact surface has
   // derivatives as expected.
   std::vector<geometry::ContactSurface<AutoDiffXd>> contact_surfaces =
-      query_object.ComputeContactSurfaces();
+      query_object.ComputeContactSurfaces(
+          geometry::HydroelasticContactRepresentation::kTriangle);
 
   ASSERT_EQ(contact_surfaces.size(), 1);
   // Contact surface documents the surface normal as pointing "out of N and into
