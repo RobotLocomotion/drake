@@ -4,7 +4,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
@@ -25,7 +24,6 @@
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
-#include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 #include "drake/systems/primitives/trajectory_affine_system.h"
@@ -233,45 +231,6 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<const VectorX<T>&, const VectorX<T>&>(),
             py::arg("min_value"), py::arg("max_value"),
             doc.Saturation.ctor.doc_2args);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
-        m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc_deprecated)
-        .def(py_init_deprecated<SignalLogger<T>, int, int>(
-                 doc.SignalLogger.doc_deprecated),
-            py::arg("input_size"), py::arg("batch_allocation_size") = 1000,
-            doc.SignalLogger.ctor.doc)
-        .def("set_publish_period", &SignalLogger<T>::set_publish_period,
-            py::arg("period"), doc.SignalLogger.set_publish_period.doc)
-        .def("set_forced_publish_only",
-            &SignalLogger<T>::set_forced_publish_only,
-            doc.SignalLogger.set_forced_publish_only.doc)
-        .def(
-            "sample_times",
-            [](const SignalLogger<T>* self) {
-              // Reference
-              return CopyIfNotPodType(self->sample_times());
-            },
-            return_value_policy_for_scalar_type<T>(),
-            doc.SignalLogger.sample_times.doc)
-        .def(
-            "data",
-            [](const SignalLogger<T>* self) {
-              // Reference.
-              return CopyIfNotPodType(self->data());
-            },
-            return_value_policy_for_scalar_type<T>(), doc.SignalLogger.data.doc)
-        .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
-
-    AddTemplateFunction(m, "LogOutput",
-        WrapDeprecated(doc.LogOutput.doc_deprecated, &LogOutput<T>),
-        GetPyParam<T>(), py::arg("src"), py::arg("builder"),
-        // Keep alive, ownership: `return` keeps `builder` alive.
-        py::keep_alive<0, 2>(),
-        // See #11531 for why `py_rvp::reference` is needed.
-        py_rvp::reference, doc.LogOutput.doc_deprecated);
-#pragma GCC diagnostic pop
 
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",

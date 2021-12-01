@@ -111,7 +111,6 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
-        "//systems/primitives:signal_logger",
         "@gflags",
     ],
 )
