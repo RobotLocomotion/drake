@@ -1,12 +1,16 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/geometry/proximity/polygon_surface_mesh.h"
+#include "drake/geometry/proximity/polygon_surface_mesh_field.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh_field.h"
@@ -20,7 +24,11 @@ namespace geometry {
 namespace internal {
 
 // Forward declaration of Tester class, so we can grant friend access.
-template <typename T> class SurfaceVolumeIntersectorTester;
+template <typename MeshType> class SurfaceVolumeIntersectorTester;
+
+// Convenience alias for accessing the field type for a mesh type.
+template <typename MeshType, typename U = typename MeshType::ScalarType>
+using FieldType = MeshFieldLinear<U, MeshType>;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
@@ -29,9 +37,11 @@ template <typename T> class SurfaceVolumeIntersectorTester;
 
  @tparam_nonsymbolic_scalar
  */
-template <typename T>
+template <typename MeshType>
 class SurfaceVolumeIntersector {
  public:
+  using T = typename MeshType::ScalarType;
+
   SurfaceVolumeIntersector() {
     // We know that each contact polygon has at most 7 vertices.
     // Each surface triangle is clipped by four half-spaces of the four
@@ -78,15 +88,23 @@ class SurfaceVolumeIntersector {
    @note
        The output surface mesh may have duplicate vertices.
    */
+  template <typename MeshBuilder>
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const Bvh<Obb, VolumeMesh<double>>& bvh_M,
       const TriangleSurfaceMesh<double>& surface_N,
       const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
-      std::unique_ptr<TriangleSurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>>* e_MN,
-      std::vector<Vector3<T>>* grad_eM_Ms);
+      MeshBuilder builder);
+
+  bool has_intersection() const { return mesh_M_ != nullptr; }
+  MeshType& mutable_mesh() { return *mesh_M_; }
+  std::unique_ptr<MeshType>&& release_mesh() { return std::move(mesh_M_); }
+  FieldType<MeshType>& mutable_field() { return *field_M_; }
+  std::unique_ptr<FieldType<MeshType>>&& release_field() {
+    return std::move(field_M_);
+  }
+  std::vector<Vector3<T>>& mutable_grad_eM_M() { return grad_eM_Ms_; }
 
  private:
   /* Calculates the intersection point between an infinite straight line
@@ -305,7 +323,21 @@ class SurfaceVolumeIntersector {
   // not introduced.
   std::vector<Vector3<T>> polygon_[2];
 
-  friend class SurfaceVolumeIntersectorTester<T>;
+  // When we've computed a polygon, we add its vertices to the builder and
+  // express the polygon as indices into the vertex set. Making it a member
+  // limits the number of allocations we perform to one allocation per
+  // mesh vs mesh (instead of tet vs tri).
+  std::vector<int> polygon_indices_;
+
+  // The mesh produce from intersecting the volume mesh with the surface mesh,
+  // measured and expressed in the volume mesh's frame M.
+  std::unique_ptr<MeshType> mesh_M_;
+  // The field defined on that mesh (in the same frame M).
+  std::unique_ptr<FieldType<MeshType>> field_M_;
+  // The spatial gradient of the volume mesh field, or mesh face.
+  std::vector<Vector3<T>> grad_eM_Ms_;
+
+  friend class SurfaceVolumeIntersectorTester<MeshType>;
 };
 
 /* Computes the contact surface between a soft geometry S and a rigid
@@ -364,7 +396,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS,
     const GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR);
+    const math::RigidTransform<T>& X_WR,
+    HydroelasticContactRepresentation representation);
 
 }  // namespace internal
 }  // namespace geometry
