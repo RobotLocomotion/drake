@@ -25,6 +25,11 @@ void LinearOperator<T>::DoAssembleMatrix(Eigen::SparseMatrix<T>*) const {
   ThrowIfNotImplemented(__func__);
 }
 
+template <typename T>
+void LinearOperator<T>::DoAssembleMatrix(BlockSparseMatrix<T>*) const {
+  ThrowIfNotImplemented(__func__);
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody

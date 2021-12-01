@@ -15,6 +15,9 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+template <typename T>
+class BlockSparseMatrix;
+
 // This abstract class provides a generic interface for linear operators
 // A ∈ ℝⁿˣᵐ defined by their application from ℝᵐ into ℝⁿ, y = A⋅x.
 // Derived classes must provide an implementation for this application
@@ -92,18 +95,17 @@ class LinearOperator {
     DoMultiplyByTranspose(x, y);
   }
 
-  // Assembles the explicit matrix form for `this` operator into matrix A.
-  // Some solvers might require this operation in order to use direct methods.
-  // Particularly useful for debugging sessions.
-  // Derived classes can provide an implementation through the virtual
-  // interface DoAssembleMatrix().
+  // Assembles this operator into an Eigen::SparseMatrix.
   // @throws if A is nullptr.
-  // @throws if A->rows() does not equal this->rows() or if A->cols() does not
-  // equal this->cols().
   void AssembleMatrix(Eigen::SparseMatrix<T>* A) const {
     DRAKE_DEMAND(A != nullptr);
-    DRAKE_DEMAND(A->rows() == rows());
-    DRAKE_DEMAND(A->cols() == cols());
+    DoAssembleMatrix(A);
+  }
+
+  // Assembles this operator into a BlockSparseMatrix.
+  // @throws if A is nullptr.
+  void AssembleMatrix(BlockSparseMatrix<T>* A) const {
+    DRAKE_DEMAND(A != nullptr);
     DoAssembleMatrix(A);
   }
 
@@ -136,13 +138,20 @@ class LinearOperator {
   virtual void DoMultiplyByTranspose(const Eigen::Ref<const VectorX<T>>& x,
                                      VectorX<T>* y) const;
 
-  // Assembles `this` operator into a sparse matrix A.
+  // TODO(amcastro-tri): For these assembly methods, consider a default
+  // implementation based on repeated multiplies by unit vectors.
+
+  // Assembles `this` operator into an Eigen::SparseMatrix.
   // The default implementation throws a std::exception.
-  // Its NVI already performed checks for a valid non-null pointer to a matrix
-  // of the proper size.
-  // TODO(amcastro-tri): A default implementation for this method based on
-  // repeated multiplies by unit vectors could be provided.
+  // The NVI already checked for a valid non-null pointer. The implementation
+  // must properly re-size the output matrix on assembly.
   virtual void DoAssembleMatrix(Eigen::SparseMatrix<T>* A) const;
+
+  // Assembles `this` operator into a BlockSparseMatrix.
+  // The default implementation throws a std::exception.
+  // The NVI already checked for a valid non-null pointer. The
+  // implementation must properly re-size the output matrix on assembly.
+  virtual void DoAssembleMatrix(BlockSparseMatrix<T>* A) const;
 
  private:
   std::string name_;
