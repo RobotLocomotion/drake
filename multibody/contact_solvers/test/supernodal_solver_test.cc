@@ -535,7 +535,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
         2, 5, 3,
         2, 3, 4;
   // clang-format on
-  MatrixXd G(3 * num_patches, 3 * num_patches);
+  MatrixXd G = MatrixXd::Zero(3 * num_patches, 3 * num_patches);
   std::vector<MatrixXd> blocks_of_G(num_patches);
   for (int i = 0; i < num_patches; ++i) {
     G.block(3 * i, 3 * i, 3, 3) = Gb;
