@@ -13,13 +13,4 @@ GTEST_TEST(DrakeThrowTest, BasicTest) {
   EXPECT_THROW(DRAKE_THROW_UNLESS(false), std::runtime_error);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(DrakeThrowTest, DeprecatedTest) {
-  int foo{};
-  int* foo_pointer = &foo;
-  DRAKE_EXPECT_NO_THROW(DRAKE_THROW_UNLESS(foo_pointer));
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
