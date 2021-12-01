@@ -21,7 +21,7 @@ class PetscSchurComplement::Impl {
         symmetric_block_sparse_matrix.MakePetscSparseMatrix();
     DRAKE_DEMAND(matrix.rows() == matrix.cols());
     if (eliminated.size() == 0) {
-      D_complement_ = matrix.MakeDenseMatrix();
+      D_complement_ = MakeDenseMatrix(matrix.get_A());
       Dinv_B_transpose_.resize(0, matrix.cols());
       return;
     }

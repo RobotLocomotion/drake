@@ -108,17 +108,21 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   void AddToBlock(const VectorX<int>& block_indices,
                   const MatrixX<double>& block) {
+    /* Notice that `MatSetValuesBlocked()` takes row oriented data whereas
+     `block.data()` is column oriented. But since `block` is symmetric, we
+     don't have to make the conversion. */
     MatSetValuesBlocked(A_, block_indices.size(), block_indices.data(),
                         block_indices.size(), block_indices.data(),
                         block.data(), ADD_VALUES);
   }
 
-  /* Makes a dense matrix representation of this block-sparse matrix. */
+  /* Makes a dense matrix representation of this block-sparse matrix. This
+   operation is expensive and is usually only used for debugging purpose. */
   MatrixX<double> MakeDenseMatrix() const {
     MatrixX<double> eigen_dense = internal::MakeDenseMatrix(A_);
-    // Notice that we store the matrix in PETSc as upper triangular matrix
-    // and the lower triangular part is ignored. To restore the full
-    // matrix, we need to fill in these blocks by hand.
+    /* Notice that we store the matrix in PETSc as upper triangular matrix
+     and the lower triangular part is ignored. To restore the full
+     matrix, we need to fill in these blocks by hand. */
     for (int i = 0; i < num_blocks_; ++i) {
       for (int j = 0; j < i; ++j) {
         eigen_dense.block(i * block_size_, j * block_size_, block_size_,
@@ -133,7 +137,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   }
 
   void ZeroRowsAndColumns(const std::vector<int>& indexes, double value) {
-    // Ensure that the matrix has been assembled.
+    /* Ensure that the matrix has been assembled. */
     MatAssemblyBegin(A_, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
     MatZeroRowsColumns(A_, indexes.size(), indexes.data(), value, PETSC_NULL,
@@ -146,7 +150,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   }
 
   PetscSparseMatrix MakePetscSparseMatrix() const {
-    // Ensure that the matrix has been assembled.
+    /* Ensure that the matrix has been assembled. */
     MatAssemblyBegin(A_, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A_, MAT_FINAL_ASSEMBLY);
     return PetscSparseMatrix(A_);
@@ -157,7 +161,6 @@ class PetscSymmetricBlockSparseMatrix::Impl {
  private:
   // The underlying PETSc matrix stored as MATSEQSBAIJ.
   Mat A_;
-  // Rows and columns of the matrix.
   int size_{0};
   int block_size_{0};
   int num_blocks_{0};
