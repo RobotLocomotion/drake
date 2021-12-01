@@ -1983,9 +1983,11 @@ void MultibodyPlant<T>::CalcContactSurfaces(
   if (is_discrete()) {
     // NOTE: This is currently being left here as a place holder for when
     // ComputeContactSurfaces takes a flag for indicating mesh representation.
-    *contact_surfaces = query_object.ComputeContactSurfaces();
+    *contact_surfaces = query_object.ComputeContactSurfaces(
+      geometry::HydroelasticContactRepresentation::kTriangle);
   } else {
-    *contact_surfaces = query_object.ComputeContactSurfaces();
+    *contact_surfaces = query_object.ComputeContactSurfaces(
+      geometry::HydroelasticContactRepresentation::kTriangle);
   }
 }
 
@@ -2013,11 +2015,13 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
       // NOTE: This is currently being left here as a place holder for when
       // ComputeContactSurfacesWithFallback takes a flag for indicating mesh
       // representation.
-      query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                      &data->point_pairs);
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle,
+          &data->contact_surfaces, &data->point_pairs);
     } else {
-      query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                      &data->point_pairs);
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle,
+          &data->contact_surfaces, &data->point_pairs);
     }
   }
 }
@@ -2078,8 +2082,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
-        const geometry::TriangleSurfaceMesh<T>& mesh = s.mesh_W();
-        num_quadrature_pairs += num_quad_points * mesh.num_triangles();
+        num_quadrature_pairs += num_quad_points * s.num_faces();
       }
     }
 
@@ -2116,7 +2119,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<geometry::ContactSurface<T>>& surfaces =
           EvalContactSurfaces(context);
       for (const auto& s : surfaces) {
-        const geometry::TriangleSurfaceMesh<T>& mesh_W = s.mesh_W();
+        const geometry::TriangleSurfaceMesh<T>& mesh_W = s.tri_mesh_W();
 
         // Combined Hunt & Crossley dissipation.
         const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
@@ -2156,7 +2159,7 @@ void MultibodyPlant<T>::CalcDiscreteContactPairs(
               const Vector3<T> barycentric(xi[qp](0), xi[qp](1),
                                            1.0 - xi[qp](0) - xi[qp](1));
               // Pressure at the quadrature point.
-              const T p0 = s.e_MN().Evaluate(face, barycentric);
+              const T p0 = s.tri_e_MN().Evaluate(face, barycentric);
 
               // Force contribution by this quadrature point.
               const T fn0 = wq[qp] * Ae * p0;

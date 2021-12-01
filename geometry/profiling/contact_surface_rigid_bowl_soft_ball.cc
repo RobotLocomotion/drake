@@ -61,6 +61,7 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::HydroelasticContactRepresentation;
 using geometry::IllustrationProperties;
 using geometry::Mesh;
 using geometry::ProximityProperties;
@@ -253,7 +254,8 @@ class ContactResultMaker final : public LeafSystem<double> {
     const auto& query_object =
         get_geometry_query_port().Eval<QueryObject<double>>(context);
     std::vector<ContactSurface<double>> contacts =
-        query_object.ComputeContactSurfaces();
+        query_object.ComputeContactSurfaces(
+            HydroelasticContactRepresentation::kTriangle);
     const int num_contacts = static_cast<int>(contacts.size());
 
     auto& msg = *results;
@@ -268,8 +270,8 @@ class ContactResultMaker final : public LeafSystem<double> {
           msg.hydroelastic_contacts[i];
       const ContactSurface<double>& surface = contacts[i];
 
-      const auto& mesh_W = surface.mesh_W();
-      const auto& e_MN_W = surface.e_MN();
+      const auto& mesh_W = surface.tri_mesh_W();
+      const auto& e_MN_W = surface.tri_e_MN();
 
       // TODO(SeanCurtis-TRI): This currently skips the full naming and doesn't
       //  report any dynamics (e.g., force, moment, or quadrature data).

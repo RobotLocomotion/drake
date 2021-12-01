@@ -243,6 +243,8 @@ unordered_map<GeometryId, RigidTransformd> PopulateEngine(
   return X_WGs;
 }
 
+// The autodiff support is independent of what the contact surface mesh
+// representation is; so we'll simply use kTriangle.
 GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   const bool anchored{true};
   const bool soft{true};
@@ -282,14 +284,15 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     // callback. So, exercising one is "sufficient". If they ever deviate in
     // execution (i.e., there were to no longer share the same callback), this
     // test would have to be elaborated.
-    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                  &point_pairs);
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
     EXPECT_EQ(surfaces.size(), 1);
     EXPECT_EQ(point_pairs.size(), 0);
     // We'll poke *one* quantity of the surface mesh to confirm it has
     // derivatives. We won't consider the *value*, just the existence as proof
     // that it has been wired up to code that has already tested value.
-    EXPECT_EQ(surfaces[0].mesh_W().vertex(0).x().derivatives().size(), 3);
+    EXPECT_EQ(surfaces[0].tri_mesh_W().vertex(0).x().derivatives().size(), 3);
   }
 
   // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
@@ -306,8 +309,9 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 
     std::vector<ContactSurface<AutoDiffXd>> surfaces;
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                  &point_pairs);
+    engine_ad->ComputeContactSurfacesWithFallback(
+        HydroelasticContactRepresentation::kTriangle, X_WGs_ad, &surfaces,
+        &point_pairs);
     EXPECT_EQ(surfaces.size(), 0);
     EXPECT_EQ(point_pairs.size(), 1);
   }
@@ -324,6 +328,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 //
 //   - A concave mesh queries penetration and distance like its convex hull.
 //   - A concave mesh queries hydroelastic based on the actual mesh.
+//
+// The test doesn't depend on the mesh representation type.
 GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
   /* This mesh looks like this:
                          +z
@@ -372,7 +378,8 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
     engine.UpdateWorldPoses(X_WGs);
 
     // Existence of a contact surface depends on the radius of the sphere.
-    const auto contact_surfaces = engine.ComputeContactSurfaces(X_WGs);
+    const auto contact_surfaces = engine.ComputeContactSurfaces(
+        HydroelasticContactRepresentation::kTriangle, X_WGs);
     EXPECT_EQ(contact_surfaces.size(), radius > 0.5 ? 1 : 0);
 
     {
@@ -1883,6 +1890,8 @@ GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
 // Confirms that the ComputeContactSurfaces() computation returns the
 // same results twice in a row. This test is explicitly required because it is
 // known that updating the pose in the FCL tree can lead to erratic ordering.
+// This logic doesn't depend on mesh representation, so we test it with a single
+// representation.
 class ProximityEngineHydro : public testing::Test {
  protected:
   void SetUp() override {
@@ -1920,11 +1929,13 @@ class ProximityEngineHydro : public testing::Test {
 
 TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
   engine_.UpdateWorldPoses(poses_);
-  const auto results1 = engine_.ComputeContactSurfaces(poses_);
+  const auto results1 = engine_.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses_);
   ASSERT_EQ(results1.size(), poses_.size());
 
   engine_.UpdateWorldPoses(poses_);
-  const auto results2 = engine_.ComputeContactSurfaces(poses_);
+  const auto results2 = engine_.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses_);
   ASSERT_EQ(results2.size(), poses_.size());
 
   for (size_t i = 0; i < poses_.size(); ++i) {
@@ -1936,6 +1947,8 @@ TEST_F(ProximityEngineHydro, ComputeContactSurfacesResultOrdering) {
 // Confirms that the ComputeContactSurfacesWithFallback() computation returns
 // the same results twice in a row. This test is explicitly required because it
 // is known that updating the pose in the FCL tree can lead to erratic ordering.
+// This logic is independent of mesh representation, so, we only test for one
+// mesh type.
 class ProximityEngineHydroWithFallback : public testing::Test {
  protected:
   void SetUp() override {
@@ -1979,14 +1992,18 @@ TEST_F(ProximityEngineHydroWithFallback,
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces1;
   vector<PenetrationAsPointPair<double>> points1;
-  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces1, &points1);
+  engine_.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces1,
+      &points1);
   ASSERT_EQ(surfaces1.size(), N_ / 2);
   ASSERT_EQ(points1.size(), N_ / 2);
 
   engine_.UpdateWorldPoses(poses_);
   vector<ContactSurface<double>> surfaces2;
   vector<PenetrationAsPointPair<double>> points2;
-  engine_.ComputeContactSurfacesWithFallback(poses_, &surfaces2, &points2);
+  engine_.ComputeContactSurfacesWithFallback(
+      HydroelasticContactRepresentation::kTriangle, poses_, &surfaces2,
+      &points2);
   ASSERT_EQ(surfaces2.size(), N_ / 2);
   ASSERT_EQ(points2.size(), N_ / 2);
 

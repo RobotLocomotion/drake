@@ -209,10 +209,12 @@ class ContactResultMaker final : public LeafSystem<double> {
     std::vector<ContactSurface<double>> surfaces;
     std::vector<PenetrationAsPointPair<double>> points;
     if (use_strict_hydro_) {
-      surfaces = query_object.ComputeContactSurfaces();
+      surfaces = query_object.ComputeContactSurfaces(
+          geometry::HydroelasticContactRepresentation::kTriangle);
     } else {
-      query_object.ComputeContactSurfacesWithFallback(&surfaces,
-                                                      &points);
+      query_object.ComputeContactSurfacesWithFallback(
+          geometry::HydroelasticContactRepresentation::kTriangle, &surfaces,
+          &points);
     }
     const int num_surfaces = static_cast<int>(surfaces.size());
     const int num_pairs = static_cast<int>(points.size());
@@ -265,8 +267,8 @@ class ContactResultMaker final : public LeafSystem<double> {
             inspector.NumGeometriesForFrameWithRole(inspector.GetFrameId(id2),
                                                     Role::kProximity);
 
-        const auto& mesh_W = surface.mesh_W();
-        const auto& e_MN_W = surface.e_MN();
+        const auto& mesh_W = surface.tri_mesh_W();
+        const auto& e_MN_W = surface.tri_e_MN();
         // Fake contact *force* and *moment* data, with some variations across
         // different faces to facilitate visualizer testing.
         write_double3(mesh_W.centroid(), surface_message.centroid_W);
