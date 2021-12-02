@@ -5,6 +5,9 @@
 #include <Eigen/SparseCore>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -144,6 +147,17 @@ TEST_F(ContactJacobianTest, AssembleMatrix) {
                                        Jcopy.outerSize());
   Eigen::Map<VectorX<int>> J_outer(J_.outerIndexPtr(), J_.outerSize());
   EXPECT_EQ(Jcopy_outer, J_outer);
+}
+
+// Thus far SparseLinearOperator does not implement assembly into a
+// BlockSparseMatrix. We expect this method to throw.
+GTEST_TEST(SparseLinearOperator, AssembleMatrixBlockSparseThrows) {
+  SparseMatrixd Asparse;
+  const SparseLinearOperator<double> Aop("A", &Asparse);
+  BlockSparseMatrix<double> Ablock;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Aop.AssembleMatrix(&Ablock), std::runtime_error,
+      "DoAssembleMatrix().*must provide an implementation.");
 }
 
 }  // namespace
