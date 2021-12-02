@@ -252,4 +252,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "system_dynamics_data_test",
+    deps = [
+        ":sparse_linear_operator",
+        ":system_dynamics_data",
+    ],
+)
+
 add_lint_tests()
