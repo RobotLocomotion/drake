@@ -216,7 +216,6 @@ class RotationalInertia {
   /// reduces some computational cost). The default value is false.
   /// @throws std::exception if skip_validity_check is false and
   /// CouldBePhysicallyValid() fails.
-
   static RotationalInertia<T> MakeFromMomentsAndProductsOfInertia(
       const T& Ixx, const T& Iyy, const T& Izz,
       const T& Ixy, const T& Ixz, const T& Iyz,
@@ -443,6 +442,16 @@ class RotationalInertia {
     return RotationalInertia(*this) /= positive_scalar;
   }
 
+  /// (Internal use only) Multiplies a rotational inertia by a scalar.
+  /// @param[in] s Scalar which is to multiply this.
+  /// @return rotational inertia multiplied by `s`.
+  /// @related operator*(const T&).
+  RotationalInertia<T> MultiplyByScalarSkipValidityCheck(const T& s) const {
+    RotationalInertia<T> I(*this);  // Mutable copy of `this`.
+    I.get_mutable_triangular_view() *= s;
+    return I;
+  }
+
   /// Sets `this` rotational inertia so all its elements are equal to NaN.
   /// This helps quickly detect uninitialized moments/products of inertia.
   void SetToNaN() {
@@ -574,7 +583,7 @@ class RotationalInertia {
     // largest product of inertia is at most half the largest moment of inertia.
     using std::max;
     const double precision = 10 * std::numeric_limits<double>::epsilon();
-    const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
+    const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
 
     // In order to avoid false negatives for inertias close to zero we use, in
     // addition to a relative tolerance of "precision", an absolute tolerance
@@ -977,33 +986,34 @@ class RotationalInertia {
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool>
   ThrowIfNotPhysicallyValid(const char* func_name) {
-    DRAKE_ASSERT(func_name != nullptr);
-    if (!CouldBePhysicallyValid() && func_name != nullptr) {
-      std::string error_msg = fmt::format(
-          "{}(): The rotational inertia\n"
-          "{}did not pass the test CouldBePhysicallyValid().",
-          func_name, *this);
-      // Provide additional information if a moment of inertia is non-negative
-      // or if moments of inertia do not satisfy the triangle inequality.
-      if constexpr (scalar_predicate<T>::is_bool) {
-        if (!IsNaN()) {
-          const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-          if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-                  p(0), p(1), p(2), /* epsilon = */ 0.0)) {
-            error_msg += fmt::format(
-                "\nThe associated principal moments of inertia:"
-                "\n{}  {}  {}", p(0), p(1), p(2));
-            if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
-              error_msg += "\nare invalid since at least one is negative.";
-            } else {
-              error_msg += "\ndo not satisify the triangle inequality.";
-            }
+    DRAKE_DEMAND(func_name != nullptr);
+    if (CouldBePhysicallyValid())
+      return;
+
+    std::string error_msg = fmt::format(
+        "{}(): The rotational inertia\n"
+        "{}did not pass the test CouldBePhysicallyValid().",
+        func_name, *this);
+    // Provide additional information if a moment of inertia is non-negative
+    // or if moments of inertia do not satisfy the triangle inequality.
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (!IsNaN()) {
+        const Vector3<double> p = CalcPrincipalMomentsOfInertia();
+        if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+                p(0), p(1), p(2), /* epsilon = */ 0.0)) {
+          error_msg += fmt::format(
+              "\nThe associated principal moments of inertia:"
+              "\n{}  {}  {}", p(0), p(1), p(2));
+          if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
+            error_msg += "\nare invalid since at least one is negative.";
+          } else {
+            error_msg += "\ndo not satisify the triangle inequality.";
           }
         }
       }
-
-      throw std::logic_error(error_msg);
     }
+
+    throw std::logic_error(error_msg);
   }
 
   // SFINAE for non-numeric types. See documentation in the implementation for

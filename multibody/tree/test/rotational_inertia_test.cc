@@ -573,7 +573,6 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
 
   // Use of operator+=() results in: Ib = Ib + Ia.
   Ib += Ia;
-
   EXPECT_EQ(Ib.get_moments(), 3.0 * m);
   EXPECT_EQ(Ib.get_products(), 3.0 * p);
 
@@ -582,11 +581,19 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   Ia *= scalar;
   EXPECT_EQ(Ia.get_moments(), scalar * m);
   EXPECT_EQ(Ia.get_products(), scalar * p);
+  EXPECT_THROW_IF_ARMED(Ia *= -2.2, std::exception);
 
   // Verify correctness of operator/=().
   Ia /= scalar;
   EXPECT_EQ(Ia.get_moments(), m);
   EXPECT_EQ(Ia.get_products(), p);
+
+  // Verify correctness of MultiplyByScalarSkipValidityCheck().
+  const RotationalInertia<double> Is =
+      Ia.MultiplyByScalarSkipValidityCheck(scalar);
+  EXPECT_EQ(Is.get_moments(), scalar * m);
+  EXPECT_EQ(Is.get_products(), scalar * p);
+  EXPECT_NO_THROW(Ia.MultiplyByScalarSkipValidityCheck(-2.2));
 
   // For symbolic::Expression.
   const Variable a("a");  // A "variable" scalar.

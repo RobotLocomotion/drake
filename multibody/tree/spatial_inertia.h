@@ -231,10 +231,18 @@ class SpatialInertia {
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
   boolean<T> IsPhysicallyValid() const {
-    // The tests in RotationalInertia become a sufficient condition when
-    // performed on a rotational inertia computed about a body's center of mass.
-    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-    return !IsNaN() && mass_ >= T(0) && G_SScm_E.CouldBePhysicallyValid();
+    // This spatial inertia is not physically valid if the mass is NaN or if the
+    // center of mass or unit inertia matrix have NaN elements.
+    boolean<T> retValue = !IsNaN() && mass_ >= T(0);
+    if (retValue) {
+      // Form a rotational inertia about the body's center of mass and then use
+      // the well-documented tests in RotationalInertia to test validity.
+      const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
+      const RotationalInertia<T> I_SScm_E =
+          G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
+      retValue = I_SScm_E.CouldBePhysicallyValid();
+    }
+    return retValue;
   }
 
   /// Copy to a full 6x6 matrix representation.
@@ -516,12 +524,12 @@ class SpatialInertia {
   // expressed in a frame E.
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 
-  // Augments operator<< to write additional information about a SpatialInertia
-  // into the std::ostream `out`.  If I_BBcm, the rotational inertia of body B
-  // about Bcm (B's center of mass) differs from I_BP, the rotational inertia
-  // about point P, then I_BBcm is also written to `out`.  In all cases, the
-  // central principal moments of inertia are written to `out`, which helps
-  // identify a rotational inertia that violates the "triangle inequality".
+  // Appends text to an existing string with information about a SpatialInertia.
+  // Specifically, if p_PBcm (position vector from about-point P to Bcm (body or
+  // composite body B's center of mass) is non-zero, appends I_BBcm, body B's
+  // rotational inertia about Bcm (B's center of mass) to `msg`. In all cases,
+  // the central principal moments of inertia are appended to `msg`, e.g., to
+  // help identify a rotational inertia that violates the "triangle inequality".
   void WriteExtraCentralInertiaProperties(std::string* msg) const;
 };
 

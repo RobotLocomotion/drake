@@ -305,9 +305,17 @@ GTEST_TEST(SpatialInertia, Shift) {
 
 // Tests that it is possible to create a spatial inertia with zero mass.
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithZeroMass) {
-  SpatialInertia<double> M(0.0, Vector3d::Zero(),
-                           UnitInertia<double>::SolidSphere(1.0));
-  EXPECT_TRUE(M.IsPhysicallyValid());
+  // The current behavior of Drake is to allow a spatial inertia to have a mass
+  // of zero, whether or not p_PBcm is a zero vector.
+  const double mass = 0.0;
+  Vector3d p_PBcm(0.0, 0.0, 0.0);
+  const SpatialInertia<double> M0(mass, p_PBcm,
+                                  UnitInertia<double>::SolidSphere(1.0));
+  EXPECT_TRUE(M0.IsPhysicallyValid());
+
+  p_PBcm = Vector3d(1.0, 2.0, 3.0);
+  const SpatialInertia<double> M1(mass, p_PBcm,
+                                  UnitInertia<double>::SolidSphere(1.0));
 }
 
 // Tests that it is not possible to create a spatial inertia with negative mass
@@ -391,7 +399,6 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
     "\\[ 1.3e-05,  1.5e-06, 0.000408\\]\n"
     " Principal moments of inertia about Bcm \\(center of mass\\) =\n"
     "\\[0.0004078925412\\d+  0.001790822592803\\d+  0.00229528486596\\d+\\]\n");
-    // "\n-1.583957883\\d+  7.881702629\\d+  17.702255254\\d+"
     // Note: The principal moments of inertia (with more significant digits)
     // are: 0.0004078925412357755  0.0017908225928030743  0.002295284865961151.
     DRAKE_EXPECT_THROWS_MESSAGE(

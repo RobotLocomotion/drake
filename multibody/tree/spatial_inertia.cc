@@ -14,19 +14,14 @@ void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
   const T& mass = get_mass();
   const Vector3<T>& p_PBcm = get_com();
 
-  // Get G_BP, unit inertia about point P, expressed in frame E.  Use G_BP to
-  // calculate G_BBcm, unit inertia about Bcm.  Then use G_BBcm to calculate
-  // IBcm rotational inertia about Bcm, but without validity checks such as
-  // IsPhysicallyValid() so that this method works for error messages.
+  // Get G_BP (unit inertia about point P) and use it to calculate G_BBcm (unit
+  // inertia about Bcm).  Use G_BBcm to calculate I_BBcm (rotational inertia
+  // about Bcm) without validity checks such as IsPhysicallyValid().
+  // Hence, this method works for error messages.
   const UnitInertia<T>& G_BP = get_unit_inertia();
   const UnitInertia<T> G_BBcm = G_BP.ShiftToCenterOfMass(p_PBcm);
-  const Matrix3<T> IBcm = mass * G_BBcm.CopyToFullMatrix3();
-
-  // Set the rotational inertia from the lower-triangular part of the matrix.
   const RotationalInertia<T> I_BBcm =
-      RotationalInertia<T>::MakeFromMomentsAndProductsOfInertia(
-          IBcm(0, 0), IBcm(1, 1), IBcm(2, 2), IBcm(1, 0), IBcm(2, 0),
-          IBcm(2, 1), /* skip_validity_check = */ true);
+      G_BBcm.MultiplyByScalarSkipValidityCheck(mass);
 
   // If point P is not at Bcm, write B's rotational inertia about Bcm.
   const boolean<T> is_position_zero = (p_PBcm == Vector3<T>::Zero());
@@ -66,17 +61,12 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
         << " Center of mass = [" << p_PBcm.transpose() << "]" << std::endl;
   }
 
-  // Get unit inertia about point P, expressed in frame E.  Then use G_BP to
-  // calculate rotational inertia about point P, but without validity checks
-  // such as IsPhysicallyValid() so that operator<< works for error messages.
+  // Get G_BP (unit inertia about point P) and use it to calculate I_BP
+  // (rotational inertia about P) without validity checks such as
+  // IsPhysicallyValid().  Hence, this method works for error messages.
   const UnitInertia<T>& G_BP = M.get_unit_inertia();
-  const Matrix3<T> IBP = mass * G_BP.CopyToFullMatrix3();
-
-  // Set the rotational inertia from the lower-triangular part of the matrix.
   const RotationalInertia<T> I_BP =
-      RotationalInertia<T>::MakeFromMomentsAndProductsOfInertia(
-          IBP(0, 0), IBP(1, 1), IBP(2, 2),
-          IBP(1, 0), IBP(2, 0), IBP(2, 1), /* skip_validity_check = */ true);
+      G_BP.MultiplyByScalarSkipValidityCheck(mass);
 
   // Write B's rotational inertia about point P.
   out << " Inertia about point P, I_BP =" << std::endl << I_BP;
