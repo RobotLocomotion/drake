@@ -20,7 +20,17 @@ class PetscSchurComplement {
 
   ~PetscSchurComplement();
 
+  /* Constructs the Schur complement for an empty matrix, i.e., A, B, and D are
+   all empty. */
+  PetscSchurComplement();
+
   PetscSchurComplement(
+      const PetscSymmetricBlockSparseMatrix& symmetric_block_sparse_matrix,
+      const std::vector<int>& eliminated, const std::vector<int>& rest);
+
+  std::unique_ptr<PetscSchurComplement> Clone() const;
+
+  void CalcSchurComplement(
       const PetscSymmetricBlockSparseMatrix& symmetric_block_sparse_matrix,
       const std::vector<int>& eliminated, const std::vector<int>& rest);
 

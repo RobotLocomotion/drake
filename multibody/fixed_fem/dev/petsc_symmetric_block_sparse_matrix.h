@@ -53,6 +53,8 @@ class PetscSymmetricBlockSparseMatrix {
   PetscSymmetricBlockSparseMatrix(int size, int block_size,
                                   const std::vector<int>& nonzero_entries);
 
+  std::unique_ptr<PetscSymmetricBlockSparseMatrix> Clone() const;
+
   /* Accumulate values in the block matrix. The Eigen analogy of this operation
    is
    ```
@@ -105,6 +107,7 @@ class PetscSymmetricBlockSparseMatrix {
   int cols() const;
 
  private:
+  PetscSymmetricBlockSparseMatrix();
   class Impl;
   std::unique_ptr<Impl> pimpl_;
 };

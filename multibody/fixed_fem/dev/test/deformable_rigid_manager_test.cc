@@ -291,8 +291,7 @@ TEST_F(DeformableRigidManagerTest, UpdateDeformableVertexPositions) {
             deformed_meshes[0].mesh().num_vertices() * 3);
   for (int i = 0; i < deformed_meshes[0].mesh().num_vertices(); ++i) {
     const Vector3<double> p_WV = current_positions[0].segment<3>(3 * i);
-    EXPECT_TRUE(
-        CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
+    EXPECT_TRUE(CompareMatrices(p_WV, deformed_meshes[0].mesh().vertex(i)));
   }
 }
 
@@ -998,14 +997,11 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
     return A.MakeDenseMatrix();
   }
 
-  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix() and returns the
-   free motion tangent matrix of the deformable body with the given `index` as a
-   dense matrix. */
-  MatrixXd CalcFreeMotionTangentMatrix(const Context<double>& context,
-                                       DeformableBodyIndex index) const {
-    const Eigen::SparseMatrix<double> tangent_matrix_sparse =
-        deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context, index);
-    return MatrixXd(tangent_matrix_sparse);
+  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix(). */
+  const internal::PetscSymmetricBlockSparseMatrix& EvalFreeMotionTangentMatrix(
+      const Context<double>& context, DeformableBodyIndex index) const {
+    return deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context,
+                                                                  index);
   }
 
   /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrixSchurComplement()
@@ -1014,7 +1010,7 @@ class DeformableRigidDynamicsDataTest : public ::testing::Test {
   const MatrixXd& EvalFreeMotionTangentMatrixSchurComplement(
       const systems::Context<double>& context,
       DeformableBodyIndex index) const {
-    const internal::SchurComplement<double>& schur_complement =
+    const internal::PetscSchurComplement& schur_complement =
         deformable_rigid_manager_->EvalFreeMotionTangentMatrixSchurComplement(
             context, index);
     return schur_complement.get_D_complement();
@@ -1099,24 +1095,12 @@ TEST_F(DeformableRigidDynamicsDataTest,
   EXPECT_EQ(tangent_matrix_schur_complement.cols(),
             3 * num_participating_vertices);
   /* Construct the Schur complement by hand and verify that it matches the
-   calculated result. Note that here we rely on the fact that the permutation in
-   the deformable dofs is identity since it so happens that v6 is the
-   non-participating vertex. */
-  const MatrixXd tangent_matrix =
-      CalcFreeMotionTangentMatrix(plant_context, B_);
-  const Eigen::SparseMatrix<double> participating_block =
-      tangent_matrix
-          .topLeftCorner<3 * num_participating_vertices,
-                         3 * num_participating_vertices>()
-          .sparseView();
-  const Eigen::SparseMatrix<double> non_participating_block =
-      tangent_matrix.bottomRightCorner<3, 3>().sparseView();
-  const Eigen::SparseMatrix<double> off_diagonal_block =
-      tangent_matrix.bottomLeftCorner<3, 3 * num_participating_vertices>()
-          .sparseView();
-  const internal::SchurComplement<double> expected_schur_complement =
-      internal::SchurComplement<double>(participating_block, off_diagonal_block,
-                                        non_participating_block);
+   calculated result. */
+  const auto& tangent_matrix = EvalFreeMotionTangentMatrix(plant_context, B_);
+  std::vector<int> pariticipating_vertices = {0, 1, 2, 3, 4, 5};
+  std::vector<int> non_pariticipating_vertices = {6};
+  const internal::PetscSchurComplement expected_schur_complement(
+      tangent_matrix, non_pariticipating_vertices, pariticipating_vertices);
   EXPECT_TRUE(CompareMatrices(expected_schur_complement.get_D_complement(),
                               tangent_matrix_schur_complement,
                               std::numeric_limits<double>::epsilon()));
@@ -1173,7 +1157,7 @@ TEST_F(DeformableRigidDynamicsDataTest, TangentMatrix) {
    tangent matrix itself. */
   EXPECT_TRUE(CompareMatrices(
       tangent_matrix.bottomRightCorner(3 * kNumVertices, 3 * kNumVertices),
-      CalcFreeMotionTangentMatrix(plant_context, A_)));
+      EvalFreeMotionTangentMatrix(plant_context, A_).MakeDenseMatrix()));
 }
 
 /* Verifies that the participating free motion velocities match expectation for

@@ -16,6 +16,8 @@ using std::vector;
 
 class PetscSymmetricBlockSparseMatrix::Impl {
  public:
+  Impl() = default;
+
   Impl(int size, int block_size, const std::vector<int>& nonzero_entries)
       : size_(size), block_size_(block_size), num_blocks_(size / block_size) {
     DRAKE_DEMAND(size >= 0 && block_size_ > 0);
@@ -23,6 +25,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
     MatCreateSeqSBAIJ(PETSC_COMM_SELF, block_size, size, size, 0,
                       nonzero_entries.data(), &A_);
+    MatSetOption(A_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
     /* Initialize solver and preconditioner. */
     KSPCreate(PETSC_COMM_WORLD, &solver_);
     KSPGetPC(solver_, &preconditioner_);
@@ -31,6 +34,19 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   ~Impl() {
     KSPDestroy(&solver_);
     MatDestroy(&A_);
+  }
+
+  std::unique_ptr<Impl> Clone() const {
+    auto clone = std::make_unique<Impl>();
+    clone->size_ = this->size_;
+    clone->block_size_ = this->block_size_;
+    clone->num_blocks_ = this->num_blocks_;
+    // Ensure that the matrix has been assembled.
+    MatAssemblyBegin(this->A_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(this->A_, MAT_FINAL_ASSEMBLY);
+    MatDuplicate(this->A_, MAT_COPY_VALUES, &clone->A_);
+    MatSetOption(clone->A_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+    return clone;
   }
 
   void SetZero() { MatZeroEntries(A_); }
@@ -168,6 +184,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   PC preconditioner_;
 };
 
+PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix() = default;
+
 PetscSymmetricBlockSparseMatrix::~PetscSymmetricBlockSparseMatrix() = default;
 
 void PetscSymmetricBlockSparseMatrix::AddToBlock(
@@ -208,6 +226,14 @@ PetscSparseMatrix PetscSymmetricBlockSparseMatrix::MakePetscSparseMatrix()
 PetscSymmetricBlockSparseMatrix::PetscSymmetricBlockSparseMatrix(
     int size, int block_size, const std::vector<int>& nonzero_entries)
     : pimpl_(new Impl(size, block_size, nonzero_entries)) {}
+
+std::unique_ptr<PetscSymmetricBlockSparseMatrix>
+PetscSymmetricBlockSparseMatrix::Clone() const {
+  std::unique_ptr<PetscSymmetricBlockSparseMatrix> clone(
+      new PetscSymmetricBlockSparseMatrix());
+  clone->pimpl_ = pimpl_->Clone();
+  return clone;
+}
 
 }  // namespace internal
 }  // namespace fem

@@ -15,7 +15,8 @@
 #include "drake/multibody/fixed_fem/dev/deformable_model.h"
 #include "drake/multibody/fixed_fem/dev/deformable_rigid_contact_pair.h"
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
-#include "drake/multibody/fixed_fem/dev/schur_complement.h"
+#include "drake/multibody/fixed_fem/dev/petsc_schur_complement.h"
+#include "drake/multibody/fixed_fem/dev/petsc_symmetric_block_sparse_matrix.h"
 #include "drake/multibody/fixed_fem/dev/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
@@ -239,27 +240,26 @@ class DeformableRigidManager final
                             FemStateBase<T>* fem_state) const;
 
   /* Eval version of CalcFreeMotionTangentMatrix(). */
-  const Eigen::SparseMatrix<T>& EvalFreeMotionTangentMatrix(
+  const internal::PetscSymmetricBlockSparseMatrix& EvalFreeMotionTangentMatrix(
       const systems::Context<T>& context, DeformableBodyIndex index) const {
     return this->plant()
         .get_cache_entry(tangent_matrix_cache_indexes_[index])
-        .template Eval<EigenSparseMatrix<T>>(context)
-        .data;
+        .template Eval<internal::PetscSymmetricBlockSparseMatrix>(context);
   }
 
   /* Calculates the tangent matrix of the deformable body with the given `index`
    at free motion state. */
-  void CalcFreeMotionTangentMatrix(const systems::Context<T>& context,
-                                   DeformableBodyIndex index,
-                                   EigenSparseMatrix<T>* tangent_matrix) const;
+  void CalcFreeMotionTangentMatrix(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
 
   /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
-  const internal::SchurComplement<T>&
+  const internal::PetscSchurComplement&
   EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
                                              DeformableBodyIndex index) const {
     return this->plant()
         .get_cache_entry(tangent_matrix_schur_complement_cache_indexes_[index])
-        .template Eval<internal::SchurComplement<T>>(context);
+        .template Eval<internal::PetscSchurComplement>(context);
   }
 
   /* Calculates the Schur complement of the tangent matrix of the deformable
@@ -270,7 +270,7 @@ class DeformableRigidManager final
    M/D = A - BD⁻¹Bᵀ, which is guaranteed to be symmetric positive definite. */
   void CalcFreeMotionTangentMatrixSchurComplement(
       const systems::Context<T>& context, DeformableBodyIndex index,
-      internal::SchurComplement<T>* schur_complement) const;
+      internal::PetscSchurComplement* schur_complement) const;
 
   // TODO(xuchenhan-tri): Remove this method when SceneGraph takes control of
   //  all geometries. SceneGraph should be responsible for obtaining the most
@@ -545,5 +545,5 @@ class DeformableRigidManager final
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::DeformableRigidManager)
+
+extern template class ::drake::multibody::fem::DeformableRigidManager<double>;

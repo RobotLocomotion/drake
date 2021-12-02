@@ -175,11 +175,13 @@ class DeformableRigidContactSolverTest : public ::testing::Test {
         context);
   }
 
-  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix(). */
-  const Eigen::SparseMatrix<double>& EvalFreeMotionTangentMatrix(
-      const Context<double>& context, DeformableBodyIndex index) const {
-    return deformable_rigid_manager_->EvalFreeMotionTangentMatrix(context,
-                                                                  index);
+  /* Calls DeformableRigidManager::EvalFreeMotionTangentMatrix() and returns a
+   equivalent Eigen dense matrix. */
+  MatrixXd EvalFreeMotionTangentMatrix(const Context<double>& context,
+                                       DeformableBodyIndex index) const {
+    return deformable_rigid_manager_
+        ->EvalFreeMotionTangentMatrix(context, index)
+        .MakeDenseMatrix();
   }
 
   /* Calls DeformableRigidManager::EvalDeformableContactSolverResults(). */

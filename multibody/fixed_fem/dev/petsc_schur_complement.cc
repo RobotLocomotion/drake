@@ -14,9 +14,22 @@ namespace internal {
 
 class PetscSchurComplement::Impl {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Impl);
+
+  Impl() = default;
+
   Impl(const PetscSymmetricBlockSparseMatrix& symmetric_block_sparse_matrix,
-       const std::vector<int>& eliminated, const std::vector<int>& rest)
-      : p_(rest.size() * 3), q_(eliminated.size() * 3) {
+       const std::vector<int>& eliminated, const std::vector<int>& rest) {
+    CalcSchurComplement(symmetric_block_sparse_matrix, eliminated, rest);
+  }
+
+  ~Impl() = default;
+
+  void CalcSchurComplement(
+      const PetscSymmetricBlockSparseMatrix& symmetric_block_sparse_matrix,
+      const std::vector<int>& eliminated, const std::vector<int>& rest) {
+    p_ = rest.size() * 3;
+    q_ = eliminated.size() * 3;
     const PetscSparseMatrix matrix =
         symmetric_block_sparse_matrix.MakePetscSparseMatrix();
     DRAKE_DEMAND(matrix.rows() == matrix.cols());
@@ -78,8 +91,6 @@ class PetscSchurComplement::Impl {
     D_complement_ = A - B_transpose.transpose() * Dinv_B_transpose_;
   }
 
-  ~Impl() {}
-
   VectorX<double> SolveForY(const Eigen::Ref<const VectorX<double>>& x) const {
     /* If M = D, then the system reduces to Dy = 0. */
     if (p_ == 0) {
@@ -98,12 +109,28 @@ class PetscSchurComplement::Impl {
   MatrixX<double> Dinv_B_transpose_;  // D⁻¹Bᵀ.
 };
 
-PetscSchurComplement::~PetscSchurComplement() = default;
+PetscSchurComplement::PetscSchurComplement() {
+  pimpl_ = std::make_unique<Impl>();
+}
 
 PetscSchurComplement::PetscSchurComplement(
     const PetscSymmetricBlockSparseMatrix& matrix,
     const std::vector<int>& eliminated_vertices, const std::vector<int>& rest)
     : pimpl_(new Impl(matrix, eliminated_vertices, rest)) {}
+
+PetscSchurComplement::~PetscSchurComplement() = default;
+
+std::unique_ptr<PetscSchurComplement> PetscSchurComplement::Clone() const {
+  std::unique_ptr<PetscSchurComplement> clone(new PetscSchurComplement());
+  *clone->pimpl_ = *this->pimpl_;
+  return clone;
+}
+
+void PetscSchurComplement::CalcSchurComplement(
+    const PetscSymmetricBlockSparseMatrix& matrix,
+    const std::vector<int>& eliminated_vertices, const std::vector<int>& rest) {
+  pimpl_->CalcSchurComplement(matrix, eliminated_vertices, rest);
+}
 
 const MatrixX<double>& PetscSchurComplement::get_D_complement() const {
   return pimpl_->get_D_complement();
