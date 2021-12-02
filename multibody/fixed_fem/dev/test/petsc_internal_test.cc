@@ -54,6 +54,7 @@ GTEST_TEST(PetscInternalTest, MakeEigenRowMajorMatrix) {
   auto petsc_matrix = MakePetscMatrix();
   const MatrixXd col_major_matrix = MakeDenseMatrix(*petsc_matrix);
   EXPECT_TRUE(CompareMatrices(col_major_matrix, A, kEps));
+  MatDestroy(petsc_matrix.get());
 }
 
 }  // namespace

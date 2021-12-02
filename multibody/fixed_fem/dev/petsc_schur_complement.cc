@@ -78,17 +78,19 @@ class PetscSchurComplement::Impl {
         MakeDenseMatrix(B_transpose_petsc_dense);
     Dinv_B_transpose_ = MakeDenseMatrix(Dinv_B_transpose_petsc);
 
+    Mat A_petsc;
+    MatCreateSubMatrix(matrix.get_A(), is0, is0, MAT_INITIAL_MATRIX, &A_petsc);
+    const MatrixX<double> A = MakeDenseMatrix(A_petsc);
+    D_complement_ = A - B_transpose.transpose() * Dinv_B_transpose_;
+
     MatDestroy(&B_transpose_petsc_dense);
     MatDestroy(&Dinv_B_transpose_petsc);
     MatDestroy(&B_transpose_petsc);
     MatDestroy(&D_petsc);
-
-    Mat A_petsc;
-    MatCreateSubMatrix(matrix.get_A(), is0, is0, MAT_INITIAL_MATRIX, &A_petsc);
-    const MatrixX<double> A = MakeDenseMatrix(A_petsc);
     MatDestroy(&A_petsc);
-
-    D_complement_ = A - B_transpose.transpose() * Dinv_B_transpose_;
+    ISDestroy(&is0);
+    ISDestroy(&is1);
+    KSPDestroy(&solver);
   }
 
   VectorX<double> SolveForY(const Eigen::Ref<const VectorX<double>>& x) const {
