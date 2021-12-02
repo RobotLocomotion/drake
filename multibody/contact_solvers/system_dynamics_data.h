@@ -17,6 +17,9 @@ class SystemDynamicsData {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemDynamicsData)
 
+  /// Empty problem data with zero velocities.
+  SystemDynamicsData() = default;
+
   // Specifies the dynamics of the system by providing Ainv, a linear operator
   // form of the inverse of the system dynamics Jacobian matrix A and the
   // vector of predicted generalized velocities v^*. Refer to ContactSolver for
@@ -31,19 +34,52 @@ class SystemDynamicsData {
   // sizes.
   SystemDynamicsData(const LinearOperator<T>* Ainv, const VectorX<T>* v_star);
 
+  // Operator A describes the inverse dynamics as A⋅(v−v*) = τ while
+  // Ainv (A⁻¹) describes the forward dynamics as v = v* + A⁻¹⋅τ. Operator A and
+  // its inverse have size nv x nv, with nv = num_velocities().
+  // Either can be nullptr meaning that the operator is not available (some
+  // formulations do not require it), see has_forward_dynamics() and
+  // has_inverse_dynamics().
+  //
+  // @param A Operator describing the inverse dynamics of the system.
+  // @param Ainv The inverse of operator A, describing the forward dynamics of
+  // the system.
+  // @param v_star Predictor's step velocity v*, of size nv.
+  //
+  // @pre At least one of A or Ainv must be a valid, non null, pointer.
+  // @pre If both operators are provided, they both must have the same size.
+  SystemDynamicsData(const LinearOperator<T>* A, const LinearOperator<T>* Ainv,
+                     const VectorX<T>* v_star);
+
   // Returns the number of generalized velocities nv in accordance to the data
   // provided at construction.
   int num_velocities() const { return nv_; }
 
-  // Retrieve operator for A⁻¹.
-  const LinearOperator<T>& get_Ainv() const { return *Ainv_; }
+  // Forward dynamics operator Ainv was provided at construction.
+  bool has_forward_dynamics() const { return Ainv_ != nullptr; }
+
+  // Inverse dynamics operator A was provided at construction.
+  bool has_inverse_dynamics() const { return A_ != nullptr; }
+
+  /// Retrieve inverse dynamics operator A.
+  const LinearOperator<T>& get_A() const {
+    DRAKE_DEMAND(A_ != nullptr);
+    return *A_;
+  }
+
+  /// Retrieve forward dynamics operator A⁻¹.
+  const LinearOperator<T>& get_Ainv() const {
+    DRAKE_DEMAND(Ainv_ != nullptr);
+    return *Ainv_;
+  }
 
   // Retrieve predicted velocity v*.
   const VectorX<T>& get_v_star() const { return *v_star_; }
 
  private:
   int nv_{0};
-  const LinearOperator<T>* Ainv_{nullptr};
+  const LinearOperator<T>* A_{nullptr};     // inverse dynamics.
+  const LinearOperator<T>* Ainv_{nullptr};  // forward dynamics.
   const VectorX<T>* v_star_{nullptr};
 };
 
