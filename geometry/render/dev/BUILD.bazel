@@ -10,11 +10,19 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:private"])
 
+filegroup(
+    name = "example_resources",
+    srcs = [
+        "4_color_texture.png",
+    ],
+)
+
 drake_cc_binary(
     name = "render_engine_vtk_minimal_example",
     srcs = ["render_engine_vtk_minimal_example.cc"],
     add_test_rule = 1,
     data = [
+        ":example_resources",
         "//manipulation/models/ycb:models",
     ],
     test_rule_args = [
