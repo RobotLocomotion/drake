@@ -31,7 +31,6 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
-from pydrake.systems.rendering import PoseBundle
 
 
 class PlanarSceneGraphVisualizer(PyPlotVisualizer):

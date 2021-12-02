@@ -1,11 +1,13 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/scope_exit.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rotation_matrix.h"
@@ -17,6 +19,7 @@
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RotationMatrix;
+using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
 
 namespace drake {
@@ -24,11 +27,21 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
+    const MultibodyTreeTopology& topology)
+    : forces(topology.num_bodies(), topology.num_velocities()),
+      aba_forces(topology),
+      ac(topology) {}
+
+template <typename T>
 CompliantContactManager<T>::CompliantContactManager(
     std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver)
     : contact_solver_(std::move(contact_solver)) {
   DRAKE_DEMAND(contact_solver_ != nullptr);
 }
+
+template <typename T>
+CompliantContactManager<T>::~CompliantContactManager() {}
 
 template <typename T>
 void CompliantContactManager<T>::DeclareCacheEntries() {
@@ -56,6 +69,50 @@ void CompliantContactManager<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_jacobian = contact_jacobian_cache_entry.cache_index();
+
+  auto& free_motion_velocities_cache_entry = this->DeclareCacheEntry(
+      std::string("Free motion velocities, v*."),
+      systems::ValueProducer(
+          this, &CompliantContactManager<T>::CalcFreeMotionVelocities),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.free_motion_velocities =
+      free_motion_velocities_cache_entry.cache_index();
+
+  // Due to issue #12786, we cannot mark
+  // CacheIndexes::non_contact_forces_accelerations dependent on the
+  // MultibodyPlant's inputs, as it should. However if we remove this
+  // dependency, we run the risk of having an undetected algebraic loop. We use
+  // this cache entry to signal when the computation of non-contact forces is in
+  // progress so that we can detect an algebraic loop.
+  auto& non_contact_forces_evaluation_in_progress = this->DeclareCacheEntry(
+      "Evaluation of non-contact forces and accelerations is in progress.",
+      // N.B. This flag is set to true only when the computation is in progress.
+      // Therefore its default value is `false`.
+      systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
+      {systems::System<T>::nothing_ticket()});
+  cache_indexes_.non_contact_forces_evaluation_in_progress =
+      non_contact_forces_evaluation_in_progress.cache_index();
+
+  // Accelerations due to non-contact forces.
+  // We cache non-contact forces, ABA forces and accelerations into a
+  // AccelerationsDueToExternalForcesCache.
+  AccelerationsDueToExternalForcesCache<T> non_contact_forces_accelerations(
+      this->internal_tree().get_topology());
+  auto& non_contact_forces_accelerations_cache_entry = this->DeclareCacheEntry(
+      std::string("Non-contact forces accelerations."),
+      systems::ValueProducer(
+          this, non_contact_forces_accelerations,
+          &CompliantContactManager<
+              T>::CalcAccelerationsDueToNonContactForcesCache),
+      // Due to issue #12786, we cannot properly mark this entry dependent on
+      // inputs. CalcAccelerationsDueToNonContactForcesCache() uses
+      // CacheIndexes::non_contact_forces_evaluation_in_progress to guard
+      // against algebraic loops.
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.non_contact_forces_accelerations =
+      non_contact_forces_accelerations_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -404,6 +461,73 @@ void CompliantContactManager<T>::
 }
 
 template <typename T>
+void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
+    const systems::Context<T>& context,
+    AccelerationsDueToExternalForcesCache<T>* no_contact_accelerations_cache)
+    const {
+  // To overcame issue #12786, we use this additional cache entry
+  // to detect algebraic loops.
+  systems::CacheEntryValue& value =
+      plant()
+          .get_cache_entry(
+              cache_indexes_.non_contact_forces_evaluation_in_progress)
+          .get_mutable_cache_entry_value(context);
+  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
+  if (evaluation_in_progress) {
+    const char* error_message =
+        "Algebraic loop detected. This situation is caused when connecting the "
+        "input of your MultibodyPlant to the output of a feedback system which "
+        "is an algebraic function of a feedthrough output of the plant. Ways "
+        "to remedy this: 1. Revisit the model for your feedback system. "
+        "Consider if its output can be written in terms of other inputs. 2. "
+        "Break the algebraic loop by adding state to the controller, typically "
+        "to 'remember' a previous input. 3. Break the algebraic loop by adding "
+        "a zero-order hold system between the output of the plant and your "
+        "feedback system. This effectively delays the input signal to the "
+        "controller.";
+    throw std::runtime_error(error_message);
+  }
+  // Mark the start of the computation. If within an algebraic
+  // loop, pulling from the plant's input ports during the
+  // computation will trigger the recursive evaluation of this
+  // method and the exception above will be thrown.
+  evaluation_in_progress = true;
+  // If the exception above is triggered, we will leave this method and the
+  // computation will no longer be "in progress". We use a scoped guard so that
+  // we have a chance to mark it as such when we leave this scope.
+  ScopeExit guard(
+      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+
+  this->CalcNonContactForces(context, &no_contact_accelerations_cache->forces);
+  this->internal_tree().CalcArticulatedBodyForceCache(
+      context, no_contact_accelerations_cache->forces,
+      &no_contact_accelerations_cache->aba_forces);
+  this->internal_tree().CalcArticulatedBodyAccelerations(
+      context, no_contact_accelerations_cache->aba_forces,
+      &no_contact_accelerations_cache->ac);
+
+  // Mark the end of the computation.
+  evaluation_in_progress = false;
+}
+
+template <typename T>
+void CompliantContactManager<T>::CalcFreeMotionVelocities(
+    const systems::Context<T>& context, VectorX<T>* v_star) const {
+  DRAKE_DEMAND(v_star != nullptr);
+  // N.B. Forces are evaluated at the previous time step state. This is
+  // consistent with the explicit Euler and symplectic Euler schemes.
+  // TODO(amcastro-tri): Implement free-motion velocities update based on the
+  // theta-method, as in the SAP paper.
+  const VectorX<T>& vdot0 =
+      EvalAccelerationsDueToNonContactForcesCache(context).get_vdot();
+  const double dt = this->plant().time_step();
+  const VectorX<T>& x0 =
+      context.get_discrete_state(this->multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(this->plant().num_velocities());
+  *v_star = v0 + dt * vdot0;
+}
+
+template <typename T>
 const std::vector<internal::DiscreteContactPair<T>>&
 CompliantContactManager<T>::EvalDiscreteContactPairs(
     const systems::Context<T>& context) const {
@@ -419,6 +543,40 @@ CompliantContactManager<T>::EvalContactJacobianCache(
   return plant()
       .get_cache_entry(cache_indexes_.contact_jacobian)
       .template Eval<internal::ContactJacobianCache<T>>(context);
+}
+
+template <typename T>
+const VectorX<T>& CompliantContactManager<T>::EvalFreeMotionVelocities(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.free_motion_velocities)
+      .template Eval<VectorX<T>>(context);
+}
+
+template <typename T>
+const multibody::internal::AccelerationKinematicsCache<T>&
+CompliantContactManager<T>::EvalAccelerationsDueToNonContactForcesCache(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.non_contact_forces_accelerations)
+      .template Eval<AccelerationsDueToExternalForcesCache<T>>(context)
+      .ac;
+}
+
+template <typename T>
+void CompliantContactManager<T>::DoCalcContactSolverResults(
+    const systems::Context<T>& context,
+    contact_solvers::internal::ContactSolverResults<T>* results) const {
+  results->Resize(plant().num_velocities(), 0);
+
+  // N.B. For now this update is only valid for problems without contact.
+  const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
+      EvalDiscreteContactPairs(context);
+  DRAKE_DEMAND(discrete_pairs.size() == 0u);
+
+  // In the absence of contact, v_next = v*.
+  results->v_next = EvalFreeMotionVelocities(context);
+  results->tau_contact.setZero();
 }
 
 }  // namespace internal

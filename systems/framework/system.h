@@ -1204,9 +1204,10 @@ class System : public SystemBase {
   static std::unique_ptr<S<U>> ToScalarType(const S<T>& from) {
     auto base_result = from.template ToScalarTypeMaybe<U>();
     if (!base_result) {
-      ThrowUnsupportedScalarConversion(from, NiceTypeName::Get<U>());
+      const System<T>& upcast_from = from;
+      throw std::logic_error(upcast_from.GetUnsupportedScalarConversionMessage(
+          typeid(T), typeid(U)));
     }
-
     return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
   }
 

@@ -417,7 +417,7 @@ struct GeometryPairWithDistance {
   GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
       : geomA(gA), geomB(gB), distance(dist) {}
 
-  bool operator<(const GeometryPairWithDistance& other) {
+  bool operator<(const GeometryPairWithDistance& other) const {
     return distance < other.distance;
   }
 };
@@ -487,7 +487,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // improve computation times in Ibex here and produce regions with fewer
   // faces.
   std::vector<GeometryPairWithDistance> sorted_pairs;
-  for (const auto [geomA, geomB] : pairs) {
+  for (const auto& [geomA, geomB] : pairs) {
     sorted_pairs.emplace_back(
         geomA, geomB,
         query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)
@@ -525,7 +525,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
     // First use a fast nonlinear optimizer to add as many constraint as it
     // can find.
-    for (const auto pair : sorted_pairs) {
+    for (const auto& pair : sorted_pairs) {
       while (sample_point_requirement &&
              FindClosestCollision(
                  same_point_constraint, *frames.at(pair.geomA),
@@ -544,7 +544,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
       // Now loop back through and use Ibex for rigorous certification.
       // TODO(russt): Consider (re-)implementing a "feasibility only" version of
       // the IRIS check + nonlinear optimization to improve.
-      for (const auto pair : sorted_pairs) {
+      for (const auto& pair : sorted_pairs) {
         while (sample_point_requirement &&
                FindClosestCollision(
                    same_point_constraint, *frames.at(pair.geomA),

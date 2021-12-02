@@ -88,3 +88,40 @@ class TestSystemDoxygen(unittest.TestCase):
 
         rst_ish = mut.process_doxygen_to_sphinx(s)
         self.assertEqual(rst_ish.count(".. pydrake_system::"), 2)
+
+    def do_test_process_doxygen_raises(self, s, msg_regex):
+        with self.assertRaisesRegex(RuntimeError, msg_regex):
+            mut.process_doxygen_system_tags(s)
+
+        with self.assertRaisesRegex(RuntimeError, msg_regex):
+            mut.process_doxygen_to_sphinx(s)
+
+    def test_process_doxygen_reject_obsolete(self):
+        s = dedent("""\
+        /**
+        @system{Alchemist
+          @input_port{lead},
+          @output_port{gold},
+        }
+        */
+        """)
+        self.do_test_process_doxygen_raises(s, 'obsolete syntax')
+
+    def test_process_doxygen_missing_end(self):
+        s = dedent("""\
+        /**
+        @system
+        */
+        """)
+        self.do_test_process_doxygen_raises(s, 'missing @endsystem')
+
+    def test_process_doxygen_illegal_nest(self):
+        s = dedent("""\
+        /**
+        @system
+        @system
+        @endsystem
+        @endsystem
+        */
+        """)
+        self.do_test_process_doxygen_raises(s, 'illegal nest')

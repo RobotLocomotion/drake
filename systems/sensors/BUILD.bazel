@@ -198,7 +198,6 @@ drake_cc_library(
         "//geometry/render:render_engine",
         "//systems/framework:leaf_system",
         "//systems/primitives:zero_order_hold",
-        "//systems/rendering:pose_vector",
     ],
 )
 

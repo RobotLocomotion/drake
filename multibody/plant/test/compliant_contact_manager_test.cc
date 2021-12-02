@@ -6,6 +6,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
@@ -19,6 +22,8 @@ using drake::math::RotationMatrixd;
 using drake::multibody::contact_solvers::internal::PgsSolver;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::systems::Context;
+using drake::systems::PassThrough;
+using drake::systems::ZeroOrderHold;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -75,24 +80,22 @@ class CompliantContactManagerTest : public ::testing::Test {
   //   - Sphere 1 penetrates into the ground penetration_distance_.
   //   - Sphere 1 and 2 penetrate penetration_distance_.
   //   - Velocities are zero.
-  void MakeDefaultSetup() {
+  void MakeDefaultSetup(bool sphere1_on_prismatic_joint = false) {
     const ContactParameters soft_contact{1.0e5, 1.0e5, 0.01, 1.0};
     const ContactParameters hard_hydro_contact{
         std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
-    const SphereParameters sphere1_params{"Sphere1",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          soft_contact};
-    const SphereParameters sphere2_params{"Sphere2",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          soft_contact};
-    MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
+    const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
+                                          0.2 /* size */, soft_contact};
+    const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
+                                          0.2 /* size */, soft_contact};
+    MakeModel(hard_hydro_contact, sphere1_params, sphere2_params,
+              sphere1_on_prismatic_joint);
   }
 
   void MakeModel(const ContactParameters& ground_params,
                  const SphereParameters& sphere1_params,
-                 const SphereParameters& sphere2_params) {
+                 const SphereParameters& sphere2_params,
+                 bool sphere1_on_prismatic_joint = false) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, time_step_);
@@ -111,6 +114,17 @@ class CompliantContactManagerTest : public ::testing::Test {
     // Add models of the spheres.
     sphere1_ = &AddSphere(sphere1_params);
     sphere2_ = &AddSphere(sphere2_params);
+
+    // Model with sphere 1 mounted on a prismatic joint with lower limits.
+    if (sphere1_on_prismatic_joint) {
+      slider1_ = &plant_->AddJoint<PrismaticJoint>(
+          "Sphere1Slider", plant_->world_body(), std::nullopt, *sphere1_,
+          std::nullopt, Vector3<double>::UnitZ(),
+          sphere1_params.radius /* lower limit */);
+    }
+
+    plant_->mutable_gravity_field().set_gravity_vector(-gravity_ *
+                                                       Vector3d::UnitZ());
 
     plant_->set_contact_model(
         drake::multibody::ContactModel::kHydroelasticWithFallback);
@@ -139,8 +153,12 @@ class CompliantContactManagerTest : public ::testing::Test {
                        const SphereParameters& sphere2_params) const {
     DRAKE_DEMAND(plant_ != nullptr);
     const double sphere1_com_z = sphere1_params.radius - penetration_distance_;
-    const RigidTransformd X_WB1(Vector3d(0, 0, sphere1_com_z));
-    plant_->SetFreeBodyPose(plant_context_, *sphere1_, X_WB1);
+    if (slider1_ != nullptr) {
+      slider1_->set_translation(plant_context_, sphere1_com_z);
+    } else {
+      const RigidTransformd X_WB1(Vector3d(0, 0, sphere1_com_z));
+      plant_->SetFreeBodyPose(plant_context_, *sphere1_, X_WB1);
+    }
     const double sphere2_com_z = 2.0 * sphere1_params.radius +
                                  sphere2_params.radius -
                                  2.0 * penetration_distance_;
@@ -168,14 +186,10 @@ class CompliantContactManagerTest : public ::testing::Test {
 
     const ContactParameters hard_hydro_contact{
         std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
-    const SphereParameters sphere1_params{"Sphere1",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          sphere1_contact_params};
-    const SphereParameters sphere2_params{"Sphere2",
-                                          10.0 /* mass */,
-                                          0.2 /* size */,
-                                          sphere2_contact_params};
+    const SphereParameters sphere1_params{
+        "Sphere1", 10.0 /* mass */, 0.2 /* size */, sphere1_contact_params};
+    const SphereParameters sphere2_params{
+        "Sphere2", 10.0 /* mass */, 0.2 /* size */, sphere2_contact_params};
 
     // Soft sphere/hard ground.
     MakeModel(hard_hydro_contact, sphere1_params, sphere2_params);
@@ -261,9 +275,18 @@ class CompliantContactManagerTest : public ::testing::Test {
     return contact_manager_->EvalContactJacobianCache(context);
   }
 
+  VectorXd CalcFreeMotionVelocities(
+      const systems::Context<double>& context) const {
+    VectorXd v_star(plant_->num_velocities());
+    contact_manager_->CalcFreeMotionVelocities(context, &v_star);
+    return v_star;
+  }
+
  protected:
   // Arbitrary positive value so that the model is discrete.
   double time_step_{0.001};
+
+  const double gravity_{10.0};  // Acceleration of gravity, in m/s².
 
   // Default penetration distance. The configuration of the model is set so that
   // ground/sphere1 and sphere1/sphere2 interpenetrate by this amount.
@@ -274,6 +297,7 @@ class CompliantContactManagerTest : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   const RigidBody<double>* sphere1_{nullptr};
   const RigidBody<double>* sphere2_{nullptr};
+  const PrismaticJoint<double>* slider1_{nullptr};
   CompliantContactManager<double>* contact_manager_{nullptr};
   std::unique_ptr<Context<double>> diagram_context_;
   Context<double>* plant_context_{nullptr};
@@ -452,6 +476,194 @@ TEST_F(CompliantContactManagerTest, EvalContactJacobianCache) {
                                   MatrixCompareType::relative));
     }
   }
+}
+
+// Verifies the correctness of the computation of free motion velocities when
+// external forces are applied.
+TEST_F(CompliantContactManagerTest,
+       CalcFreeMotionVelocitiesWithExternalForces) {
+  MakeDefaultSetup();
+  const double kTolerance = std::numeric_limits<double>::epsilon();
+
+  // We set an arbitrary non-zero external force to the plant to verify it gets
+  // properly applied as part of the computation.
+  const int nv = plant_->num_velocities();
+  const VectorXd tau = VectorXd::LinSpaced(nv, 1.0, 2.0);
+  plant_->get_applied_generalized_force_input_port().FixValue(plant_context_,
+                                                              tau);
+
+  // Set arbitrary non-zero velocities.
+  const VectorXd v0 = VectorXd::LinSpaced(nv, 2.0, 3.0);
+  plant_->SetVelocities(plant_context_, v0);
+
+  // Since the spheres's frames are located at their COM and since their
+  // rotational inertias are triaxially symmetric, the Coriolis term is zero.
+  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g + tau.
+  const double dt = plant_->time_step();
+  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
+  MatrixXd M(nv, nv);
+  plant_->CalcMassMatrix(*plant_context_, &M);
+  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g + tau);
+
+  // Compute the velocities the system would have next time step in the absence
+  // of constraints.
+  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
+
+  EXPECT_TRUE(CompareMatrices(v_star, v_expected, kTolerance,
+                              MatrixCompareType::relative));
+}
+
+// Verifies that joint limit forces are applied.
+TEST_F(CompliantContactManagerTest, CalcFreeMotionVelocitiesWithJointLimits) {
+  // In this model sphere 1 is attached to the world by a prismatic joint with
+  // lower limit z = 0.
+  const bool sphere1_on_prismatic_joint = true;
+  MakeDefaultSetup(sphere1_on_prismatic_joint);
+
+  const int nv = plant_->num_velocities();
+
+  // Set arbitrary non-zero velocities.
+  const VectorXd non_zero_vs = VectorXd::LinSpaced(nv, 2.0, 3.0);
+  plant_->SetVelocities(plant_context_, non_zero_vs);
+
+  // The slider velocity is set to be negative to ensure the joint limit is
+  // active. That is, the position was set to be below the lower limit and in
+  // addition it is decreasing.
+  slider1_->set_translation_rate(plant_context_, -1.0);
+
+  // Initial velocities.
+  const VectorXd v0 = plant_->GetVelocities(*plant_context_);
+
+  // Since sphere 2's frame is located at its COM and since its inertia is
+  // triaxially symmetric, the Coriolis term for sphere 2 is zero. The Coriolis
+  // term is trivially zero for sphere 1, which only can move along the z-axis.
+  // Therefore the momentum equation reduces to: M * (v-v0)/dt = tau_g.
+  // We compute the expected velocities in the absence of joint limits.
+  const double dt = plant_->time_step();
+  const VectorXd tau_g = plant_->CalcGravityGeneralizedForces(*plant_context_);
+  MatrixXd M(nv, nv);
+  plant_->CalcMassMatrix(*plant_context_, &M);
+  const VectorXd v_expected = v0 + dt * M.ldlt().solve(tau_g);
+  // Obtain the slider's velocity at v_expected.
+  const double v_slider_no_limits = v_expected(slider1_->velocity_start());
+
+  // Compute the velocities the system would have next time step in the absence
+  // of constraints.
+  const VectorXd v_star = CalcFreeMotionVelocities(*plant_context_);
+  // Obtain the slider's velocity at v*.
+  const double v_slider_star = v_star(slider1_->velocity_start());
+
+  // While other MultibodyPlant tests verify the correctness of joint limit
+  // forces, this test is simply limited to verifying the manager applied them.
+  // Therefore we only check the force limits have the effect of making the
+  // slider velocity larger than if not present.
+  EXPECT_GT(v_slider_star, v_slider_no_limits);
+}
+
+// CompliantContactManager implements a workaround for issue #12786 which might
+// lead to undetected algebraic loops in the systems framework. Therefore
+// CompliantContactManager implements an internal algebraic loop detection to
+// properly warn users. This should go away as issue #12786 is resolved. This
+// test verifies the algebraic loop detection logic.
+class AlgebraicLoopDetection : public ::testing::Test {
+ public:
+  // Makes a system containing a multibody plant. When with_algebraic_loop =
+  // true the model includes a feedback system that creates an algebraic loop.
+  void MakeDiagram(bool with_algebraic_loop) {
+    systems::DiagramBuilder<double> builder;
+    plant_ = builder.AddSystem<MultibodyPlant>(1.0e-3);
+    plant_->Finalize();
+    auto owned_contact_manager =
+        std::make_unique<CompliantContactManager<double>>(
+            std::make_unique<PgsSolver<double>>());
+    plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
+
+    systems::System<double>* feedback{nullptr};
+    if (with_algebraic_loop) {
+      // We intentionally create an algebraic loop by placing a pass through
+      // system between the contact forces output and the input forces. This
+      // test is based on a typical user story: a user wants to write a
+      // controller that uses the estimated forces as input to the controller.
+      // For instance, the controller could implement force feedback for
+      // grasping. To simplify the model, a user might choose to emulate a real
+      // sensor or force estimator by connecting the output forces from the
+      // plant straight into the controller, creating an algebraic loop.
+      feedback = builder.AddSystem<PassThrough>(plant_->num_velocities());
+    } else {
+      // A more realistic model would include a force estimator, that most
+      // likely would introduce state and break the algebraic loop. Another
+      // option would be to introduce a delay between the force output ant the
+      // controller, effectively modeling a delay in the measured signal. Here
+      // we emulate one of these strategies using a zero-order-hold (ZOH) system
+      // to add feedback. This will not create an algebraic loop.
+      // N.B. The discrete period of the ZOH does not necessarily need to match
+      // that of the plant. This example makes them different to illustrate this
+      // point.
+      feedback =
+          builder.AddSystem<ZeroOrderHold>(2.0e-4, plant_->num_velocities());
+    }
+    builder.Connect(plant_->get_generalized_contact_forces_output_port(
+                        default_model_instance()),
+                    feedback->get_input_port(0));
+    builder.Connect(feedback->get_output_port(0),
+                    plant_->get_applied_generalized_force_input_port());
+    diagram_ = builder.Build();
+    diagram_context_ = diagram_->CreateDefaultContext();
+    plant_context_ =
+        &plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  }
+
+  void VerifyLoopIsDetected() const {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_
+            ->get_generalized_contact_forces_output_port(
+                default_model_instance())
+            .Eval(*plant_context_),
+        "Algebraic loop detected.*");
+  }
+
+  void VerifyNoLoopIsDetected() const {
+    EXPECT_NO_THROW(plant_
+                        ->get_generalized_contact_forces_output_port(
+                            default_model_instance())
+                        .Eval(*plant_context_));
+  }
+
+ protected:
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+  MultibodyPlant<double>* plant_{nullptr};
+  std::unique_ptr<Context<double>> diagram_context_;
+  Context<double>* plant_context_{nullptr};
+};
+
+TEST_F(AlgebraicLoopDetection, LoopIsDetected) {
+  MakeDiagram(true /* make diagram with algebraic loop */);
+  VerifyLoopIsDetected();
+}
+
+TEST_F(AlgebraicLoopDetection, LoopIsDetectedWhenCachingIsDisabled) {
+  MakeDiagram(true /* make diagram with algebraic loop */);
+  diagram_context_->DisableCaching();
+  VerifyLoopIsDetected();
+}
+
+TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositives) {
+  MakeDiagram(false /* make diagram with no algebraic loop */);
+  // There is no loop and therefore no exception should be thrown.
+  VerifyNoLoopIsDetected();
+  // Since the computation is cached, we can evaluate it multiple times without
+  // triggering the loop detection, as desired.
+  VerifyNoLoopIsDetected();
+}
+
+TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
+  MakeDiagram(false /* make diagram with no algebraic loop */);
+  diagram_context_->DisableCaching();
+  // There is no loop and therefore no exception should be thrown.
+  VerifyNoLoopIsDetected();
+  // Even if the computation is not cached, the loop detection is not triggered,
+  // as desired.
+  VerifyNoLoopIsDetected();
 }
 
 }  // namespace internal

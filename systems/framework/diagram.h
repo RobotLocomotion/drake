@@ -315,6 +315,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
                             CompositeEventCollection<T>* event_info,
                             T* time) const override;
 
+  std::string GetUnsupportedScalarConversionMessage(
+      const std::type_info& source_type,
+      const std::type_info& destination_type) const final;
+
  private:
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const final;

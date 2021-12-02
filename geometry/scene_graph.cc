@@ -10,7 +10,6 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace geometry {
@@ -24,7 +23,6 @@ using systems::LeafSystem;
 using systems::Parameters;
 using systems::State;
 using systems::SystemTypeTag;
-using systems::rendering::PoseBundle;
 
 namespace {
 
@@ -87,11 +85,6 @@ SceneGraph<T>::SceneGraph()
   model_inspector_.set(&model_);
   geometry_state_index_ =
       this->DeclareAbstractParameter(GeometryStateValue<T>());
-
-  bundle_port_index_ = this->DeclareAbstractOutputPort(
-                               "lcm_visualization",
-                               &SceneGraph::CalcPoseBundle)
-                           .get_index();
 
   query_port_index_ =
       this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
@@ -371,43 +364,6 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   // See the todo in the header for an alternate formulation.
   output->set(&context, this);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
-                                   PoseBundle<T>* output) const {
-  static const logging::Warn log_once(
-      "Do not use SceneGraph's PoseBundle-valued output port. It is deprecated "
-      "for removal after 2021-12-01. Instead use the QueryObject-valued port "
-      "and directly query for any information you need.");
-  // Note: This functionality can potentially lead to strange visualization
-  // artifacts. No invariant is maintained on what poses are being reported.
-  // That means, when computing the output, *any* frame with illustration
-  // geometry will have a pose reported, even if those frames had not been
-  // present during the corresponding visualization "initialization" call.
-  FullPoseUpdate(context);
-  const auto& g_state = geometry_state(context);
-
-  vector<FrameId> dynamic_frames =
-      GetDynamicFrames(g_state, Role::kIllustration);
-
-  if (output->get_num_poses() != static_cast<int>(dynamic_frames.size())) {
-    *output = PoseBundle<T>(dynamic_frames.size());
-  }
-
-  for (int i = 0; i < output->get_num_poses(); ++i) {
-    const FrameId f_id = dynamic_frames[i];
-    const SourceId s_id = g_state.get_source_id(f_id);
-    const std::string& source_name = g_state.GetName(s_id);
-    const std::string& frame_name = g_state.GetName(f_id);
-    output->set_name(i, source_name + "::" + frame_name);
-    output->set_model_instance_id(i, g_state.GetFrameGroup(f_id));
-    output->set_transform(i, g_state.get_pose_in_world(f_id));
-    // TODO(SeanCurtis-TRI): Handle velocity.
-  }
-}
-#pragma GCC diagnostic pop
 
 template <typename T>
 std::vector<FrameId> SceneGraph<T>::GetDynamicFrames(

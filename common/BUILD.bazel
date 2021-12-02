@@ -75,7 +75,6 @@ drake_cc_library(
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_throw.h",
-        "eigen_stl_types.h",
         "eigen_types.h",
         "never_destroyed.h",
         "text_logging.h",
@@ -826,14 +825,6 @@ drake_cc_googletest(
     name = "dummy_value_test",
     deps = [
         ":dummy_value",
-    ],
-)
-
-drake_cc_googletest(
-    name = "eigen_stl_types_test",
-    copts = ["-Wno-cpp"],
-    deps = [
-        ":essential",
     ],
 )
 

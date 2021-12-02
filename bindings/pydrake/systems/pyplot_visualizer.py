@@ -4,9 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from warnings import warn
 
-from pydrake.common.deprecation import _warn_deprecated
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
-from pydrake.systems.primitives import SignalLogger, VectorLog
+from pydrake.systems.primitives import VectorLog
 from pydrake.trajectories import Trajectory
 
 
@@ -34,8 +33,6 @@ class PyPlotVisualizer(LeafSystem):
         # that has an exact representation in binary floating point; see
         # drake#15021 for details.
         default_draw_period = 1./32
-
-        self._warned_signal_logger_deprecated = False  # Remove 2021-12-01.
 
         self.set_name('pyplot_visualization')
         self.timestep = draw_period or default_draw_period
@@ -125,23 +122,15 @@ class PyPlotVisualizer(LeafSystem):
         """
         Args:
             log: A reference to a pydrake.systems.primitives.VectorLog, or a
-                pydrake.systems.primitives.SignalLogger (deprecated for
-                2021-12-01), or a pydrake.trajectories.Trajectory that contains
-                the plant state after running a simulation.
+                pydrake.trajectories.Trajectory that contains the plant state
+                after running a simulation.
             resample: Whether we should do a resampling operation to make the
                 samples more consistent in time. This can be disabled if you
                 know the draw_period passed into the constructor exactly
                 matches the sample timestep of the log.
             Additional kwargs are passed through to FuncAnimation.
         """
-        log_is_signal_logger = isinstance(log, SignalLogger)
-        if log_is_signal_logger and not self._warned_signal_logger_deprecated:
-            _warn_deprecated(
-                "SignalLogger is deprecated. Use VectorLog instead.",
-                date="2021-12-01")
-            self._warned_signal_logger_deprecated = True
-
-        if isinstance(log, VectorLog) or log_is_signal_logger:
+        if isinstance(log, VectorLog):
             t = log.sample_times()
             x = log.data()
 

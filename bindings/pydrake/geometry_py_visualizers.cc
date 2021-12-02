@@ -199,6 +199,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("web_url", &Class::web_url, cls_doc.web_url.doc)
         .def("port", &Class::port, cls_doc.port.doc)
         .def("ws_url", &Class::ws_url, cls_doc.ws_url.doc)
+        .def("Flush", &Class::Flush, cls_doc.Flush.doc)
         .def("SetObject",
             py::overload_cast<std::string_view, const Shape&, const Rgba&>(
                 &Class::SetObject),

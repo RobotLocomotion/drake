@@ -74,7 +74,6 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - camera_[NAME]_depth_image
 /// - <b style="color:orange">camera_[NAME]_label_image</b>
 /// - <b style="color:orange">camera_[NAME]_point_cloud</b>
-/// - <b style="color:orange">pose_bundle</b> (deprecated for 2021-12-01)
 /// - <b style="color:orange">query_object</b>
 /// - <b style="color:orange">contact_results</b>
 /// - <b style="color:orange">plant_continuous_state</b>
