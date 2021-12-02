@@ -155,32 +155,46 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradientThrow) {
                std::runtime_error);
 }
 
-GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
+// Tests the transformation of the field when calling Transform(). As
+// documented, there are *two* APIs that depend on the field's frame:
+// EvaluateGradient() and EvaluateCartesian(). We test both to confirm that
+// the transformation is complete.
+GTEST_TEST(MeshFieldLinearTest, TestTransform) {
   // Create mesh and field. Both mesh vertices and field gradient are expressed
   // in frame M.
-  auto mesh = GenerateMesh<double>();
+  auto mesh_M = GenerateMesh<double>();
   std::vector<double> e_values = {0., 1., 2., 3.};
-  auto mesh_field =
-      std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
-          std::move(e_values), mesh.get());
+  MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_M(
+      std::move(e_values), mesh_M.get(), true /* calc_gradients */);
 
-  // We will not check all gradient vectors. Instead we will use the gradient
-  // vector of the first triangle as a representative.
-  Vector3d gradient_M = mesh_field->EvaluateGradient(0);
-
-  // Confirm the gradient vector before rigid transform.
-  Vector3d expect_gradient_M(1., 1., 0.);
-  ASSERT_TRUE(CompareMatrices(expect_gradient_M, gradient_M, 1e-14));
-
-  RigidTransformd X_MN(RollPitchYawd(M_PI_2, M_PI_4, M_PI / 6.),
+  RigidTransformd X_NM(RollPitchYawd(M_PI_2, M_PI_4, M_PI / 6.),
                        Vector3d(1.2, 1.3, -4.3));
-  mesh->TransformVertices(X_MN);
-  mesh_field->TransformGradients(X_MN);
+  MeshFieldLinear<double, TriangleSurfaceMesh<double>> mesh_field_N(
+      mesh_field_M);
+  // NOTE: re-expressing the field like this (and subsequent calls to
+  // EvaluateCartesian()) don't actually require the field's captured mesh to
+  // have properly transformed vertex positions. That is not generally true and
+  // this should be considered an anti-pattern. Generally, the mesh and field
+  // should be transformed in tandem. But it is expedient for this test to
+  // ignore that.
+  mesh_field_N.Transform(X_NM);
 
-  Vector3d gradient_N = mesh_field->EvaluateGradient(0);
-  Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
-
-  EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
+  for (int f = 0; f < mesh_M->num_triangles(); ++f) {
+    // Successful invocation of EvaluateGradient() is proof that the gradients
+    // have been computed.
+    const Vector3d& gradient_M = mesh_field_M.EvaluateGradient(f);
+    const Vector3d& gradient_N = mesh_field_N.EvaluateGradient(f);
+    // The gradients are different, but related by rotation.
+    ASSERT_FALSE(CompareMatrices(gradient_M, gradient_N, 1e-2));
+    ASSERT_TRUE(
+        CompareMatrices(X_NM.rotation() * gradient_M, gradient_N, 1e-15));
+    // Pick an arbitrary point within the triangle.
+    const Vector3d p_MQ =
+        mesh_M->CalcCartesianFromBarycentric(f, Vector3d{0.1, 0.3, 0.6});
+    const Vector3d p_NQ = X_NM * p_MQ;
+    ASSERT_NEAR(mesh_field_M.EvaluateCartesian(f, p_MQ),
+                mesh_field_N.EvaluateCartesian(f, p_NQ), 2e-15);
+  }
 }
 
 // Confirms that invoking EvaluateCartesian() produces equivalent expected
