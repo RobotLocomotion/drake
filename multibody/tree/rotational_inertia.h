@@ -443,8 +443,8 @@ class RotationalInertia {
   }
 
   /// (Internal use only) Multiplies a rotational inertia by a scalar.
-  /// @param[in] s Scalar which is to multiply this.
-  /// @return rotational inertia multiplied by `s`.
+  /// @param[in] s Scalar which multiplies `this`.
+  /// @return `this` rotational inertia multiplied by `s`.
   /// @related operator*(const T&).
   RotationalInertia<T> MultiplyByScalarSkipValidityCheck(const T& s) const {
     RotationalInertia<T> I(*this);  // Mutable copy of `this`.

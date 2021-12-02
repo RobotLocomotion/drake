@@ -581,7 +581,7 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   Ia *= scalar;
   EXPECT_EQ(Ia.get_moments(), scalar * m);
   EXPECT_EQ(Ia.get_products(), scalar * p);
-  EXPECT_THROW_IF_ARMED(Ia *= -2.2, std::exception);
+  EXPECT_THROW_IF_ARMED(Ia * (-2.2), std::exception);
 
   // Verify correctness of operator/=().
   Ia /= scalar;

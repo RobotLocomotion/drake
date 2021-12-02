@@ -525,11 +525,11 @@ class SpatialInertia {
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 
   // Appends text to an existing string with information about a SpatialInertia.
-  // Specifically, if p_PBcm (position vector from about-point P to Bcm (body or
-  // composite body B's center of mass) is non-zero, appends I_BBcm, body B's
-  // rotational inertia about Bcm (B's center of mass) to `msg`. In all cases,
-  // the central principal moments of inertia are appended to `msg`, e.g., to
-  // help identify a rotational inertia that violates the "triangle inequality".
+  // If the position vector p_PBcm from about-point P to Bcm (body B's center of
+  // mass) is non-zero, appends I_BBcm (body B's rotational inertia about Bcm)
+  // to `msg`. In all cases, the central principal moments of inertia are
+  // appended to `msg`, e.g., to help identify a rotational inertia that
+  // violates the "triangle inequality".
   void WriteExtraCentralInertiaProperties(std::string* msg) const;
 };
 

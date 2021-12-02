@@ -7,6 +7,8 @@
 namespace drake {
 namespace multibody {
 
+// TODO(Mitiguy) Consider using this code (or code similar to this) to write
+//  most/all Drake matrices and consolidate other usages to use this.
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const RotationalInertia<T>& I) {
   int width = 0;

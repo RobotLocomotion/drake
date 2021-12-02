@@ -361,14 +361,14 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
 }
 
 // Tests that an informative exception message is issued if a spatial inertia
-// fails IsPhysicallyValid().  This tests resulted from issue #16058 in which a
+// fails IsPhysicallyValid().  This test resulted from issue #16058 in which a
 // user reported that SpatialInertia::IsPhysicallyValid() failed for what seemed
 // like a reasonable spatial inertia. Although the spatial inertia is invalid,
 // Drake's previous error messages made it very difficult to see the problem.
 // The new error message reports rotational inertia about both Bcm (body or
 // composite body B's center of mass) and point P.  This makes it easy to match
-// against the user's URDF/SDF and also reports the principal moments of inertia
-// about Bcm (to help identify the "triangle inequality").
+// against the user's URDF/SDFormat and also reports the principal moments of
+// inertia about Bcm (to help identify the "triangle inequality").
 GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
   const double mass = 0.634;
   const Vector3<double> p_PBcm(0, 0.016, -0.02);  // Center of mass.
