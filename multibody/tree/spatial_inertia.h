@@ -233,16 +233,16 @@ class SpatialInertia {
   boolean<T> IsPhysicallyValid() const {
     // This spatial inertia is not physically valid if the mass is NaN or if the
     // center of mass or unit inertia matrix have NaN elements.
-    boolean<T> retValue = !IsNaN() && mass_ >= T(0);
-    if (retValue) {
+    boolean<T> ret_value = !IsNaN() && mass_ >= T(0);
+    if (ret_value) {
       // Form a rotational inertia about the body's center of mass and then use
       // the well-documented tests in RotationalInertia to test validity.
       const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
       const RotationalInertia<T> I_SScm_E =
           G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
-      retValue = I_SScm_E.CouldBePhysicallyValid();
+      ret_value = I_SScm_E.CouldBePhysicallyValid();
     }
-    return retValue;
+    return ret_value;
   }
 
   /// Copy to a full 6x6 matrix representation.
