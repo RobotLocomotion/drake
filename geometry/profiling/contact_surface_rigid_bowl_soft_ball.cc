@@ -270,8 +270,8 @@ class ContactResultMaker final : public LeafSystem<double> {
           msg.hydroelastic_contacts[i];
       const ContactSurface<double>& surface = contacts[i];
 
-      const auto& mesh_W = surface.mesh_W();
-      const auto& e_MN_W = surface.e_MN();
+      const auto& mesh_W = surface.tri_mesh_W();
+      const auto& e_MN_W = surface.tri_e_MN();
 
       // TODO(SeanCurtis-TRI): This currently skips the full naming and doesn't
       //  report any dynamics (e.g., force, moment, or quadrature data).

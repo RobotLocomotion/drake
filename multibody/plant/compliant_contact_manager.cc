@@ -265,7 +265,7 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
     const std::vector<geometry::ContactSurface<T>>& surfaces =
         this->EvalContactSurfaces(context);
     for (const auto& s : surfaces) {
-      const geometry::TriangleSurfaceMesh<T>& mesh = s.mesh_W();
+      const geometry::TriangleSurfaceMesh<T>& mesh = s.tri_mesh_W();
       num_quadrature_pairs += num_quad_points * mesh.num_triangles();
     }
   }
@@ -343,7 +343,7 @@ void CompliantContactManager<T>::
   const std::vector<geometry::ContactSurface<T>>& surfaces =
       this->EvalContactSurfaces(context);
   for (const auto& s : surfaces) {
-    const geometry::TriangleSurfaceMesh<T>& mesh_W = s.mesh_W();
+    const geometry::TriangleSurfaceMesh<T>& mesh_W = s.tri_mesh_W();
     const T tau_M = GetDissipationTimeConstant(s.id_M(), inspector);
     const T tau_N = GetDissipationTimeConstant(s.id_N(), inspector);
     const T tau = CombineDissipationTimeConstant(tau_M, tau_N);
@@ -381,7 +381,7 @@ void CompliantContactManager<T>::
           const Vector3<T> barycentric(xi[qp](0), xi[qp](1),
                                        1.0 - xi[qp](0) - xi[qp](1));
           // Pressure at the quadrature point.
-          const T p0 = s.e_MN().Evaluate(face, barycentric);
+          const T p0 = s.tri_e_MN().Evaluate(face, barycentric);
 
           // Force contribution by this quadrature point.
           const T fn0 = wq[qp] * Ae * p0;

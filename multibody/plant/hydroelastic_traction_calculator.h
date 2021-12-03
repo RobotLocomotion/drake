@@ -42,7 +42,7 @@ class HydroelasticTractionCalculator {
         const geometry::ContactSurface<T>* surface_in) :
             X_WA(X_WA_in), X_WB(X_WB_in), V_WA(V_WA_in), V_WB(V_WB_in),
             surface(*surface_in),
-            p_WC(surface_in->mesh_W().centroid()) {
+            p_WC(surface_in->centroid()) {
       DRAKE_DEMAND(surface_in != nullptr);
     }
 
